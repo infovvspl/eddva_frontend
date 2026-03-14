@@ -6,6 +6,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import SuperAdminDashboard from "./pages/super-admin/SuperAdminDashboard";
+import InstitutesPage from "./pages/super-admin/InstitutesPage";
+import NewInstitutePage from "./pages/super-admin/NewInstitutePage";
+import InstituteDetailPage from "./pages/super-admin/InstituteDetailPage";
+import UsersPage from "./pages/super-admin/UsersPage";
+import AnnouncementsPage from "./pages/super-admin/AnnouncementsPage";
+import PlatformStatsPage from "./pages/super-admin/PlatformStatsPage";
+import SettingsPage from "./pages/super-admin/SettingsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -25,14 +32,16 @@ const App = () => (
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Super Admin */}
           <Route element={<DashboardLayout />}>
+            {/* Super Admin */}
             <Route path="/super-admin" element={<SuperAdminDashboard />} />
-            <Route path="/super-admin/tenants" element={<PlaceholderPage title="All Institutes" subtitle="Manage platform tenants" />} />
-            <Route path="/super-admin/users" element={<PlaceholderPage title="Users" subtitle="Platform-wide user management" />} />
-            <Route path="/super-admin/announcements" element={<PlaceholderPage title="Announcements" />} />
-            <Route path="/super-admin/stats" element={<PlaceholderPage title="Platform Stats" />} />
-            <Route path="/super-admin/settings" element={<PlaceholderPage title="Settings" />} />
+            <Route path="/super-admin/tenants" element={<InstitutesPage />} />
+            <Route path="/super-admin/tenants/new" element={<NewInstitutePage />} />
+            <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
+            <Route path="/super-admin/users" element={<UsersPage />} />
+            <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
+            <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
+            <Route path="/super-admin/settings" element={<SettingsPage />} />
 
             {/* Institute Admin */}
             <Route path="/admin" element={<AdminDashboard />} />
