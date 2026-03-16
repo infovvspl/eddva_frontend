@@ -1,269 +1,224 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Settings, Globe, Shield, Bell, CreditCard, Palette, Mail, Save } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Settings, Globe, Shield, Bell, CreditCard, Palette, 
+  Mail, Save, Check, ShieldCheck, Zap, AlertTriangle 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/shared/PageHeader";
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState("general");
+  const [isSaving, setIsSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const sections = [
-    { id: "general", label: "General", icon: Settings },
-    { id: "branding", label: "Branding", icon: Palette },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "security", label: "Security", icon: Shield },
-    { id: "billing", label: "Billing", icon: CreditCard },
+    { id: "general", label: "General", icon: Settings, desc: "Platform identity & trials" },
+    { id: "branding", label: "Branding", icon: Palette, desc: "Logos, colors & taglines" },
+    { id: "notifications", label: "Notifications", icon: Bell, desc: "System & email alerts" },
+    { id: "security", label: "Security", icon: Shield, desc: "Auth & access control" },
+    { id: "billing", label: "Billing", icon: CreditCard, desc: "Gateways & invoicing" },
   ];
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-      <PageHeader title="Platform Settings" subtitle="Configure APEXIQ platform settings" />
+  const handleSave = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }, 1000);
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Settings Nav */}
-        <div className="card-surface p-2">
-          <nav className="space-y-0.5">
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-10 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Platform Settings</h1>
+            <p className="text-slate-500 font-medium">Configure the global APEXIQ ecosystem</p>
+          </div>
+          <Button 
+            onClick={handleSave}
+            className="h-12 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold flex gap-2 shadow-lg shadow-slate-200 transition-all active:scale-95"
+          >
+            {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save Changes
+          </Button>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Sidebar Navigation */}
+          <div className="lg:col-span-4 space-y-2">
             {sections.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full flex items-center gap-4 p-4 rounded-[24px] transition-all text-left ${
                   activeSection === s.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-white shadow-sm border border-slate-100 ring-1 ring-slate-100"
+                    : "hover:bg-slate-100/50 text-slate-400"
                 }`}
               >
-                <s.icon className="w-4 h-4" />
-                {s.label}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                  activeSection === s.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-400"
+                }`}>
+                  <s.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className={`text-sm font-black uppercase tracking-tight ${activeSection === s.id ? "text-slate-900" : "text-slate-500"}`}>
+                    {s.label}
+                  </p>
+                  <p className="text-[11px] font-medium opacity-70">{s.desc}</p>
+                </div>
               </button>
             ))}
-          </nav>
-        </div>
+          </div>
 
-        {/* Settings Content */}
-        <div className="lg:col-span-3">
-          {activeSection === "general" && (
-            <div className="card-surface p-5 space-y-5">
-              <h3 className="font-semibold text-foreground">General Settings</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Platform Name</label>
-                  <input
-                    defaultValue="APEXIQ"
-                    className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Support Email</label>
-                  <input
-                    defaultValue="support@apexiq.in"
-                    className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Default Trial Days</label>
-                  <input
-                    type="number" defaultValue={14}
-                    className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Max Institutes</label>
-                  <input
-                    type="number" defaultValue={200}
-                    className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-foreground">Feature Toggles</h4>
-                {[
-                  { label: "Battle Arena", desc: "Enable battle mode for students", enabled: true },
-                  { label: "AI Doubt Resolution", desc: "Auto-answer student doubts with AI", enabled: true },
-                  { label: "Study Plan AI", desc: "AI-generated personalized study plans", enabled: true },
-                  { label: "Maintenance Mode", desc: "Show maintenance page to all users", enabled: false },
-                ].map((toggle) => (
-                  <div key={toggle.label} className="flex items-center justify-between p-3 bg-background rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{toggle.label}</p>
-                      <p className="text-xs text-muted-foreground">{toggle.desc}</p>
-                    </div>
-                    <button
-                      className={`w-10 h-6 rounded-full transition-colors ${
-                        toggle.enabled ? "bg-primary" : "bg-border"
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-foreground rounded-full transition-transform mx-1 ${
-                        toggle.enabled ? "translate-x-4" : "translate-x-0"
-                      }`} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end">
-                <Button><Save className="w-4 h-4" /> Save Changes</Button>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "branding" && (
-            <div className="card-surface p-5 space-y-5">
-              <h3 className="font-semibold text-foreground">Branding Settings</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Tagline</label>
-                  <input
-                    defaultValue="Fight. Learn. Rank."
-                    className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Primary Color</label>
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-lg bg-primary border border-border" />
-                    <input
-                      defaultValue="#F97316"
-                      className="flex-1 h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground font-mono focus:border-primary outline-none transition-colors"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Logo</label>
-                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-background">
-                  <Palette className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Drop logo here or click to browse</p>
-                  <p className="text-xs text-muted-foreground mt-1">SVG or PNG, max 2MB</p>
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button><Save className="w-4 h-4" /> Save Changes</Button>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "notifications" && (
-            <div className="card-surface p-5 space-y-5">
-              <h3 className="font-semibold text-foreground">Notification Settings</h3>
-              <div className="space-y-3">
-                {[
-                  { label: "New Institute Signup", desc: "Get notified when a new institute registers", enabled: true },
-                  { label: "Payment Failed", desc: "Alert when an institute payment fails", enabled: true },
-                  { label: "High Error Rate", desc: "Alert when platform error rate exceeds 1%", enabled: true },
-                  { label: "Daily Summary", desc: "Receive daily platform summary email", enabled: false },
-                  { label: "Weekly Report", desc: "Detailed weekly analytics report", enabled: true },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between p-3 bg-background rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{item.label}</p>
-                      <p className="text-xs text-muted-foreground">{item.desc}</p>
-                    </div>
-                    <button
-                      className={`w-10 h-6 rounded-full transition-colors ${item.enabled ? "bg-primary" : "bg-border"}`}
-                    >
-                      <div className={`w-4 h-4 bg-foreground rounded-full transition-transform mx-1 ${
-                        item.enabled ? "translate-x-4" : "translate-x-0"
-                      }`} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-end">
-                <Button><Save className="w-4 h-4" /> Save Changes</Button>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "security" && (
-            <div className="card-surface p-5 space-y-5">
-              <h3 className="font-semibold text-foreground">Security Settings</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Session Timeout (minutes)</label>
-                  <input
-                    type="number" defaultValue={60}
-                    className="w-full max-w-xs h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Max Login Attempts</label>
-                  <input
-                    type="number" defaultValue={5}
-                    className="w-full max-w-xs h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { label: "Two-Factor Authentication", desc: "Require 2FA for admin accounts", enabled: true },
-                    { label: "IP Whitelisting", desc: "Restrict super admin access by IP", enabled: false },
-                    { label: "Rate Limiting", desc: "Enable API rate limiting", enabled: true },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between p-3 bg-background rounded-lg">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{item.label}</p>
-                        <p className="text-xs text-muted-foreground">{item.desc}</p>
+          {/* Settings Content Area */}
+          <div className="lg:col-span-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-sm"
+              >
+                {activeSection === "general" && (
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Platform Name</label>
+                        <input defaultValue="APEXIQ" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
                       </div>
-                      <button
-                        className={`w-10 h-6 rounded-full transition-colors ${item.enabled ? "bg-primary" : "bg-border"}`}
-                      >
-                        <div className={`w-4 h-4 bg-foreground rounded-full transition-transform mx-1 ${
-                          item.enabled ? "translate-x-4" : "translate-x-0"
-                        }`} />
-                      </button>
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Support Email</label>
+                        <input defaultValue="support@apexiq.in" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button><Save className="w-4 h-4" /> Save Changes</Button>
-              </div>
-            </div>
-          )}
 
-          {activeSection === "billing" && (
-            <div className="card-surface p-5 space-y-5">
-              <h3 className="font-semibold text-foreground">Billing Configuration</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Payment Gateway</label>
-                  <select className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none">
-                    <option>Razorpay</option>
-                    <option>Stripe</option>
-                    <option>PhonePe Business</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Currency</label>
-                  <select className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none">
-                    <option>INR (₹)</option>
-                    <option>USD ($)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">GST Number</label>
-                  <input
-                    defaultValue="29AABCU9603R1ZM"
-                    className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground font-mono focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Invoice Prefix</label>
-                  <input
-                    defaultValue="APX"
-                    className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground font-mono focus:border-primary outline-none transition-colors"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button><Save className="w-4 h-4" /> Save Changes</Button>
-              </div>
-            </div>
-          )}
+                    <div className="space-y-4">
+                      <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-indigo-500" /> Advanced Modules
+                      </h4>
+                      <div className="grid gap-3">
+                        {[
+                          { label: "Battle Arena", desc: "Gamified peer-to-peer testing", enabled: true },
+                          { label: "AI Doubt Resolution", desc: "LLM-powered academic support", enabled: true },
+                          { label: "Maintenance Mode", desc: "Lock platform for updates", enabled: false, warning: true },
+                        ].map((toggle) => (
+                          <div key={toggle.label} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
+                            <div>
+                              <p className="text-sm font-black text-slate-800">{toggle.label}</p>
+                              <p className="text-[11px] font-medium text-slate-500">{toggle.desc}</p>
+                            </div>
+                            <button
+                              className={`w-12 h-6 rounded-full transition-all relative ${
+                                toggle.enabled ? (toggle.warning ? "bg-rose-500" : "bg-indigo-600") : "bg-slate-200"
+                              }`}
+                            >
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${toggle.enabled ? "left-7" : "left-1"}`} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeSection === "branding" && (
+                  <div className="space-y-8">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Primary Brand Color</label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-600 shadow-inner" />
+                        <input defaultValue="#6366F1" className="flex-1 h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-mono font-bold focus:bg-white outline-none" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Platform Logo</label>
+                      <div className="border-2 border-dashed border-slate-100 rounded-[24px] p-12 flex flex-col items-center justify-center bg-slate-50 group hover:bg-white hover:border-indigo-200 transition-all cursor-pointer">
+                        <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 mb-4 group-hover:scale-110 transition-transform">
+                          <Palette className="w-6 h-6" />
+                        </div>
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Upload New Asset</p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-medium">SVG or Transparent PNG (Max 5MB)</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeSection === "security" && (
+                  <div className="space-y-6">
+                    <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center gap-4">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                      <p className="text-xs font-bold text-amber-700 leading-tight">
+                        Security changes will log out all current super-admin sessions immediately.
+                      </p>
+                    </div>
+                    {[
+                      { label: "Two-Factor Auth", desc: "Require TOTP for all staff", enabled: true, icon: ShieldCheck },
+                      { label: "IP Lockdown", desc: "Access only from office range", enabled: false, icon: Globe },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center justify-between p-4 border border-slate-100 rounded-2xl">
+                         <div className="flex items-center gap-3">
+                           <item.icon className="w-5 h-5 text-slate-400" />
+                           <div>
+                              <p className="text-sm font-black text-slate-800">{item.label}</p>
+                              <p className="text-[11px] font-medium text-slate-400">{item.desc}</p>
+                           </div>
+                         </div>
+                         <button className={`w-12 h-6 rounded-full transition-all relative ${item.enabled ? "bg-indigo-600" : "bg-slate-200"}`}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${item.enabled ? "left-7" : "left-1"}`} />
+                         </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Billing Section Placeholder */}
+                {activeSection === "billing" && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Gateway</label>
+                        <select className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none appearance-none">
+                          <option>Razorpay Premium</option>
+                          <option>Stripe Connect</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Currency</label>
+                        <select className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none appearance-none">
+                          <option>INR (₹) - Rupee</option>
+                          <option>USD ($) - Dollar</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
-    </motion.div>
+
+      {/* Success Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-4 rounded-[20px] shadow-2xl flex items-center gap-3 z-50 border border-slate-700"
+          >
+            <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+              <Check className="w-4 h-4 text-white stroke-[4]" />
+            </div>
+            <p className="text-sm font-bold">Configurations updated successfully</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
