@@ -34,7 +34,7 @@ const SettingsPage = () => {
         <header className="mb-10 flex justify-between items-end">
           <div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">Platform Settings</h1>
-            <p className="text-slate-500 font-medium">Configure the global APEXIQ ecosystem</p>
+            <p className="text-slate-500 font-medium">Configure the global EDVA ecosystem</p>
           </div>
           <Button 
             onClick={handleSave}
@@ -88,11 +88,11 @@ const SettingsPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Platform Name</label>
-                        <input defaultValue="APEXIQ" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
+                        <input defaultValue="EDVA" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Support Email</label>
-                        <input defaultValue="support@apexiq.in" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
+                        <input defaultValue="support@edva.in" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
                       </div>
                     </div>
 

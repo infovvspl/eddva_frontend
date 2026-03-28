@@ -1,14 +1,16 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Outlet } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
+import { useLogout } from "@/hooks/use-auth";
 import type { UserRole } from "@/lib/types";
-import { 
-  Home, Building2, Users, Megaphone, BarChart3, Settings, 
+import {
+  Home, Building2, Users, Megaphone, BarChart3, Settings,
   BookOpen, GraduationCap, FolderOpen, Calendar, FileText,
   Video, HelpCircle, Layout, BarChart,
-  Swords, Trophy, Brain, User, Zap, LogOut, Menu, X, MessageSquare
+  Swords, Trophy, Brain, User, Zap, LogOut, Menu, X, MessageSquare, Sparkles
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { usePresenceHeartbeat } from "@/hooks/use-presence";
 
 interface NavItem {
   label: string;
@@ -32,8 +34,10 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Teachers", path: "/admin/teachers", icon: GraduationCap },
     { label: "Students", path: "/admin/students", icon: Users },
     { label: "Content", path: "/admin/content", icon: FolderOpen },
+    { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+    { label: "PYQ Bank", path: "/admin/pyq", icon: FileText },
+    { label: "Lectures", path: "/admin/lectures", icon: Video },
     { label: "Calendar", path: "/admin/calendar", icon: Calendar },
-    { label: "Reports", path: "/admin/reports", icon: FileText },
     { label: "Settings", path: "/admin/settings", icon: Settings },
   ],
   teacher: [
@@ -43,10 +47,13 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, badge: 5 },
     { label: "My Batches", path: "/teacher/batches", icon: Users },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+    { label: "AI Tools", path: "/teacher/ai-tools", icon: Sparkles },
+    { label: "My Profile", path: "/teacher/profile", icon: User },
   ],
   student: [
     { label: "Dashboard", path: "/student", icon: Home },
     { label: "Learn", path: "/student/learn", icon: Brain },
+    { label: "Lectures", path: "/student/lectures", icon: Video },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
     { label: "Doubts", path: "/student/doubts", icon: HelpCircle },
     { label: "Leaderboard", path: "/student/leaderboard", icon: Trophy },
@@ -56,31 +63,44 @@ const navByRole: Record<UserRole, NavItem[]> = {
 };
 
 const DashboardLayout = () => {
-  const { user, clearAuth } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const logout = useLogout();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  usePresenceHeartbeat();
+
   if (!user) {
-    navigate("/login");
-    return null;
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role === "teacher" && user.teacherProfile === null) {
+    return <Navigate to="/teacher/onboarding" replace />;
   }
 
   const navItems = navByRole[user.role];
 
   const handleLogout = () => {
-    clearAuth();
-    navigate("/login");
+    logout();
   };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
+      {/* Logo / Institute Name */}
       <div className="h-14 flex items-center gap-2.5 px-4 border-b border-sidebar-border shrink-0">
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
           <Zap className="w-5 h-5 text-primary-foreground" />
         </div>
-        {sidebarOpen && <span className="text-lg font-extrabold text-foreground tracking-tight">APEXIQ</span>}
+        {sidebarOpen && (
+          <div className="min-w-0">
+            <span className="text-lg font-extrabold text-foreground tracking-tight block truncate">
+              {user.tenantName || "EDVA"}
+            </span>
+            {user.tenantName && (
+              <span className="text-[10px] text-muted-foreground font-medium -mt-1 block">Powered by EDVA</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Nav */}
