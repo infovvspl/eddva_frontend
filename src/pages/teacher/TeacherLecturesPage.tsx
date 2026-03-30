@@ -1412,28 +1412,39 @@ function UploadModal({ onClose, onSuccess, batches }: {
     setTopicId("");
   };
 
-  const { data: allSubjects } = useSubjects();
+  const { data: allSubjects, isLoading: subjectsLoading } = useSubjects();
   const { data: chapters } = useChapters(selectedSubjectId);
   const { data: topics } = useTopics(selectedChapterId);
 
   // Fetch subject-teacher assignments for the selected batch
-  const { data: batchAssignments = [] } = useQuery({
+  const { data: batchAssignments = [], isLoading: assignmentsLoading } = useQuery({
     queryKey: ["batch-subject-teachers", batchId],
     queryFn: () => getBatchSubjectTeachers(batchId),
     enabled: !!batchId,
   });
 
-  // Names of subjects assigned to the current teacher in this batch (case-insensitive)
+  // Check if this teacher is the primary teacher of the selected batch
+  const isPrimaryTeacher = !!batchId && batches.find((b: any) => b.id === batchId)?.teacherId === teacherId;
+
+  // Names of subjects assigned to the current teacher in this batch (trimmed + lowercased)
   const assignedSubjectNames = batchAssignments
     .filter(a => a.teacherId === teacherId)
-    .map(a => a.subjectName.toLowerCase());
+    .map(a => a.subjectName.toLowerCase().trim());
 
-  // If the batch has assignments and this teacher has some, filter subjects
-  // If no assignments exist at all (admin didn't configure), show all subjects
+  // Subject list logic:
+  // - Still loading → show nothing (avoid flash of wrong state)
+  // - Primary teacher with NO explicit subject assignments → show all subjects
+  // - Teacher has explicit subject assignments → show only those matching subjects
+  // - No assignments configured in this batch at all → show all subjects
   const hasAnyAssignments = batchAssignments.length > 0;
-  const subjects = hasAnyAssignments && assignedSubjectNames.length > 0
-    ? (allSubjects ?? []).filter((s: any) => assignedSubjectNames.includes(s.name.toLowerCase()))
-    : (allSubjects ?? []);
+  const isLoading = subjectsLoading || (!!batchId && assignmentsLoading);
+  const subjects = isLoading
+    ? []
+    : !hasAnyAssignments || (isPrimaryTeacher && assignedSubjectNames.length === 0)
+      ? (allSubjects ?? [])
+      : (allSubjects ?? []).filter(
+          (s: any) => assignedSubjectNames.includes(s.name.toLowerCase().trim())
+        );
 
   const handleThumbnail = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1527,13 +1538,15 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   <option value="">
                     {!batchId
                       ? "Select batch first…"
-                      : subjects.length === 0
-                        ? "No subjects assigned to you for this batch"
-                        : "Select subject…"}
+                      : isLoading
+                        ? "Loading subjects…"
+                        : subjects.length === 0
+                          ? "No subjects found"
+                          : "Select subject…"}
                   </option>
                   {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
-                {batchId && hasAnyAssignments && assignedSubjectNames.length === 0 && (
+                {batchId && !isLoading && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjects.length === 0 && (
                   <p className="text-xs text-amber-500 mt-1">
                     No subjects are assigned to you for this batch yet. Contact your admin.
                   </p>
