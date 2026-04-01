@@ -349,6 +349,7 @@ export default function StudentPYQPage() {
   const [endYear, setEndYear] = useState("all");
   const [exam, setExam] = useState("all");
   const [difficulty, setDifficulty] = useState("all");
+  const [questionType, setQuestionType] = useState("all");
 
   const startSession = useStartPYQSession();
 
@@ -359,6 +360,7 @@ export default function StudentPYQPage() {
     if (endYear !== "all") f.endYear = parseInt(endYear);
     if (exam !== "all") f.exam = exam;
     if (difficulty !== "all") f.difficulty = difficulty;
+    if (questionType !== "all") f.type = questionType;
     return f;
   }
 
@@ -411,7 +413,7 @@ export default function StudentPYQPage() {
     const cached = readCache(buildCacheKey(topicId!, activeFilters()));
     setCachedCount(cached?.length ?? 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicId, startYear, endYear, exam, difficulty]);
+  }, [topicId, startYear, endYear, exam, difficulty, questionType]);
 
   function handleRestart() {
     setPhase("setup");
@@ -513,6 +515,22 @@ export default function StudentPYQPage() {
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Question Type */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Question Type</label>
+              <Select value={questionType} onValueChange={setQuestionType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="mcq_single">MCQ (Single)</SelectItem>
+                  <SelectItem value="mcq_multi">MCQ (Multi)</SelectItem>
+                  <SelectItem value="integer">Integer</SelectItem>
                 </SelectContent>
               </Select>
             </div>

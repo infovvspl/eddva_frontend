@@ -1715,8 +1715,6 @@ function UploadModal({ onClose, onSuccess, batches }: {
 
 // ─── Schedule Live Modal ──────────────────────────────────────────────────────
 
-type LivePlatform = "google_meet" | "platform";
-
 function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches: any[] }) {
   const createLecture = useCreateLecture();
   const { toast } = useToast();
@@ -1724,8 +1722,6 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
-  const [platform, setPlatform] = useState<LivePlatform>("google_meet");
-  const [meetUrl, setMeetUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1736,7 +1732,6 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
         batchId, title, description: description || undefined,
         type: "live",
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
-        liveMeetingUrl: platform === "google_meet" ? meetUrl : undefined,
       });
       toast({ title: "Live class scheduled!", description: "Students have been notified and it's saved in their calendar." });
       onClose();
@@ -1799,38 +1794,6 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
                 </div>
               </div>
 
-              {/* Platform */}
-              <div className="space-y-2">
-                <Label>Platform</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {([
-                    { value: "google_meet" as LivePlatform, label: "Google Meet", sub: "Paste your meeting link", icon: "🎥" },
-                    { value: "platform" as LivePlatform, label: "EDVA Platform", sub: "Built-in live class", icon: "⚡" },
-                  ]).map(p => (
-                    <button key={p.value} type="button" onClick={() => setPlatform(p.value)}
-                      className={cn("p-4 rounded-xl border-2 text-left transition-all",
-                        platform === p.value
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-muted-foreground/40")}>
-                      <span className="text-xl">{p.icon}</span>
-                      <p className={cn("text-sm font-semibold mt-1.5", platform === p.value ? "text-primary" : "text-foreground")}>{p.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{p.sub}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {platform === "google_meet" && (
-                <div className="space-y-1.5">
-                  <Label>Google Meet Link</Label>
-                  <div className="flex gap-2.5 items-center bg-secondary border border-border rounded-xl px-4 h-11 focus-within:border-primary transition-colors">
-                    <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <input value={meetUrl} onChange={e => setMeetUrl(e.target.value)}
-                      placeholder="https://meet.google.com/abc-defg-hij"
-                      className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Right — info panel */}

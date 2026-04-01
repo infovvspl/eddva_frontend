@@ -15,17 +15,17 @@ import { toast } from "sonner";
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const statusConfig: Record<DoubtStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  open:             { label: "Waiting",         color: "text-amber-400",   bg: "bg-amber-500/10",   icon: <Clock className="w-3 h-3" /> },
-  ai_resolved:      { label: "AI Resolved",     color: "text-blue-400",    bg: "bg-blue-500/10",    icon: <Sparkles className="w-3 h-3" /> },
-  escalated:        { label: "Sent to Teacher", color: "text-violet-400",  bg: "bg-violet-500/10",  icon: <User className="w-3 h-3" /> },
-  teacher_resolved: { label: "Teacher Replied", color: "text-emerald-400", bg: "bg-emerald-500/10", icon: <CheckCircle className="w-3 h-3" /> },
+  open:             { label: "Waiting",           color: "text-amber-400",   bg: "bg-amber-500/10",   icon: <Clock className="w-3 h-3" /> },
+  ai_resolved:      { label: "AI Answered",       color: "text-blue-400",    bg: "bg-blue-500/10",    icon: <Sparkles className="w-3 h-3" /> },
+  escalated:        { label: "Sent to Teacher",   color: "text-violet-400",  bg: "bg-violet-500/10",  icon: <User className="w-3 h-3" /> },
+  teacher_resolved: { label: "Teacher Replied",   color: "text-emerald-400", bg: "bg-emerald-500/10", icon: <CheckCircle className="w-3 h-3" /> },
 };
 
 const TABS: { key: string; label: string }[] = [
   { key: "all",             label: "All" },
   { key: "open",            label: "Pending" },
-  { key: "ai_resolved",     label: "AI Resolved" },
-  { key: "escalated",       label: "Escalated" },
+  { key: "ai_resolved",     label: "AI Answered" },
+  { key: "escalated",       label: "Sent to Teacher" },
   { key: "teacher_resolved",label: "Answered" },
 ];
 
@@ -167,6 +167,7 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
   const [selectedTopicId, setSelectedTopicId] = useState("");
   const [question, setQuestion] = useState("");
   const [mode, setMode] = useState<ExplanationMode>("short");
+  const [askMode, setAskMode] = useState<"ai" | "teacher">("ai");
 
   const { data: subjects, isLoading: subLoading } = useSubjects();
   const { data: chapters, isLoading: chLoading } = useChapters(selectedSubjectId);
@@ -176,10 +177,18 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
   const handleSubmit = () => {
     if (!selectedTopicId || !question.trim()) return;
     createDoubt.mutate(
-      { topicId: selectedTopicId, questionText: question.trim(), source: "manual", explanationMode: mode },
+      {
+        topicId: selectedTopicId,
+        questionText: question.trim(),
+        source: "manual",
+        explanationMode: mode,
+        ...(askMode === "teacher" ? { skipAI: true } : {}),
+      },
       {
         onSuccess: () => {
-          toast.success("Doubt submitted! AI is analyzing...");
+          toast.success(askMode === "teacher"
+            ? "Sent to your teacher! They'll reply soon."
+            : "Doubt submitted! AI is analyzing...");
           onClose();
         },
         onError: () => toast.error("Failed to submit. Please try again."),
@@ -202,6 +211,36 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
+          {/* Ask mode toggle */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Ask</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAskMode("ai")}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors flex items-center justify-center gap-2
+                  ${askMode === "ai"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-secondary/30 text-foreground border-border hover:bg-secondary/60"}`}
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Ask AI
+              </button>
+              <button
+                onClick={() => setAskMode("teacher")}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors flex items-center justify-center gap-2
+                  ${askMode === "teacher"
+                    ? "bg-violet-600 text-white border-violet-600"
+                    : "bg-secondary/30 text-foreground border-border hover:bg-secondary/60"}`}
+              >
+                <User className="w-3.5 h-3.5" /> Ask Teacher
+              </button>
+            </div>
+            {askMode === "teacher" && (
+              <p className="text-xs text-violet-400 mt-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> Your teacher will be notified directly.
+              </p>
+            )}
+          </div>
+
           {/* Subject */}
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Subject</label>
@@ -270,23 +309,25 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
                 />
               </div>
 
-              {/* Mode */}
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Explanation Type</label>
-                <div className="flex gap-2">
-                  {(["short", "detailed"] as ExplanationMode[]).map(m => (
-                    <button key={m}
-                      onClick={() => setMode(m)}
-                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors
-                        ${mode === m
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-secondary/30 text-foreground border-border hover:bg-secondary/60"}`}
-                    >
-                      {m === "short" ? "⚡ Quick" : "📖 Detailed"}
-                    </button>
-                  ))}
+              {/* Mode — only relevant for AI */}
+              {askMode === "ai" && (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Explanation Type</label>
+                  <div className="flex gap-2">
+                    {(["short", "detailed"] as ExplanationMode[]).map(m => (
+                      <button key={m}
+                        onClick={() => setMode(m)}
+                        className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors
+                          ${mode === m
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary/30 text-foreground border-border hover:bg-secondary/60"}`}
+                      >
+                        {m === "short" ? "⚡ Quick" : "📖 Detailed"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -300,8 +341,10 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
           >
             {createDoubt.isPending ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
+            ) : askMode === "teacher" ? (
+              <><User className="w-4 h-4" /> Send to Teacher</>
             ) : (
-              <><Send className="w-4 h-4" /> Ask AI Now</>
+              <><Sparkles className="w-4 h-4" /> Ask AI Now</>
             )}
           </button>
         </div>

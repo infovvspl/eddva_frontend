@@ -301,7 +301,7 @@ function QuestionRow({
 function AIGeneratePanel({
   onQuestionsGenerated,
 }: {
-  onQuestionsGenerated: (questions: DraftQuestion[]) => void;
+  onQuestionsGenerated: (questions: DraftQuestion[], topicId?: string) => void;
 }) {
   const [exam, setExam] = useState("JEE");
   const [count, setCount] = useState(30);
@@ -310,18 +310,67 @@ function AIGeneratePanel({
   const [error, setError] = useState("");
   const [progress, setProgress] = useState("");
 
+  // Topic selection state
+  const [subjectId, setSubjectId] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [aiTopicId, setAiTopicId] = useState("");
+  const [aiTopicName, setAiTopicName] = useState("");
+  const [aiChapterName, setAiChapterName] = useState("");
+  const [aiSubjectName, setAiSubjectName] = useState("");
+
+  const { data: subjects } = useSubjects();
+  const { data: chapters } = useChapters(subjectId);
+  const { data: topics } = useTopics(chapterId);
+
+  const subjectList = Array.isArray(subjects) ? subjects : [];
+  const chapterList = Array.isArray(chapters) ? chapters : [];
+  const topicList = Array.isArray(topics) ? topics : [];
+
   const cfg = EXAM_CONFIGS[exam] ?? EXAM_CONFIGS.JEE;
+  const topicSelected = !!aiTopicId;
 
   const handleGenerate = async () => {
     setError("");
     setGenerating(true);
-    setProgress("Crafting diagnostic prompt…");
+    setProgress("Crafting prompt…");
 
     const easyCount = Math.round(count * 0.3);
     const hardCount = Math.round(count * 0.25);
     const mediumCount = count - easyCount - hardCount;
 
-    const transcript = `
+    let transcript: string;
+    let testTitle: string;
+
+    if (topicSelected) {
+      // ── Topic-based generation ──
+      const topicPath = [aiSubjectName, aiChapterName, aiTopicName].filter(Boolean).join(" > ");
+      testTitle = `${aiTopicName} Test`;
+      transcript = `
+You are an expert question setter. Generate exactly ${count} high-quality multiple-choice questions specifically on the topic: "${aiTopicName}" (${topicPath}).
+
+DISTRIBUTION:
+- Easy questions: ${easyCount} (label difficulty: easy)
+- Medium questions: ${mediumCount} (label difficulty: medium)
+- Hard questions: ${hardCount} (label difficulty: hard)
+
+REQUIREMENTS FOR EACH QUESTION:
+1. ALL questions MUST be strictly about "${aiTopicName}" only — do not include questions from other topics
+2. Four distinct options labeled A, B, C, D
+3. Exactly one correct answer
+4. Questions should test both conceptual understanding AND numerical/problem-solving skills for this topic
+5. Cover different subtopics and aspects of "${aiTopicName}" — do NOT repeat the same concept twice in a row
+6. Set subject: "${aiSubjectName || aiTopicName}"
+7. Label each question with difficulty (easy/medium/hard)
+8. Provide a brief explanation of the correct answer
+
+${customInstructions ? `ADDITIONAL INSTRUCTIONS:\n${customInstructions}` : ""}
+
+Generate exactly ${count} questions ALL based on "${aiTopicName}". Suitable for Class 11-12 or competitive exam students.
+      `.trim();
+    } else {
+      // ── Exam-based generation (fallback) ──
+      testTitle = `${exam} Diagnostic Test`;
+      transcript = `
 You are an expert question setter for competitive exams in India. Generate exactly ${count} high-quality multiple-choice diagnostic test questions for ${exam} (${cfg.description}).
 
 DISTRIBUTION:
@@ -345,11 +394,12 @@ REQUIREMENTS FOR EACH QUESTION:
 ${customInstructions ? `ADDITIONAL INSTRUCTIONS:\n${customInstructions}` : ""}
 
 Generate exactly ${count} questions spanning all subjects evenly. Make questions suitable for diagnostic assessment of Class 11-12 students.
-    `.trim();
+      `.trim();
+    }
 
     try {
       setProgress("AI is generating questions (this may take ~30 seconds)…");
-      const result = await aiGenerateQuestions({ transcript, lectureTitle: `${exam} Diagnostic Test` });
+      const result = await aiGenerateQuestions({ transcript, lectureTitle: testTitle });
       const raw = result?.questions ?? [];
 
       if (!raw.length) {
@@ -358,20 +408,19 @@ Generate exactly ${count} questions spanning all subjects evenly. Make questions
       }
 
       setProgress(`Converting ${raw.length} questions…`);
-      const drafts = raw.map(aiToDict => aiToDict).map(aiToDict => {
-        // Normalize: backend may return different shapes
+      const drafts = raw.map(aiToDict => {
         const q: AiGeneratedQuestion = {
           questionText: (aiToDict as any).questionText || (aiToDict as any).question || "",
           options: (aiToDict as any).options ?? [],
           correctOption: (aiToDict as any).correctOption || (aiToDict as any).correct_option || "A",
           difficulty: (aiToDict as any).difficulty ?? "medium",
-          subject: (aiToDict as any).subject ?? "",
+          subject: (aiToDict as any).subject ?? (aiSubjectName || ""),
           explanation: (aiToDict as any).explanation ?? "",
         };
         return aiToDict2(q);
       });
 
-      onQuestionsGenerated(drafts);
+      onQuestionsGenerated(drafts, aiTopicId || undefined);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "AI generation failed.";
       setError(msg);
@@ -386,18 +435,89 @@ Generate exactly ${count} questions spanning all subjects evenly. Make questions
       <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
         <Sparkles className="w-4 h-4 text-violet-500 shrink-0" />
         <p className="text-xs text-violet-700 dark:text-violet-400 font-medium">
-          AI will generate a complete diagnostic test based on the exam target and difficulty distribution.
+          {topicSelected
+            ? `AI will generate ${count} questions specifically about "${aiTopicName}"`
+            : "Select a topic below for topic-specific questions, or use exam-based generation."}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exam Target</label>
-          <select value={exam} onChange={e => setExam(e.target.value)}
-            className="h-10 w-full px-3 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary">
-            {Object.keys(EXAM_CONFIGS).map(k => <option key={k} value={k}>{k.replace("_", " ")}</option>)}
+      {/* ── Topic Selector ── */}
+      <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Topic <span className="normal-case font-normal text-muted-foreground/60">(recommended — generates topic-specific questions)</span>
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          <select
+            value={subjectId}
+            onChange={e => {
+              const id = e.target.value;
+              const name = subjectList.find(s => s.id === id)?.name ?? "";
+              setSubjectId(id); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(name); setAiChapterName("");
+            }}
+            className="h-9 w-full px-2 bg-background border border-border rounded-lg text-xs outline-none focus:border-primary"
+          >
+            <option value="">Subject…</option>
+            {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select
+            value={chapterId}
+            onChange={e => {
+              const id = e.target.value;
+              const name = chapterList.find(c => c.id === id)?.name ?? "";
+              setChapterId(id); setAiTopicId(""); setAiTopicName(""); setAiChapterName(name);
+            }}
+            disabled={!subjectId}
+            className="h-9 w-full px-2 bg-background border border-border rounded-lg text-xs outline-none focus:border-primary disabled:opacity-40"
+          >
+            <option value="">Chapter…</option>
+            {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select
+            value={aiTopicId}
+            onChange={e => {
+              const id = e.target.value;
+              const name = topicList.find(t => t.id === id)?.name ?? "";
+              setAiTopicId(id); setAiTopicName(name);
+            }}
+            disabled={!chapterId}
+            className="h-9 w-full px-2 bg-background border border-border rounded-lg text-xs outline-none focus:border-primary disabled:opacity-40"
+          >
+            <option value="">Topic…</option>
+            {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
+        {topicSelected ? (
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span className="text-xs text-emerald-600 font-medium flex-1 truncate">
+              {[aiSubjectName, aiChapterName, aiTopicName].filter(Boolean).join(" › ")}
+            </span>
+            <button
+              type="button"
+              onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground shrink-0"
+            >
+              Clear
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-amber-600 dark:text-amber-400 pt-0.5">
+            No topic selected — will use exam-based generation below.
+          </p>
+        )}
+      </div>
+
+      {/* ── Question count (always visible) ── */}
+      <div className={`grid gap-3 ${!topicSelected ? "grid-cols-2" : "grid-cols-1"}`}>
+        {!topicSelected && (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exam Target</label>
+            <select value={exam} onChange={e => setExam(e.target.value)}
+              className="h-10 w-full px-3 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary">
+              {Object.keys(EXAM_CONFIGS).map(k => <option key={k} value={k}>{k.replace("_", " ")}</option>)}
+            </select>
+          </div>
+        )}
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Number of Questions</label>
           <select value={count} onChange={e => setCount(+e.target.value)}
@@ -411,18 +531,20 @@ Generate exactly ${count} questions spanning all subjects evenly. Make questions
         </div>
       </div>
 
-      {/* Subject preview */}
-      <div className="rounded-xl border border-border bg-secondary/40 p-3">
-        <p className="text-xs font-semibold text-muted-foreground mb-2">Subjects covered:</p>
-        <div className="flex flex-wrap gap-1.5">
-          {cfg.subjects.map(s => (
-            <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{s}</span>
-          ))}
+      {/* Subject preview — only for exam-based */}
+      {!topicSelected && (
+        <div className="rounded-xl border border-border bg-secondary/40 p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Subjects covered:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {cfg.subjects.map(s => (
+              <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{s}</span>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Difficulty: ~30% easy · ~45% medium · ~25% hard
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Difficulty: ~30% easy · ~45% medium · ~25% hard
-        </p>
-      </div>
+      )}
 
       <div>
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -430,7 +552,9 @@ Generate exactly ${count} questions spanning all subjects evenly. Make questions
         </label>
         <textarea rows={2} value={customInstructions}
           onChange={e => setCustomInstructions(e.target.value)}
-          placeholder="e.g. Focus more on modern physics and organic chemistry. Avoid very long numerical problems."
+          placeholder={topicSelected
+            ? `e.g. Include more numerical problems on ${aiTopicName}. Focus on advanced concepts.`
+            : "e.g. Focus more on modern physics and organic chemistry. Avoid very long numerical problems."}
           className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary resize-none" />
       </div>
 
@@ -677,10 +801,10 @@ function CreateTestModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const computedTotalMarks = questions.reduce((sum, q) => sum + q.marksCorrect, 0);
   const computedDuration = Math.max(30, Math.ceil(questions.length * 1.5));
 
-  const handleAIGenerated = (drafts: DraftQuestion[]) => {
+  const handleAIGenerated = (drafts: DraftQuestion[], autoTopicId?: string) => {
     setQuestions(drafts);
-    // Auto-fill title and duration
     setDurationMinutes(Math.max(30, Math.ceil(drafts.length * 1.5)));
+    if (autoTopicId) setTopicId(autoTopicId);
     setStep("details");
   };
 

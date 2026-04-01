@@ -27,7 +27,7 @@ type ScopeType = "global" | "state" | "city" | "school" | "subject" | "battle_xp
 const SCOPES: { key: ScopeType; label: string }[] = [
   { key: "global",    label: "Global" },
   { key: "city",      label: "City" },
-  { key: "school",    label: "Coaching" },
+  { key: "school",    label: "Institute" },
   { key: "battle_xp", label: "Battle XP" },
 ];
 

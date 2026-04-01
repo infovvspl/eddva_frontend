@@ -14,8 +14,9 @@ import {
   MessageSquare, Clock, AlertCircle, CheckCircle2, Send,
   Loader2, Search, RefreshCw, ChevronRight, Image as ImageIcon,
   BookOpen, Sparkles, ThumbsUp, ThumbsDown, Link2, Eye, EyeOff,
-  CheckCheck, XCircle, Users, Inbox, Filter,
+  CheckCheck, XCircle, Users, Inbox, Filter, Bot,
 } from "lucide-react";
+import { apiClient, extractData } from "@/lib/api/client";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -107,16 +108,41 @@ function DoubtListItem({ doubt, selected, onClick }: {
 
 // ─── Response Editor ──────────────────────────────────────────────────────────
 
-function ResponseEditor({ doubtId, aiQualityRating, onDone }: {
+function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
   doubtId: string;
   aiQualityRating?: string;
+  questionText?: string;
   onDone: () => void;
 }) {
   const [response, setResponse] = useState("");
   const [lectureRef, setLectureRef] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const respondM = useRespondToDoubt();
+
+  const handleAiAssist = async () => {
+    if (!questionText?.trim()) return;
+    setAiLoading(true);
+    try {
+      const res = await apiClient.post("/ai/doubt/resolve", {
+        questionText: questionText.trim(),
+        mode: "detailed",
+      });
+      const data = extractData<{ explanation: string }>(res);
+      const explanation = data?.explanation ?? "";
+      if (explanation) {
+        setResponse(prev => prev ? `${prev}\n\n[AI Draft]:\n${explanation}` : explanation);
+        toast.success("AI draft added — review and edit before sending.");
+      } else {
+        toast.error("AI couldn't generate a response. Write manually.");
+      }
+    } catch {
+      toast.error("Failed to get AI response.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!response.trim()) { toast.error("Please write a response before sending."); return; }
@@ -150,6 +176,18 @@ function ResponseEditor({ doubtId, aiQualityRating, onDone }: {
           {showPreview ? "Edit" : "Preview"}
         </button>
       </div>
+
+      {/* AI Assist button */}
+      {!showPreview && questionText && (
+        <button
+          onClick={handleAiAssist}
+          disabled={aiLoading}
+          className="w-full flex items-center justify-center gap-2 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
+        >
+          {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+          {aiLoading ? "Generating AI draft…" : "Ask AI for Help (pre-fill response)"}
+        </button>
+      )}
 
       {showPreview ? (
         <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-4 min-h-[120px]">
@@ -394,24 +432,27 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
               </div>
             )}
 
-            {/* Case 2: Escalated (AI failed or student said not helpful) → direct response editor */}
+            {/* Case 2: Escalated → direct response editor */}
             {(isEscalated || showResponseEditor) && (
               <div className="space-y-3">
                 {isEscalated && (
                   <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
-                    {hasAI ? "Student found AI answer unhelpful — needs your explanation." : "AI couldn't resolve this — your expertise is needed."}
+                    {hasAI
+                      ? "Student found AI answer unhelpful — needs your explanation."
+                      : "Student asked you directly — no AI was used."}
                   </div>
                 )}
                 <ResponseEditor
                   doubtId={doubt.id}
                   aiQualityRating={aiQuality ?? undefined}
+                  questionText={doubt.questionText ?? undefined}
                   onDone={onRefresh}
                 />
               </div>
             )}
 
-            {/* Case 3: AI resolved but no AI → direct response */}
+            {/* Case 3: AI resolved but no AI text → direct response */}
             {doubt.status === "ai_resolved" && !hasAI && !showResponseEditor && (
               <button
                 onClick={() => setShowResponseEditor(true)}

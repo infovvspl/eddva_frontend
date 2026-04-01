@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Swords, Zap, Users, Globe, UserPlus, Bot,
+  Swords, Zap, Users, Globe, UserPlus,
   Trophy, Clock, ArrowLeft, Copy, Check,
   Loader2, Wifi, X, Crown, Target,
   ChevronRight, Sparkles, Shield, AlertCircle,
@@ -109,18 +109,6 @@ const MODES: ModeConfig[] = [
     iconBg: "bg-emerald-500/10",
     iconText: "text-emerald-400",
     accent: "hover:border-emerald-500/40",
-    questions: 10,
-    seconds: 45,
-  },
-  {
-    mode: "bot",
-    title: "Practice vs Bot",
-    desc: "Train against AI · no risk",
-    detail: "10 questions · adaptive AI",
-    icon: Bot,
-    iconBg: "bg-amber-500/10",
-    iconText: "text-amber-400",
-    accent: "hover:border-amber-500/40",
     questions: 10,
     seconds: 45,
   },
@@ -223,6 +211,8 @@ function BattleInProgress({
   myName,
   onEnd,
   onResult,
+  prefetchedQuestions,
+  topicLabel,
 }: {
   room: BattleRoom;
   mode: ModeConfig;
@@ -230,9 +220,11 @@ function BattleInProgress({
   myName: string;
   onEnd: () => void;
   onResult: (result: BattleResult) => void;
+  prefetchedQuestions?: QuizQuestion[];
+  topicLabel?: string;
 }) {
   const isBot = mode.mode === "bot";
-  const totalRounds = mode.questions;
+  const totalRounds = prefetchedQuestions?.length || mode.questions;
   const secondsPerRound = mode.seconds;
 
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
@@ -253,6 +245,11 @@ function BattleInProgress({
   const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerSentRef = useRef(false);
   const startTimeRef  = useRef<number>(0);
+  // Refs to avoid stale-closure bugs in bot mode callbacks
+  const selectedRef   = useRef<string | null>(null);
+  const questionsRef  = useRef<QuizQuestion[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const processRoundResultRef = useRef<(data: any) => void>(null!);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -294,17 +291,17 @@ function BattleInProgress({
       const botOptionId = botCorrect
         ? q.correctId!
         : q.options.find(o => o.id !== q.correctId)?.id ?? q.options[0].id;
-      // Process round result for bot mode
-      processRoundResult({
+      // Use ref so we always call the latest processRoundResult (avoids stale closure)
+      processRoundResultRef.current({
         roundNumber: rn,
-        roundWinnerId: null, // will be determined below
+        roundWinnerId: null,
         correctOptionId: q.correctId!,
         scores: {},
         botOptionId,
         botCorrect,
       });
     }, delay);
-  }, []);
+  }, []); // stable — intentionally empty; uses processRoundResultRef to stay fresh
 
   const processRoundResult = useCallback((data: {
     roundNumber: number;
@@ -326,7 +323,7 @@ function BattleInProgress({
 
     if (isBot) {
       const playerAnsweredCorrect = answerSentRef.current
-        ? selected === data.correctOptionId
+        ? selectedRef.current === data.correctOptionId  // use ref — avoids stale closure
         : false;
       const botAnsweredCorrect = data.botCorrect ?? false;
       const playerTime = Date.now() - startTimeRef.current;
@@ -367,6 +364,7 @@ function BattleInProgress({
         const nextRound = data.roundNumber + 1;
         setRoundNumber(nextRound);
         setSelected(null);
+        selectedRef.current = null;
         setRevealed(false);
         setRoundWinnerId(null);
         setCorrectOptionId(null);
@@ -374,7 +372,7 @@ function BattleInProgress({
         answerSentRef.current = false;
 
         if (isBot) {
-          const nextQ = questions[nextRound - 1];
+          const nextQ = questionsRef.current[nextRound - 1];  // use ref — avoids stale closure
           if (nextQ) {
             setCurrentQuestion(nextQ);
             startTimer();
@@ -384,7 +382,9 @@ function BattleInProgress({
         // For socket mode, next question comes from server event
       }, 2500);
     }
-  }, [isBot, myStudentId, selected, questions, totalRounds, startTimer, triggerBotAnswer]);
+  }, [isBot, myStudentId, totalRounds, startTimer, triggerBotAnswer]);
+  // Always keep the ref pointing at the latest version so triggerBotAnswer (stable, [] deps) can call it
+  processRoundResultRef.current = processRoundResult;
 
   const finalizeBattle = useCallback((lastRoundWinnerId: string | null, finalScores: ScoreMap) => {
     let myScore = 0;
@@ -444,7 +444,8 @@ function BattleInProgress({
     clearTimer();
 
     const responseTimeMs = Date.now() - startTimeRef.current;
-    if (optionId) setSelected(optionId);
+    if (optionId) { setSelected(optionId); selectedRef.current = optionId; }
+    else { selectedRef.current = null; }
 
     if (isBot) {
       // Don't process yet — wait for bot's answer
@@ -473,14 +474,19 @@ function BattleInProgress({
 
   useEffect(() => {
     if (isBot) {
-      // Bot mode: load local questions
-      const qs: QuizQuestion[] = BOT_QUESTIONS.slice(0, totalRounds).map(q => ({
-        id: q.id,
-        text: q.text,
-        options: q.options,
-        correctId: q.correctId,
-      }));
+      // Bot mode: use prefetched curriculum questions, fall back to hardcoded bank
+      const sourceQs = prefetchedQuestions && prefetchedQuestions.length > 0
+        ? prefetchedQuestions
+        : BOT_QUESTIONS.slice(0, totalRounds).map(q => ({
+            id: q.id,
+            text: q.text,
+            options: q.options,
+            correctId: q.correctId,
+          }));
+      const qs = sourceQs.slice(0, totalRounds);
       setQuestions(qs);
+      questionsRef.current = qs;   // keep ref in sync so processRoundResult sees it
+      selectedRef.current = null;  // reset for fresh battle
       setCurrentQuestion(qs[0]);
       setOpponentName("Battle Bot");
       setConnected(true);
@@ -624,11 +630,16 @@ function BattleInProgress({
           </div>
 
           {/* Round info */}
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-1.5">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-secondary text-xs font-bold text-muted-foreground">
               <Swords className="w-3.5 h-3.5" />
               {roundNumber}/{totalRounds}
             </div>
+            {topicLabel && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 max-w-[110px] truncate text-center">
+                {topicLabel}
+              </span>
+            )}
             {!connected && (
               <span className="text-[10px] text-amber-400 flex items-center gap-1">
                 <Loader2 className="w-2.5 h-2.5 animate-spin" /> connecting
@@ -676,10 +687,13 @@ function BattleInProgress({
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {currentQuestion.options.map(opt => {
+              {currentQuestion.options.map((opt, optIdx) => {
                 const isSelected = selected === opt.id;
                 const isCorrect  = revealed && opt.id === correctOptionId;
                 const isWrong    = revealed && isSelected && opt.id !== correctOptionId;
+                // Use A/B/C/D label derived from index — works for both
+                // hardcoded bot questions (id="a") and real DB questions (id=UUID)
+                const label = String.fromCharCode(65 + optIdx);
 
                 return (
                   <motion.button
@@ -697,10 +711,14 @@ function BattleInProgress({
                     `}
                   >
                     <span className="flex items-center gap-2.5">
-                      <span className="w-6 h-6 rounded-lg border border-current/30 flex items-center justify-center text-[11px] font-bold shrink-0">
-                        {opt.id.toUpperCase()}
+                      <span className={`w-6 h-6 rounded-lg border flex items-center justify-center text-[11px] font-bold shrink-0
+                        ${isCorrect ? "border-emerald-500/60 bg-emerald-500/20" :
+                          isWrong   ? "border-red-500/60 bg-red-500/20" :
+                          isSelected? "border-primary/60 bg-primary/20" :
+                                      "border-border/60"}`}>
+                        {label}
                       </span>
-                      <span>{opt.text}</span>
+                      <span className="leading-snug">{opt.text}</span>
                     </span>
                     {isCorrect && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
                     {isWrong   && <XCircle      className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />}
@@ -1095,7 +1113,8 @@ function MatchmakingScreen({
   };
 
   useEffect(() => {
-    if (currentRoom.status === "in_progress") {
+    // Accept both mapped ("in_progress") and raw backend ("active") status
+    if (currentRoom.status === "in_progress" || (currentRoom.status as string) === "active") {
       onBattleStart(currentRoom);
     }
   }, [currentRoom.status]);
@@ -1480,6 +1499,233 @@ function HomeScreen({
   );
 }
 
+// ─── Bot Picker Screen ────────────────────────────────────────────────────────
+
+type BotTestType = "topic" | "chapter" | "subject";
+
+function BotPickerScreen({
+  onBack,
+  onStart,
+}: {
+  onBack: () => void;
+  onStart: (questions: QuizQuestion[], label: string) => void;
+}) {
+  const [testType, setTestType]   = useState<BotTestType>("topic");
+  const [subjectId, setSubjectId] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [topicId, setTopicId]     = useState("");
+  const [subjectName, setSubjectName] = useState("");
+  const [chapterName, setChapterName] = useState("");
+  const [topicName, setTopicName]     = useState("");
+  const [count, setCount]         = useState(10);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
+
+  const { data: subjects, isLoading: subLoading } = useSubjects();
+  const { data: chapters, isLoading: chapLoading } = useChapters(subjectId);
+  const { data: topics,   isLoading: topLoading  } = useTopics(chapterId);
+
+  const subList  = Array.isArray(subjects) ? subjects : [];
+  const chapList = Array.isArray(chapters) ? chapters : [];
+  const topList  = Array.isArray(topics)   ? topics   : [];
+
+  const scopeId =
+    testType === "topic"   ? topicId :
+    testType === "chapter" ? chapterId :
+                             subjectId;
+
+  const scopeLabel =
+    testType === "topic"   ? topicName :
+    testType === "chapter" ? chapterName :
+                             subjectName;
+
+  const canStart = !!scopeId;
+
+  const handleStart = async () => {
+    if (!canStart) return;
+    setError("");
+    setLoading(true);
+    try {
+      const raw = await getBotPracticeQuestions(testType, scopeId, count);
+      if (!raw.length) {
+        setError("No questions found for this selection. Try a different subject, chapter, or topic.");
+        return;
+      }
+      const qs: QuizQuestion[] = raw.map(q => ({
+        id: q.id,
+        text: q.text,
+        options: q.options,
+        correctId: q.correctId ?? undefined,
+      }));
+      onStart(qs, scopeLabel);
+    } catch {
+      setError("Failed to load questions. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const TEST_TYPES: { key: BotTestType; label: string; desc: string }[] = [
+    { key: "topic",   label: "Topic Test",   desc: "Deep focus on a single topic" },
+    { key: "chapter", label: "Chapter Test", desc: "Mix from the full chapter" },
+    { key: "subject", label: "Subject Test", desc: "Broad questions across a subject" },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={onBack}
+          className="w-9 h-9 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div>
+          <h2 className="font-bold text-foreground text-lg">Practice vs Bot</h2>
+          <p className="text-xs text-muted-foreground">Choose what to practice — questions from your curriculum</p>
+        </div>
+      </div>
+
+      {/* Test type selector */}
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        {TEST_TYPES.map(t => (
+          <button
+            key={t.key}
+            onClick={() => { setTestType(t.key); setSubjectId(""); setChapterId(""); setTopicId(""); setSubjectName(""); setChapterName(""); setTopicName(""); }}
+            className={`p-3.5 rounded-xl border-2 text-left transition-all ${
+              testType === t.key
+                ? "border-amber-500/70 bg-amber-500/8"
+                : "border-border hover:border-amber-500/30 hover:bg-secondary/50"
+            }`}
+          >
+            <p className={`text-sm font-bold ${testType === t.key ? "text-amber-400" : "text-foreground"}`}>
+              {t.label}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{t.desc}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Cascading selectors */}
+      <div className="space-y-3 mb-6">
+        {/* Subject — always shown */}
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Subject</label>
+          {subLoading ? (
+            <div className="h-10 rounded-xl bg-secondary animate-pulse" />
+          ) : (
+            <select
+              value={subjectId}
+              onChange={e => {
+                const id = e.target.value;
+                setSubjectId(id);
+                setSubjectName(subList.find(s => s.id === id)?.name ?? "");
+                setChapterId(""); setChapterName("");
+                setTopicId(""); setTopicName("");
+              }}
+              className="h-10 w-full px-3 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary"
+            >
+              <option value="">Select subject…</option>
+              {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          )}
+        </div>
+
+        {/* Chapter — for chapter & topic tests */}
+        {(testType === "chapter" || testType === "topic") && (
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Chapter</label>
+            {chapLoading && subjectId ? (
+              <div className="h-10 rounded-xl bg-secondary animate-pulse" />
+            ) : (
+              <select
+                value={chapterId}
+                onChange={e => {
+                  const id = e.target.value;
+                  setChapterId(id);
+                  setChapterName(chapList.find(c => c.id === id)?.name ?? "");
+                  setTopicId(""); setTopicName("");
+                }}
+                disabled={!subjectId}
+                className="h-10 w-full px-3 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary disabled:opacity-40"
+              >
+                <option value="">Select chapter…</option>
+                {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+          </div>
+        )}
+
+        {/* Topic — for topic test only */}
+        {testType === "topic" && (
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Topic</label>
+            {topLoading && chapterId ? (
+              <div className="h-10 rounded-xl bg-secondary animate-pulse" />
+            ) : (
+              <select
+                value={topicId}
+                onChange={e => {
+                  const id = e.target.value;
+                  setTopicId(id);
+                  setTopicName(topList.find(t => t.id === id)?.name ?? "");
+                }}
+                disabled={!chapterId}
+                className="h-10 w-full px-3 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary disabled:opacity-40"
+              >
+                <option value="">Select topic…</option>
+                {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Question count */}
+      <div className="mb-6">
+        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">Number of Questions</label>
+        <div className="flex gap-2">
+          {[5, 10, 15, 20].map(n => (
+            <button
+              key={n}
+              onClick={() => setCount(n)}
+              className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
+                count === n
+                  ? "border-amber-500/70 bg-amber-500/10 text-amber-400"
+                  : "border-border text-foreground hover:border-amber-500/30"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2.5 text-xs text-destructive mb-4">
+          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+        </div>
+      )}
+
+      <Button
+        className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
+        disabled={!canStart || loading}
+        onClick={handleStart}
+      >
+        {loading
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading Questions…</>
+          : <><Bot className="w-4 h-4" /> Start Bot Practice ({count} Questions)</>
+        }
+      </Button>
+
+      {!subList.length && !subLoading && (
+        <p className="text-xs text-amber-500 text-center mt-3">
+          No subjects found. Ask your teacher or admin to add subjects first.
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
 // ─── Root Component ──────────────────────────────────────────────────────────
 
 type Stage = "home" | "topic_pick" | "join_room" | "matchmaking" | "in_battle" | "result" | "error";
@@ -1508,12 +1754,16 @@ const BattleArena = () => {
     setActiveMode(mode);
     if (mode.mode === "topic_battle") {
       setStage("topic_pick");
-    } else if (mode.mode === "bot") {
-      // Bot mode: skip backend matchmaking, go directly to battle with fake room
-      setBattleRoom({ battleId: "bot", roomCode: "BOT", status: "in_progress", mode: "bot" });
-      setStage("in_battle");
-    } else if (mode.mode === "challenge_friend") {
-      startBattle(mode);
+    } else if (mode.mode === "daily" && dailyBattle && (dailyBattle as any).roomCode) {
+      // Daily battle: join the existing daily room by code rather than creating a new one
+      const db = dailyBattle as any;
+      if (db.battleId) {
+        // Already has a battleId — go straight to matchmaking with that room
+        setBattleRoom({ battleId: db.battleId, roomCode: db.roomCode, status: db.status === "active" ? "in_progress" : db.status, mode: "daily" });
+        setStage("matchmaking");
+      } else {
+        startBattle(mode);
+      }
     } else {
       startBattle(mode);
     }
@@ -1541,7 +1791,7 @@ const BattleArena = () => {
   const handleTopicSelect = (topId: string, topName: string) => {
     if (!activeMode) return;
     startBattle(activeMode, topId, topName);
-    setStage("matchmaking");
+    // stage is set to "matchmaking" inside startBattle.onSuccess; don't set here
   };
 
   const handleJoined = (room: BattleRoom) => {
@@ -1574,11 +1824,11 @@ const BattleArena = () => {
     if (!activeMode) { reset(); return; }
     setBattleRoom(null);
     setBattleResult(null);
-    if (activeMode.mode === "bot") {
-      setBattleRoom({ battleId: "bot", roomCode: "BOT", status: "in_progress", mode: "bot" });
-      setStage("in_battle");
-    } else if (activeMode.mode === "topic_battle") {
+    if (activeMode.mode === "topic_battle") {
       setStage("topic_pick");
+    } else if (activeMode.mode === "daily") {
+      // Re-enter the daily battle
+      handleModeSelect(activeMode);
     } else {
       startBattle(activeMode);
     }
@@ -1618,7 +1868,7 @@ const BattleArena = () => {
           </motion.div>
         )}
 
-        {stage === "join_room" && (
+{stage === "join_room" && (
           <motion.div key="join" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <JoinRoomScreen onBack={() => setStage("home")} onJoined={handleJoined} />
           </motion.div>
@@ -1645,6 +1895,7 @@ const BattleArena = () => {
               myName={myName}
               onEnd={reset}
               onResult={handleBattleResult}
+              topicLabel={topicName || undefined}
             />
           </motion.div>
         )}

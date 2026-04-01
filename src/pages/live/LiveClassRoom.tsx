@@ -1061,14 +1061,12 @@ export default function LiveClassRoom() {
   const askAiForDoubt = async (id: string, question: string) => {
     try {
       const { apiClient, extractData } = await import("@/lib/api/client");
-      const res = await apiClient.post("/doubts", {
+      const res = await apiClient.post("/ai/doubt/resolve", {
         questionText: question,
-        source: "live_class",
-        sourceRefId: socketSessionId,
-        explanationMode: "short",
+        mode: "short",
       });
-      const data = extractData<{ aiExplanation: string }>(res);
-      const aiAnswer = data?.aiExplanation ?? "AI could not generate an answer.";
+      const data = extractData<{ explanation: string }>(res);
+      const aiAnswer = data?.explanation ?? "AI could not generate an answer.";
       if (!socketRef.current?.connected || !socketSessionId) return;
       socketRef.current.emit("live:answer-doubt", {
         sessionId: socketSessionId,

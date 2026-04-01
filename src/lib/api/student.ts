@@ -532,6 +532,29 @@ export interface BattleElo {
   winStreak: number;
 }
 
+export interface BotPracticeQuestion {
+  id: string;
+  text: string;
+  options: { id: string; text: string }[];
+  correctId: string | null;
+  difficulty: string;
+}
+
+export async function getBotPracticeQuestions(
+  scope: 'subject' | 'chapter' | 'topic',
+  scopeId: string,
+  count = 10,
+): Promise<BotPracticeQuestion[]> {
+  try {
+    const res = await apiClient.get('/battles/bot-questions', {
+      params: { scope, scopeId, count },
+    });
+    return extractData<BotPracticeQuestion[]>(res) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getMyBattleElo(): Promise<BattleElo | null> {
   try {
     const res = await apiClient.get("/battles/my-elo");
