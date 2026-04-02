@@ -929,7 +929,21 @@ export default function LiveClassRoom() {
 
   // ── Mic / Cam / Speaker
   const toggleMic = async () => {
-    if (!localAudioTrack) { toast.error("Microphone not active. Start the class first."); return; }
+    if (!localAudioTrack) {
+      // Student enabling mic for the first time
+      if (!clientRef.current || !isJoined) return;
+      try {
+        const audio = await AgoraRTC.createMicrophoneAudioTrack({ AEC: true, ANS: true, AGC: true });
+        await clientRef.current.setClientRole("host");
+        await clientRef.current.publish(audio);
+        setLocalAudioTrack(audio);
+        setIsMicOn(true);
+      } catch (e: any) {
+        if (e?.name === "NotAllowedError") toast.error("Microphone access blocked. Allow it in browser settings.", { duration: 8000 });
+        else toast.error("Could not access microphone.");
+      }
+      return;
+    }
     await localAudioTrack.setEnabled(!isMicOn);
     setIsMicOn((v) => !v);
   };
@@ -938,6 +952,35 @@ export default function LiveClassRoom() {
     if (!localVideoTrack) { toast.error("Camera not active. Start the class first."); return; }
     await localVideoTrack.setEnabled(!isCamOn);
     setIsCamOn((v) => !v);
+  };
+
+  const toggleStudentCam = async () => {
+    if (!clientRef.current || !isJoined) return;
+
+    if (localVideoTrack) {
+      // Turn off camera
+      try { await clientRef.current.unpublish(localVideoTrack); } catch {}
+      localVideoTrack.stop();
+      localVideoTrack.close();
+      setLocalVideoTrack(null);
+      setIsCamOn(false);
+      if (!localAudioTrack) {
+        try { await clientRef.current.setClientRole("audience"); } catch {}
+      }
+      return;
+    }
+
+    // Turn on camera
+    try {
+      const video = await AgoraRTC.createCameraVideoTrack({ encoderConfig: "480p_1", optimizationMode: "motion" });
+      await clientRef.current.setClientRole("host");
+      await clientRef.current.publish(video);
+      setLocalVideoTrack(video);
+      setIsCamOn(true);
+    } catch (e: any) {
+      if (e?.name === "NotAllowedError") toast.error("Camera access blocked. Allow it in browser settings.", { duration: 8000 });
+      else toast.error("Could not access camera.");
+    }
   };
 
   const toggleSpeaker = () => {
@@ -953,11 +996,13 @@ export default function LiveClassRoom() {
     if (!clientRef.current) { toast.error("Join the class first"); return; }
 
     if (isScreenSharing) {
-      screenTrack?.stop(); screenTrack?.close();
-      if (localVideoTrack) {
+      try {
+        // Unpublish BEFORE closing the track
         await clientRef.current.unpublish(screenTrack!);
-        await clientRef.current.publish(localVideoTrack);
-      }
+        if (localVideoTrack) await clientRef.current.publish(localVideoTrack);
+      } catch {}
+      screenTrack?.stop();
+      screenTrack?.close();
       setScreenTrack(null);
       setIsScreenSharing(false);
       socketRef.current?.emit("live:screen-share-stopped", { sessionId: socketSessionId });
@@ -972,8 +1017,10 @@ export default function LiveClassRoom() {
       ) as ILocalVideoTrack;
 
       screen.on("track-ended", async () => {
-        await clientRef.current?.unpublish(screen);
-        if (localVideoTrack) await clientRef.current?.publish(localVideoTrack);
+        try {
+          await clientRef.current?.unpublish(screen);
+          if (localVideoTrack) await clientRef.current?.publish(localVideoTrack);
+        } catch {}
         screen.stop(); screen.close();
         setScreenTrack(null);
         setIsScreenSharing(false);
@@ -1285,6 +1332,13 @@ export default function LiveClassRoom() {
                 </div>
               )}
 
+              {/* Student: self-view PiP when camera is on */}
+              {!isTeacher && localVideoTrack && isCamOn && (
+                <div className="absolute bottom-5 right-5 w-36 h-24 rounded-xl overflow-hidden border border-white/20 shadow-2xl z-10">
+                  <VideoTile videoTrack={localVideoTrack} label={user?.name} isLocal isCamOn={isCamOn} />
+                </div>
+              )}
+
               {/* Teacher WAITING: Start CTA overlay */}
               {isTeacher && isWaiting && (
                 <div className="absolute inset-3 rounded-2xl flex items-end justify-center pb-10 pointer-events-none">
@@ -1332,16 +1386,27 @@ export default function LiveClassRoom() {
                   />
                 )}
 
-                {/* Speaker (student only) */}
+                {/* Speaker + Camera (student only) */}
                 {!isTeacher && (
-                  <CtrlBtn
-                    icon={isSpeakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                    label={isSpeakerOn ? "Speaker" : "Muted"}
-                    onClick={toggleSpeaker}
-                    active={isSpeakerOn}
-                    activeClass="bg-white/12 hover:bg-white/20"
-                    inactiveClass="bg-red-500/20 hover:bg-red-500/30 text-red-400"
-                  />
+                  <>
+                    <CtrlBtn
+                      icon={isSpeakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                      label={isSpeakerOn ? "Speaker" : "Muted"}
+                      onClick={toggleSpeaker}
+                      active={isSpeakerOn}
+                      activeClass="bg-white/12 hover:bg-white/20"
+                      inactiveClass="bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                    />
+                    <CtrlBtn
+                      icon={isCamOn && localVideoTrack ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                      label={isCamOn && localVideoTrack ? "Camera" : "Cam Off"}
+                      onClick={toggleStudentCam}
+                      active={!!(isCamOn && localVideoTrack)}
+                      activeClass="bg-white/12 hover:bg-white/20"
+                      inactiveClass="bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                      disabled={!isJoined}
+                    />
+                  </>
                 )}
 
                 {/* Screen share (teacher only) */}

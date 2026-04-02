@@ -9,7 +9,7 @@ import {
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
   Maximize, RotateCcw, AlertCircle, Trophy, FileText,
   Radio, Calendar, Tag, Layers, FlaskConical, GraduationCap,
-  MessageCircle,
+  MessageCircle, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -542,10 +542,11 @@ const StudentLecturePage = () => {
   const { watchPct: liveWatchPct, currentTime: liveCurrentTime } = useWatchPercentage(videoRef);
 
   // Queries
-  const { data: lecture, isLoading: lectureLoading } = useQuery({
+  const { data: lecture, isLoading: lectureLoading, error: lectureError } = useQuery({
     queryKey: ["student", "lecture", id],
     queryFn: () => fetchLecture(id!),
     enabled: !!id,
+    retry: false,
   });
 
   const { data: savedProgress } = useQuery({
@@ -594,6 +595,21 @@ const StudentLecturePage = () => {
   if (lectureLoading) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  // 403 = lecture is locked (previous lecture not completed)
+  const isAccessLocked = (lectureError as any)?.response?.status === 403 || (lectureError as any)?.status === 403;
+  if (isAccessLocked) return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center px-6">
+      <div className="w-20 h-20 rounded-2xl bg-slate-500/10 border border-slate-500/20 flex items-center justify-center">
+        <Lock className="w-10 h-10 text-slate-400" />
+      </div>
+      <div>
+        <p className="text-lg font-bold text-foreground">Lecture Locked</p>
+        <p className="text-sm text-muted-foreground mt-1">Complete the previous lecture (watch 90%+) to unlock this one.</p>
+      </div>
+      <Button variant="outline" onClick={() => navigate(-1)}>← Go back</Button>
     </div>
   );
 

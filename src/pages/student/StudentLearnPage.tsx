@@ -428,30 +428,42 @@ export function TopicDetailPage() {
           <p className="text-sm text-muted-foreground mb-4">{lectures?.length ?? 0} available</p>
 
           <div className="space-y-3">
-            {lectures?.map(lec => {
+            {lectures?.map((lec, idx) => {
               const prog = lec.studentProgress;
               const watchPct = prog?.watchPercentage ?? 0;
               const isCompleted = prog?.isCompleted ?? false;
               const lastPos = prog?.lastPositionSeconds ?? 0;
+              const isLocked = lec.isLocked ?? false;
               const fmtPos = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
               return (
                 <button key={lec.id}
-                  onClick={() => navigate(`/student/lectures/${lec.id}`)}
-                  className={`w-full border rounded-2xl p-4 text-left hover:bg-secondary/30 transition-all group flex flex-col gap-3
-                    ${isCompleted ? "bg-emerald-500/5 border-emerald-500/25" : watchPct > 0 ? "bg-primary/5 border-primary/25" : "bg-card border-border"}`}
+                  disabled={isLocked}
+                  onClick={() => !isLocked && navigate(`/student/lectures/${lec.id}`)}
+                  className={`w-full border rounded-2xl p-4 text-left transition-all group flex flex-col gap-3
+                    ${isLocked
+                      ? "bg-card/40 border-white/5 opacity-60 cursor-not-allowed"
+                      : isCompleted
+                        ? "bg-emerald-500/5 border-emerald-500/25 hover:bg-secondary/30 cursor-pointer"
+                        : watchPct > 0
+                          ? "bg-primary/5 border-primary/25 hover:bg-secondary/30 cursor-pointer"
+                          : "bg-card border-border hover:bg-secondary/30 cursor-pointer"}`}
                 >
                   <div className="flex items-center gap-4">
-                    {/* Icon / thumbnail */}
+                    {/* Icon */}
                     <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center shrink-0
-                      ${isCompleted ? "bg-emerald-500/15" : watchPct > 0 ? "bg-primary/15" : "bg-primary/10"}`}>
-                      {isCompleted
-                        ? <CheckCircle className="w-5 h-5 text-emerald-500" />
-                        : <Play className="w-5 h-5 text-primary" />}
+                      ${isLocked ? "bg-slate-500/10" : isCompleted ? "bg-emerald-500/15" : watchPct > 0 ? "bg-primary/15" : "bg-primary/10"}`}>
+                      {isLocked
+                        ? <Lock className="w-5 h-5 text-slate-400" />
+                        : isCompleted
+                          ? <CheckCircle className="w-5 h-5 text-emerald-500" />
+                          : <Play className="w-5 h-5 text-primary" />}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground truncate">{lec.title}</p>
+                      <p className={`font-semibold text-sm truncate ${isLocked ? "text-muted-foreground" : "text-foreground"}`}>
+                        {lec.title}
+                      </p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-xs text-muted-foreground uppercase">{lec.type}</span>
                         {lec.videoDurationSeconds && (
@@ -459,26 +471,32 @@ export function TopicDetailPage() {
                             <Clock className="w-2.5 h-2.5" />{Math.round(lec.videoDurationSeconds / 60)}m
                           </span>
                         )}
-                        {isCompleted && (
+                        {isLocked && (
+                          <span className="text-xs text-slate-400 flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5" /> Complete lecture {idx} to unlock
+                          </span>
+                        )}
+                        {!isLocked && isCompleted && (
                           <span className="text-xs text-emerald-500 font-semibold">Completed</span>
                         )}
-                        {!isCompleted && watchPct > 0 && (
+                        {!isLocked && !isCompleted && watchPct > 0 && (
                           <span className="text-xs text-primary font-semibold">{Math.round(watchPct)}% watched</span>
                         )}
-                        {!isCompleted && lastPos > 10 && (
+                        {!isLocked && !isCompleted && lastPos > 10 && (
                           <span className="text-xs text-muted-foreground">· Resume at {fmtPos(lastPos)}</span>
                         )}
-                        {watchPct === 0 && !isCompleted && (
+                        {!isLocked && watchPct === 0 && !isCompleted && (
                           <span className="text-xs text-muted-foreground">Not started</span>
                         )}
                       </div>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                    {!isLocked && <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />}
+                    {isLocked && <Lock className="w-4 h-4 text-slate-500 shrink-0" />}
                   </div>
 
                   {/* Progress bar */}
-                  {watchPct > 0 && (
+                  {!isLocked && watchPct > 0 && (
                     <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${isCompleted ? "bg-emerald-500" : "bg-primary"}`}

@@ -86,6 +86,7 @@ export interface StudentLecture {
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
   topic?: { id: string; name: string };
+  isLocked?: boolean;
   studentProgress?: {
     watchPercentage: number;
     lastPositionSeconds: number;
