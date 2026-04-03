@@ -14,6 +14,8 @@ import {
   useCompleteAiStudy, useStudyStatus,
 } from "@/hooks/use-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { getStoredLanguage, sarvamTranslate, sarvamTranslateMany } from "@/lib/api/sarvam";
 
 // ─── Elapsed timer ─────────────────────────────────────────────────────────────
 
@@ -152,6 +154,14 @@ export default function StudentAiStudyPage() {
   const [showComplete, setShowComplete] = useState(false);
   const [completed, setCompleted] = useState(false);
 
+  // ── Translation ───────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(getStoredLanguage);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedLesson, setTranslatedLesson] = useState<string | null>(null);
+  const [translatedConcepts, setTranslatedConcepts] = useState<string[]>([]);
+  const [translatedMistakes, setTranslatedMistakes] = useState<string[]>([]);
+  const [translatedQuestions, setTranslatedQuestions] = useState<AiPracticeQuestion[]>([]);
+
   // ── Data fetching ─────────────────────────────────────────────────────────────
   const { data: status } = useStudyStatus(topicId);
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
@@ -184,6 +194,54 @@ export default function StudentAiStudyPage() {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [sessionData?.conversation, activeTab]);
+
+  // Translate content when language changes or session loads
+  useEffect(() => {
+    if (!sessionData || lang === "en-IN") {
+      setTranslatedLesson(null);
+      setTranslatedConcepts([]);
+      setTranslatedMistakes([]);
+      setTranslatedQuestions([]);
+      return;
+    }
+    let cancelled = false;
+    setIsTranslating(true);
+    (async () => {
+      try {
+        const conceptsAndMistakes = [...sessionData.keyConcepts, ...sessionData.commonMistakes];
+        const [lesson, cmTranslated] = await Promise.all([
+          sessionData.lessonMarkdown
+            ? sarvamTranslate(sessionData.lessonMarkdown, lang)
+            : Promise.resolve(""),
+          sarvamTranslateMany(conceptsAndMistakes, lang),
+        ]);
+        if (cancelled) return;
+        setTranslatedLesson(lesson || null);
+        setTranslatedConcepts(cmTranslated.slice(0, sessionData.keyConcepts.length));
+        setTranslatedMistakes(cmTranslated.slice(sessionData.keyConcepts.length));
+
+        const qAll = sessionData.practiceQuestions.flatMap(q =>
+          q.explanation ? [q.question, q.answer, q.explanation] : [q.question, q.answer]
+        );
+        const qTranslated = await sarvamTranslateMany(qAll, lang);
+        if (cancelled) return;
+        let idx = 0;
+        setTranslatedQuestions(
+          sessionData.practiceQuestions.map(q => {
+            const tq = qTranslated[idx++] ?? q.question;
+            const ta = qTranslated[idx++] ?? q.answer;
+            const te = q.explanation ? (qTranslated[idx++] ?? q.explanation) : q.explanation;
+            return { ...q, question: tq, answer: ta, explanation: te };
+          })
+        );
+      } catch {
+        setLang("en-IN");
+      } finally {
+        if (!cancelled) setIsTranslating(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [lang, sessionData?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Actions ──────────────────────────────────────────────────────────────────
 
@@ -271,6 +329,11 @@ export default function StudentAiStudyPage() {
 
   if (!sessionData) return null;
 
+  const displayLesson = translatedLesson ?? sessionData.lessonMarkdown;
+  const displayConcepts = translatedConcepts.length > 0 ? translatedConcepts : sessionData.keyConcepts;
+  const displayMistakes = translatedMistakes.length > 0 ? translatedMistakes : sessionData.commonMistakes;
+  const displayQuestions = translatedQuestions.length > 0 ? translatedQuestions : sessionData.practiceQuestions;
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "lesson",   label: "Lesson",    icon: <BookOpen className="w-4 h-4" /> },
     { id: "concepts", label: "Concepts",  icon: <Brain className="w-4 h-4" /> },
@@ -298,6 +361,10 @@ export default function StudentAiStudyPage() {
               <span className="text-xs font-medium text-violet-400 uppercase tracking-wider">AI Study</span>
             </div>
           </div>
+
+          {/* Language selector */}
+          <LanguageSelector value={lang} onChange={setLang} />
+          {isTranslating && <Loader2 className="w-4 h-4 animate-spin text-violet-400 shrink-0" />}
 
           {/* Timer */}
           <div className="flex items-center gap-1.5 bg-violet-900/20 border border-violet-800/30 px-3 py-1.5 rounded-xl">
@@ -426,7 +493,7 @@ export default function StudentAiStudyPage() {
                           hr: () => <hr className="border-violet-800/30 my-8" />,
                         }}
                       >
-                        {sessionData.lessonMarkdown}
+                        {displayLesson}
                       </ReactMarkdown>
                     </div>
 
@@ -472,7 +539,7 @@ export default function StudentAiStudyPage() {
                 className="space-y-6"
               >
                 {/* Key Concepts */}
-                {sessionData.keyConcepts.length > 0 && (
+                {displayConcepts.length > 0 && (
                   <section>
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-7 h-7 rounded-lg bg-blue-600/20 flex items-center justify-center">
@@ -481,7 +548,7 @@ export default function StudentAiStudyPage() {
                       <h3 className="font-bold text-white text-base">Key Concepts</h3>
                     </div>
                     <div className="space-y-2">
-                      {sessionData.keyConcepts.map((concept, i) => (
+                      {displayConcepts.map((concept, i) => (
                         <motion.div
                           key={i}
                           initial={{ opacity: 0, x: -8 }}
@@ -525,7 +592,7 @@ export default function StudentAiStudyPage() {
                 )}
 
                 {/* Common Mistakes */}
-                {sessionData.commonMistakes.length > 0 && (
+                {displayMistakes.length > 0 && (
                   <section>
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-7 h-7 rounded-lg bg-amber-600/20 flex items-center justify-center">
@@ -534,7 +601,7 @@ export default function StudentAiStudyPage() {
                       <h3 className="font-bold text-white text-base">Common Mistakes</h3>
                     </div>
                     <div className="space-y-2">
-                      {sessionData.commonMistakes.map((mistake, i) => (
+                      {displayMistakes.map((mistake, i) => (
                         <motion.div
                           key={i}
                           initial={{ opacity: 0, x: -8 }}
@@ -550,7 +617,7 @@ export default function StudentAiStudyPage() {
                   </section>
                 )}
 
-                {sessionData.keyConcepts.length === 0 && sessionData.formulas.length === 0 && sessionData.commonMistakes.length === 0 && (
+                {displayConcepts.length === 0 && sessionData.formulas.length === 0 && displayMistakes.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                     <Brain className="w-10 h-10 mb-3 opacity-30" />
                     <p>No concepts extracted yet</p>
@@ -572,17 +639,17 @@ export default function StudentAiStudyPage() {
                     <FlaskConical className="w-4 h-4 text-emerald-400" />
                   </div>
                   <h3 className="font-bold text-white text-base">Practice Questions</h3>
-                  <span className="text-xs text-slate-500 ml-1">({sessionData.practiceQuestions.length})</span>
+                  <span className="text-xs text-slate-500 ml-1">({displayQuestions.length})</span>
                 </div>
 
-                {sessionData.practiceQuestions.length === 0 ? (
+                {displayQuestions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                     <FlaskConical className="w-10 h-10 mb-3 opacity-30" />
                     <p>No practice questions yet</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {sessionData.practiceQuestions.map((q, i) => (
+                    {displayQuestions.map((q, i) => (
                       <PracticeCard key={i} q={q} index={i} onAskAI={handleAskAboutQuestion} />
                     ))}
                   </div>

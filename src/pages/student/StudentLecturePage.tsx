@@ -9,8 +9,10 @@ import {
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
   Maximize, RotateCcw, AlertCircle, Trophy, FileText,
   Radio, Calendar, Tag, Layers, FlaskConical, GraduationCap,
-  MessageCircle, Lock,
+  MessageCircle, Lock, Loader2,
 } from "lucide-react";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { sarvamTranslate, getStoredLanguage } from "@/lib/api/sarvam";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { apiClient, extractData } from "@/lib/api/client";
@@ -398,15 +400,62 @@ function VideoPlayer({
 // ─── Notes Panel ───────────────────────────────────────────────────────────
 
 function NotesPanel({ lecture }: { lecture: Lecture }) {
+  const [lang, setLang] = useState<string>(() => getStoredLanguage());
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translated, setTranslated] = useState<{
+    lang: string;
+    concepts: string[];
+    notes: string;
+  } | null>(null);
+
+  const isEnglish = lang === "en-IN";
+
+  useEffect(() => {
+    if (isEnglish) { setTranslated(null); return; }
+    if (translated?.lang === lang) return;
+
+    setIsTranslating(true);
+    const conceptsText = (lecture.aiKeyConcepts ?? []).join(" | ");
+    Promise.all([
+      conceptsText ? sarvamTranslate(conceptsText, lang) : Promise.resolve(""),
+      lecture.aiNotesMarkdown ? sarvamTranslate(lecture.aiNotesMarkdown, lang) : Promise.resolve(""),
+    ]).then(([tc, tn]) => {
+      setTranslated({
+        lang,
+        concepts: tc ? tc.split("|").map((s) => s.trim()).filter(Boolean) : [],
+        notes: tn,
+      });
+    }).catch(() => {
+      toast.error("Translation failed. Showing in English.");
+      setLang("en-IN");
+    }).finally(() => setIsTranslating(false));
+  }, [lang, lecture.id]);
+
+  const displayConcepts = !isEnglish && translated?.lang === lang
+    ? translated.concepts
+    : (lecture.aiKeyConcepts ?? []);
+  const displayNotes = !isEnglish && translated?.lang === lang
+    ? translated.notes
+    : lecture.aiNotesMarkdown;
+
   return (
     <div className="h-full overflow-y-auto space-y-5">
-      {(lecture.aiKeyConcepts?.length ?? 0) > 0 && (
+      {/* Language selector */}
+      <div className="flex items-center justify-between pb-3 border-b border-border">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Language</p>
+        <div className="flex items-center gap-2">
+          {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
+          <LanguageSelector value={lang} onChange={setLang} />
+        </div>
+      </div>
+
+      {(displayConcepts.length ?? 0) > 0 && (
         <div>
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Tag className="w-3.5 h-3.5" /> Key Concepts
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {lecture.aiKeyConcepts!.map((c, i) => (
+            {displayConcepts.map((c, i) => (
               <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">{c}</span>
             ))}
           </div>
@@ -424,13 +473,13 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </div>
         </div>
       )}
-      {lecture.aiNotesMarkdown ? (
+      {displayNotes ? (
         <div>
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" /> Lecture Notes
           </p>
           <div className="prose prose-sm prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80 prose-code:text-primary max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{lecture.aiNotesMarkdown}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayNotes}</ReactMarkdown>
           </div>
         </div>
       ) : (

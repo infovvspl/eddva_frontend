@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +12,8 @@ import {
 } from "@/hooks/use-student";
 import { StudyPlanItem, PlanItemType } from "@/lib/api/student";
 import { toast } from "sonner";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { sarvamTranslateMany, getStoredLanguage } from "@/lib/api/sarvam";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,7 +57,7 @@ function getWeekDates(offset = 0) {
 
 // ─── Plan Item Card ───────────────────────────────────────────────────────────
 
-function PlanItemCard({ item }: { item: StudyPlanItem }) {
+function PlanItemCard({ item, translatedTitle }: { item: StudyPlanItem; translatedTitle?: string }) {
   const navigate    = useNavigate();
   const complete    = useCompletePlanItem();
   const skip        = useSkipPlanItem();
@@ -94,7 +96,7 @@ function PlanItemCard({ item }: { item: StudyPlanItem }) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold truncate ${isDone ? "line-through text-muted-foreground" : "text-foreground"}`}>
-          {item.title}
+          {translatedTitle ?? item.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
           <span className={`text-xs font-medium ${cfg.color}`}>
@@ -138,10 +140,21 @@ function PlanItemCard({ item }: { item: StudyPlanItem }) {
 
 // ─── Weekly View ──────────────────────────────────────────────────────────────
 
-function WeeklyView() {
+function WeeklyView({ lang }: { lang: string }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const { start, end, label } = getWeekDates(weekOffset);
   const { data: items, isLoading } = useWeeklyPlan(start, end);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (lang === "en-IN" || !items?.length) { setTranslations({}); return; }
+    const titles = items.map((i) => i.title);
+    sarvamTranslateMany(titles, lang).then((translated) => {
+      const map: Record<string, string> = {};
+      items.forEach((item, idx) => { map[item.id] = translated[idx]; });
+      setTranslations(map);
+    }).catch(() => setTranslations({}));
+  }, [lang, items]);
 
   const grouped = useMemo(() => {
     const m: Record<string, StudyPlanItem[]> = {};
@@ -194,7 +207,7 @@ function WeeklyView() {
                   <span className="text-xs text-muted-foreground">{dayItems.length} tasks</span>
                 </div>
                 <div className="space-y-2">
-                  {dayItems.map(item => <PlanItemCard key={item.id} item={item} />)}
+                  {dayItems.map(item => <PlanItemCard key={item.id} item={item} translatedTitle={translations[item.id]} />)}
                 </div>
               </div>
             );
@@ -209,8 +222,20 @@ function WeeklyView() {
 
 export default function StudentStudyPlanPage() {
   const [tab, setTab] = useState<"today" | "week">("today");
+  const [lang, setLang] = useState<string>(() => getStoredLanguage());
+  const [todayTranslations, setTodayTranslations] = useState<Record<string, string>>({});
   const { data: todayItems, isLoading } = useTodaysPlan();
   const regenerate = useRegeneratePlan();
+
+  useEffect(() => {
+    if (lang === "en-IN" || !todayItems?.length) { setTodayTranslations({}); return; }
+    const titles = todayItems.map((i) => i.title);
+    sarvamTranslateMany(titles, lang).then((translated) => {
+      const map: Record<string, string> = {};
+      todayItems.forEach((item, idx) => { map[item.id] = translated[idx]; });
+      setTodayTranslations(map);
+    }).catch(() => setTodayTranslations({}));
+  }, [lang, todayItems]);
 
   const completed  = todayItems?.filter(i => i.status === "completed").length ?? 0;
   const total      = todayItems?.length ?? 0;
@@ -233,14 +258,17 @@ export default function StudentStudyPlanPage() {
           <h1 className="text-2xl font-bold text-foreground">Study Plan</h1>
           <p className="text-sm text-muted-foreground mt-0.5">AI-generated daily tasks</p>
         </div>
-        <button
-          onClick={handleRegenerate}
-          disabled={regenerate.isPending}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-border text-sm font-medium text-foreground hover:bg-secondary/40 transition-colors disabled:opacity-50"
-        >
-          {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          Regenerate
-        </button>
+        <div className="flex items-center gap-2">
+          <LanguageSelector value={lang} onChange={setLang} />
+          <button
+            onClick={handleRegenerate}
+            disabled={regenerate.isPending}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-border text-sm font-medium text-foreground hover:bg-secondary/40 transition-colors disabled:opacity-50"
+          >
+            {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Regenerate
+          </button>
+        </div>
       </div>
 
       {/* Progress ring + stats */}
@@ -301,11 +329,11 @@ export default function StudentStudyPlanPage() {
           </div>
         ) : (
           <div className="space-y-2.5">
-            {todayItems.map(item => <PlanItemCard key={item.id} item={item} />)}
+            {todayItems.map(item => <PlanItemCard key={item.id} item={item} translatedTitle={todayTranslations[item.id]} />)}
           </div>
         )
       ) : (
-        <WeeklyView />
+        <WeeklyView lang={lang} />
       )}
     </div>
   );
