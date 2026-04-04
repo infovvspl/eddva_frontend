@@ -14,13 +14,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Users, Globe, UserPlus,
-  Trophy, Clock, ArrowLeft, Copy, Check,
+  Trophy, Clock, ArrowLeft, ArrowRight, Copy, Check,
   Loader2, Wifi, X, Crown, Target,
   ChevronRight, Sparkles, Shield, AlertCircle,
   CheckCircle2, XCircle, TrendingUp, TrendingDown,
-  Star, Flame,
+  Star, Flame, Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   useStudentMe, useDailyBattle, useCreateBattle,
   useCancelBattle, useBattleRoom, useJoinBattle,
@@ -31,9 +32,27 @@ import { BattleMode, BattleRoom } from "@/lib/api/student";
 import { tokenStorage } from "@/lib/api/client";
 import { toast } from "sonner";
 
-const BLUE   = "#013889";
-const BLUE_M = "#0257c8";
-const BLUE_L = "#E6EEF8";
+// ─── Design Tokens ─────────────────────────────────────────────────────────────
+const BLUE   = "#2563EB";
+const PURPLE = "#7C3AED";
+const CYAN   = "#06B6D4";
+const AMBER  = "#F59E0B";
+const EMERALD = "#10B981";
+const SLATE  = "#64748B";
+
+const CardGlass = ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
+  <motion.div 
+    whileHover={onClick ? { y: -5, scale: 1.01 } : {}}
+    onClick={onClick}
+    className={cn(
+      "bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] shadow-2xl relative overflow-hidden transition-all duration-500",
+      onClick ? "cursor-pointer" : "",
+      className
+    )}
+  >
+    {children}
+  </motion.div>
+);
 
 import { io, Socket } from "socket.io-client";
 
@@ -620,169 +639,200 @@ function BattleInProgress({
   const oppScore = isBot ? (scores["bot"] ?? 0) : (Object.entries(scores).find(([k]) => k !== myStudentId)?.[1] ?? 0);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto space-y-4"
-    >
-      {/* Header: scores + round */}
-      <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-4">
-        <div className="flex items-center justify-between gap-3">
-          {/* My score */}
-          <div className="text-center flex-1">
-            <p className="text-xs text-gray-500 mb-0.5 truncate">{myName}</p>
-            <p className="text-3xl font-black text-blue-600 tabular-nums">{myScore}</p>
-          </div>
+    <div className="max-w-5xl mx-auto space-y-10">
+      {/* 🛡️ Combat HUD: Holographic Frames */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+        
+        {/* Unit A: Player */}
+        <CardGlass className="p-8 border-blue-500/20 bg-blue-500/[0.02]">
+           <div className="flex flex-col items-center">
+              <div className="w-16 h-16 rounded-2xl bg-white border-2 border-blue-100 flex items-center justify-center text-2xl font-black text-slate-900 mb-4 shadow-xl">
+                 {myName.charAt(0).toUpperCase()}
+              </div>
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Unit Paragon</p>
+              <p className="text-lg font-black text-slate-900 uppercase italic truncate max-w-full mb-6">{myName}</p>
+              
+              <div className="w-full space-y-2">
+                 <div className="flex justify-between text-[11px] font-black text-slate-400 uppercase italic">
+                    <span>Dominance</span>
+                    <span className="text-blue-600">{myScore}</span>
+                 </div>
+                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5">
+                    <motion.div animate={{ width: `${(myScore/totalRounds)*100}%` }} className="h-full bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)]" />
+                 </div>
+              </div>
+           </div>
+        </CardGlass>
 
-          {/* Round info */}
-          <div className="flex flex-col items-center gap-1.5">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-gray-50 text-xs font-bold text-gray-500">
-              <Swords className="w-3.5 h-3.5" />
-              {roundNumber}/{totalRounds}
-            </div>
-            {topicLabel && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 max-w-[110px] truncate text-center">
-                {topicLabel}
-              </span>
-            )}
-            {!connected && (
-              <span className="text-[10px] text-amber-400 flex items-center gap-1">
-                <Loader2 className="w-2.5 h-2.5 animate-spin" /> connecting
-              </span>
-            )}
-          </div>
+        {/* ⚡ Battle Core: Timer & Round */}
+        <div className="flex flex-col items-center justify-center gap-6">
+           <div className="relative">
+              <motion.div 
+                animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full"
+              />
+              <div className="relative w-28 h-28 rounded-full border-4 border-slate-900 flex flex-col items-center justify-center bg-white shadow-2xl z-10">
+                 <p className={cn("text-3xl font-black tabular-nums", timeLeft <= 5 ? "text-red-500 animate-pulse" : "text-slate-900")}>
+                    {timeLeft}
+                 </p>
+                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Seconds</p>
+              </div>
+           </div>
 
-          {/* Opponent score */}
-          <div className="text-center flex-1">
-            <p className="text-xs text-gray-500 mb-0.5 truncate">
-              {isBot ? "Battle Bot" : opponentName}
-            </p>
-            <p className="text-3xl font-black text-rose-400 tabular-nums">{oppScore}</p>
-          </div>
+           <div className="flex flex-col items-center gap-2">
+              <div className="px-5 py-2 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
+                 Nexus Round {roundNumber}/{totalRounds}
+              </div>
+              {topicLabel && (
+                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full">
+                   {topicLabel}
+                </span>
+              )}
+           </div>
         </div>
 
-        {/* Timer bar */}
-        <div className="mt-3 flex items-center gap-3">
-          <Clock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-          <div className="flex-1 h-2 rounded-full bg-border overflow-hidden">
-            <motion.div
-              className={`h-full rounded-full transition-colors duration-300 ${timerColor}`}
-              animate={{ width: `${timerPct}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-          <span className={`text-sm font-bold tabular-nums w-6 text-right ${
-            timeLeft <= 5 ? "text-red-400" : "text-gray-900"
-          }`}>{timeLeft}</span>
-        </div>
+        {/* Unit B: Opponent */}
+        <CardGlass className="p-8 border-red-500/20 bg-red-500/[0.02]">
+           <div className="flex flex-col items-center">
+              <div className="w-16 h-16 rounded-2xl bg-white border-2 border-red-100 flex items-center justify-center text-2xl font-black text-slate-900 mb-4 shadow-xl">
+                 {isBot ? <Sparkles className="w-8 h-8 text-purple-600" /> : opponentName.charAt(0).toUpperCase()}
+              </div>
+              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">{isBot ? "Neural Construct" : "Enemy Paragon"}</p>
+              <p className="text-lg font-black text-slate-900 uppercase italic truncate max-w-full mb-6">{isBot ? "Battle Bot" : opponentName}</p>
+
+              <div className="w-full space-y-2">
+                 <div className="flex justify-between text-[11px] font-black text-slate-400 uppercase italic">
+                    <span>Dominance</span>
+                    <span className="text-red-600">{oppScore}</span>
+                 </div>
+                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5">
+                    <motion.div animate={{ width: `${(oppScore/totalRounds)*100}%` }} className="h-full bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.4)]" />
+                 </div>
+              </div>
+           </div>
+        </CardGlass>
       </div>
 
-      {/* Question */}
+      {/* 🧩 Data Node: Question */}
       {currentQuestion ? (
         <AnimatePresence mode="wait">
           <motion.div
             key={currentQuestion.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="bg-white shadow-sm border border-gray-100 rounded-3xl p-5 space-y-4"
+            initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
+            className="space-y-8"
           >
-            <p className="text-base font-bold text-gray-900 leading-snug">
-              {currentQuestion.text}
-            </p>
+            <CardGlass className="p-12 border-white/80 text-center">
+               <div className="max-w-3xl mx-auto">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight italic">
+                    "{currentQuestion.text}"
+                  </h2>
+               </div>
+            </CardGlass>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {currentQuestion.options.map((opt, optIdx) => {
                 const isSelected = selected === opt.id;
                 const isCorrect  = revealed && opt.id === correctOptionId;
                 const isWrong    = revealed && isSelected && opt.id !== correctOptionId;
-                // Use A/B/C/D label derived from index — works for both
-                // hardcoded bot questions (id="a") and real DB questions (id=UUID)
                 const label = String.fromCharCode(65 + optIdx);
 
                 return (
                   <motion.button
                     key={opt.id}
-                    whileHover={!revealed && !answerSentRef.current ? { scale: 1.02 } : {}}
+                    whileHover={!revealed && !answerSentRef.current ? { y: -4, scale: 1.02 } : {}}
                     whileTap={!revealed && !answerSentRef.current ? { scale: 0.98 } : {}}
                     onClick={() => !revealed && !answerSentRef.current && handleAnswer(opt.id)}
                     disabled={revealed || answerSentRef.current}
-                    className={`relative w-full text-left px-4 py-3 rounded-2xl border text-sm font-medium transition-all
-                      ${isCorrect  ? "border-emerald-500 bg-emerald-500/15 text-emerald-300" :
-                        isWrong    ? "border-red-500 bg-red-500/15 text-red-300" :
-                        isSelected ? "border-blue-600 bg-blue-600/15 text-blue-600" :
-                                     "border-gray-100 bg-gray-50 hover:border-blue-600/40 text-gray-900"}
-                      ${(revealed || answerSentRef.current) ? "cursor-default" : "cursor-pointer"}
-                    `}
+                    className={cn(
+                      "relative w-full text-left px-8 py-6 rounded-[2rem] border-2 transition-all group overflow-hidden",
+                      isCorrect  ? "border-emerald-500 bg-emerald-50 shadow-emerald-500/10" :
+                      isWrong    ? "border-red-500 bg-red-50 shadow-red-500/10" :
+                      isSelected ? "border-blue-600 bg-blue-50 shadow-blue-500/10" :
+                                   "border-white bg-white/40 backdrop-blur-md hover:border-blue-200 shadow-xl"
+                    )}
                   >
-                    <span className="flex items-center gap-2.5">
-                      <span className={`w-6 h-6 rounded-lg border flex items-center justify-center text-[11px] font-bold shrink-0
-                        ${isCorrect ? "border-emerald-500/60 bg-emerald-500/20" :
-                          isWrong   ? "border-red-500/60 bg-red-500/20" :
-                          isSelected? "border-blue-600/60 bg-blue-600/20" :
-                                      "border-gray-100/60"}`}>
-                        {label}
-                      </span>
-                      <span className="leading-snug">{opt.text}</span>
-                    </span>
-                    {isCorrect && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
-                    {isWrong   && <XCircle      className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />}
+                    <div className="flex items-center gap-5 relative z-10">
+                       <div className={cn(
+                         "w-10 h-10 rounded-xl border-2 flex items-center justify-center text-xs font-black shrink-0 transition-colors",
+                         isCorrect  ? "bg-emerald-500 text-white border-emerald-500" :
+                         isWrong    ? "bg-red-500 text-white border-red-500" :
+                         isSelected ? "bg-blue-600 text-white border-blue-600" :
+                                      "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-blue-200"
+                       )}>
+                          {label}
+                       </div>
+                       <span className={cn("text-base font-black uppercase italic tracking-tight", (revealed || isSelected) ? "text-slate-900" : "text-slate-600")}>
+                         {opt.text}
+                       </span>
+                    </div>
+                    {isCorrect && <CheckCircle2 className="absolute right-8 top-1/2 -translate-y-1/2 w-6 h-6 text-emerald-500" />}
+                    {isWrong   && <XCircle      className="absolute right-8 top-1/2 -translate-y-1/2 w-6 h-6 text-red-500" />}
                   </motion.button>
                 );
               })}
             </div>
 
-            {/* Round result overlay */}
-            {revealed && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`mt-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl text-sm font-bold
-                  ${roundWinnerId === myStudentId
-                    ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
-                    : roundWinnerId === null
-                    ? "bg-gray-50 text-gray-500 border border-gray-100"
-                    : "bg-rose-500/10 text-rose-300 border border-rose-500/20"}
-                `}
-              >
-                {roundWinnerId === myStudentId ? (
-                  <><Star className="w-4 h-4" /> You won this round!</>
-                ) : roundWinnerId === null ? (
-                  <>No correct answer — round draw</>
-                ) : (
-                  <><Swords className="w-4 h-4" /> {isBot ? "Bot" : opponentName} won this round</>
-                )}
-              </motion.div>
-            )}
+            {/* Event Log Overlay */}
+            <AnimatePresence>
+              {revealed && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-center"
+                >
+                   <div className={cn(
+                     "px-10 py-4 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-4 shadow-2xl",
+                     roundWinnerId === myStudentId ? "bg-emerald-500 text-white shadow-emerald-500/20" :
+                     roundWinnerId === null ? "bg-slate-900 text-white shadow-slate-900/20" :
+                     "bg-red-500 text-white shadow-red-500/20"
+                   )}>
+                      {roundWinnerId === myStudentId ? (
+                        <><Star className="w-5 h-5 fill-white" /> Node Secured: Excellence Point Secured</>
+                      ) : roundWinnerId === null ? (
+                        <><Info className="w-5 h-5" /> Node Stabilized: Tie Detected</>
+                      ) : (
+                        <><Bolt className="w-5 h-5 fill-white" /> Sector Compromised: Opponent Gain</>
+                      )}
+                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Waiting indicator */}
             {waiting && !revealed && (
-              <div className="flex items-center justify-center gap-2 py-2 text-xs text-gray-500">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Waiting for {isBot ? "bot" : "opponent"}…
+              <div className="flex flex-col items-center gap-4 py-4 text-slate-400">
+                <div className="flex gap-1.5">
+                   {[0, 1, 2].map(i => <motion.div key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, delay: i*0.2 }} className="w-2 h-2 rounded-full bg-blue-500" />)}
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em]">Waiting for {isBot ? "Neural Construct" : "Enemy Paragon"} Response</p>
               </div>
             )}
           </motion.div>
         </AnimatePresence>
       ) : (
-        <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-10 flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="text-sm text-gray-500">
-            {connected ? "Waiting for opponent to join…" : "Connecting…"}
-          </p>
+        <div className="py-40 flex flex-col items-center gap-6">
+           <div className="relative">
+              <Loader2 className="w-16 h-16 animate-spin text-blue-50" />
+              <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-blue-500 animate-pulse" />
+           </div>
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Connecting to Neural Combat Frequency...</p>
         </div>
       )}
 
-      {/* Abandon button */}
-      <div className="flex justify-center">
-        <Button variant="ghost" size="sm" onClick={onEnd}
-          className="text-gray-500 hover:text-destructive gap-1.5 text-xs">
-          <X className="w-3.5 h-3.5" /> Abandon Battle
-        </Button>
+      {/* Manual Termination */}
+      <div className="flex justify-center pt-10">
+        <button onClick={onEnd} className="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-white border border-red-100 text-red-500 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-red-50 transition-all">
+          <X className="w-4 h-4" /> Terminate Link
+        </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
+
+const Bolt = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="4"/></svg>
+);
+const Activity = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+);
 
 // ─── Result Screen ────────────────────────────────────────────────────────────
 
@@ -798,95 +848,85 @@ function ResultScreen({
   const { isWinner, myRoundsWon, opponentRoundsWon, myName, opponentName,
     eloChange, xpEarned, newElo } = result;
 
-  const tc = TIER_COLORS[
-    (() => {
-      if (newElo < 1100) return "iron";
-      if (newElo < 1300) return "bronze";
-      if (newElo < 1500) return "silver";
-      if (newElo < 1700) return "gold";
-      if (newElo < 1900) return "platinum";
-      if (newElo < 2100) return "diamond";
-      return "champion";
-    })()
-  ] ?? TIER_COLORS.iron;
-
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="max-w-md mx-auto flex flex-col items-center text-center gap-6"
-    >
-      {/* Trophy / shield icon */}
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", delay: 0.1 }}
-        className={`w-24 h-24 rounded-3xl flex items-center justify-center border-2 ${
-          isWinner
-            ? "bg-amber-500/10 border-amber-500/30"
-            : "bg-gray-50 border-gray-100"
-        }`}
-      >
-        {isWinner
-          ? <Trophy className="w-12 h-12 text-amber-400" />
-          : <Shield className="w-12 h-12 text-gray-500" />
-        }
-      </motion.div>
+    <div className="max-w-4xl mx-auto py-12">
+      <CardGlass className="p-12 text-center border-white/80 overflow-hidden">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          className="relative z-10"
+        >
+           <div className="flex justify-center mb-10">
+              <div className={cn(
+                "w-32 h-32 rounded-[3rem] flex items-center justify-center shadow-2xl relative",
+                isWinner ? "bg-amber-400 text-white shadow-amber-500/40" : "bg-slate-900 text-white shadow-slate-900/40"
+              )}>
+                 {isWinner ? <Trophy className="w-16 h-16" /> : <Swords className="w-16 h-16" />}
+                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border-2 border-dashed border-current opacity-20 rounded-[3.5rem]" />
+              </div>
+           </div>
 
-      {/* Outcome text */}
-      <div>
-        <h2 className={`text-2xl font-black mb-1 ${isWinner ? "text-amber-400" : "text-gray-900"}`}>
-          {isWinner ? "Victory!" : "Defeat"}
-        </h2>
-        <p className="text-sm text-gray-500">
-          {isWinner
-            ? "Well played! You dominated the arena."
-            : "Good effort. Keep training to climb the ranks."}
-        </p>
-      </div>
+           <h2 className={cn("text-5xl font-black uppercase italic tracking-tighter mb-4", isWinner ? "text-amber-500" : "text-slate-900")}>
+              {isWinner ? "Combat Zenith" : "Sector Compromised"}
+           </h2>
+           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.4em] mb-12">
+              {isWinner ? "Neural Link Dominance Established" : "Defensive Node Re-calibration Required"}
+           </p>
 
-      {/* Score card */}
-      <div className="w-full bg-white shadow-sm border border-gray-100 rounded-3xl p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-gray-900 truncate">{myName} (You)</span>
-          <span className="text-2xl font-black text-blue-600 tabular-nums">{myRoundsWon}</span>
-        </div>
-        <div className="h-px bg-border" />
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-gray-900 truncate">{opponentName}</span>
-          <span className="text-2xl font-black text-rose-400 tabular-nums">{opponentRoundsWon}</span>
-        </div>
-      </div>
+           {/* Scoreboard */}
+           <div className="grid grid-cols-3 gap-12 items-center mb-16">
+              <div className="text-right">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">Your Impact</p>
+                 <p className="text-4xl font-black text-slate-900">{myRoundsWon}</p>
+              </div>
+              <div className="flex flex-col items-center">
+                 <div className="w-px h-12 bg-slate-100" />
+                 <span className="text-xs font-black text-slate-300 my-2">VS</span>
+                 <div className="w-px h-12 bg-slate-100" />
+              </div>
+              <div className="text-left">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">Enemy Impact</p>
+                 <p className="text-4xl font-black text-slate-900">{opponentRoundsWon}</p>
+              </div>
+           </div>
 
-      {/* ELO + XP */}
-      <div className="w-full grid grid-cols-2 gap-3">
-        <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-4 flex flex-col items-center gap-1">
-          {eloChange >= 0
-            ? <TrendingUp className="w-5 h-5 text-emerald-400" />
-            : <TrendingDown className="w-5 h-5 text-red-400" />
-          }
-          <p className={`text-xl font-black tabular-nums ${eloChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-            {eloChange >= 0 ? "+" : ""}{eloChange}
-          </p>
-          <p className="text-[11px] text-gray-500">ELO Change</p>
-        </div>
-        <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-4 flex flex-col items-center gap-1">
-          <Flame className="w-5 h-5 text-amber-400" />
-          <p className="text-xl font-black text-amber-400 tabular-nums">+{xpEarned}</p>
-          <p className="text-[11px] text-gray-500">XP Earned</p>
-        </div>
-      </div>
+           {/* Rewards Grid */}
+           <div className="grid grid-cols-2 gap-6 mb-16">
+              <div className="p-6 rounded-[2rem] bg-blue-50 border border-blue-100 flex flex-col items-center">
+                 <Zap className="w-6 h-6 text-blue-600 mb-2" />
+                 <p className="text-2xl font-black text-slate-900">+{xpEarned}</p>
+                 <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Neural XP Sync</p>
+              </div>
+              <div className="p-6 rounded-[2rem] bg-purple-50 border border-purple-100 flex flex-col items-center">
+                 <TrendingUp className="w-6 h-6 text-purple-600 mb-2" />
+                 <p className="text-2xl font-black text-slate-900">{newElo}</p>
+                 <p className="text-[9px] font-black text-purple-600 uppercase tracking-widest">ELO Resonance</p>
+              </div>
+           </div>
 
-      {/* Actions */}
-      <div className="w-full flex flex-col gap-3">
-        <Button className="w-full gap-2" onClick={onPlayAgain}>
-          <Swords className="w-4 h-4" /> Play Again
-        </Button>
-        <Button variant="outline" className="w-full gap-2" onClick={onHome}>
-          <ArrowLeft className="w-4 h-4" /> Back to Arena
-        </Button>
-      </div>
-    </motion.div>
+           {/* Actions */}
+           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={onPlayAgain}
+                className="w-full sm:w-auto px-12 py-5 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-blue-600 transition-all"
+              >
+                 Return to Arena
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={onHome}
+                className="w-full sm:w-auto px-12 py-5 rounded-2xl bg-white border border-slate-100 text-slate-900 text-xs font-black uppercase tracking-widest shadow-xl hover:border-blue-200 transition-all"
+              >
+                 Identity Hub
+              </motion.button>
+           </div>
+        </motion.div>
+        
+        {/* Decorative Background Elements */}
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full -ml-32 -mb-32" />
+        <div className={cn("absolute top-0 right-0 w-80 h-80 blur-[100px] rounded-full -mr-40 -mt-40", isWinner ? "bg-amber-500/10" : "bg-red-500/10")} />
+      </CardGlass>
+    </div>
   );
 }
 
@@ -916,102 +956,132 @@ function TopicPicker({
   const selectedTopic = topList.find(t => t.id === topicId);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="flex items-center gap-3 mb-6">
+    <div className="max-w-4xl mx-auto py-10 space-y-10">
+      {/* Header */}
+      <div className="flex items-center gap-6">
         <button onClick={onBack}
-          className="w-9 h-9 rounded-2xl border border-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
+          className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-sm group">
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         </button>
         <div>
-          <h2 className="font-bold text-gray-900 text-lg">Choose Topic</h2>
-          <p className="text-xs text-gray-500">Select the topic you want to battle on</p>
+          <h2 className="text-3xl font-black text-slate-900 italic uppercase leading-none">Sector<br/><span className="not-italic text-blue-600">Selection</span></h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mt-2">Designate combat coordinates via neural curriculum.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {/* Subject */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Subject</label>
-          {subLoading ? (
-            <div className="h-10 rounded-2xl bg-gray-50 animate-pulse" />
-          ) : (
-            <select
-              value={subjectId}
-              onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
-              className="h-10 w-full px-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm outline-none focus:border-blue-600"
-            >
-              <option value="">Select subject…</option>
-              {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <CardGlass className="p-8 border-slate-100 space-y-8">
+            {/* Subject */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Curriculum Subject</label>
+              {subLoading ? (
+                <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
+              ) : (
+                <select
+                  value={subjectId}
+                  onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                  className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+                >
+                  <option value="">Select subject…</option>
+                  {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Chapter */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Neural Chapter</label>
+                {chapLoading && subjectId ? (
+                  <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
+                ) : (
+                  <select
+                    value={chapterId}
+                    onChange={e => { setChapterId(e.target.value); setTopicId(""); }}
+                    disabled={!subjectId}
+                    className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select chapter…</option>
+                    {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                )}
+              </div>
+
+              {/* Topic */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Target Topic</label>
+                {topLoading && chapterId ? (
+                  <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
+                ) : (
+                  <select
+                    value={topicId}
+                    onChange={e => setTopicId(e.target.value)}
+                    disabled={!chapterId}
+                    className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select topic…</option>
+                    {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
+          </CardGlass>
+
+          {topicId && selectedTopic && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Button
+                className="w-full h-16 rounded-2xl bg-slate-900 border-none text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3"
+                disabled={!topicId || loading}
+                onClick={() => topicId && selectedTopic && onSelect(topicId, selectedTopic.name)}
+              >
+                {loading
+                  ? <><Loader2 className="w-5 h-5 animate-spin" /> Optimizing Link…</>
+                  : <><Swords className="w-5 h-5" /> Initiate Combat Sync</>
+                }
+              </Button>
+            </motion.div>
           )}
         </div>
 
-        {/* Chapter */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Chapter</label>
-          {chapLoading && subjectId ? (
-            <div className="h-10 rounded-2xl bg-gray-50 animate-pulse" />
-          ) : (
-            <select
-              value={chapterId}
-              onChange={e => { setChapterId(e.target.value); setTopicId(""); }}
-              disabled={!subjectId}
-              className="h-10 w-full px-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm outline-none focus:border-blue-600 disabled:opacity-40"
-            >
-              <option value="">Select chapter…</option>
-              {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          )}
-        </div>
-
-        {/* Topic */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Topic</label>
-          {topLoading && chapterId ? (
-            <div className="h-10 rounded-2xl bg-gray-50 animate-pulse" />
-          ) : (
-            <select
-              value={topicId}
-              onChange={e => setTopicId(e.target.value)}
-              disabled={!chapterId}
-              className="h-10 w-full px-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm outline-none focus:border-blue-600 disabled:opacity-40"
-            >
-              <option value="">Select topic…</option>
-              {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          )}
+        <div className="space-y-6">
+          <CardGlass className="p-8 border-blue-100 bg-blue-500/5">
+             <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+                   <Target className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Mission Metadata</h3>
+             </div>
+             
+             {selectedTopic ? (
+               <div className="space-y-6">
+                  <div className="space-y-1">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Node</p>
+                     <p className="text-lg font-black text-slate-900 leading-tight">{selectedTopic.name}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-6 border-t border-blue-100">
+                     <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</p>
+                        <p className="text-sm font-black text-slate-900 tabular-nums">{selectedTopic.estimatedStudyMinutes || 10}m Sync</p>
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complexity</p>
+                        <div className="flex gap-1 mt-1">
+                           {[1, 2, 3, 4, 5].map(i => <div key={i} className={`h-1.5 w-4 rounded-full ${i <= 3 ? "bg-blue-500" : "bg-blue-200"}`} />)}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+             ) : (
+               <div className="py-10 text-center space-y-4">
+                  <Info className="w-8 h-8 text-blue-300 mx-auto opacity-50" />
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Awaiting Designation</p>
+               </div>
+             )}
+          </CardGlass>
         </div>
       </div>
-
-      {topicId && selectedTopic && (
-        <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-          className="mb-6 p-4 rounded-3xl bg-blue-500/8 border border-blue-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-500/15 flex items-center justify-center">
-              <Target className="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <p className="font-bold text-gray-900 text-sm">{selectedTopic.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {selectedTopic.estimatedStudyMinutes ? `~${selectedTopic.estimatedStudyMinutes} min · ` : ""}
-                10 questions · 45s each
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      <Button
-        className="w-full gap-2"
-        disabled={!topicId || loading}
-        onClick={() => topicId && selectedTopic && onSelect(topicId, selectedTopic.name)}
-      >
-        {loading
-          ? <><Loader2 className="w-4 h-4 animate-spin" /> Finding Opponent…</>
-          : <><Swords className="w-4 h-4" /> Start Battle</>
-        }
-      </Button>
-    </motion.div>
+    </div>
   );
 }
 
@@ -1037,48 +1107,46 @@ function JoinRoomScreen({
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack}
-          className="w-9 h-9 rounded-2xl border border-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
+    <div className="max-w-xl mx-auto py-20 space-y-12">
+      <div className="flex flex-col items-center text-center space-y-6">
+        <div className="w-20 h-20 rounded-[2rem] bg-emerald-500 text-white flex items-center justify-center shadow-2xl shadow-emerald-500/20">
+          <UserPlus className="w-10 h-10" />
+        </div>
         <div>
-          <h2 className="font-bold text-gray-900 text-lg">Join a Battle</h2>
-          <p className="text-xs text-gray-500">Enter your friend's room code</p>
+          <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">Neural<br/><span className="not-italic text-emerald-600">Join Link</span></h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">Synchronize with a designated combat partner via room frequency.</p>
         </div>
       </div>
 
-      <div className="max-w-sm mx-auto space-y-4">
-        <div className="text-center py-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <UserPlus className="w-8 h-8 text-emerald-400" />
-          </div>
-        </div>
-
-        <div>
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">Room Code</label>
+      <CardGlass className="p-10 border-emerald-100 flex flex-col items-center space-y-10">
+        <div className="w-full space-y-4">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center block">Access Frequency Code</label>
           <input
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === "Enter" && handleJoin()}
             maxLength={8}
-            placeholder="e.g. AB12CD"
-            className="h-14 w-full text-center text-2xl font-black tracking-widest px-4 bg-gray-50 border border-gray-100 rounded-3xl outline-none focus:border-blue-600 uppercase"
+            placeholder="ALPHA-SYNC"
+            className="h-20 w-full text-center text-4xl font-black tracking-[0.2em] px-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] outline-none focus:border-emerald-500 focus:bg-white transition-all uppercase placeholder:text-slate-200"
           />
         </div>
+
         <Button
-          className="w-full h-12 text-base gap-2"
+          className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3"
           disabled={code.trim().length < 4 || joinBattle.isPending}
           onClick={handleJoin}
         >
           {joinBattle.isPending
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Joining…</>
-            : <><Swords className="w-4 h-4" /> Join Battle</>
+            ? <><Loader2 className="w-5 h-5 animate-spin" /> Syncing Node…</>
+            : <><Swords className="w-5 h-5" /> Establish Link</>
           }
         </Button>
-      </div>
-    </motion.div>
+
+        <button onClick={onBack} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">
+          Abort Synchronization
+        </button>
+      </CardGlass>
+    </div>
   );
 }
 
@@ -1118,7 +1186,6 @@ function MatchmakingScreen({
   };
 
   useEffect(() => {
-    // Accept both mapped ("in_progress") and raw backend ("active") status
     if (currentRoom.status === "in_progress" || (currentRoom.status as string) === "active") {
       onBattleStart(currentRoom);
     }
@@ -1127,83 +1194,77 @@ function MatchmakingScreen({
   const isFriend = mode.mode === "challenge_friend";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4"
-    >
-      {/* Animated radar */}
-      <div className="relative w-32 h-32 mb-8">
-        {[1, 2, 3].map(i => (
-          <motion.div key={i}
-            className="absolute inset-0 rounded-full border-2 border-blue-600/30"
-            initial={{ scale: 0.4, opacity: 0.8 }}
-            animate={{ scale: 1.8, opacity: 0 }}
-            transition={{ duration: 2, delay: i * 0.6, repeat: Infinity, ease: "easeOut" }}
-          />
-        ))}
-        <div className="absolute inset-0 rounded-full bg-blue-600/10 border-2 border-blue-600/30 flex items-center justify-center">
-          <mode.icon className={`w-10 h-10 ${mode.iconText}`} />
-        </div>
-      </div>
+    <div className="max-w-xl mx-auto py-20 space-y-12">
+       <div className="flex flex-col items-center text-center space-y-10">
+          {/* Cinematic Radar */}
+          <div className="relative w-48 h-48">
+            <div className="absolute inset-0 bg-blue-500/5 rounded-full blur-2xl animate-pulse" />
+            {[1, 2, 3].map(i => (
+              <motion.div key={i}
+                className="absolute inset-0 rounded-full border border-blue-500/20"
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1.5, opacity: 0 }}
+                transition={{ duration: 3, delay: i * 1, repeat: Infinity, ease: "linear" }}
+              />
+            ))}
+            <div className="absolute inset-0 rounded-[3rem] bg-white border border-slate-100 shadow-2xl flex items-center justify-center group overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent" />
+               <mode.icon className={cn("w-16 h-16 relative z-10 transition-transform group-hover:scale-110", mode.iconText)} />
+               <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -inset-1 border border-dashed border-blue-500/20 rounded-[3.5rem]" />
+            </div>
+          </div>
 
-      <h2 className="text-xl font-black text-gray-900 mb-2">
-        {isFriend ? "Waiting for Friend" : "Finding Opponent…"}
-      </h2>
-      <p className="text-sm text-gray-500 mb-2">
-        {topicName ? `Topic: ${topicName}` : mode.detail}
-      </p>
-      {currentRoom.status === "waiting" && (
-        <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium mb-8">
-          <Wifi className="w-3.5 h-3.5 animate-pulse" />
-          <span>Searching for a match…</span>
-        </div>
-      )}
+          <div className="space-y-4">
+             <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">
+                Neural<br/><span className="not-italic text-blue-600">{isFriend ? "Partner Sync" : "Tactical Search"}</span>
+             </h2>
+             <div className="flex items-center justify-center gap-3 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600">
+                <Wifi className="w-3.5 h-3.5 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest">{currentRoom.status === "waiting" ? "Pinging Neural Lattice..." : "Sync Established"}</span>
+             </div>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">
+                {topicName ? `Neural Sector: ${topicName}` : mode.detail}
+             </p>
+          </div>
+       </div>
 
-      <div className="w-full max-w-xs mb-8">
-        <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
-          {isFriend ? "Share this room code" : "Your room code"}
-        </p>
-        <button
-          onClick={copyCode}
-          className="w-full flex items-center justify-between gap-3 px-5 py-3.5 rounded-3xl bg-gray-50 border border-gray-100 hover:border-blue-600/40 transition-all group"
-        >
-          <span className="text-2xl font-black tracking-widest text-gray-900 font-mono">
-            {currentRoom.roomCode}
-          </span>
-          {copied
-            ? <Check className="w-5 h-5 text-emerald-400 shrink-0" />
-            : <Copy className="w-4 h-4 text-gray-500 group-hover:text-gray-900 shrink-0 transition-colors" />
-          }
-        </button>
-        {isFriend && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Ask your friend to click "Challenge Friend" → Join with this code
-          </p>
-        )}
-      </div>
+       <CardGlass className="p-8 border-slate-100 space-y-8">
+          <div className="space-y-4">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Identity Frequency</p>
+             <div className="relative group">
+                <button
+                  onClick={copyCode}
+                  className="w-full flex items-center justify-between gap-6 px-8 py-5 rounded-2xl bg-slate-900 text-white shadow-2xl hover:bg-blue-600 transition-all border border-white/10"
+                >
+                  <span className="text-3xl font-black tracking-[0.3em] font-mono leading-none">
+                    {currentRoom.roomCode}
+                  </span>
+                  {copied
+                    ? <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+                    : <Copy className="w-5 h-5 text-white/40 group-hover:text-white shrink-0 transition-colors" />
+                  }
+                </button>
+                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-white border border-slate-100 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                   <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap">Click to Resonance Link</p>
+                </div>
+             </div>
+          </div>
 
-      <div className="flex items-center gap-6 mb-8 text-sm text-gray-500">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-4 h-4" />
-          <span>{mode.questions} questions</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Zap className="w-4 h-4" />
-          <span>{mode.seconds}s each</span>
-        </div>
-      </div>
-
-      <Button
-        variant="outline"
-        className="gap-2 text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/5"
-        disabled={cancelBattle.isPending}
-        onClick={handleCancel}
-      >
-        {cancelBattle.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-        Cancel
-      </Button>
-    </motion.div>
+          <div className="pt-6 border-t border-slate-50 flex flex-col items-center gap-6">
+             {isFriend && (
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center leading-relaxed max-w-xs">
+                 Instruct partner to execute <span className="text-blue-600">"Neural Join"</span> using this frequency.
+               </p>
+             )}
+             <button
+               onClick={handleCancel}
+               className="px-8 py-3 rounded-xl border border-red-100 text-red-500 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all"
+             >
+               Abort Synchronization
+             </button>
+          </div>
+       </CardGlass>
+    </div>
   );
 }
 
@@ -1213,73 +1274,64 @@ function BattleLeaderboard() {
   const { data: lb, isLoading } = useBattleLeaderboard();
   const entries = lb?.data?.slice(0, 5) ?? [];
 
-  const rankColors = ["text-yellow-400", "text-slate-400", "text-amber-600"];
-
   if (isLoading) {
     return (
-      <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Crown className="w-4 h-4 text-amber-400" />
-          <h3 className="font-bold text-gray-900 text-sm">Battle Leaderboard</h3>
+      <CardGlass className="p-8">
+        <div className="flex items-center gap-3 mb-8">
+           <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center animate-pulse" />
+           <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
         </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-gray-50 animate-pulse" />
-              <div className="flex-1 h-4 rounded bg-gray-50 animate-pulse" />
-              <div className="w-12 h-4 rounded bg-gray-50 animate-pulse" />
-            </div>
-          ))}
+        <div className="space-y-4">
+           {[1, 2, 3].map(i => <div key={i} className="h-10 w-full bg-slate-50 rounded-2xl animate-pulse" />)}
         </div>
-      </div>
+      </CardGlass>
     );
   }
 
   if (!entries.length) return null;
 
   return (
-    <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Crown className="w-4 h-4 text-amber-400" />
-          <h3 className="font-bold text-gray-900 text-sm">Battle Leaderboard</h3>
+    <CardGlass className="p-8 border-white/60">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-lg shadow-amber-500/20">
+             <Crown className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-black text-slate-900 uppercase italic">Combat Elite</h3>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 uppercase tracking-wider">Live</span>
+        <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-red-500 text-white uppercase tracking-widest animate-pulse">Live Sync</span>
       </div>
-      <div className="space-y-2.5">
+
+      <div className="space-y-3">
         {entries.map((entry, i) => (
-          <div key={entry.studentId} className="flex items-center gap-3">
-            <span className={`text-sm font-bold w-5 text-center shrink-0 ${rankColors[i] ?? "text-gray-500"}`}>
-              {i + 1}
+          <div key={entry.studentId} className="flex items-center gap-4 p-3 rounded-2xl bg-white/40 border border-slate-50 hover:bg-white transition-all group">
+            <span className={cn("text-xs font-black w-6 text-center italic", i===0 ? "text-amber-500" : i===1 ? "text-slate-400" : i===2 ? "text-orange-600" : "text-slate-300")}>
+              #{i + 1}
             </span>
-            <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-gray-100 flex items-center justify-center shrink-0">
-              {entry.avatarUrl
-                ? <img src={entry.avatarUrl} className="w-full h-full rounded-full object-cover" alt="" />
-                : <span className="text-xs font-bold text-blue-600">{entry.name.charAt(0)}</span>
-              }
+            <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden">
+               {entry.avatarUrl ? <img src={entry.avatarUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-[10px] font-black">{entry.name.charAt(0)}</span>}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-gray-900 truncate">{entry.name}</p>
-              {entry.eloTier && (
-                <p className="text-[10px] text-gray-500 capitalize">{entry.eloTier}</p>
-              )}
+               <p className="text-xs font-black text-slate-900 uppercase italic truncate">{entry.name}</p>
+               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{entry.eloTier || "Iron"}</p>
             </div>
-            <span className="text-xs font-bold text-blue-600 tabular-nums">{entry.score.toLocaleString()} XP</span>
+            <span className="text-[10px] font-black text-blue-600 tabular-nums bg-blue-50 px-2 py-0.5 rounded-lg">{entry.score.toLocaleString()} XP</span>
           </div>
         ))}
       </div>
+
       {lb?.currentStudentRank && (
-        <div className="mt-4 pt-3 border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">Your rank</span>
+        <div className="mt-8 pt-6 border-t border-slate-100">
+          <div className="flex items-center justify-between px-2">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Neural Link Rank</span>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-gray-900">#{lb.currentStudentRank.rank}</span>
-              <span className="text-xs font-bold text-blue-600">{lb.currentStudentRank.score.toLocaleString()} XP</span>
+              <span className="text-xs font-black text-slate-900 italic">#{lb.currentStudentRank.rank}</span>
+              <span className="text-[10px] font-black text-blue-600 tabular-nums">{lb.currentStudentRank.score.toLocaleString()} XP</span>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </CardGlass>
   );
 }
 
@@ -1291,40 +1343,43 @@ function TierProgress({ tier, xp }: { tier: string; xp: number }) {
   const progressPct = tierIdx >= 0 ? ((tierIdx + 1) / TIERS.length) * 100 : 14;
 
   return (
-    <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Shield className={`w-5 h-5 ${tc.text}`} />
+    <CardGlass className="p-8 border-white/60">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg", TIER_COLORS[tier]?.bg || "bg-slate-100")}>
+             <Shield className={cn("w-6 h-6", TIER_COLORS[tier]?.text || "text-slate-400")} />
+          </div>
           <div>
-            <p className="text-sm font-bold text-gray-900 capitalize">{tier || "Iron"} Tier</p>
-            <p className="text-xs text-gray-500">{xp.toLocaleString()} Battle XP</p>
+            <p className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{tier || "Iron"} Tier</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{xp.toLocaleString()} BATTLE XP</p>
           </div>
         </div>
-        <div className={`px-3 py-1 rounded-2xl text-xs font-bold ${tc.bg} ${tc.text}`}>
-          {tierIdx >= 0 && tierIdx < TIERS.length - 1 ? `Next: ${TIERS[tierIdx + 1]}` : "Max Tier"}
+        <div className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest", TIER_COLORS[tier]?.bg || "bg-slate-100", TIER_COLORS[tier]?.text || "text-slate-400")}>
+          {tierIdx >= 0 && tierIdx < TIERS.length - 1 ? `Target: ${TIERS[tierIdx + 1]}` : "Zenith Reach"}
         </div>
       </div>
 
-      <div className="relative mb-2">
-        <div className="absolute top-1.5 left-0 right-0 h-0.5 bg-border rounded-full" />
-        <motion.div
-          className={`absolute top-1.5 left-0 h-0.5 rounded-full bg-gradient-to-r ${tc.grad}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${progressPct}%` }}
-          transition={{ duration: 1, ease: "easeOut" }}
-        />
-        <div className="relative flex justify-between">
+      <div className="relative pt-4 pb-2">
+        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 relative">
+          <motion.div
+            className={cn("h-full rounded-full bg-gradient-to-r shadow-lg shadow-blue-500/20", tc.grad)}
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          />
+        </div>
+        <div className="flex justify-between mt-4">
           {TIERS.map((t, i) => {
             const done = i < (tierIdx >= 0 ? tierIdx + 1 : 0);
             const current = i === tierIdx;
             return (
-              <div key={t} className="flex flex-col items-center gap-1">
-                <div className={`w-3 h-3 rounded-full border-2 transition-all ${
-                  current  ? `border-blue-600 bg-blue-600 ring-2 ring-blue-600/25 ring-offset-1 ring-offset-card` :
-                  done     ? `border-blue-600 bg-blue-600` :
-                             `border-gray-100 bg-white shadow-sm`
-                }`} />
-                <span className={`text-[9px] font-bold hidden sm:block ${current ? tc.text : "text-gray-500"}`}>
+              <div key={t} className="flex flex-col items-center gap-2">
+                <div className={cn(
+                  "w-2.5 h-2.5 rounded-full transition-all",
+                  current ? "bg-blue-600 ring-4 ring-blue-100 shadow-lg" : 
+                  done ? "bg-blue-600/40" : "bg-slate-100"
+                )} />
+                <span className={cn("text-[8px] font-black uppercase tracking-tighter", current ? "text-blue-600" : "text-slate-300")}>
                   {t}
                 </span>
               </div>
@@ -1332,11 +1387,13 @@ function TierProgress({ tier, xp }: { tier: string; xp: number }) {
           })}
         </div>
       </div>
-    </div>
+    </CardGlass>
   );
 }
 
 // ─── Mode Card ────────────────────────────────────────────────────────────────
+
+// ─── Mode Card: Mission Board Integration ─────────────────────────────────────
 
 function ModeCard({
   mode,
@@ -1351,60 +1408,60 @@ function ModeCard({
   const isDailyDisabled = mode.mode === "daily" && !dailyInfo;
 
   return (
-    <motion.div
-      whileHover={{ y: -2, scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+    <CardGlass
       onClick={isDailyDisabled ? undefined : onSelect}
-      className={`relative bg-white shadow-sm border border-gray-100 rounded-3xl p-5 flex flex-col gap-4 transition-all cursor-pointer group
-        ${isDailyDisabled ? "opacity-50 cursor-not-allowed" : `hover:shadow-lg ${mode.accent}`}
-        ${isDailyLive ? "border-violet-500/40 shadow-lg shadow-violet-500/10" : ""}
-      `}
-    >
-      {mode.badge && (
-        <div className={`absolute top-3 right-3 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-          mode.mode === "daily" ? "bg-violet-500/15 text-violet-400" : "bg-amber-500/15 text-amber-400"
-        }`}>
-          {isDailyLive ? "● LIVE" : mode.badge}
-        </div>
+      className={cn(
+        "p-8 border-white/80 group",
+        isDailyDisabled ? "opacity-30 grayscale cursor-not-allowed shadow-none" : "hover:border-blue-200",
+        isDailyLive ? "ring-2 ring-violet-500/20 shadow-violet-500/10" : ""
       )}
-
-      <div className={`w-12 h-12 rounded-2xl ${mode.iconBg} flex items-center justify-center`}>
-        <mode.icon className={`w-6 h-6 ${mode.iconText}`} />
+    >
+      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[40px] rounded-full -mr-16 -mt-16 pointer-events-none" />
+      
+      <div className="flex items-center justify-between mb-8">
+        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform", mode.iconBg, mode.iconText)}>
+          <mode.icon className="w-7 h-7" />
+        </div>
+        {mode.badge && (
+          <div className={cn(
+            "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm",
+            isDailyLive ? "bg-red-500 text-white animate-pulse" : "bg-slate-900 text-white"
+          )}>
+            {isDailyLive ? "● Combat Live" : mode.badge}
+          </div>
+        )}
       </div>
 
-      <div className="flex-1">
-        <h3 className="font-bold text-gray-900 text-sm mb-1">{mode.title}</h3>
-        <p className="text-xs text-gray-500">
+      <div className="space-y-2 mb-8">
+        <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{mode.title}</h3>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
           {mode.mode === "daily" && dailyInfo?.topicName
-            ? `Topic: ${dailyInfo.topicName}`
+            ? `Neural Zone: ${dailyInfo.topicName}`
             : mode.desc
           }
         </p>
-        <p className="text-[11px] text-gray-500/70 mt-1">{mode.detail}</p>
       </div>
 
-      <div className="flex items-center justify-between">
-        {mode.mode === "daily" && dailyInfo?.playerCount ? (
-          <span className="text-xs text-gray-500 flex items-center gap-1">
-            <Users className="w-3 h-3" />
-            {dailyInfo.playerCount.toLocaleString()} online
-          </span>
-        ) : mode.mode === "bot" ? (
-          <span className="text-xs text-gray-500 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> Always available
-          </span>
-        ) : isDailyDisabled ? (
-          <span className="text-xs text-gray-500">No battle today</span>
-        ) : (
-          <span className="text-xs text-gray-500 flex items-center gap-1">
-            <Zap className="w-3 h-3" /> {mode.questions} questions
-          </span>
-        )}
-        <div className={`flex items-center gap-1 text-xs font-bold ${mode.iconText} opacity-0 group-hover:opacity-100 transition-opacity`}>
-          Play <ChevronRight className="w-3.5 h-3.5" />
+      <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+        <div className="flex items-center gap-3">
+          {mode.mode === "daily" && dailyInfo?.playerCount ? (
+            <span className="text-[10px] font-black text-violet-600 uppercase tracking-widest flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" />
+              {dailyInfo.playerCount.toLocaleString()} ONLINE
+            </span>
+          ) : (
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-blue-500" />
+              {mode.questions} NODES
+            </span>
+          )}
+        </div>
+        
+        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+           <ArrowRight className="w-4 h-4" />
         </div>
       </div>
-    </motion.div>
+    </CardGlass>
   );
 }
 
@@ -1426,67 +1483,85 @@ function HomeScreen({
   onJoinFriend: () => void;
 }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-3xl bg-gradient-to-br from-red-500/20 to-violet-500/20 border border-red-500/20 flex items-center justify-center">
-            <Swords className="w-6 h-6 text-red-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-gray-900">Battle Arena</h1>
-            <p className="text-xs text-gray-500">
-              {eloRating ? `ELO: ${eloRating} · ` : ""}Challenge students, climb the ranks
-            </p>
-          </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
+      {/* 🛡️ Mission Directive Header */}
+      <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
+        <div className="space-y-4">
+           <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-slate-900 text-white w-fit shadow-xl">
+             <Swords className="w-3.5 h-3.5 text-red-400" />
+             <span className="text-[9px] font-black uppercase tracking-[0.2em]">Neural Combat Frequency: Active</span>
+           </div>
+           <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">
+              Combat<br/><span className="not-italic text-red-600">Terminal</span>
+           </h1>
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">
+              {eloRating ? `SYNC Rating: ${eloRating} • ` : ""}Engage designated units to optimize ELO resonance.
+           </p>
         </div>
-        <button
+
+        <motion.button
+          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
           onClick={onJoinFriend}
-          className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all text-sm font-bold text-emerald-400"
+          className="px-8 py-5 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-xl hover:border-emerald-200 transition-all group"
         >
-          <UserPlus className="w-4 h-4" />
-          Join with Code
-        </button>
+           <UserPlus className="w-5 h-5 text-emerald-500 group-hover:rotate-12 transition-transform" /> Neural Join Link
+        </motion.button>
       </div>
 
-      {/* Tier progress */}
-      <TierProgress tier={tier} xp={xp} />
-
-      {/* Daily battle highlight */}
-      {dailyBattle && (
-        <motion.button
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          onClick={() => onModeSelect(MODES.find(m => m.mode === "daily")!)}
-          className="w-full bg-gradient-to-r from-violet-500/15 via-blue-500/10 to-violet-500/15 border border-violet-500/25 rounded-3xl p-5 text-left hover:border-violet-500/50 transition-all"
-        >
-          <div className="flex items-center justify-between">
+      {/* Stats Board */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+         <div className="lg:col-span-3">
+            <TierProgress tier={tier} xp={xp} />
+         </div>
+         <CardGlass className="p-8 bg-slate-900 border-slate-800 text-white flex flex-col justify-center">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Unit Rank</p>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-violet-400" />
+               <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+                  <TrendingUp className="w-7 h-7 text-blue-400" />
+               </div>
+               <div>
+                  <p className="text-2xl font-black italic uppercase leading-none">{tier}</p>
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-1">Status: Operational</p>
+               </div>
+            </div>
+         </CardGlass>
+      </div>
+
+      {/* Daily Directive Highlight */}
+      {dailyBattle && (
+        <CardGlass 
+          onClick={() => onModeSelect(MODES.find(m => m.mode === "daily")!)}
+          className="p-1 border-white/40 ring-1 ring-violet-500/20 shadow-violet-500/10"
+        >
+          <div className="bg-gradient-to-r from-violet-600/5 to-blue-600/5 p-8 rounded-[2.3rem] flex items-center justify-between group">
+            <div className="flex items-center gap-8">
+              <div className="w-16 h-16 rounded-[2rem] bg-violet-600 text-white flex items-center justify-center shadow-2xl shadow-violet-600/30 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-8 h-8" />
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-gray-900 text-sm">Daily Battle</h3>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400">
-                    {(dailyBattle as any).status === "active" ? "● LIVE NOW" : "TODAY"}
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-black text-slate-900 uppercase italic">Prime Objective</h3>
+                  <span className="text-[9px] font-black px-3 py-1 rounded-full bg-violet-600 text-white uppercase tracking-widest animate-pulse">
+                    {(dailyBattle as any).status === "active" ? "Combat Live" : "Synchronizing"}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-tight">
                   {(dailyBattle as any).topicName
-                    ? `Topic: ${(dailyBattle as any).topicName}`
-                    : "Open topic · everyone battles at once"}
+                    ? `Neural Sector: ${(dailyBattle as any).topicName}`
+                    : "Zero Domain • Global Neural Convergence"}
                 </p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-500 shrink-0" />
+            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-xl group-hover:translate-x-2 transition-all">
+               <ArrowRight className="w-6 h-6 text-violet-600" />
+            </div>
           </div>
-        </motion.button>
+        </CardGlass>
       )}
 
-      {/* Mode grid + leaderboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Mission Board Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-8">
           {MODES.filter(m => m.mode !== "daily").map(mode => (
             <ModeCard
               key={mode.mode}
@@ -1496,7 +1571,7 @@ function HomeScreen({
             />
           ))}
         </div>
-        <div>
+        <div className="lg:col-span-1">
           <BattleLeaderboard />
         </div>
       </div>
@@ -1570,164 +1645,146 @@ function BotPickerScreen({
     }
   };
 
-  const TEST_TYPES: { key: BotTestType; label: string; desc: string }[] = [
-    { key: "topic",   label: "Topic Test",   desc: "Deep focus on a single topic" },
-    { key: "chapter", label: "Chapter Test", desc: "Mix from the full chapter" },
-    { key: "subject", label: "Subject Test", desc: "Broad questions across a subject" },
+  const TEST_TYPES: { key: BotTestType; label: string; desc: string; icon: any }[] = [
+    { key: "topic",   label: "Neural Node",   desc: "Targeted single topic precision", icon: Target },
+    { key: "chapter", label: "Sector Scan", desc: "Mixed chapter-wide engagement", icon: Globe },
+    { key: "subject", label: "Global Sync", desc: "Full curriculum saturation", icon: Shield },
   ];
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+    <div className="max-w-4xl mx-auto py-10 space-y-10">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-6">
         <button onClick={onBack}
-          className="w-9 h-9 rounded-2xl border border-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
+          className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-sm group">
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         </button>
         <div>
-          <h2 className="font-bold text-gray-900 text-lg">Practice vs Bot</h2>
-          <p className="text-xs text-gray-500">Choose what to practice — questions from your curriculum</p>
+           <h2 className="text-3xl font-black text-slate-900 italic uppercase leading-none text-amber-500">Practice<br/><span className="not-italic text-slate-900">Construct</span></h2>
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mt-2">Engage artificial intelligence units for curriculum mastery.</p>
         </div>
       </div>
 
       {/* Test type selector */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
+      <div className="grid grid-cols-3 gap-6">
         {TEST_TYPES.map(t => (
           <button
             key={t.key}
             onClick={() => { setTestType(t.key); setSubjectId(""); setChapterId(""); setTopicId(""); setSubjectName(""); setChapterName(""); setTopicName(""); }}
-            className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
+            className={cn(
+              "p-6 rounded-[2rem] border-2 text-left transition-all relative group overflow-hidden",
               testType === t.key
-                ? "border-amber-500/70 bg-amber-500/8"
-                : "border-gray-100 hover:border-amber-500/30 hover:bg-gray-50/50"
-            }`}
+                ? "border-amber-500 bg-amber-500/5 shadow-xl shadow-amber-500/10"
+                : "border-slate-100 hover:border-amber-200 hover:bg-slate-50"
+            )}
           >
-            <p className={`text-sm font-bold ${testType === t.key ? "text-amber-400" : "text-gray-900"}`}>
-              {t.label}
-            </p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{t.desc}</p>
+             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-2xl rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform" />
+             <t.icon className={cn("w-6 h-6 mb-4 relative z-10", testType === t.key ? "text-amber-500" : "text-slate-300")} />
+             <p className={cn("text-sm font-black uppercase italic tracking-tight relative z-10", testType === t.key ? "text-slate-900" : "text-slate-400")}>
+               {t.label}
+             </p>
+             <p className="text-[10px] font-bold text-slate-400 mt-1 relative z-10">{t.desc}</p>
           </button>
         ))}
       </div>
 
-      {/* Cascading selectors */}
-      <div className="space-y-3 mb-6">
-        {/* Subject — always shown */}
-        <div>
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5 block">Subject</label>
-          {subLoading ? (
-            <div className="h-10 rounded-2xl bg-gray-50 animate-pulse" />
-          ) : (
-            <select
-              value={subjectId}
-              onChange={e => {
-                const id = e.target.value;
-                setSubjectId(id);
-                setSubjectName(subList.find(s => s.id === id)?.name ?? "");
-                setChapterId(""); setChapterName("");
-                setTopicId(""); setTopicName("");
-              }}
-              className="h-10 w-full px-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm outline-none focus:border-blue-600"
-            >
-              <option value="">Select subject…</option>
-              {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          )}
-        </div>
-
-        {/* Chapter — for chapter & topic tests */}
-        {(testType === "chapter" || testType === "topic") && (
-          <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5 block">Chapter</label>
-            {chapLoading && subjectId ? (
-              <div className="h-10 rounded-2xl bg-gray-50 animate-pulse" />
-            ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <div className="lg:col-span-3">
+          <CardGlass className="p-8 border-slate-100 space-y-8">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Lattice Subject</label>
               <select
-                value={chapterId}
+                value={subjectId}
                 onChange={e => {
                   const id = e.target.value;
-                  setChapterId(id);
-                  setChapterName(chapList.find(c => c.id === id)?.name ?? "");
+                  setSubjectId(id);
+                  setSubjectName(subList.find(s => s.id === id)?.name ?? "");
+                  setChapterId(""); setChapterName("");
                   setTopicId(""); setTopicName("");
                 }}
-                disabled={!subjectId}
-                className="h-10 w-full px-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm outline-none focus:border-blue-600 disabled:opacity-40"
+                className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-amber-500 transition-all appearance-none"
               >
-                <option value="">Select chapter…</option>
-                {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="">Select subject…</option>
+                {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-            )}
-          </div>
-        )}
+            </div>
 
-        {/* Topic — for topic test only */}
-        {testType === "topic" && (
-          <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5 block">Topic</label>
-            {topLoading && chapterId ? (
-              <div className="h-10 rounded-2xl bg-gray-50 animate-pulse" />
-            ) : (
-              <select
-                value={topicId}
-                onChange={e => {
-                  const id = e.target.value;
-                  setTopicId(id);
-                  setTopicName(topList.find(t => t.id === id)?.name ?? "");
-                }}
-                disabled={!chapterId}
-                className="h-10 w-full px-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm outline-none focus:border-blue-600 disabled:opacity-40"
-              >
-                <option value="">Select topic…</option>
-                {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            )}
-          </div>
-        )}
-      </div>
+            <div className="grid grid-cols-2 gap-6">
+               {(testType === "chapter" || testType === "topic") && (
+                 <div className="space-y-3 font-black text-slate-400 uppercase tracking-widest text-[10px]">
+                    <label className="ml-1">Designated Chapter</label>
+                    <select
+                      value={chapterId}
+                      onChange={e => {
+                        const id = e.target.value;
+                        setChapterId(id);
+                        setChapterName(chapList.find(c => c.id === id)?.name ?? "");
+                        setTopicId(""); setTopicName("");
+                      }}
+                      disabled={!subjectId}
+                      className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-amber-500 disabled:opacity-30 transition-all appearance-none"
+                    >
+                      <option value="">Select chapter…</option>
+                      {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                 </div>
+               )}
 
-      {/* Question count */}
-      <div className="mb-6">
-        <label className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 block">Number of Questions</label>
-        <div className="flex gap-2">
-          {[5, 10, 15, 20].map(n => (
-            <button
-              key={n}
-              onClick={() => setCount(n)}
-              className={`flex-1 py-2.5 rounded-2xl border-2 text-sm font-bold transition-all ${
-                count === n
-                  ? "border-amber-500/70 bg-amber-500/10 text-amber-400"
-                  : "border-gray-100 text-gray-900 hover:border-amber-500/30"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
+               {testType === "topic" && (
+                 <div className="space-y-3 font-black text-slate-400 uppercase tracking-widest text-[10px]">
+                    <label className="ml-1">Neural Node</label>
+                    <select
+                      value={topicId}
+                      onChange={e => {
+                        const id = e.target.value;
+                        setTopicId(id);
+                        setTopicName(topList.find(t => t.id === id)?.name ?? "");
+                      }}
+                      disabled={!chapterId}
+                      className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-amber-500 disabled:opacity-30 transition-all appearance-none"
+                    >
+                      <option value="">Select topic…</option>
+                      {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                 </div>
+               )}
+            </div>
+          </CardGlass>
+        </div>
+
+        <div className="lg:col-span-1 space-y-6">
+           <CardGlass className="p-8 border-amber-100 bg-amber-500/5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 block">Combat Iterations</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[5, 10, 15, 20].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setCount(n)}
+                    className={cn(
+                      "h-12 rounded-xl border-2 font-black text-sm transition-all shadow-sm",
+                      count === n
+                        ? "border-amber-500 bg-white text-amber-500 shadow-amber-500/10"
+                        : "border-white bg-white/50 text-slate-400 hover:border-amber-200"
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+           </CardGlass>
+           <Button
+             className="w-full h-16 rounded-[1.5rem] bg-amber-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl hover:bg-amber-600 transition-all flex items-center justify-center gap-3"
+             disabled={!canStart || loading}
+             onClick={handleStart}
+           >
+             {loading
+               ? <><Loader2 className="w-5 h-5 animate-spin" /> Synchronizing…</>
+               : <><Bolt className="w-5 h-5" /> Engage AI Construct</>
+             }
+           </Button>
         </div>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-2xl border border-destructive/25 bg-destructive/5 px-3 py-2.5 text-xs text-destructive mb-4">
-          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
-        </div>
-      )}
-
-      <Button
-        className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
-        disabled={!canStart || loading}
-        onClick={handleStart}
-      >
-        {loading
-          ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading Questions…</>
-          : <><Bot className="w-4 h-4" /> Start Bot Practice ({count} Questions)</>
-        }
-      </Button>
-
-      {!subList.length && !subLoading && (
-        <p className="text-xs text-amber-500 text-center mt-3">
-          No subjects found. Ask your teacher or admin to add subjects first.
-        </p>
-      )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -1848,92 +1905,96 @@ const BattleArena = () => {
   }
 
   return (
-    <div>
-      <AnimatePresence mode="wait">
-        {stage === "home" && (
-          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <HomeScreen
-              tier={tier}
-              xp={xp}
-              eloRating={eloRating}
-              dailyBattle={dailyBattle}
-              onModeSelect={handleModeSelect}
-              onJoinFriend={() => setStage("join_room")}
-            />
-          </motion.div>
-        )}
+    <div className="min-h-screen relative bg-[#F8FAFC] custom-scrollbar selection:bg-red-600/10">
+      {/* ── Aero Dynamic Background ── */}
+   
+      <div className="relative z-10 px-6 sm:px-10 py-8 max-w-[1700px] mx-auto">
+        <AnimatePresence mode="wait">
+          {stage === "home" && (
+            <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <HomeScreen
+                tier={tier}
+                xp={xp}
+                eloRating={eloRating}
+                dailyBattle={dailyBattle}
+                onModeSelect={handleModeSelect}
+                onJoinFriend={() => setStage("join_room")}
+              />
+            </motion.div>
+          )}
 
-        {stage === "topic_pick" && activeMode && (
-          <motion.div key="topic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TopicPicker
-              onBack={() => setStage("home")}
-              onSelect={handleTopicSelect}
-              loading={createBattle.isPending}
-            />
-          </motion.div>
-        )}
+          {stage === "topic_pick" && activeMode && (
+            <motion.div key="topic" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <TopicPicker
+                onBack={() => setStage("topic_pick")}
+                onSelect={handleTopicSelect}
+                loading={createBattle.isPending}
+              />
+            </motion.div>
+          )}
 
-{stage === "join_room" && (
-          <motion.div key="join" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <JoinRoomScreen onBack={() => setStage("home")} onJoined={handleJoined} />
-          </motion.div>
-        )}
+          {stage === "join_room" && (
+            <motion.div key="join" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <JoinRoomScreen onBack={() => setStage("home")} onJoined={handleJoined} />
+            </motion.div>
+          )}
 
-        {stage === "matchmaking" && battleRoom && activeMode && (
-          <motion.div key="matchmaking" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <MatchmakingScreen
-              room={battleRoom}
-              mode={activeMode}
-              topicName={topicName}
-              onCancel={reset}
-              onBattleStart={handleBattleStart}
-            />
-          </motion.div>
-        )}
+          {stage === "matchmaking" && battleRoom && activeMode && (
+            <motion.div key="matchmaking" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}>
+              <MatchmakingScreen
+                room={battleRoom}
+                mode={activeMode}
+                topicName={topicName}
+                onCancel={reset}
+                onBattleStart={handleBattleStart}
+              />
+            </motion.div>
+          )}
 
-        {stage === "in_battle" && battleRoom && activeMode && (
-          <motion.div key="battle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <BattleInProgress
-              room={battleRoom}
-              mode={activeMode}
-              myStudentId={myStudentId}
-              myName={myName}
-              onEnd={reset}
-              onResult={handleBattleResult}
-              topicLabel={topicName || undefined}
-            />
-          </motion.div>
-        )}
+          {stage === "in_battle" && battleRoom && activeMode && (
+            <motion.div key="battle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <BattleInProgress
+                room={battleRoom}
+                mode={activeMode}
+                myStudentId={myStudentId}
+                myName={myName}
+                onEnd={reset}
+                onResult={handleBattleResult}
+                topicLabel={topicName || undefined}
+              />
+            </motion.div>
+          )}
 
-        {stage === "result" && battleResult && (
-          <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ResultScreen
-              result={battleResult}
-              onPlayAgain={playAgain}
-              onHome={reset}
-            />
-          </motion.div>
-        )}
+          {stage === "result" && battleResult && (
+            <motion.div key="result" initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+              <ResultScreen
+                result={battleResult}
+                onPlayAgain={playAgain}
+                onHome={reset}
+              />
+            </motion.div>
+          )}
 
-        {stage === "error" && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4"
-          >
-            <div className="w-16 h-16 mb-5 rounded-3xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
-              <AlertCircle className="w-8 h-8 text-destructive" />
-            </div>
-            <h2 className="text-xl font-black text-gray-900 mb-2">Could Not Start Battle</h2>
-            <p className="text-sm text-gray-500 max-w-sm mb-8">{errorMsg || "Something went wrong. Please try again."}</p>
-            <Button onClick={reset} className="gap-2">
-              <ArrowLeft className="w-4 h-4" /> Back to Arena
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {stage === "error" && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center min-h-[60vh] text-center"
+            >
+              <div className="w-20 h-20 mb-8 rounded-[2rem] bg-red-50 text-red-500 flex items-center justify-center shadow-xl">
+                <AlertCircle className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 uppercase italic mb-2">Sync Interrupted</h2>
+              <p className="text-sm font-bold text-slate-400 max-w-sm mb-10 uppercase tracking-tight">{errorMsg || "Neural link failure detected."}</p>
+              <button onClick={reset} className="px-10 py-4 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-2xl">
+                <ArrowLeft className="w-4 h-4" /> Reset Hub
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
