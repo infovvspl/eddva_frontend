@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ClipboardList, Clock, ChevronRight, Loader2,
   CheckCircle, XCircle, AlertTriangle, Flame,
-  BarChart3, Sparkles, BookOpen,
+  BarChart3, Sparkles, BookOpen, Target, Brain,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { patchDiagnosticCompleted } from "@/lib/auth-store";
@@ -25,6 +25,11 @@ import {
 } from "@/lib/api/student";
 import type { QuizQuestion, TestSession, SessionResult } from "@/lib/api/student";
 import { toast } from "sonner";
+
+// ─── Design Tokens ─────────────────────────────────────────────────────────────
+const BLUE   = "#013889";
+const BLUE_M = "#0257c8";
+const BLUE_L = "#E6EEF8";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,67 +65,80 @@ function InfoScreen({ batchName, onStart }: { batchName: string; onStart: () => 
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="min-h-screen flex items-center justify-center bg-background p-4"
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{ background: "#F5F7FB" }}
     >
+      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100 rounded-full blur-[100px] opacity-50 -z-10 translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-[100px] opacity-40 -z-10 -translate-x-1/2 translate-y-1/2" style={{ background: BLUE_L }} />
+
       <div className="w-full max-w-lg">
         {/* Icon */}
-        <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
-          <ClipboardList className="w-10 h-10 text-primary" />
+        <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border" style={{ background: BLUE_L, borderColor: `${BLUE}20` }}>
+          <ClipboardList className="w-12 h-12" style={{ color: BLUE }} />
         </div>
 
-        <h1 className="text-3xl font-bold text-foreground text-center mb-2">
+        <h1 className="text-3xl font-black text-gray-900 text-center mb-2 tracking-tight">
           Diagnostic Test
         </h1>
-        <p className="text-center text-muted-foreground mb-8">
+        <p className="text-center text-gray-500 font-bold mb-10">
           Before you start, let's understand your level
         </p>
 
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 mb-8">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4 text-blue-400" />
+        <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-6 sm:p-8 space-y-6 mb-8 relative">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 shadow-inner">
+              <BookOpen className="w-5 h-5 text-blue-500" />
             </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">AI-generated for your syllabus</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Questions are automatically created from <span className="text-foreground font-medium">{batchName || "your batch"}</span> topics — no teacher setup needed
+            <div className="pt-1">
+              <p className="font-black text-gray-900 text-base">AI-generated for your syllabus</p>
+              <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">
+                Questions are automatically created from <span className="text-gray-900 font-black bg-gray-50 px-1 rounded">{batchName || "your batch"}</span> topics — no teacher setup needed
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-              <Clock className="w-4 h-4 text-amber-400" />
+
+          <div className="w-full h-px bg-gray-50" />
+
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0 shadow-inner">
+              <Clock className="w-5 h-5 text-amber-500" />
             </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">~20 minutes · AI-adaptive</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Difficulty adjusts as you answer</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">Unlocks your AI study plan</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Results build your 30-day personalised schedule</p>
+            <div className="pt-1">
+              <p className="font-black text-gray-900 text-base">~20 minutes · AI-adaptive</p>
+              <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">Difficulty adjusts as you answer to find your true level</p>
             </div>
           </div>
-          <div className="mt-2 rounded-xl bg-amber-500/8 border border-amber-500/20 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-              <p className="text-xs font-medium text-amber-400">
+
+          <div className="w-full h-px bg-gray-50" />
+
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0 shadow-inner">
+              <Sparkles className="w-5 h-5 text-violet-500" />
+            </div>
+            <div className="pt-1">
+              <p className="font-black text-gray-900 text-base">Unlocks your AI study plan</p>
+              <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">Results build your personalised 30-day schedule</p>
+            </div>
+          </div>
+          
+          <div className="mt-8 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 px-4 py-3 rounded-2xl">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+              <p className="text-sm font-bold text-amber-600">
                 This test is mandatory. You cannot skip or go back during the test.
               </p>
             </div>
           </div>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
           onClick={onStart}
-          className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
+          style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}
         >
           Start Diagnostic Test 🧪
-        </button>
+        </motion.button>
       </div>
     </motion.div>
   );
@@ -143,6 +161,7 @@ function QuestionCard({
 }) {
   const isInteger = question.type === "integer";
   const [intVal, setIntVal] = useState("");
+  useEffect(() => { setIntVal(""); }, [question.id]);
 
   return (
     <motion.div
@@ -150,55 +169,50 @@ function QuestionCard({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="space-y-5"
+      className="space-y-4"
     >
-      {/* Question number + content */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+      <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className="text-xs font-black px-3 py-1 rounded-xl" style={{ background: BLUE_L, color: BLUE }}>
             Q{index + 1} / {total}
           </span>
-          <span className="text-xs text-muted-foreground capitalize">{question.difficulty}</span>
-          {question.topic && (
-            <span className="text-xs text-muted-foreground">· {question.topic.name}</span>
+          <span className="text-xs font-bold text-gray-400 capitalize bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">{question.difficulty}</span>
+          {"topic" in question && question.topic && (
+            <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 truncate max-w-[150px]">{question.topic.name}</span>
           )}
         </div>
-        <p className="text-base font-medium text-foreground leading-relaxed">{question.content}</p>
+        <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">{question.content}</p>
       </div>
 
-      {/* Options */}
       {isInteger ? (
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">
-            Enter your answer
-          </label>
+        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+          <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-3 block text-center">Type your integer answer</label>
           <input
-            type="number"
-            value={intVal}
+            type="number" value={intVal}
             onChange={e => { setIntVal(e.target.value); onSelect(e.target.value); }}
-            placeholder="Type integer answer..."
-            className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-3 text-lg font-bold text-foreground text-center focus:outline-none focus:border-primary"
+            placeholder="0"
+            className="w-full max-w-xs mx-auto block bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-3xl font-black text-gray-900 text-center focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all placeholder-gray-300"
           />
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {question.options?.map(opt => {
             const isSelected = selected.includes(opt.id);
             return (
-              <button
-                key={opt.id}
-                onClick={() => onSelect(opt.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border text-left transition-all
-                  ${isSelected
-                    ? "bg-primary/10 border-primary/50 text-primary"
-                    : "bg-card border-border text-foreground hover:bg-secondary/40"}`}
+              <motion.button
+                whileHover={!isSelected ? { scale: 1.01 } : {}} whileTap={{ scale: 0.99 }}
+                key={opt.id} onClick={() => onSelect(opt.id)}
+                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-left transition-all
+                  ${isSelected ? "shadow-md" : "bg-white border-gray-100 text-gray-800 hover:border-blue-200"}`}
+                style={isSelected ? { background: BLUE_L, borderColor: BLUE, color: BLUE } : {}}
               >
-                <span className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-sm font-bold border
-                  ${isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/40 border-border"}`}>
+                <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors
+                  ${isSelected ? "border-transparent" : "border-gray-200 text-gray-500"}`}
+                  style={isSelected ? { background: BLUE, color: "#fff" } : {}}>
                   {opt.optionLabel}
-                </span>
-                <span className="text-sm font-medium">{opt.content}</span>
-              </button>
+                </div>
+                <span className="text-sm font-medium leading-relaxed flex-1">{opt.content}</span>
+              </motion.button>
             );
           })}
         </div>
@@ -218,28 +232,29 @@ function ResultsScreen({
 }) {
   const accuracy = result.accuracy ?? (result.totalCorrect / Math.max(result.totalCorrect + result.totalWrong, 1)) * 100;
   const eb = result.errorBreakdown;
-  const wrongTopics = result.attempts
-    .filter(a => !a.isCorrect && a.questionContent)
-    .slice(0, 5);
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="min-h-screen flex items-center justify-center bg-background p-4"
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: "#F5F7FB" }}
     >
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-lg bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-sm">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🎉</div>
-          <h1 className="text-3xl font-bold text-foreground">Diagnostic Complete!</h1>
-          <p className="text-muted-foreground mt-1">Here's how you performed</p>
+          <div className="w-20 h-20 rounded-3xl bg-emerald-50 border border-emerald-100 mx-auto flex items-center justify-center mb-4 shadow-sm relative">
+            <CheckCircle className="w-10 h-10 text-emerald-500 relative z-10" />
+            <div className="absolute inset-0 bg-emerald-100 rounded-3xl blur-xl opacity-50 z-0" />
+          </div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Diagnostic Complete!</h1>
+          <p className="text-gray-400 font-bold mt-2">Here's how you performed</p>
         </div>
 
         {/* Score ring */}
-        <div className="bg-card border border-border rounded-2xl p-6 mb-4 flex items-center gap-6">
+        <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 mb-6 flex items-center gap-6 shadow-inner">
           <div className="relative w-24 h-24 shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
-              <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+              <circle cx="48" cy="48" r="40" fill="none" stroke="#E5E7EB" strokeWidth="10" />
               <circle cx="48" cy="48" r="40" fill="none"
                 stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
                 strokeWidth="10"
@@ -248,31 +263,32 @@ function ResultsScreen({
                 strokeLinecap="round" />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xl font-bold text-foreground">{accuracy.toFixed(0)}%</span>
+              <span className="text-xl font-black text-gray-900">{accuracy.toFixed(0)}%</span>
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-foreground">{result.totalScore} pts</p>
-            <div className="flex items-center gap-3 mt-1.5">
-              <span className="flex items-center gap-1 text-xs text-emerald-400">
-                <CheckCircle className="w-3 h-3" />{result.totalCorrect} correct
+            <p className="text-3xl font-black text-gray-900 mb-1">{result.totalScore}</p>
+            <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-3">Total Points</p>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                <CheckCircle className="w-3 h-3" />{result.totalCorrect}
               </span>
-              <span className="flex items-center gap-1 text-xs text-red-400">
-                <XCircle className="w-3 h-3" />{result.totalWrong} wrong
+              <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg border border-red-100">
+                <XCircle className="w-3 h-3" />{result.totalWrong}
               </span>
-              <span className="text-xs text-muted-foreground">{result.totalSkipped} skipped</span>
+              {result.totalSkipped > 0 && <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg border border-gray-200">{result.totalSkipped} skip</span>}
             </div>
           </div>
         </div>
 
         {/* Error breakdown */}
-        {eb && (
-          <div className="bg-card border border-border rounded-2xl p-5 mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart3 className="w-4 h-4 text-muted-foreground" />
-              <p className="text-sm font-bold text-foreground">Error Breakdown</p>
+        {eb && result.totalWrong > 0 && (
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 mb-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-gray-400" />
+              <p className="text-base font-black text-gray-900">Error Analysis</p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {[
                 { key: "conceptual", label: "Concept gaps",   color: "#ef4444" },
                 { key: "silly",      label: "Silly mistakes", color: "#f59e0b" },
@@ -284,11 +300,11 @@ function ResultsScreen({
                 if (!val) return null;
                 return (
                   <div key={key}>
-                    <div className="flex justify-between mb-0.5">
-                      <span className="text-xs text-muted-foreground">{label}</span>
-                      <span className="text-xs font-bold text-foreground">{val}</span>
+                    <div className="flex justify-between mb-1.5">
+                      <span className="text-xs font-bold text-gray-500">{label}</span>
+                      <span className="text-xs font-black text-gray-900">{val}</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                         transition={{ duration: 0.6 }}
@@ -304,19 +320,26 @@ function ResultsScreen({
         )}
 
         {/* AI study plan */}
-        <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl p-4 mb-6 flex items-center gap-3">
-          <Sparkles className="w-5 h-5 text-violet-400 shrink-0" />
-          <p className="text-sm text-foreground">
-            AI is building your <span className="font-bold text-violet-400">personalised 30-day study plan</span> based on these results
-          </p>
+        <div className="bg-violet-50 border-2 border-violet-100 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+          <div className="w-10 h-10 rounded-xl bg-white border border-violet-200 flex items-center justify-center shrink-0 shadow-sm">
+            <Sparkles className="w-5 h-5 text-violet-500" />
+          </div>
+          <div className="pt-0.5">
+             <p className="text-sm font-black text-gray-900 mb-1">Study Plan Generated!</p>
+             <p className="text-[13px] font-medium text-gray-600 leading-relaxed">
+               AI has built your personalised 30-day schedule based on these exact results.
+             </p>
+          </div>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
           onClick={onContinue}
-          className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all"
+          style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}
         >
-          <>View My Study Plan <ChevronRight className="w-5 h-5" /></>
-        </button>
+          View My Study Plan <ChevronRight className="w-4 h-4" />
+        </motion.button>
       </div>
     </motion.div>
   );
@@ -450,11 +473,8 @@ export default function DiagnosticTestPage() {
       const res = await submitSession(session.id);
       setResult(res);
       // Backend marks diagnosticCompleted = true — patch local store immediately
-      // so ProtectedRoute doesn't redirect while still on this page, then
-      // invalidate the React Query /me cache so next navigation gets fresh data.
       patchDiagnosticCompleted(useAuthStore.getState());
-      // Sync the React Query /me cache directly so ProtectedRoute's useMe(hasToken)
-      // sees diagnosticCompleted=true without needing a network refetch.
+      // Sync the React Query /me cache directly
       queryClient.setQueryData(authKeys.me, (prev: any) => {
         if (!prev) return prev;
         return {
@@ -472,7 +492,7 @@ export default function DiagnosticTestPage() {
     }
   };
 
-  // ── Navigate to study plan (backend already auto-generated it on diagnostic submit) ──
+  // ── Navigate to study plan ────────────────────────────────────────────────
   const handleViewPlan = () => {
     navigate("/student/study-plan");
   };
@@ -483,8 +503,8 @@ export default function DiagnosticTestPage() {
     return (
       <>
         {error && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium rounded-xl px-4 py-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" /> {error}
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-50 border border-red-100 text-red-600 text-sm font-bold rounded-2xl px-5 py-4 flex items-center gap-2 shadow-sm">
+            <AlertTriangle className="w-5 h-5" /> {error}
           </div>
         )}
         <InfoScreen batchName={batchName} onStart={handleStart} />
@@ -494,24 +514,17 @@ export default function DiagnosticTestPage() {
 
   if (stage === "loading") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: "#F5F7FB" }}>
         <div className="relative">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <Sparkles className="w-5 h-5 text-violet-400 absolute -top-1 -right-1 animate-pulse" />
+          <div className="w-24 h-24 rounded-3xl bg-white border border-gray-100 flex items-center justify-center shadow-sm z-10 relative">
+             <Loader2 className="w-10 h-10 animate-spin" style={{ color: BLUE }} />
+             <Sparkles className="w-6 h-6 text-violet-400 absolute -top-3 -right-3 animate-pulse drop-shadow-md" />
+          </div>
+          <div className="absolute inset-0 bg-blue-100 rounded-3xl animate-ping opacity-50 z-0" />
         </div>
         <div className="text-center">
-          <p className="text-foreground font-bold text-lg">Building your diagnostic test...</p>
-          <p className="text-muted-foreground text-sm mt-1">
-            AI is generating personalised questions based on your syllabus
-          </p>
-        </div>
-        <div className="flex items-center gap-6 mt-2">
-          {["Analysing syllabus", "Generating questions", "Setting difficulty"].map((step, i) => (
-            <div key={step} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: `${i * 0.3}s` }} />
-              {step}
-            </div>
-          ))}
+          <p className="text-gray-900 font-black text-xl mb-1 mt-2">Building diagnostic test...</p>
+          <p className="text-gray-500 font-bold text-sm">AI is generating personalised questions from your syllabus</p>
         </div>
       </div>
     );
@@ -519,9 +532,9 @@ export default function DiagnosticTestPage() {
 
   if (stage === "submitting") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Analysing your answers...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: "#F5F7FB" }}>
+        <Loader2 className="w-12 h-12 animate-spin" style={{ color: BLUE }} />
+        <p className="text-gray-500 font-black tracking-widest uppercase text-xs mt-2">Analysing your answers...</p>
       </div>
     );
   }
@@ -532,10 +545,12 @@ export default function DiagnosticTestPage() {
 
   if (stage === "generating_plan") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <Sparkles className="w-10 h-10 text-primary animate-pulse" />
-        <p className="text-foreground font-bold text-lg">Building your study plan...</p>
-        <p className="text-muted-foreground text-sm">This takes a few seconds</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: "#F5F7FB" }}>
+        <Sparkles className="w-12 h-12 animate-pulse text-violet-500" />
+        <div>
+          <p className="text-gray-900 font-black text-xl mb-1">Building your study plan...</p>
+          <p className="text-gray-500 font-bold text-sm">This takes a few seconds</p>
+        </div>
       </div>
     );
   }
@@ -550,85 +565,88 @@ export default function DiagnosticTestPage() {
   const timerDanger  = seconds <= 60;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "#F5F7FB" }}>
       {/* Fixed top bar */}
-      <div className="sticky top-0 z-20 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
-          {/* Logo / title */}
-          <div className="flex items-center gap-2 mr-auto">
-            <ClipboardList className="w-5 h-5 text-primary" />
-            <span className="font-bold text-foreground text-sm">Diagnostic Test</span>
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 mr-auto bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-xl">
+            <ClipboardList className="w-4 h-4" style={{ color: BLUE }} />
+            <span className="font-black text-gray-900 text-xs uppercase tracking-widest">Diagnostic</span>
           </div>
 
-          {/* Timer */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-bold text-sm
-            ${timerDanger ? "bg-red-500/10 text-red-400 animate-pulse" : "bg-secondary/60 text-foreground"}`}>
-            <Clock className="w-4 h-4" />
-            {formatTime(seconds)}
+          <div className="flex items-center gap-3">
+             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border
+               ${timerDanger ? "bg-red-50 border-red-100 text-red-500 animate-pulse" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
+               <Clock className="w-3.5 h-3.5" />{formatTime(seconds)}
+             </div>
+             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handleSubmit(false)}
+               className="px-4 py-2 rounded-xl text-white text-xs font-black transition-colors shrink-0 shadow-sm"
+               style={{ background: BLUE }}>
+               Submit
+             </motion.button>
           </div>
-
-          {/* Submit button */}
-          <button
-            onClick={() => handleSubmit(false)}
-            className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors"
-          >
-            Submit Test
-          </button>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 bg-secondary/30">
+        <div className="h-1 bg-gray-100">
           <div
-            className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+            className="h-full transition-all duration-300"
+            style={{ width: `${((currentQ + 1) / questions.length) * 100}%`, background: BLUE }}
           />
         </div>
       </div>
 
       {/* Question content */}
-      <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
-        <AnimatePresence mode="wait">
-          <QuestionCard
-            key={q.id}
-            question={q}
-            index={currentQ}
-            total={questions.length}
-            selected={selectedOpts}
-            onSelect={handleSelectOption}
-          />
-        </AnimatePresence>
+      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 sm:py-8 flex flex-col">
+        <div className="flex-1">
+          <AnimatePresence mode="wait">
+            <QuestionCard
+              key={q.id}
+              question={q}
+              index={currentQ}
+              total={questions.length}
+              selected={selectedOpts}
+              onSelect={handleSelectOption}
+            />
+          </AnimatePresence>
+        </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-6">
+        <div className="mt-8 flex items-center justify-between bg-white border border-gray-100 rounded-3xl p-3 shadow-sm">
           <button
             onClick={() => setCurrentQ(i => Math.max(i - 1, 0))}
             disabled={currentQ === 0}
-            className="px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary/40 transition-colors disabled:opacity-30"
+            className="px-5 py-2.5 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30"
           >
-            ← Previous
+            Prev
           </button>
 
-          <div className="flex items-center gap-1">
-            {questions.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentQ(i)}
-                className={`w-2 h-2 rounded-full transition-all
-                  ${i === currentQ ? "w-5 bg-primary" : answers[questions[i].id]?.length ? "bg-primary/50" : "bg-secondary"}`}
-              />
-            ))}
+          <div className="flex items-center gap-1.5 overflow-x-auto px-2 scrollbar-none">
+            {questions.map((_, i) => {
+               const isAns = answers[questions[i].id]?.length > 0;
+               const isCurr = i === currentQ;
+               return (
+                 <button key={i} onClick={() => setCurrentQ(i)}
+                   className={`shrink-0 rounded-full transition-all
+                     ${isCurr ? "w-6 h-2.5" : "w-2.5 h-2.5"}
+                     ${isCurr ? "" : isAns ? "" : "bg-gray-200 hover:bg-gray-300"}`}
+                   style={isCurr ? { background: BLUE } : isAns ? { background: BLUE_M, opacity: 0.5 } : {}}
+                 />
+               );
+             })}
           </div>
 
           <button
             onClick={handleNext}
-            className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all
+            className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all shadow-sm
               ${isLast
-                ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                ? "bg-emerald-500 text-white"
                 : isAnswered
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-secondary/50 text-muted-foreground"}`}
+                  ? "text-white"
+                  : "bg-gray-100 text-gray-400"}`}
+            style={!isLast && isAnswered ? { background: BLUE } : {}}
           >
-            {isLast ? "Submit →" : "Next →"}
+            {isLast ? "Done" : "Next"}
           </button>
         </div>
       </div>

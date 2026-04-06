@@ -9,7 +9,11 @@ import {
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
   Maximize, RotateCcw, AlertCircle, Trophy, FileText,
   Radio, Calendar, Tag, Layers, FlaskConical, GraduationCap,
+<<<<<<< HEAD
   MessageCircle, Lock, Loader2,
+=======
+  MessageCircle, LinkIcon, Loader2, Lock,
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { sarvamTranslate, getStoredLanguage } from "@/lib/api/sarvam";
@@ -37,6 +41,11 @@ import { FormulasTab } from "@/components/lecture/FormulasTab";
 import { DownloadNotesButton } from "@/components/lecture/DownloadNotesButton";
 import { QuizUnlockButton } from "@/components/lecture/QuizUnlockButton";
 import { NextLectureCard } from "@/components/lecture/NextLectureCard";
+
+// ─── Design Tokens ─────────────────────────────────────────────────────────────
+const BLUE   = "#013889";
+const BLUE_M = "#0257c8";
+const BLUE_L = "#E6EEF8";
 
 // ─── Fetch helpers ─────────────────────────────────────────────────────────
 
@@ -128,30 +137,30 @@ function QuizPopup({
       initial={{ opacity: 0, scale: 0.95, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: 20 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
     >
-      <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-        <div className="px-5 pt-5 pb-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-black uppercase tracking-widest px-3 py-1 rounded-xl" style={{ background: BLUE_L, color: BLUE }}>
               Question {questionIndex + 1} / {total}
             </span>
-            {/* Close button — visible after answering */}
             {state !== "asking" && (
               <button
                 onClick={onClose}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
-                title="Close"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
               >
                 <XCircle className="w-3.5 h-3.5" /> Close
               </button>
             )}
           </div>
         </div>
-        <div className="px-5 pb-2">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">📚 {question.segmentTitle}</p>
-          <p className="text-sm font-semibold text-foreground leading-6 mb-4">{question.questionText}</p>
-          <div className="space-y-2">
+        <div className="px-6 pb-4">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1">
+            <BookOpen className="w-3.5 h-3.5" /> {question.segmentTitle}
+          </p>
+          <p className="text-base font-bold text-gray-900 leading-relaxed mb-6">{question.questionText}</p>
+          <div className="space-y-2.5">
             {question.options.map((opt) => {
               const isSelected = selected === opt.label;
               const isCorrect = result?.correctOption === opt.label;
@@ -161,47 +170,51 @@ function QuizPopup({
                 <button key={opt.label} onClick={() => state === "asking" && setSelected(opt.label)}
                   disabled={state !== "asking"}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
-                    state === "asking" && !isSelected && "border-border hover:border-primary/50 hover:bg-primary/5",
-                    state === "asking" && isSelected && "border-primary bg-primary/10",
-                    showResult && isCorrect && "border-emerald-500 bg-emerald-500/10",
-                    showResult && isWrong && "border-red-500 bg-red-500/10",
-                    showResult && !isCorrect && !isWrong && "border-border opacity-50",
+                    "w-full flex items-center gap-4 px-5 py-3.5 rounded-xl border-2 text-left text-sm font-medium transition-all",
+                    state === "asking" && !isSelected && "border-gray-200 hover:border-blue-200",
+                    state === "asking" && isSelected && "border-blue-700 bg-blue-50 text-blue-800",
+                    showResult && isCorrect && "border-emerald-500 bg-emerald-50 text-emerald-800",
+                    showResult && isWrong && "border-red-500 bg-red-50 text-red-800",
+                    showResult && !isCorrect && !isWrong && "border-gray-200 opacity-50 text-gray-400",
                   )}>
                   <span className={cn(
-                    "w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0",
-                    state === "asking" && isSelected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30",
-                    showResult && isCorrect && "border-emerald-500 bg-emerald-500 text-white",
-                    showResult && isWrong && "border-red-500 bg-red-500 text-white",
+                    "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 transition-all",
+                    state === "asking" && isSelected ? "bg-blue-700 text-white" : "bg-gray-100 text-gray-500",
+                    showResult && isCorrect && "bg-emerald-500 text-white",
+                    showResult && isWrong && "bg-red-500 text-white",
                   )}>
-                    {showResult && isCorrect ? <CheckCircle className="w-3.5 h-3.5" /> : showResult && isWrong ? <XCircle className="w-3.5 h-3.5" /> : opt.label}
+                    {showResult && isCorrect ? <CheckCircle className="w-4 h-4" /> : showResult && isWrong ? <XCircle className="w-4 h-4" /> : opt.label}
                   </span>
-                  <span className={cn("flex-1", showResult && isCorrect && "text-emerald-700 dark:text-emerald-400 font-medium")}>{opt.text}</span>
+                  <span className="flex-1">{opt.text}</span>
                 </button>
               );
             })}
           </div>
         </div>
-        <div className="px-5 py-4">
+        <div className="p-6 bg-gray-50 border-t border-gray-100">
           {state === "asking" ? (
-            <Button onClick={handleSubmit} disabled={!selected || isSubmitting} className="w-full gap-2" size="sm">
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSubmit} disabled={!selected || isSubmitting}
+              className="w-full py-4 rounded-xl text-white text-sm font-black flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md"
+              style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}>
               Submit Answer <ChevronRight className="w-4 h-4" />
-            </Button>
+            </motion.button>
           ) : (
-            <div className="space-y-3">
-              <div className={cn("flex items-center gap-2.5 rounded-xl px-4 py-3",
-                state === "correct" ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-red-500/10 border border-red-500/20")}>
-                {state === "correct" ? <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" /> : <XCircle className="w-5 h-5 text-red-500 shrink-0" />}
+            <div className="space-y-4">
+              <div className={cn("flex items-start gap-4 rounded-2xl px-5 py-4",
+                state === "correct" ? "bg-emerald-100 border border-emerald-200" : "bg-red-100 border border-red-200")}>
+                {state === "correct" ? <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" /> : <XCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />}
                 <div>
-                  <p className={cn("text-sm font-semibold", state === "correct" ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400")}>
+                  <p className={cn("text-base font-black mb-1", state === "correct" ? "text-emerald-800" : "text-red-800")}>
                     {state === "correct" ? "Correct! Well done 🎉" : "Not quite right"}
                   </p>
-                  {result?.explanation && <p className="text-xs text-muted-foreground mt-0.5 leading-5">{result.explanation}</p>}
+                  {result?.explanation && <p className="text-sm font-medium leading-relaxed opacity-90" style={{ color: state === "correct" ? "#065f46" : "#7f1d1d" }}>{result.explanation}</p>}
                 </div>
               </div>
-              <Button onClick={onClose} className="w-full gap-2" size="sm">
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onClose}
+                className="w-full py-4 rounded-xl text-white text-sm font-black flex items-center justify-center gap-2 transition-all shadow-md"
+                style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}>
                 <Play className="w-4 h-4" /> Continue Watching
-              </Button>
+              </motion.button>
             </div>
           )}
         </div>
@@ -293,7 +306,7 @@ function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative bg-black rounded-2xl overflow-hidden aspect-video group shadow-2xl"
+      className="relative bg-black rounded-3xl overflow-hidden aspect-video group shadow-xl ring-1 ring-gray-900/10"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -305,7 +318,7 @@ function VideoPlayer({
           allowFullScreen
         />
       ) : (
-        <video ref={videoRef} src={src} className="w-full h-full"
+        <video ref={videoRef} src={src} className="w-full h-full object-contain"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={() => {
             const v = videoRef.current;
@@ -334,62 +347,58 @@ function VideoPlayer({
 
       {/* Resume toast */}
       {resumeToast && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/80 text-white text-xs font-semibold px-4 py-2 rounded-full border border-white/10 pointer-events-none">
-          <Play className="w-3.5 h-3.5 text-primary" /> {resumeToast}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/80 backdrop-blur text-white text-xs font-bold px-4 py-2 rounded-full border border-white/20 pointer-events-none shadow-lg">
+          <Play className="w-3.5 h-3.5" style={{ color: BLUE }} /> {resumeToast}
         </div>
       )}
 
       {/* Floating doubt button — visible on hover */}
       {!isYouTube && (
-        <FloatingDoubtButton
-          currentTime={currentTime}
-          visible={hovered && !activeQuiz}
-          onClick={onDoubtClick}
-        />
+        <div className="absolute top-4 right-4 z-40 transition-opacity" style={{ opacity: hovered && !activeQuiz ? 1 : 0 }}>
+          <button onClick={onDoubtClick} className="flex items-center gap-2 bg-white text-gray-900 px-4 py-2.5 rounded-2xl shadow-lg border border-gray-100 hover:scale-105 transition-all">
+            <MessageCircle className="w-4 h-4 text-violet-600" />
+            <span className="text-sm font-black">Ask Doubt</span>
+          </button>
+        </div>
       )}
 
       {!isYouTube && (
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent px-4 pb-4 pt-10 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="relative mb-3">
-            <div className="h-1.5 bg-white/20 rounded-full cursor-pointer relative" onClick={seek}>
-              <div className="h-full bg-primary rounded-full pointer-events-none" style={{ width: `${progressPct}%` }} />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-6 pb-6 pt-16 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="relative mb-4">
+            <div className="h-1.5 bg-white/30 rounded-full cursor-pointer relative hover:scale-y-150 transition-transform" onClick={seek}>
+              <div className="h-full rounded-full pointer-events-none shadow-[0_0_10px_rgba(1,56,137,0.8)]" style={{ width: `${progressPct}%`, background: BLUE }} />
               {checkpoints.map(cp => (
                 <div key={cp.id}
-                  className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-white bg-amber-400 -translate-x-1/2"
+                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white bg-amber-400 -translate-x-1/2 shadow-sm"
                   style={{ left: `${cp.triggerAtPercent}%` }} title={`Quiz: ${cp.segmentTitle}`} />
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={togglePlay} className="text-white hover:text-primary transition-colors">
-              {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          <div className="flex items-center gap-4">
+            <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors">
+              {playing ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
             </button>
             <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, v.currentTime - 10); }}
-              className="text-white/70 hover:text-white transition-colors">
-              <RotateCcw className="w-4 h-4" />
+              className="text-white/80 hover:text-white transition-colors">
+              <RotateCcw className="w-5 h-5" />
             </button>
-            <span className="text-white text-xs font-mono">{fmt(localTime)} / {fmt(duration)}</span>
+            <span className="text-white font-mono text-sm tracking-wide bg-white/10 px-2 py-1 rounded-lg">{fmt(localTime)} <span className="opacity-50 text-xs">/</span> {fmt(duration)}</span>
             <div className="flex-1" />
-            <SpeedControl videoRef={videoRef} />
-            <button onClick={() => { setMuted(m => !m); if (videoRef.current) videoRef.current.muted = !muted; }}
-              className="text-white/70 hover:text-white transition-colors">
-              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
-            <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume}
-              onChange={e => { const v = parseFloat(e.target.value); setVolume(v); if (videoRef.current) videoRef.current.volume = v; }}
-              className="w-16 accent-primary" />
-            <button onClick={() => containerRef.current?.requestFullscreen()} className="text-white/70 hover:text-white transition-colors">
+            <div className="bg-white/10 rounded-lg backdrop-blur">
+              <SpeedControl videoRef={videoRef} />
+            </div>
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-2 py-1 backdrop-blur">
+              <button onClick={() => { setMuted(m => !m); if (videoRef.current) videoRef.current.muted = !muted; }}
+                className="text-white/80 hover:text-white transition-colors p-1">
+                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume}
+                onChange={e => { const v = parseFloat(e.target.value); setVolume(v); if (videoRef.current) videoRef.current.volume = v; }}
+                className="w-16 accent-blue-500" />
+            </div>
+            <button onClick={() => containerRef.current?.requestFullscreen()} className="text-white/80 hover:text-white transition-colors p-2 bg-white/10 rounded-lg backdrop-blur">
               <Maximize className="w-4 h-4" />
             </button>
-          </div>
-        </div>
-      )}
-
-      {checkpoints.length > 0 && (
-        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-2.5 py-1.5">
-            <div className="w-2 h-2 rounded-full bg-amber-400" />
-            <span className="text-white text-xs">{checkpoints.length} quiz checkpoint{checkpoints.length > 1 ? "s" : ""}</span>
           </div>
         </div>
       )}
@@ -439,6 +448,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
     : lecture.aiNotesMarkdown;
 
   return (
+<<<<<<< HEAD
     <div className="h-full overflow-y-auto space-y-5">
       {/* Language selector */}
       <div className="flex items-center justify-between pb-3 border-b border-border">
@@ -457,22 +467,34 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           <div className="flex flex-wrap gap-1.5">
             {displayConcepts.map((c, i) => (
               <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">{c}</span>
+=======
+    <div className="h-full overflow-y-auto space-y-6 pr-2 custom-scrollbar">
+      {(lecture.aiKeyConcepts?.length ?? 0) > 0 && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <p className="text-[11px] font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2">
+            <Tag className="w-4 h-4" /> Key Concepts
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {lecture.aiKeyConcepts!.map((c, i) => (
+              <span key={i} className="px-3 py-1.5 rounded-xl text-xs font-bold border" style={{ background: BLUE_L, color: BLUE, borderColor: BLUE_M + "30" }}>{c}</span>
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
             ))}
           </div>
         </div>
       )}
       {(lecture.aiFormulas?.length ?? 0) > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <FlaskConical className="w-3.5 h-3.5" /> Formulas
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <p className="text-[11px] font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2">
+            <FlaskConical className="w-4 h-4" /> Formulas
           </p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {lecture.aiFormulas!.map((f, i) => (
-              <div key={i} className="bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-2.5 font-mono text-sm text-foreground">{f}</div>
+              <div key={i} className="bg-violet-50 text-violet-700 border border-violet-100 rounded-xl px-4 py-3 font-mono text-sm shadow-inner">{f}</div>
             ))}
           </div>
         </div>
       )}
+<<<<<<< HEAD
       {displayNotes ? (
         <div>
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -480,14 +502,28 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </p>
           <div className="prose prose-sm prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80 prose-code:text-primary max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayNotes}</ReactMarkdown>
+=======
+      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+        {lecture.aiNotesMarkdown ? (
+          <div>
+            <p className="text-[11px] font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2">
+              <BookOpen className="w-4 h-4" /> AI Summary Notes
+            </p>
+            <div className="prose prose-sm prose-gray max-w-none prose-headings:font-black prose-p:font-medium prose-a:text-blue-600 prose-code:bg-gray-100 prose-code:px-1.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{lecture.aiNotesMarkdown}</ReactMarkdown>
+            </div>
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <BookOpen className="w-10 h-10 opacity-20 mb-3" />
-          <p className="text-sm">Notes will appear here once the AI processes the lecture.</p>
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100 mb-4">
+              <Sparkles className="w-8 h-8 text-violet-400" />
+            </div>
+            <p className="font-bold text-gray-900 mb-1">Generating Notes</p>
+            <p className="text-sm font-medium text-gray-400">Our AI is processing the lecture to create summary notes.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -497,12 +533,12 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
 function TranscriptPanel({ transcript }: { transcript: string }) {
   const paragraphs = transcript.split(/\n{2,}/).filter(Boolean);
   return (
-    <div className="h-full overflow-y-auto space-y-3">
-      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
-        <FileText className="w-3.5 h-3.5" /> Auto-generated transcript
+    <div className="h-full overflow-y-auto space-y-4 pr-2 custom-scrollbar bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+      <p className="text-[11px] font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2 border-b border-gray-100 pb-4">
+        <FileText className="w-4 h-4" /> Auto-generated transcript
       </p>
       {paragraphs.map((para, i) => (
-        <p key={i} className="text-sm text-foreground/80 leading-7">{para}</p>
+        <p key={i} className="text-sm font-medium text-gray-600 leading-relaxed indent-4">{para}</p>
       ))}
     </div>
   );
@@ -517,13 +553,13 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
   const answered = savedResponses ?? [];
   const correct = answered.filter(r => r.isCorrect).length;
   return (
-    <div className="space-y-4 overflow-y-auto h-full">
+    <div className="space-y-4 overflow-y-auto h-full pr-2 custom-scrollbar">
       {answered.length > 0 && (
-        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl p-3">
-          <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+        <div className="flex items-center gap-4 bg-amber-50 border border-amber-100 rounded-2xl p-4 shadow-sm text-amber-600">
+          <Trophy className="w-8 h-8 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-foreground">Score: {correct} / {answered.length} correct</p>
-            <p className="text-xs text-muted-foreground">{Math.round((correct / answered.length) * 100)}% accuracy</p>
+            <p className="text-sm font-black uppercase tracking-wider mb-0.5">Score Summary</p>
+            <p className="text-base font-bold">{correct} correct out of {answered.length} — {Math.round((correct / answered.length) * 100)}% accuracy</p>
           </div>
         </div>
       )}
@@ -531,23 +567,38 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
         {checkpoints.map((cp, i) => {
           const response = answered.find(r => r.questionId === cp.id);
           return (
-            <div key={cp.id} className={cn("rounded-xl border p-3.5 text-sm",
-              response?.isCorrect ? "border-emerald-500/20 bg-emerald-500/5" :
-              response ? "border-red-500/20 bg-red-500/5" : "border-border bg-secondary/40")}>
-              <div className="flex items-start gap-2">
-                <span className="text-xs font-bold text-muted-foreground shrink-0 mt-0.5">Q{i + 1}</span>
+            <div key={cp.id} className={cn("rounded-2xl border p-4 text-sm shadow-sm transition-all",
+              response?.isCorrect ? "border-emerald-200 bg-emerald-50" :
+              response ? "border-red-200 bg-red-50" : "border-gray-100 bg-white")}>
+              <div className="flex items-start gap-3">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-white border shadow-sm text-xs font-black shrink-0 mt-0.5"
+                  style={{ color: response?.isCorrect ? "#10b981" : response ? "#ef4444" : "#6b7280" }}>
+                  Q{i + 1}
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1">{cp.segmentTitle}</p>
-                  <p className="text-sm text-foreground leading-5">{cp.questionText}</p>
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Clock className="w-3 h-3" /> {cp.segmentTitle}</p>
+                  <p className="text-sm font-bold text-gray-900 leading-relaxed mb-3">{cp.questionText}</p>
                   {response ? (
-                    <div className="mt-2 flex items-center gap-1.5">
-                      {response.isCorrect ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
-                      <span className="text-xs text-muted-foreground">
-                        You chose {response.selectedOption}{!response.isCorrect && ` · Correct: ${cp.correctOption}`}
-                      </span>
+                    <div className="flex flex-col gap-1.5 bg-white/60 p-3 rounded-xl border border-white/40">
+                      <div className="flex items-center gap-2">
+                        {response.isCorrect ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> : <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
+                        <span className="text-[13px] font-bold text-gray-800">
+                          Your Answer: {response.selectedOption}
+                        </span>
+                      </div>
+                      {!response.isCorrect && (
+                         <div className="flex items-center gap-2 pt-1.5 border-t border-red-200/50">
+                           <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 opacity-50" />
+                           <span className="text-[13px] font-bold text-gray-500">
+                             Correct Answer: {cp.correctOption}
+                           </span>
+                         </div>
+                      )}
                     </div>
                   ) : (
-                    <p className="mt-1.5 text-xs text-muted-foreground italic">Watch the video to reach this checkpoint</p>
+                    <p className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg">
+                      <Play className="w-3.5 h-3.5" /> Watch video to unlock
+                    </p>
                   )}
                 </div>
               </div>
@@ -565,37 +616,28 @@ type TabKey = "notes" | "formulas" | "quiz" | "doubt";
 
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
-const StudentLecturePage = () => {
+export default function StudentLecturePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<TabKey>("notes");
-
-  // Video ref shared with hooks
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Video hover state for FloatingDoubtButton
   const [videoHovered, setVideoHovered] = useState(false);
-
-  // Doubt panel state
   const [doubtTimestamp, setDoubtTimestamp] = useState(0);
 
-  // New feature state
   const [topicProgress, setTopicProgress] = useState<TopicProgress | null>(null);
   const [nextLecture, setNextLecture] = useState<Lecture | null>(null);
   const [mockTestId, setMockTestId] = useState<string | null>(null);
   const [completionReward, setCompletionReward] = useState<LectureCompletionReward | null>(null);
 
-  // Real-time watch percentage from RAF loop
   const { watchPct: liveWatchPct, currentTime: liveCurrentTime } = useWatchPercentage(videoRef);
 
   // Queries
-  const { data: lecture, isLoading: lectureLoading, error: lectureError } = useQuery({
+  const { data: lecture, isLoading: lectureLoading } = useQuery({
     queryKey: ["student", "lecture", id],
     queryFn: () => fetchLecture(id!),
     enabled: !!id,
-    retry: false,
   });
 
   const { data: savedProgress } = useQuery({
@@ -610,26 +652,17 @@ const StudentLecturePage = () => {
     enabled: !!id,
   });
 
-  // Fetch topic-level data after lecture loads
   useEffect(() => {
     if (!lecture?.topicId) return;
     const topicId = lecture.topicId;
-
-    getTopicProgress(topicId)
-      .then(p => setTopicProgress(p))
-      .catch(() => setTopicProgress(null));
-
+    getTopicProgress(topicId).then(p => setTopicProgress(p)).catch(() => setTopicProgress(null));
     fetchSiblingLectures(topicId).then(siblings => {
       const currentIndex = siblings.findIndex(s => s.id === id);
-      if (currentIndex !== -1 && currentIndex < siblings.length - 1) {
-        setNextLecture(siblings[currentIndex + 1]);
-      }
+      if (currentIndex !== -1 && currentIndex < siblings.length - 1) setNextLecture(siblings[currentIndex + 1]);
     });
-
     fetchMockTestForTopic(topicId).then(mtId => setMockTestId(mtId));
   }, [lecture?.topicId, id]);
 
-  // Completion callback for useLectureProgress
   const handleCompletion = useCallback((reward: LectureCompletionReward) => {
     setCompletionReward(reward);
     toast.success(reward.message, { duration: 4000 });
@@ -638,12 +671,11 @@ const StudentLecturePage = () => {
     if (reward.mockTestId) setMockTestId(reward.mockTestId);
   }, [qc]);
 
-  // Auto-save progress hook
   useLectureProgress(id ?? "", videoRef, handleCompletion);
 
   if (lectureLoading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <Loader2 className="w-10 h-10 animate-spin" style={{ color: BLUE }} />
     </div>
   );
 
@@ -663,44 +695,27 @@ const StudentLecturePage = () => {
   );
 
   if (!lecture) return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-muted-foreground">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-gray-500 gap-4">
       <AlertCircle className="w-12 h-12 opacity-30" />
-      <p>Lecture not found.</p>
-      <Button variant="ghost" onClick={() => navigate(-1)}>Go back</Button>
+      <p className="font-bold">Lecture not found.</p>
+      <button onClick={() => navigate(-1)} className="text-sm font-bold bg-white border border-gray-200 px-4 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all">Go back</button>
     </div>
   );
 
   const videoSrc = lecture.videoUrl ?? "";
-  // Use live watch pct if playing, else fall back to saved
   const displayWatchPct = liveWatchPct > 0 ? liveWatchPct : (savedProgress?.watchPercentage ?? 0);
   const isLive = lecture.type === "live" || lecture.status === "live";
   const duration = fmtDuration(lecture.videoDurationSeconds);
 
-  // Revision mode: topic already completed before this session
   const isRevisionMode = topicProgress?.status === "completed";
   const bestAccuracy = topicProgress?.bestAccuracy ?? 0;
-  const passedDaysAgo = topicProgress
-    ? (() => {
-        // completedAt not on interface — use a safe fallback
-        return 0;
-      })()
-    : 0;
+  const passedDaysAgo = 0; // Safest fallback
 
-  // Quiz unlocked when watch >= 90% or reward says so or revision mode
   const quizUnlocked = isRevisionMode || displayWatchPct >= 90 || !!completionReward;
 
-  // Parse aiFormulas into structured objects for FormulasTab
-  // The Lecture type has aiFormulas as string[] (raw strings from backend)
-  // We'll parse "Name: latex — description" format or just show as raw
   const parsedFormulas = (lecture.aiFormulas ?? []).map((f) => {
     const colonIdx = f.indexOf(":");
-    if (colonIdx > -1) {
-      return {
-        name: f.slice(0, colonIdx).trim(),
-        latex: f.slice(colonIdx + 1).trim(),
-        description: "",
-      };
-    }
+    if (colonIdx > -1) return { name: f.slice(0, colonIdx).trim(), latex: f.slice(colonIdx + 1).trim(), description: "" };
     return { name: "Formula", latex: f, description: "" };
   });
 
@@ -710,310 +725,183 @@ const StudentLecturePage = () => {
     ...(checkpoints.length > 0 ? [{ key: "quiz" as const, label: `Quiz (${checkpoints.length})`, icon: Sparkles }] : []),
   ];
 
-  const handleDoubtClick = () => {
-    setDoubtTimestamp(liveCurrentTime);
-    setActiveTab("doubt");
-  };
-
-  const handleCloseDoubt = () => {
-    setActiveTab("notes");
-  };
-
+  const handleDoubtClick = () => { setDoubtTimestamp(liveCurrentTime); setActiveTab("doubt"); };
+  const handleCloseDoubt = () => { setActiveTab("notes"); };
   const handleTakeQuiz = () => {
-    const path = mockTestId
-      ? `/student/quiz?mockTestId=${mockTestId}`
-      : `/student/quiz?topicId=${lecture.topicId}`;
+    const path = mockTestId ? `/student/quiz?mockTestId=${mockTestId}` : `/student/quiz?topicId=${lecture.topicId}`;
     navigate(path);
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: "#F5F7FB" }}>
       {/* ── Top Bar ── */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-3.5 flex items-center gap-4 shadow-sm">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-900 border border-transparent hover:border-gray-200">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-foreground text-sm truncate">{lecture.title}</h1>
+          <h1 className="font-black text-gray-900 text-lg truncate">{lecture.title}</h1>
           <div className="flex items-center gap-2 mt-0.5">
-            {lecture.batch?.name && <span className="text-xs text-muted-foreground">{lecture.batch.name}</span>}
+            {lecture.batch?.name && <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md uppercase tracking-wider">{lecture.batch.name}</span>}
             {lecture.topic?.name && (
-              <>
-                <span className="text-muted-foreground/40 text-xs">·</span>
-                <span className="text-xs text-muted-foreground">{lecture.topic.name}</span>
-              </>
+              <span className="text-[11px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider">{lecture.topic.name}</span>
             )}
           </div>
         </div>
         {isLive && (
-          <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
+          <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-black px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Live
           </div>
         )}
-        {/* ▶ X% watched pill */}
         {displayWatchPct > 0 && !isLive && (
-          <div
-            className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-            style={{
-              background: isRevisionMode ? "rgba(34,197,94,0.1)" : "rgba(249,115,22,0.1)",
-              color: isRevisionMode ? "#22C55E" : "#F97316",
-              border: `1px solid ${isRevisionMode ? "rgba(34,197,94,0.2)" : "rgba(249,115,22,0.2)"}`,
-            }}
-          >
+          <div className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border shadow-sm transition-colors"
+            style={isRevisionMode ? { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" } : { background: "#FFFBEB", color: "#D97706", borderColor: "#FDE68A" }}>
             <Play className="w-3 h-3" />
             {Math.round(displayWatchPct)}% watched
           </div>
         )}
       </div>
 
-      {/* ── Revision Mode Banner ── */}
       {isRevisionMode && (
-        <RevisionModeBanner bestAccuracy={bestAccuracy} passedDaysAgo={passedDaysAgo} />
+        <div className="bg-emerald-50 border-b border-emerald-100 px-6 py-2.5 flex items-center justify-center gap-2">
+           <CheckCircle className="w-4 h-4 text-emerald-600" />
+           <span className="text-xs font-bold text-emerald-700">Topic completed! Watching in revision mode.</span>
+        </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
-
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ── Left: Video + Info ── */}
-        <div className="lg:col-span-3 space-y-5">
-
+        <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Video */}
           {videoSrc ? (
-            <VideoPlayer
-              src={videoSrc}
-              checkpoints={checkpoints}
-              lectureId={id!}
-              videoRef={videoRef}
-              onDoubtClick={handleDoubtClick}
-              onVideoHoverChange={setVideoHovered}
-              currentTime={liveCurrentTime}
-              resumeAt={savedProgress?.lastPositionSeconds}
-            />
+            <VideoPlayer src={videoSrc} checkpoints={checkpoints} lectureId={id!} videoRef={videoRef} onDoubtClick={handleDoubtClick} onVideoHoverChange={setVideoHovered} currentTime={liveCurrentTime} resumeAt={savedProgress?.lastPositionSeconds} />
           ) : isLive && lecture.liveMeetingUrl ? (
-            <div className="aspect-video bg-gradient-to-br from-red-500/10 to-background border border-red-500/20 rounded-2xl flex flex-col items-center justify-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-red-500/15 flex items-center justify-center relative">
-                <Radio className="w-8 h-8 text-red-500" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+            <div className="aspect-video bg-gradient-to-br from-red-50 to-white border border-red-100 rounded-3xl flex flex-col items-center justify-center gap-6 shadow-sm">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-3xl bg-red-100 flex items-center justify-center shadow-inner relative z-10">
+                  <Radio className="w-10 h-10 text-red-500" />
+                </div>
+                <div className="absolute inset-0 bg-red-200 rounded-3xl animate-ping opacity-50 z-0" />
               </div>
               <div className="text-center">
-                <p className="font-bold text-foreground">Live Class in Progress</p>
-                <p className="text-sm text-muted-foreground mt-1">Click below to join</p>
+                <p className="font-black text-2xl text-gray-900">Live Class Starting</p>
+                <p className="text-sm font-medium text-gray-500 mt-2">Join via external meeting platform</p>
               </div>
               <a href={lecture.liveMeetingUrl} target="_blank" rel="noopener noreferrer">
-                <Button className="gap-2 bg-red-500 hover:bg-red-600">
-                  <Radio className="w-4 h-4" /> Join Live Class
-                </Button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3.5 rounded-2xl bg-red-500 text-white font-black text-sm flex items-center gap-2 shadow-lg shadow-red-500/30">
+                  <LinkIcon className="w-4 h-4" /> Join Meeting
+                </motion.button>
               </a>
             </div>
           ) : (
-            <div className="aspect-video bg-secondary rounded-2xl flex flex-col items-center justify-center gap-3 text-muted-foreground">
-              <Play className="w-12 h-12 opacity-20" />
-              <p className="text-sm">Video not available yet</p>
+            <div className="aspect-video bg-white border border-gray-100 rounded-3xl flex flex-col items-center justify-center gap-4 text-gray-400 shadow-sm">
+              <Play className="w-16 h-16 opacity-30" />
+              <p className="text-sm font-bold tracking-wide uppercase">Video not available yet</p>
             </div>
           )}
 
-          {/* Watch Progress Bar */}
-          {!isLive && videoSrc && (
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <WatchProgressBar
-                watchPct={displayWatchPct}
-                isRevisionMode={isRevisionMode}
-                mockTestId={mockTestId}
-                onTakeQuiz={handleTakeQuiz}
-              />
-            </div>
-          )}
+          {/* Watch Progress & Next Actions */}
+          <div className="flex flex-col gap-4">
+             {!isLive && videoSrc && (
+               <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm p-5">
+                 <div className="flex items-center justify-between mb-3">
+                   <span className="text-xs font-black text-gray-400 tracking-widest uppercase">Progress</span>
+                   <span className="text-xs font-black" style={{ color: BLUE }}>{Math.round(displayWatchPct)}%</span>
+                 </div>
+                 <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                   <div className="h-full rounded-full transition-all duration-300" style={{ width: `${displayWatchPct}%`, background: isRevisionMode ? "#10b981" : BLUE }} />
+                 </div>
+               </div>
+             )}
 
-          {/* Quiz Unlock Button */}
-          {quizUnlocked && lecture.topicId && !isLive && (
-            <QuizUnlockButton
-              mockTestId={mockTestId ?? ""}
-              topicId={lecture.topicId}
-              onNavigate={navigate}
-              isRevisionMode={isRevisionMode}
-              animate={!!completionReward}
-            />
-          )}
+             {quizUnlocked && lecture.topicId && !isLive && (
+               <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={handleTakeQuiz}
+                 className="w-full py-5 rounded-2xl border-2 flex flex-col items-center justify-center relative overflow-hidden group shadow-sm transition-colors"
+                 style={{ borderColor: BLUE_L, background: "#fff" }}>
+                 <div className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                 <Sparkles className="w-6 h-6 mb-2 relative z-10" style={{ color: BLUE }} />
+                 <span className="text-base font-black relative z-10 text-gray-900">Topic Quiz Unlocked!</span>
+                 <span className="text-xs font-bold text-gray-500 mt-1 relative z-10">Test your knowledge to mark this topic complete.</span>
+               </motion.button>
+             )}
 
-          {/* Next Lecture Card */}
-          {nextLecture && (quizUnlocked || isRevisionMode) && (
-            <NextLectureCard
-              lecture={nextLecture}
-              onWatch={() => navigate(`/student/lectures/${nextLecture.id}`)}
-              onQuizFirst={() => {
-                const path = mockTestId
-                  ? `/student/quiz?mockTestId=${mockTestId}`
-                  : lecture.topicId
-                  ? `/student/quiz?topicId=${lecture.topicId}`
-                  : "/student/learn";
-                navigate(path);
-              }}
-            />
-          )}
+             {nextLecture && (quizUnlocked || isRevisionMode) && (
+               <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: BLUE_L, color: BLUE }}>
+                      <Play className="w-5 h-5 fill-current" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black tracking-widest text-gray-400 uppercase mb-1">Up Next</p>
+                      <p className="font-bold text-gray-900 text-sm truncate max-w-[200px] sm:max-w-[400px]">{nextLecture.title}</p>
+                    </div>
+                 </div>
+                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(`/student/lectures/${nextLecture.id}`)}
+                    className="px-5 py-2.5 rounded-xl text-white font-black text-sm shadow-md flex items-center gap-2"
+                    style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}>
+                    Watch <ChevronRight className="w-4 h-4" />
+                 </motion.button>
+               </div>
+             )}
+          </div>
 
-          {/* Metadata strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { icon: isLive ? Radio : Layers, label: "Type", value: isLive ? "Live Class" : "Recorded", color: isLive ? "text-red-500" : "text-blue-500" },
-              ...(duration ? [{ icon: Clock, label: "Duration", value: duration, color: "text-violet-500" }] : []),
-              ...(lecture.topic?.name ? [{ icon: Tag, label: "Topic", value: lecture.topic.name, color: "text-emerald-500" }] : []),
-              { icon: Calendar, label: "Uploaded", value: fmtDate(lecture.createdAt), color: "text-amber-500" },
+              { icon: isLive ? Radio : Layers, label: "Type", value: isLive ? "Live Class" : "Recorded Audio/Video", color: isLive ? "text-red-500" : "text-blue-500", bg: isLive ? "bg-red-50" : "bg-blue-50" },
+              ...(duration ? [{ icon: Clock, label: "Duration", value: duration, color: "text-violet-500", bg: "bg-violet-50" }] : []),
+              ...(lecture.topic?.name ? [{ icon: Tag, label: "Topic", value: lecture.topic.name, color: "text-emerald-500", bg: "bg-emerald-50" }] : []),
+              { icon: Calendar, label: "Uploaded", value: fmtDate(lecture.createdAt), color: "text-amber-500", bg: "bg-amber-50" },
             ].map((m, i) => (
-              <div key={i} className="bg-card border border-border rounded-xl p-3 flex items-start gap-2.5">
-                <m.icon className={cn("w-4 h-4 mt-0.5 shrink-0", m.color)} />
-                <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{m.label}</p>
-                  <p className="text-xs font-semibold text-foreground truncate mt-0.5">{m.value}</p>
+              <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
+                <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", m.bg)}>
+                   <m.icon className={cn("w-4 h-4", m.color)} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-black tracking-widest uppercase mb-1">{m.label}</p>
+                  <p className="text-sm font-black text-gray-900 truncate">{m.value}</p>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Description */}
-          {lecture.description && (
-            <div className="bg-card border border-border rounded-xl p-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5" /> About this lecture
-              </p>
-              <p className="text-sm text-foreground/80 leading-7">{lecture.description}</p>
-            </div>
-          )}
-
-          {/* Mobile: tabs panel below video */}
-          <div className="lg:hidden">
-            <MobileTabsPanel
-              lecture={lecture}
-              checkpoints={checkpoints}
-              savedProgress={savedProgress}
-              tabs={tabs}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              parsedFormulas={parsedFormulas}
-              doubtProps={
-                activeTab === "doubt"
-                  ? {
-                      lectureId: id!,
-                      topicId: lecture.topicId ?? "",
-                      topicName: lecture.topic?.name ?? "",
-                      lectureTitle: lecture.title,
-                      timestampSeconds: doubtTimestamp,
-                      onClose: handleCloseDoubt,
-                    }
-                  : null
-              }
-            />
-          </div>
         </div>
 
-        {/* ── Right: Notes / Transcript / Formulas / Quiz / Doubt ── */}
-        <div className="hidden lg:flex lg:col-span-2 flex-col gap-4">
-          {/* Tab switcher */}
-          <div className="flex bg-secondary rounded-xl p-1 gap-1 flex-wrap">
-            {tabs.map(t => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)}
-                className={cn("flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-colors min-w-[60px]",
-                  activeTab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-                <t.icon className="w-3.5 h-3.5" />{t.label}
-              </button>
-            ))}
-            {/* Doubt tab button */}
-            <button
-              onClick={() => { setDoubtTimestamp(liveCurrentTime); setActiveTab("doubt"); }}
-              className={cn("flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-colors min-w-[60px]",
-                activeTab === "doubt" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-            >
-              <MessageCircle className="w-3.5 h-3.5" />Doubt
-            </button>
-          </div>
-
-          {/* Panel header actions */}
-          {activeTab === "notes" && (
-            <div className="flex justify-end px-1">
-              <DownloadNotesButton lecture={lecture} />
-            </div>
+        {/* ── Right: Sidebar Tabs ── */}
+        <div className="flex flex-col bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden h-[800px] max-h-[85vh]">
+          {activeTab === "doubt" ? (
+             <div className="h-full flex flex-col relative">
+                <div className="absolute top-4 right-4 z-10">
+                  <button onClick={handleCloseDoubt} className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors">
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <AskDoubtPanel lectureId={id!} topicId={lecture.topicId ?? ""} timestampSeconds={doubtTimestamp} />
+                </div>
+             </div>
+          ) : (
+             <>
+                <div className="flex items-center gap-1 p-2 bg-gray-50 border-b border-gray-100">
+                  {tabs.map(t => (
+                    <button key={t.key} onClick={() => setActiveTab(t.key)}
+                      className={cn("flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all",
+                        activeTab === t.key ? "bg-white text-gray-900 shadow-sm border border-gray-100" : "text-gray-500 hover:bg-gray-100")}>
+                      <t.icon className={cn("w-4 h-4", activeTab === t.key ? "text-blue-600" : "opacity-70")} />
+                      {t.label}
+                    </button>
+                  ))}
+                  {lecture.aiNotesMarkdown && activeTab === "notes" && (
+                    <DownloadNotesButton lectureId={id!} title={lecture.title} markdown={lecture.aiNotesMarkdown} />
+                  )}
+                </div>
+                <div className="flex-1 overflow-hidden p-6 bg-white shrink">
+                  {activeTab === "notes" && <NotesPanel lecture={lecture} />}
+                  {activeTab === "formulas" && <FormulasTab formulas={parsedFormulas} />}
+                  {activeTab === "quiz" && <QuizSummaryPanel checkpoints={checkpoints} savedResponses={savedProgress?.quizResponses} />}
+                </div>
+             </>
           )}
-
-          {/* Panel body */}
-          <div className="bg-card border border-border rounded-2xl p-5 flex-1 overflow-hidden" style={{ maxHeight: "78vh" }}>
-            {activeTab === "notes" && <NotesPanel lecture={lecture} />}
-            {activeTab === "formulas" && <FormulasTab formulas={parsedFormulas} />}
-            {activeTab === "quiz" && <QuizSummaryPanel checkpoints={checkpoints} savedResponses={savedProgress?.quizResponses} />}
-            {activeTab === "doubt" && (
-              <AskDoubtPanel
-                lectureId={id!}
-                topicId={lecture.topicId ?? ""}
-                topicName={lecture.topic?.name ?? ""}
-                lectureTitle={lecture.title}
-                timestampSeconds={doubtTimestamp}
-                onClose={handleCloseDoubt}
-              />
-            )}
-          </div>
         </div>
       </div>
     </div>
   );
-};
-
-// ─── Mobile tabs panel ─────────────────────────────────────────────────────
-
-interface DoubtProps {
-  lectureId: string;
-  topicId: string;
-  topicName: string;
-  lectureTitle: string;
-  timestampSeconds: number;
-  onClose: () => void;
 }
-
-function MobileTabsPanel({
-  lecture, checkpoints, savedProgress, tabs, activeTab, setActiveTab,
-  parsedFormulas, doubtProps,
-}: {
-  lecture: Lecture;
-  checkpoints: QuizCheckpoint[];
-  savedProgress: { quizResponses?: { questionId: string; isCorrect: boolean; selectedOption: string }[] } | null | undefined;
-  tabs: { key: TabKey; label: string; icon: React.ElementType }[];
-  activeTab: TabKey;
-  setActiveTab: (t: TabKey) => void;
-  parsedFormulas: { name: string; latex: string; description: string }[];
-  doubtProps: DoubtProps | null;
-}) {
-  const allTabs = [
-    ...tabs,
-    { key: "doubt" as const, label: "Doubt", icon: MessageCircle },
-  ];
-
-  return (
-    <div className="space-y-3">
-      <div className="flex bg-secondary rounded-xl p-1 gap-1 flex-wrap">
-        {allTabs.map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key)}
-            className={cn("flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-colors min-w-[56px]",
-              activeTab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-            <t.icon className="w-3.5 h-3.5" />{t.label}
-          </button>
-        ))}
-      </div>
-      {activeTab === "notes" && (
-        <div className="flex justify-end">
-          <DownloadNotesButton lecture={lecture} />
-        </div>
-      )}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        {activeTab === "notes" && <NotesPanel lecture={lecture} />}
-        {activeTab === "transcript" && lecture.transcript && <TranscriptPanel transcript={lecture.transcript} />}
-        {activeTab === "formulas" && <FormulasTab formulas={parsedFormulas} />}
-        {activeTab === "quiz" && <QuizSummaryPanel checkpoints={checkpoints} savedResponses={savedProgress?.quizResponses} />}
-        {activeTab === "doubt" && doubtProps && <AskDoubtPanel {...doubtProps} />}
-        {activeTab === "doubt" && !doubtProps && (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <MessageCircle className="w-8 h-8 opacity-20 mb-2" />
-            <p className="text-sm">Pause the video and use the doubt button to ask at a timestamp</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default StudentLecturePage;

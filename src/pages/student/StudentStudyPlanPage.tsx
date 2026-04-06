@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   CheckCircle, SkipForward, Play, BookOpen, Swords,
   MessageSquare, Brain, Loader2, RefreshCw, ChevronLeft,
-  ChevronRight, Clock, Zap, Calendar,
+  ChevronRight, Clock, Zap, Calendar, Sparkles,
 } from "lucide-react";
 import {
   useTodaysPlan, useWeeklyPlan, useCompletePlanItem,
@@ -15,15 +15,19 @@ import { toast } from "sonner";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { sarvamTranslateMany, getStoredLanguage } from "@/lib/api/sarvam";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Design Tokens ─────────────────────────────────────────────────────────────
+const BLUE   = "#013889";
+const BLUE_M = "#0257c8";
+const BLUE_L = "#E6EEF8";
 
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 const typeConfig: Record<PlanItemType, { icon: React.ReactNode; color: string; bg: string; xp: number }> = {
-  lecture:       { icon: <Play className="w-4 h-4" />,        color: "text-blue-400",   bg: "bg-blue-500/10",   xp: 10 },
-  practice:      { icon: <Brain className="w-4 h-4" />,       color: "text-violet-400", bg: "bg-violet-500/10", xp: 5  },
-  mock_test:     { icon: <BookOpen className="w-4 h-4" />,    color: "text-amber-400",  bg: "bg-amber-500/10",  xp: 15 },
-  battle:        { icon: <Swords className="w-4 h-4" />,      color: "text-red-400",    bg: "bg-red-500/10",    xp: 20 },
-  revision:      { icon: <RefreshCw className="w-4 h-4" />,   color: "text-teal-400",   bg: "bg-teal-500/10",   xp: 5  },
-  doubt_session: { icon: <MessageSquare className="w-4 h-4" />,color: "text-pink-400",  bg: "bg-pink-500/10",   xp: 5  },
+  lecture:       { icon: <Play         className="w-4 h-4" />, color: BLUE,       bg: BLUE_L,          xp: 10 },
+  practice:      { icon: <Brain        className="w-4 h-4" />, color: "#7c3aed",  bg: "#F5F3FF",       xp: 5  },
+  mock_test:     { icon: <BookOpen     className="w-4 h-4" />, color: "#d97706",  bg: "#FFFBEB",       xp: 15 },
+  battle:        { icon: <Swords       className="w-4 h-4" />, color: "#ef4444",  bg: "#FEF2F2",       xp: 20 },
+  revision:      { icon: <RefreshCw    className="w-4 h-4" />, color: "#0f766e",  bg: "#F0FDFA",       xp: 5  },
+  doubt_session: { icon: <MessageSquare className="w-4 h-4" />, color: "#db2777", bg: "#FDF2F8",       xp: 5  },
 };
 
 function validId(id: string | null | undefined): string | null {
@@ -32,12 +36,12 @@ function validId(id: string | null | undefined): string | null {
 }
 
 const typeNav: Record<PlanItemType, (refId: string | null | undefined) => string> = {
-  lecture:       (id) => validId(id) ? `/student/lectures/${validId(id)}` : `/student/learn`,
-  practice:      (id) => validId(id) ? `/student/learn/topic/${validId(id)}` : `/student/learn`,
-  mock_test:     (id) => validId(id) ? `/student/quiz?mockTestId=${validId(id)}` : `/student/learn`,
-  battle:        ()   => `/student/battle`,
-  revision:      (id) => validId(id) ? `/student/learn/topic/${validId(id)}` : `/student/learn`,
-  doubt_session: ()   => `/student/doubts`,
+  lecture:       id => validId(id) ? `/student/lectures/${validId(id)}` : `/student/learn`,
+  practice:      id => validId(id) ? `/student/learn/topic/${validId(id)}` : `/student/learn`,
+  mock_test:     id => validId(id) ? `/student/quiz?mockTestId=${validId(id)}` : `/student/learn`,
+  battle:        ()  => `/student/battle`,
+  revision:      id => validId(id) ? `/student/learn/topic/${validId(id)}` : `/student/learn`,
+  doubt_session: ()  => `/student/doubts`,
 };
 
 function getWeekDates(offset = 0) {
@@ -55,6 +59,7 @@ function getWeekDates(offset = 0) {
   };
 }
 
+<<<<<<< HEAD
 // ─── Plan Item Card ───────────────────────────────────────────────────────────
 
 function PlanItemCard({ item, translatedTitle }: { item: StudyPlanItem; translatedTitle?: string }) {
@@ -80,33 +85,50 @@ function PlanItemCard({ item, translatedTitle }: { item: StudyPlanItem; translat
   };
 
   const handleOpen = () => navigate(typeNav[item.type](item.refId));
+=======
+// ─── Plan Item Card ────────────────────────────────────────────────────────────
+function PlanItemCard({ item }: { item: StudyPlanItem }) {
+  const navigate  = useNavigate();
+  const complete  = useCompletePlanItem();
+  const skip      = useSkipPlanItem();
+  const cfg       = typeConfig[item.type];
+  const isDone    = item.status === "completed";
+  const isSkipped = item.status === "skipped";
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`bg-card border border-border rounded-2xl p-4 flex items-center gap-3 transition-opacity
-        ${isDone || isSkipped ? "opacity-60" : ""}`}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      whileHover={!isDone && !isSkipped ? { y: -1, boxShadow: `0 6px 20px rgba(1,56,137,0.08)` } : {}}
+      className={`bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 transition-all shadow-sm ${isDone || isSkipped ? "opacity-60" : ""}`}
     >
       {/* Type icon */}
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg}`}>
-        <span className={cfg.color}>{cfg.icon}</span>
+      <div
+        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: cfg.bg, color: cfg.color }}
+      >
+        {cfg.icon}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
+<<<<<<< HEAD
         <p className={`text-sm font-semibold truncate ${isDone ? "line-through text-muted-foreground" : "text-foreground"}`}>
           {translatedTitle ?? item.title}
+=======
+        <p className={`text-sm font-bold truncate ${isDone ? "line-through text-gray-400" : "text-gray-900"}`}>
+          {item.title}
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
         </p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className={`text-xs font-medium ${cfg.color}`}>
-            {item.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+          <span className="text-xs font-semibold capitalize" style={{ color: cfg.color }}>
+            {item.type.replace(/_/g, " ")}
           </span>
-          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-            <Clock className="w-2.5 h-2.5" />{item.estimatedMinutes}m
+          <span className="text-xs text-gray-400 flex items-center gap-0.5">
+            <Clock className="w-3 h-3" />{item.estimatedMinutes}m
           </span>
           {!isDone && !isSkipped && (
-            <span className="text-xs text-amber-400 flex items-center gap-0.5">
+            <span className="text-xs font-bold text-amber-500 flex items-center gap-0.5">
               <Zap className="w-2.5 h-2.5" />+{cfg.xp} XP
             </span>
           )}
@@ -115,21 +137,32 @@ function PlanItemCard({ item, translatedTitle }: { item: StudyPlanItem; translat
 
       {/* Actions */}
       {isDone ? (
-        <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div className="w-8 h-8 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+        </div>
       ) : isSkipped ? (
-        <span className="text-xs text-muted-foreground shrink-0">Rescheduled</span>
+        <span className="text-xs text-gray-400 shrink-0 px-2 py-1 rounded-lg bg-gray-50">Rescheduled</span>
       ) : (
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={handleSkip} disabled={skip.isPending}
-            className="p-1.5 rounded-lg bg-secondary/40 hover:bg-secondary/80 transition-colors">
-            <SkipForward className="w-3.5 h-3.5 text-muted-foreground" />
+          <button
+            onClick={() => skip.mutate(item.id, { onSuccess: () => toast.info("Rescheduled"), onError: () => toast.error("Failed") })}
+            disabled={skip.isPending}
+            className="w-8 h-8 rounded-xl bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors"
+          >
+            <SkipForward className="w-3.5 h-3.5 text-gray-400" />
           </button>
-          <button onClick={handleComplete} disabled={complete.isPending}
-            className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors">
-            {complete.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" /> : <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />}
+          <button
+            onClick={() => complete.mutate(item.id, { onSuccess: () => toast.success(`+${cfg.xp} XP earned! ✨`), onError: () => toast.error("Failed") })}
+            disabled={complete.isPending}
+            className="w-8 h-8 rounded-xl bg-green-50 hover:bg-green-100 flex items-center justify-center transition-colors"
+          >
+            {complete.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin text-green-500" /> : <CheckCircle className="w-3.5 h-3.5 text-green-500" />}
           </button>
-          <button onClick={handleOpen}
-            className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors">
+          <button
+            onClick={() => navigate(typeNav[item.type](item.refId))}
+            className="px-4 py-2 rounded-xl text-white text-xs font-bold hover:opacity-90 transition-opacity"
+            style={{ background: BLUE, boxShadow: `0 2px 8px ${BLUE}30` }}
+          >
             Start
           </button>
         </div>
@@ -138,9 +171,14 @@ function PlanItemCard({ item, translatedTitle }: { item: StudyPlanItem; translat
   );
 }
 
+<<<<<<< HEAD
 // ─── Weekly View ──────────────────────────────────────────────────────────────
 
 function WeeklyView({ lang }: { lang: string }) {
+=======
+// ─── Weekly View ───────────────────────────────────────────────────────────────
+function WeeklyView() {
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
   const [weekOffset, setWeekOffset] = useState(0);
   const { start, end, label } = getWeekDates(weekOffset);
   const { data: items, isLoading } = useWeeklyPlan(start, end);
@@ -170,41 +208,54 @@ function WeeklyView({ lang }: { lang: string }) {
 
   return (
     <div>
-      {/* Week navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setWeekOffset(v => v - 1)}
-          className="p-2 rounded-xl bg-card border border-border hover:bg-secondary/40 transition-colors">
-          <ChevronLeft className="w-4 h-4 text-foreground" />
-        </button>
+      <div className="flex items-center justify-between mb-5">
+        <motion.button
+          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          onClick={() => setWeekOffset(v => v - 1)}
+          className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          <ChevronLeft className="w-4 h-4 text-gray-600" />
+        </motion.button>
         <div className="text-center">
-          <p className="text-sm font-bold text-foreground">{label}</p>
-          {weekOffset === 0 && <p className="text-xs text-primary">This week</p>}
+          <p className="text-sm font-black text-gray-900">{label}</p>
+          {weekOffset === 0 && <p className="text-xs font-bold" style={{ color: BLUE }}>This week</p>}
         </div>
-        <button onClick={() => setWeekOffset(v => v + 1)}
-          className="p-2 rounded-xl bg-card border border-border hover:bg-secondary/40 transition-colors">
-          <ChevronRight className="w-4 h-4 text-foreground" />
-        </button>
+        <motion.button
+          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          onClick={() => setWeekOffset(v => v + 1)}
+          className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          <ChevronRight className="w-4 h-4 text-gray-600" />
+        </motion.button>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: BLUE }} />
+        </div>
       ) : Object.keys(grouped).length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30" />
-          <p>No tasks scheduled this week</p>
+        <div className="text-center py-16 bg-white rounded-3xl border border-gray-100">
+          <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+          <p className="text-gray-500 font-semibold">No tasks scheduled this week</p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {Object.entries(grouped).sort().map(([date, dayItems]) => {
             const isToday = date === today;
             const d = new Date(date);
             return (
               <div key={date}>
-                <div className="flex items-center gap-2 mb-2">
-                  <p className={`text-sm font-bold ${isToday ? "text-primary" : "text-foreground"}`}>
-                    {isToday ? "Today" : d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
-                  </p>
-                  <span className="text-xs text-muted-foreground">{dayItems.length} tasks</span>
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                    style={isToday ? { background: BLUE_L } : { background: "#F8FAFF" }}
+                  >
+                    <Calendar className="w-3.5 h-3.5" style={{ color: isToday ? BLUE : "#9CA3AF" }} />
+                    <p className={`text-sm font-black ${isToday ? "" : "text-gray-500"}`} style={isToday ? { color: BLUE } : {}}>
+                      {isToday ? "Today" : d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-400 font-medium">{dayItems.length} tasks</span>
                 </div>
                 <div className="space-y-2">
                   {dayItems.map(item => <PlanItemCard key={item.id} item={item} translatedTitle={translations[item.id]} />)}
@@ -218,8 +269,7 @@ function WeeklyView({ lang }: { lang: string }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function StudentStudyPlanPage() {
   const [tab, setTab] = useState<"today" | "week">("today");
   const [lang, setLang] = useState<string>(() => getStoredLanguage());
@@ -227,6 +277,7 @@ export default function StudentStudyPlanPage() {
   const { data: todayItems, isLoading } = useTodaysPlan();
   const regenerate = useRegeneratePlan();
 
+<<<<<<< HEAD
   useEffect(() => {
     if (lang === "en-IN" || !todayItems?.length) { setTodayTranslations({}); return; }
     const titles = todayItems.map((i) => i.title);
@@ -241,16 +292,16 @@ export default function StudentStudyPlanPage() {
   const total      = todayItems?.length ?? 0;
   const pct        = total > 0 ? (completed / total) * 100 : 0;
   const totalXP    = todayItems?.filter(i => i.status !== "skipped")
+=======
+  const completed = todayItems?.filter(i => i.status === "completed").length ?? 0;
+  const total     = todayItems?.length ?? 0;
+  const pct       = total > 0 ? (completed / total) * 100 : 0;
+  const totalXP   = todayItems?.filter(i => i.status !== "skipped")
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
     .reduce((sum, i) => sum + (typeConfig[i.type]?.xp ?? 5), 0) ?? 0;
 
-  const handleRegenerate = () => {
-    regenerate.mutate(undefined, {
-      onSuccess: () => toast.success("📅 Your plan has been updated by AI"),
-      onError:   () => toast.error("Failed to regenerate plan"),
-    });
-  };
-
   return (
+<<<<<<< HEAD
     <div className="max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
@@ -270,64 +321,126 @@ export default function StudentStudyPlanPage() {
           </button>
         </div>
       </div>
+=======
+    <div className="min-h-screen p-5 sm:p-6" style={{ background: "#F5F7FB" }}>
+      <div className="max-w-2xl mx-auto space-y-5">
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
 
-      {/* Progress ring + stats */}
-      {tab === "today" && total > 0 && (
-        <div className="bg-card border border-border rounded-2xl p-5 mb-5 flex items-center gap-5">
-          {/* Circle */}
-          <div className="relative w-20 h-20 shrink-0">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-              <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
-              <circle cx="40" cy="40" r="34" fill="none" stroke="#6366f1" strokeWidth="8"
-                strokeDasharray={`${2 * Math.PI * 34}`}
-                strokeDashoffset={`${2 * Math.PI * 34 * (1 - pct / 100)}`}
-                strokeLinecap="round" className="transition-all duration-700" />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-lg font-bold text-foreground">{Math.round(pct)}%</span>
-            </div>
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black text-gray-900">Study Plan</h1>
+            <p className="text-sm text-gray-400 font-medium mt-0.5">AI-generated daily tasks</p>
           </div>
-          {/* Stats */}
-          <div className="flex-1">
-            <p className="font-bold text-foreground">Today's Progress</p>
-            <p className="text-sm text-muted-foreground mt-0.5">{completed} of {total} tasks done</p>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-xs text-amber-400 flex items-center gap-1">
-                <Zap className="w-3 h-3" />{totalXP} XP available
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-5">
-        {(["today", "week"] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors
-              ${tab === t ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+          <motion.button
+            whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+            onClick={() => regenerate.mutate(undefined, {
+              onSuccess: () => toast.success("📅 Your plan has been updated by AI"),
+              onError:   () => toast.error("Failed to regenerate plan"),
+            })}
+            disabled={regenerate.isPending}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
           >
-            {t === "today" ? "Today" : "This Week"}
-          </button>
-        ))}
-      </div>
+            {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Regenerate
+          </motion.button>
+        </div>
 
-      {/* Content */}
-      {tab === "today" ? (
-        isLoading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-        ) : todayItems?.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Brain className="w-14 h-14 mx-auto mb-3 opacity-20" />
-            <p className="font-semibold text-foreground">No plan for today</p>
-            <p className="text-sm mt-1">Click Regenerate to have AI create your plan</p>
-            <button onClick={handleRegenerate} disabled={regenerate.isPending}
-              className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 mx-auto">
-              {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-              Generate Plan
-            </button>
-          </div>
+        {/* ── Progress Card ── */}
+        {tab === "today" && total > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="relative overflow-hidden bg-white border border-gray-100 rounded-3xl p-5 shadow-sm"
+          >
+            <div className="flex items-center gap-6">
+              {/* SVG Ring */}
+              <div className="relative w-24 h-24 shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke={BLUE_L} strokeWidth="8" />
+                  <motion.circle
+                    cx="40" cy="40" r="34" fill="none"
+                    stroke={pct === 100 ? "#10b981" : BLUE}
+                    strokeWidth="8" strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 34}`}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 34 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 34 * (1 - pct / 100) }}
+                    transition={{ duration: 0.9, ease: "easeOut" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-black text-gray-900">{Math.round(pct)}%</span>
+                </div>
+              </div>
+              {/* Stats */}
+              <div className="flex-1">
+                <p className="font-black text-gray-900 text-base">Today's Progress</p>
+                <p className="text-sm text-gray-400 mt-0.5">{completed} of {total} tasks done</p>
+                <div className="flex items-center gap-4 mt-3">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl" style={{ background: BLUE_L }}>
+                    <Zap className="w-3.5 h-3.5" style={{ color: BLUE }} />
+                    <span className="text-xs font-black" style={{ color: BLUE }}>{totalXP} XP available</span>
+                  </div>
+                  {pct === 100 && (
+                    <span className="text-xs font-bold text-green-600 flex items-center gap-1">
+                      🎉 All done!
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Tabs ── */}
+        <div className="flex gap-2">
+          {(["today", "week"] as const).map(t => (
+            <motion.button
+              key={t} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              onClick={() => setTab(t)}
+              className="px-5 py-2.5 rounded-2xl text-sm font-bold transition-all"
+              style={tab === t
+                ? { background: BLUE, color: "#fff", boxShadow: `0 4px 12px ${BLUE}30` }
+                : { background: "#fff", color: "#9CA3AF", border: "1px solid #E5E7EB" }}
+            >
+              {t === "today" ? "Today" : "This Week"}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* ── Content ── */}
+        {tab === "today" ? (
+          isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin" style={{ color: BLUE }} />
+            </div>
+          ) : todayItems?.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
+              <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: BLUE_L }}>
+                <Brain className="w-8 h-8" style={{ color: BLUE }} />
+              </div>
+              <p className="font-black text-gray-800 text-base">No plan for today</p>
+              <p className="text-sm text-gray-400 mt-1">Let AI create your personalized plan</p>
+              <motion.button
+                whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                onClick={() => regenerate.mutate(undefined, {
+                  onSuccess: () => toast.success("📅 Plan generated!"),
+                  onError:   () => toast.error("Failed to generate plan"),
+                })}
+                disabled={regenerate.isPending}
+                className="mt-4 inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                style={{ background: BLUE, boxShadow: `0 4px 16px ${BLUE}30` }}
+              >
+                {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Generate Plan
+              </motion.button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {todayItems.map(item => <PlanItemCard key={item.id} item={item} />)}
+            </div>
+          )
         ) : (
+<<<<<<< HEAD
           <div className="space-y-2.5">
             {todayItems.map(item => <PlanItemCard key={item.id} item={item} translatedTitle={todayTranslations[item.id]} />)}
           </div>
@@ -335,6 +448,11 @@ export default function StudentStudyPlanPage() {
       ) : (
         <WeeklyView lang={lang} />
       )}
+=======
+          <WeeklyView />
+        )}
+      </div>
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
     </div>
   );
 }
