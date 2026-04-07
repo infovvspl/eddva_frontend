@@ -60,7 +60,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Dashboard",    path: "/student",               icon: LayoutDashboard },
     { label: "Learn",        path: "/student/learn",         icon: Brain           },
     { label: "Lectures",     path: "/student/lectures",      icon: Video           },
-    { label: "Attendance",   path: "/student/study-plan",    icon: ClipboardList   },
+    { label: "Study Plan",    path: "/student/study-plan",    icon: ClipboardList   },
     { label: "Doubts",       path: "/student/doubts",        icon: Headphones      },
     { label: "Leaderboard",  path: "/student/leaderboard",   icon: Trophy          },
     { label: "Battle Arena", path: "/student/battle",        icon: Swords          },
@@ -136,7 +136,7 @@ const DashboardLayout = () => {
       <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-0.5">
         {/* Section Label */}
         {sidebarOpen && (
-          <p className="text-[10px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: "#9CA3AF" }}>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] px-4 mb-3" style={{ color: "#64748B" }}>
             {section.main}
           </p>
         )}
@@ -148,15 +148,18 @@ const DashboardLayout = () => {
             onClick={() => setMobileSidebarOpen(false)}
             className={({ isActive }) =>
               cn(
-                "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 relative",
+                "group flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-black transition-all duration-300 relative mx-2",
                 isActive
-                  ? "text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                  ? "text-white shadow-2xl scale-[1.02]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               )
             }
             style={({ isActive }) =>
               isActive
-                ? { background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)`, boxShadow: `0 4px 12px rgba(1,56,137,0.25)` }
+                ? { 
+                    background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)`, 
+                    boxShadow: `0 8px 20px rgba(1,56,137,0.3)` 
+                  }
                 : {}
             }
           >
@@ -176,7 +179,7 @@ const DashboardLayout = () => {
                   <item.icon
                     className={cn(
                       "w-4 h-4 transition-colors",
-                      isActive ? "text-white" : "text-gray-400 group-hover:text-gray-700"
+                      isActive ? "text-white" : "text-slate-500 group-hover:text-slate-900"
                     )}
                   />
                 </div>
