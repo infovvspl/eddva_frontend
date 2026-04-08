@@ -9,8 +9,10 @@ import {
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
   Maximize, RotateCcw, AlertCircle, Trophy, FileText,
   Radio, Calendar, Tag, Layers, FlaskConical, GraduationCap,
-  MessageCircle, LinkIcon, Loader2, Lock,
+  MessageCircle, Lock, Loader2,
 } from "lucide-react";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { sarvamTranslate, getStoredLanguage } from "@/lib/api/sarvam";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { apiClient, extractData } from "@/lib/api/client";
@@ -420,7 +422,65 @@ function VideoPlayer({
 // ─── Notes Panel ───────────────────────────────────────────────────────────
 
 function NotesPanel({ lecture }: { lecture: Lecture }) {
+  const [lang, setLang] = useState<string>(() => getStoredLanguage());
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translated, setTranslated] = useState<{
+    lang: string;
+    concepts: string[];
+    notes: string;
+  } | null>(null);
+
+  const isEnglish = lang === "en-IN";
+
+  useEffect(() => {
+    if (isEnglish) { setTranslated(null); return; }
+    if (translated?.lang === lang) return;
+
+    setIsTranslating(true);
+    const conceptsText = (lecture.aiKeyConcepts ?? []).join(" | ");
+    Promise.all([
+      conceptsText ? sarvamTranslate(conceptsText, lang) : Promise.resolve(""),
+      lecture.aiNotesMarkdown ? sarvamTranslate(lecture.aiNotesMarkdown, lang) : Promise.resolve(""),
+    ]).then(([tc, tn]) => {
+      setTranslated({
+        lang,
+        concepts: tc ? tc.split("|").map((s) => s.trim()).filter(Boolean) : [],
+        notes: tn,
+      });
+    }).catch(() => {
+      toast.error("Translation failed. Showing in English.");
+      setLang("en-IN");
+    }).finally(() => setIsTranslating(false));
+  }, [lang, lecture.id]);
+
+  const displayConcepts = !isEnglish && translated?.lang === lang
+    ? translated.concepts
+    : (lecture.aiKeyConcepts ?? []);
+  const displayNotes = !isEnglish && translated?.lang === lang
+    ? translated.notes
+    : lecture.aiNotesMarkdown;
+
   return (
+<<<<<<< HEAD
+    <div className="h-full overflow-y-auto space-y-5">
+      {/* Language selector */}
+      <div className="flex items-center justify-between pb-3 border-b border-border">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Language</p>
+        <div className="flex items-center gap-2">
+          {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
+          <LanguageSelector value={lang} onChange={setLang} />
+        </div>
+      </div>
+
+      {(displayConcepts.length ?? 0) > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5" /> Key Concepts
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {displayConcepts.map((c, i) => (
+              <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">{c}</span>
+=======
     <div className="h-full overflow-y-auto space-y-6 pr-2 custom-scrollbar">
       {(lecture.aiKeyConcepts?.length ?? 0) > 0 && (
         <div className="bg-white/5 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
@@ -430,14 +490,44 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </p>
           <div className="flex flex-wrap gap-3">
             {lecture.aiKeyConcepts!.map((c, i) => (
+<<<<<<< HEAD
+              <span key={i} className="px-3 py-1.5 rounded-xl text-xs font-bold border" style={{ background: BLUE_L, color: BLUE, borderColor: BLUE_M + "30" }}>{c}</span>
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
+=======
               <span key={i} className="px-5 py-2.5 rounded-[1.25rem] text-[11px] font-black bg-white/5 text-white/70 border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all cursor-default">
                 {c}
               </span>
+>>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
             ))}
           </div>
         </div>
       )}
+<<<<<<< HEAD
+      {(lecture.aiFormulas?.length ?? 0) > 0 && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <p className="text-[11px] font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2">
+            <FlaskConical className="w-4 h-4" /> Formulas
+          </p>
+          <div className="space-y-3">
+            {lecture.aiFormulas!.map((f, i) => (
+              <div key={i} className="bg-violet-50 text-violet-700 border border-violet-100 rounded-xl px-4 py-3 font-mono text-sm shadow-inner">{f}</div>
+            ))}
+          </div>
+        </div>
+      )}
+<<<<<<< HEAD
+      {displayNotes ? (
+        <div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5" /> Lecture Notes
+          </p>
+          <div className="prose prose-sm prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80 prose-code:text-primary max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayNotes}</ReactMarkdown>
+=======
+      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+=======
       <div className="bg-white/5 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-2xl relative min-h-[400px]">
+>>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
         {lecture.aiNotesMarkdown ? (
           <div>
             <p className="text-[10px] font-black tracking-[0.25em] text-emerald-400 uppercase mb-8 flex items-center gap-4">
@@ -446,6 +536,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
             <div className="prose prose-sm prose-invert max-w-none prose-headings:text-white prose-p:text-white/70 prose-strong:text-blue-400 prose-code:bg-white/5 prose-code:text-emerald-400 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:before:content-none prose-code:after:content-none prose-ul:text-white/60">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{lecture.aiNotesMarkdown}</ReactMarkdown>
             </div>
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 text-center">

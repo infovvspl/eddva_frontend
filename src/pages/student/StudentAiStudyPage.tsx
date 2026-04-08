@@ -14,6 +14,8 @@ import {
   useCompleteAiStudy, useStudyStatus,
 } from "@/hooks/use-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { getStoredLanguage, sarvamTranslate, sarvamTranslateMany } from "@/lib/api/sarvam";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 const BLUE   = "#013889";
@@ -157,6 +159,14 @@ export default function StudentAiStudyPage() {
   const [showComplete, setShowComplete] = useState(false);
   const [completed, setCompleted] = useState(false);
 
+  // ── Translation ───────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(getStoredLanguage);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedLesson, setTranslatedLesson] = useState<string | null>(null);
+  const [translatedConcepts, setTranslatedConcepts] = useState<string[]>([]);
+  const [translatedMistakes, setTranslatedMistakes] = useState<string[]>([]);
+  const [translatedQuestions, setTranslatedQuestions] = useState<AiPracticeQuestion[]>([]);
+
   // ── Data fetching ─────────────────────────────────────────────────────────────
   const { data: status } = useStudyStatus(topicId);
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
@@ -185,6 +195,54 @@ export default function StudentAiStudyPage() {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [sessionData?.conversation, activeTab]);
+
+  // Translate content when language changes or session loads
+  useEffect(() => {
+    if (!sessionData || lang === "en-IN") {
+      setTranslatedLesson(null);
+      setTranslatedConcepts([]);
+      setTranslatedMistakes([]);
+      setTranslatedQuestions([]);
+      return;
+    }
+    let cancelled = false;
+    setIsTranslating(true);
+    (async () => {
+      try {
+        const conceptsAndMistakes = [...sessionData.keyConcepts, ...sessionData.commonMistakes];
+        const [lesson, cmTranslated] = await Promise.all([
+          sessionData.lessonMarkdown
+            ? sarvamTranslate(sessionData.lessonMarkdown, lang)
+            : Promise.resolve(""),
+          sarvamTranslateMany(conceptsAndMistakes, lang),
+        ]);
+        if (cancelled) return;
+        setTranslatedLesson(lesson || null);
+        setTranslatedConcepts(cmTranslated.slice(0, sessionData.keyConcepts.length));
+        setTranslatedMistakes(cmTranslated.slice(sessionData.keyConcepts.length));
+
+        const qAll = sessionData.practiceQuestions.flatMap(q =>
+          q.explanation ? [q.question, q.answer, q.explanation] : [q.question, q.answer]
+        );
+        const qTranslated = await sarvamTranslateMany(qAll, lang);
+        if (cancelled) return;
+        let idx = 0;
+        setTranslatedQuestions(
+          sessionData.practiceQuestions.map(q => {
+            const tq = qTranslated[idx++] ?? q.question;
+            const ta = qTranslated[idx++] ?? q.answer;
+            const te = q.explanation ? (qTranslated[idx++] ?? q.explanation) : q.explanation;
+            return { ...q, question: tq, answer: ta, explanation: te };
+          })
+        );
+      } catch {
+        setLang("en-IN");
+      } finally {
+        if (!cancelled) setIsTranslating(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [lang, sessionData?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Actions ──────────────────────────────────────────────────────────────────
 
@@ -261,6 +319,11 @@ export default function StudentAiStudyPage() {
 
   if (!sessionData) return null;
 
+  const displayLesson = translatedLesson ?? sessionData.lessonMarkdown;
+  const displayConcepts = translatedConcepts.length > 0 ? translatedConcepts : sessionData.keyConcepts;
+  const displayMistakes = translatedMistakes.length > 0 ? translatedMistakes : sessionData.commonMistakes;
+  const displayQuestions = translatedQuestions.length > 0 ? translatedQuestions : sessionData.practiceQuestions;
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "lesson",   label: "Lesson",    icon: <BookOpen className="w-4 h-4" /> },
     { id: "concepts", label: "Concepts",  icon: <Brain className="w-4 h-4" /> },
@@ -292,10 +355,28 @@ export default function StudentAiStudyPage() {
             </div>
           </div>
 
+<<<<<<< HEAD
+          {/* Language selector */}
+          <LanguageSelector value={lang} onChange={setLang} />
+          {isTranslating && <Loader2 className="w-4 h-4 animate-spin text-violet-400 shrink-0" />}
+
+          {/* Timer */}
+          <div className="flex items-center gap-1.5 bg-violet-900/20 border border-violet-800/30 px-3 py-1.5 rounded-xl">
+            <Clock className="w-3.5 h-3.5 text-violet-400" />
+            <span className="text-sm font-mono font-semibold text-violet-300">{formatTime(elapsed)}</span>
+          </div>
+
+          {/* Complete badge */}
+          {completed && (
+            <div className="flex items-center gap-1.5 bg-emerald-900/30 border border-emerald-700/40 px-3 py-1.5 rounded-xl">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-xs font-semibold text-emerald-400">Done</span>
+=======
           <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl">
               <Clock className="w-4 h-4 text-gray-400" />
               <span className="text-sm font-mono font-black text-gray-700">{formatTime(elapsed)}</span>
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
             </div>
             {completed && (
               <div className="hidden sm:flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
@@ -373,7 +454,11 @@ export default function StudentAiStudyPage() {
                           hr: () => <hr className="border-gray-100 my-10" />,
                         }}
                       >
+<<<<<<< HEAD
+                        {displayLesson}
+=======
                        {sessionData.lessonMarkdown}
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
                       </ReactMarkdown>
                     </div>
 
@@ -410,6 +495,42 @@ export default function StudentAiStudyPage() {
 
             {/* ── CONCEPTS TAB ───────────────────────────────────────────────────── */}
             {activeTab === "concepts" && (
+<<<<<<< HEAD
+              <motion.div
+                key="concepts"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="space-y-6"
+              >
+                {/* Key Concepts */}
+                {displayConcepts.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-blue-600/20 flex items-center justify-center">
+                        <Lightbulb className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <h3 className="font-bold text-white text-base">Key Concepts</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {displayConcepts.map((concept, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="flex items-start gap-3 bg-blue-950/20 border border-blue-800/20 rounded-xl px-4 py-3"
+                        >
+                          <div className="w-5 h-5 rounded-full bg-blue-600/30 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-[10px] font-bold text-blue-300">{i + 1}</span>
+                          </div>
+                          <p className="text-sm text-slate-200 leading-relaxed">{concept}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+=======
               <motion.div key="concepts" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-6">
                  <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-sm">
                    {/* Key Concepts */}
@@ -434,6 +555,7 @@ export default function StudentAiStudyPage() {
                        </div>
                      </section>
                    )}
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
 
                    {/* Formulas */}
                    {sessionData.formulas.length > 0 && (
@@ -456,6 +578,40 @@ export default function StudentAiStudyPage() {
                      </section>
                    )}
 
+<<<<<<< HEAD
+                {/* Common Mistakes */}
+                {displayMistakes.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-amber-600/20 flex items-center justify-center">
+                        <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <h3 className="font-bold text-white text-base">Common Mistakes</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {displayMistakes.map((mistake, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="flex items-start gap-3 bg-amber-950/20 border border-amber-800/20 rounded-xl px-4 py-3"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                          <p className="text-sm text-slate-200 leading-relaxed">{mistake}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {displayConcepts.length === 0 && sessionData.formulas.length === 0 && displayMistakes.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                    <Brain className="w-10 h-10 mb-3 opacity-30" />
+                    <p>No concepts extracted yet</p>
+                  </div>
+                )}
+=======
                    {/* Common Mistakes */}
                    {sessionData.commonMistakes.length > 0 && (
                      <section>
@@ -486,6 +642,7 @@ export default function StudentAiStudyPage() {
                      </div>
                    )}
                  </div>
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
               </motion.div>
             )}
 
@@ -500,6 +657,20 @@ export default function StudentAiStudyPage() {
                     <h3 className="font-black text-gray-900 text-xl">Practice Questions</h3>
                     <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{sessionData.practiceQuestions.length} Questions Available</p>
                   </div>
+<<<<<<< HEAD
+                  <h3 className="font-bold text-white text-base">Practice Questions</h3>
+                  <span className="text-xs text-slate-500 ml-1">({displayQuestions.length})</span>
+                </div>
+
+                {displayQuestions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                    <FlaskConical className="w-10 h-10 mb-3 opacity-30" />
+                    <p>No practice questions yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {displayQuestions.map((q, i) => (
+=======
                 </div>
 
                 {sessionData.practiceQuestions.length === 0 ? (
@@ -510,6 +681,7 @@ export default function StudentAiStudyPage() {
                 ) : (
                   <div className="space-y-4">
                     {sessionData.practiceQuestions.map((q, i) => (
+>>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
                       <PracticeCard key={i} q={q} index={i} onAskAI={handleAskAboutQuestion} />
                     ))}
                   </div>
