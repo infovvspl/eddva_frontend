@@ -28,8 +28,8 @@ export interface PaginatedResponse<T> {
 // ---------------------------------------------------------------------------
 // Token helpers (localStorage based — works across tabs)
 // ---------------------------------------------------------------------------
-const TOKEN_KEY = "apexiq_access_token";
-const REFRESH_KEY = "apexiq_refresh_token";
+const TOKEN_KEY = "eddva_access_token";
+const REFRESH_KEY = "eddva_refresh_token";
 
 export const tokenStorage = {
   getAccess: () => localStorage.getItem(TOKEN_KEY),

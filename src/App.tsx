@@ -8,7 +8,7 @@ import Index from "./pages/Index";
 import Courses from "./pages/Courses";
 import AboutUs from "./pages/AboutUs";
 import LoginPage from "./pages/LoginPage";
-import TenantHomePage from "./pages/TenantHomePage";
+import StudentRegisterPage from "./pages/StudentRegisterPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import SuperAdminDashboard from "./pages/super-admin/SuperAdminDashboard";
@@ -19,6 +19,7 @@ import UsersPage from "./pages/super-admin/UsersPage";
 import AnnouncementsPage from "./pages/super-admin/AnnouncementsPage";
 import PlatformStatsPage from "./pages/super-admin/PlatformStatsPage";
 import SettingsPage from "./pages/super-admin/SettingsPage";
+import SuperAdminLoginPage from "./pages/super-admin/SuperAdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import BatchesPage from "./pages/admin/BatchesPage";
 import TeachersPage from "./pages/admin/TeachersPage";
@@ -166,8 +167,8 @@ const StudentRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<TenantHomePage />} />
-    <Route path="/login" element={<TenantHomePage />} />
+    <Route path="/" element={<LoginPage />} />
+    <Route path="/login" element={<LoginPage />} />
     {AdminRoutes()}
     {PYQRoute()}
     {TeacherRoutes()}
@@ -188,6 +189,8 @@ const PlatformRoutes = () => (
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
 
     <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/super-admin" element={<SuperAdminDashboard />} />

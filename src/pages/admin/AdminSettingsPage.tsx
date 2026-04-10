@@ -138,7 +138,7 @@ function BrandingTab() {
             </p>
             {data?.subdomain && (
               <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                <Globe className="w-3 h-3" /> {data.subdomain}.apexiq.in
+                <Globe className="w-3 h-3" /> {data.subdomain}.eddva.in
               </div>
             )}
           </div>

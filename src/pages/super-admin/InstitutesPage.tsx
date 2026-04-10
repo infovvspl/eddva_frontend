@@ -26,77 +26,77 @@ const InstitutesPage = () => {
   const totalPages = (tenantsData as any)?.meta?.totalPages || Math.max(1, Math.ceil(totalCount / perPage));
 
   const planStyles: Record<string, string> = {
-    starter: "bg-secondary text-muted-foreground border-border",
-    growth: "bg-sky-50 text-sky-600 border-sky-100 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20",
-    scale: "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
-    enterprise: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20",
-    STARTER: "bg-secondary text-muted-foreground border-border",
-    GROWTH: "bg-sky-50 text-sky-600 border-sky-100 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20",
-    SCALE: "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
-    ENTERPRISE: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20",
+    starter: "bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
+    growth: "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
+    scale: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20",
+    enterprise: "bg-slate-900 text-white border-slate-800 dark:bg-white dark:text-slate-900 dark:border-slate-100",
+    STARTER: "bg-slate-50 text-slate-500 border-slate-100",
+    GROWTH: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    SCALE: "bg-purple-50 text-purple-600 border-purple-100",
+    ENTERPRISE: "bg-slate-900 text-white border-slate-800",
   };
 
   const statusStyles: Record<string, string> = {
-    active: "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
-    trial: "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
-    suspended: "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",
+    active: "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-[0_0_12px_rgba(16,185,129,0.05)]",
+    trial: "bg-amber-50 text-amber-600 border-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.05)]",
+    suspended: "bg-rose-50 text-rose-600 border-rose-100 shadow-[0_0_12px_rgba(225,29,72,0.05)]",
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8 font-sans text-foreground">
+    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12 border-b border-slate-100 pb-10">
           <div>
-            <h1 className="text-3xl font-black text-foreground tracking-tight">Institutes</h1>
-            <p className="text-muted-foreground text-sm mt-1 font-medium">Manage and monitor educational partners</p>
+            <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">Institute Directory</h1>
+            <p className="text-slate-400 text-[17px] mt-1 font-semibold uppercase tracking-tight">Active Governance & Compliance Monitoring</p>
           </div>
           <Button
             onClick={() => navigate("/super-admin/tenants/new")}
-            className="bg-foreground hover:bg-foreground/90 text-background rounded-[18px] h-12 px-6 shadow-xl transition-all font-bold flex gap-2"
+            className="h-14 px-10 rounded-[20px] bg-slate-900 hover:bg-slate-800 text-white font-black shadow-2xl transition-all text-[15px] flex gap-2"
           >
-            <Plus className="w-5 h-5" /> New Institute
+            <Plus className="w-5 h-5 stroke-[3]" /> Deploy New Institute
           </Button>
         </header>
 
         {/* Filters */}
-        <div className="bg-card p-4 rounded-[28px] border border-border shadow-sm mb-6 flex flex-wrap items-center gap-4">
-          <div className="relative flex-1 min-w-[280px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="bg-slate-50/50 p-6 rounded-[32px] border border-slate-100 mb-8 flex flex-wrap items-center gap-6">
+          <div className="relative flex-1 min-w-[320px]">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
             <input
               type="text"
-              placeholder="Search by name or subdomain..."
+              placeholder="Search by organization name or subdomain..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full h-12 pl-11 pr-4 bg-secondary/50 border border-border rounded-[18px] text-sm text-foreground placeholder:text-muted-foreground focus:bg-background focus:border-primary outline-none transition-all"
+              className="w-full h-14 pl-14 pr-6 bg-white border border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-800 placeholder:text-slate-300 focus:border-indigo-500/30 focus:shadow-xl focus:shadow-indigo-500/5 transition-all outline-none shadow-sm"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-4">
             <select
               value={planFilter}
               onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}
-              className="h-12 px-4 bg-secondary/50 border border-border rounded-[18px] text-sm font-bold text-foreground outline-none hover:bg-background transition-all cursor-pointer"
+              className="h-14 px-6 bg-white border border-slate-100 rounded-[20px] text-[14px] font-black text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
             >
-              <option value="all">All Plans</option>
-              <option value="STARTER">Starter</option>
-              <option value="GROWTH">Growth</option>
-              <option value="SCALE">Scale</option>
-              <option value="ENTERPRISE">Enterprise</option>
+              <option value="all">Global Pricing</option>
+              <option value="STARTER">Starter Tier</option>
+              <option value="GROWTH">Growth Hub</option>
+              <option value="SCALE">Scale Dynamic</option>
+              <option value="ENTERPRISE">Cloud Enterprise</option>
             </select>
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="h-12 px-4 bg-secondary/50 border border-border rounded-[18px] text-sm font-bold text-foreground outline-none hover:bg-background transition-all cursor-pointer"
+              className="h-14 px-6 bg-white border border-slate-100 rounded-[20px] text-[14px] font-black text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="trial">Trial</option>
-              <option value="suspended">Suspended</option>
+              <option value="all">Platform Status</option>
+              <option value="active">Operational</option>
+              <option value="trial">Trial Period</option>
+              <option value="suspended">Suspended Hub</option>
             </select>
           </div>
         </div>
 
-        {/* Table */}
-        <motion.div layout className="bg-card rounded-[32px] border border-border shadow-sm overflow-hidden">
+        {/* Table/List View */}
+        <motion.div layout className="bg-white rounded-[44px] border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
@@ -135,51 +135,55 @@ const InstitutesPage = () => {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="group hover:bg-secondary/30 transition-colors cursor-pointer"
+                          className="group hover:bg-slate-50 transition-colors cursor-pointer"
                           onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}
                         >
-                          <td className="px-8 py-5">
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                          <td className="px-10 py-6">
+                            <div className="flex items-center gap-5">
+                              <div className="w-12 h-12 rounded-[18px] bg-slate-100 flex items-center justify-center text-slate-400 font-black group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
                                 {(inst.name || "?")[0]}
                               </div>
                               <div>
-                                <p className="text-sm font-bold text-foreground leading-tight">{inst.name}</p>
-                                <p className="text-[11px] text-muted-foreground font-medium">
-                                  {inst.createdAt ? `Joined ${new Date(inst.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` : ""}
+                                <p className="text-[15px] font-black text-slate-900 leading-tight mb-1">{inst.name}</p>
+                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                                  {inst.createdAt ? `Partnered ${new Date(inst.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` : "Onboarding"}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-8 py-5 text-sm font-semibold text-muted-foreground italic">
-                            {inst.subdomain}.edva.in
+                          <td className="px-10 py-6 text-[13px] font-black text-slate-400 tracking-tight">
+                            {inst.subdomain}<span className="opacity-40">.edva.in</span>
                           </td>
-                          <td className="px-8 py-5">
-                            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${planStyles[plan] || planStyles.growth}`}>
+                          <td className="px-10 py-6">
+                            <span className={`text-[10px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg border ${planStyles[plan] || planStyles.growth}`}>
                               {plan}
                             </span>
                           </td>
-                          <td className="px-8 py-5">
-                            <div className="flex flex-col gap-1.5 w-32">
-                              <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
+                          <td className="px-10 py-6">
+                            <div className="flex flex-col gap-2 w-40">
+                              <div className="flex justify-between text-[11px] font-black text-slate-900 tracking-tight">
                                 <span>{students.toLocaleString()}</span>
-                                <span className="opacity-50">/ {limit.toLocaleString()}</span>
+                                <span className="text-slate-300">/ {limit.toLocaleString()}</span>
                               </div>
-                              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                                <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min((students / limit) * 100, 100)}%` }} />
+                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }} 
+                                  animate={{ width: `${Math.min((students / limit) * 100, 100)}%` }} 
+                                  className={`h-full rounded-full ${students/limit > 0.9 ? 'bg-rose-500' : 'bg-indigo-500'}`} 
+                                />
                               </div>
                             </div>
                           </td>
-                          <td className="px-8 py-5">
-                            <div className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit px-3 py-1 rounded-full border ${statusStyles[status] || statusStyles.active}`}>
-                              <div className="w-1 h-1 rounded-full bg-current" />
-                              {status}
+                          <td className="px-10 py-6">
+                            <div className={`text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 w-fit px-4 py-1.5 rounded-full border shadow-sm ${statusStyles[status] || statusStyles.active}`}>
+                              <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                              {status === 'active' ? 'Operational' : status === 'trial' ? 'Trial Hub' : 'Suspended'}
                             </div>
                           </td>
-                          <td className="px-8 py-5 text-right">
+                          <td className="px-10 py-6 text-right">
                             <button
                               onClick={(e) => e.stopPropagation()}
-                              className="p-2 hover:bg-secondary hover:shadow-sm rounded-xl transition-all text-muted-foreground hover:text-primary"
+                              className="p-3 bg-white border border-slate-100 hover:border-indigo-500/30 hover:shadow-lg rounded-[14px] transition-all text-slate-300 hover:text-indigo-600"
                             >
                               <MoreVertical className="w-5 h-5" />
                             </button>

@@ -77,22 +77,17 @@ export const LandingNavbar = () => {
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
-          <Link to="/login" className="rounded-xl px-5 py-2.5 text-[14px] font-bold text-gray-600 transition-all hover:text-blue-600 hover:bg-blue-50/50">
+          <Link to="/login"
+            className="rounded-xl px-5 py-2.5 text-[14px] font-bold text-gray-600 transition-all hover:text-blue-600 hover:bg-blue-50/50">
             Login
           </Link>
-          <motion.a href="#pricing" whileHover={{ scale: 1.05, boxShadow: `0 12px 30px ${B}33` }} whileTap={{ scale: 0.95 }}
-            className="relative overflow-hidden rounded-2xl px-7 py-3 text-[14px] font-black text-white shadow-lg"
-            style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-            <span className="relative z-10 flex items-center gap-2">
-              Start Free <Sparkles className="h-4 w-4" />
-            </span>
-            <motion.div
-              initial={{ x: "-100%" }}
-              whileHover={{ x: "100%" }}
-              transition={{ duration: 0.6 }}
-              className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-            />
-          </motion.a>
+          <motion.div whileHover={{ scale: 1.05, boxShadow: `0 12px 30px ${B}33` }} whileTap={{ scale: 0.95 }}>
+            <Link to="/register"
+              className="relative overflow-hidden rounded-2xl px-7 py-3 text-[14px] font-black text-white shadow-lg flex items-center gap-2"
+              style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
+              Register Free <Sparkles className="h-4 w-4" />
+            </Link>
+          </motion.div>
         </div>
 
         <button className="rounded-xl p-2 hover:bg-gray-100 md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
@@ -124,9 +119,17 @@ export const LandingNavbar = () => {
               </div>
             </div>
 
-            <Link to="/login" className="mt-4 block rounded-2xl border-2 border-gray-100 py-3.5 text-center text-[15px] font-black text-gray-700">
-              Login
-            </Link>
+            <div className="mt-4 flex flex-col gap-3">
+              <Link to="/login" onClick={() => setMenuOpen(false)}
+                className="block rounded-2xl border-2 border-gray-100 py-3.5 text-center text-[15px] font-black text-gray-700 hover:bg-gray-50 transition-colors">
+                Login
+              </Link>
+              <Link to="/register" onClick={() => setMenuOpen(false)}
+                className="block rounded-2xl py-3.5 text-center text-[15px] font-black text-white shadow-lg"
+                style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
+                Register Free
+              </Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

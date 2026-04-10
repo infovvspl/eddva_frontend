@@ -121,11 +121,13 @@ const Index = () => {
 
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.3 }}
                 className="mb-10 flex flex-wrap gap-3">
-                <motion.a href="#exams" whileHover={{ scale:1.04, boxShadow:`0 16px 40px ${B}40` }} whileTap={{ scale:0.97 }}
-                  className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
-                  style={{ background: grad() }}>
-                  Start Learning <ArrowRight className="h-4 w-4" />
-                </motion.a>
+                <motion.div whileHover={{ scale:1.04, boxShadow:`0 16px 40px ${B}40` }} whileTap={{ scale:0.97 }}>
+                  <Link to="/register"
+                    className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
+                    style={{ background: grad() }}>
+                    Start Learning <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </motion.div>
                 <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
                   className="flex items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-7 py-3.5 text-[15px] font-bold text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all">
                   Explore Exams <ChevronRight className="h-4 w-4" />
@@ -831,11 +833,13 @@ const Index = () => {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <motion.a href="#exams" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                  className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-gray-900 shadow-lg"
-                  style={{ background:"linear-gradient(135deg,#FBBF24,#F59E0B)" }}>
-                  Start Your Journey <ArrowRight className="h-4 w-4" />
-                </motion.a>
+                <motion.div whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                  <Link to="/register"
+                    className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-gray-900 shadow-lg"
+                    style={{ background:"linear-gradient(135deg,#FBBF24,#F59E0B)" }}>
+                    Start Your Journey <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </motion.div>
                 <motion.a href="#about" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
                   className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-white backdrop-blur-sm hover:bg-white/15 transition-all">
                   Learn About Us <ChevronRight className="h-4 w-4" />
@@ -1086,11 +1090,13 @@ const Index = () => {
               Join 50,000+ students already on EDDVA. Start your free plan today — no credit card needed.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <motion.a href="#exams" whileHover={{ scale:1.05, boxShadow:`0 20px 48px ${B}44` }} whileTap={{ scale:0.97 }}
-                className="flex items-center gap-2 rounded-2xl px-8 py-4 text-[16px] font-bold text-white shadow-xl"
-                style={{ background: grad() }}>
-                Start Learning Free <ArrowRight className="h-5 w-5" />
-              </motion.a>
+              <motion.div whileHover={{ scale:1.05, boxShadow:`0 20px 48px ${B}44` }} whileTap={{ scale:0.97 }}>
+                <Link to="/register"
+                  className="flex items-center gap-2 rounded-2xl px-8 py-4 text-[16px] font-bold text-white shadow-xl"
+                  style={{ background: grad() }}>
+                  Start Learning Free <ArrowRight className="h-5 w-5" />
+                </Link>
+              </motion.div>
               <motion.a href="#how" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
                 className="flex items-center gap-2 rounded-2xl border-2 border-gray-200 px-8 py-4 text-[16px] font-bold text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all">
                 See How It Works <ChevronRight className="h-5 w-5" />
