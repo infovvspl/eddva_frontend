@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useEffect, useRef, useState } from "react";
-=======
-﻿import React, { useRef, useState } from "react";
->>>>>>> eaf1c500c548f1ac31736cccbee170294683f90d
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, ChevronRight, BookOpen, FileText, X, Lock,
@@ -144,26 +140,11 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
         <div onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)} onDrop={handleDrop}
           onClick={() => setShowUploadForm(!showUploadForm)}
-<<<<<<< HEAD
           className={cn("border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all",
             dragging ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300 hover:bg-slate-50")}>
           <Upload className={cn("w-5 h-5 mx-auto mb-1.5 transition-colors", dragging ? "text-blue-500" : "text-slate-300")} />
           <p className="text-xs font-bold text-slate-500">{dragging ? "Drop to upload" : `Upload ${cfg.label}`}</p>
           <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop · max 5 MB</p>
-=======
-          className={cn(
-            "border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all",
-            dragging
-              ? "border-blue-400 bg-blue-50"
-              : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
-          )}
-        >
-          <Upload className={cn("w-5 h-5 mx-auto mb-1.5 transition-colors", dragging ? "text-blue-500" : "text-gray-600")} />
-          <p className="text-xs font-bold text-slate-500">
-            {dragging ? "Drop to upload" : `Upload ${cfg.label}`}
-          </p>
-          <p className="text-[10px] text-gray-600 mt-0.5">click or drag & drop</p>
->>>>>>> eaf1c500c548f1ac31736cccbee170294683f90d
         </div>
 
         <AnimatePresence>
