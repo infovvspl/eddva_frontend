@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -117,7 +117,7 @@ const InstituteDetailPage = () => {
               className={`h-14 px-8 rounded-[20px] font-black shadow-2xl transition-all text-[15px] ${
                 status === "suspended"
                   ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
-                  : "bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20"
+                  : "bg-white text-gray-900 hover:bg-gray-100 shadow-slate-900/20"
               }`}
             >
               {status === "suspended" ? <Shield className="w-5 h-5 mr-3" /> : <Ban className="w-5 h-5 mr-3" />}
@@ -145,7 +145,7 @@ const InstituteDetailPage = () => {
         {/* Tabs */}
         <div className="bg-slate-50 p-1.5 rounded-[24px] border border-slate-100 inline-flex gap-1">
           {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-8 py-3.5 rounded-[18px] text-[13px] font-black uppercase tracking-tight transition-all ${activeTab === tab.id ? "bg-slate-900 text-white shadow-xl shadow-slate-900/10" : "text-slate-400 hover:text-slate-900"}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-8 py-3.5 rounded-[18px] text-[13px] font-black uppercase tracking-tight transition-all ${activeTab === tab.id ? "bg-white text-gray-900 shadow-xl shadow-slate-900/10" : "text-slate-400 hover:text-slate-900"}`}>
               {tab.label}
             </button>
           ))}
@@ -171,14 +171,14 @@ const InstituteDetailPage = () => {
                       <div key={item.label} className="group">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{item.label}</p>
                         <div className="flex items-center gap-4">
-                          <item.icon className="w-5 h-5 text-slate-200 group-hover:text-indigo-600 transition-colors" />
+                          <item.icon className="w-5 h-5 text-gray-800 group-hover:text-indigo-600 transition-colors" />
                           <span className="text-[16px] font-black text-slate-800">{item.value}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="bg-slate-900 rounded-[44px] p-10 text-white shadow-2xl shadow-slate-900/40 relative overflow-hidden">
+                <div className="bg-white rounded-[44px] p-10 text-gray-900 shadow-2xl shadow-slate-900/40 relative overflow-hidden">
                   <h3 className="text-xl font-black mb-10 relative z-10">Quota Intelligence</h3>
                   <div className="space-y-10 relative z-10">
                     <UsageProgress label="Active Learner Hub" current={studentCount} total={studentLimit} color="bg-indigo-500" inverse />
@@ -250,7 +250,7 @@ const UsageProgress = ({ label, current, total, color, inverse = false }: { labe
     <div>
       <div className="flex justify-between items-end mb-3">
         <p className={`text-[11px] font-black uppercase tracking-widest ${inverse ? 'text-white/40' : 'text-slate-400'}`}>{label}</p>
-        <p className={`text-[12px] font-black ${inverse ? 'text-white' : 'text-slate-900'}`}>{current.toLocaleString()} <span className={inverse ? 'text-white/30' : 'text-slate-300'}>/ {total.toLocaleString()}</span></p>
+        <p className={`text-[12px] font-black ${inverse ? 'text-white' : 'text-slate-900'}`}>{current.toLocaleString()} <span className={inverse ? 'text-white/30' : 'text-gray-600'}>/ {total.toLocaleString()}</span></p>
       </div>
       <div className={`h-2.5 rounded-full overflow-hidden ${inverse ? 'bg-white/5' : 'bg-slate-100'}`}>
         <motion.div initial={{ width: 0 }} animate={{ width: `${percentage}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${color} shadow-[0_0_12px_rgba(0,0,0,0.1)]`} />

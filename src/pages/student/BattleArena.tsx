@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BattleArena
  *
  * Stages:
@@ -680,7 +680,7 @@ function BattleInProgress({
            </div>
 
            <div className="flex flex-col items-center gap-2">
-              <div className="px-5 py-2 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
+              <div className="px-5 py-2 rounded-full bg-white text-gray-900 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
                  Nexus Round {roundNumber}/{totalRounds}
               </div>
               {topicLabel && (
@@ -782,7 +782,7 @@ function BattleInProgress({
                    <div className={cn(
                      "px-10 py-4 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-4 shadow-2xl",
                      roundWinnerId === myStudentId ? "bg-emerald-500 text-white shadow-emerald-500/20" :
-                     roundWinnerId === null ? "bg-slate-900 text-white shadow-slate-900/20" :
+                     roundWinnerId === null ? "bg-white text-gray-900 shadow-slate-900/20" :
                      "bg-red-500 text-white shadow-red-500/20"
                    )}>
                       {roundWinnerId === myStudentId ? (
@@ -858,7 +858,7 @@ function ResultScreen({
            <div className="flex justify-center mb-10">
               <div className={cn(
                 "w-32 h-32 rounded-[3rem] flex items-center justify-center shadow-2xl relative",
-                isWinner ? "bg-amber-400 text-white shadow-amber-500/40" : "bg-slate-900 text-white shadow-slate-900/40"
+                isWinner ? "bg-amber-400 text-white shadow-amber-500/40" : "bg-white text-white shadow-slate-900/40"
               )}>
                  {isWinner ? <Trophy className="w-16 h-16" /> : <Swords className="w-16 h-16" />}
                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border-2 border-dashed border-current opacity-20 rounded-[3.5rem]" />
@@ -880,7 +880,7 @@ function ResultScreen({
               </div>
               <div className="flex flex-col items-center">
                  <div className="w-px h-12 bg-slate-100" />
-                 <span className="text-xs font-black text-slate-300 my-2">VS</span>
+                 <span className="text-xs font-black text-gray-600 my-2">VS</span>
                  <div className="w-px h-12 bg-slate-100" />
               </div>
               <div className="text-left">
@@ -908,7 +908,7 @@ function ResultScreen({
               <motion.button
                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                 onClick={onPlayAgain}
-                className="w-full sm:w-auto px-12 py-5 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-blue-600 transition-all"
+                className="w-full sm:w-auto px-12 py-5 rounded-2xl bg-white text-white text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-blue-600 transition-all"
               >
                  Return to Arena
               </motion.button>
@@ -1031,7 +1031,7 @@ function TopicPicker({
           {topicId && selectedTopic && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Button
-                className="w-full h-16 rounded-2xl bg-slate-900 border-none text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3"
+                className="w-full h-16 rounded-2xl bg-white border-none text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3"
                 disabled={!topicId || loading}
                 onClick={() => topicId && selectedTopic && onSelect(topicId, selectedTopic.name)}
               >
@@ -1127,12 +1127,12 @@ function JoinRoomScreen({
             onKeyDown={e => e.key === "Enter" && handleJoin()}
             maxLength={8}
             placeholder="ALPHA-SYNC"
-            className="h-20 w-full text-center text-4xl font-black tracking-[0.2em] px-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] outline-none focus:border-emerald-500 focus:bg-white transition-all uppercase placeholder:text-slate-200"
+            className="h-20 w-full text-center text-4xl font-black tracking-[0.2em] px-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] outline-none focus:border-emerald-500 focus:bg-white transition-all uppercase placeholder:text-gray-800"
           />
         </div>
 
         <Button
-          className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3"
+          className="w-full h-16 rounded-2xl bg-white text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3"
           disabled={code.trim().length < 4 || joinBattle.isPending}
           onClick={handleJoin}
         >
@@ -1234,7 +1234,7 @@ function MatchmakingScreen({
              <div className="relative group">
                 <button
                   onClick={copyCode}
-                  className="w-full flex items-center justify-between gap-6 px-8 py-5 rounded-2xl bg-slate-900 text-white shadow-2xl hover:bg-blue-600 transition-all border border-white/10"
+                  className="w-full flex items-center justify-between gap-6 px-8 py-5 rounded-2xl bg-white text-white shadow-2xl hover:bg-blue-600 transition-all border border-gray-200"
                 >
                   <span className="text-3xl font-black tracking-[0.3em] font-mono leading-none">
                     {currentRoom.roomCode}
@@ -1305,7 +1305,7 @@ function BattleLeaderboard() {
       <div className="space-y-3">
         {entries.map((entry, i) => (
           <div key={entry.studentId} className="flex items-center gap-4 p-3 rounded-2xl bg-white/40 border border-slate-50 hover:bg-white transition-all group">
-            <span className={cn("text-xs font-black w-6 text-center italic", i===0 ? "text-amber-500" : i===1 ? "text-slate-400" : i===2 ? "text-orange-600" : "text-slate-300")}>
+            <span className={cn("text-xs font-black w-6 text-center italic", i===0 ? "text-amber-500" : i===1 ? "text-slate-400" : i===2 ? "text-orange-600" : "text-gray-600")}>
               #{i + 1}
             </span>
             <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden">
@@ -1379,7 +1379,7 @@ function TierProgress({ tier, xp }: { tier: string; xp: number }) {
                   current ? "bg-blue-600 ring-4 ring-blue-100 shadow-lg" : 
                   done ? "bg-blue-600/40" : "bg-slate-100"
                 )} />
-                <span className={cn("text-[8px] font-black uppercase tracking-tighter", current ? "text-blue-600" : "text-slate-300")}>
+                <span className={cn("text-[8px] font-black uppercase tracking-tighter", current ? "text-blue-600" : "text-gray-600")}>
                   {t}
                 </span>
               </div>
@@ -1425,7 +1425,7 @@ function ModeCard({
         {mode.badge && (
           <div className={cn(
             "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm",
-            isDailyLive ? "bg-red-500 text-white animate-pulse" : "bg-slate-900 text-white"
+            isDailyLive ? "bg-red-500 text-white animate-pulse" : "bg-white text-white"
           )}>
             {isDailyLive ? "● Combat Live" : mode.badge}
           </div>
@@ -1487,7 +1487,7 @@ function HomeScreen({
       {/* 🛡️ Mission Directive Header */}
       <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
         <div className="space-y-4">
-           <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-slate-900 text-white w-fit shadow-xl">
+           <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white text-gray-900 w-fit shadow-xl">
              <Swords className="w-3.5 h-3.5 text-red-400" />
              <span className="text-[9px] font-black uppercase tracking-[0.2em]">Neural Combat Frequency: Active</span>
            </div>
@@ -1513,7 +1513,7 @@ function HomeScreen({
          <div className="lg:col-span-3">
             <TierProgress tier={tier} xp={xp} />
          </div>
-         <CardGlass className="p-8 bg-slate-900 border-slate-800 text-white flex flex-col justify-center">
+         <CardGlass className="p-8 bg-white border-gray-200 text-gray-900 flex flex-col justify-center">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Unit Rank</p>
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
@@ -1679,7 +1679,7 @@ function BotPickerScreen({
             )}
           >
              <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-2xl rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform" />
-             <t.icon className={cn("w-6 h-6 mb-4 relative z-10", testType === t.key ? "text-amber-500" : "text-slate-300")} />
+             <t.icon className={cn("w-6 h-6 mb-4 relative z-10", testType === t.key ? "text-amber-500" : "text-gray-600")} />
              <p className={cn("text-sm font-black uppercase italic tracking-tight relative z-10", testType === t.key ? "text-slate-900" : "text-slate-400")}>
                {t.label}
              </p>
@@ -1988,7 +1988,7 @@ const BattleArena = () => {
               </div>
               <h2 className="text-2xl font-black text-slate-900 uppercase italic mb-2">Sync Interrupted</h2>
               <p className="text-sm font-bold text-slate-400 max-w-sm mb-10 uppercase tracking-tight">{errorMsg || "Neural link failure detected."}</p>
-              <button onClick={reset} className="px-10 py-4 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-2xl">
+              <button onClick={reset} className="px-10 py-4 rounded-2xl bg-white text-gray-900 text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-2xl">
                 <ArrowLeft className="w-4 h-4" /> Reset Hub
               </button>
             </motion.div>

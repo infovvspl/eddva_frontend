@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
@@ -199,7 +199,7 @@ const NewInstitutePage = () => {
             {[1, 2].map((s) => (
               <div key={s} className="flex flex-col items-center gap-2">
                 <div className={`h-2 w-20 rounded-full transition-all ${s <= step ? "bg-indigo-600" : "bg-slate-100"}`} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${s === step ? "text-indigo-600" : "text-slate-300"}`}>Step {s}</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${s === step ? "text-indigo-600" : "text-gray-600"}`}>Step {s}</span>
               </div>
             ))}
           </div>
@@ -243,7 +243,7 @@ const NewInstitutePage = () => {
                     <div className="space-y-3">
                       <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Subdomain</label>
                       <div className="relative">
-                        <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                        <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                         <input
                           required
                           value={form.subdomain}
@@ -252,7 +252,7 @@ const NewInstitutePage = () => {
                           className="w-full h-14 pl-12 pr-36 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
                         />
                         <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                          <span className="text-[11px] font-bold text-slate-300">.edva.in</span>
+                          <span className="text-[11px] font-bold text-gray-600">.edva.in</span>
                           {subdomainStatus === "checking" && <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />}
                           {subdomainStatus === "available" && <Check className="w-4 h-4 text-emerald-500" />}
                           {subdomainStatus === "taken" && <X className="w-4 h-4 text-rose-500" />}
@@ -301,7 +301,7 @@ const NewInstitutePage = () => {
                     type="button"
                     onClick={() => setStep(2)}
                     disabled={!canProceedStep1}
-                    className="h-14 px-10 rounded-[20px] bg-slate-900 text-white font-black hover:bg-slate-800 shadow-2xl transition-all"
+                    className="h-14 px-10 rounded-[20px] bg-white text-gray-900 font-black hover:bg-gray-100 shadow-2xl transition-all"
                   >
                     Continue <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -323,7 +323,7 @@ const NewInstitutePage = () => {
                     <div className="space-y-3">
                       <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Billing Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                         <input
                           type="email"
                           required
@@ -384,7 +384,7 @@ const NewInstitutePage = () => {
                               />
                             ))}
                           </div>
-                          <Button type="button" onClick={handleVerifyOtp} disabled={otp.some(d => !d) || otpLoading} className="h-12 w-full rounded-[18px] bg-slate-900 text-white font-black">
+                          <Button type="button" onClick={handleVerifyOtp} disabled={otp.some(d => !d) || otpLoading} className="h-12 w-full rounded-[18px] bg-white text-gray-900 font-black">
                             {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                             Verify OTP
                           </Button>
@@ -415,7 +415,7 @@ const NewInstitutePage = () => {
 
           {/* Sidebar summary */}
           <div className="space-y-6">
-            <div className="bg-slate-900 rounded-[36px] p-8 text-white sticky top-10 shadow-2xl shadow-slate-900/30 overflow-hidden">
+            <div className="bg-white rounded-[36px] p-8 text-gray-900 sticky top-10 shadow-2xl shadow-slate-900/30 overflow-hidden">
               <div className="relative z-10 space-y-6">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">Summary</h4>
 
@@ -428,19 +428,19 @@ const NewInstitutePage = () => {
                 <div className="h-px bg-white/10" />
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
                     <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Plan</p>
                     <p className="text-base font-black capitalize">{form.plan}</p>
                   </div>
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
                     <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Trial</p>
                     <p className="text-base font-black">{form.trialDays}d</p>
                   </div>
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
                     <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Students</p>
                     <p className="text-base font-black">{form.maxStudents.toLocaleString()}</p>
                   </div>
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
                     <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Teachers</p>
                     <p className="text-base font-black">{form.maxTeachers}</p>
                   </div>

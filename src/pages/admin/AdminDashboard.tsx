@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -13,10 +13,10 @@ import { cn } from "@/lib/utils";
 // ─── Thumbnail generator ──────────────────────────────────────────────────────
 
 const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> = {
-  jee:   { from: "#1D4ED8", to: "#4F46E5", badge: "JEE"  },
-  neet:  { from: "#059669", to: "#0D9488", badge: "NEET" },
-  both:  { from: "#7C3AED", to: "#C026D3", badge: "ALL"  },
-  default: { from: "#0F172A", to: "#334155", badge: "—"  },
+  jee: { from: "#1D4ED8", to: "#4F46E5", badge: "JEE" },
+  neet: { from: "#059669", to: "#0D9488", badge: "NEET" },
+  both: { from: "#7C3AED", to: "#C026D3", badge: "ALL" },
+  default: { from: "#0F172A", to: "#334155", badge: "—" },
 };
 
 const _API_ORIGIN = (() => {
@@ -127,7 +127,7 @@ function CourseCard({ course, index, onClick }: { course: any; index: number; on
         </div>
       </div>
 
-      <ChevronRight className="w-4 h-4 text-slate-200 group-hover:text-blue-500 shrink-0 transition-colors" />
+      <ChevronRight className="w-4 h-4 text-gray-800 group-hover:text-blue-500 shrink-0 transition-colors" />
     </motion.div>
   );
 }
@@ -170,7 +170,7 @@ const AdminDashboard = () => {
         <div>
           <p className="text-sm font-semibold text-slate-400">{today}</p>
           <h1 className="text-2xl font-black text-slate-900 mt-0.5">
-            Welcome back{firstName ? `, ${firstName}` : ""} 👋
+            Welcome back{firstName ? `, ${user?.name}` : ""} 👋
           </h1>
           <p className="text-sm text-slate-400 mt-0.5">{user?.tenantName}</p>
         </div>
@@ -203,7 +203,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 
         {/* ── Course list (2/3) ── */}
-        <div className="xl:col-span-2 space-y-4">
+        <div className="xl:col-span-2 space-y-4 ">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-black text-slate-900">Your Courses</h2>
@@ -218,16 +218,16 @@ const AdminDashboard = () => {
           </div>
 
           {courses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
-              <BookOpen className="w-10 h-10 text-slate-200 mb-3" />
+            <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200 ">
+              {/* <BookOpen className="w-10 h-10 text-gray-800 mb-3" /> */}
               <p className="text-sm font-bold text-slate-400">No courses yet</p>
               <button onClick={() => navigate("/admin/batches")}
-                className="mt-4 text-xs font-black text-blue-600 hover:underline">
+                className="mt-4 text-xs  font-black text-blue-600 hover:underline">
                 Create your first course →
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 shadow-lg rounded-xl">
               {courses.map((c, i) => (
                 <CourseCard key={c.id} course={c} index={i} onClick={() => navigate("/admin/batches")} />
               ))}
@@ -239,22 +239,22 @@ const AdminDashboard = () => {
         <div className="space-y-6">
 
           {/* Quick actions */}
-          <div className="bg-slate-900 rounded-3xl p-6 text-white">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40 mb-5">Quick Actions</h3>
+          <div className="bg-white rounded-3xl p-6 text-gray-900 shadow-lg">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 mb-5">Quick Actions</h3>
             <div className="space-y-2.5">
               {[
-                { label: "Create Course",    icon: Plus,       path: "/admin/batches",      color: "bg-blue-500"    },
-                { label: "Build Content",    icon: BookOpen,   path: "/admin/content",      color: "bg-indigo-500"  },
-                { label: "Schedule Class",   icon: Radio,      path: "/teacher/lectures",   color: "bg-red-500"     },
-                { label: "View Analytics",   icon: BarChart2,  path: "/teacher/analytics",  color: "bg-violet-500"  },
-                { label: "AI Tools",         icon: Sparkles,   path: "/teacher/ai-tools",   color: "bg-amber-500"   },
+                { label: "Create Course", icon: Plus, path: "/admin/batches", color: "bg-blue-500" },
+                { label: "Build Content", icon: BookOpen, path: "/admin/content", color: "bg-indigo-500" },
+                { label: "Schedule Class", icon: Radio, path: "/teacher/lectures", color: "bg-red-500" },
+                { label: "View Analytics", icon: BarChart2, path: "/teacher/analytics", color: "bg-violet-500" },
+                { label: "AI Tools", icon: Sparkles, path: "/teacher/ai-tools", color: "bg-amber-500" },
               ].map((a) => (
                 <button key={a.label} onClick={() => navigate(a.path)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group text-left">
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-gray-200 hover:bg-white/10 transition-colors group text-left">
                   <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", a.color)}>
                     <a.icon className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-white/70 group-hover:text-white transition-colors">{a.label}</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-900 transition-colors">{a.label}</span>
                   <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white/60 ml-auto transition-colors" />
                 </button>
               ))}
@@ -263,9 +263,9 @@ const AdminDashboard = () => {
 
           {/* Course enrollment summary */}
           <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-5">Enrollment Overview</h3>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 mb-5">Enrollment Overview</h3>
             {courses.length === 0 ? (
-              <p className="text-sm text-slate-300 text-center py-4">No courses yet</p>
+              <p className="text-sm text-gray-600 text-center py-4">No courses yet</p>
             ) : (
               <div className="space-y-4">
                 {courses.slice(0, 5).map((c, i) => {

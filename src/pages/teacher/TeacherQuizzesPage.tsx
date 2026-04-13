@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -494,7 +494,7 @@ function ManualQuestionForm({ topicId, topicName, onAdd }: { topicId: string; to
           </label>
           {q.options.map((opt, i) => (
             <div key={i} className={cn("flex items-center gap-2 border rounded-lg px-3 py-2 transition-colors cursor-pointer",
-              opt.isCorrect ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20" : "border-border")}>
+              opt.isCorrect ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-50/20" : "border-border")}>
               <button
                 type="button"
                 onClick={() => setCorrect(i)}
@@ -691,7 +691,7 @@ function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topic
       </div>
 
       {!topicId && (
-        <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-50/20 border border-amber-200 rounded-lg px-3 py-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           Select a topic to enable AI generation.
         </div>
@@ -861,7 +861,7 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-50/20 border border-amber-200 rounded-lg px-3 py-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           No topics found. Add topics to this {scope} first.
         </div>
@@ -1147,7 +1147,7 @@ function Step2AddQuestions({ state, onAdd, onRemove, onBack, onNext }: Step2Prop
                           {q.difficulty}
                         </span>
                         <span className="text-xs text-muted-foreground">+{q.marksCorrect}/{q.marksWrong}</span>
-                        {q.fromBank && <span className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-1 py-0.5 rounded">Bank</span>}
+                        {q.fromBank && <span className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-50/20 px-1 py-0.5 rounded">Bank</span>}
                         {q.topicName && (
                           <span className="text-[10px] text-violet-700 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded truncate max-w-[80px]">
                             {q.topicName}
@@ -1404,7 +1404,7 @@ function LiveResultsDashboard({ quiz, onClose }: { quiz: MockTest; onClose: () =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-gray-300/50 flex items-center justify-center p-4">
       <div className="bg-background rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
@@ -1567,7 +1567,7 @@ function QuizDetailPanel({ quiz, onClose, onPublish }: { quiz: MockTest; onClose
           </div>
 
           {quiz.scheduledAt && (
-            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-50/20 border border-blue-200 rounded-lg px-3 py-2">
               <Calendar className="w-4 h-4 shrink-0" />
               Scheduled: {new Date(quiz.scheduledAt).toLocaleString()}
             </div>
@@ -1686,7 +1686,7 @@ function CreateWizardModal({ onClose, onSuccess }: { onClose: () => void; onSucc
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-gray-300/50 flex items-center justify-center p-4">
       <div className="bg-background rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
           <h2 className="font-bold text-lg">Create New Quiz</h2>

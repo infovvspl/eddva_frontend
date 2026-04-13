@@ -446,6 +446,19 @@ export function useUpdateProfile() {
     },
   });
 }
+
+export function useUploadAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => studentApi.uploadAvatar(file),
+    onSuccess: (avatarUrl) => {
+      // Optimistically patch the cached me data so avatar updates instantly
+      qc.setQueryData<studentApi.StudentMe>(studentKeys.me, (old) =>
+        old ? { ...old, profilePictureUrl: avatarUrl } : old
+      );
+    },
+  });
+}
 // ─── PYQ (Previous Year Questions) ───────────────────────────────────────────
 
 export const pyqKeys = {

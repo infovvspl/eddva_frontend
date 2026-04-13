@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -70,7 +70,7 @@ const LoginPage = () => {
   const [setPwLoading,   setSetPwLoading]   = useState(false);
 
   const inputClass =
-    "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-slate-300 focus:bg-white focus:border-blue-400 focus:ring-8 focus:ring-blue-500/5 disabled:opacity-50 shadow-sm";
+    "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-600 focus:bg-white focus:border-blue-400 focus:ring-8 focus:ring-blue-500/5 disabled:opacity-50 shadow-sm";
 
   /* ── helpers ── */
   const buildUser = (meData: any) => {
@@ -284,7 +284,7 @@ const LoginPage = () => {
                         className={`${inputClass} pr-14`}
                       />
                       <button type="button" onClick={() => setShowPassword(s => !s)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-300 hover:text-slate-600 transition-colors">
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-gray-600 hover:text-slate-600 transition-colors">
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
@@ -387,7 +387,7 @@ const LoginPage = () => {
                         placeholder="Min 8 characters" minLength={8} disabled={setPwLoading}
                         className={`${inputClass} pr-14`} />
                       <button type="button" onClick={() => setShowSetNew(s => !s)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-300 hover:text-slate-600 transition-colors">
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-gray-600 hover:text-slate-600 transition-colors">
                         {showSetNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
@@ -403,7 +403,7 @@ const LoginPage = () => {
                         placeholder="Repeat new password" disabled={setPwLoading}
                         className={`${inputClass} pr-14`} />
                       <button type="button" onClick={() => setShowSetConfirm(s => !s)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-300 hover:text-slate-600 transition-colors">
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-gray-600 hover:text-slate-600 transition-colors">
                         {showSetConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
@@ -513,7 +513,7 @@ const LoginPage = () => {
 
           {/* Footer */}
           <div className="mt-16 flex items-center justify-center gap-2 border-t border-slate-200/60 pt-8">
-            <Lock className="h-4 w-4 text-slate-300" />
+            <Lock className="h-4 w-4 text-gray-600" />
             <p className="text-[12px] text-slate-400 font-bold uppercase tracking-widest">Secured by EDDVA Architecture</p>
           </div>
         </motion.div>
@@ -564,7 +564,7 @@ const LoginPage = () => {
             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             className="relative mb-12"
           >
-            <div className="absolute -inset-x-12 -bottom-6 h-12 bg-slate-900/5 blur-3xl rounded-full scale-x-50 opacity-50" />
+            <div className="absolute -inset-x-12 -bottom-6 h-12 bg-white/5 blur-3xl rounded-full scale-x-50 opacity-50" />
             <img src={loginIllustration} alt="Learn"
               className="w-full h-auto max-h-[440px] object-contain drop-shadow-[0_32px_64px_rgba(0,0,0,0.12)] relative z-10" />
           </motion.div>

@@ -1,4 +1,4 @@
-import { Globe } from "lucide-react";
+﻿import { Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { INDIAN_LANGUAGES, storeLanguage } from "@/lib/api/sarvam";
 
@@ -20,7 +20,7 @@ export function LanguageSelector({ value, onChange, className }: Props) {
       <select
         value={value}
         onChange={(e) => handleChange(e.target.value)}
-        className="text-xs bg-black/30 border border-white/15 rounded-lg px-2 py-1 text-foreground/80 focus:outline-none focus:border-primary/50 cursor-pointer"
+        className="text-xs bg-gray-200/50 border border-gray-200 rounded-lg px-2 py-1 text-foreground/80 focus:outline-none focus:border-primary/50 cursor-pointer"
       >
         {INDIAN_LANGUAGES.map((lang) => (
           <option key={lang.code} value={lang.code} className="bg-[#0d0d1a] text-white">

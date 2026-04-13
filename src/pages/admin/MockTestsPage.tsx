@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, FileText, Trash2, X, ChevronRight,
@@ -694,7 +694,7 @@ function CsvImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-lg rounded-2xl bg-card border border-border shadow-2xl p-6">
         <div className="flex items-center justify-between mb-5">
@@ -860,7 +860,7 @@ function CreateTestModal({ onClose, onCreated }: { onClose: () => void; onCreate
   // ── Mode selection screen ──
   if (createMode === "select") {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4">
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl p-6">
           <div className="flex items-center justify-between mb-6">
@@ -929,7 +929,7 @@ function CreateTestModal({ onClose, onCreated }: { onClose: () => void; onCreate
   // ── AI mode ──
   if (createMode === "ai" && step === "questions") {
     return (
-      <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-start justify-center bg-gray-300/50 p-4 overflow-y-auto">
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-lg rounded-2xl bg-card border border-border shadow-2xl p-6 my-8">
           <div className="flex items-center justify-between mb-5">
@@ -949,7 +949,7 @@ function CreateTestModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
   // ── Manual mode OR AI step 2 (review + details) ──
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-gray-300/50 p-4 overflow-y-auto">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-2xl rounded-2xl bg-card border border-border shadow-2xl p-6 my-8">
         <div className="flex items-center justify-between mb-5">
@@ -1111,7 +1111,7 @@ function AddQuestionModal({ mockTestId, existingIds, onClose }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-gray-300/50 p-4 overflow-y-auto">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-xl rounded-2xl bg-card border border-border shadow-2xl p-6 my-8">
         <div className="flex items-center justify-between mb-5">

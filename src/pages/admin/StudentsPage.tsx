@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Users, Search, ChevronRight, ChevronDown,
@@ -172,7 +172,7 @@ function CourseRow({ course, students, index, onStudentClick }: {
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enrolled</p>
           </div>
           <ChevronDown className={cn(
-            "w-4 h-4 text-slate-300 transition-transform duration-300",
+            "w-4 h-4 text-gray-600 transition-transform duration-300",
             expanded && "rotate-180"
           )} />
         </div>
@@ -190,7 +190,7 @@ function CourseRow({ course, students, index, onStudentClick }: {
           >
             <div className="border-t border-slate-100">
               {students.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-300">
+                <div className="flex flex-col items-center justify-center py-10 text-gray-600">
                   <GraduationCap className="w-8 h-8 mb-2" />
                   <p className="text-sm font-semibold">No students enrolled yet</p>
                 </div>
@@ -221,7 +221,7 @@ function CourseRow({ course, students, index, onStudentClick }: {
                             <span>Last seen {new Date(s.lastLoginAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
                           )}
                         </div>
-                        <ChevronRight className="w-4 h-4 text-slate-200 group-hover:text-blue-500 transition-colors ml-2" />
+                        <ChevronRight className="w-4 h-4 text-gray-800 group-hover:text-blue-500 transition-colors ml-2" />
                       </button>
                     );
                   })}
@@ -318,7 +318,7 @@ const StudentsPage = () => {
         <div className="space-y-4">
           {batchList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
-              <BookOpen className="w-10 h-10 text-slate-200 mb-3" />
+              <BookOpen className="w-10 h-10 text-gray-800 mb-3" />
               <p className="text-sm font-bold text-slate-400">No courses yet</p>
               <button onClick={() => navigate("/admin/batches")}
                 className="mt-4 text-xs font-black text-blue-600 hover:underline">
@@ -354,13 +354,13 @@ const StudentsPage = () => {
               />
             </div>
             <button type="submit"
-              className="px-5 h-11 bg-slate-900 text-white text-xs font-black uppercase tracking-wider rounded-2xl hover:bg-slate-700 transition-colors">
+              className="px-5 h-11 bg-white text-gray-900 text-xs font-black uppercase tracking-wider rounded-2xl hover:bg-slate-700 transition-colors">
               Search
             </button>
           </form>
 
           {paged.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-300">
+            <div className="flex flex-col items-center justify-center py-16 text-gray-600">
               <Users className="w-12 h-12 mb-3" />
               <p className="text-sm font-bold text-slate-400">
                 {search ? "No students match your search" : "No students found"}
@@ -429,7 +429,7 @@ const StudentsPage = () => {
                               : "Never"}
                           </td>
                           <td className="p-4">
-                            <ChevronRight className="w-4 h-4 text-slate-200 group-hover:text-blue-500 transition-colors" />
+                            <ChevronRight className="w-4 h-4 text-gray-800 group-hover:text-blue-500 transition-colors" />
                           </td>
                         </tr>
                       );

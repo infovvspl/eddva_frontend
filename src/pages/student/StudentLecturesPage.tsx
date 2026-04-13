@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -199,7 +199,7 @@ function LectureCard({ lecture, onWatch }: { lecture: StudentLecture; onWatch: (
         {/* Action Button */}
         <div className="flex flex-col items-center justify-center p-2">
            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center group-hover:border-blue-200 group-hover:scale-110 transition-all shadow-sm">
-              <ChevronRight className="w-6 h-6 text-slate-300 group-hover:text-blue-600 transition-colors" />
+              <ChevronRight className="w-6 h-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
            </div>
         </div>
       </div>
@@ -267,7 +267,7 @@ export default function StudentLecturesPage() {
           <div className="space-y-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-slate-900 text-white w-fit shadow-xl"
+              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white text-gray-900 w-fit shadow-xl"
             >
               <Sparkles className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-[9px] font-black uppercase tracking-[0.2em]">Neural Streams Archive</span>
@@ -301,7 +301,7 @@ export default function StudentLecturesPage() {
                    onClick={() => setTab(t.key)}
                    className={cn(
                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                     tab === t.key ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                     tab === t.key ? "bg-white text-gray-900 shadow-lg" : "text-slate-400 hover:text-slate-600"
                    )}
                  >
                    {t.icon} {t.label}
@@ -326,7 +326,7 @@ export default function StudentLecturesPage() {
         ) : filtered.length === 0 ? (
           <div className="py-40 flex flex-col items-center text-center max-w-md mx-auto">
              <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-8">
-                <Filter className="w-10 h-10 text-slate-200" />
+                <Filter className="w-10 h-10 text-gray-800" />
              </div>
              <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Zero Streams Found</h3>
              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">

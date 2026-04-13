@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -22,14 +22,14 @@ import { apiClient, extractData } from "@/lib/api/client";
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
   open:             { label: "Open",             bg: "bg-orange-100 dark:bg-orange-950/30", text: "text-orange-700 dark:text-orange-400", dot: "bg-orange-500" },
-  ai_resolved:      { label: "AI Resolved",      bg: "bg-blue-100 dark:bg-blue-950/30",   text: "text-blue-700 dark:text-blue-400",   dot: "bg-blue-500" },
+  ai_resolved:      { label: "AI Resolved",      bg: "bg-blue-100 dark:bg-blue-50/30",   text: "text-blue-700 dark:text-blue-400",   dot: "bg-blue-500" },
   escalated:        { label: "Needs Answer",     bg: "bg-red-100 dark:bg-red-950/30",     text: "text-red-700 dark:text-red-400",     dot: "bg-red-500" },
-  teacher_resolved: { label: "Resolved",         bg: "bg-emerald-100 dark:bg-emerald-950/30", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
+  teacher_resolved: { label: "Resolved",         bg: "bg-emerald-100 dark:bg-emerald-50/30", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
 };
 
 const AI_QUALITY_OPTIONS = [
-  { value: "correct", label: "Completely Correct", desc: "AI answered it right — no extra response needed", icon: CheckCircle2, color: "text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20" },
-  { value: "partial", label: "Partially Correct",  desc: "AI got some parts right — I'll complete it", icon: AlertCircle, color: "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/20" },
+  { value: "correct", label: "Completely Correct", desc: "AI answered it right — no extra response needed", icon: CheckCircle2, color: "text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-50/20" },
+  { value: "partial", label: "Partially Correct",  desc: "AI got some parts right — I'll complete it", icon: AlertCircle, color: "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-50/20" },
   { value: "wrong",   label: "Completely Wrong",   desc: "AI missed it entirely — I'll write from scratch", icon: XCircle, color: "text-red-600 border-red-300 bg-red-50 dark:bg-red-950/20" },
 ];
 
@@ -182,7 +182,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
         <button
           onClick={handleAiAssist}
           disabled={aiLoading}
-          className="w-full flex items-center justify-center gap-2 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-50/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
         >
           {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
           {aiLoading ? "Generating AI draft…" : "Ask AI for Help (pre-fill response)"}
@@ -190,11 +190,11 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
       )}
 
       {showPreview ? (
-        <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-4 min-h-[120px]">
+        <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-50/20 rounded-xl p-4 min-h-[120px]">
           <p className="text-xs font-semibold text-emerald-600 mb-2">Preview — Student will see:</p>
           <p className="text-sm whitespace-pre-wrap text-foreground">{response || <span className="text-muted-foreground italic">Nothing written yet…</span>}</p>
           {lectureRef && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-blue-600 border border-blue-200 bg-blue-50 dark:bg-blue-950/20 rounded-lg px-3 py-2">
+            <div className="mt-3 flex items-center gap-2 text-xs text-blue-600 border border-blue-200 bg-blue-50 dark:bg-blue-50/20 rounded-lg px-3 py-2">
               <Link2 className="w-3.5 h-3.5 shrink-0" /> {lectureRef}
             </div>
           )}
@@ -355,7 +355,7 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-500" /> What AI Tried
             </p>
-            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 rounded-xl p-4 space-y-2">
+            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-50/20 rounded-xl p-4 space-y-2">
               <p className="text-sm text-foreground whitespace-pre-wrap">{doubt.aiExplanation}</p>
               {doubt.aiConceptLinks && doubt.aiConceptLinks.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
@@ -473,7 +473,7 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
 
             {/* Reviewed without response */}
             {doubt.teacherReviewedAt && !doubt.teacherResponse && (
-              <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-4">
+              <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-50/20 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCheck className="w-4 h-4 text-emerald-600" />
                   <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">AI Answer Verified Correct</p>
@@ -484,7 +484,7 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
 
             {/* Written response */}
             {doubt.teacherResponse && (
-              <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-4 space-y-3">
+              <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-50/20 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-3.5 h-3.5 text-white" />
@@ -493,7 +493,7 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
                 </div>
                 <p className="text-sm text-foreground whitespace-pre-wrap">{doubt.teacherResponse}</p>
                 {doubt.teacherLectureRef && (
-                  <div className="flex items-center gap-2 text-xs text-blue-600 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-xs text-blue-600 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-50/20 rounded-lg px-3 py-2">
                     <Link2 className="w-3.5 h-3.5 shrink-0" /> {doubt.teacherLectureRef}
                   </div>
                 )}
@@ -510,7 +510,7 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
               <div className={cn(
                 "flex items-center gap-2 text-xs rounded-xl px-3 py-2 border",
                 doubt.isTeacherResponseHelpful
-                  ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                  ? "bg-emerald-50 dark:bg-emerald-50/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
                   : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
               )}>
                 {doubt.isTeacherResponseHelpful

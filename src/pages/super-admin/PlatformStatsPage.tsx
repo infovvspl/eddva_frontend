@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import {
   Users, Building2, DollarSign, Swords, Activity, Zap, Globe, ShieldCheck, ArrowUpRight, Loader2
 } from "lucide-react";
@@ -89,7 +89,7 @@ const PlatformStatsPage = () => {
           <div className="bg-white p-10 rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group">
             <div className="flex justify-between items-center mb-10 relative z-10">
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Revenue Hub</h3>
-              <div className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-[0.15em]">MRR Protocol</div>
+              <div className="px-4 py-1.5 bg-white text-gray-900 rounded-full text-[10px] font-black uppercase tracking-[0.15em]">MRR Protocol</div>
             </div>
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={monthlyGrowth}>
@@ -133,7 +133,7 @@ const PlatformStatsPage = () => {
               {[
                 { label: "JEE Main/Adv", value: 62, color: "bg-indigo-600" },
                 { label: "NEET UG Hub", value: 34, color: "bg-purple-600" },
-                { label: "Foundation", value: 4, color: "bg-slate-900" },
+                { label: "Foundation", value: 4, color: "bg-white" },
               ].map((ex) => (
                 <div key={ex.label}>
                   <div className="flex justify-between items-end mb-3">
@@ -148,7 +148,7 @@ const PlatformStatsPage = () => {
             </div>
           </div>
 
-          <div className="bg-slate-900 p-10 rounded-[44px] text-white shadow-2xl shadow-slate-900/40 relative overflow-hidden group">
+          <div className="bg-white p-10 rounded-[44px] text-gray-900 shadow-2xl shadow-slate-900/40 relative overflow-hidden group">
             <h3 className="text-xl font-black mb-10 relative z-10">System Integrity</h3>
             <div className="space-y-4 relative z-10">
               {[
@@ -157,7 +157,7 @@ const PlatformStatsPage = () => {
                 { label: "Neural Layer", value: "Shield Active", icon: ShieldCheck, status: "text-indigo-400" },
                 { label: "Error Margin", value: "0.01%", icon: Activity, status: "text-emerald-400" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-[24px] group/item hover:bg-white/10 transition-all cursor-default">
+                <div key={item.label} className="flex items-center justify-between p-5 bg-white/5 border border-gray-200 rounded-[24px] group/item hover:bg-white/10 transition-all cursor-default">
                   <div className="flex items-center gap-4">
                     <item.icon className="w-5 h-5 text-white/20 group-hover/item:text-indigo-400 transition-colors" />
                     <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">{item.label}</span>

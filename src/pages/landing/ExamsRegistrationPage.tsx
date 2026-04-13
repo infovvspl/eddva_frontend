@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Calendar, CheckCircle2, 
@@ -63,7 +63,7 @@ export default function ExamsRegistrationPage() {
         {/* ── Minimal Hero with Banner ── */}
         <section className="relative overflow-hidden py-32 lg:py-48 text-center border-b border-gray-50">
            {/* Background Image with Overlay */}
-           <div className="absolute inset-0 -z-10 bg-slate-950">
+           <div className="absolute inset-0 -z-10 bg-gray-50">
               <img src={bannerImg} alt="Exams Info" className="h-full w-full object-cover opacity-30" />
               <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, transparent, ${BG_STUDIO})` }} />
            </div>

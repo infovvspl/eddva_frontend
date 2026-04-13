@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -192,7 +192,7 @@ export default function CareerPage() {
           <div className="relative z-10 flex h-full items-center">
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
               <FadeUp>
-                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
+                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                   <Calendar className="h-3 w-3" /> Upcoming Exams 2025
                 </span>
                 <h1 className="mb-5 text-[46px] font-extrabold leading-[1.1] tracking-tight text-white lg:text-[66px]">
@@ -218,7 +218,7 @@ export default function CareerPage() {
                     href="/study-material"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-white backdrop-blur-sm hover:bg-white/15 transition-all"
+                    className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-gray-900 backdrop-blur-sm hover:bg-white/15 transition-all"
                   >
                     Start Preparing <ChevronRight className="h-4 w-4" />
                   </motion.a>
@@ -237,7 +237,7 @@ export default function CareerPage() {
                     initial={{ opacity: 0, x: 30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 + i * 0.12 }}
-                    className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 backdrop-blur-md"
+                    className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/10 px-4 py-2.5 backdrop-blur-md"
                   >
                     <span className="text-xl">{s.icon}</span>
                     <div>

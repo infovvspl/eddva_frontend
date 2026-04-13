@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LandingLayout } from "@/components/landing/LandingLayout";
@@ -99,7 +99,7 @@ export default function StudyMaterialPage() {
           {/* content — centred */}
           <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
             <FadeUp>
-              <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
+              <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                 <BookOpen className="h-3 w-3" /> Study Material
               </span>
               <h1 className="mb-5 text-[40px] font-extrabold leading-[1.15] tracking-tight text-white lg:text-[58px]">
@@ -119,7 +119,7 @@ export default function StudyMaterialPage() {
                   <input
                     type="text"
                     placeholder="Search resources..."
-                    className="w-full h-14 rounded-2xl border border-white/20 bg-white/90 pl-14 pr-6 text-gray-900 outline-none focus:border-blue-400 focus:bg-white transition-all font-bold shadow-lg backdrop-blur-sm"
+                    className="w-full h-14 rounded-2xl border border-gray-200 bg-white/90 pl-14 pr-6 text-gray-900 outline-none focus:border-blue-400 focus:bg-white transition-all font-bold shadow-lg backdrop-blur-sm"
                   />
                 </div>
               </div>
@@ -133,7 +133,7 @@ export default function StudyMaterialPage() {
                   { icon:"⭐", val:"4.9★",  label:"Avg Rating" },
                 ].map(s => (
                   <div key={s.label}
-                    className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 backdrop-blur-sm">
+                    className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-4 py-2 backdrop-blur-sm">
                     <span className="text-[15px]">{s.icon}</span>
                     <span className="text-[13px] font-bold text-white">{s.val}</span>
                     <span className="text-[11px] text-white/50">{s.label}</span>

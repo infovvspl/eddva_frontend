@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { apiClient, extractData } from "@/lib/api/client";
 
@@ -222,7 +222,7 @@ export function AskDoubtPanel({ lectureId, topicId, topicName, lectureTitle, tim
                   ✨ AI Response
                 </span>
               </div>
-              <div className="text-sm prose prose-invert max-w-none" style={{ color: "#E6EDF3" }}>
+              <div className="text-sm prose max-w-none" style={{ color: "#E6EDF3" }}>
                 <ReactMarkdown>{response.aiExplanation}</ReactMarkdown>
               </div>
 

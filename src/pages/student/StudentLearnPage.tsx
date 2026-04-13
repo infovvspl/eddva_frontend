@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -88,7 +88,7 @@ function LearningHero({ me, nextAction }: { me: any; nextAction: any }) {
             whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(37,99,235,0.3)" }}
             whileTap={{ scale: 0.95 }}
             onClick={handleResume}
-            className="group flex items-center gap-6 px-10 py-5 rounded-[2.5rem] bg-slate-900 text-white shadow-3xl hover:bg-blue-600 transition-all"
+            className="group flex items-center gap-6 px-10 py-5 rounded-[2.5rem] bg-white text-white shadow-3xl hover:bg-blue-600 transition-all"
           >
              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:rotate-12 transition-transform">
                 <Play className="w-5 h-5 fill-white" />
@@ -139,13 +139,13 @@ function MissionCard({ action }: { action: any }) {
 
   return (
     <CardGlass className="p-1 max-w-4xl cursor-pointer group" onClick={() => navigate(action.type === "lecture" ? `/student/lecture/${action.refId}` : `/student/quiz?mockTestId=${action.refId}`)}>
-       <div className="rounded-[2rem] bg-gradient-to-br from-blue-600 via-indigo-600 to-slate-900 p-8 text-white relative">
+       <div className="rounded-[2rem] bg-gradient-to-br from-blue-600 via-indigo-600 to-white p-8 text-white relative">
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 blur-[70px] rounded-full -mr-24 -mt-24" />
           
           <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
              <div className="space-y-5 flex-1 min-w-0">
                 <div className="flex items-center gap-3">
-                   <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-[9px] font-black uppercase tracking-[0.25em]">Today's Focus</div>
+                   <div className="px-4 py-1.5 rounded-full bg-white/10 border border-gray-200 text-[9px] font-black uppercase tracking-[0.25em]">Today's Focus</div>
                    <div className="px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-[9px] font-black uppercase tracking-[0.25em] flex items-center gap-2">
                       <Zap className="w-3 h-3 fill-emerald-400" /> +250 XP
                    </div>
@@ -235,7 +235,7 @@ export default function StudentLearnPage() {
              <section className="space-y-8">
                 <div className="flex items-center justify-between mb-4">
                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-2xl">
+                      <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-900 shadow-2xl">
                          <Layers className="w-6 h-6" />
                       </div>
                       <div>
@@ -260,7 +260,7 @@ export default function StudentLearnPage() {
                 <div className="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] p-8 shadow-3xl">
                    <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-4 custom-scrollbar">
                       <span className="text-[9px] font-black uppercase text-slate-400 px-3 py-1.5 rounded-full border border-slate-200 shrink-0">Current Stage</span>
-                      <ChevronRight className="w-4 h-4 text-slate-200 shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-gray-800 shrink-0" />
                       <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight shrink-0">{activeSub?.name} Overview</h3>
                    </div>
                    
@@ -384,7 +384,7 @@ export default function StudentLearnPage() {
       {/* ── Floating Doubt Trigger ── */}
       <motion.button
         whileHover={{ scale: 1.1, rotate: -5 }} whileTap={{ scale: 0.9 }}
-        className="fixed bottom-10 right-10 w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-3xl z-[100] group"
+        className="fixed bottom-10 right-10 w-16 h-16 rounded-2xl bg-white text-gray-900 flex items-center justify-center shadow-3xl z-[100] group"
         onClick={() => navigate("/student/doubts")}
       >
         <div className="absolute inset-0 bg-blue-600/20 blur-2xl group-hover:blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-all" />
