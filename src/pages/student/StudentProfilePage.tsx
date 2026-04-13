@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Flame, Zap, Trophy, Target, BookOpen,
   Loader2, Check, LogOut, Edit3, X, TrendingUp, BarChart2,
-  Mail, Phone, MapPin, Calendar, Star, Award, 
-  Shield, Sparkles, Globe, ArrowRight, Activity, 
-  Layers, HardDrive, Cpu, Compass,
+  Mail, Phone, MapPin, Calendar, Star, Award,
+  Shield, Sparkles, Globe, ArrowRight, Activity,
+  Layers, HardDrive, Cpu, Compass, Camera,
 } from "lucide-react";
-import { useStudentMe, useMyPerformance, useUpdateProfile } from "@/hooks/use-student";
+import { useStudentMe, useMyPerformance, useUpdateProfile, useUploadAvatar } from "@/hooks/use-student";
 import { useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -188,6 +188,22 @@ export default function StudentProfilePage() {
 
   const { data: me, isLoading: meLoading } = useStudentMe();
   const { data: perf }                     = useMyPerformance();
+  const uploadAvatar                       = useUploadAvatar();
+
+  const handleAvatarClick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        uploadAvatar.mutate(file, {
+          onError: () => toast.error("Avatar upload failed. Try again."),
+        });
+      }
+    };
+    input.click();
+  };
 
   if (meLoading) {
     return (
@@ -290,16 +306,34 @@ export default function StudentProfilePage() {
                      </div>
                   </div>
                   <div className="px-8 pb-10 -mt-12 relative flex flex-col items-center text-center">
-                     <div className="w-24 h-24 rounded-[2.5rem] bg-white border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center group mb-6">
-                        {me?.profilePictureUrl ? (
-                          <img src={me.profilePictureUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        ) : (
-                          <div className="w-full h-full bg-slate-100 flex items-center justify-center text-4xl font-black text-slate-900">
-                             {name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="absolute inset-0 border-2 border-white/20 rounded-[2.5rem] pointer-events-none" />
-                     </div>
+                     {/* ── Avatar with upload overlay ── */}
+                     <button
+                       onClick={handleAvatarClick}
+                       disabled={uploadAvatar.isPending}
+                       className="relative w-24 h-24 rounded-[2.5rem] bg-white border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center group mb-6 cursor-pointer focus:outline-none"
+                       title="Change profile picture"
+                     >
+                       {me?.profilePictureUrl ? (
+                         <img src={me.profilePictureUrl} alt="avatar" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                       ) : (
+                         <div className="w-full h-full bg-slate-100 flex items-center justify-center text-4xl font-black text-slate-900">
+                           {name.charAt(0).toUpperCase()}
+                         </div>
+                       )}
+                       {/* Hover / uploading overlay */}
+                       <div className={cn(
+                         "absolute inset-0 flex flex-col items-center justify-center transition-all duration-200 rounded-[2.5rem]",
+                         uploadAvatar.isPending
+                           ? "bg-black/50"
+                           : "bg-black/0 group-hover:bg-black/40"
+                       )}>
+                         {uploadAvatar.isPending ? (
+                           <Loader2 className="w-6 h-6 text-white animate-spin" />
+                         ) : (
+                           <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                         )}
+                       </div>
+                     </button>
                      
                      <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight">{name}</h2>
                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mt-2">{student?.examTarget} UNIT • CLASS {student?.currentClass}</p>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,14 +13,7 @@ import {
   useTodaysPlan, useWeeklyPlan, useCompletePlanItem,
   useSkipPlanItem, useRegeneratePlan,
 } from "@/hooks/use-student";
-<<<<<<< HEAD
-import { StudyPlanItem, PlanItemType } from "@/lib/api/student";
-import { toast } from "sonner";
-import { LanguageSelector } from "@/components/LanguageSelector";
-import { sarvamTranslateMany, getStoredLanguage } from "@/lib/api/sarvam";
-=======
 import type { StudyPlanItem } from "@/lib/api/student";
->>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 const BLUE = "#2563EB";
@@ -39,139 +32,6 @@ const typeConfig: Record<StudyPlanItem["type"], { icon: any; color: string; labe
 
 // ─── Components ────────────────────────────────────────────────────────────
 
-<<<<<<< HEAD
-const typeNav: Record<PlanItemType, (refId: string | null | undefined) => string> = {
-  lecture:       id => validId(id) ? `/student/lectures/${validId(id)}` : `/student/learn`,
-  practice:      id => validId(id) ? `/student/learn/topic/${validId(id)}` : `/student/learn`,
-  mock_test:     id => validId(id) ? `/student/quiz?mockTestId=${validId(id)}` : `/student/learn`,
-  battle:        ()  => `/student/battle`,
-  revision:      id => validId(id) ? `/student/learn/topic/${validId(id)}` : `/student/learn`,
-  doubt_session: ()  => `/student/doubts`,
-};
-
-function getWeekDates(offset = 0) {
-  const today = new Date();
-  today.setDate(today.getDate() + offset * 7);
-  const dow = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return {
-    start: monday.toISOString().split("T")[0],
-    end:   sunday.toISOString().split("T")[0],
-    label: `${monday.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} – ${sunday.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
-  };
-}
-
-<<<<<<< HEAD
-// ─── Plan Item Card ───────────────────────────────────────────────────────────
-
-function PlanItemCard({ item, translatedTitle }: { item: StudyPlanItem; translatedTitle?: string }) {
-  const navigate    = useNavigate();
-  const complete    = useCompletePlanItem();
-  const skip        = useSkipPlanItem();
-  const cfg         = typeConfig[item.type];
-  const isDone      = item.status === "completed";
-  const isSkipped   = item.status === "skipped";
-
-  const handleComplete = () => {
-    complete.mutate(item.id, {
-      onSuccess: () => toast.success(`+${cfg.xp} XP earned! ✨`),
-      onError:   () => toast.error("Failed to update"),
-    });
-  };
-
-  const handleSkip = () => {
-    skip.mutate(item.id, {
-      onSuccess: () => toast.info("Rescheduled to tomorrow"),
-      onError:   () => toast.error("Failed to skip"),
-    });
-  };
-
-  const handleOpen = () => navigate(typeNav[item.type](item.refId));
-=======
-// ─── Plan Item Card ────────────────────────────────────────────────────────────
-function PlanItemCard({ item }: { item: StudyPlanItem }) {
-  const navigate  = useNavigate();
-  const complete  = useCompletePlanItem();
-  const skip      = useSkipPlanItem();
-  const cfg       = typeConfig[item.type];
-  const isDone    = item.status === "completed";
-  const isSkipped = item.status === "skipped";
->>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      whileHover={!isDone && !isSkipped ? { y: -1, boxShadow: `0 6px 20px rgba(1,56,137,0.08)` } : {}}
-      className={`bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3 transition-all shadow-sm ${isDone || isSkipped ? "opacity-60" : ""}`}
-    >
-      {/* Type icon */}
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: cfg.bg, color: cfg.color }}
-      >
-        {cfg.icon}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-<<<<<<< HEAD
-        <p className={`text-sm font-semibold truncate ${isDone ? "line-through text-muted-foreground" : "text-foreground"}`}>
-          {translatedTitle ?? item.title}
-=======
-        <p className={`text-sm font-bold truncate ${isDone ? "line-through text-gray-400" : "text-gray-900"}`}>
-          {item.title}
->>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
-        </p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs font-semibold capitalize" style={{ color: cfg.color }}>
-            {item.type.replace(/_/g, " ")}
-          </span>
-          <span className="text-xs text-gray-400 flex items-center gap-0.5">
-            <Clock className="w-3 h-3" />{item.estimatedMinutes}m
-          </span>
-          {!isDone && !isSkipped && (
-            <span className="text-xs font-bold text-amber-500 flex items-center gap-0.5">
-              <Zap className="w-2.5 h-2.5" />+{cfg.xp} XP
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Actions */}
-      {isDone ? (
-        <div className="w-8 h-8 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-          <CheckCircle className="w-5 h-5 text-green-500" />
-        </div>
-      ) : isSkipped ? (
-        <span className="text-xs text-gray-400 shrink-0 px-2 py-1 rounded-lg bg-gray-50">Rescheduled</span>
-      ) : (
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => skip.mutate(item.id, { onSuccess: () => toast.info("Rescheduled"), onError: () => toast.error("Failed") })}
-            disabled={skip.isPending}
-            className="w-8 h-8 rounded-xl bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors"
-          >
-            <SkipForward className="w-3.5 h-3.5 text-gray-400" />
-          </button>
-          <button
-            onClick={() => complete.mutate(item.id, { onSuccess: () => toast.success(`+${cfg.xp} XP earned! ✨`), onError: () => toast.error("Failed") })}
-            disabled={complete.isPending}
-            className="w-8 h-8 rounded-xl bg-green-50 hover:bg-green-100 flex items-center justify-center transition-colors"
-          >
-            {complete.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin text-green-500" /> : <CheckCircle className="w-3.5 h-3.5 text-green-500" />}
-          </button>
-          <button
-            onClick={() => navigate(typeNav[item.type](item.refId))}
-            className="px-4 py-2 rounded-xl text-white text-xs font-bold hover:opacity-90 transition-opacity"
-            style={{ background: BLUE, boxShadow: `0 2px 8px ${BLUE}30` }}
-          >
-            Start
-          </button>
-        </div>
-=======
 function PlanItemCard({ item }: { item: StudyPlanItem }) {
   const navigate = useNavigate();
   const complete = useCompletePlanItem();
@@ -192,7 +52,6 @@ function PlanItemCard({ item }: { item: StudyPlanItem }) {
       className={cn(
         "relative group transition-all duration-500",
         isDone ? "opacity-60" : "opacity-100"
->>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
       )}
     >
       <div className={cn(
@@ -272,32 +131,7 @@ function PlanItemCard({ item }: { item: StudyPlanItem }) {
   );
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-// ─── Weekly View ──────────────────────────────────────────────────────────────
-
-function WeeklyView({ lang }: { lang: string }) {
-=======
-// ─── Weekly View ───────────────────────────────────────────────────────────────
-function WeeklyView() {
->>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
-  const [weekOffset, setWeekOffset] = useState(0);
-  const { start, end, label } = getWeekDates(weekOffset);
-  const { data: items, isLoading } = useWeeklyPlan(start, end);
-  const [translations, setTranslations] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (lang === "en-IN" || !items?.length) { setTranslations({}); return; }
-    const titles = items.map((i) => i.title);
-    sarvamTranslateMany(titles, lang).then((translated) => {
-      const map: Record<string, string> = {};
-      items.forEach((item, idx) => { map[item.id] = translated[idx]; });
-      setTranslations(map);
-    }).catch(() => setTranslations({}));
-  }, [lang, items]);
-=======
 // ─── Weekly Planner ────────────────────────────────────────────────────────
->>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
 
 function WeeklyManager() {
   const { data: weekMap, isLoading } = useWeeklyPlan();
@@ -307,66 +141,6 @@ function WeeklyManager() {
   const entries = Object.entries(weekMap).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
 
   return (
-<<<<<<< HEAD
-    <div>
-      <div className="flex items-center justify-between mb-5">
-        <motion.button
-          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={() => setWeekOffset(v => v - 1)}
-          className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <ChevronLeft className="w-4 h-4 text-gray-600" />
-        </motion.button>
-        <div className="text-center">
-          <p className="text-sm font-black text-gray-900">{label}</p>
-          {weekOffset === 0 && <p className="text-xs font-bold" style={{ color: BLUE }}>This week</p>}
-        </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={() => setWeekOffset(v => v + 1)}
-          className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <ChevronRight className="w-4 h-4 text-gray-600" />
-        </motion.button>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: BLUE }} />
-        </div>
-      ) : Object.keys(grouped).length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-gray-100">
-          <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-200" />
-          <p className="text-gray-500 font-semibold">No tasks scheduled this week</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {Object.entries(grouped).sort().map(([date, dayItems]) => {
-            const isToday = date === today;
-            const d = new Date(date);
-            return (
-              <div key={date}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                    style={isToday ? { background: BLUE_L } : { background: "#F8FAFF" }}
-                  >
-                    <Calendar className="w-3.5 h-3.5" style={{ color: isToday ? BLUE : "#9CA3AF" }} />
-                    <p className={`text-sm font-black ${isToday ? "" : "text-gray-500"}`} style={isToday ? { color: BLUE } : {}}>
-                      {isToday ? "Today" : d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-400 font-medium">{dayItems.length} tasks</span>
-                </div>
-                <div className="space-y-2">
-                  {dayItems.map(item => <PlanItemCard key={item.id} item={item} translatedTitle={translations[item.id]} />)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-=======
     <div className="space-y-16">
       {entries.map(([dateStr, dayItems]) => {
         const d = new Date(dateStr);
@@ -394,7 +168,6 @@ function WeeklyManager() {
           </div>
         );
       })}
->>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
     </div>
   );
 }
@@ -403,62 +176,10 @@ function WeeklyManager() {
 
 export default function StudentStudyPlanPage() {
   const [tab, setTab] = useState<"today" | "week">("today");
-  const [lang, setLang] = useState<string>(() => getStoredLanguage());
-  const [todayTranslations, setTodayTranslations] = useState<Record<string, string>>({});
   const { data: todayItems, isLoading } = useTodaysPlan();
   const regenerate = useRegeneratePlan();
   const navigate = useNavigate();
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  useEffect(() => {
-    if (lang === "en-IN" || !todayItems?.length) { setTodayTranslations({}); return; }
-    const titles = todayItems.map((i) => i.title);
-    sarvamTranslateMany(titles, lang).then((translated) => {
-      const map: Record<string, string> = {};
-      todayItems.forEach((item, idx) => { map[item.id] = translated[idx]; });
-      setTodayTranslations(map);
-    }).catch(() => setTodayTranslations({}));
-  }, [lang, todayItems]);
-
-  const completed  = todayItems?.filter(i => i.status === "completed").length ?? 0;
-  const total      = todayItems?.length ?? 0;
-  const pct        = total > 0 ? (completed / total) * 100 : 0;
-  const totalXP    = todayItems?.filter(i => i.status !== "skipped")
-=======
-  const completed = todayItems?.filter(i => i.status === "completed").length ?? 0;
-  const total     = todayItems?.length ?? 0;
-  const pct       = total > 0 ? (completed / total) * 100 : 0;
-  const totalXP   = todayItems?.filter(i => i.status !== "skipped")
->>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
-    .reduce((sum, i) => sum + (typeConfig[i.type]?.xp ?? 5), 0) ?? 0;
-
-  return (
-<<<<<<< HEAD
-    <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Study Plan</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">AI-generated daily tasks</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <LanguageSelector value={lang} onChange={setLang} />
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerate.isPending}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card border border-border text-sm font-medium text-foreground hover:bg-secondary/40 transition-colors disabled:opacity-50"
-          >
-            {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Regenerate
-          </button>
-        </div>
-      </div>
-=======
-    <div className="min-h-screen p-5 sm:p-6" style={{ background: "#F5F7FB" }}>
-      <div className="max-w-2xl mx-auto space-y-5">
->>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
-=======
   const stats = useMemo(() => {
     const completed = todayItems?.filter(i => i.status === "completed").length ?? 0;
     const total     = todayItems?.length ?? 0;
@@ -478,7 +199,6 @@ export default function StudentStudyPlanPage() {
     <div className="min-h-screen relative bg-[#F8FAFC] custom-scrollbar">
       {/* ── Aero Dynamic Background ── */}
     
->>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
 
       <div className="relative z-10 px-6 sm:px-10 py-8 max-w-[1700px] mx-auto">
         {/* ── Aero Dashboard Hook ── */}
@@ -547,25 +267,6 @@ export default function StudentStudyPlanPage() {
                 Recalibrate Path
               </motion.button>
             </div>
-<<<<<<< HEAD
-          ) : (
-            <div className="space-y-3">
-              {todayItems.map(item => <PlanItemCard key={item.id} item={item} />)}
-            </div>
-          )
-        ) : (
-<<<<<<< HEAD
-          <div className="space-y-2.5">
-            {todayItems.map(item => <PlanItemCard key={item.id} item={item} translatedTitle={todayTranslations[item.id]} />)}
-          </div>
-        )
-      ) : (
-        <WeeklyView lang={lang} />
-      )}
-=======
-          <WeeklyView />
-        )}
-=======
 
             <AnimatePresence mode="wait">
               {tab === "today" ? (
@@ -641,9 +342,7 @@ export default function StudentStudyPlanPage() {
              </div>
           </aside>
         </div>
->>>>>>> 6001d4f1a65eecb3bf3fd2350afc992db7751fd1
       </div>
->>>>>>> 65ae41bbcc96ba8dbde77931ffc6961dfcd2e0ed
     </div>
   );
 }

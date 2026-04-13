@@ -146,10 +146,10 @@ export async function completeTeacherOnboarding(payload: TeacherOnboardingPayloa
 }
 
 /** Upload avatar image */
-export async function uploadAvatar(file: File): Promise<{ url: string }> {
+export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await apiClient.post("/auth/upload/avatar", form, {
+  const res = await apiClient.post("/auth/profile/avatar", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return extractData(res);

@@ -637,6 +637,19 @@ export async function updateProfile(payload: {
   return extractData<StudentMe>(res);
 }
 
+export async function uploadAvatar(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await apiClient.post("/auth/profile/avatar", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  const data = extractData<{ avatarUrl: string }>(res);
+  const raw = data?.avatarUrl ?? "";
+  // Backend returns relative /uploads/... — make it absolute
+  const base = (import.meta.env.VITE_API_BASE_URL as string ?? "").replace(/\/api\/v1\/?$/, "");
+  return raw.startsWith("http") ? raw : `${base}${raw}`;
+}
+
 export async function logout(refreshToken: string): Promise<void> {
   await apiClient.post("/auth/logout", { refreshToken });
 }
