@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+﻿import React, { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, ChevronRight, BookOpen, FileText, X, Lock,
@@ -152,11 +152,11 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
               : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
           )}
         >
-          <Upload className={cn("w-5 h-5 mx-auto mb-1.5 transition-colors", dragging ? "text-blue-500" : "text-slate-300")} />
+          <Upload className={cn("w-5 h-5 mx-auto mb-1.5 transition-colors", dragging ? "text-blue-500" : "text-gray-600")} />
           <p className="text-xs font-bold text-slate-500">
             {dragging ? "Drop to upload" : `Upload ${cfg.label}`}
           </p>
-          <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop</p>
+          <p className="text-[10px] text-gray-600 mt-0.5">click or drag & drop</p>
         </div>
 
         <AnimatePresence>
@@ -197,10 +197,10 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
             <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
           </div>
         ) : resources.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-slate-200">
+          <div className="flex flex-col items-center justify-center py-10 text-gray-800">
             <BookMarked className="w-10 h-10 mb-2" />
             <p className="text-sm font-semibold text-slate-400">No resources yet</p>
-            <p className="text-xs text-slate-300 mt-0.5">Upload PDFs, DPPs, quizzes or videos</p>
+            <p className="text-xs text-gray-600 mt-0.5">Upload PDFs, DPPs, quizzes or videos</p>
           </div>
         ) : (
           resources.map((r, i) => {
@@ -364,21 +364,21 @@ const ContentPage = () => {
           className={cn("transition-colors", selectedSubject ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}
         >Subjects</button>
         {selectedSubjectObj && (<>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
           <button onClick={() => { setSelectedChapter(""); setSelectedTopic(""); }}
             className={cn("transition-colors", selectedChapter ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
             {selectedSubjectObj.name}
           </button>
         </>)}
         {selectedChapterObj && (<>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
           <button onClick={() => setSelectedTopic("")}
             className={cn("transition-colors", selectedTopic ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
             {selectedChapterObj.name}
           </button>
         </>)}
         {selectedTopicObj && (<>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
           <span className="text-slate-900">{selectedTopicObj.name}</span>
         </>)}
       </div>
@@ -415,7 +415,7 @@ const ContentPage = () => {
           </AnimatePresence>
 
           {subjectList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-300">
+            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
               <BookOpen className="w-10 h-10 mb-2" />
               <p className="text-sm font-semibold text-slate-400">No subjects yet</p>
             </div>
@@ -435,7 +435,7 @@ const ContentPage = () => {
                   <span className={cn("text-[10px]", selectedSubject === s.id ? "text-white/60" : "text-slate-400")}>{s.chapters?.length ?? 0} ch</span>
                 </div>
               </div>
-              <ChevronRight className={cn("w-4 h-4 shrink-0", selectedSubject === s.id ? "text-white/60" : "text-slate-200 group-hover:text-blue-500")} />
+              <ChevronRight className={cn("w-4 h-4 shrink-0", selectedSubject === s.id ? "text-white/60" : "text-gray-800 group-hover:text-blue-500")} />
             </motion.button>
           ))}
         </Panel>
@@ -445,7 +445,7 @@ const ContentPage = () => {
           addLabel="Add Chapter" showForm={showChapterForm}
           onAdd={() => { if (selectedSubject) setShowChapterForm(!showChapterForm); }}>
           {!selectedSubject ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-200">
+            <div className="flex flex-col items-center justify-center py-12 text-gray-800">
               <Layers className="w-10 h-10 mb-2" />
               <p className="text-sm font-semibold text-slate-400">Select a subject first</p>
             </div>
@@ -470,7 +470,7 @@ const ContentPage = () => {
                 )}
               </AnimatePresence>
               {chapterList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-300">
+                <div className="flex flex-col items-center justify-center py-12 text-gray-600">
                   <FileText className="w-10 h-10 mb-2" />
                   <p className="text-sm font-semibold text-slate-400">No chapters yet</p>
                 </div>
@@ -480,14 +480,14 @@ const ContentPage = () => {
                   className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
                     selectedChapter === c.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "hover:bg-slate-50 border border-transparent hover:border-slate-100")}>
                   <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0",
-                    selectedChapter === c.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500")}>
+                    selectedChapter === c.id ? "bg-white/20 text-gray-900" : "bg-slate-100 text-slate-500")}>
                     {String(i + 1).padStart(2, "0")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-sm font-bold truncate", selectedChapter === c.id ? "text-white" : "text-slate-800")}>{c.name}</p>
                     <p className={cn("text-[10px] mt-0.5", selectedChapter === c.id ? "text-white/60" : "text-slate-400")}>{c.topics?.length ?? 0} topics</p>
                   </div>
-                  <ChevronRight className={cn("w-4 h-4 shrink-0", selectedChapter === c.id ? "text-white/60" : "text-slate-200 group-hover:text-blue-500")} />
+                  <ChevronRight className={cn("w-4 h-4 shrink-0", selectedChapter === c.id ? "text-white/60" : "text-gray-800 group-hover:text-blue-500")} />
                 </motion.button>
               ))}
             </>
@@ -499,7 +499,7 @@ const ContentPage = () => {
           addLabel="Add Topic" showForm={showTopicForm}
           onAdd={() => { if (selectedChapter) setShowTopicForm(!showTopicForm); }}>
           {!selectedChapter ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-200">
+            <div className="flex flex-col items-center justify-center py-12 text-gray-800">
               <Hash className="w-10 h-10 mb-2" />
               <p className="text-sm font-semibold text-slate-400">Select a chapter first</p>
             </div>
@@ -534,7 +534,7 @@ const ContentPage = () => {
                 )}
               </AnimatePresence>
               {topicList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-300">
+                <div className="flex flex-col items-center justify-center py-12 text-gray-600">
                   <FileText className="w-10 h-10 mb-2" />
                   <p className="text-sm font-semibold text-slate-400">No topics yet</p>
                 </div>
@@ -544,7 +544,7 @@ const ContentPage = () => {
                   className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
                     selectedTopic === t.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "border border-slate-100 hover:border-blue-100 hover:shadow-sm bg-white")}>
                   <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0",
-                    selectedTopic === t.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500")}>
+                    selectedTopic === t.id ? "bg-white/20 text-gray-900" : "bg-slate-100 text-slate-500")}>
                     {String(i + 1).padStart(2, "0")}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -561,14 +561,14 @@ const ContentPage = () => {
                       </span>
                       <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-md",
                         selectedTopic === t.id
-                          ? "bg-white/20 text-white"
+                          ? "bg-white/20 text-gray-900"
                           : t.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400")}>
                         {t.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
                   </div>
                   <Upload className={cn("w-3.5 h-3.5 shrink-0 transition-colors",
-                    selectedTopic === t.id ? "text-white/60" : "text-slate-200 group-hover:text-blue-500")} />
+                    selectedTopic === t.id ? "text-white/60" : "text-gray-800 group-hover:text-blue-500")} />
                 </motion.button>
               ))}
             </>

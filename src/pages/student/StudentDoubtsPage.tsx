@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Plus, ThumbsUp, ThumbsDown, ChevronDown,
@@ -90,7 +90,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
         <div className="flex flex-col items-center justify-center p-2 pt-4">
            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center group-hover:border-blue-200 transition-all shadow-sm">
               <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
-                <ChevronDown className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                <ChevronDown className="w-5 h-5 text-gray-600 group-hover:text-blue-500 transition-colors" />
               </motion.div>
            </div>
         </div>
@@ -105,7 +105,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
             <div className="p-8 space-y-6">
               {/* Question Detail */}
               <div className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm relative">
-                 <div className="absolute top-4 right-4"><Info className="w-4 h-4 text-slate-200" /></div>
+                 <div className="absolute top-4 right-4"><Info className="w-4 h-4 text-gray-800" /></div>
                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 opacity-60">System Entry Query</p>
                  <p className="text-slate-800 font-medium leading-relaxed">{doubt.questionText}</p>
               </div>
@@ -214,7 +214,7 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/60 backdrop-blur-xl"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <motion.div
@@ -226,7 +226,7 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between px-10 py-8 border-b border-slate-100 relative z-10">
           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white">
+             <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-gray-900">
                 <Monitor className="w-6 h-6" />
              </div>
              <div>
@@ -251,7 +251,7 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
                 onClick={() => setAskMode(opt.val)}
                 className={cn(
                   "flex flex-col items-center gap-3 p-6 rounded-3xl border-2 transition-all group",
-                  askMode === opt.val ? "border-slate-900 bg-slate-900 text-white shadow-2xl" : "border-slate-100 bg-white hover:border-slate-200"
+                  askMode === opt.val ? "border-slate-900 bg-white text-gray-900 shadow-2xl" : "border-slate-100 bg-white hover:border-slate-200"
                 )}
               >
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", askMode === opt.val ? "bg-white/10" : "bg-slate-50 group-hover:scale-110 transition-transform")}>
@@ -344,7 +344,7 @@ function AskDoubtForm({ onClose }: { onClose: () => void }) {
             disabled={!selectedTopicId || !question.trim() || createDoubt.isPending}
             className={cn(
               "w-full py-6 rounded-3xl text-xs font-black uppercase tracking-[0.3em] flex items-center justify-center gap-4 transition-all disabled:opacity-50 shadow-2xl",
-              askMode === "ai" ? "bg-slate-900 text-white shadow-blue-500/20" : "bg-blue-600 text-white shadow-blue-600/20"
+              askMode === "ai" ? "bg-white text-white shadow-blue-500/20" : "bg-blue-600 text-white shadow-blue-600/20"
             )}
           >
             {createDoubt.isPending
@@ -385,7 +385,7 @@ export default function StudentDoubtsPage() {
           <div className="space-y-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-slate-900 text-white w-fit shadow-xl"
+              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white text-gray-900 w-fit shadow-xl"
             >
               <Monitor className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-[9px] font-black uppercase tracking-[0.2em]">Neural Block Resonator Interface</span>
@@ -421,7 +421,7 @@ export default function StudentDoubtsPage() {
                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(37,99,235,0.2)" }}
                whileTap={{ scale: 0.95 }}
                onClick={() => setShowForm(true)}
-               className="flex items-center gap-4 px-10 py-6 rounded-3xl bg-slate-900 text-white text-xs font-black uppercase tracking-[0.2em] shadow-2xl group"
+               className="flex items-center gap-4 px-10 py-6 rounded-3xl bg-white text-gray-900 text-xs font-black uppercase tracking-[0.2em] shadow-2xl group"
              >
                 <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" /> Dispatch Query
              </motion.button>
@@ -440,7 +440,7 @@ export default function StudentDoubtsPage() {
                     onClick={() => setActiveTab(tab.key)}
                     className={cn(
                       "shrink-0 flex items-center gap-3 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
-                      activeTab === tab.key ? "bg-slate-900 text-white border-slate-900 shadow-xl" : "bg-white text-slate-400 border-slate-100 hover:border-blue-200"
+                      activeTab === tab.key ? "bg-white text-gray-900 border-slate-900 shadow-xl" : "bg-white text-slate-400 border-slate-100 hover:border-blue-200"
                     )}
                   >
                     {tab.label}
@@ -465,7 +465,7 @@ export default function StudentDoubtsPage() {
              ) : !doubts?.length ? (
                <div className="py-32 flex flex-col items-center text-center max-w-md mx-auto">
                   <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-10">
-                     <Monitor className="w-10 h-10 text-slate-200" />
+                     <Monitor className="w-10 h-10 text-gray-800" />
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-3">Feed Offline</h3>
                   <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">
@@ -521,7 +521,7 @@ export default function StudentDoubtsPage() {
                 </div>
              </CardGlass>
 
-             <CardGlass className="p-0 bg-slate-900 overflow-hidden shadow-indigo-500/20">
+             <CardGlass className="p-0 bg-white overflow-hidden shadow-indigo-500/20">
                 <div className="p-8 pb-4">
                    <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center mb-6">
                       <Layers className="w-7 h-7 text-white" />
@@ -529,7 +529,7 @@ export default function StudentDoubtsPage() {
                    <h4 className="text-xl font-black text-white italic uppercase tracking-tight mb-2">Knowledge Base</h4>
                    <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-10 leading-loose">Access your curated resolution archive. <span className="text-blue-400 font-black">42 common unit blocks</span> verified for your batch.</p>
                 </div>
-                <button className="w-full py-5 bg-white/5 border-t border-white/5 text-xs font-black text-white hover:bg-white/10 uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3">
+                <button className="w-full py-5 bg-white/5 border-t border-white/5 text-xs font-black text-gray-900 hover:bg-white/10 uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3">
                    Query Archive <ArrowRight className="w-4 h-4" />
                 </button>
              </CardGlass>

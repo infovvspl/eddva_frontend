@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Megaphone, Plus, Send, Calendar, Eye,
@@ -20,7 +20,7 @@ const AnnouncementsPage = () => {
 
   const getBadgeColor = (audience: string) => {
     const a = (audience || "").toLowerCase();
-    if (a.includes("all")) return "bg-slate-900 text-white border-slate-800";
+    if (a.includes("all")) return "bg-white text-gray-900 border-gray-200";
     if (a.includes("student")) return "bg-indigo-50 text-indigo-600 border-indigo-100";
     if (a.includes("teacher")) return "bg-emerald-50 text-emerald-600 border-emerald-100";
     if (a.includes("admin")) return "bg-purple-50 text-purple-600 border-purple-100";
@@ -64,7 +64,7 @@ const AnnouncementsPage = () => {
           <Button
             onClick={() => setShowForm(!showForm)}
             className={`h-14 px-8 rounded-2xl font-black flex gap-3 transition-all active:scale-95 text-[15px] shadow-2xl ${
-              showForm ? "bg-white border-2 border-slate-100 text-slate-400 hover:text-slate-900 shadow-none" : "bg-slate-900 text-white hover:bg-slate-800"
+              showForm ? "bg-white border-2 border-slate-100 text-slate-400 hover:text-slate-900 shadow-none" : "bg-white text-gray-900 hover:bg-gray-100"
             }`}
           >
             {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5 stroke-[3]" />}
@@ -115,7 +115,7 @@ const AnnouncementsPage = () => {
                     <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Detailed announcement details..." rows={5} className="w-full px-6 py-5 bg-white border-2 border-slate-100 rounded-[32px] text-[16px] font-semibold text-slate-900 focus:border-indigo-600 outline-none transition-all resize-none shadow-sm" />
                   </div>
                   <div className="flex justify-end pt-4">
-                    <Button onClick={handlePublish} disabled={createAnnouncement.isPending || !form.title || !form.body} className="h-16 px-10 bg-slate-900 text-white rounded-[24px] font-black text-[16px] hover:bg-slate-800 shadow-2xl transition-all flex gap-3">
+                    <Button onClick={handlePublish} disabled={createAnnouncement.isPending || !form.title || !form.body} className="h-16 px-10 bg-white text-gray-900 rounded-[24px] font-black text-[16px] hover:bg-gray-100 shadow-2xl transition-all flex gap-3">
                       {createAnnouncement.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-5 h-5 stroke-[2.5]" />}
                       Execute Broadcast
                     </Button>
@@ -129,7 +129,7 @@ const AnnouncementsPage = () => {
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white scale-75">
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-900 scale-75">
                <Filter className="w-4 h-4" />
             </div>
             <span className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Governance Feed</span>
@@ -177,7 +177,7 @@ const AnnouncementsPage = () => {
                   <button
                     onClick={() => handleDelete(a.id)}
                     disabled={deleteAnnouncement.isPending}
-                    className="p-3 text-slate-200 hover:text-rose-600 hover:bg-rose-50 rounded-[14px] transition-all"
+                    className="p-3 text-gray-800 hover:text-rose-600 hover:bg-rose-50 rounded-[14px] transition-all"
                   >
                     <Trash2 className="w-6 h-6" />
                   </button>

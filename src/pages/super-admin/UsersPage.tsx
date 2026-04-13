@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Users, Shield, GraduationCap, BookOpen,
@@ -48,7 +48,7 @@ const UsersPage = () => {
             <Button variant="outline" className="h-14 px-8 rounded-2xl border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-[15px]">
               <Download className="w-5 h-5 mr-3" /> Export Logs
             </Button>
-            <Button className="h-14 px-8 bg-slate-900 text-white rounded-2xl font-black hover:bg-slate-800 shadow-2xl transition-all text-[15px]">
+            <Button className="h-14 px-8 bg-white text-gray-900 rounded-2xl font-black hover:bg-gray-100 shadow-2xl transition-all text-[15px]">
               <UserPlus className="w-5 h-5 mr-3" /> Provision New Account
             </Button>
           </div>
@@ -57,13 +57,13 @@ const UsersPage = () => {
         {/* Filter Bar */}
         <div className="bg-slate-50/50 p-6 rounded-[32px] border border-slate-100 mb-8 flex flex-wrap items-center gap-6">
           <div className="relative flex-1 min-w-[320px]">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600" />
             <input
               type="text"
               placeholder="Search by full name, phone, or unique ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-14 pl-14 pr-6 bg-white border border-slate-100 rounded-[24px] text-[15px] font-semibold text-slate-800 placeholder:text-slate-300 focus:border-indigo-500/30 transition-all outline-none shadow-sm"
+              className="w-full h-14 pl-14 pr-6 bg-white border border-slate-100 rounded-[24px] text-[15px] font-semibold text-slate-800 placeholder:text-gray-600 focus:border-indigo-500/30 transition-all outline-none shadow-sm"
             />
           </div>
           <div className="flex items-center gap-4">
@@ -117,7 +117,7 @@ const UsersPage = () => {
                         <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="group hover:bg-slate-50 transition-colors">
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-5">
-                              <div className="w-12 h-12 rounded-[18px] bg-slate-100 flex items-center justify-center text-[13px] font-black text-slate-400 border border-slate-50 group-hover:bg-slate-900 group-hover:text-white transition-all shadow-sm">
+                              <div className="w-12 h-12 rounded-[18px] bg-slate-100 flex items-center justify-center text-[13px] font-black text-slate-400 border border-slate-50 group-hover:bg-white group-hover:text-white transition-all shadow-sm">
                                 {name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                               </div>
                               <div>
@@ -148,12 +148,12 @@ const UsersPage = () => {
                           </td>
                           <td className="px-8 py-6 text-right">
                             <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                              <button className="p-3 bg-white border border-slate-100 text-slate-300 hover:text-indigo-600 hover:shadow-lg rounded-[14px] transition-all" title="View Audit Logs">
+                              <button className="p-3 bg-white border border-slate-100 text-gray-600 hover:text-indigo-600 hover:shadow-lg rounded-[14px] transition-all" title="View Audit Logs">
                                 <Eye className="w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => handleToggleStatus(user.id, userStatus)}
-                                className="p-3 bg-white border border-slate-100 text-slate-300 hover:text-rose-600 hover:shadow-lg rounded-[14px] transition-all"
+                                className="p-3 bg-white border border-slate-100 text-gray-600 hover:text-rose-600 hover:shadow-lg rounded-[14px] transition-all"
                                 title={userStatus === "suspended" ? "Reinstate Access" : "Revoke Access"}
                               >
                                 <Ban className="w-5 h-5" />

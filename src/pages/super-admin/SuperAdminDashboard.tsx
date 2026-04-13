@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { Building2, Users, DollarSign, ArrowUpRight, ChevronRight, Zap, Loader2, AlertCircle, GraduationCap, Plus, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -56,7 +56,7 @@ const SuperAdminDashboard = () => {
           </Button>
           <Button
             onClick={() => navigate("/super-admin/tenants/new")}
-            className="h-14 px-10 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black shadow-2xl transition-all text-[15px] flex gap-2"
+            className="h-14 px-10 rounded-2xl bg-white hover:bg-gray-100 text-gray-900 font-black shadow-2xl transition-all text-[15px] flex gap-2"
           >
             <Plus className="w-5 h-5" /> Deploy New Institute
           </Button>
@@ -87,7 +87,7 @@ const SuperAdminDashboard = () => {
               </div>
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">{m.label}</p>
               <h3 className="text-[32px] font-black text-slate-900 tracking-tight">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin text-slate-300" /> : m.value}
+                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin text-gray-600" /> : m.value}
               </h3>
             </div>
           </motion.div>
@@ -110,7 +110,7 @@ const SuperAdminDashboard = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="p-10 rounded-[44px] bg-slate-900 text-white relative overflow-hidden shadow-2xl shadow-slate-900/20"
+            className="p-10 rounded-[44px] bg-white text-gray-900 relative overflow-hidden shadow-2xl shadow-slate-900/20"
           >
             <div className="relative z-10">
               <h3 className="text-2xl font-black mb-8">Hierarchy Intelligence</h3>
@@ -140,7 +140,7 @@ const SuperAdminDashboard = () => {
               <div className="mt-12 flex items-center gap-6">
                 <div className="flex -space-x-3">
                   {[1,2,3,4].map(i => (
-                    <div key={i} className="h-10 w-10 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-black">
+                    <div key={i} className="h-10 w-10 rounded-full border-2 border-slate-900 bg-gray-100 flex items-center justify-center text-[10px] font-black">
                       INST
                     </div>
                   ))}
@@ -178,7 +178,7 @@ const SuperAdminDashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {tenantsLoading ? (
-                    <tr><td colSpan={3} className="py-20 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-200" /></td></tr>
+                    <tr><td colSpan={3} className="py-20 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-800" /></td></tr>
                   ) : tenants.slice(0, 4).map((inst: any) => (
                     <tr key={inst.id} className="group hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}>
                       <td className="px-10 py-6">
@@ -199,7 +199,7 @@ const SuperAdminDashboard = () => {
                       </td>
                       <td className="px-10 py-6 text-right">
                         <div className="flex flex-col items-end gap-1.5">
-                          <p className="text-sm font-black text-slate-900">{(inst.studentCount ?? 0).toLocaleString()} <span className="text-slate-300">/ {(inst.maxStudents ?? 500).toLocaleString()}</span></p>
+                          <p className="text-sm font-black text-slate-900">{(inst.studentCount ?? 0).toLocaleString()} <span className="text-gray-600">/ {(inst.maxStudents ?? 500).toLocaleString()}</span></p>
                           <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
                             <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min(((inst.studentCount ?? 0) / (inst.maxStudents ?? 500)) * 100, 100)}%` }} />
                           </div>
@@ -222,7 +222,7 @@ const SuperAdminDashboard = () => {
                 { label: "Add New Institute", icon: Building2, path: "/super-admin/tenants/new", color: "bg-indigo-600" },
                 { label: "Manage Platform Users", icon: Users, path: "/super-admin/users", color: "bg-purple-600" },
                 { label: "Global Announcements", icon: Zap, path: "/super-admin/announcements", color: "bg-emerald-600" },
-                { label: "System Health & API", icon: Server, path: "/super-admin/stats", color: "bg-slate-900" },
+                { label: "System Health & API", icon: Server, path: "/super-admin/stats", color: "bg-white" },
               ].map((act) => (
                 <button
                   key={act.label}
@@ -235,7 +235,7 @@ const SuperAdminDashboard = () => {
                     </div>
                     <span className="text-[13px] font-black text-slate-600 group-hover:text-slate-900 transition-colors uppercase tracking-tight">{act.label}</span>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-indigo-500 transition-all" />
+                  <ChevronRight className="h-5 w-5 text-gray-800 group-hover:text-indigo-500 transition-all" />
                 </button>
               ))}
             </div>
@@ -248,7 +248,7 @@ const SuperAdminDashboard = () => {
                 "Growth is not just about numbers, but the stability of the foundation." 
               </p>
               <div className="mt-8 flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white">SA</div>
+                <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-[10px] font-black text-gray-900">SA</div>
                 <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Platform Core Admin</p>
               </div>
             </div>

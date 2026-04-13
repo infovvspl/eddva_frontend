@@ -1,4 +1,4 @@
-import { 
+﻿import { 
   Users, Target, Award, Heart, 
   ChevronRight, Sparkles, Brain, 
   MessageCircle, Rocket
@@ -51,7 +51,7 @@ export default function AboutUsPage() {
           <div className="relative z-10 flex h-full items-center">
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
               <FadeUp>
-                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
+                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                   <Sparkles className="h-3 w-3" /> About EDDVA
                 </span>
                 <h1 className="mb-5 text-[46px] font-extrabold leading-[1.1] tracking-tight text-white lg:text-[64px]">
@@ -72,7 +72,7 @@ export default function AboutUsPage() {
                     { icon:<Heart className="h-4 w-4" />,   val:"Since 2020", label:"Trusted in India" },
                   ].map(s => (
                     <div key={s.label}
-                      className="flex items-center gap-2.5 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
+                      className="flex items-center gap-2.5 rounded-2xl border border-gray-200 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
                       <span className="text-white/60">{s.icon}</span>
                       <div>
                         <p className="text-[15px] font-extrabold text-white leading-none">{s.val}</p>
@@ -116,7 +116,7 @@ export default function AboutUsPage() {
                         { val:"500+", label:"Expert Educators" },
                         { val:"5M+", label:"Study Hours Logged" },
                       ].map(s => (
-                        <div key={s.label} className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 backdrop-blur-sm">
+                        <div key={s.label} className="rounded-2xl border border-gray-200 bg-white/10 px-4 py-2 backdrop-blur-sm">
                           <span className="text-[16px] font-extrabold text-white">{s.val} </span>
                           <span className="text-[12px] text-white/55">{s.label}</span>
                         </div>

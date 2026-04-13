@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -354,9 +354,9 @@ function StudentsTab({ sessions, quiz }: { sessions: MockTestSession[]; quiz: Mo
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium",
-                        s.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" :
-                        s.status === "in_progress" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" :
-                        "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400")}>
+                        s.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-50/40 dark:text-emerald-400" :
+                        s.status === "in_progress" ? "bg-blue-100 text-blue-700 dark:bg-blue-50/40 dark:text-blue-400" :
+                        "bg-slate-100 text-slate-600 dark:bg-gray-100 dark:text-slate-400")}>
                         {s.status === "completed" ? "Submitted" : s.status === "in_progress" ? "In Progress" : "Abandoned"}
                       </span>
                     </td>
@@ -399,8 +399,8 @@ function StudentsTab({ sessions, quiz }: { sessions: MockTestSession[]; quiz: Mo
 // ─── Questions Tab ─────────────────────────────────────────────────────────────
 
 const DIFFICULTY_COLOR: Record<string, string> = {
-  easy:   "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400",
-  medium: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
+  easy:   "bg-emerald-100 text-emerald-700 dark:bg-emerald-50/40 dark:text-emerald-400",
+  medium: "bg-amber-100 text-amber-700 dark:bg-amber-50/40 dark:text-amber-400",
   hard:   "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400",
 };
 
@@ -492,7 +492,7 @@ function QuestionsTab({ quiz }: { quiz: MockTest }) {
             <p className="text-lg font-bold text-red-600">{hardest?.accuracy ?? "—"}%</p>
             <p className="text-xs text-muted-foreground">Lowest Accuracy</p>
           </div>
-          <div className="border border-emerald-200 rounded-xl p-3 bg-emerald-50 dark:bg-emerald-950/20 text-center">
+          <div className="border border-emerald-200 rounded-xl p-3 bg-emerald-50 dark:bg-emerald-50/20 text-center">
             <p className="text-lg font-bold text-emerald-600">{easiest?.accuracy ?? "—"}%</p>
             <p className="text-xs text-muted-foreground">Highest Accuracy</p>
           </div>
@@ -584,7 +584,7 @@ function SettingsTab({ quiz, onPublish }: { quiz: MockTest; onPublish: () => Pro
     <div className="space-y-5">
       {/* Publish banner */}
       {!quiz.isPublished && (
-        <div className="border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 rounded-xl p-4 flex items-center justify-between gap-4">
+        <div className="border border-amber-200 bg-amber-50 dark:bg-amber-50/20 dark:border-amber-800 rounded-xl p-4 flex items-center justify-between gap-4">
           <div>
             <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">This quiz is a draft</p>
             <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">Students cannot see it until you publish.</p>
@@ -658,10 +658,10 @@ export function QuizAnalyticsModal({ quiz, onClose }: { quiz: MockTest; onClose:
   const q = fullQuiz ?? quiz;
   const status = q.isPublished ? "published" : q.scheduledAt ? "scheduled" : "draft";
   const statusStyle = status === "published"
-    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-50/40 dark:text-emerald-400"
     : status === "scheduled"
-    ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
-    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
+    ? "bg-blue-100 text-blue-700 dark:bg-blue-50/40 dark:text-blue-400"
+    : "bg-slate-100 text-slate-600 dark:bg-gray-100 dark:text-slate-400";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">

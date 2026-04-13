@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -91,7 +91,7 @@ function PlanItemCard({ item }: { item: StudyPlanItem }) {
             "w-16 h-16 rounded-[1.75rem] flex items-center justify-center border shadow-inner transition-transform group-hover:rotate-6",
             isDone ? "bg-slate-50 border-slate-100" : "bg-white/60 border-white/80"
           )}>
-            <cfg.icon className={cn("w-8 h-8", isDone ? "text-slate-300" : "")} style={!isDone ? { color: cfg.color } : {}} />
+            <cfg.icon className={cn("w-8 h-8", isDone ? "text-gray-600" : "")} style={!isDone ? { color: cfg.color } : {}} />
           </div>
         </div>
 
@@ -106,7 +106,7 @@ function PlanItemCard({ item }: { item: StudyPlanItem }) {
              ) : (
                <button 
                  onClick={handleAction} 
-                 className="px-6 py-2.5 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.15em] hover:bg-blue-600 transition-colors shadow-xl"
+                 className="px-6 py-2.5 rounded-2xl bg-white text-white text-[10px] font-black uppercase tracking-[0.15em] hover:bg-blue-600 transition-colors shadow-xl"
                >
                  Initiate Session
                </button>
@@ -119,7 +119,7 @@ function PlanItemCard({ item }: { item: StudyPlanItem }) {
                  <button onClick={() => complete.mutate(item.id)} className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
                     <CheckCircle2 className="w-5 h-5" />
                  </button>
-                 <button onClick={() => skip.mutate(item.id)} className="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-sm">
+                 <button onClick={() => skip.mutate(item.id)} className="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-white hover:text-white transition-all shadow-sm">
                     <SkipForward className="w-5 h-5" />
                  </button>
                </>
@@ -206,7 +206,7 @@ export default function StudentStudyPlanPage() {
           <div className="space-y-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-slate-900 text-white w-fit shadow-xl"
+              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white text-gray-900 w-fit shadow-xl"
             >
               <Sparkles className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-[9px] font-black uppercase tracking-[0.2em]">Neural Intelligence Roadmap</span>
@@ -285,9 +285,9 @@ export default function StudentStudyPlanPage() {
                        {todayItems?.map(item => <PlanItemCard key={item.id} item={item} />)}
                        {todayItems?.length === 0 && (
                           <div className="md:col-span-2 py-32 text-center bg-white/40 border border-dashed border-slate-200 rounded-[3.5rem] backdrop-blur-xl">
-                             <Sparkles className="w-16 h-16 text-slate-200 mx-auto mb-6" />
-                             <p className="text-xl font-black text-slate-300 uppercase tracking-widest italic">All Missions Complete</p>
-                             <p className="text-sm font-bold text-slate-300 mt-2">Check the weekly view for upcoming quests.</p>
+                             <Sparkles className="w-16 h-16 text-gray-800 mx-auto mb-6" />
+                             <p className="text-xl font-black text-gray-600 uppercase tracking-widest italic">All Missions Complete</p>
+                             <p className="text-sm font-bold text-gray-600 mt-2">Check the weekly view for upcoming quests.</p>
                           </div>
                        )}
                      </div>
@@ -328,14 +328,14 @@ export default function StudentStudyPlanPage() {
                 </div>
              </div>
 
-             <div className="bg-slate-900 rounded-[3.5rem] p-10 shadow-3xl relative overflow-hidden group">
+             <div className="bg-white rounded-[3.5rem] p-10 shadow-3xl relative overflow-hidden group">
                 <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-white/5 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-1000" />
                 <Sparkles className="w-12 h-12 text-blue-400 mb-8" />
                 <p className="text-2xl font-black text-white italic leading-tight mb-4">Ascend to Rank<br/><span className="text-blue-400 not-italic">Tier III Mastery</span></p>
                 <p className="text-sm font-bold text-white/30 uppercase tracking-[0.15em] leading-relaxed mb-10">Verify 4 more modules before Sunday to secure your batch percentile.</p>
                 <button 
                   onClick={() => navigate("/student/leaderboard")}
-                  className="w-full py-5 rounded-2xl bg-white/10 text-white text-[10px] font-black uppercase tracking-widest border border-white/5 hover:bg-white/20 transition-all"
+                  className="w-full py-5 rounded-2xl bg-white/10 text-gray-900 text-[10px] font-black uppercase tracking-widest border border-white/5 hover:bg-white/20 transition-all"
                 >
                   View Standings
                 </button>

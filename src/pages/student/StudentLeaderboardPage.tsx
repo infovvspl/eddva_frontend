@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy, Medal, Crown, Loader2, Flame, Zap, 
@@ -121,7 +121,7 @@ function Podium({ entries }: { entries: any[] }) {
             <div className={cn(
               "w-full rounded-t-[2.5rem] relative overflow-hidden group border border-white/60",
               config.height,
-              i === 1 ? "bg-slate-900 border-slate-800" : "bg-white/60"
+              i === 1 ? "bg-white border-gray-200" : "bg-white/60"
             )}>
                <div className={cn("absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity", i === 1 ? "bg-blue-600" : "bg-slate-400")} />
                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
@@ -161,7 +161,7 @@ function RankRow({ entry, isMe }: { entry: any; isMe?: boolean }) {
          {entry.rank <= 3 ? (
            <span className="text-2xl">{entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : "🥉"}</span>
          ) : (
-           <span className={cn("text-lg font-black italic", isMe ? "text-blue-600" : "text-slate-300")}>#{entry.rank}</span>
+           <span className={cn("text-lg font-black italic", isMe ? "text-blue-600" : "text-gray-600")}>#{entry.rank}</span>
          )}
       </div>
 
@@ -210,7 +210,7 @@ function RankRow({ entry, isMe }: { entry: any; isMe?: boolean }) {
       </div>
       
       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-         <ArrowRight className="w-5 h-5 text-slate-300" />
+         <ArrowRight className="w-5 h-5 text-gray-600" />
       </div>
     </CardGlass>
   );
@@ -240,7 +240,7 @@ export default function StudentLeaderboardPage() {
           <div className="space-y-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-slate-900 text-white w-fit shadow-xl"
+              className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white text-gray-900 w-fit shadow-xl"
             >
               <Award className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-[9px] font-black uppercase tracking-[0.2em]">Neural Paragon Archive</span>
@@ -289,7 +289,7 @@ export default function StudentLeaderboardPage() {
               onClick={() => setScope(s.key)}
               className={cn(
                 "shrink-0 flex items-center gap-3 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm",
-                scope === s.key ? "bg-slate-900 text-white shadow-xl" : "bg-white text-slate-400 border border-slate-100 hover:border-blue-200"
+                scope === s.key ? "bg-white text-gray-900 shadow-xl" : "bg-white text-slate-400 border border-slate-100 hover:border-blue-200"
               )}
             >
               {s.icon} {s.label}
@@ -309,7 +309,7 @@ export default function StudentLeaderboardPage() {
         ) : entries.length === 0 ? (
            <div className="py-40 flex flex-col items-center text-center max-w-md mx-auto">
               <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-10">
-                 <Swords className="w-10 h-10 text-slate-200" />
+                 <Swords className="w-10 h-10 text-gray-800" />
               </div>
               <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-3">No Contenders Found</h3>
               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">
@@ -342,9 +342,9 @@ export default function StudentLeaderboardPage() {
                     {!meInList && myRank && (
                       <div className="mt-12 space-y-4">
                          <div className="flex items-center gap-4 px-6 opacity-30">
-                            <div className="flex-1 h-px bg-slate-900/10" />
+                            <div className="flex-1 h-px bg-white/10" />
                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Your Trajectory</span>
-                            <div className="flex-1 h-px bg-slate-900/10" />
+                            <div className="flex-1 h-px bg-white/10" />
                          </div>
                          <RankRow entry={{ rank: myRank.rank, name: me?.fullName ?? "Unit Zero", score: myRank.score }} isMe />
                       </div>
@@ -377,7 +377,7 @@ export default function StudentLeaderboardPage() {
                      </div>
                   </CardGlass>
 
-                  <CardGlass className="p-0 bg-slate-900 overflow-hidden shadow-amber-500/10">
+                  <CardGlass className="p-0 bg-white overflow-hidden shadow-amber-500/10">
                      <div className="p-8 pb-4">
                         <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center mb-6">
                            <Medal className="w-7 h-7 text-white" />
@@ -385,7 +385,7 @@ export default function StudentLeaderboardPage() {
                         <h4 className="text-xl font-black text-white italic uppercase tracking-tight mb-2">Paragon Perks</h4>
                         <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-10 leading-loose">Reach Global <span className="text-amber-400">Top 10</span> to unlock specialized AI avatars and early-access quests.</p>
                      </div>
-                     <button className="w-full py-5 bg-white/5 border-t border-white/5 text-xs font-black text-white hover:bg-white/10 uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3">
+                     <button className="w-full py-5 bg-white/5 border-t border-white/5 text-xs font-black text-gray-900 hover:bg-white/10 uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3">
                         View Rewards <ArrowRight className="w-4 h-4" />
                      </button>
                   </CardGlass>

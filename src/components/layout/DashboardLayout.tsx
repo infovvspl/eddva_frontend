@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Outlet } from "react-router-dom";
+﻿import { NavLink, Navigate, Outlet } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout } from "@/hooks/use-auth";
 import type { UserRole } from "@/lib/types";
@@ -313,7 +313,7 @@ const DashboardLayout = () => {
             <SidebarContent />
           </div>
           <div
-            className="flex-1 bg-black/30 backdrop-blur-sm"
+            className="flex-1 bg-gray-200/50 backdrop-blur-sm"
             onClick={() => setMobileSidebarOpen(false)}
           />
         </div>

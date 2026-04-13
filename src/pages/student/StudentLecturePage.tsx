@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+﻿import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -124,7 +124,7 @@ function QuizPopup({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
     >
-      <div className="bg-slate-900/90 border border-white/10 rounded-[3rem] w-full max-w-lg shadow-[0_48px_96px_-24px_rgba(0,0,0,0.8)] overflow-hidden">
+      <div className="bg-white/90 border border-gray-200 rounded-[3rem] w-full max-w-lg shadow-[0_48px_96px_-24px_rgba(0,0,0,0.8)] overflow-hidden">
         <div className="px-10 pt-10 pb-4">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
@@ -148,7 +148,7 @@ function QuizPopup({
                   disabled={state !== "asking"}
                   className={cn(
                     "w-full flex items-center gap-5 px-7 py-5 rounded-[2rem] border-2 text-left text-sm font-bold transition-all",
-                    state === "asking" && !isSelected && "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20",
+                    state === "asking" && !isSelected && "border-white/5 bg-white/5 hover:bg-white/10 hover:border-gray-200",
                     state === "asking" && isSelected && "border-blue-500 bg-blue-500/10 text-blue-400",
                     showResult && isCorrect && "border-emerald-500 bg-emerald-500/10 text-emerald-400",
                     showResult && isWrong && "border-red-500 bg-red-500/10 text-red-400",
@@ -189,7 +189,7 @@ function QuizPopup({
                 </div>
               </div>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onClose}
-                className="w-full py-6 rounded-[1.75rem] text-white text-sm font-black flex items-center justify-center gap-4 transition-all shadow-xl bg-white/10 hover:bg-white/20 border border-white/5">
+                className="w-full py-6 rounded-[1.75rem] text-gray-900 text-sm font-black flex items-center justify-center gap-4 transition-all shadow-xl bg-white/10 hover:bg-white/20 border border-white/5">
                 Resume Expedition <Play className="w-4.5 h-4.5 fill-white" />
               </motion.button>
             </div>
@@ -332,7 +332,7 @@ function VideoPlayer({
       <AnimatePresence>
         {resumeToast && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            className="absolute top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-white/5 backdrop-blur-3xl text-white text-[12px] font-black px-8 py-4 rounded-3xl border border-white/10 shadow-2xl ring-1 ring-white/10">
+            className="absolute top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-white/5 backdrop-blur-3xl text-gray-900 text-[12px] font-black px-8 py-4 rounded-3xl border border-gray-200 shadow-2xl ring-1 ring-white/10">
             <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_15px_rgba(37,99,235,0.8)]" /> {resumeToast}
           </motion.div>
         )}
@@ -341,7 +341,7 @@ function VideoPlayer({
       {/* Floating Doubt Assist */}
       {!isYouTube && (
         <div className="absolute top-8 right-8 z-40 transition-all duration-500 origin-right" style={{ opacity: hovered && !activeQuiz ? 1 : 0, scale: hovered ? 1 : 0.8 }}>
-          <button onClick={onDoubtClick} className="flex items-center gap-3 bg-black/40 backdrop-blur-2xl text-white px-7 py-4 rounded-[1.5rem] shadow-2xl border border-white/10 hover:bg-white/10 transition-all group/doubt">
+          <button onClick={onDoubtClick} className="flex items-center gap-3 bg-black/40 backdrop-blur-2xl text-gray-900 px-7 py-4 rounded-[1.5rem] shadow-2xl border border-gray-200 hover:bg-white/10 transition-all group/doubt">
             <MessageCircle className="w-5 h-5 text-blue-400 font-black group-hover/doubt:scale-110 transition-transform" />
             <span className="text-xs font-black tracking-tight">Vocalize Doubt</span>
           </button>
@@ -356,7 +356,7 @@ function VideoPlayer({
           }}
         >
           {/* Aero Floating Console */}
-          <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-10 py-8 shadow-[0_24px_50px_rgba(0,0,0,0.5)]">
+          <div className="bg-black/40 backdrop-blur-3xl border border-gray-200 rounded-[2.5rem] px-10 py-8 shadow-[0_24px_50px_rgba(0,0,0,0.5)]">
             <div className="relative mb-8 group/progress">
               <div className="h-2 bg-white/5 rounded-full cursor-pointer relative hover:h-3 transition-all" onClick={seek}>
                 <div className="h-full rounded-full shadow-[0_0_20px_rgba(37,99,235,0.6)] relative overflow-hidden"
@@ -382,7 +382,7 @@ function VideoPlayer({
               </button>
 
               <div className="flex items-center gap-3">
-                <span className="text-white font-mono text-[13px] font-black tracking-widest bg-white/5 px-4 py-2.5 rounded-2xl border border-white/5 tabular-nums">
+                <span className="text-gray-900 font-mono text-[13px] font-black tracking-widest bg-white/5 px-4 py-2.5 rounded-2xl border border-white/5 tabular-nums">
                   {fmt(localTime)} <span className="opacity-20 mx-1">|</span> {fmt(duration)}
                 </span>
               </div>
@@ -423,7 +423,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
   return (
     <div className="h-full overflow-y-auto space-y-6 pr-2 custom-scrollbar">
       {(lecture.aiKeyConcepts?.length ?? 0) > 0 && (
-        <div className="bg-white/5 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+        <div className="bg-white/5 border border-gray-200 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
           <div className="absolute -top-12 -right-12 w-24 h-24 bg-blue-500/10 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-1000" />
           <p className="text-[10px] font-black tracking-[0.25em] text-blue-400 uppercase mb-6 flex items-center gap-4">
             <Tag className="w-4 h-4" /> Core Synthesis
@@ -437,13 +437,13 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </div>
         </div>
       )}
-      <div className="bg-white/5 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-2xl relative min-h-[400px]">
+      <div className="bg-white/5 border border-gray-200 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-2xl relative min-h-[400px]">
         {lecture.aiNotesMarkdown ? (
           <div>
             <p className="text-[10px] font-black tracking-[0.25em] text-emerald-400 uppercase mb-8 flex items-center gap-4">
               <BookOpen className="w-5 h-5" /> Neural Transcription
             </p>
-            <div className="prose prose-sm prose-invert max-w-none prose-headings:text-white prose-p:text-white/70 prose-strong:text-blue-400 prose-code:bg-white/5 prose-code:text-emerald-400 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:before:content-none prose-code:after:content-none prose-ul:text-white/60">
+            <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600 prose-strong:text-blue-400 prose-code:bg-white/5 prose-code:text-emerald-400 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:before:content-none prose-code:after:content-none prose-ul:text-gray-600">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{lecture.aiNotesMarkdown}</ReactMarkdown>
             </div>
           </div>
@@ -470,9 +470,9 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
   return (
     <div className="space-y-6 overflow-y-auto h-full pr-2 custom-scrollbar">
       {answered.length > 0 && (
-        <div className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-indigo-600/10 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl shadow-blue-500/5">
+        <div className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-indigo-600/10 border border-gray-200 rounded-[2.5rem] p-8 shadow-2xl shadow-blue-500/5">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+            <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-gray-200 shadow-inner">
               <Trophy className="w-9 h-9 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
             </div>
             <div>
@@ -488,12 +488,12 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
           return (
             <div key={cp.id} className={cn("rounded-[2.5rem] border p-8 text-sm shadow-xl transition-all relative overflow-hidden group",
               response?.isCorrect ? "bg-emerald-500/5 border-emerald-500/10" :
-                response ? "bg-red-500/5 border-red-500/10" : "bg-white/5 border-white/5 hover:border-white/10")}>
+                response ? "bg-red-500/5 border-red-500/10" : "bg-white/5 border-white/5 hover:border-gray-200")}>
 
               <div className="relative z-10 flex items-start gap-6">
                 <span className={cn("w-12 h-12 rounded-[1.25rem] flex items-center justify-center border shadow-2xl text-xs font-black shrink-0",
                   response?.isCorrect ? "bg-emerald-500/20 border-emerald-500/20 text-emerald-400" :
-                    response ? "bg-red-500/20 border-red-500/20 text-red-400" : "bg-white/5 border-white/10 text-white/30")}>
+                    response ? "bg-red-500/20 border-red-500/20 text-red-400" : "bg-white/5 border-gray-200 text-white/30")}>
                   Q{i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -503,7 +503,7 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
                   <p className="text-lg font-bold text-white/90 leading-relaxed mb-6">{cp.questionText}</p>
                   {response ? (
                     <div className="space-y-4">
-                      <div className="flex items-center gap-4 bg-black/30 p-5 rounded-[1.5rem] border border-white/5">
+                      <div className="flex items-center gap-4 bg-gray-200/50 p-5 rounded-[1.5rem] border border-white/5">
                         <div className={cn("w-2.5 h-2.5 rounded-full", response.isCorrect ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" : "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]")} />
                         <span className="text-[11px] font-black text-white/30 uppercase tracking-widest mr-2">Selection:</span>
                         <span className="text-md font-bold text-white">{response.selectedOption}</span>
@@ -615,7 +615,7 @@ export default function StudentLecturePage() {
   const isAccessLocked = (lectureError as any)?.response?.status === 403 || (lectureError as any)?.status === 403;
   if (isAccessLocked) return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#020617] text-center px-10">
-      <div className="w-28 h-28 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center shadow-3xl mb-10 group hover:border-red-500/20 transition-all duration-500">
+      <div className="w-28 h-28 rounded-[2.5rem] bg-white/5 border border-gray-200 flex items-center justify-center shadow-3xl mb-10 group hover:border-red-500/20 transition-all duration-500">
         <Lock className="w-14 h-14 text-slate-500 group-hover:text-red-500 transition-colors" />
       </div>
       <div>
@@ -663,7 +663,7 @@ export default function StudentLecturePage() {
         <motion.button
           whileHover={{ scale: 1.1, x: -5 }} whileTap={{ scale: 0.95 }}
           onClick={() => navigate(-1)}
-          className="w-14 h-14 flex items-center justify-center rounded-[1.75rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all shadow-2xl"
+          className="w-14 h-14 flex items-center justify-center rounded-[1.75rem] bg-white/5 border border-gray-200 hover:bg-white/10 transition-all shadow-2xl"
         >
           <ArrowLeft className="w-6 h-6 text-white" />
         </motion.button>
@@ -683,7 +683,7 @@ export default function StudentLecturePage() {
         </div>
 
         {displayWatchPct > 0 && !isLive && (
-          <div className="hidden lg:flex items-center gap-8 px-10 py-5 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-3xl shadow-3xl hover:bg-white/10 transition-colors">
+          <div className="hidden lg:flex items-center gap-8 px-10 py-5 rounded-[2.5rem] border border-gray-200 bg-white/5 backdrop-blur-3xl shadow-3xl hover:bg-white/10 transition-colors">
             <div>
               <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.25em] mb-2">Neural Assimilation</p>
               <div className="flex items-center gap-5">
@@ -750,7 +750,7 @@ export default function StudentLecturePage() {
                         <p className="text-lg text-white/40 font-bold mt-2">Validate neural links and acquire bonus EXP for your rank.</p>
                       </div>
                     </div>
-                    <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-blue-600 group-hover:translate-x-3 transition-all">
+                    <div className="w-16 h-16 rounded-full bg-white/5 border border-gray-200 flex items-center justify-center group-hover:bg-blue-600 group-hover:translate-x-3 transition-all">
                       <ChevronRight className="w-8 h-8 text-white" />
                     </div>
                   </div>
@@ -795,7 +795,7 @@ export default function StudentLecturePage() {
                 )}
                 {activeTab === "doubt" && (
                   <motion.div key="doubt" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
-                    <div className="bg-white/5 border border-white/10 rounded-[3rem] h-full overflow-hidden flex flex-col p-1 shadow-2xl shadow-purple-500/5">
+                    <div className="bg-white/5 border border-gray-200 rounded-[3rem] h-full overflow-hidden flex flex-col p-1 shadow-2xl shadow-purple-500/5">
                       <AskDoubtPanel lectureId={id!} topicId={lecture.topicId} topicName={lecture.topic?.name ?? "General"} lectureTitle={lecture.title} timestampSeconds={doubtTimestamp} onClose={handleCloseDoubt} />
                     </div>
                   </motion.div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronLeft, ChevronRight, MoreVertical, Loader2 } from "lucide-react";
@@ -29,11 +29,11 @@ const InstitutesPage = () => {
     starter: "bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
     growth: "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
     scale: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20",
-    enterprise: "bg-slate-900 text-white border-slate-800 dark:bg-white dark:text-slate-900 dark:border-slate-100",
+    enterprise: "bg-white text-gray-900 border-gray-200 dark:bg-white dark:text-slate-900 dark:border-slate-100",
     STARTER: "bg-slate-50 text-slate-500 border-slate-100",
     GROWTH: "bg-indigo-50 text-indigo-600 border-indigo-100",
     SCALE: "bg-purple-50 text-purple-600 border-purple-100",
-    ENTERPRISE: "bg-slate-900 text-white border-slate-800",
+    ENTERPRISE: "bg-white text-gray-900 border-gray-200",
   };
 
   const statusStyles: Record<string, string> = {
@@ -52,7 +52,7 @@ const InstitutesPage = () => {
           </div>
           <Button
             onClick={() => navigate("/super-admin/tenants/new")}
-            className="h-14 px-10 rounded-[20px] bg-slate-900 hover:bg-slate-800 text-white font-black shadow-2xl transition-all text-[15px] flex gap-2"
+            className="h-14 px-10 rounded-[20px] bg-white hover:bg-gray-100 text-gray-900 font-black shadow-2xl transition-all text-[15px] flex gap-2"
           >
             <Plus className="w-5 h-5 stroke-[3]" /> Deploy New Institute
           </Button>
@@ -61,13 +61,13 @@ const InstitutesPage = () => {
         {/* Filters */}
         <div className="bg-slate-50/50 p-6 rounded-[32px] border border-slate-100 mb-8 flex flex-wrap items-center gap-6">
           <div className="relative flex-1 min-w-[320px]">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600" />
             <input
               type="text"
               placeholder="Search by organization name or subdomain..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full h-14 pl-14 pr-6 bg-white border border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-800 placeholder:text-slate-300 focus:border-indigo-500/30 focus:shadow-xl focus:shadow-indigo-500/5 transition-all outline-none shadow-sm"
+              className="w-full h-14 pl-14 pr-6 bg-white border border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-800 placeholder:text-gray-600 focus:border-indigo-500/30 focus:shadow-xl focus:shadow-indigo-500/5 transition-all outline-none shadow-sm"
             />
           </div>
           <div className="flex gap-4">
@@ -163,7 +163,7 @@ const InstitutesPage = () => {
                             <div className="flex flex-col gap-2 w-40">
                               <div className="flex justify-between text-[11px] font-black text-slate-900 tracking-tight">
                                 <span>{students.toLocaleString()}</span>
-                                <span className="text-slate-300">/ {limit.toLocaleString()}</span>
+                                <span className="text-gray-600">/ {limit.toLocaleString()}</span>
                               </div>
                               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                                 <motion.div 
@@ -183,7 +183,7 @@ const InstitutesPage = () => {
                           <td className="px-10 py-6 text-right">
                             <button
                               onClick={(e) => e.stopPropagation()}
-                              className="p-3 bg-white border border-slate-100 hover:border-indigo-500/30 hover:shadow-lg rounded-[14px] transition-all text-slate-300 hover:text-indigo-600"
+                              className="p-3 bg-white border border-slate-100 hover:border-indigo-500/30 hover:shadow-lg rounded-[14px] transition-all text-gray-600 hover:text-indigo-600"
                             >
                               <MoreVertical className="w-5 h-5" />
                             </button>

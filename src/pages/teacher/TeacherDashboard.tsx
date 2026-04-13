@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -49,7 +49,7 @@ const statusBadge: Record<string, string> = {
 const Tip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#1e293b] border border-white/10 rounded-xl px-3 py-2 text-xs shadow-xl">
+    <div className="bg-[#1e293b] border border-gray-200 rounded-xl px-3 py-2 text-xs shadow-xl">
       {label && <p className="font-semibold text-white/80 mb-1.5">{label}</p>}
       {payload.map((p: any, i: number) => (
         <p key={i} className="flex items-center gap-1.5 font-medium" style={{ color: p.fill || p.color }}>

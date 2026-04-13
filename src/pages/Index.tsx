@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
@@ -319,7 +319,7 @@ const Index = () => {
                     { icon:"🏆", val:"Rank #3",      color:"#8B5CF6", bg:"rgba(139,92,246,0.15)" },
                   ].map(s => (
                     <motion.div key={s.val} whileHover={{ y:-3 }}
-                      className="flex items-center gap-2 rounded-2xl border border-white/20 px-3.5 py-2 backdrop-blur-md"
+                      className="flex items-center gap-2 rounded-2xl border border-gray-200 px-3.5 py-2 backdrop-blur-md"
                       style={{ background:s.bg }}>
                       <span className="text-[15px]">{s.icon}</span>
                       <span className="text-[12px] font-bold text-white">{s.val}</span>
@@ -328,7 +328,7 @@ const Index = () => {
                 </div>
                 {/* top label */}
                 <div className="absolute left-5 top-5">
-                  <div className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
                     <span className="text-[11px] font-bold text-white">Live Learning Platform</span>
                   </div>
@@ -466,7 +466,7 @@ const Index = () => {
         <div className="relative z-10 pb-0 pt-20 lg:pt-28">
           <div className="mx-auto max-w-7xl px-5">
             <FadeUp className="mb-12 text-center">
-              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                 <Sparkles className="h-3 w-3" /> Our Learning Philosophy
               </span>
               <h2 className="mt-3 text-[38px] font-extrabold leading-tight tracking-tight text-white lg:text-[52px]">
@@ -525,7 +525,7 @@ const Index = () => {
               {courses.slice(coursePage * 3, coursePage * 3 + 3).map((course) => (
                 <motion.div key={course.id}
                   whileHover={{ y: -6, scale: 1.01 }}
-                  className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-xl transition-all"
+                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl transition-all"
                 >
                   {/* Image thumbnail */}
                   <div className="relative h-44 overflow-hidden bg-gray-800">
@@ -541,11 +541,11 @@ const Index = () => {
                       style={{ background: `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.65) 100%)` }} />
                     {/* exam + rating chips */}
                     <div className="absolute left-4 top-4 flex items-center gap-2">
-                      <span className="rounded-xl bg-white/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white backdrop-blur-sm border border-white/20">
+                      <span className="rounded-xl bg-white/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-gray-900 backdrop-blur-sm border border-gray-200">
                         {course.exam}
                       </span>
                     </div>
-                    <div className="absolute right-4 top-4 flex items-center gap-1 rounded-xl bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm border border-white/20">
+                    <div className="absolute right-4 top-4 flex items-center gap-1 rounded-xl bg-white/20 px-2.5 py-1 text-[11px] font-bold text-gray-900 backdrop-blur-sm border border-gray-200">
                       <Star className="h-3 w-3 fill-yellow-300 text-yellow-300" /> {course.rating}
                     </div>
                     {/* instructor + play */}
@@ -717,7 +717,7 @@ const Index = () => {
                     EDDVA completely changed how I study. In 4 months, my JEE score went from 180 to 267. The AI study plan, doubt solver and mock tests — everything worked together perfectly. I got into IIT Bombay!
                   </p>
                   <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 text-[22px] font-black text-white backdrop-blur-sm">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 text-[22px] font-black text-gray-900 backdrop-blur-sm">
                       V
                     </div>
                     <div>
@@ -797,7 +797,7 @@ const Index = () => {
 
             {/* LEFT — text content */}
             <FadeUp>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
                 <Award className="h-3.5 w-3.5 text-yellow-400" />
                 <span className="text-[11px] font-black uppercase tracking-widest text-white/80">Career & Growth</span>
               </div>
@@ -823,7 +823,7 @@ const Index = () => {
                 ].map(item => (
                   <motion.div key={item.title}
                     whileHover={{ y:-4, boxShadow:"0 16px 40px rgba(0,0,0,0.4)" }}
-                    className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm transition-all"
+                    className="rounded-2xl border border-gray-200 bg-white/8 p-4 backdrop-blur-sm transition-all"
                     style={{ background:"rgba(255,255,255,0.07)" }}>
                     <div className="mb-2 text-2xl">{item.icon}</div>
                     <p className="text-[13px] font-bold text-white">{item.title}</p>
@@ -841,7 +841,7 @@ const Index = () => {
                   </Link>
                 </motion.div>
                 <motion.a href="#about" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                  className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-white backdrop-blur-sm hover:bg-white/15 transition-all">
+                  className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-gray-900 backdrop-blur-sm hover:bg-white/15 transition-all">
                   Learn About Us <ChevronRight className="h-4 w-4" />
                 </motion.a>
               </div>
@@ -859,7 +859,7 @@ const Index = () => {
                   initial={{ opacity:0, x:40 }} whileInView={{ opacity:1, x:0 }}
                   viewport={{ once:true }} transition={{ duration:0.45, delay: i * 0.1 }}
                   whileHover={{ x:-5, boxShadow:`0 16px 48px ${s.color}30` }}
-                  className="flex items-center gap-5 rounded-2xl border border-white/10 p-5 backdrop-blur-sm transition-all"
+                  className="flex items-center gap-5 rounded-2xl border border-gray-200 p-5 backdrop-blur-sm transition-all"
                   style={{ background:"rgba(255,255,255,0.06)", borderColor:`${s.color}30` }}>
                   <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
                     style={{ background:`${s.color}18`, border:`1px solid ${s.color}30` }}>
@@ -1030,7 +1030,7 @@ const Index = () => {
                       <div className="p-3">
                         <div className="mb-1 flex items-center gap-1">
                           <span className="rounded bg-yellow-400 px-1.5 py-0.5 text-[8px] font-black text-gray-900">Topper</span>
-                          <span className="rounded bg-white/20 px-1.5 py-0.5 text-[8px] font-bold text-white">Class 11th</span>
+                          <span className="rounded bg-white/20 px-1.5 py-0.5 text-[8px] font-bold text-gray-900">Class 11th</span>
                         </div>
                         <p className="text-[13px] font-black leading-tight text-white">CRASH<br/>COURSE</p>
                         <p className="mt-0.5 text-[8px] text-white/70">Complete Syllabus in 45 Days</p>

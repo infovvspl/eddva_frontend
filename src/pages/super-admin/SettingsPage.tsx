@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Settings, Globe, Shield, Bell, CreditCard, Palette, 
@@ -39,7 +39,7 @@ const SettingsPage = () => {
           </div>
           <Button 
             onClick={handleSave}
-            className="h-14 px-8 bg-slate-900 text-white rounded-[20px] font-black flex gap-3 shadow-2xl hover:bg-slate-800 transition-all text-[15px]"
+            className="h-14 px-8 bg-white text-gray-900 rounded-[20px] font-black flex gap-3 shadow-2xl hover:bg-gray-100 transition-all text-[15px]"
           >
             {isSaving ? <Zap className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 stroke-[2.5]" />}
             Execute Sync
@@ -60,7 +60,7 @@ const SettingsPage = () => {
                 }`}
               >
                 <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center transition-all ${
-                  activeSection === s.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "bg-white text-slate-300 border border-slate-100"
+                  activeSection === s.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "bg-white text-gray-600 border border-slate-100"
                 }`}>
                   <s.icon className={`w-6 h-6 ${activeSection === s.id ? 'stroke-[2.5]' : ''}`} />
                 </div>
@@ -142,7 +142,7 @@ const SettingsPage = () => {
                     <div className="space-y-3">
                       <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Legacy Asset Management</label>
                       <div className="border-2 border-dashed border-slate-100 rounded-[32px] p-12 flex flex-col items-center justify-center bg-slate-50/50 group/upload hover:bg-white hover:border-indigo-600 transition-all cursor-pointer">
-                        <div className="w-16 h-16 rounded-[24px] bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-300 mb-6 group-hover/upload:scale-110 group-hover/upload:text-indigo-600 transition-all">
+                        <div className="w-16 h-16 rounded-[24px] bg-white border border-slate-100 shadow-sm flex items-center justify-center text-gray-600 mb-6 group-hover/upload:scale-110 group-hover/upload:text-indigo-600 transition-all">
                           <Palette className="w-8 h-8" />
                         </div>
                         <p className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Update Primary Logo</p>
@@ -214,7 +214,7 @@ const SettingsPage = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-4 rounded-[20px] shadow-2xl flex items-center gap-3 z-50 border border-slate-700"
+            className="fixed bottom-8 right-8 bg-white text-gray-900 px-6 py-4 rounded-[20px] shadow-2xl flex items-center gap-3 z-50 border border-gray-200"
           >
             <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
               <Check className="w-4 h-4 text-white stroke-[4]" />

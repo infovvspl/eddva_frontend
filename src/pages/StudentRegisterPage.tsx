@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -44,7 +44,7 @@ const Field = ({
         flex items-center gap-3 rounded-2xl border-2 transition-all duration-300 bg-slate-50/50
         ${focused ? "border-blue-400/50 bg-white ring-8 ring-blue-500/5" : "border-slate-100/50 hover:border-slate-200"}
       `}>
-        <div className={`pl-4 transition-colors duration-300 ${focused ? "text-blue-500" : "text-slate-300"}`}>
+        <div className={`pl-4 transition-colors duration-300 ${focused ? "text-blue-500" : "text-gray-600"}`}>
           {icon}
         </div>
         <input
@@ -56,7 +56,7 @@ const Field = ({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChange={e => onChange(numeric ? e.target.value.replace(/\D/g, "") : e.target.value)}
-          className="w-full bg-transparent px-2 py-4 text-[15px] font-semibold text-slate-800 outline-none placeholder:text-slate-300 disabled:opacity-50"
+          className="w-full bg-transparent px-2 py-4 text-[15px] font-semibold text-slate-800 outline-none placeholder:text-gray-600 disabled:opacity-50"
         />
       </div>
     </div>
@@ -75,7 +75,7 @@ const PwField = ({
         flex items-center gap-3 rounded-2xl border-2 transition-all duration-300 bg-slate-50/50
         ${focused ? "border-blue-400/50 bg-white ring-8 ring-blue-500/5" : "border-slate-100/50 hover:border-slate-200"}
       `}>
-        <div className={`pl-4 transition-colors ${focused ? "text-blue-500" : "text-slate-300"}`}>
+        <div className={`pl-4 transition-colors ${focused ? "text-blue-500" : "text-gray-600"}`}>
           <Lock className="h-4 w-4" />
         </div>
         <input
@@ -86,10 +86,10 @@ const PwField = ({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChange={e => onChange(e.target.value)}
-          className="w-full bg-transparent px-2 py-4 text-[15px] font-semibold text-slate-800 outline-none placeholder:text-slate-300 disabled:opacity-50"
+          className="w-full bg-transparent px-2 py-4 text-[15px] font-semibold text-slate-800 outline-none placeholder:text-gray-600 disabled:opacity-50"
         />
         <button type="button" onClick={() => setShow(s => !s)}
-          className="pr-4 text-slate-300 hover:text-slate-600 transition-colors flex-shrink-0">
+          className="pr-4 text-gray-600 hover:text-slate-600 transition-colors flex-shrink-0">
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
@@ -369,12 +369,12 @@ const StudentRegisterPage = () => {
                         <div className="relative group">
                           <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1">State</label>
                           <div className="flex items-center gap-3 rounded-2xl border-2 border-slate-100/50 bg-slate-50/50 px-4 py-3.5">
-                            <MapPin className="h-5 w-5 text-slate-300" />
+                            <MapPin className="h-5 w-5 text-gray-600" />
                             <select value={form.state} onChange={e => set("state")(e.target.value)}
                               className="w-full bg-transparent text-[15px] font-semibold text-slate-800 outline-none appearance-none cursor-pointer">
                               {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
-                            <ChevronDown className="h-4 w-4 text-slate-300" />
+                            <ChevronDown className="h-4 w-4 text-gray-600" />
                           </div>
                         </div>
                       </>
@@ -418,7 +418,7 @@ const StudentRegisterPage = () => {
                   <div className="mt-10 flex items-center gap-4">
                     {step > 1 && (
                       <button onClick={prevStep} disabled={loading}
-                        className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-slate-100 text-slate-300 hover:text-blue-500 hover:border-blue-100 transition-all">
+                        className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-slate-100 text-gray-600 hover:text-blue-500 hover:border-blue-100 transition-all">
                         <ChevronLeft className="h-6 w-6" />
                       </button>
                     )}
@@ -439,7 +439,7 @@ const StudentRegisterPage = () => {
             </AnimatePresence>
           </div>
 
-          <p className="mt-12 text-center text-[11px] font-black uppercase tracking-[0.2em] text-slate-200">
+          <p className="mt-12 text-center text-[11px] font-black uppercase tracking-[0.2em] text-gray-800">
             Secure AI Engine • EDDVA v2.0
           </p>
 

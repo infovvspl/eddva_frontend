@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { CheckCircle, XCircle, Upload, Sparkles, BarChart2, RefreshCw, ChevronDown, ChevronUp, AlertCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -416,7 +416,7 @@ function UnverifiedCard({ q }: { q: UnverifiedPYQ }) {
             </div>
 
             {q.solutionText && (
-              <div className="text-xs p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200">
+              <div className="text-xs p-3 bg-blue-50 dark:bg-blue-50/20 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200">
                 <span className="font-semibold">Solution: </span>{q.solutionText}
               </div>
             )}

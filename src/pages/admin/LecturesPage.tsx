@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Loader2, EyeOff, BarChart3, X, Play,
@@ -39,7 +39,7 @@ function StatsDrawer({ lectureId, title, onClose }: { lectureId: string; title: 
   const { data: stats, isLoading } = useLectureStats(lectureId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-300/50 p-4">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -254,7 +254,7 @@ const LecturesPage = () => {
       {/* Unpublish confirm dialog */}
       <AnimatePresence>
         {confirmUnpublish && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}

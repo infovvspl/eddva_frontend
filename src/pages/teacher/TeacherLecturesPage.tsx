@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+﻿import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -2280,7 +2280,7 @@ const TeacherLecturesPage = () => {
             <button onClick={() => setFilterBatch("")}
               className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
                 !filterBatch
-                  ? "bg-slate-900 text-white"
+                  ? "bg-white text-gray-900"
                   : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
               All
             </button>
@@ -2288,7 +2288,7 @@ const TeacherLecturesPage = () => {
               <button key={b.id} onClick={() => setFilterBatch(b.id)}
                 className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
                   filterBatch === b.id
-                    ? "bg-slate-900 text-white"
+                    ? "bg-white text-gray-900"
                     : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
                 {b.name}
               </button>
@@ -2305,9 +2305,9 @@ const TeacherLecturesPage = () => {
       ) : tab === "recorded" ? (
         recorded.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
-            <Video className="w-14 h-14 text-slate-200 mb-3" />
+            <Video className="w-14 h-14 text-gray-800 mb-3" />
             <p className="text-sm font-bold text-slate-400">No recorded lectures yet</p>
-            <p className="text-xs text-slate-300 mt-1">Click "Upload Lecture" to get started.</p>
+            <p className="text-xs text-gray-600 mt-1">Click "Upload Lecture" to get started.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -2327,9 +2327,9 @@ const TeacherLecturesPage = () => {
       ) : (
         live.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
-            <Radio className="w-14 h-14 text-slate-200 mb-3" />
+            <Radio className="w-14 h-14 text-gray-800 mb-3" />
             <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
-            <p className="text-xs text-slate-300 mt-1">Click "Schedule Live" to schedule your first class.</p>
+            <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

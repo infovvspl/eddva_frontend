@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   Users, BookOpen, MessageCircle, TrendingUp, Download,
   AlertTriangle, CheckCircle, Clock, BarChart3, Zap, Flame,
@@ -52,7 +52,7 @@ function StatCard({
   loading?: boolean;
 }) {
   const colors = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-50 dark:text-blue-400",
     green: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
     orange: "bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400",
     purple: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",

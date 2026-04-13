@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { FadeUp, Label } from "@/components/landing/LandingPrimitives";
 import { motion, AnimatePresence } from "framer-motion";
@@ -139,7 +139,7 @@ const CourseCard = ({ course, size = "medium" }: { course: typeof courses[0], si
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="mb-4 border-t border-white/20 pt-4">
+              <div className="mb-4 border-t border-gray-200 pt-4">
                 <p className="mb-3 text-[13px] font-medium leading-relaxed opacity-90">
                   Detailed syllabus covering {course.duration} of immersive learning with {course.instructor}.
                 </p>
@@ -147,7 +147,7 @@ const CourseCard = ({ course, size = "medium" }: { course: typeof courses[0], si
                   <button className="flex-1 rounded-xl bg-white py-2.5 text-[13px] font-black text-gray-900 transition-transform active:scale-95">
                     Enroll Now
                   </button>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-md transition-colors hover:bg-white/30">
+                  <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-gray-900 backdrop-blur-md transition-colors hover:bg-white/30">
                     <Play className="h-4 w-4" />
                   </button>
                 </div>

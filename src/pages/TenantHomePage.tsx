@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -22,7 +22,7 @@ const FloatCard = ({
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.6, ease: "easeOut" }}
-    className="flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 px-4 py-3 shadow-lg"
+    className="flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-md border border-gray-200 px-4 py-3 shadow-lg"
   >
     <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: color + "33" }}>
       <span style={{ color }}>{icon}</span>
@@ -350,7 +350,7 @@ const TenantHomePage = () => {
         </div>
 
         {/* Tenant badge */}
-        <div className="absolute top-8 right-8 flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 px-4 py-2.5">
+        <div className="absolute top-8 right-8 flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-sm border border-gray-200 px-4 py-2.5">
           <div className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/15 overflow-hidden">
             {tenant.logoUrl
               ? <img src={tenant.logoUrl} alt={tenant.name} className="h-full w-full object-cover" />
@@ -383,7 +383,7 @@ const TenantHomePage = () => {
           <img src={loginIllustration} alt="Learn"
             className="w-full h-auto max-h-[380px] object-contain drop-shadow-2xl relative z-10 mb-10" />
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-1.5 mb-5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 backdrop-blur-sm px-4 py-1.5 mb-5">
             <Sparkles className="h-3.5 w-3.5 text-yellow-300" />
             <span className="text-[12px] font-bold text-white/80 uppercase tracking-widest">Smart Learning Platform</span>
           </div>

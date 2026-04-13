@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import AgoraRTC, {
@@ -201,7 +201,7 @@ function ChatPanel({
             placeholder="Message..."
             maxLength={500}
             rows={1}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 resize-none"
+            className="flex-1 bg-white/5 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 placeholder:text-white/30 focus:outline-none focus:border-primary/50 resize-none"
             style={{ minHeight: 36, maxHeight: 80 }}
           />
           <button
@@ -237,7 +237,7 @@ function PollCard({
   const total = poll.results?.reduce((s, r) => s + r.count, 0) ?? 0;
 
   return (
-    <div className={`rounded-2xl border p-4 space-y-3 ${poll.isActive ? "border-primary/30 bg-primary/5" : "border-white/10 bg-white/3"}`}>
+    <div className={`rounded-2xl border p-4 space-y-3 ${poll.isActive ? "border-primary/30 bg-primary/5" : "border-gray-200 bg-white/3"}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-white leading-snug">{poll.question}</p>
         <div className="flex items-center gap-2 shrink-0">
@@ -268,7 +268,7 @@ function PollCard({
               className={`w-full text-left rounded-xl border px-3 py-2.5 text-xs relative overflow-hidden transition-all
                 ${isCorrect ? "border-emerald-500/50 bg-emerald-500/10" :
                   isMyVote ? "border-primary/50 bg-primary/10" :
-                  canVote ? "border-white/10 hover:border-primary/30 hover:bg-primary/5 cursor-pointer" :
+                  canVote ? "border-gray-200 hover:border-primary/30 hover:bg-primary/5 cursor-pointer" :
                   "border-white/5 cursor-default"}`}
             >
               {showResults && pct > 0 && (
@@ -325,28 +325,28 @@ function PollCreator({ sessionId, onCreated, onClose }: {
   };
 
   return (
-    <div className="bg-white/3 border border-white/10 rounded-2xl p-4 space-y-3">
+    <div className="bg-white/3 border border-gray-200 rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-white">New Poll</span>
         <button onClick={onClose} className="text-white/30 hover:text-white/60"><X className="w-4 h-4" /></button>
       </div>
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask a question..."
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50" />
+        className="w-full bg-white/5 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 placeholder:text-white/30 focus:outline-none focus:border-primary/50" />
       <div className="space-y-2">
         {opts.map((o, i) => (
           <div key={i} className="flex gap-2">
             <input value={o} onChange={(e) => setOpts((p) => p.map((x, j) => j === i ? e.target.value : x))}
               placeholder={`Option ${i + 1}`}
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50" />
+              className="flex-1 bg-white/5 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 placeholder:text-white/30 focus:outline-none focus:border-primary/50" />
             <button onClick={() => setCorrect(correct === i ? undefined : i)}
               className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 transition-colors
-                ${correct === i ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "border-white/10 text-white/20 hover:border-emerald-500/30"}`}
+                ${correct === i ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "border-gray-200 text-white/20 hover:border-emerald-500/30"}`}
               title="Mark as correct">
               <CheckCircle className="w-3.5 h-3.5" />
             </button>
             {opts.length > 2 && (
               <button onClick={() => setOpts((p) => p.filter((_, j) => j !== i))}
-                className="w-8 h-8 rounded-xl border border-white/10 flex items-center justify-center text-white/20 hover:text-red-400 hover:border-red-400/30 transition-colors shrink-0">
+                className="w-8 h-8 rounded-xl border border-gray-200 flex items-center justify-center text-white/20 hover:text-red-400 hover:border-red-400/30 transition-colors shrink-0">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
@@ -356,7 +356,7 @@ function PollCreator({ sessionId, onCreated, onClose }: {
       <div className="flex gap-2">
         {opts.length < 6 && (
           <button onClick={() => setOpts((p) => [...p, ""])}
-            className="flex-1 py-2 rounded-xl border border-dashed border-white/10 text-xs text-white/30 hover:border-primary/40 hover:text-primary/60 transition-colors flex items-center justify-center gap-1">
+            className="flex-1 py-2 rounded-xl border border-dashed border-gray-200 text-xs text-white/30 hover:border-primary/40 hover:text-primary/60 transition-colors flex items-center justify-center gap-1">
             <Plus className="w-3 h-3" /> Add Option
           </button>
         )}
@@ -412,7 +412,7 @@ function DoubtCard({ doubt, isTeacher, onResolve, onAnswer, onAskAI }: {
         <div className="flex items-center gap-1.5 shrink-0">
           {isTeacher && !doubt.resolved && onResolve && (
             <button onClick={() => onResolve(doubt.id)}
-              className="text-[10px] text-white/30 hover:text-emerald-400 border border-white/10 hover:border-emerald-400/30 px-2 py-0.5 rounded-full transition-colors">
+              className="text-[10px] text-white/30 hover:text-emerald-400 border border-gray-200 hover:border-emerald-400/30 px-2 py-0.5 rounded-full transition-colors">
               Resolve
             </button>
           )}
@@ -444,7 +444,7 @@ function DoubtCard({ doubt, isTeacher, onResolve, onAnswer, onAskAI }: {
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitAnswer(); } }}
                 placeholder="Type your answer..."
                 rows={2}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 resize-none"
+                className="w-full bg-white/5 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 placeholder:text-white/30 focus:outline-none focus:border-primary/50 resize-none"
               />
               <div className="flex gap-1.5">
                 <button onClick={submitAnswer} disabled={!answerText.trim()}
@@ -452,7 +452,7 @@ function DoubtCard({ doubt, isTeacher, onResolve, onAnswer, onAskAI }: {
                   Send Answer
                 </button>
                 <button onClick={() => setShowAnswerInput(false)}
-                  className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/40 text-[10px] hover:bg-white/10 transition-colors">
+                  className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-gray-200 text-white/40 text-[10px] hover:bg-white/10 transition-colors">
                   Cancel
                 </button>
               </div>
@@ -460,7 +460,7 @@ function DoubtCard({ doubt, isTeacher, onResolve, onAnswer, onAskAI }: {
           ) : (
             <div className="flex gap-1.5">
               <button onClick={() => setShowAnswerInput(true)}
-                className="flex-1 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-[10px] font-semibold hover:border-primary/30 hover:text-primary transition-colors">
+                className="flex-1 py-1.5 rounded-lg bg-white/5 border border-gray-200 text-white/50 text-[10px] font-semibold hover:border-primary/30 hover:text-primary transition-colors">
                 Answer
               </button>
               {onAskAI && (
@@ -1200,7 +1200,7 @@ export default function LiveClassRoom() {
     <div className="h-screen bg-[#0a0a0f] text-white flex flex-col overflow-hidden">
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
-      <div className="h-13 shrink-0 flex items-center justify-between px-4 border-b border-white/5 bg-black/30 backdrop-blur-sm">
+      <div className="h-13 shrink-0 flex items-center justify-between px-4 border-b border-white/5 bg-gray-200/50 backdrop-blur-sm">
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={() => navigate(-1)}
             className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors shrink-0">
@@ -1219,7 +1219,7 @@ export default function LiveClassRoom() {
         <div className="flex items-center gap-2 shrink-0">
           {/* Viewer count — always show when session exists */}
           {!!session && (
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+            <div className="flex items-center gap-1.5 bg-white/5 border border-gray-200 rounded-full px-3 py-1.5">
               <Users className="w-3.5 h-3.5 text-white/50" />
               <span className="text-xs font-bold text-white/70">{viewerCount}</span>
             </div>
@@ -1239,7 +1239,7 @@ export default function LiveClassRoom() {
             </div>
           )}
           {ended && (
-            <div className="bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+            <div className="bg-white/5 border border-gray-200 rounded-full px-3 py-1.5">
               <span className="text-xs font-bold text-white/40">Ended</span>
             </div>
           )}
@@ -1327,14 +1327,14 @@ export default function LiveClassRoom() {
 
               {/* Teacher: PiP of self when screen sharing */}
               {isTeacher && isScreenSharing && localVideoTrack && isCamOn && (
-                <div className="absolute bottom-5 right-5 w-36 h-24 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
+                <div className="absolute bottom-5 right-5 w-36 h-24 rounded-xl overflow-hidden border border-gray-200 shadow-2xl">
                   <VideoTile videoTrack={localVideoTrack} label={user?.name} isLocal isCamOn={isCamOn} />
                 </div>
               )}
 
               {/* Student: self-view PiP when camera is on */}
               {!isTeacher && localVideoTrack && isCamOn && (
-                <div className="absolute bottom-5 right-5 w-36 h-24 rounded-xl overflow-hidden border border-white/20 shadow-2xl z-10">
+                <div className="absolute bottom-5 right-5 w-36 h-24 rounded-xl overflow-hidden border border-gray-200 shadow-2xl z-10">
                   <VideoTile videoTrack={localVideoTrack} label={user?.name} isLocal isCamOn={isCamOn} />
                 </div>
               )}
@@ -1594,7 +1594,7 @@ export default function LiveClassRoom() {
                       />
                     ) : (
                       <button onClick={() => setShowPollCreator(true)}
-                        className="w-full py-3 rounded-xl border border-dashed border-white/10 text-white/30 hover:border-primary/40 hover:text-primary/60 transition-colors text-xs flex items-center justify-center gap-1.5">
+                        className="w-full py-3 rounded-xl border border-dashed border-gray-200 text-white/30 hover:border-primary/40 hover:text-primary/60 transition-colors text-xs flex items-center justify-center gap-1.5">
                         <Plus className="w-3.5 h-3.5" /> Create Poll
                       </button>
                     )

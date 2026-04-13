@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { 
   GraduationCap, Search, Play, 
   ChevronDown, BookOpen, Star, 
@@ -123,7 +123,7 @@ export default function LandingCoursesPage() {
                             <div className="h-1.5 w-1.5 rounded-full bg-white" /> Live
                           </div>
                         )}
-                        <div className="rounded-lg bg-white/20 px-3 py-1 text-[10px] uppercase font-black text-white backdrop-blur-md border border-white/20">
+                        <div className="rounded-lg bg-white/20 px-3 py-1 text-[10px] uppercase font-black text-gray-900 backdrop-blur-md border border-gray-200">
                           {course.exam}
                         </div>
                       </div>

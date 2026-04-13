@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -418,7 +418,7 @@ const StudentDashboard = () => {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     {nextAction && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-sm text-white text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-sm text-gray-900 text-xs font-semibold">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                         {nextAction.type?.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase()) ?? "Task"}
                       </span>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { FadeUp, Label, HeroBadge } from "@/components/landing/LandingPrimitives";
 import { motion } from "framer-motion";
@@ -228,7 +228,7 @@ export default function AboutUs() {
                 <motion.button 
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-xl border border-white/40"
+                  className="mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-white/20 text-gray-900 backdrop-blur-xl border border-white/40"
                 >
                    <PlayCircle className="h-12 w-12" />
                 </motion.button>
