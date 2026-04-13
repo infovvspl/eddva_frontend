@@ -750,7 +750,7 @@ export default function LiveClassRoom() {
     const socket = io(`${BACKEND_URL}/live`, {
       path: "/socket.io",
       transports: ["websocket"],
-      auth: { token: localStorage.getItem("apexiq_access_token") },
+      auth: { token: localStorage.getItem("eddva_access_token") },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 10,

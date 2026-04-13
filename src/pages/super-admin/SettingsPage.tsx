@@ -29,45 +29,46 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-10 flex justify-between items-end">
+        <header className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-100 pb-10">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Platform Settings</h1>
-            <p className="text-slate-500 font-medium">Configure the global EDVA ecosystem</p>
+            <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Protocol Management</h2>
+            <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">System Settings</h1>
+            <p className="text-slate-400 text-[17px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
           </div>
           <Button 
             onClick={handleSave}
-            className="h-12 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold flex gap-2 shadow-lg shadow-slate-200 transition-all active:scale-95"
+            className="h-14 px-8 bg-slate-900 text-white rounded-[20px] font-black flex gap-3 shadow-2xl hover:bg-slate-800 transition-all text-[15px]"
           >
-            {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save Changes
+            {isSaving ? <Zap className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 stroke-[2.5]" />}
+            Execute Sync
           </Button>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Sidebar Navigation */}
-          <div className="lg:col-span-4 space-y-2">
+          <div className="lg:col-span-4 space-y-3">
             {sections.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
-                className={`w-full flex items-center gap-4 p-4 rounded-[24px] transition-all text-left ${
+                className={`w-full flex items-center gap-5 p-5 rounded-[28px] transition-all text-left border-2 ${
                   activeSection === s.id
-                    ? "bg-white shadow-sm border border-slate-100 ring-1 ring-slate-100"
-                    : "hover:bg-slate-100/50 text-slate-400"
+                    ? "bg-white border-slate-100 shadow-xl shadow-slate-200/40"
+                    : "bg-slate-50 border-transparent hover:bg-white hover:border-slate-100 text-slate-400"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                  activeSection === s.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-400"
+                <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center transition-all ${
+                  activeSection === s.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "bg-white text-slate-300 border border-slate-100"
                 }`}>
-                  <s.icon className="w-5 h-5" />
+                  <s.icon className={`w-6 h-6 ${activeSection === s.id ? 'stroke-[2.5]' : ''}`} />
                 </div>
                 <div>
-                  <p className={`text-sm font-black uppercase tracking-tight ${activeSection === s.id ? "text-slate-900" : "text-slate-500"}`}>
+                  <p className={`text-[13px] font-black uppercase tracking-tight ${activeSection === s.id ? "text-slate-900" : "text-slate-500"}`}>
                     {s.label}
                   </p>
-                  <p className="text-[11px] font-medium opacity-70">{s.desc}</p>
+                  <p className="text-[11px] font-bold opacity-50 mt-0.5">{s.desc}</p>
                 </div>
               </button>
             ))}
@@ -78,11 +79,12 @@ const SettingsPage = () => {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeSection}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-sm"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-white border border-slate-100 rounded-[44px] p-10 shadow-sm relative overflow-hidden group"
               >
+                <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-50/20 blur-[60px] translate-x-12 -translate-y-12 opacity-0 group-hover:opacity-100 transition-opacity" />
                 {activeSection === "general" && (
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -126,22 +128,25 @@ const SettingsPage = () => {
                 )}
 
                 {activeSection === "branding" && (
-                  <div className="space-y-8">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Primary Brand Color</label>
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-600 shadow-inner" />
-                        <input defaultValue="#6366F1" className="flex-1 h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-mono font-bold focus:bg-white outline-none" />
+                  <div className="space-y-10 relative z-10">
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Primary Core Color</label>
+                      <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-[24px] bg-indigo-600 shadow-xl shadow-indigo-600/20" />
+                        <div className="flex-1">
+                          <input defaultValue="#6366F1" className="w-full h-16 px-6 bg-slate-50 border border-slate-100 rounded-[20px] text-[16px] font-mono font-black text-slate-900 focus:bg-white focus:border-indigo-600 outline-none transition-all shadow-sm" />
+                          <p className="text-[10px] font-bold text-slate-400 mt-2 ml-2 uppercase tracking-tight">Standard Platform Primary HEX</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Platform Logo</label>
-                      <div className="border-2 border-dashed border-slate-100 rounded-[24px] p-12 flex flex-col items-center justify-center bg-slate-50 group hover:bg-white hover:border-indigo-200 transition-all cursor-pointer">
-                        <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 mb-4 group-hover:scale-110 transition-transform">
-                          <Palette className="w-6 h-6" />
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Legacy Asset Management</label>
+                      <div className="border-2 border-dashed border-slate-100 rounded-[32px] p-12 flex flex-col items-center justify-center bg-slate-50/50 group/upload hover:bg-white hover:border-indigo-600 transition-all cursor-pointer">
+                        <div className="w-16 h-16 rounded-[24px] bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-300 mb-6 group-hover/upload:scale-110 group-hover/upload:text-indigo-600 transition-all">
+                          <Palette className="w-8 h-8" />
                         </div>
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Upload New Asset</p>
-                        <p className="text-[10px] text-slate-400 mt-1 font-medium">SVG or Transparent PNG (Max 5MB)</p>
+                        <p className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Update Primary Logo</p>
+                        <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-tight">SVG • PNG • WEBP (MAX 10MB)</p>
                       </div>
                     </div>
                   </div>

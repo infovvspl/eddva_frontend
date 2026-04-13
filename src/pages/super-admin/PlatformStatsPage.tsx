@@ -15,10 +15,10 @@ const monthlyGrowth = [
 ];
 
 const planDistribution = [
-  { name: "Starter", value: 14, color: "#94a3b8" },
-  { name: "Growth", value: 18, color: "#0ea5e9" },
-  { name: "Scale", value: 12, color: "#6366f1" },
-  { name: "Enterprise", value: 4, color: "#a855f7" },
+  { name: "Starter Tier", value: 14, color: "#cbd5e1" },
+  { name: "Growth Hub", value: 18, color: "#818cf8" },
+  { name: "Scale Dynamic", value: 12, color: "#6366f1" },
+  { name: "Enterprise", value: 4, color: "#0f172a" },
 ];
 
 const PlatformStatsPage = () => {
@@ -39,131 +39,134 @@ const PlatformStatsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-10">
-          <h1 className="text-4xl font-black text-foreground tracking-tight">Platform Analytics</h1>
-          <p className="text-muted-foreground font-medium">Real-time ecosystem performance and health metrics.</p>
+        <header className="mb-12 border-b border-slate-100 pb-10">
+          <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Ecosystem Intelligence</h2>
+          <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">Platform Analytics</h1>
+          <p className="text-slate-400 text-[17px] mt-1 font-semibold">Real-time architecture performance and platform health metrics</p>
         </header>
 
         {/* Top Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {topStats.map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden group">
-              <div className={`${s.bg} ${s.color} w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
+            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group">
+              <div className={`p-4 rounded-[20px] ${s.bg} ${s.color} w-fit mb-6 transition-transform group-hover:scale-110`}>
                 <s.icon className="w-6 h-6" />
               </div>
-              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">{s.label}</p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <h3 className="text-3xl font-black text-foreground">
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : String(s.value)}
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{s.label}</p>
+              <div className="flex items-baseline gap-3 mt-1">
+                <h3 className="text-[32px] font-black text-slate-900">
+                  {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : String(s.value)}
                 </h3>
-                <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400 flex items-center">
-                  {s.trend} <ArrowUpRight className="w-3 h-3" />
+                <span className="text-[11px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                  {s.trend} <ArrowUpRight className="w-3 h-3 stroke-[3]" />
                 </span>
               </div>
+              <div className="absolute top-0 right-0 h-24 w-24 bg-indigo-50/30 opacity-0 group-hover:opacity-100 blur-[40px] transition-opacity translate-x-12 -translate-y-12" />
             </motion.div>
           ))}
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div className="bg-card p-8 rounded-[32px] border border-border shadow-sm">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="font-black text-foreground uppercase tracking-tight">Student Acquisition</h3>
-              <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-widest">Growth Curve</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+          <div className="bg-white p-10 rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="flex justify-between items-center mb-10 relative z-10">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Student Acquisition</h3>
+              <div className="px-4 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full text-[10px] font-black uppercase tracking-[0.15em]">Growth Curve</div>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={320}>
               <LineChart data={monthlyGrowth}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontWeight: 600 }} />
-                <Tooltip contentStyle={{ borderRadius: "20px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} cursor={{ stroke: "#6366f1", strokeWidth: 2 }} />
-                <Line type="monotone" dataKey="students" stroke="#6366f1" strokeWidth={4} dot={{ r: 6, fill: "#6366f1", strokeWidth: 3, stroke: "#fff" }} activeDot={{ r: 8 }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} />
+                <Tooltip contentStyle={{ borderRadius: "24px", border: "1px solid #f1f5f9", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.05)" }} cursor={{ stroke: "#6366f1", strokeWidth: 2 }} />
+                <Line type="monotone" dataKey="students" stroke="#6366f1" strokeWidth={5} dot={{ r: 0 }} activeDot={{ r: 8, fill: "#6366f1" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-card p-8 rounded-[32px] border border-border shadow-sm">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="font-black text-foreground uppercase tracking-tight">Revenue Stream</h3>
-              <div className="px-3 py-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest">Monthly MRR</div>
+          <div className="bg-white p-10 rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="flex justify-between items-center mb-10 relative z-10">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Revenue Hub</h3>
+              <div className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-[0.15em]">MRR Protocol</div>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={320}>
               <BarChart data={monthlyGrowth}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 100000}L`} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontWeight: 600 }} />
-                <Tooltip cursor={{ fill: "hsl(var(--secondary))" }} contentStyle={{ borderRadius: "20px", border: "none" }} />
-                <Bar dataKey="revenue" fill="#10b981" radius={[10, 10, 0, 0]} barSize={40} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 100000}L`} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} />
+                <Tooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ borderRadius: "24px", border: "1px solid #f1f5f9" }} />
+                <Bar dataKey="revenue" fill="#0f172a" radius={[12, 12, 0, 0]} barSize={44} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="bg-card p-8 rounded-[32px] border border-border shadow-sm flex flex-col items-center">
-            <h3 className="font-black text-foreground uppercase tracking-tight mb-6 self-start w-full text-left">Market Share</h3>
-            <ResponsiveContainer width="100%" height={200}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="bg-white p-10 rounded-[44px] border border-slate-100 shadow-sm flex flex-col items-center">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight mb-8 self-start w-full text-left">Market Share</h3>
+            <ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={planDistribution} innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="value">
+                <Pie data={planDistribution} innerRadius={70} outerRadius={90} paddingAngle={10} dataKey="value">
                   {planDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={{ borderRadius: '20px' }} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="grid grid-cols-2 gap-4 mt-4 w-full">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4 mt-8 w-full">
               {planDistribution.map((p) => (
-                <div key={p.name} className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">{p.name}</span>
+                <div key={p.name} className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: p.color }} />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">{p.name}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-card p-8 rounded-[32px] border border-border shadow-sm">
-            <h3 className="font-black text-foreground uppercase tracking-tight mb-8">Student Focus</h3>
-            <div className="space-y-6">
+          <div className="bg-white p-10 rounded-[44px] border border-slate-100 shadow-sm">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight mb-10">Student Focus</h3>
+            <div className="space-y-8">
               {[
-                { label: "JEE Main/Adv", value: 62, color: "bg-indigo-500" },
-                { label: "NEET UG", value: 34, color: "bg-emerald-500" },
-                { label: "Foundation", value: 4, color: "bg-purple-500" },
+                { label: "JEE Main/Adv", value: 62, color: "bg-indigo-600" },
+                { label: "NEET UG Hub", value: 34, color: "bg-purple-600" },
+                { label: "Foundation", value: 4, color: "bg-slate-900" },
               ].map((ex) => (
                 <div key={ex.label}>
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-xs font-black text-foreground uppercase tracking-widest">{ex.label}</span>
-                    <span className="text-sm font-black text-foreground">{ex.value}%</span>
+                  <div className="flex justify-between items-end mb-3">
+                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">{ex.label}</span>
+                    <span className="text-[15px] font-black text-slate-900">{ex.value}%</span>
                   </div>
-                  <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${ex.value}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${ex.color}`} />
+                  <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${ex.value}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${ex.color} shadow-sm`} />
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-card p-8 rounded-[32px] border border-border shadow-sm">
-            <h3 className="font-black text-foreground uppercase tracking-tight mb-6">System Integrity</h3>
-            <div className="space-y-3">
+          <div className="bg-slate-900 p-10 rounded-[44px] text-white shadow-2xl shadow-slate-900/40 relative overflow-hidden group">
+            <h3 className="text-xl font-black mb-10 relative z-10">System Integrity</h3>
+            <div className="space-y-4 relative z-10">
               {[
-                { label: "Global Uptime", value: "99.97%", icon: Globe, status: "text-emerald-500" },
-                { label: "API Latency", value: "142ms", icon: Zap, status: "text-amber-500" },
-                { label: "Security", value: "Shield Active", icon: ShieldCheck, status: "text-indigo-500" },
-                { label: "Error Rate", value: "0.03%", icon: Activity, status: "text-emerald-500" },
+                { label: "Global Uptime", value: "99.99%", icon: Globe, status: "text-emerald-400" },
+                { label: "API Latency", value: "112ms", icon: Zap, status: "text-amber-400" },
+                { label: "Neural Layer", value: "Shield Active", icon: ShieldCheck, status: "text-indigo-400" },
+                { label: "Error Margin", value: "0.01%", icon: Activity, status: "text-emerald-400" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-4 bg-secondary rounded-[20px] group hover:bg-card hover:shadow-md transition-all cursor-default">
-                  <div className="flex items-center gap-3">
-                    <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">{item.label}</span>
+                <div key={item.label} className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-[24px] group/item hover:bg-white/10 transition-all cursor-default">
+                  <div className="flex items-center gap-4">
+                    <item.icon className="w-5 h-5 text-white/20 group-hover/item:text-indigo-400 transition-colors" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">{item.label}</span>
                   </div>
-                  <span className={`text-xs font-black ${item.status}`}>{item.value}</span>
+                  <span className={`text-[13px] font-black ${item.status}`}>{item.value}</span>
                 </div>
               ))}
             </div>
+            <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-500 opacity-10 blur-[60px] translate-x-12 -translate-y-12" />
           </div>
         </div>
       </div>

@@ -18,7 +18,7 @@ export const useAuthStore = create<AuthState>()(
       clearAuth: () => set({ user: null, isAuthenticated: false }),
     }),
     {
-      name: "apexiq_auth",
+      name: "eddva_auth",
     },
   ),
 );

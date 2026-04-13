@@ -2,1122 +2,1115 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
-  Brain, Zap, BarChart2, MessageCircle, FlaskConical,
-  Star, Check, Menu, X, ArrowRight, Sparkles,
-  BookOpen, TrendingUp, Users, Award, Clock, Target,
-  Bot, ChevronRight, Play, Search, Filter,
-  Atom, Stethoscope, GraduationCap, Building2, Briefcase, Globe,
-  ChevronLeft, Library, ChevronDown,
+  Brain, Zap, MessageCircle, Star,
+  Menu, X, ArrowRight, Sparkles, TrendingUp,
+  Award, Target, Bot, ChevronRight, Play,
+  Search, Smartphone,
+  Mail, Phone, MapPin,
+  GraduationCap, BarChart,
 } from "lucide-react";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
-import heroIllustration from "@/assets/hero_illustration.png";
+import heroIllustration from "@/assets/online-learning-concept-vector-illustration_235222-1269.png";
+import aboutImg   from "@/assets/education-learning-study-concept-apacity-development-training-personal-development-mixed-media-business_1085052-1781.avif";
+import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";
+import careerImg  from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
 
-/* ─── Design tokens ─── */
-const B = "#3B82F6"; // Soft Blue
-const P = "#8B5CF6"; // Soft Purple
-const T = "#10B981"; // Soft Emerald
-const G = "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)"; // Soft Premium Gradient
-const SG = "linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%)"; // Soft Background Gradient
+import { LandingLayout } from "@/components/landing/LandingLayout";
+import { FadeUp, Label as SLabel, HeroBadge as FloatBadge } from "@/components/landing/LandingPrimitives";
+import { B, P, T, IN, grad, gText, SG } from "@/components/landing/DesignTokens";
 
-/* ─── Scroll-reveal wrapper ─── */
-const FadeUp = ({
-  children, delay = 0, className = "",
-}: { children: React.ReactNode; delay?: number; className?: string }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-  return (
-    <motion.div ref={ref}
-      initial={{ opacity: 0, y: 28 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.55, delay, ease: "easeOut" as const }}
-      className={className}>
-      {children}
-    </motion.div>
-  );
-};
-
-/* ─── Section label pill ─── */
-const Label = ({ children, color = "blue" }: { children: React.ReactNode; color?: "blue" | "purple" | "teal" }) => {
-  const styles = {
-    blue:   "border-blue-100 bg-blue-50 text-blue-600",
-    purple: "border-purple-100 bg-purple-50 text-purple-600",
-    teal:   "border-teal-100 bg-teal-50 text-teal-600",
-  };
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[12px] font-bold uppercase tracking-widest ${styles[color]}`}>
-      <Sparkles className="h-3 w-3" />{children}
-    </span>
-  );
-};
-
-/* ─── Floating animated badge ─── */
-const HeroBadge = ({
-  icon, label, value, color, bg, drift = -8, delay = 0, className = "",
-}: { icon: React.ReactNode; label: string; value: string; color: string; bg: string; drift?: number; delay?: number; className?: string }) => (
-  <motion.div
-    animate={{ y: [0, drift, 0] }}
-    transition={{ duration: 3 + delay, repeat: Infinity, ease: "easeInOut" as const, delay }}
-    className={`flex items-center gap-2.5 rounded-2xl border border-white/80 bg-white px-3.5 py-2.5 shadow-xl backdrop-blur-sm ${className}`}>
-    <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: bg }}>
-      <span style={{ color }}>{icon}</span>
-    </div>
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
-      <p className="text-[14px] font-extrabold text-gray-900">{value}</p>
-    </div>
-  </motion.div>
-);
-
-/* ─── Feature card ─── */
-const FeatCard = ({
-  icon, color, bg, title, desc, emoji, delay,
-}: { icon: React.ReactNode; color: string; bg: string; title: string; desc: string; emoji: string; delay: number }) => (
-  <FadeUp delay={delay}>
-    <motion.div
-      whileHover={{ y: -8, boxShadow: `0 24px 48px ${color}15` }}
-      className="group relative overflow-hidden rounded-[28px] border border-white bg-white/70 p-8 shadow-sm backdrop-blur-xl transition-all duration-500">
-      
-      {/* decorative background element */}
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-[0.03] transition-transform duration-700 group-hover:scale-150 group-hover:rotate-12" 
-        style={{ background: color }} />
-
-      <div className="relative z-10 mb-6 flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner transition-transform duration-500 group-hover:scale-110" 
-        style={{ background: bg }}>
-        <span className="scale-110" style={{ color }}>{icon}</span>
-      </div>
-      
-      <h3 className="relative z-10 mb-3 text-[18px] font-black tracking-tight text-gray-900">{title}</h3>
-      <p className="relative z-10 mb-6 text-[14px] leading-relaxed text-gray-500">{desc}</p>
-      
-      <motion.div 
-        className="relative z-10 flex items-center gap-2 text-[13px] font-black uppercase tracking-wider" 
-        style={{ color }}>
-        <span className="border-b-2 border-transparent transition-all group-hover:border-current">Explore Feature</span>
-        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-      </motion.div>
-
-      {/* Large faded emoji background */}
-      <div className="pointer-events-none absolute -bottom-4 -right-2 translate-y-4 text-[80px] leading-none opacity-[0.04] transition-all duration-700 group-hover:translate-y-0 group-hover:opacity-[0.08] select-none grayscale">
-        {emoji}
-      </div>
-    </motion.div>
-  </FadeUp>
-);
-
-/* ─── Typing indicator dots ─── */
-const TypingDots = () => (
-  <div className="flex items-center gap-1.5 px-5 py-4">
-    {[0, 0.2, 0.4].map((d, i) => (
-      <motion.div key={i} className="h-2 w-2 rounded-full"
-        style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}
-        animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
-        transition={{ duration: 0.8, repeat: Infinity, delay: d, ease: "easeInOut" }} />
-    ))}
-  </div>
-);
-
-/* ─── Exam category data ─── */
-type ExamCard = {
-  id: string; name: string; icon: string; iconBg: string; color: string;
-  tags: string[]; students: string; desc: string; popular?: boolean;
-};
-
-const examTabs = [
-  { key: "competitive", label: "Competitive Exams", icon: "🎯" },
-  { key: "boards",      label: "School Boards",     icon: "📚" },
-  { key: "government",  label: "Govt Exams",        icon: "🏛️" },
+/* ── Data ── */
+const examCategories = [
+  { id: "jee",   name: "IIT JEE",        icon: "⚛️", color: B,         tags: ["Class 11","Class 12","Dropper"], students: "32K+", desc: "Crack IIT with AI-powered Physics, Chemistry & Maths prep — adaptive tests and full syllabus coverage.", popular: true },
+  { id: "neet",  name: "NEET UG",        icon: "🩺", color: "#EF4444", tags: ["Class 11","Class 12","Dropper"], students: "24K+", desc: "Complete Biology, Physics & Chemistry preparation for MBBS & BDS entrance with mock tests.", popular: true },
+  { id: "state", name: "State Board 9–11",icon: "📚", color: "#F59E0B", tags: ["Class 9","Class 10","Class 11"],  students: "18K+", desc: "Foundation-level preparation for all major state boards — MP, UP, MH, Rajasthan & more.", popular: true },
+  { id: "cbse",  name: "CBSE 9–12",      icon: "🎓", color: T,         tags: ["Class 9","Class 10","Class 11","Class 12"], students: "28K+", desc: "NCERT-aligned complete CBSE prep for Science, Maths, English & Social Studies.", popular: true },
+  { id: "icse",  name: "ICSE / ISC",     icon: "🏫", color: P,         tags: ["Class 9","Class 10"],            students: "9K+",  desc: "CISCE board prep for Class 9 & 10 with detailed topic-wise notes and solved papers." },
+  { id: "isc",   name: "ISC Class 11–12",icon: "📐", color: IN,        tags: ["Class 11","Class 12"],           students: "7K+",  desc: "ISC Science and Commerce prep with chapter-wise tests, previous papers and AI guidance." },
 ];
 
-const examData: Record<string, ExamCard[]> = {
-  competitive: [
-    { id: "neet",    name: "NEET UG",       icon: "🩺", iconBg: "linear-gradient(135deg,#FEF2F2,#FFE4E4)", color: "#EF4444", tags: ["Class 11","Class 12","Dropper"], students: "24K+", desc: "Biology, Physics & Chemistry for medical entrance.", popular: true },
-    { id: "jeead",   name: "IIT JEE Adv",  icon: "⚛️", iconBg: "linear-gradient(135deg,#EEF4FF,#DBEAFE)", color: B,        tags: ["Class 12","Dropper"],             students: "18K+", desc: "Advanced engineering entrance for IITs.", popular: true },
-    { id: "jeem",    name: "JEE Mains",    icon: "🔬", iconBg: "linear-gradient(135deg,#F3F0FF,#EDE9FE)", color: P,        tags: ["Class 11","Class 12","Dropper"],  students: "32K+", desc: "Gateway to NITs, IIITs & top engineering colleges.", popular: true },
-    { id: "cuet",    name: "CUET UG",      icon: "🎓", iconBg: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", color: T,        tags: ["Class 12"],                       students: "12K+", desc: "Central universities entrance test." },
-    { id: "bitsat",  name: "BITSAT",       icon: "💻", iconBg: "linear-gradient(135deg,#FFFBEB,#FEF3C7)", color: "#F59E0B",tags: ["Class 12","Dropper"],             students: "8K+",  desc: "BITS Pilani online entrance examination." },
-    { id: "viteee",  name: "VITEEE",       icon: "🏗️", iconBg: "linear-gradient(135deg,#FFF1F0,#FFE4E4)", color: "#F97316",tags: ["Class 12"],                       students: "6K+",  desc: "VIT Engineering entrance examination." },
-  ],
-  boards: [
-    { id: "cbse10",  name: "CBSE Class 10", icon: "📖", iconBg: "linear-gradient(135deg,#EEF4FF,#DBEAFE)", color: B,        tags: ["Class 10"],    students: "28K+", desc: "Complete CBSE board preparation for Class 10.", popular: true },
-    { id: "cbse12",  name: "CBSE Class 12", icon: "📝", iconBg: "linear-gradient(135deg,#F3F0FF,#EDE9FE)", color: P,        tags: ["Class 12"],    students: "22K+", desc: "Science, Commerce & Arts streams for Class 12.", popular: true },
-    { id: "icse",    name: "ICSE / ISC",   icon: "🏫", iconBg: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", color: T,        tags: ["Class 10","Class 12"], students: "9K+",  desc: "CISCE board comprehensive study material." },
-    { id: "state",   name: "State Boards", icon: "🗺️", iconBg: "linear-gradient(135deg,#FFFBEB,#FEF3C7)", color: "#F59E0B",tags: ["Class 10","Class 12"], students: "15K+", desc: "All major state boards — UP, MP, Bihar, MH & more." },
-  ],
-  government: [
-    { id: "upsc",    name: "UPSC CSE",     icon: "🏛️", iconBg: "linear-gradient(135deg,#EEF4FF,#DBEAFE)", color: B,        tags: ["Prelims","Mains","Interview"], students: "14K+", desc: "Civil services exam — IAS, IPS, IFS preparation.", popular: true },
-    { id: "ssc",     name: "SSC CGL",      icon: "📋", iconBg: "linear-gradient(135deg,#F3F0FF,#EDE9FE)", color: P,        tags: ["Tier 1","Tier 2","Tier 3"],    students: "11K+", desc: "Combined graduate level — Group B & C posts." },
-    { id: "banking", name: "Banking",      icon: "🏦", iconBg: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", color: T,        tags: ["IBPS","SBI","RBI"],            students: "9K+",  desc: "PO, Clerk & SO exams for banking sector.", popular: true },
-    { id: "railway", name: "Railways",     icon: "🚂", iconBg: "linear-gradient(135deg,#FFFBEB,#FEF3C7)", color: "#F59E0B",tags: ["RRB NTPC","Group D"],          students: "7K+",  desc: "RRB NTPC, Group D & JE examination prep." },
-    { id: "defence", name: "Defence",      icon: "⚔️", iconBg: "linear-gradient(135deg,#FFF1F0,#FFE4E4)", color: "#EF4444",tags: ["NDA","CDS","CAPF"],           students: "5K+",  desc: "NDA, CDS and AFCAT for defence aspirants." },
-    { id: "teaching",name: "Teaching",     icon: "🍎", iconBg: "linear-gradient(135deg,#F3F0FF,#EDE9FE)", color: P,        tags: ["CTET","UPTET","NET"],          students: "6K+",  desc: "Teacher eligibility and NET/SET exams." },
-  ],
-};
+const howSteps = [
+  { num: "01", icon: <GraduationCap className="h-6 w-6" />, title: "Sign Up",        desc: "Create your account in 30 seconds. No credit card required.",          color: B },
+  { num: "02", icon: <Target className="h-6 w-6" />,        title: "Choose Exam",    desc: "Pick your target exam and tell us your current level and exam date.",   color: IN },
+  { num: "03", icon: <Brain className="h-6 w-6" />,         title: "Learn with AI",  desc: "Get a personalized study plan. Practice adaptive quizzes and tests.",   color: P },
+  { num: "04", icon: <TrendingUp className="h-6 w-6" />,    title: "Track Progress", desc: "Review performance dashboards, fix weak topics, and hit your target.",   color: T },
+];
 
-/* ─── Exam category card ─── */
-const ExamCard = ({ card, idx }: { card: ExamCard; idx: number }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, scale: 0.95 }}
-    transition={{ duration: 0.4, delay: idx * 0.05 }}
-    whileHover={{ y: -8, scale: 1.02 }}
-    className="group relative cursor-pointer overflow-hidden rounded-[24px] border border-white bg-white/70 p-6 shadow-sm backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10">
+const courses = [
+  { id: 1, name: "Physics — Wave Optics",     exam: "JEE",     pct: 68, color: B,         from: B,        to: IN,         lastSeen: "Yesterday",  chapters: 12, rating: 4.8, students: "12K", instructor: "Dr. Anil Kumar",    thumb: aboutImg   },
+  { id: 2, name: "Organic Chemistry",          exam: "NEET",    pct: 45, color: "#EF4444", from:"#EF4444", to:"#F97316",   lastSeen: "2 days ago", chapters: 18, rating: 4.9, students: "18K", instructor: "Prof. Sunita Rao",  thumb: coursesImg },
+  { id: 3, name: "Indian Polity & Governance", exam: "UPSC",    pct: 82, color: "#0EA5E9", from:"#0EA5E9", to:T,           lastSeen: "Today",      chapters: 22, rating: 4.7, students: "9K",  instructor: "IAS Ravi Shankar",  thumb: careerImg  },
+  { id: 4, name: "Quantitative Aptitude",      exam: "SSC",     pct: 55, color: P,         from: P,        to:"#6366F1",   lastSeen: "3 days ago", chapters: 14, rating: 4.6, students: "14K", instructor: "Meena Sharma",      thumb: careerImg  },
+  { id: 5, name: "Mathematics — Integration",  exam: "JEE",     pct: 31, color: IN,        from: IN,       to: P,          lastSeen: "1 week ago", chapters: 9,  rating: 4.9, students: "20K", instructor: "Dr. Prabhas Nair",  thumb: coursesImg },
+  { id: 6, name: "Reasoning & Puzzles",        exam: "Banking", pct: 74, color: T,         from: T,        to:"#0EA5E9",   lastSeen: "Today",      chapters: 10, rating: 4.5, students: "7K",  instructor: "Kavitha Reddy",     thumb: aboutImg   },
+];
 
-    {/* soft gradient background */}
-    <div className="absolute inset-0 z-0 opacity-[0.03] transition-opacity duration-300 group-hover:opacity-[0.07]"
-      style={{ background: card.iconBg }} />
 
-    <div className="relative z-10 flex h-full flex-col">
-      <div className="mb-6 flex items-start justify-between">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl text-4xl shadow-inner transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
-          style={{ background: card.iconBg }}>
-          {card.icon}
-        </div>
-        {card.popular && (
-          <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-600 border border-amber-100/50">
-            <Star className="h-3 w-3 fill-amber-500" /> Popular
-          </div>
-        )}
-      </div>
+const testimonials = [
+  { name: "Priya Sharma",  role: "JEE Aspirant",  text: "EDDVA's adaptive plan helped me improve my Physics score from 54% to 89% in just 3 months!",              avatar: "P", color: B },
+  { name: "Rahul Mehta",   role: "Parent",         text: "Finally a platform my son actually uses daily. The AI doubt solver is incredible — available at 2am!",     avatar: "R", color: P },
+  { name: "Ananya Singh",  role: "NEET Student",   text: "The test analytics showed me exactly where I was losing marks. Went from 550 to 680 in NEET mock.",        avatar: "A", color: T },
+];
 
-      <div className="flex-1">
-        <div className="mb-1.5 flex items-center gap-2">
-          <h3 className="text-[20px] font-black tracking-tight text-gray-900">{card.name}</h3>
-        </div>
-        <p className="mb-4 text-[14px] leading-relaxed text-gray-500 line-clamp-2">{card.desc}</p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-1.5">
-          {card.tags.map(tag => (
-            <span key={tag} className="rounded-lg border border-gray-100 bg-gray-50/50 px-2.5 py-1 text-[11px] font-bold text-gray-500">
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-          <span className="text-[12px] font-bold text-gray-400">{card.students} Aspirants</span>
-          <motion.div
-            className="flex items-center gap-1.5 text-[14px] font-black"
-            style={{ color: card.color }}
-            whileHover={{ x: 5 }}>
-            Explore <ArrowRight className="h-4 w-4" />
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  </motion.div>
-);
-
-/* ─── Step card ─── */
-const Step = ({ num, icon, title, desc, color, delay }: {
-  num: string; icon: React.ReactNode; title: string; desc: string; color: string; delay: number;
-}) => (
-  <FadeUp delay={delay} className="flex flex-col items-center text-center px-4 relative group">
-    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-[24px] text-white shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6"
-      style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, boxShadow: `0 12px 32px ${color}33` }}>
-      {icon}
-    </div>
-    <div className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Step {num}</div>
-    <h4 className="mb-2 text-[18px] font-bold text-gray-900">{title}</h4>
-    <p className="text-[14px] leading-relaxed text-gray-500 max-w-[220px]">{desc}</p>
-  </FadeUp>
-);
-
-/* ════════════════════════════════════════════════ */
-
+/* ════════════════════════════════════════════════════════ */
 const Index = () => {
-  const [menuOpen,      setMenuOpen]      = useState(false);
-  const [activeTab,     setActiveTab]     = useState("competitive");
-  const [searchQuery,   setSearchQuery]   = useState("");
-  const [showTyping,    setShowTyping]    = useState(true);
-  const [showAiReply,   setShowAiReply]   = useState(false);
-  const [activePricing, setActivePricing] = useState(1);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab,   setActiveTab]   = useState<"all"|"engineering"|"medical"|"boards">("all");
+  const [coursePage, setCoursePage] = useState(0);
+  const [courseProgress, setCourseProgress] = useState(0);
+  const PAGES = 2; // 6 courses / 3 per page
+  const INTERVAL = 4500;
 
-  /* reveal AI reply after typing animation */
   useEffect(() => {
-    const t1 = setTimeout(() => setShowTyping(false), 2000);
-    const t2 = setTimeout(() => setShowAiReply(true),  2200);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+    setCourseProgress(0);
+    const prog = setInterval(() => setCourseProgress(p => Math.min(p + 100 / (INTERVAL / 50), 100)), 50);
+    const adv  = setTimeout(() => { setCoursePage(p => (p + 1) % PAGES); }, INTERVAL);
+    return () => { clearInterval(prog); clearTimeout(adv); };
+  }, [coursePage]);
 
-  /* filter exams by search */
-  const filteredExams = examData[activeTab].filter(e =>
-    searchQuery === "" ||
-    e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const [studyMenuOpen, setStudyMenuOpen] = useState(false);
-  const navLinks = ["Home", "Courses", "About Us", "Career"];
-
-  const studyMaterialLinks = [
-    { name: "PYQs",        href: "#pyqs",   icon: <BookOpen className="h-4 w-4" /> },
-    { name: "Books",       href: "#books",  icon: <Library className="h-4 w-4" /> },
-    { name: "Quiz",        href: "#quiz",   icon: <GraduationCap className="h-4 w-4" /> },
-    { name: "Free Videos", href: "#videos", icon: <Play className="h-4 w-4" /> },
-  ];
-
-  const scroll = (dir: "left" | "right") => {
-    if (!carouselRef.current) return;
-    carouselRef.current.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" });
+  const tabMap: Record<string, string[]> = {
+    all:         ["jee","neet","state","cbse","icse","isc"],
+    engineering: ["jee"],
+    medical:     ["neet"],
+    boards:      ["state","cbse","icse","isc"],
   };
 
-  const features = [
-    { icon: <Brain className="h-5 w-5" />,        color: B,        bg: "#EEF4FF", emoji: "🧠", title: "AI Assessment",        desc: "Auto question generation, adaptive difficulty, and instant evaluation with detailed insight reports." },
-    { icon: <Zap className="h-5 w-5" />,           color: P,        bg: "#F3F0FF", emoji: "⚡", title: "Adaptive Learning",    desc: "Personalized 30-day study cycles that identify weak topics and build custom timetables automatically." },
-    { icon: <Play className="h-5 w-5" />,          color: T,        bg: "#F0FDFA", emoji: "🎬", title: "Live Classes",         desc: "AI-assisted Q&A, real-time attendance, and post-lecture transcripts delivered to every student." },
-    { icon: <BarChart2 className="h-5 w-5" />,     color: "#F59E0B",bg: "#FFFBEB", emoji: "📊", title: "Performance Tracking", desc: "Track scores, streaks, and accuracy trends with beautiful visual dashboards and weekly reports." },
-    { icon: <MessageCircle className="h-5 w-5" />, color: "#10B981",bg: "#F0FDF4", emoji: "💬", title: "Doubt Solving",        desc: "24/7 bilingual AI chatbot resolves curriculum doubts in Hindi and English instantly." },
-    { icon: <FlaskConical className="h-5 w-5" />,  color: "#EF4444",bg: "#FFF1F0", emoji: "🔬", title: "Test Analytics",       desc: "Deep dive into each test — mistake patterns, time analysis, and topic-level accuracy breakdown." },
-  ];
+  const filteredExams = examCategories.filter(e =>
+    tabMap[activeTab].includes(e.id) &&
+    (searchQuery === "" || e.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-  const testimonials = [
-    { name: "Priya Sharma",  role: "JEE Aspirant",  text: "EDDVA's adaptive plan helped me improve my Physics score from 54% to 89% in just 3 months!", avatar: "P", color: B },
-    { name: "Rahul Mehta",   role: "Parent",         text: "Finally a platform my son actually uses daily. The AI doubt solver is incredible — available at 2am!", avatar: "R", color: P },
-    { name: "Ananya Singh",  role: "NEET Student",   text: "The test analytics showed me exactly where I was losing marks. Went from 550 to 680 in NEET mock.", avatar: "A", color: T },
-  ];
-
-  const pricing = [
-    { name: "Basic",   price: "₹499",  period: "/month", desc: "Perfect for self-starters",          cta: "Get Started",     features: ["AI doubt solving (50/day)", "Mock tests (5/month)", "Performance dashboard", "Basic study plan"] },
-    { name: "Pro",     price: "₹999",  period: "/month", desc: "Most popular for serious aspirants", cta: "Start Free Trial", features: ["Unlimited AI doubt solving", "Unlimited mock tests", "Advanced analytics", "AI adaptive study plan", "Live class access", "Priority support"] },
-    { name: "Premium", price: "₹1,999",period: "/month", desc: "For institutions & coaching centers",cta: "Book Demo",        features: ["Everything in Pro", "Batch management", "Teacher dashboard", "Admin analytics", "AI proctoring", "Dedicated support"] },
-  ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-gray-900 antialiased">
+    <LandingLayout>
 
-      {/* ══ NAVBAR ══ */}
-      <header className="sticky top-0 z-50 border-b border-gray-100/80 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center">
-            <img src={edvaLogo} alt="EDDVA" className="h-10 w-auto object-contain" />
-          </Link>
-          <nav className="hidden items-center gap-10 md:flex">
-            {navLinks.map(item => (
-              <a key={item} href={`#${item.toLowerCase().replace(/ /g, "-")}`}
-                className="group relative text-[14px] font-black uppercase tracking-widest text-gray-500 transition-colors hover:text-blue-600">
-                {item}
-                <span className="absolute -bottom-1 left-0 h-0.5 w-0 origin-left scale-x-0 bg-blue-600 transition-all group-hover:w-full group-hover:scale-x-100" />
-              </a>
-            ))}
 
-            {/* Study Material Dropdown */}
-            <div className="relative" onMouseEnter={() => setStudyMenuOpen(true)} onMouseLeave={() => setStudyMenuOpen(false)}>
-              <button className="flex items-center gap-1.5 text-[14px] font-black uppercase tracking-widest text-gray-500 transition-colors hover:text-blue-600">
-                Study Material
-                <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${studyMenuOpen ? "rotate-180" : ""}`} />
-              </button>
+      {/* ══════════════════════ HERO ══════════════════════ */}
+      <section className="relative overflow-hidden pb-0 pt-16 lg:pt-20">
+        {/* layered soft bg */}
+        <div className="absolute inset-0 -z-10" style={{ background: SG }} />
+        <motion.div animate={{ scale:[1,1.12,1], opacity:[0.18,0.28,0.18] }} transition={{ duration:9, repeat:Infinity, ease:"easeInOut" as const }}
+          className="pointer-events-none absolute -right-32 -top-32 h-[520px] w-[520px] rounded-full blur-[120px]" style={{ background: B }} />
+        <motion.div animate={{ scale:[1,1.1,1], opacity:[0.12,0.2,0.12] }} transition={{ duration:11, repeat:Infinity, ease:"easeInOut" as const, delay:3 }}
+          className="pointer-events-none absolute -bottom-16 -left-20 h-80 w-80 rounded-full blur-[100px]" style={{ background: P }} />
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.025]"
+          style={{ backgroundImage:`radial-gradient(circle, #3B82F6 1.5px, transparent 1.5px)`, backgroundSize:"30px 30px" }} />
 
-              <AnimatePresence>
-                {studyMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute left-1/2 top-full mt-2 w-56 -translate-x-1/2 overflow-hidden rounded-[24px] border border-white bg-white/80 p-2 shadow-2xl backdrop-blur-xl"
-                  >
-                    {studyMaterialLinks.map(link => (
-                      <a
-                        key={link.name}
-                        href={link.href}
-                        className="flex items-center gap-3 rounded-xl px-4 py-3 text-[14px] font-bold text-gray-600 transition-all hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100">
-                          {link.icon}
-                        </div>
-                        {link.name}
-                      </a>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </nav>
-          <div className="hidden items-center gap-4 md:flex">
-            <Link to="/login" className="rounded-xl px-5 py-2.5 text-[14px] font-bold text-gray-600 transition-all hover:text-blue-600 hover:bg-blue-50/50">
-              Login
-            </Link>
-            <motion.a href="#pricing" whileHover={{ scale: 1.05, boxShadow: `0 12px 30px ${B}33` }} whileTap={{ scale: 0.95 }}
-              className="relative overflow-hidden rounded-2xl px-7 py-3 text-[14px] font-black text-white shadow-lg"
-              style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-              <span className="relative z-10 flex items-center gap-2">
-                Start Free <Sparkles className="h-4 w-4" />
-              </span>
-              <motion.div
-                initial={{ x: "-100%" }}
-                whileHover={{ x: "100%" }}
-                transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-              />
-            </motion.a>
-          </div>
-          <button className="rounded-xl p-2 hover:bg-gray-100 md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t border-gray-100 bg-white px-6 pb-6 md:hidden">
-              {navLinks.map(item => (
-                <a key={item} href={`#${item.toLowerCase().replace(/ /g, "-")}`}
-                  onClick={() => setMenuOpen(false)}
-                  className="block py-4 text-[14px] font-black uppercase tracking-widest text-gray-700 hover:text-blue-600 border-b border-gray-50">
-                  {item}
-                </a>
-              ))}
-              
-              <div className="py-4">
-                <p className="mb-3 text-[12px] font-black uppercase tracking-widest text-gray-400">Study Material</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {studyMaterialLinks.map(link => (
-                    <a key={link.name} href={link.href} onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 rounded-xl bg-gray-50 px-4 py-3 text-[13px] font-bold text-gray-600">
-                      {link.icon} {link.name}
-                    </a>
-                  ))}
-                </div>
-              </div>
-
-              <Link to="/login" className="mt-4 block rounded-2xl border-2 border-gray-100 py-3.5 text-center text-[15px] font-black text-gray-700">
-                Login
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
-
-      {/* ══ HERO ══ */}
-      <section className="relative overflow-hidden">
-        {/* multi-layer soft bg */}
-        <div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(160deg, #ffffff 0%, #F0F7FF 45%, #F5F3FF 100%)" }} />
-        {/* animated orbs */}
-        <motion.div animate={{ scale: [1, 1.2, 1.1, 1], rotate: [0, 90, 180, 0], opacity: [0.15, 0.25, 0.15] }} transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="pointer-events-none absolute -top-32 -right-32 h-[600px] w-[600px] rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${B}44, transparent)` }} />
-        <motion.div animate={{ scale: [1, 1.1, 1.2, 1], rotate: [0, -90, -180, 0], opacity: [0.1, 0.2, 0.1] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="pointer-events-none absolute bottom-0 -left-24 h-96 w-96 rounded-full blur-[80px]" style={{ background: `radial-gradient(circle, ${P}33, transparent)` }} />
-        {/* dot grid */}
-        <div className="absolute inset-0 -z-10 opacity-[0.05]"
-          style={{ backgroundImage: `radial-gradient(circle, ${B} 1.5px, transparent 1.5px)`, backgroundSize: "36px 36px" }} />
-
-        <div className="mx-auto max-w-7xl px-6 py-20 lg:py-28">
-          <div className="grid items-center gap-14 lg:grid-cols-2">
-            {/* Copy */}
-            <div>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5">
+        <div className="mx-auto max-w-7xl px-5">
+          <div className="grid items-center gap-10 pb-0 lg:grid-cols-2 lg:gap-16">
+            {/* ─ Left copy ─ */}
+            <div className="pt-4 lg:pt-0">
+              <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5 }} className="mb-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-4 py-1.5">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
-                  <span className="text-[12px] font-bold uppercase tracking-widest text-blue-600">India's AI EdTech Platform</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">India's #1 AI EdTech Platform</span>
                 </div>
               </motion.div>
 
-              <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-                className="mb-6 text-[46px] font-extrabold leading-[1.1] tracking-tight text-gray-900 lg:text-[58px]">
-                Smarter Learning.<br />
-                <span style={{ background: `linear-gradient(135deg, ${B}, ${P})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  Brighter Futures.
-                </span>
+              <motion.h1 initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.6, delay:0.1 }}
+                className="mb-5 text-[44px] font-extrabold leading-[1.1] tracking-tight lg:text-[58px]">
+                Smarter Learning.
+                <br />
+                <span style={gText()}>Brighter Futures.</span>
               </motion.h1>
 
-              <motion.p initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-                className="mb-8 max-w-lg text-[17px] font-medium leading-relaxed text-gray-500">
-                AI-powered personalized education for JEE, NEET & beyond. Identify gaps, practice smart, and achieve the scores you deserve.
+              <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.2 }}
+                className="mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-500">
+                AI-powered personalized education for JEE, NEET, UPSC & 20+ more exams. Identify gaps, practice smart, and achieve your target score.
               </motion.p>
 
-              <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
-                className="mb-10 flex flex-wrap gap-4">
-                <motion.a href="#pricing" whileHover={{ scale: 1.04, boxShadow: `0 20px 40px ${B}44` }} whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 rounded-2xl px-8 py-4 text-[16px] font-bold text-white shadow-xl"
-                  style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-                  Start Learning Free <ArrowRight className="h-5 w-5" />
-                </motion.a>
-                <motion.a href="#how-it-works" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/50 backdrop-blur-md px-8 py-4 text-[16px] font-bold text-gray-700 transition-all hover:border-blue-200 hover:bg-blue-50/50 shadow-sm">
-                  Book Demo <ChevronRight className="h-5 w-5" />
+              <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.3 }}
+                className="mb-10 flex flex-wrap gap-3">
+                <motion.div whileHover={{ scale:1.04, boxShadow:`0 16px 40px ${B}40` }} whileTap={{ scale:0.97 }}>
+                  <Link to="/register"
+                    className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
+                    style={{ background: grad() }}>
+                    Start Learning <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </motion.div>
+                <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
+                  className="flex items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-7 py-3.5 text-[15px] font-bold text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                  Explore Exams <ChevronRight className="h-4 w-4" />
                 </motion.a>
               </motion.div>
 
-              {/* stats */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.45 }}
+              {/* Stat strip */}
+              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ duration:0.6, delay:0.45 }}
                 className="flex flex-wrap gap-8">
-                {[{ val: "50K+", label: "Students" },{ val: "98%", label: "Pass Rate" },{ val: "500+", label: "Topics" },{ val: "24/7", label: "AI Support" }].map(({ val, label }) => (
+                {[
+                  { val:"50K+", label:"Students" },
+                  { val:"20+",  label:"Exams Covered" },
+                  { val:"98%",  label:"Pass Rate" },
+                  { val:"24/7", label:"AI Support" },
+                ].map(({ val, label }) => (
                   <div key={label} className="text-center">
                     <p className="text-[22px] font-extrabold text-gray-900">{val}</p>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
                   </div>
                 ))}
               </motion.div>
             </div>
 
-            {/* Illustration */}
-            <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" as const }}
-              className="relative flex justify-center">
-              <div className="absolute inset-0 m-auto h-4/5 w-4/5 rounded-full opacity-20 blur-3xl"
-                style={{ background: `linear-gradient(135deg, ${B}, ${P})` }} />
-              <img src={heroIllustration} alt="Learning" className="relative z-10 w-full max-w-lg drop-shadow-2xl" />
+            {/* ─ Right illustration ─ */}
+            <motion.div initial={{ opacity:0, x:40 }} animate={{ opacity:1, x:0 }}
+              transition={{ duration:0.8, delay:0.2, ease:"easeOut" as const }}
+              className="relative flex justify-center pb-8 lg:pb-0">
+              {/* glow blob behind */}
+              <div className="absolute inset-10 rounded-full blur-3xl opacity-20" style={{ background: grad() }} />
 
-              <HeroBadge icon={<Zap className="h-4 w-4" />} label="XP Today" value="+240 pts" color={B} bg="#EEF4FF" drift={-8} delay={0} className="absolute left-0 top-16 z-20" />
-              <HeroBadge icon={<TrendingUp className="h-4 w-4" />} label="Accuracy" value="89.4%" color="#10B981" bg="#F0FDF4" drift={8} delay={0.6} className="absolute bottom-12 right-0 z-20" />
-              <HeroBadge icon={<Award className="h-4 w-4" />} label="Rank" value="#3 in Batch" color={P} bg="#F3F0FF" drift={-6} delay={1.2} className="absolute right-8 top-6 z-20" />
+              <img src={heroIllustration} alt="Student Learning"
+                className="relative z-10 w-full max-w-[520px] drop-shadow-2xl" />
 
-              {/* AI chat bubble */}
-              <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" as const, delay: 2 }}
-                className="absolute bottom-28 left-0 z-20 flex max-w-[200px] items-start gap-2 rounded-2xl bg-white p-3 shadow-xl border border-gray-100">
-                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>AI</div>
-                <p className="text-[11px] leading-snug text-gray-700">
-                  Your Chemistry needs attention. Shall I assign a recovery plan? 🎯
-                </p>
+              {/* floating cards */}
+              <FloatBadge icon={<Zap className="h-4 w-4" />} label="XP Today" value="+240 pts"
+                color={B} bg="#EFF6FF" drift={-8} delay={0} className="absolute left-2 top-16 z-20" />
+              <FloatBadge icon={<TrendingUp className="h-4 w-4" />} label="Accuracy" value="89.4%"
+                color={T} bg="#ECFDF5" drift={8} delay={0.7} className="absolute bottom-16 right-2 z-20" />
+              <FloatBadge icon={<Award className="h-4 w-4" />} label="Rank" value="#3 in Batch"
+                color={P} bg="#F5F3FF" drift={-6} delay={1.4} className="absolute right-10 top-8 z-20" />
+
+              {/* AI insight bubble */}
+              <motion.div animate={{ y:[0,-6,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" as const, delay:2 }}
+                className="absolute bottom-32 left-2 z-20 max-w-[190px] rounded-2xl border border-gray-100 bg-white p-3 shadow-xl">
+                <div className="flex items-start gap-2">
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    style={{ background: grad() }}>AI</div>
+                  <p className="text-[11px] leading-snug text-gray-700">
+                    Chemistry needs attention — recovery plan ready! 🎯
+                  </p>
+                </div>
               </motion.div>
             </motion.div>
           </div>
         </div>
 
-        {/* wave divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 60L60 50C120 40 240 20 360 15C480 10 600 20 720 27.5C840 35 960 40 1080 37.5C1200 35 1320 25 1380 20L1440 15V60H0Z" fill="#F8FAFC"/>
-          </svg>
-        </div>
+        {/* soft wave */}
+        <svg viewBox="0 0 1440 60" className="mt-0 w-full" style={{ marginBottom:"-2px" }}>
+          <path d="M0,40 C360,70 1080,10 1440,40 L1440,60 L0,60 Z" fill="white" />
+        </svg>
       </section>
 
-      {/* ══ TRUST STRIP ══ */}
-      <section className="border-b border-gray-100 bg-white py-14">
-        <div className="mx-auto max-w-7xl px-6">
-          <FadeUp className="mb-10 text-center">
-            <p className="text-[13px] font-bold uppercase tracking-widest text-gray-400">Trusted by 50,000+ students & parents across India</p>
-          </FadeUp>
-          <FadeUp delay={0.1} className="mb-12 flex flex-col items-center gap-2">
-            <div className="flex gap-1">{Array(5).fill(0).map((_, i) => <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />)}</div>
-            <p className="text-[15px] font-semibold text-gray-600">4.9 / 5 — from 12,000+ reviews</p>
-          </FadeUp>
-          <div className="grid gap-6 md:grid-cols-3">
-            {testimonials.map((t, i) => (
-              <FadeUp key={t.name} delay={i * 0.12}>
-                <motion.div whileHover={{ y: -4, boxShadow: "0 16px 48px rgba(0,0,0,0.07)" }}
-                  className="flex flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                  <div className="mb-4 flex gap-0.5">{Array(5).fill(0).map((_, j) => <Star key={j} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)}</div>
-                  <p className="mb-6 flex-1 text-[14px] leading-relaxed text-gray-600">"{t.text}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-bold text-white"
-                      style={{ background: `linear-gradient(135deg, ${t.color}, ${t.color}bb)` }}>
-                      {t.avatar}
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-bold text-gray-900">{t.name}</p>
-                      <p className="text-[12px] text-gray-400">{t.role}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </FadeUp>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ══ EXAM CATEGORIES (MAJOR SECTION) ══ */}
-      <section className="py-20 lg:py-28" id="exams" style={{ background: "linear-gradient(180deg, #F8FAFC 0%, #EEF4FF 60%, #F3F0FF 100%)" }}>
-        <div className="mx-auto max-w-7xl px-6">
-
-          <FadeUp className="mb-12 text-center">
-            <Label>Exam Categories</Label>
-            <h2 className="mt-5 text-[36px] font-extrabold tracking-tight text-gray-900 lg:text-[44px]">
-              Find Your Exam, Start Today
+      {/* ══════════════════════ EXAM CATEGORIES ══════════════════════ */}
+      <section className="bg-white py-20 lg:py-28" id="exams">
+        <div className="mx-auto max-w-7xl px-5">
+          <FadeUp className="mb-4 text-center">
+            <SLabel>Exam Categories</SLabel>
+          </FadeUp>
+          <FadeUp delay={0.05} className="mb-5 text-center">
+            <h2 className="text-[36px] font-extrabold tracking-tight lg:text-[44px]">
+              Choose Your <span style={gText()}>Exam Path</span>
             </h2>
-            <p className="mt-4 mx-auto max-w-2xl text-[17px] font-medium leading-relaxed text-gray-500">
-              Comprehensive prep for 20+ exams — competitive, board, and government. Pick your goal and we'll build your path.
+          </FadeUp>
+          <FadeUp delay={0.1} className="mb-10 text-center">
+            <p className="mx-auto max-w-xl text-[16px] font-medium leading-relaxed text-gray-500">
+              Comprehensive preparation for 20+ exams. Pick your goal and we'll build your personalized path.
             </p>
           </FadeUp>
 
-          {/* Search bar */}
-          <FadeUp delay={0.1} className="mb-8 flex justify-center">
-            <div className="relative w-full max-w-lg">
+          {/* Search + tab filter */}
+          <FadeUp delay={0.12} className="mb-7 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+            <div className="relative w-full max-w-sm">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search exam (NEET, JEE, UPSC, CBSE…)"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="h-12 w-full rounded-2xl border border-gray-200 bg-white pl-11 pr-5 text-[14px] text-gray-800 shadow-sm outline-none transition-all placeholder:text-gray-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
-              />
+              <input type="text" placeholder="Search JEE, NEET, UPSC…"
+                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                className="h-11 w-full rounded-2xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-[13px] outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100" />
               {searchQuery && (
-                <button onClick={() => setSearchQuery("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-700">
-                  <X className="h-3.5 w-3.5" />
+                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
-          </FadeUp>
-
-          {/* Category tabs */}
-          <FadeUp delay={0.15} className="mb-12 flex justify-center">
-            <div className="flex flex-wrap items-center justify-center gap-2 rounded-[24px] border border-gray-100 bg-white/50 backdrop-blur-xl p-2 shadow-inner">
-              {examTabs.map(tab => (
-                <motion.button key={tab.key}
-                  onClick={() => { setActiveTab(tab.key); setSearchQuery(""); }}
-                  className={`relative flex items-center gap-2.5 rounded-[18px] px-6 py-3 text-[14px] font-black transition-all ${activeTab === tab.key ? "text-white" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50/50"}`}
-                  whileTap={{ scale: 0.96 }}>
-                  {activeTab === tab.key && (
-                    <motion.div layoutId="tab-pill" className="absolute inset-0 rounded-[18px] shadow-lg shadow-blue-500/20"
-                      style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }} />
-                  )}
-                  <span className="relative z-10 text-lg opacity-90">{tab.icon}</span>
-                  <span className="relative z-10 tracking-tight">{tab.label}</span>
-                </motion.button>
+            <div className="flex gap-1.5 overflow-x-auto rounded-2xl border border-gray-100 bg-gray-50 p-1">
+              {(["all","engineering","medical","boards"] as const).map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  className={`relative whitespace-nowrap rounded-xl px-4 py-2 text-[12px] font-bold capitalize transition-all ${activeTab === tab ? "text-white shadow-md" : "text-gray-500 hover:text-gray-800"}`}
+                  style={activeTab === tab ? { background: grad() } : {}}>
+                  {{ all:"All Exams", engineering:"Engineering", medical:"Medical", boards:"School Boards" }[tab]}
+                </button>
               ))}
             </div>
           </FadeUp>
 
-          {/* Count + filter */}
-          <FadeUp delay={0.2} className="mb-6 flex items-center justify-between">
-            <p className="text-[13px] font-semibold text-gray-400">
-              Showing <span className="font-bold text-gray-900">{filteredExams.length}</span> exams
-              {searchQuery && <span> for "<span className="text-blue-600">{searchQuery}</span>"</span>}
-            </p>
-            <div className="flex items-center gap-1.5 text-[12px] font-bold text-gray-400">
-              <Filter className="h-3.5 w-3.5" />
-              Sort: Popular first
-            </div>
-          </FadeUp>
-
-          {/* Cards grid */}
+          {/* Cards */}
           <AnimatePresence mode="wait">
-            {filteredExams.length > 0 ? (
-              <motion.div key={activeTab + searchQuery} layout
-                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredExams.map((card, idx) => (
-                  <ExamCard key={card.id} card={card} idx={idx} />
-                ))}
-              </motion.div>
-            ) : (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-4 py-16 text-center">
-                <div className="text-5xl">🔍</div>
-                <p className="text-[16px] font-bold text-gray-700">No exams found for "{searchQuery}"</p>
-                <p className="text-[14px] text-gray-400">Try searching for NEET, JEE, UPSC, CBSE…</p>
-                <button onClick={() => setSearchQuery("")}
-                  className="rounded-xl border border-gray-200 px-5 py-2 text-[13px] font-bold text-gray-600 hover:bg-gray-50">
-                  Clear search
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            <motion.div key={activeTab + searchQuery} layout
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {filteredExams.length > 0 ? filteredExams.map((exam, i) => (
+                <motion.div key={exam.id} layout
+                  initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
+                  transition={{ duration:0.35, delay: i * 0.05 }}
+                  whileHover={{ y:-6, boxShadow:`0 24px 56px ${exam.color}22` }}
+                  className="group relative cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
 
-          {/* popular badge callout */}
-          <FadeUp delay={0.3} className="mt-10 flex items-center justify-center gap-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent max-w-xs" />
-            <span className="flex items-center gap-2 rounded-full border border-yellow-100 bg-yellow-50 px-4 py-1.5 text-[12px] font-bold text-yellow-700">
-              <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
-              Popular exams are marked with a star
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-transparent max-w-xs" />
-          </FadeUp>
-        </div>
-      </section>
+                  {/* hover color wash */}
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    style={{ background: `radial-gradient(circle at top left, ${exam.color}08, transparent 65%)` }} />
 
-      {/* ══ FEATURES ══ */}
-      <section className="py-20 lg:py-28 bg-white" id="features">
-        <div className="mx-auto max-w-7xl px-6">
-          <FadeUp className="mb-16 text-center">
-            <Label>Features</Label>
-            <h2 className="mt-5 text-[36px] font-extrabold tracking-tight text-gray-900 lg:text-[44px]">Everything you need to excel</h2>
-            <p className="mt-4 mx-auto max-w-2xl text-[17px] font-medium leading-relaxed text-gray-500">
-              Six AI-powered modules, one complete learning platform designed for real, measurable results.
-            </p>
-          </FadeUp>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((f, i) => <FeatCard key={f.title} {...f} delay={i * 0.08} />)}
-          </div>
-        </div>
-      </section>
+                  {exam.popular && (
+                    <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black text-white"
+                      style={{ background: exam.color }}>
+                      <Star className="h-2.5 w-2.5 fill-current" /> Popular
+                    </div>
+                  )}
 
-      {/* ══ DASHBOARD PREVIEW ══ */}
-      <section className="py-20 lg:py-28" style={{ background: "linear-gradient(180deg, #ffffff 0%, #EEF4FF 100%)" }}>
-        <div className="mx-auto max-w-7xl px-6">
-          <FadeUp className="mb-16 text-center">
-            <Label>Product Preview</Label>
-            <h2 className="mt-5 text-[36px] font-extrabold tracking-tight text-gray-900">Your dashboard, reimagined</h2>
-            <p className="mt-4 mx-auto max-w-xl text-[17px] text-gray-500 leading-relaxed">
-              Track every metric, review every session, and get AI-powered suggestions — all in one calm, beautiful place.
-            </p>
-          </FadeUp>
-
-          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.6fr]">
-            {/* left: feature list */}
-            <FadeUp className="space-y-6">
-              {[
-                { icon: "📊", color: B,        bg: "#EEF4FF", title: "Real-time Analytics",     desc: "Live score tracking, subject-wise accuracy, and weekly growth charts." },
-                { icon: "🤖", color: P,        bg: "#F3F0FF", title: "AI-Powered Insights",     desc: "Personalized gap analysis and auto-assigned recovery modules." },
-                { icon: "🏆", color: "#F59E0B",bg: "#FFFBEB", title: "Gamified Progress",       desc: "XP points, streaks, badges and batch leaderboards to stay motivated." },
-                { icon: "📅", color: T,        bg: "#F0FDFA", title: "Smart Study Schedule",    desc: "AI builds and updates your daily plan based on exam date and performance." },
-              ].map((item, i) => (
-                <motion.div key={item.title} initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                  transition={{ duration: 0.45, delay: i * 0.1 }}
-                  className="flex items-start gap-4">
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl" style={{ background: item.bg }}>
-                    {item.icon}
+                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-3xl"
+                    style={{ background: `${exam.color}15` }}>
+                    {exam.icon}
                   </div>
-                  <div>
-                    <h4 className="mb-0.5 text-[15px] font-bold text-gray-900">{item.title}</h4>
-                    <p className="text-[13px] leading-relaxed text-gray-500">{item.desc}</p>
+
+                  <h3 className="mb-1 text-[16px] font-extrabold text-gray-900">{exam.name}</h3>
+                  <p className="mb-3 text-[12px] leading-relaxed text-gray-500">{exam.desc}</p>
+
+                  <div className="mb-4 flex flex-wrap gap-1.5">
+                    {exam.tags.map(tag => (
+                      <span key={tag} className="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                        style={{ background:`${exam.color}12`, color: exam.color }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-gray-400">{exam.students} students</span>
+                    <motion.span className="flex items-center gap-1 text-[12px] font-bold"
+                      style={{ color: exam.color }}
+                      whileHover={{ x: 3 }}>
+                      Explore <ArrowRight className="h-3 w-3" />
+                    </motion.span>
                   </div>
                 </motion.div>
-              ))}
+              )) : (
+                <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="col-span-4 py-16 text-center">
+                  <div className="mb-3 text-5xl">🔍</div>
+                  <p className="text-[16px] font-bold text-gray-700">No exams found for "{searchQuery}"</p>
+                  <button onClick={() => setSearchQuery("")}
+                    className="mt-4 rounded-xl border border-gray-200 px-5 py-2 text-[13px] font-bold text-gray-600 hover:bg-gray-50">
+                    Clear search
+                  </button>
+                </motion.div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </section>
+
+
+      {/* ══════════════════════ ABOUT ══════════════════════ */}
+      <section className="py-20 lg:py-28" id="about"
+        style={{ background:"linear-gradient(160deg, #EFF6FF 0%, #F5F3FF 100%)" }}>
+        <div className="mx-auto max-w-7xl px-5">
+          <div className="grid items-center gap-14 lg:grid-cols-2">
+
+            {/* About image panel */}
+            <FadeUp>
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl"
+                style={{ boxShadow:"0 32px 80px rgba(59,130,246,0.18)" }}>
+                <img src={aboutImg} alt="Education & Learning" className="h-[480px] w-full object-cover object-center" />
+                {/* gradient overlay */}
+                <div className="absolute inset-0"
+                  style={{ background:"linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(15,23,42,0.75) 100%)" }} />
+                {/* floating stat pills */}
+                <div className="absolute bottom-6 left-5 right-5 flex flex-wrap gap-3">
+                  {[
+                    { icon:"⚡", val:"4,820 XP",   color:"#3B82F6", bg:"rgba(59,130,246,0.15)" },
+                    { icon:"🔥", val:"12-day Streak", color:"#F59E0B", bg:"rgba(245,158,11,0.15)" },
+                    { icon:"🎯", val:"89% Accuracy", color:"#10B981", bg:"rgba(16,185,129,0.15)" },
+                    { icon:"🏆", val:"Rank #3",      color:"#8B5CF6", bg:"rgba(139,92,246,0.15)" },
+                  ].map(s => (
+                    <motion.div key={s.val} whileHover={{ y:-3 }}
+                      className="flex items-center gap-2 rounded-2xl border border-white/20 px-3.5 py-2 backdrop-blur-md"
+                      style={{ background:s.bg }}>
+                      <span className="text-[15px]">{s.icon}</span>
+                      <span className="text-[12px] font-bold text-white">{s.val}</span>
+                    </motion.div>
+                  ))}
+                </div>
+                {/* top label */}
+                <div className="absolute left-5 top-5">
+                  <div className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+                    <span className="text-[11px] font-bold text-white">Live Learning Platform</span>
+                  </div>
+                </div>
+              </div>
             </FadeUp>
 
-            {/* right: browser mockup */}
-            <FadeUp delay={0.15} className="relative">
-              {/* decorative floating elements */}
-              <motion.div
-                animate={{ y: [0, -15, 0], rotate: [0, 5, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -right-8 -top-8 z-30 flex h-24 w-24 items-center justify-center rounded-[32px] border border-white bg-white/80 p-4 shadow-2xl backdrop-blur-xl">
-                <div className="text-center">
-                  <p className="text-[10px] font-black uppercase text-gray-400">Goal</p>
-                  <p className="text-[20px] font-black text-emerald-500">92%</p>
-                </div>
-              </motion.div>
-              
-              <motion.div
-                animate={{ y: [0, 15, 0], rotate: [0, -5, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -left-12 bottom-12 z-0 h-32 w-32 rounded-full bg-gradient-to-tr from-blue-400/20 to-purple-400/20 blur-2xl" />
+            {/* Text */}
+            <FadeUp delay={0.15}>
+              <SLabel>About EDDVA</SLabel>
+              <h2 className="mt-5 text-[36px] font-extrabold leading-tight tracking-tight lg:text-[42px]">
+                The AI-powered learning platform built for{" "}
+                <span style={gText()}>real results</span>
+              </h2>
+              <p className="mt-4 text-[16px] font-medium leading-relaxed text-gray-500">
+                EDDVA combines adaptive AI, expert-curated content and real-time analytics to give every student a personalized path to their target score — no matter the exam.
+              </p>
 
-              <div className="relative z-10 overflow-hidden rounded-[32px] border border-white bg-white/40 shadow-2xl backdrop-blur-2xl"
-                style={{ boxShadow: "0 40px 100px rgba(37,99,235,0.12)" }}>
-                <div className="flex items-center gap-2 border-b border-gray-100 bg-white/50 px-6 py-4">
-                  <div className="flex gap-1.5">
-                    <div className="h-3 w-3 rounded-full bg-[#FF5F57]" />
-                    <div className="h-3 w-3 rounded-full bg-[#FFBD2E]" />
-                    <div className="h-3 w-3 rounded-full bg-[#28C840]" />
-                  </div>
-                  <div className="ml-6 flex-1 rounded-xl bg-gray-100 px-4 py-1.5 text-[12px] font-bold text-gray-400 tracking-tight">
-                    app.eddva.in/student/dashboard
-                  </div>
-                </div>
-                
-                <div className="space-y-5 p-6" style={{ background: "rgba(248, 250, 252, 0.5)" }}>
-                  {/* top stat row */}
-                  <div className="grid grid-cols-4 gap-4">
-                    {[
-                      { label: "XP",      val: "4,820",  icon: "⚡", color: B,        bg: "#EEF4FF" },
-                      { label: "Streak",  val: "12d",    icon: "🔥", color: "#F59E0B", bg: "#FFFBEB" },
-                      { label: "Accuracy",val: "89%",    icon: "🎯", color: "#10B981", bg: "#F0FDF4" },
-                      { label: "Rank",    val: "#3",     icon: "🏆", color: P,        bg: "#F3F0FF" },
-                    ].map(s => (
-                      <motion.div key={s.label} whileHover={{ y: -4 }} className="rounded-[20px] border border-white bg-white p-4 text-center shadow-sm">
-                        <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-xl text-lg shadow-sm" style={{ background: s.bg }}>{s.icon}</div>
-                        <p className="text-[11px] font-black uppercase tracking-wider text-gray-400">{s.label}</p>
-                        <p className="text-[17px] font-black" style={{ color: s.color }}>{s.val}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {/* progress */}
-                  <div className="rounded-[24px] border border-white bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <p className="text-[12px] font-black uppercase tracking-[0.1em] text-gray-400">Active Learning</p>
-                      <span className="text-[11px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">+12% gain</span>
-                    </div>
-                    {[
-                      { name: "Physics",     pct: 78, color: B },
-                      { name: "Chemistry",   pct: 62, color: P },
-                      { name: "Mathematics", pct: 91, color: "#10B981" },
-                    ].map(s => (
-                      <div key={s.name} className="mb-4">
-                        <div className="mb-2 flex justify-between text-[13px] font-black text-gray-700">
-                          <span>{s.name}</span><span>{s.pct}%</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                          <motion.div className="h-2 rounded-full"
-                            initial={{ width: 0 }} whileInView={{ width: `${s.pct}%` }}
-                            viewport={{ once: true }} transition={{ duration: 1.2, ease: "easeOut" }}
-                            style={{ background: `linear-gradient(90deg, ${s.color}88, ${s.color})` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* AI insight component */}
-                  <motion.div initial={{ x: 20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }}
-                    className="flex items-start gap-4 rounded-[24px] border border-blue-100 bg-blue-50/80 p-5 backdrop-blur-md">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-                      <Bot className="h-5 w-5" />
+              <div className="mt-8 space-y-4">
+                {[
+                  { icon:<Brain className="h-5 w-5" />,     color:B,  bg:"#EFF6FF", title:"Adaptive Learning",       desc:"Study plans that evolve with your performance every day." },
+                  { icon:<Zap className="h-5 w-5" />,       color:P,  bg:"#F5F3FF", title:"Smart Recommendations",   desc:"AI suggests what to study next based on gaps and exam date." },
+                  { icon:<BarChart className="h-5 w-5" />,  color:T,  bg:"#ECFDF5", title:"Performance Tracking",    desc:"Visual dashboards with subject-wise accuracy and trend charts." },
+                  { icon:<MessageCircle className="h-5 w-5" />, color:IN, bg:"#EEF2FF", title:"24/7 Doubt Solver",   desc:"Bilingual AI chatbot — Hindi + English, always available." },
+                ].map(item => (
+                  <motion.div key={item.title} whileHover={{ x:4 }}
+                    className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl" style={{ background:item.bg, color:item.color }}>
+                      {item.icon}
                     </div>
                     <div>
-                      <p className="mb-1 text-[11px] font-black uppercase tracking-widest text-blue-700">Predictive Analysis</p>
-                      <p className="text-[13px] font-medium leading-relaxed text-blue-900/80">
-                        Current pace suggests a <strong>98th percentile</strong> in coming JEE Mock. Focus on "Thermodynamics" for +12 marks.
-                      </p>
+                      <p className="text-[14px] font-bold text-gray-900">{item.title}</p>
+                      <p className="text-[13px] text-gray-500">{item.desc}</p>
                     </div>
                   </motion.div>
-                </div>
-              </div>
-            </FadeUp>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ HOW IT WORKS ══ */}
-      <section className="bg-white py-20 lg:py-28" id="how-it-works">
-        <div className="mx-auto max-w-7xl px-6">
-          <FadeUp className="mb-16 text-center">
-            <Label>Learning Flow</Label>
-            <h2 className="mt-5 text-[36px] font-extrabold tracking-tight text-gray-900">How EDDVA works</h2>
-            <p className="mt-4 mx-auto max-w-xl text-[17px] text-gray-500 leading-relaxed">
-              A simple 4-step AI-powered cycle designed to continuously improve your performance.
-            </p>
-          </FadeUp>
-          <div className="relative">
-            <div className="absolute top-7 left-[12.5%] right-[12.5%] hidden h-px lg:block"
-              style={{ background: `linear-gradient(90deg, ${B}44, ${P}44, ${T}44, #F59E0B44)` }} />
-            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { num: "01", icon: <BookOpen className="h-6 w-6" />, title: "Learn",    desc: "Access curated AI-powered lessons tailored to your exam and level.", color: B },
-                { num: "02", icon: <Target className="h-6 w-6" />,   title: "Practice", desc: "Adaptive quizzes that get progressively harder as you improve.", color: P },
-                { num: "03", icon: <FlaskConical className="h-6 w-6" />, title: "Test", desc: "Full-length mock tests with proctoring, timing, and instant evaluation.", color: T },
-                { num: "04", icon: <TrendingUp className="h-6 w-6" />, title: "Improve",desc: "AI pinpoints gaps and auto-assigns recovery resources for you.", color: "#F59E0B" },
-              ].map((s, i) => <Step key={s.title} {...s} delay={i * 0.1} />)}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ DOUBT SOLVING ══ */}
-      <section className="py-20 lg:py-28" style={{ background: "#F8FAFC" }}>
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid items-center gap-16 lg:grid-cols-2">
-            <FadeUp>
-              <Label>AI Doubt Solver</Label>
-              <h2 className="mt-5 text-[36px] font-extrabold leading-tight tracking-tight text-gray-900 lg:text-[42px]">
-                Doubts cleared.<br />Any time. Any language.
-              </h2>
-              <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-gray-500">
-                EDDVA's AI understands Hindi and English, resolves doubts instantly, and even corrects your notes — 24 hours a day.
-              </p>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                {[
-                  { icon: "🌙", title: "Always-On",  desc: "Available 24/7 — even at 2am" },
-                  { icon: "🇮🇳", title: "Bilingual",  desc: "Hindi + English in one chat" },
-                  { icon: "📝", title: "Notes AI",   desc: "Flags errors, fills gaps" },
-                  { icon: "📊", title: "Tracks Doubts",desc: "Surfaces patterns to teachers" },
-                ].map(item => (
-                  <div key={item.title} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                    <span className="text-xl">{item.icon}</span>
-                    <div>
-                      <p className="text-[13px] font-bold text-gray-900">{item.title}</p>
-                      <p className="text-[12px] text-gray-500">{item.desc}</p>
-                    </div>
-                  </div>
                 ))}
               </div>
-            </FadeUp>
 
-            {/* Enhanced chat UI */}
-            <FadeUp delay={0.15}>
-              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
-                style={{ boxShadow: "0 24px 64px rgba(37,99,235,0.10)" }}>
-                {/* Chat header */}
-                <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4"
-                  style={{ background: `linear-gradient(135deg, ${B}08, ${P}06)` }}>
-                  <div className="relative">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full text-white font-bold text-sm"
-                      style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-                      AI
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-bold text-gray-900">EDDVA AI Assistant</p>
-                    <div className="flex items-center gap-1.5">
-                      <motion.span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-                      <span className="text-[12px] font-medium text-green-600">Online · Responds instantly</span>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 shadow-sm">
-                    24/7 Support
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="space-y-3.5 p-5" style={{ background: "#FAFBFC" }}>
-                  {/* AI greeting */}
-                  <div className="flex items-start gap-2.5">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                      style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>AI</div>
-                    <div>
-                      <div className="rounded-2xl rounded-tl-none bg-white px-4 py-2.5 text-[13px] text-gray-700 shadow-sm border border-gray-100 max-w-xs leading-snug">
-                        नमस्ते! 👋 Ask me anything in Hindi or English — I'm here 24/7.
-                      </div>
-                      <p className="mt-1 ml-1 text-[10px] text-gray-400">EDDVA AI · Just now</p>
-                    </div>
-                  </div>
-
-                  {/* User message */}
-                  <div className="flex justify-end">
-                    <div>
-                      <div className="rounded-2xl rounded-tr-none px-4 py-2.5 text-[13px] text-white max-w-xs leading-snug"
-                        style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-                        Newton's third law को simple way में explain करो
-                      </div>
-                      <p className="mt-1 mr-1 text-right text-[10px] text-gray-400">You · 1 min ago</p>
-                    </div>
-                  </div>
-
-                  {/* AI reply */}
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[14px] text-[10px] font-black text-white shadow-lg"
-                      style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>AI</div>
-                    <div className="max-w-[80%]">
-                      <div className="rounded-[22px] rounded-tl-none bg-white px-5 py-4 text-[14px] text-gray-700 shadow-sm border border-gray-100 leading-relaxed">
-                        हर <span className="font-bold text-blue-600">action</span> के लिए equal और opposite <span className="font-bold text-purple-600">reaction</span> होता है 🔄<br /><br />
-                        <div className="rounded-xl bg-gray-50 p-3 text-[13px] border border-gray-100">
-                          <strong>Example:</strong> जब आप दीवार को push करते हैं, दीवार भी आपको equal force से push करती है।
-                        </div>
-                      </div>
-                      <p className="mt-2 ml-2 text-[11px] font-bold text-gray-400">EDDVA AI · 30s ago</p>
-                    </div>
-                  </div>
-
-                  {/* User: check notes */}
-                  <div className="flex justify-end">
-                    <div className="rounded-2xl rounded-tr-none px-4 py-2.5 text-[13px] text-white max-w-xs leading-snug"
-                      style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-                      Can you check my notes on this?
-                    </div>
-                  </div>
-
-                  {/* Typing OR result */}
-                  <div className="flex items-start gap-2.5">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                      style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>AI</div>
-                    <AnimatePresence mode="wait">
-                      {showTyping ? (
-                        <motion.div key="typing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                          className="rounded-2xl rounded-tl-none bg-white shadow-sm border border-gray-100">
-                          <TypingDots />
-                        </motion.div>
-                      ) : showAiReply ? (
-                        <motion.div key="reply" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                          <div className="rounded-2xl rounded-tl-none border border-emerald-100 bg-emerald-50 px-5 py-4 text-[13px] text-emerald-800 max-w-xs leading-relaxed shadow-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Check className="h-4 w-4 text-emerald-600" />
-                              <strong className="font-black">Scan Complete</strong>
-                            </div>
-                            <p className="text-[12px] mb-2 font-medium">1 Conceptual error flagged · 2 sections incomplete</p>
-                            <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 text-[11px] font-black text-white cursor-pointer active:scale-95 transition-all">
-                              Download Corrected Version ⬇
-                            </span>
-                          </div>
-                        </motion.div>
-                      ) : null}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Input bar */}
-                <div className="border-t border-gray-100 px-5 py-3.5 bg-white">
-                  <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5">
-                    <span className="flex-1 text-[13px] text-gray-400">Ask your doubt in Hindi or English…</span>
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
-                      style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </motion.button>
-                  </div>
-                </div>
-              </div>
+              <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
+                className="mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
+                style={{ background: grad() }}>
+                Start Your Journey <ArrowRight className="h-4 w-4" />
+              </motion.a>
             </FadeUp>
           </div>
         </div>
       </section>
 
-      {/* ══ RESULTS ══ */}
-      <section className="bg-white py-20 lg:py-28">
-        <div className="mx-auto max-w-7xl px-6">
-          <FadeUp className="mb-16 text-center">
-            <Label>Results</Label>
-            <h2 className="mt-5 text-[36px] font-extrabold tracking-tight text-gray-900">Real students, real improvements</h2>
-            <p className="mt-4 mx-auto max-w-xl text-[17px] text-gray-500 leading-relaxed">
-              Students using EDDVA see measurable improvement within weeks — not months.
+
+      {/* ══════════════════════ HOW IT WORKS ══════════════════════ */}
+      <section className="py-20 lg:py-28" id="how"
+        style={{ background:"linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 55%,#F5F3FF 100%)" }}>
+        <div className="mx-auto max-w-7xl px-5">
+          <FadeUp className="mb-4 text-center"><SLabel>How It Works</SLabel></FadeUp>
+          <FadeUp delay={0.05} className="mb-4 text-center">
+            <h2 className="text-[36px] font-extrabold tracking-tight lg:text-[44px]">
+              Four steps to <span style={gText()}>exam success</span>
+            </h2>
+          </FadeUp>
+          <FadeUp delay={0.1} className="mb-14 text-center">
+            <p className="mx-auto max-w-xl text-[16px] text-gray-500 leading-relaxed">
+              A simple AI-powered cycle designed to build your skills and keep you improving every single day.
             </p>
           </FadeUp>
+
+          {/* Step cards */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: <TrendingUp className="h-7 w-7" />, val: "+34%",  label: "Average score increase",      color: B,        bg: "#EEF4FF" },
-              { icon: <Clock className="h-7 w-7" />,      val: "3 wks", label: "Average time to see results",  color: P,        bg: "#F3F0FF" },
-              { icon: <Users className="h-7 w-7" />,      val: "92%",   label: "Students feel more confident", color: T,        bg: "#F0FDFA" },
-              { icon: <Award className="h-7 w-7" />,      val: "50K+",  label: "Students enrolled",            color: "#F59E0B",bg: "#FFFBEB" },
-            ].map((item, i) => (
-              <FadeUp key={item.label} delay={i * 0.1}>
-                <motion.div whileHover={{ y: -4, boxShadow: `0 12px 40px ${item.color}15` }}
-                  className="flex flex-col items-center rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-                  <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: item.bg, color: item.color }}>
-                    {item.icon}
-                  </div>
-                  <p className="mb-2 text-[36px] font-extrabold leading-none" style={{ color: item.color }}>{item.val}</p>
-                  <p className="text-[14px] font-medium leading-snug text-gray-500">{item.label}</p>
-                </motion.div>
-              </FadeUp>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ PRICING ══ */}
-      <section className="py-20 lg:py-28" id="pricing"
-        style={{ background: "linear-gradient(180deg, #F8FAFC 0%, #EEF4FF 100%)" }}>
-        <div className="mx-auto max-w-7xl px-6">
-          <FadeUp className="mb-16 text-center">
-            <Label>Pricing</Label>
-            <h2 className="mt-5 text-[36px] font-extrabold tracking-tight text-gray-900">Simple, transparent pricing</h2>
-            <p className="mt-4 mx-auto max-w-xl text-[17px] text-gray-500 leading-relaxed">
-              Start free. Upgrade anytime. No hidden fees, no surprises.
-            </p>
-          </FadeUp>
-          <div className="grid gap-6 md:grid-cols-3">
-            {pricing.map((plan, i) => {
-              const isHighlight = i === 1;
+            {howSteps.map((s, i) => {
+              const gradTo = s.color === B ? IN : s.color === IN ? P : s.color === P ? T : T;
               return (
-                <FadeUp key={plan.name} delay={i * 0.1}>
+                <FadeUp key={s.title} delay={i * 0.1}>
                   <motion.div
-                    whileHover={{ y: -6, boxShadow: isHighlight ? `0 24px 64px ${B}28` : "0 12px 40px rgba(0,0,0,0.07)" }}
-                    className={`relative flex flex-col rounded-2xl p-8 transition-all duration-300 ${isHighlight ? "border-2 bg-white shadow-xl" : "border border-gray-100 bg-white shadow-sm"}`}
-                    style={isHighlight ? { borderColor: B + "55" } : {}}>
-                    {isHighlight && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                        <span className="rounded-full px-4 py-1.5 text-[12px] font-bold text-white shadow-md"
-                          style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-                          Most Popular
-                        </span>
+                    whileHover={{ y:-7, boxShadow:`0 28px 64px ${s.color}25` }}
+                    className="relative flex flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white p-7 shadow-sm transition-all">
+                    {/* ghost number watermark */}
+                    <div className="pointer-events-none absolute -right-3 -top-3 text-[88px] font-black leading-none select-none"
+                      style={{ color:`${s.color}0E` }}>{s.num}</div>
+
+                    {/* top bar accent */}
+                    <div className="absolute inset-x-0 top-0 h-1 rounded-t-3xl"
+                      style={{ background:`linear-gradient(90deg, ${s.color}, ${gradTo})` }} />
+
+                    {/* icon */}
+                    <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg"
+                      style={{ background:`linear-gradient(135deg, ${s.color}, ${gradTo})` }}>
+                      {s.icon}
+                    </div>
+
+                    {/* step chip */}
+                    <span className="mb-3 inline-flex w-fit items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest"
+                      style={{ background:`${s.color}12`, color:s.color }}>
+                      Step {s.num}
+                    </span>
+
+                    <h4 className="mb-2 text-[17px] font-extrabold text-gray-900">{s.title}</h4>
+                    <p className="text-[13px] leading-relaxed text-gray-500">{s.desc}</p>
+
+                    {/* bottom arrow connector on desktop (except last) */}
+                    {i < 3 && (
+                      <div className="absolute -right-4 top-[46px] z-10 hidden h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-50 shadow-md lg:flex">
+                        <ChevronRight className="h-4 w-4" style={{ color:s.color }} />
                       </div>
                     )}
-                    <h3 className="mb-1.5 text-[18px] font-bold text-gray-900">{plan.name}</h3>
-                    <p className="mb-6 text-[13px] text-gray-400">{plan.desc}</p>
-                    <div className="mb-7 flex items-end gap-1">
-                      <span className="text-[40px] font-extrabold leading-none text-gray-900">{plan.price}</span>
-                      <span className="mb-1.5 text-[14px] font-medium text-gray-400">{plan.period}</span>
-                    </div>
-                    <ul className="mb-8 flex-1 space-y-3">
-                      {plan.features.map(f => (
-                        <li key={f} className="flex items-start gap-2.5">
-                          <Check className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: isHighlight ? B : "#9CA3AF" }} />
-                          <span className="text-[14px] text-gray-600">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                      className={`w-full rounded-xl py-3 text-[15px] font-bold transition-all ${isHighlight ? "text-white shadow-md" : "border-2 border-gray-200 text-gray-700 hover:border-blue-200 hover:bg-blue-50"}`}
-                      style={isHighlight ? { background: `linear-gradient(135deg, ${B}, ${P})` } : {}}>
-                      {plan.cta}
-                    </motion.button>
                   </motion.div>
                 </FadeUp>
               );
             })}
           </div>
+
+          {/* Bottom CTA strip */}
+          <FadeUp delay={0.45} className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <motion.a href="#exams" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
+              className="flex items-center gap-2 rounded-2xl px-8 py-3.5 text-[15px] font-bold text-white shadow-lg"
+              style={{ background: grad() }}>
+              Start Your Journey <ArrowRight className="h-4 w-4" />
+            </motion.a>
+            <p className="text-[13px] font-medium text-gray-400">Free forever · No credit card needed</p>
+          </FadeUp>
         </div>
       </section>
 
-      {/* ══ FINAL CTA ══ */}
-      <section className="relative overflow-hidden py-24">
-        <div className="absolute inset-0 -z-10"
-          style={{ background: `linear-gradient(135deg, ${B} 0%, #4F46E5 50%, ${P} 100%)` }} />
-        <div className="absolute inset-0 -z-10 opacity-[0.07]"
-          style={{ backgroundImage: `radial-gradient(circle, #fff 1.5px, transparent 1.5px)`, backgroundSize: "28px 28px" }} />
-        <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" as const }}
-          className="pointer-events-none absolute -top-24 right-0 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-        <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" as const, delay: 3 }}
-          className="pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
 
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <FadeUp>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
-              <Sparkles className="h-3.5 w-3.5 text-yellow-300" />
-              <span className="text-[12px] font-bold uppercase tracking-widest text-white/80">Start Today — It's Free</span>
+      {/* ══════════════════════ ONGOING COURSES ══════════════════════ */}
+      <section id="courses" className="relative overflow-hidden">
+        {/* Full-bleed chalkboard background */}
+        <img
+          src={coursesImg}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        <div className="absolute inset-0" style={{ background:"linear-gradient(180deg, rgba(3,10,28,0.82) 0%, rgba(3,10,28,0.70) 60%, rgba(15,23,42,0.95) 100%)" }} />
+
+        {/* Banner hero strip */}
+        <div className="relative z-10 pb-0 pt-20 lg:pt-28">
+          <div className="mx-auto max-w-7xl px-5">
+            <FadeUp className="mb-12 text-center">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
+                <Sparkles className="h-3 w-3" /> Our Learning Philosophy
+              </span>
+              <h2 className="mt-3 text-[38px] font-extrabold leading-tight tracking-tight text-white lg:text-[52px]">
+                Learn · Explore · <span style={{ background:"linear-gradient(135deg,#60A5FA,#A78BFA)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Discover · Create</span>
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-[16px] font-medium text-white/60">
+                Every course is built to spark curiosity and build real skills that last beyond the exam.
+              </p>
+            </FadeUp>
+          </div>
+        </div>
+
+        {/* Cards container — white overlay at bottom */}
+        <div className="relative z-10 py-10 lg:py-14" style={{ background:"linear-gradient(180deg, transparent 0%, rgba(248,250,252,0.03) 100%)" }}>
+        <div className="mx-auto max-w-7xl px-5">
+
+          {/* Header row */}
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <FadeUp><SLabel>Continue Learning</SLabel></FadeUp>
+              <FadeUp delay={0.05} className="mt-3">
+                <h2 className="text-[34px] font-extrabold tracking-tight text-white lg:text-[40px]">
+                  Pick up where <span style={gText()}>you left off</span>
+                </h2>
+              </FadeUp>
+              <FadeUp delay={0.08} className="mt-2">
+                <p className="text-[15px] text-white/55">Continue your personalized AI-powered courses.</p>
+              </FadeUp>
             </div>
-            <h2 className="mb-6 text-[40px] font-extrabold leading-tight tracking-tight text-white lg:text-[52px]">
-              Start Your Learning<br />Journey Today
+            {/* Page dots + progress */}
+            <FadeUp delay={0.1} className="flex items-center gap-3">
+              {Array.from({ length: PAGES }).map((_, i) => (
+                <button key={i} onClick={() => setCoursePage(i)}
+                  className="relative h-2 overflow-hidden rounded-full transition-all"
+                  style={{ width: i === coursePage ? 48 : 8, background: i === coursePage ? `${B}40` : "rgba(255,255,255,0.2)" }}>
+                  {i === coursePage && (
+                    <motion.div className="absolute inset-y-0 left-0 rounded-full"
+                      style={{ width: `${courseProgress}%`, background: grad() }} />
+                  )}
+                </button>
+              ))}
+              <span className="ml-1 text-[12px] font-bold text-white/50">{coursePage + 1} / {PAGES}</span>
+            </FadeUp>
+          </div>
+
+          {/* Full-width 3-col auto-advancing grid */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={coursePage}
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.45, ease: "easeOut" as const }}
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {courses.slice(coursePage * 3, coursePage * 3 + 3).map((course) => (
+                <motion.div key={course.id}
+                  whileHover={{ y: -6, scale: 1.01 }}
+                  className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-xl transition-all"
+                >
+                  {/* Image thumbnail */}
+                  <div className="relative h-44 overflow-hidden bg-gray-800">
+                    <img
+                      src={course.thumb}
+                      alt={course.name}
+                      loading="eager"
+                      decoding="async"
+                      style={{ display:"block", width:"100%", height:"100%", objectFit:"cover", objectPosition:"center" }}
+                    />
+                    {/* gradient overlay */}
+                    <div className="absolute inset-0"
+                      style={{ background: `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.65) 100%)` }} />
+                    {/* exam + rating chips */}
+                    <div className="absolute left-4 top-4 flex items-center gap-2">
+                      <span className="rounded-xl bg-white/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white backdrop-blur-sm border border-white/20">
+                        {course.exam}
+                      </span>
+                    </div>
+                    <div className="absolute right-4 top-4 flex items-center gap-1 rounded-xl bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm border border-white/20">
+                      <Star className="h-3 w-3 fill-yellow-300 text-yellow-300" /> {course.rating}
+                    </div>
+                    {/* instructor + play */}
+                    <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-4">
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-white/60">Instructor</p>
+                        <p className="text-[13px] font-bold text-white">{course.instructor}</p>
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md cursor-pointer hover:scale-110 transition-transform">
+                        <Play className="h-4 w-4 fill-current" style={{ color: course.from }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card body */}
+                  <div className="p-5">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <h4 className="text-[15px] font-extrabold leading-snug text-gray-900">{course.name}</h4>
+                      <span className="flex-shrink-0 text-[11px] font-bold" style={{ color: course.color }}>{course.students} joined</span>
+                    </div>
+                    <p className="mb-4 text-[12px] text-gray-400">
+                      {course.chapters} chapters · Last: <span className="font-semibold text-gray-600">{course.lastSeen}</span>
+                    </p>
+
+                    <div className="mb-1 flex justify-between text-[12px] font-bold">
+                      <span className="text-gray-400">Progress</span>
+                      <span style={{ color: course.color }}>{course.pct}%</span>
+                    </div>
+                    <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                      <motion.div className="h-full rounded-full"
+                        initial={{ width: 0 }} animate={{ width: `${course.pct}%` }}
+                        transition={{ duration: 0.9, ease: "easeOut" as const }}
+                        style={{ background: `linear-gradient(90deg, ${course.from}, ${course.to})` }} />
+                    </div>
+
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold text-white"
+                      style={{ background: `linear-gradient(135deg, ${course.from}, ${course.to})` }}>
+                      <Play className="h-3.5 w-3.5 fill-current" /> Resume Lesson
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>{/* max-w-7xl */}
+        </div>{/* cards container */}
+      </section>
+
+
+      {/* ══════════════════════ YOUTUBE SECTION ══════════════════════ */}
+      <section className="bg-white py-20 lg:py-28" id="videos">
+        <div className="mx-auto max-w-7xl px-5">
+          <FadeUp className="mb-3 text-center"><SLabel color="#FF0000">YouTube</SLabel></FadeUp>
+          <FadeUp delay={0.05} className="mb-3 text-center">
+            <h2 className="text-[36px] font-extrabold tracking-tight lg:text-[44px]">
+              Explore More From{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10" style={gText("#FF0000","#FF6B00")}>EDDVA!</span>
+                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 10" fill="none">
+                  <path d="M2 7 Q50 2 100 6 Q150 10 198 4" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                </svg>
+              </span>
             </h2>
-            <p className="mb-10 mx-auto max-w-2xl text-[18px] font-medium leading-relaxed text-white/65">
-              Join 50,000+ students already using EDDVA to study smarter, score higher, and achieve their dreams.
+          </FadeUp>
+          <FadeUp delay={0.08} className="mb-12 text-center">
+            <p className="mx-auto max-w-xl text-[16px] text-gray-500">
+              Learn smarter with our YouTube channels — free lessons designed for every class and exam goal.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-6">
-              <motion.a href="#pricing" whileHover={{ scale: 1.05, boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }} whileTap={{ scale: 0.97 }}
-                className="group relative flex items-center gap-3 overflow-hidden rounded-[24px] bg-white px-10 py-5 text-[17px] font-black text-gray-900 shadow-2xl">
-                Start Learning Free <ArrowRight className="h-6 w-6 transition-transform group-hover:translate-x-1" />
-                <motion.div
-                  initial={{ x: "-100%" }}
-                  whileHover={{ x: "100%" }}
-                  transition={{ duration: 1 }}
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/30 to-transparent"
-                />
-              </motion.a>
-              <motion.a href="#how-it-works" whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-3 rounded-[24px] border-2 border-white/40 bg-white/10 px-10 py-5 text-[17px] font-black text-white backdrop-blur-xl transition-all hover:bg-white/20">
-                Book a Demo <ChevronRight className="h-6 w-6" />
+          </FadeUp>
+
+          {/* ── Split: channels list + video embed ── */}
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr]">
+
+            {/* LEFT: channel list */}
+            <FadeUp className="flex flex-col gap-4">
+              {[
+                { emoji:"📚", title:"JEE Physics & Chemistry Full Prep",   sub:"EDDVA JEE Channel",    desc:"Focused lessons for Class 11 & 12 and Droppers", color: B },
+                { emoji:"🩺", title:"NEET Biology — Complete NCERT",        sub:"EDDVA NEET Channel",   desc:"Master NCERT Biology, Physics & Chemistry for NEET", color:"#EF4444" },
+                { emoji:"🎓", title:"CBSE Class 9 to 12 — All Subjects",    sub:"EDDVA School Channel", desc:"Chapter-wise lessons aligned to CBSE & NCERT syllabus", color: T },
+                { emoji:"🏫", title:"ICSE / ISC Boards — Science & Maths", sub:"EDDVA Boards Channel", desc:"Smart learning for ICSE Class 9–10 and ISC 11–12", color: P },
+              ].map((ch, i) => (
+                <motion.a key={ch.sub} href="https://www.youtube.com/@eddva" target="_blank" rel="noopener noreferrer"
+                  initial={{ opacity:0, x:-20 }} whileInView={{ opacity:1, x:0 }}
+                  viewport={{ once:true }} transition={{ duration:0.4, delay: i*0.08 }}
+                  whileHover={{ x:5, boxShadow:`0 8px 32px ${ch.color}18` }}
+                  className="group flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-gray-200">
+                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
+                    style={{ background:`${ch.color}12` }}>
+                    {ch.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-extrabold leading-snug text-gray-900 group-hover:text-blue-600 transition-colors">{ch.title}</p>
+                    <p className="text-[11px] font-semibold text-gray-400 mt-0.5">Channel: {ch.sub}</p>
+                    <p className="text-[12px] text-gray-500 mt-1">{ch.desc}</p>
+                  </div>
+                  <motion.div whileHover={{ scale:1.05 }}
+                    className="flex-shrink-0 flex items-center gap-1 rounded-xl border px-3 py-1.5 text-[12px] font-bold transition-all"
+                    style={{ borderColor:`${ch.color}44`, color: ch.color, background:`${ch.color}08` }}>
+                    Visit Channel <ChevronRight className="h-3.5 w-3.5" />
+                  </motion.div>
+                </motion.a>
+              ))}
+            </FadeUp>
+
+            {/* RIGHT: embedded video + join CTA */}
+            <FadeUp delay={0.15} className="flex flex-col gap-5">
+              <div className="overflow-hidden rounded-2xl border border-gray-200">
+                <div className="relative" style={{ paddingBottom:"56.25%" }}>
+                  <iframe
+                    className="absolute inset-0 h-full w-full"
+                    src="https://www.youtube.com/embed/8M5t19gOnJ8?si=ceuCYmu4AvaTy67J"
+                    title="EDDVA YouTube Lesson"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+
+              {/* Join CTA card */}
+              <div className="flex items-center gap-5 rounded-2xl border border-yellow-100 bg-yellow-50 p-5">
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-red-600 shadow-lg">
+                  <Play className="h-5 w-5 fill-white text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[16px] font-extrabold text-gray-900">Join our Main Channel!</p>
+                  <p className="mt-1 text-[13px] text-gray-600 leading-snug">
+                    Join millions of students learning for JEE, NEET & Boards in the most simple, visual & fun way.
+                  </p>
+                </div>
+                <motion.a href="https://www.youtube.com/@eddva" target="_blank" rel="noopener noreferrer"
+                  whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
+                  className="flex-shrink-0 rounded-2xl bg-red-600 px-5 py-2.5 text-[13px] font-black text-white shadow-md hover:bg-red-700 transition-colors">
+                  Join Now!
+                </motion.a>
+              </div>
+            </FadeUp>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ══════════════════════ TESTIMONIALS ══════════════════════ */}
+      <section className="py-20 lg:py-28" style={{ background:"linear-gradient(160deg,#F5F3FF 0%,#EFF6FF 100%)" }}>
+        <div className="mx-auto max-w-7xl px-5">
+          <FadeUp className="mb-4 text-center"><SLabel>Student Stories</SLabel></FadeUp>
+          <FadeUp delay={0.05} className="mb-3 text-center">
+            <h2 className="text-[34px] font-extrabold tracking-tight lg:text-[42px]">
+              Real students, <span style={gText()}>real results</span>
+            </h2>
+          </FadeUp>
+          <FadeUp delay={0.08} className="mb-12 flex flex-col items-center gap-2">
+            <div className="flex gap-1">{Array(5).fill(0).map((_,i)=><Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400"/>)}</div>
+            <p className="text-[15px] font-bold text-gray-600">4.9 / 5 · 12,000+ reviews</p>
+          </FadeUp>
+
+          {/* big featured testimonial */}
+          <FadeUp delay={0.1} className="mb-6">
+            <div className="relative overflow-hidden rounded-3xl p-8 text-white lg:p-12"
+              style={{ background:`linear-gradient(135deg, ${B}, ${P})` }}>
+              <div className="pointer-events-none absolute inset-0 opacity-10"
+                style={{ backgroundImage:`radial-gradient(circle,#fff 1px,transparent 1px)`, backgroundSize:"24px 24px" }} />
+              <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_auto]">
+                <div>
+                  <div className="mb-4 text-[48px] font-black leading-none text-white/20">"</div>
+                  <p className="mb-6 text-[18px] font-medium leading-relaxed text-white/90 lg:text-[20px]">
+                    EDDVA completely changed how I study. In 4 months, my JEE score went from 180 to 267. The AI study plan, doubt solver and mock tests — everything worked together perfectly. I got into IIT Bombay!
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 text-[22px] font-black text-white backdrop-blur-sm">
+                      V
+                    </div>
+                    <div>
+                      <p className="text-[16px] font-extrabold text-white">Vikram Iyer</p>
+                      <p className="text-[13px] text-white/65">IIT-JEE 2024 · AIR 892 · IIT Bombay</p>
+                    </div>
+                    <div className="ml-auto hidden items-center gap-1 sm:flex">
+                      {Array(5).fill(0).map((_,i)=><Star key={i} className="h-5 w-5 fill-yellow-300 text-yellow-300"/>)}
+                    </div>
+                  </div>
+                </div>
+                {/* score improvement badge */}
+                <div className="flex flex-row items-center gap-4 lg:flex-col lg:items-end lg:justify-center">
+                  <div className="rounded-2xl bg-white/15 p-4 text-center backdrop-blur-sm">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-white/60">Before</p>
+                    <p className="text-[28px] font-extrabold text-white">180</p>
+                    <p className="text-[11px] text-white/60">JEE Score</p>
+                  </div>
+                  <div className="text-2xl text-white/40">→</div>
+                  <div className="rounded-2xl bg-white/25 p-4 text-center backdrop-blur-sm ring-2 ring-white/30">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-white/80">After</p>
+                    <p className="text-[28px] font-extrabold text-yellow-300">267</p>
+                    <p className="text-[11px] text-white/70">JEE Score</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeUp>
+
+          {/* 3 standard cards */}
+          <div className="grid gap-5 md:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <FadeUp key={t.name} delay={i * 0.1}>
+                <motion.div whileHover={{ y:-5, boxShadow:`0 20px 56px ${t.color}15` }}
+                  className="flex flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                  {/* top: stars + quote mark */}
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex gap-0.5">{Array(5).fill(0).map((_,j)=><Star key={j} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400"/>)}</div>
+                    <span className="text-[32px] font-black leading-none" style={{ color:`${t.color}22` }}>"</span>
+                  </div>
+                  <p className="mb-5 flex-1 text-[14px] leading-relaxed text-gray-600">"{t.text}"</p>
+                  {/* divider */}
+                  <div className="mb-4 h-px" style={{ background:`linear-gradient(90deg, ${t.color}33, transparent)` }} />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl text-[16px] font-black text-white"
+                      style={{ background:`linear-gradient(135deg, ${t.color}, ${t.color}bb)` }}>
+                      {t.avatar}
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-gray-900">{t.name}</p>
+                      <p className="text-[12px] font-medium" style={{ color: t.color }}>{t.role}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </FadeUp>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* ══════════════════════ CAREER / FUTURE LEARNING ══════════════════════ */}
+      <section className="relative overflow-hidden" id="career">
+        {/* full-bleed image */}
+        <img src={careerImg} alt="Future Learning" className="absolute inset-0 h-full w-full object-cover object-center" />
+        {/* dark overlay */}
+        <div className="absolute inset-0"
+          style={{ background:"linear-gradient(135deg, rgba(11,17,32,0.88) 0%, rgba(13,31,60,0.78) 50%, rgba(7,20,40,0.88) 100%)" }} />
+        {/* animated orb accents */}
+        <motion.div animate={{ scale:[1,1.15,1], opacity:[0.2,0.35,0.2] }} transition={{ duration:8, repeat:Infinity, ease:"easeInOut" as const }}
+          className="pointer-events-none absolute -left-20 top-1/4 h-64 w-64 rounded-full blur-3xl" style={{ background:B }} />
+        <motion.div animate={{ scale:[1,1.1,1], opacity:[0.15,0.25,0.15] }} transition={{ duration:10, repeat:Infinity, ease:"easeInOut" as const, delay:3 }}
+          className="pointer-events-none absolute -right-16 bottom-1/4 h-56 w-56 rounded-full blur-3xl" style={{ background:P }} />
+
+        <div className="relative z-10 mx-auto max-w-7xl px-5 py-24 lg:py-32">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+
+            {/* LEFT — text content */}
+            <FadeUp>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
+                <Award className="h-3.5 w-3.5 text-yellow-400" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-white/80">Career & Growth</span>
+              </div>
+              <h2 className="mb-5 text-[38px] font-extrabold leading-tight tracking-tight text-white lg:text-[50px]">
+                Build Your{" "}
+                <span className="relative inline-block">
+                  <span style={{ background:"linear-gradient(135deg,#FBBF24,#F59E0B)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+                    Future
+                  </span>
+                </span>
+                <br />with EDDVA
+              </h2>
+              <p className="mb-8 max-w-lg text-[16px] font-medium leading-relaxed text-white/65">
+                From cracking your dream exam to building knowledge that opens real-world doors — EDDVA is your partner at every step of your learning journey.
+              </p>
+
+              <div className="mb-8 grid grid-cols-2 gap-4">
+                {[
+                  { icon:"🚀", title:"Future Learning",     desc:"AI-powered paths built for tomorrow's world" },
+                  { icon:"💡", title:"Knowledge Evolution",  desc:"From basics to advanced — grow continuously" },
+                  { icon:"📈", title:"Digital Growth",       desc:"Track progress and see real improvements" },
+                  { icon:"✨", title:"Idea Spark",           desc:"Ignite curiosity and unlock your potential" },
+                ].map(item => (
+                  <motion.div key={item.title}
+                    whileHover={{ y:-4, boxShadow:"0 16px 40px rgba(0,0,0,0.4)" }}
+                    className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm transition-all"
+                    style={{ background:"rgba(255,255,255,0.07)" }}>
+                    <div className="mb-2 text-2xl">{item.icon}</div>
+                    <p className="text-[13px] font-bold text-white">{item.title}</p>
+                    <p className="mt-1 text-[12px] leading-snug text-white/55">{item.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <motion.div whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                  <Link to="/register"
+                    className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-gray-900 shadow-lg"
+                    style={{ background:"linear-gradient(135deg,#FBBF24,#F59E0B)" }}>
+                    Start Your Journey <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </motion.div>
+                <motion.a href="#about" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
+                  className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-white backdrop-blur-sm hover:bg-white/15 transition-all">
+                  Learn About Us <ChevronRight className="h-4 w-4" />
+                </motion.a>
+              </div>
+            </FadeUp>
+
+            {/* RIGHT — glowing stat cards */}
+            <FadeUp delay={0.2} className="flex flex-col gap-5">
+              {[
+                { num:"50K+",  label:"Active Students",      icon:"🎓", color:"#3B82F6" },
+                { num:"500+",  label:"Expert-Made Courses",  icon:"📚", color:"#8B5CF6" },
+                { num:"99.9%", label:"Platform Uptime",      icon:"⚡", color:"#10B981" },
+                { num:"4.8★",  label:"Average App Rating",   icon:"⭐", color:"#F59E0B" },
+              ].map((s, i) => (
+                <motion.div key={s.label}
+                  initial={{ opacity:0, x:40 }} whileInView={{ opacity:1, x:0 }}
+                  viewport={{ once:true }} transition={{ duration:0.45, delay: i * 0.1 }}
+                  whileHover={{ x:-5, boxShadow:`0 16px 48px ${s.color}30` }}
+                  className="flex items-center gap-5 rounded-2xl border border-white/10 p-5 backdrop-blur-sm transition-all"
+                  style={{ background:"rgba(255,255,255,0.06)", borderColor:`${s.color}30` }}>
+                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
+                    style={{ background:`${s.color}18`, border:`1px solid ${s.color}30` }}>
+                    {s.icon}
+                  </div>
+                  <div>
+                    <p className="text-[28px] font-extrabold leading-none text-white">{s.num}</p>
+                    <p className="mt-1 text-[13px] font-medium text-white/55">{s.label}</p>
+                  </div>
+                  <div className="ml-auto h-8 w-1 rounded-full" style={{ background:`linear-gradient(180deg, ${s.color}, transparent)` }} />
+                </motion.div>
+              ))}
+            </FadeUp>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ══════════════════════ APP DOWNLOAD ══════════════════════ */}
+      <section className="relative overflow-hidden py-20 lg:py-28" id="app" style={{ background:"#FEFCE8" }}>
+        {/* doodle watermark bg */}
+        <div className="pointer-events-none absolute inset-0 select-none overflow-hidden opacity-[0.07]">
+          {[
+            { emoji:"🚀", top:"8%",  left:"3%",  size:72,  rot:-20 },
+            { emoji:"📐", top:"12%", right:"4%", size:64,  rot:15  },
+            { emoji:"📚", top:"65%", left:"2%",  size:60,  rot:10  },
+            { emoji:"⚗️", top:"72%", right:"3%", size:68,  rot:-12 },
+            { emoji:"🔭", top:"40%", left:"6%",  size:56,  rot:8   },
+            { emoji:"🧲", top:"30%", right:"7%", size:52,  rot:-18 },
+            { emoji:"📊", top:"82%", left:"18%", size:48,  rot:5   },
+            { emoji:"🔬", top:"18%", left:"22%", size:44,  rot:-8  },
+            { emoji:"✏️", top:"55%", right:"12%",size:50,  rot:20  },
+            { emoji:"🧮", top:"88%", right:"20%",size:44,  rot:-5  },
+          ].map((d, i) => (
+            <div key={i} className="absolute text-gray-700"
+              style={{ top:d.top, left:(d as any).left, right:(d as any).right, fontSize:d.size, transform:`rotate(${d.rot}deg)` }}>
+              {d.emoji}
+            </div>
+          ))}
+        </div>
+
+        <div className="mx-auto max-w-7xl px-5">
+          {/* ── Top rating badges ── */}
+          <FadeUp className="mb-14 flex flex-wrap items-center justify-center gap-10">
+            {[
+              { rating:"4.3+", store:"Play Store",  icon:"▶", bg:"#34A853", label:"out of 5" },
+              { rating:"4.2+", store:"App Store",   icon:"⬡", bg:"#0071E3", label:"out of 5" },
+            ].map(r => (
+              <div key={r.store} className="flex items-center gap-3">
+                {/* laurel left */}
+                <svg width="28" height="44" viewBox="0 0 28 44" fill="none" className="opacity-80">
+                  <path d="M14 2 C8 8 4 14 5 20 C6 26 10 30 14 34 C10 30 7 26 8 20 C9 14 12 8 14 2Z" fill="#D97706"/>
+                  <path d="M14 8 C10 13 7 18 8 23 C9 28 12 32 14 36" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M6 12 Q4 16 6 20" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M5 20 Q3 24 6 28" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M7 28 Q5 32 8 36" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                </svg>
+                {/* icon + text */}
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl text-white text-lg shadow-md"
+                    style={{ background:r.bg }}>{r.icon}</div>
+                  <div>
+                    <p className="text-[26px] font-black leading-none text-gray-900">{r.rating}</p>
+                    <p className="text-[12px] font-semibold text-gray-500">{r.label}</p>
+                  </div>
+                </div>
+                {/* laurel right (mirror) */}
+                <svg width="28" height="44" viewBox="0 0 28 44" fill="none" className="scale-x-[-1] opacity-80">
+                  <path d="M14 2 C8 8 4 14 5 20 C6 26 10 30 14 34 C10 30 7 26 8 20 C9 14 12 8 14 2Z" fill="#D97706"/>
+                  <path d="M14 8 C10 13 7 18 8 23 C9 28 12 32 14 36" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M6 12 Q4 16 6 20" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M5 20 Q3 24 6 28" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M7 28 Q5 32 8 36" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                </svg>
+              </div>
+            ))}
+          </FadeUp>
+
+          {/* ── Main grid: left text + right phone ── */}
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            {/* LEFT */}
+            <FadeUp>
+              <h2 className="mb-4 text-[40px] font-extrabold leading-[1.1] tracking-tight text-gray-900 lg:text-[52px]">
+                Join over{" "}
+                <em className="not-italic font-black" style={gText()}>500K+ learners</em>
+                <br />across India!
+              </h2>
+              <p className="mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-600">
+                Download the EDDVA app to access live classes, notes, assignments, and videos — even without internet.
+              </p>
+
+              {/* Dark store buttons */}
+              <div className="flex flex-wrap gap-4">
+                <motion.button whileHover={{ scale:1.05, boxShadow:"0 16px 40px rgba(0,0,0,0.3)" }} whileTap={{ scale:0.97 }}
+                  className="flex items-center gap-3 rounded-2xl bg-gray-950 px-6 py-3.5 text-white shadow-lg">
+                  {/* Google Play SVG */}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M3.18 1.4 14.04 12 3.18 22.6a1.5 1.5 0 01-.18-.72V2.12c0-.27.06-.52.18-.72z" fill="#4285F4"/>
+                    <path d="M17.82 8.82L5.34.54 14.04 12l3.78-3.18z" fill="#EA4335"/>
+                    <path d="M17.82 15.18L14.04 12l-3.78 3.78 9.56 5.7-.06-.06a1.5 1.5 0 00.06-5.34z" fill="#FBBC05"/>
+                    <path d="M5.34 23.46l12.48-8.28L14.04 12 5.34 23.46z" fill="#34A853"/>
+                  </svg>
+                  <div className="text-left">
+                    <p className="text-[10px] font-semibold text-white/60">GET IT ON</p>
+                    <p className="text-[15px] font-bold leading-tight">Google Play</p>
+                  </div>
+                </motion.button>
+
+                <motion.button whileHover={{ scale:1.05, boxShadow:"0 16px 40px rgba(0,0,0,0.3)" }} whileTap={{ scale:0.97 }}
+                  className="flex items-center gap-3 rounded-2xl bg-gray-950 px-6 py-3.5 text-white shadow-lg">
+                  {/* Apple SVG */}
+                  <svg width="22" height="24" viewBox="0 0 814 1000" fill="white">
+                    <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-36.8-162.8-106.3C141 420 107 238.1 107 148.2c0-61.7 29.4-115.2 59.4-153.3C214.1 32.5 270 0 330 0c58.8 0 96.5 39.5 166 39.5 67.6 0 109.6-39.5 166-39.5 60 0 114 31.4 161 85.5zm-326 12c-25.9-11.5-42.9-30.1-42.9-54.9 0-23.6 7.8-43.2 22.3-58.2 15-15.5 35.3-25.7 55.7-27.9.7 2.4.7 5.4.7 8.7 0 24.3-8.1 44.1-23.4 60.8C448.1 337.6 429 346.8 462.1 352.9z"/>
+                  </svg>
+                  <div className="text-left">
+                    <p className="text-[10px] font-semibold text-white/60">Download on the</p>
+                    <p className="text-[15px] font-bold leading-tight">App Store</p>
+                  </div>
+                </motion.button>
+              </div>
+
+              {/* Stat pills */}
+              <div className="mt-8 flex flex-wrap gap-4">
+                {[
+                  { val:"500K+", label:"Learners" },
+                  { val:"2M+",   label:"Downloads" },
+                  { val:"4.8★",  label:"Avg Rating" },
+                ].map(({ val, label }) => (
+                  <div key={label} className="rounded-2xl border border-yellow-200 bg-white/80 px-5 py-3 text-center shadow-sm">
+                    <p className="text-[20px] font-extrabold text-gray-900">{val}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </FadeUp>
+
+            {/* RIGHT — floating phone */}
+            <FadeUp delay={0.2} className="flex justify-center">
+              <motion.div animate={{ y:[0,-12,0] }} transition={{ duration:5, repeat:Infinity, ease:"easeInOut" as const }}
+                className="relative w-[260px]">
+                <div className="overflow-hidden rounded-[40px] border-[5px] border-gray-800 bg-white shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
+                  {/* status bar */}
+                  <div className="flex items-center justify-between bg-gray-900 px-4 py-2.5">
+                    <span className="text-[9px] font-bold text-white">9:41</span>
+                    <div className="h-4 w-20 rounded-full bg-black" />
+                    <span className="text-[9px] font-bold text-white">●●●</span>
+                  </div>
+                  {/* app screen */}
+                  <div className="space-y-2 bg-white p-4">
+                    {/* top bar */}
+                    <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-6 w-6 rounded-md flex items-center justify-center text-white text-[10px] font-black"
+                          style={{ background: grad() }}>E</div>
+                        <span className="text-[10px] font-bold text-gray-700">11th Class</span>
+                        <ChevronRight className="h-3 w-3 text-gray-400" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Search className="h-4 w-4 text-gray-400" />
+                        <div className="relative"><Smartphone className="h-4 w-4 text-gray-400" />
+                          <div className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" /></div>
+                      </div>
+                    </div>
+                    {/* greeting */}
+                    <p className="px-1 text-[11px] font-bold text-gray-900">Hello, Amit Kumar 👋</p>
+                    {/* course banner */}
+                    <div className="relative overflow-hidden rounded-xl" style={{ background: grad() }}>
+                      <div className="p-3">
+                        <div className="mb-1 flex items-center gap-1">
+                          <span className="rounded bg-yellow-400 px-1.5 py-0.5 text-[8px] font-black text-gray-900">Topper</span>
+                          <span className="rounded bg-white/20 px-1.5 py-0.5 text-[8px] font-bold text-white">Class 11th</span>
+                        </div>
+                        <p className="text-[13px] font-black leading-tight text-white">CRASH<br/>COURSE</p>
+                        <p className="mt-0.5 text-[8px] text-white/70">Complete Syllabus in 45 Days</p>
+                      </div>
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 shadow-md">
+                        <Play className="h-4 w-4 fill-white text-white" />
+                      </div>
+                    </div>
+                    {/* grid menu */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { label:"Premium Courses", icon:"🎓", bg:"#FEF9C3" },
+                        { label:"Books",           icon:"📚", bg:"#FEF9C3" },
+                        { label:"Free Lectures",   icon:"🎬", bg:"#FEF9C3" },
+                        { label:"Free Tests",      icon:"📝", bg:"#FEF9C3" },
+                        { label:"Quiz",            icon:"🧠", bg:"#FEF9C3" },
+                        { label:"Assignment & Notes", icon:"📋", bg:"#FEF9C3" },
+                      ].map(item => (
+                        <div key={item.label} className="flex items-center gap-1.5 rounded-xl px-2 py-2.5"
+                          style={{ background: item.bg }}>
+                          <span className="text-[14px]">{item.icon}</span>
+                          <p className="text-[9px] font-bold leading-tight text-gray-800">{item.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* shadow glow */}
+                <div className="absolute -bottom-6 left-1/2 h-10 w-4/5 -translate-x-1/2 rounded-full blur-2xl opacity-40"
+                  style={{ background:"#FDE68A" }} />
+                {/* floating atoms */}
+                <motion.div animate={{ rotate:360 }} transition={{ duration:12, repeat:Infinity, ease:"linear" as const }}
+                  className="absolute -left-10 top-20 text-[40px] select-none">⚛️</motion.div>
+                <motion.div animate={{ y:[0,-8,0] }} transition={{ duration:3, repeat:Infinity, ease:"easeInOut" as const }}
+                  className="absolute -right-8 top-32 text-[32px] select-none">📐</motion.div>
+                <motion.div animate={{ y:[0,8,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" as const, delay:1 }}
+                  className="absolute -left-8 bottom-24 text-[28px] select-none">🧪</motion.div>
+              </motion.div>
+            </FadeUp>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ══════════════════════ FINAL CTA ══════════════════════ */}
+      <section className="bg-white py-24 text-center">
+        <div className="mx-auto max-w-4xl px-5">
+          <FadeUp>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">Start Free — No Credit Card</span>
+            </div>
+            <h2 className="mb-5 text-[40px] font-extrabold leading-tight tracking-tight lg:text-[52px]">
+              Ready to ace your <span style={gText()}>exam?</span>
+            </h2>
+            <p className="mb-10 mx-auto max-w-xl text-[17px] font-medium leading-relaxed text-gray-500">
+              Join 50,000+ students already on EDDVA. Start your free plan today — no credit card needed.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <motion.div whileHover={{ scale:1.05, boxShadow:`0 20px 48px ${B}44` }} whileTap={{ scale:0.97 }}>
+                <Link to="/register"
+                  className="flex items-center gap-2 rounded-2xl px-8 py-4 text-[16px] font-bold text-white shadow-xl"
+                  style={{ background: grad() }}>
+                  Start Learning Free <ArrowRight className="h-5 w-5" />
+                </Link>
+              </motion.div>
+              <motion.a href="#how" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
+                className="flex items-center gap-2 rounded-2xl border-2 border-gray-200 px-8 py-4 text-[16px] font-bold text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                See How It Works <ChevronRight className="h-5 w-5" />
               </motion.a>
             </div>
           </FadeUp>
         </div>
       </section>
 
-      {/* ══ FOOTER ══ */}
-      <footer className="border-t border-gray-100 bg-white py-16">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-12 md:grid-cols-4">
-            <div>
-              <img src={edvaLogo} alt="EDDVA" className="mb-5 h-10 w-auto object-contain" />
-              <p className="max-w-xs text-[14px] leading-relaxed text-gray-500">
-                India's AI-powered EdTech platform for JEE, NEET & beyond. Smarter learning, brighter futures.
-              </p>
-              <p className="mt-5 text-[13px] font-medium text-gray-400">🇮🇳 Available in Hindi & English</p>
-            </div>
-            {[
-              { title: "Platform", links: ["AI Assessment", "Doubt Solver", "Live Classes", "Mock Tests", "Analytics"] },
-              { title: "Company",  links: ["About EDDVA", "Careers", "Blog", "Press", "Contact"] },
-              { title: "Support",  links: ["Help Center", "Book Demo", "Partner With Us", "Privacy Policy", "Terms"] },
-            ].map(col => (
-              <div key={col.title}>
-                <h5 className="mb-5 text-[12px] font-bold uppercase tracking-widest text-gray-400">{col.title}</h5>
-                <ul className="space-y-2.5">
-                  {col.links.map(link => (
-                    <li key={link}>
-                      <a href="#" className="text-[14px] font-medium text-gray-500 transition-colors hover:text-blue-600">{link}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 sm:flex-row">
-            <p className="text-[13px] text-gray-400">© 2025 EDDVA — Education Plus Advancement. All rights reserved.</p>
-            <p className="text-[13px] text-gray-400">Made with ❤️ in India</p>
-          </div>
-        </div>
-      </footer>
 
-      {/* ══ FLOATING AI BUTTON ══ */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 2, duration: 0.4, type: "spring", stiffness: 200 }}
-        whileHover={{ scale: 1.12, boxShadow: `0 16px 48px ${B}55` }}
-        whileTap={{ scale: 0.93 }}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-2xl"
-        style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}
-        title="Chat with AI">
-        <Bot className="h-6 w-6" />
-      </motion.button>
+      {/* ══════════════════════ FOOTER ══════════════════════ */}
+      {/* ── Footer and AI button are handled by LandingLayout ── */}
 
-    </div>
+    </LandingLayout>
   );
 };
 

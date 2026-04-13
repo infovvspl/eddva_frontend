@@ -37,7 +37,6 @@ const navByRole: Record<UserRole, NavItem[]> = {
   institute_admin: [
     { label: "Dashboard",   path: "/admin",               icon: Home         },
     { label: "Batches",     path: "/admin/batches",        icon: Layout       },
-    { label: "Teachers",    path: "/admin/teachers",       icon: GraduationCap},
     { label: "Students",    path: "/admin/students",       icon: Users        },
     { label: "Content",     path: "/admin/content",        icon: FolderOpen   },
     { label: "Mock Tests",  path: "/admin/mock-tests",     icon: BookOpen     },

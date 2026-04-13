@@ -1,24 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Check, X, Loader2, Building2, Zap, Mail, Globe, Copy, AlertCircle, ShieldCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { sendOnboardingOtp, verifyOnboardingOtp } from "@/lib/api/public-tenant";
 
-const plans = [
-  { id: "starter", name: "Starter", price: "₹4,999", students: 500, teachers: 10, features: ["Basic Analytics", "Email Support", "5 Batches"] },
-  { id: "growth", name: "Growth", price: "₹9,999", students: 1000, teachers: 25, features: ["Advanced Analytics", "Priority Support", "20 Batches", "AI Doubts"] },
-  { id: "scale", name: "Scale", price: "₹19,999", students: 2000, teachers: 50, features: ["Full Analytics", "Dedicated Support", "Unlimited Batches", "AI Doubts"] },
-  { id: "enterprise", name: "Enterprise", price: "Custom", students: 5000, teachers: 100, features: ["Custom Branding", "API Access", "SLA Guarantee", "On-premise"] },
-];
+const PLANS = ["starter", "growth", "scale", "enterprise"] as const;
+const PLAN_LIMITS: Record<string, { students: number; teachers: number }> = {
+  starter:    { students: 500,  teachers: 20  },
+  growth:     { students: 1000, teachers: 50  },
+  scale:      { students: 2000, teachers: 100 },
+  enterprise: { students: 5000, teachers: 200 },
+};
 
 const NewInstitutePage = () => {
   const navigate = useNavigate();
   const createTenant = useCreateTenant();
+
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    name: "", subdomain: "", plan: "growth", billingEmail: "",
-    maxStudents: 1000, maxTeachers: 25, adminPhone: "", trialDays: 14,
+    name: "", subdomain: "", plan: "starter", billingEmail: "",
+    maxStudents: 500, maxTeachers: 20, adminPhone: "", trialDays: 14,
   });
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [submitted, setSubmitted] = useState(false);
@@ -26,7 +29,7 @@ const NewInstitutePage = () => {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  // OTP verification state
+  // OTP state
   const [otpStep, setOtpStep] = useState<"idle" | "sent" | "verified">("idle");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpCountdown, setOtpCountdown] = useState(0);
@@ -42,7 +45,6 @@ const NewInstitutePage = () => {
     }
   }, [otpCountdown]);
 
-  // Reset OTP state when phone number changes
   useEffect(() => {
     if (form.adminPhone !== verifiedPhone.replace("+91", "")) {
       setOtpStep("idle");
@@ -53,66 +55,9 @@ const NewInstitutePage = () => {
 
   const fullAdminPhone = `+91${form.adminPhone}`;
 
-  const handleSendOtp = async () => {
-    if (form.adminPhone.length < 10) return;
-    setOtpError("");
-    setOtpLoading(true);
-    try {
-      await sendOnboardingOtp(fullAdminPhone);
-      setOtpStep("sent");
-      setOtpCountdown(30);
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    } catch (err: unknown) {
-      const msg = (err as any)?.response?.data?.message || "Failed to send OTP.";
-      setOtpError(msg);
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setOtpError("");
-    setOtpLoading(true);
-    try {
-      await sendOnboardingOtp(fullAdminPhone);
-      setOtpCountdown(30);
-    } catch {
-      setOtpError("Failed to resend OTP.");
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) return;
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    setOtpError("");
-    setOtpLoading(true);
-    try {
-      await verifyOnboardingOtp(fullAdminPhone, otp.join(""));
-      setOtpStep("verified");
-      setVerifiedPhone(fullAdminPhone);
-    } catch (err: unknown) {
-      const msg = (err as any)?.response?.data?.message || "Invalid OTP.";
-      setOtpError(msg);
-    } finally {
-      setOtpLoading(false);
-    }
+  const handlePlanChange = (plan: string) => {
+    const limits = PLAN_LIMITS[plan] ?? { students: 500, teachers: 20 };
+    setForm({ ...form, plan, maxStudents: limits.students, maxTeachers: limits.teachers });
   };
 
   const handleSubdomainChange = (val: string) => {
@@ -126,12 +71,45 @@ const NewInstitutePage = () => {
     }
   };
 
+  const handleSendOtp = async () => {
+    if (form.adminPhone.length < 10) return;
+    setOtpError(""); setOtpLoading(true);
+    try {
+      await sendOnboardingOtp(fullAdminPhone);
+      setOtpStep("sent");
+      setOtpCountdown(30);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch (err: unknown) {
+      setOtpError((err as any)?.response?.data?.message || "Failed to send OTP.");
+    } finally { setOtpLoading(false); }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1 || !/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) otpRefs.current[index - 1]?.focus();
+  };
+
+  const handleVerifyOtp = async () => {
+    setOtpError(""); setOtpLoading(true);
+    try {
+      await verifyOnboardingOtp(fullAdminPhone, otp.join(""));
+      setOtpStep("verified");
+      setVerifiedPhone(fullAdminPhone);
+    } catch (err: unknown) {
+      setOtpError((err as any)?.response?.data?.message || "Invalid OTP.");
+    } finally { setOtpLoading(false); }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpStep !== "verified") {
-      setError("Please verify the admin phone number first.");
-      return;
-    }
+    if (otpStep !== "verified") { setError("Please verify the admin phone number first."); return; }
     setError("");
     try {
       const data = await createTenant.mutateAsync({
@@ -147,8 +125,7 @@ const NewInstitutePage = () => {
       setResult(data);
       setSubmitted(true);
     } catch (err: unknown) {
-      const msg = (err as any)?.response?.data?.message || "Failed to create institute. Please try again.";
-      setError(msg);
+      setError((err as any)?.response?.data?.message || "Failed to create institute. Please try again.");
     }
   };
 
@@ -158,6 +135,9 @@ const NewInstitutePage = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const canProceedStep1 = form.name.trim() && form.subdomain && subdomainStatus === "available";
+
+  // ── Success screen ─────────────────────────────────────────────────────────
   if (submitted) {
     const tempPassword = result?.tempPassword || "—";
     return (
@@ -166,29 +146,35 @@ const NewInstitutePage = () => {
           <div className="w-20 h-20 rounded-[24px] bg-emerald-500 text-white flex items-center justify-center mx-auto mb-6 shadow-xl">
             <Check className="w-10 h-10 stroke-[3]" />
           </div>
-          <h2 className="text-3xl font-black text-foreground mb-2">Registration Successful!</h2>
+          <h2 className="text-3xl font-black text-foreground mb-2">Institute Deployed!</h2>
           <p className="text-muted-foreground font-medium mb-8">
-            <span className="text-primary font-bold">{form.name}</span> has been provisioned at <br />
+            <span className="text-primary font-bold">{form.name}</span> is live at <br />
             <span className="underline decoration-primary/30">{form.subdomain}.edva.in</span>
           </p>
 
-          <div className="bg-card border border-border rounded-[32px] p-6 shadow-sm mb-8 text-left">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Temporary Credentials</p>
-            <div className="bg-secondary rounded-2xl p-4 flex items-center justify-between group">
+          <div className="bg-card border border-border rounded-[32px] p-6 shadow-sm mb-8 text-left space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Admin Temporary Password</p>
+            <div className="bg-secondary rounded-2xl p-4 flex items-center justify-between">
               <code className="text-sm font-bold text-foreground font-mono">{tempPassword}</code>
               <button onClick={() => handleCopy(tempPassword)} className="p-2 hover:bg-background rounded-lg transition-all text-primary">
                 <Copy className="w-4 h-4" />
               </button>
             </div>
-            {copied && <p className="text-xs text-emerald-500 font-bold mt-2">Copied!</p>}
+            {copied && <p className="text-xs text-emerald-500 font-bold">Copied!</p>}
+            <p className="text-xs text-muted-foreground">Share this with the institute admin. They will be prompted to set a new password on first login.</p>
           </div>
 
           <div className="flex flex-col gap-3">
             <Button onClick={() => navigate("/super-admin/tenants")} className="h-14 rounded-2xl bg-foreground text-background font-bold w-full">
-              Go to Dashboard
+              Go to Institutes
             </Button>
-            <Button variant="ghost" onClick={() => { setSubmitted(false); setResult(null); setOtpStep("idle"); setOtp(["", "", "", "", "", ""]); setVerifiedPhone(""); setForm({ name: "", subdomain: "", plan: "growth", billingEmail: "", maxStudents: 1000, maxTeachers: 25, adminPhone: "", trialDays: 14 }); }} className="text-muted-foreground font-bold">
-              Create another institute
+            <Button variant="ghost" onClick={() => {
+              setSubmitted(false); setResult(null); setOtpStep("idle");
+              setOtp(["", "", "", "", "", ""]); setVerifiedPhone("");
+              setForm({ name: "", subdomain: "", plan: "starter", billingEmail: "", maxStudents: 500, maxTeachers: 20, adminPhone: "", trialDays: 14 });
+              setSubdomainStatus("idle"); setStep(1);
+            }} className="text-muted-foreground font-bold">
+              Add another institute
             </Button>
           </div>
         </motion.div>
@@ -196,208 +182,281 @@ const NewInstitutePage = () => {
     );
   }
 
+  // ── Main form ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-10">
-          <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground font-bold text-xs uppercase tracking-widest flex items-center gap-2 mb-4 transition-colors">
-            <X className="w-4 h-4" /> Cancel Registration
-          </button>
-          <h1 className="text-4xl font-black text-foreground tracking-tight">New Institute</h1>
-          <p className="text-muted-foreground font-medium">Onboard a new educational partner to the ecosystem.</p>
+    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-12 border-b border-slate-100 pb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div>
+            <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-900 font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-2 mb-4 transition-colors">
+              <X className="w-4 h-4" /> Cancel
+            </button>
+            <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">New Institute</h1>
+            <p className="text-slate-400 text-[17px] font-semibold mt-1">Provision a new educational partner on the platform.</p>
+          </div>
+
+          <div className="flex gap-2">
+            {[1, 2].map((s) => (
+              <div key={s} className="flex flex-col items-center gap-2">
+                <div className={`h-2 w-20 rounded-full transition-all ${s <= step ? "bg-indigo-600" : "bg-slate-100"}`} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${s === step ? "text-indigo-600" : "text-slate-300"}`}>Step {s}</span>
+              </div>
+            ))}
+          </div>
         </header>
 
         {error && (
-          <div className="mb-6 flex items-center gap-2 p-4 rounded-2xl bg-destructive/5 border border-destructive/20 text-destructive text-sm font-medium">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            {error}
+          <div className="mb-8 flex items-start gap-4 p-5 rounded-[24px] bg-rose-50 border border-rose-100 text-rose-700 text-sm font-semibold">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <p>{error}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Identity */}
-          <div className="bg-card p-8 rounded-[32px] border border-border shadow-sm">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <h3 className="font-black text-foreground text-lg uppercase tracking-tight">Identity & Access</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">Institute Name</label>
-                <div className="relative group">
-                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 group-focus-within:text-primary transition-colors" />
-                  <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Quantum Academy" className="w-full h-14 pl-12 pr-4 bg-secondary/50 border border-border rounded-[20px] text-sm font-bold text-foreground focus:bg-background focus:border-primary outline-none transition-all" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">Subdomain</label>
-                <div className="relative group">
-                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 group-focus-within:text-primary transition-colors" />
-                  <input required value={form.subdomain} onChange={(e) => handleSubdomainChange(e.target.value)} placeholder="quantum" className="w-full h-14 pl-12 pr-28 bg-secondary/50 border border-border rounded-[20px] text-sm font-bold text-foreground focus:bg-background focus:border-primary outline-none transition-all" />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <span className="text-[10px] font-black text-muted-foreground/50 uppercase">.edva.in</span>
-                    {subdomainStatus === "checking" && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
-                    {subdomainStatus === "available" && <Check className="w-4 h-4 text-emerald-500" />}
-                    {subdomainStatus === "taken" && <X className="w-4 h-4 text-rose-500" />}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 space-y-8">
+            <AnimatePresence mode="wait">
 
-          {/* Plan Selection */}
-          <div className="space-y-4">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-4">Subscription Model</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {plans.map((plan) => (
-                <button
-                  key={plan.id} type="button"
-                  onClick={() => setForm({ ...form, plan: plan.id, maxStudents: plan.students, maxTeachers: plan.teachers })}
-                  className={`p-6 rounded-[28px] text-left transition-all relative overflow-hidden border ${
-                    form.plan === plan.id
-                      ? "bg-foreground border-foreground shadow-xl -translate-y-1"
-                      : "bg-card border-border hover:border-primary/30"
-                  }`}
-                >
-                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${form.plan === plan.id ? "text-background/60" : "text-muted-foreground"}`}>{plan.name}</p>
-                  <p className={`text-xl font-black ${form.plan === plan.id ? "text-background" : "text-foreground"}`}>{plan.price}</p>
-                  <div className={`mt-4 space-y-2 ${form.plan === plan.id ? "text-background/60" : "text-muted-foreground"}`}>
-                    {plan.features.slice(0, 3).map(f => (
-                      <div key={f} className="flex items-center gap-2 text-[10px] font-bold">
-                        <Check className={`w-3 h-3 ${form.plan === plan.id ? "text-primary" : "text-primary"}`} /> {f}
+              {/* ── Step 1: Identity + Plan ── */}
+              {step === 1 && (
+                <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-8">
+                  <div className="bg-slate-50/50 p-10 rounded-[44px] border border-slate-100 space-y-8">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-[18px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                        <Building2 className="h-6 w-6" />
                       </div>
-                    ))}
-                  </div>
-                  {form.plan === plan.id && <Zap className="absolute -right-2 -bottom-2 w-16 h-16 text-background/5 rotate-12" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Contact & Phone Verification */}
-          <div className="bg-card p-8 rounded-[32px] border border-border shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">Billing Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-                  <input type="email" required value={form.billingEmail} onChange={(e) => setForm({ ...form, billingEmail: e.target.value })} className="w-full h-14 pl-12 bg-secondary/50 border border-border rounded-[20px] text-sm font-bold text-foreground focus:bg-background outline-none" />
-                </div>
-              </div>
-
-              {/* Admin Phone with OTP */}
-              <div className="space-y-3">
-                <label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Admin Phone
-                  {otpStep === "verified" && (
-                    <span className="ml-2 text-emerald-500 normal-case tracking-normal font-bold">Verified</span>
-                  )}
-                </label>
-                <div className="flex gap-2">
-                  <div className="h-14 w-16 bg-secondary/50 border border-border rounded-[20px] flex items-center justify-center text-sm font-black text-muted-foreground">+91</div>
-                  <input
-                    type="tel"
-                    required
-                    value={form.adminPhone}
-                    onChange={(e) => setForm({ ...form, adminPhone: e.target.value.replace(/\D/g, "") })}
-                    maxLength={10}
-                    disabled={otpStep === "verified"}
-                    className="flex-1 h-14 px-5 bg-secondary/50 border border-border rounded-[20px] text-sm font-bold text-foreground focus:bg-background outline-none disabled:opacity-60"
-                  />
-                  {otpStep === "verified" && (
-                    <div className="h-14 w-14 bg-emerald-500/10 border border-emerald-500/30 rounded-[20px] flex items-center justify-center">
-                      <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                      <h3 className="text-xl font-black text-slate-900">Institute Details</h3>
                     </div>
-                  )}
-                </div>
 
-                {/* OTP Error */}
-                {otpError && (
-                  <div className="flex items-center gap-2 text-xs text-destructive font-medium">
-                    <AlertCircle className="w-3 h-3" /> {otpError}
+                    {/* Name */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Institute Name</label>
+                      <input
+                        required
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        placeholder="e.g. Allen Career Institute"
+                        className="w-full h-14 px-6 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Subdomain */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Subdomain</label>
+                      <div className="relative">
+                        <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                        <input
+                          required
+                          value={form.subdomain}
+                          onChange={(e) => handleSubdomainChange(e.target.value)}
+                          placeholder="allen-kota"
+                          className="w-full h-14 pl-12 pr-36 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        />
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-slate-300">.edva.in</span>
+                          {subdomainStatus === "checking" && <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />}
+                          {subdomainStatus === "available" && <Check className="w-4 h-4 text-emerald-500" />}
+                          {subdomainStatus === "taken" && <X className="w-4 h-4 text-rose-500" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Plan */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Plan</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {PLANS.map((p) => (
+                          <button
+                            key={p} type="button"
+                            onClick={() => handlePlanChange(p)}
+                            className={`h-12 rounded-[16px] border-2 text-[13px] font-black capitalize transition-all ${
+                              form.plan === p
+                                ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                                : "bg-white border-slate-100 text-slate-500 hover:border-indigo-200"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-slate-400 ml-2">
+                        Up to <span className="font-bold text-slate-600">{form.maxStudents.toLocaleString()} students</span> · <span className="font-bold text-slate-600">{form.maxTeachers} teachers</span>
+                      </p>
+                    </div>
+
+                    {/* Trial days */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Trial Period (days)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={90}
+                        value={form.trialDays}
+                        onChange={(e) => setForm({ ...form, trialDays: Number(e.target.value) })}
+                        className="w-full h-14 px-6 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                      />
+                    </div>
                   </div>
-                )}
 
-                {/* Send OTP button */}
-                {otpStep === "idle" && form.adminPhone.length === 10 && (
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={handleSendOtp}
-                    disabled={otpLoading}
-                    className="h-10 w-full rounded-2xl font-bold text-xs"
+                    onClick={() => setStep(2)}
+                    disabled={!canProceedStep1}
+                    className="h-14 px-10 rounded-[20px] bg-slate-900 text-white font-black hover:bg-slate-800 shadow-2xl transition-all"
                   >
-                    {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Send Verification OTP
+                    Continue <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                )}
+                </motion.div>
+              )}
 
-                {/* OTP input */}
-                {otpStep === "sent" && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-                    <div className="flex justify-between gap-2">
-                      {otp.map((digit, i) => (
-                        <input
-                          key={i}
-                          ref={(el) => { otpRefs.current[i] = el; }}
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={1}
-                          value={digit}
-                          onChange={(e) => handleOtpChange(i, e.target.value)}
-                          onKeyDown={(e) => {
-                            handleOtpKeyDown(i, e);
-                            if (e.key === "Enter" && otp.every(d => d)) handleVerifyOtp();
-                          }}
-                          disabled={otpLoading}
-                          className="aspect-square w-full max-w-[44px] rounded-xl border border-border bg-secondary text-center text-lg font-bold text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
-                        />
-                      ))}
+              {/* ── Step 2: Governance ── */}
+              {step === 2 && (
+                <motion.div key="step2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-8">
+                  <div className="bg-slate-50/50 p-10 rounded-[44px] border border-slate-100 space-y-8">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-[18px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                        <ShieldCheck className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-900">Admin Credentials</h3>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">Sent to +91 {form.adminPhone}</span>
-                      {otpCountdown > 0 ? (
-                        <span className="text-[10px] text-muted-foreground">Resend in {otpCountdown}s</span>
-                      ) : (
-                        <button type="button" onClick={handleResendOtp} disabled={otpLoading} className="text-[10px] font-bold text-primary hover:text-primary/80 disabled:opacity-50">
-                          Resend
-                        </button>
+
+                    {/* Billing email */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Billing Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                        <input
+                          type="email"
+                          required
+                          value={form.billingEmail}
+                          onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
+                          placeholder="admin@institute.edu"
+                          className="w-full h-14 pl-12 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Admin phone + OTP */}
+                    <div className="space-y-4">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Admin Phone Number</label>
+                      <div className="flex gap-3">
+                        <div className="h-14 w-16 bg-slate-100 rounded-[20px] flex items-center justify-center font-black text-slate-500 text-sm shrink-0">+91</div>
+                        <input
+                          type="tel"
+                          required
+                          value={form.adminPhone}
+                          onChange={(e) => setForm({ ...form, adminPhone: e.target.value.replace(/\D/g, "") })}
+                          maxLength={10}
+                          disabled={otpStep === "verified"}
+                          placeholder="9876543210"
+                          className="flex-1 h-14 px-5 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
+                        />
+                        {otpStep === "verified" && (
+                          <div className="h-14 w-14 bg-emerald-50 text-emerald-500 border-2 border-emerald-100 rounded-[20px] flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-6 h-6" />
+                          </div>
+                        )}
+                      </div>
+
+                      {otpError && <p className="text-xs text-rose-500 font-bold ml-2">{otpError}</p>}
+
+                      {otpStep === "idle" && form.adminPhone.length === 10 && (
+                        <Button type="button" onClick={handleSendOtp} disabled={otpLoading} className="h-12 w-full rounded-[18px] bg-indigo-600 text-white font-black">
+                          {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          Send OTP
+                        </Button>
+                      )}
+
+                      {otpStep === "sent" && (
+                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                          <p className="text-[12px] font-bold text-slate-400 ml-1">Enter 6-digit OTP sent to +91 {form.adminPhone}</p>
+                          <div className="flex justify-between gap-2">
+                            {otp.map((digit, i) => (
+                              <input
+                                key={i}
+                                ref={(el) => { otpRefs.current[i] = el; }}
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={1}
+                                value={digit}
+                                onChange={(e) => handleOtpChange(i, e.target.value)}
+                                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                className="aspect-square w-full rounded-2xl border-2 border-slate-100 bg-white text-center font-black text-xl focus:border-indigo-600 outline-none transition-all"
+                              />
+                            ))}
+                          </div>
+                          <Button type="button" onClick={handleVerifyOtp} disabled={otp.some(d => !d) || otpLoading} className="h-12 w-full rounded-[18px] bg-slate-900 text-white font-black">
+                            {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Verify OTP
+                          </Button>
+                          {otpCountdown > 0
+                            ? <p className="text-[11px] text-slate-400 text-center">Resend in {otpCountdown}s</p>
+                            : <button type="button" onClick={handleSendOtp} className="text-[11px] text-indigo-600 font-bold w-full text-center">Resend OTP</button>
+                          }
+                        </motion.div>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      onClick={handleVerifyOtp}
-                      disabled={otp.some(d => !d) || otpLoading}
-                      className="h-10 w-full rounded-2xl font-bold text-xs"
-                    >
-                      {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify Phone"}
-                    </Button>
-                  </motion.div>
-                )}
-              </div>
-            </div>
+                  </div>
 
-            <div className="bg-secondary/50 rounded-[24px] p-6 space-y-4 border border-dashed border-border">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Resource Allocation</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-xs font-bold text-muted-foreground mb-1">Students</p><p className="text-xl font-black text-foreground">{form.maxStudents.toLocaleString()}</p></div>
-                <div><p className="text-xs font-bold text-muted-foreground mb-1">Teachers</p><p className="text-xl font-black text-foreground">{form.maxTeachers}</p></div>
-                <div><p className="text-xs font-bold text-muted-foreground mb-1">Trial Period</p><p className="text-xl font-black text-foreground">{form.trialDays} Days</p></div>
-              </div>
-            </div>
+                  <div className="flex gap-4">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-14 px-8 rounded-[20px] border-2 border-slate-100 font-black text-slate-600">
+                      Back
+                    </Button>
+                    <Button type="submit" disabled={otpStep !== "verified" || createTenant.isPending} className="h-14 px-10 rounded-[20px] bg-indigo-600 text-white font-black shadow-2xl flex gap-3">
+                      {createTenant.isPending
+                        ? <Loader2 className="w-5 h-5 animate-spin" />
+                        : <><Check className="w-5 h-5 stroke-[3]" /> Deploy Institute</>}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+            </AnimatePresence>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pb-10">
-            <Button type="button" variant="ghost" onClick={() => navigate(-1)} className="font-bold text-muted-foreground hover:text-foreground">Discard</Button>
-            <Button
-              type="submit"
-              disabled={createTenant.isPending || !form.name || !form.subdomain || !form.billingEmail || !form.adminPhone || otpStep !== "verified"}
-              className="h-14 px-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[20px] font-black shadow-xl transition-all flex gap-2"
-            >
-              {createTenant.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5 stroke-[3]" /> Deploy Institute</>}
-            </Button>
+          {/* Sidebar summary */}
+          <div className="space-y-6">
+            <div className="bg-slate-900 rounded-[36px] p-8 text-white sticky top-10 shadow-2xl shadow-slate-900/30 overflow-hidden">
+              <div className="relative z-10 space-y-6">
+                <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">Summary</h4>
+
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-400">Name</p>
+                  <p className="text-xl font-black leading-tight">{form.name || "—"}</p>
+                  <p className="text-xs font-bold text-white/40">{form.subdomain ? `${form.subdomain}.edva.in` : "—"}</p>
+                </div>
+
+                <div className="h-px bg-white/10" />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Plan</p>
+                    <p className="text-base font-black capitalize">{form.plan}</p>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Trial</p>
+                    <p className="text-base font-black">{form.trialDays}d</p>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Students</p>
+                    <p className="text-base font-black">{form.maxStudents.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-[16px] border border-white/10">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Teachers</p>
+                    <p className="text-base font-black">{form.maxTeachers}</p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-white/10" />
+
+                <div className="flex items-center gap-3">
+                  <div className={`h-3 w-3 rounded-full transition-all ${otpStep === "verified" ? "bg-emerald-400" : "bg-white/10"}`} />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/50">
+                    {otpStep === "verified" ? "Phone Verified" : "Awaiting Verification"}
+                  </p>
+                </div>
+              </div>
+              <div className="absolute top-0 right-0 h-28 w-28 bg-indigo-500 opacity-10 blur-[50px]" />
+            </div>
           </div>
         </form>
       </div>

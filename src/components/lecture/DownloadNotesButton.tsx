@@ -45,7 +45,7 @@ export function DownloadNotesButton({ lecture }: Props) {
       };
 
       // Header
-      addText("APEXIQ — Lecture Notes", 18, [249, 115, 22], true, false);
+      addText("EDDVA — Lecture Notes", 18, [249, 115, 22], true, false);
       addText(lecture.title, 14, [230, 237, 243], true, false);
       if (lecture.topic?.name) addText(`Topic: ${lecture.topic.name}`, 10, [139, 148, 158], false, false);
       addText(`Date: ${new Date().toLocaleDateString("en-IN")}`, 10, [72, 79, 88], false, false);
@@ -89,7 +89,7 @@ export function DownloadNotesButton({ lecture }: Props) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(72, 79, 88);
-        doc.text(`APEXIQ · ${lecture.title} · Page ${i}`, margin, doc.internal.pageSize.getHeight() - 10);
+        doc.text(`EDDVA · ${lecture.title} · Page ${i}`, margin, doc.internal.pageSize.getHeight() - 10);
       }
 
       const topicName = lecture.topic?.name?.replace(/\s+/g, "-") ?? "Notes";

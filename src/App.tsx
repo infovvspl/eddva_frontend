@@ -5,8 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getSubdomain } from "@/lib/tenant";
 import Index from "./pages/Index";
+import Courses from "./pages/Courses";
+import AboutUs from "./pages/AboutUs";
 import LoginPage from "./pages/LoginPage";
-import TenantHomePage from "./pages/TenantHomePage";
+import StudentRegisterPage from "./pages/StudentRegisterPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import SuperAdminDashboard from "./pages/super-admin/SuperAdminDashboard";
@@ -17,6 +19,7 @@ import UsersPage from "./pages/super-admin/UsersPage";
 import AnnouncementsPage from "./pages/super-admin/AnnouncementsPage";
 import PlatformStatsPage from "./pages/super-admin/PlatformStatsPage";
 import SettingsPage from "./pages/super-admin/SettingsPage";
+import SuperAdminLoginPage from "./pages/super-admin/SuperAdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import BatchesPage from "./pages/admin/BatchesPage";
 import TeachersPage from "./pages/admin/TeachersPage";
@@ -55,6 +58,15 @@ import PYQManagementPage from "./pages/admin/PYQManagementPage";
 import LiveClassRoom from "./pages/live/LiveClassRoom";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
+
+// Landing Pages
+import { LandingNavbar } from "@/components/landing/LandingNavbar";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import AboutUsPage from "./pages/landing/AboutUsPage";
+import LandingCoursesPage from "./pages/landing/LandingCoursesPage";
+import ExamsRegistrationPage from "./pages/landing/ExamsRegistrationPage";
+import StudyMaterialPage from "./pages/landing/StudyMaterialPage";
+import CareerPage from "./pages/landing/CareerPage";
 
 const queryClient = new QueryClient();
 
@@ -155,8 +167,8 @@ const StudentRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<TenantHomePage />} />
-    <Route path="/login" element={<TenantHomePage />} />
+    <Route path="/" element={<LoginPage />} />
+    <Route path="/login" element={<LoginPage />} />
     {AdminRoutes()}
     {PYQRoute()}
     {TeacherRoutes()}
@@ -169,7 +181,16 @@ const TenantRoutes = () => (
 const PlatformRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
+    <Route path="/courses" element={<Courses />} />
+    <Route path="/about-us" element={<AboutUs />} />
+    <Route path="/about" element={<AboutUsPage />} />
+    <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
+    <Route path="/career" element={<CareerPage />} />
+    <Route path="/study-material/:type" element={<StudyMaterialPage />} />
+    <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
 
     <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/super-admin" element={<SuperAdminDashboard />} />

@@ -6,7 +6,7 @@
 
 const SARVAM_API_KEY = import.meta.env.VITE_SARVAM_API_KEY as string;
 const SARVAM_URL = "https://api.sarvam.ai/translate";
-const LANG_KEY = "apexiq_lang_preference";
+const LANG_KEY = "eddva_lang_preference";
 
 export interface IndianLanguage {
   code: string;
