@@ -5,7 +5,7 @@ import {
   UserPlus, Upload, Download, Copy, Check, AlertCircle,
   Layout, Calendar, GraduationCap, BarChart3, Edit2,
   Trophy, TrendingDown, TrendingUp, DollarSign, CheckCircle2,
-  PauseCircle, PlayCircle,
+  PauseCircle, PlayCircle, ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
   useBatchRoster, useCreateBatchStudent, useBulkCreateBatchStudents,
   useSubjectTeachers, useAssignSubjectTeacher, useRemoveSubjectTeacher,
   useBatchAttendance, useBatchPerformance, useBatchLiveAttendance,
+  useUploadBatchThumbnail,
 } from "@/hooks/use-admin";
 import type { BatchStudentRow, BulkStudentResult } from "@/lib/api/admin";
 import { toast } from "sonner";
@@ -541,12 +542,58 @@ const StudentImportPanel = ({ batchId, batchName }: { batchId: string; batchName
   );
 };
 
+// ─── Course thumbnail (shared with dashboard) ─────────────────────────────────
+
+const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> = {
+  jee:     { from: "#1D4ED8", to: "#4F46E5", badge: "JEE"  },
+  neet:    { from: "#059669", to: "#0D9488", badge: "NEET" },
+  both:    { from: "#7C3AED", to: "#C026D3", badge: "ALL"  },
+  default: { from: "#0F172A", to: "#334155", badge: "—"    },
+};
+
+const _API_ORIGIN = (() => {
+  try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
+  catch { return "http://localhost:3000"; }
+})();
+function resolveMediaUrl(url?: string) {
+  if (!url) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${_API_ORIGIN}${url}`;
+}
+
+function CourseThumbnail({ name, examTarget, imageUrl, className = "" }: {
+  name: string; examTarget: string; imageUrl?: string; className?: string;
+}) {
+  const [imgError, setImgError] = React.useState(false);
+  const style = EXAM_STYLES[examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
+  const initials = name.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("");
+  const resolvedUrl = resolveMediaUrl(imageUrl);
+  if (resolvedUrl && !imgError) {
+    return (
+      <div className={`rounded-2xl overflow-hidden shrink-0 ${className}`}>
+        <img src={resolvedUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`rounded-2xl flex flex-col items-center justify-center relative overflow-hidden shrink-0 ${className}`}
+      style={{ background: `linear-gradient(135deg, ${style.from}, ${style.to})` }}
+    >
+      <div className="absolute inset-0 opacity-10"
+        style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "12px 12px" }} />
+      <span className="text-white font-black text-xl relative z-10 leading-none">{initials}</span>
+      <span className="text-white/60 text-[9px] font-black uppercase tracking-widest mt-1 relative z-10">{style.badge}</span>
+    </div>
+  );
+}
+
 // ─── Main BatchesPage ──────────────────────────────────────────────────────────
 
-const statusColor: Record<string, string> = {
-  active: "bg-emerald-500/10 text-emerald-600",
-  inactive: "bg-gray-400/10 text-gray-500",
-  completed: "bg-blue-500/10 text-blue-600",
+const statusColor: Record<string, { pill: string; dot: string }> = {
+  active:    { pill: "bg-emerald-50 text-emerald-600 border border-emerald-100",  dot: "bg-emerald-500" },
+  inactive:  { pill: "bg-slate-100 text-slate-500 border border-slate-200",        dot: "bg-slate-400"   },
+  completed: { pill: "bg-blue-50 text-blue-600 border border-blue-100",            dot: "bg-blue-500"    },
 };
 
 type BatchTab = "students" | "teacher" | "attendance" | "performance";
@@ -900,6 +947,8 @@ function PerformanceTab({ batchId }: { batchId: string }) {
 
 function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: any[]; onClose: () => void }) {
   const updateBatch = useUpdateBatch();
+  const uploadBatchThumbnail = useUploadBatchThumbnail();
+  const editThumbRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: batch.name ?? "",
     examTarget: batch.examTarget ?? "jee",
@@ -909,8 +958,29 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
     feeAmount: batch.feeAmount ?? "",
     startDate: batch.startDate ? batch.startDate.split("T")[0] : "",
     endDate: batch.endDate ? batch.endDate.split("T")[0] : "",
+    thumbnailUrl: batch.thumbnailUrl ?? "",
   });
+  const [editThumbPreview, setEditThumbPreview] = useState<string>(batch.thumbnailUrl ?? "");
+  const [editThumbUploading, setEditThumbUploading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleEditThumbFile = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { toast.error("Thumbnail must be 5 MB or smaller"); return; }
+    setEditThumbUploading(true);
+    // Show local preview immediately
+    const reader = new FileReader();
+    reader.onload = e => setEditThumbPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+    try {
+      const { thumbnailUrl } = await uploadBatchThumbnail.mutateAsync({ batchId: batch.id, file });
+      setForm(f => ({ ...f, thumbnailUrl }));
+    } catch {
+      toast.error("Thumbnail upload failed");
+      setEditThumbPreview(batch.thumbnailUrl ?? "");
+    } finally {
+      setEditThumbUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -926,8 +996,9 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
         feeAmount: form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
+        thumbnailUrl: form.thumbnailUrl || undefined,
       });
-      toast.success("Batch updated");
+      toast.success("Course updated");
       onClose();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to update batch.");
@@ -939,7 +1010,7 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-foreground">Edit Batch</h3>
+          <h3 className="text-lg font-black text-slate-900">Edit Course</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
         {error && (
@@ -1001,10 +1072,33 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
               <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
                 className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
             </div>
+            {/* Thumbnail */}
+            <div className="sm:col-span-2">
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block flex items-center gap-1">
+                <ImageIcon className="w-3 h-3" /> Course Thumbnail
+              </label>
+              <input ref={editThumbRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { if (e.target.files?.[0]) handleEditThumbFile(e.target.files[0]); }} />
+              <button type="button" onClick={() => editThumbRef.current?.click()}
+                className="w-full h-24 flex flex-col items-center justify-center gap-2 bg-secondary border border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors overflow-hidden relative">
+                {editThumbUploading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /><span className="text-xs">Uploading…</span></>
+                ) : editThumbPreview ? (
+                  <>
+                    <img src={editThumbPreview} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="" />
+                    <span className="relative z-10 flex items-center gap-1 text-xs font-semibold bg-white/80 px-3 py-1 rounded-lg">
+                      <ImageIcon className="w-3.5 h-3.5" /> Change thumbnail
+                    </span>
+                  </>
+                ) : (
+                  <><ImageIcon className="w-6 h-6 opacity-40" /><span className="text-xs">Click to upload thumbnail</span></>
+                )}
+              </button>
+            </div>
           </div>
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-            <Button type="submit" disabled={updateBatch.isPending} className="flex-1">
+            <Button type="submit" disabled={updateBatch.isPending || editThumbUploading} className="flex-1">
               {updateBatch.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
             </Button>
           </div>
@@ -1023,12 +1117,20 @@ const BatchesPage = () => {
   const updateBatch = useUpdateBatch();
   const deleteBatch = useDeleteBatch();
 
+  const uploadBatchThumbnail = useUploadBatchThumbnail();
+
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     name: "", examTarget: "jee", class: "11", teacherId: "",
     maxStudents: 60, feeAmount: "", startDate: "", endDate: "",
+    thumbnailUrl: "",
   });
+  const [thumbPreview, setThumbPreview] = useState<string>("");
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [thumbUploading, setThumbUploading] = useState(false);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
+
   const [expandedId, setExpandedId] = useState<string>("");
   const [batchTab, setBatchTab] = useState<Record<string, BatchTab>>({});
   const [editBatch, setEditBatch] = useState<any | null>(null);
@@ -1040,7 +1142,7 @@ const BatchesPage = () => {
     e.preventDefault();
     setFormError("");
     try {
-      await createBatch.mutateAsync({
+      const batch = await createBatch.mutateAsync({
         name: form.name,
         examTarget: form.examTarget,
         class: form.class,
@@ -1050,11 +1152,30 @@ const BatchesPage = () => {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
       });
-      setForm({ name: "", examTarget: "jee", class: "11", teacherId: "", maxStudents: 60, feeAmount: "", startDate: "", endDate: "" });
+      // Upload thumbnail after batch is created (needs the batchId)
+      if (thumbFile && batch?.id) {
+        try {
+          await uploadBatchThumbnail.mutateAsync({ batchId: batch.id, file: thumbFile });
+        } catch {
+          toast.error("Course created but thumbnail upload failed");
+        }
+      }
+      setForm({ name: "", examTarget: "jee", class: "11", teacherId: "", maxStudents: 60, feeAmount: "", startDate: "", endDate: "", thumbnailUrl: "" });
+      setThumbPreview("");
+      setThumbFile(null);
       setShowForm(false);
     } catch (err: any) {
-      setFormError(err?.response?.data?.message || "Failed to create batch.");
+      setFormError(err?.response?.data?.message || "Failed to create course.");
     }
+  };
+
+  const handleThumbFile = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { toast.error("Thumbnail must be 5 MB or smaller"); return; }
+    setThumbFile(file);
+    // Show local preview immediately — actual upload happens after batch creation
+    const reader = new FileReader();
+    reader.onload = e => setThumbPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleDelete = async (id: string) => {
@@ -1081,164 +1202,196 @@ const BatchesPage = () => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+    <div className="max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* ── Header ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Batches</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{batchList.length} batches total</p>
+          <h1 className="text-2xl font-black text-slate-900">Courses</h1>
+          <p className="text-sm text-slate-400 mt-0.5">{batchList.length} course{batchList.length !== 1 ? "s" : ""} total</p>
         </div>
-        <Button onClick={() => { setShowForm(!showForm); setFormError(""); }} className="gap-2">
+        <button
+          onClick={() => { setShowForm(!showForm); setFormError(""); }}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-all hover:opacity-90"
+          style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
+        >
           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? "Cancel" : "New Batch"}
-        </Button>
-      </div>
+          {showForm ? "Cancel" : "New Course"}
+        </button>
+      </motion.div>
 
-      {/* Create form */}
+      {/* ── Create form ── */}
       <AnimatePresence>
         {showForm && (
           <motion.form
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
             onSubmit={handleCreate}
-            className="bg-card border border-border rounded-2xl p-6 space-y-4"
+            className="bg-white border border-slate-100 rounded-3xl p-6 space-y-4 shadow-sm"
           >
-            <h3 className="font-semibold text-foreground">New Batch</h3>
+            <h3 className="font-black text-slate-900">New Course</h3>
             {formError && (
-              <div className="flex items-start gap-2 bg-red-500/5 border border-red-500/20 rounded-xl px-4 py-3">
+              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
                 <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-red-600">{formError}</p>
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <input required placeholder="Batch Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
+              <input required placeholder="Course Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
               <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
                 <option value="jee">JEE</option>
                 <option value="neet">NEET</option>
                 <option value="both">Both / General</option>
               </select>
               <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
                 {["8", "9", "10", "11", "12", "DROPPER"].map(c => (
                   <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
                 ))}
               </select>
               <select value={form.teacherId} onChange={e => setForm({ ...form, teacherId: e.target.value })}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
                 <option value="">Assign Teacher (optional)</option>
                 {teacherList.map((t: any) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
               </select>
               <input type="number" placeholder="Max Students (default 60)" value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
+                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
               <input type="number" placeholder="Fee Amount ₹ (optional)" value={form.feeAmount} onChange={e => setForm({ ...form, feeAmount: e.target.value })}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
+                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-muted-foreground px-1">Start Date</label>
+                <label className="text-xs text-slate-400 px-1 font-semibold">Start Date</label>
                 <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
-                  className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
+                  className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-muted-foreground px-1">End Date</label>
+                <label className="text-xs text-slate-400 px-1 font-semibold">End Date</label>
                 <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
-                  className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
+                  className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
               </div>
-              <Button type="submit" disabled={createBatch.isPending || !form.name} className="h-11 self-end">
-                {createBatch.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Batch"}
-              </Button>
+              {/* Thumbnail picker */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-400 px-1 font-semibold">Course Thumbnail</label>
+                <input ref={thumbInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => { if (e.target.files?.[0]) handleThumbFile(e.target.files[0]); }} />
+                <button type="button" onClick={() => thumbInputRef.current?.click()}
+                  className="h-11 flex items-center justify-center gap-2 bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors overflow-hidden relative">
+                  {thumbUploading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
+                  ) : thumbPreview ? (
+                    <>
+                      <img src={thumbPreview} className="absolute inset-0 w-full h-full object-cover opacity-40" alt="" />
+                      <span className="relative z-10 flex items-center gap-1"><ImageIcon className="w-4 h-4" /> Change image</span>
+                    </>
+                  ) : (
+                    <><ImageIcon className="w-4 h-4" /> Upload thumbnail</>
+                  )}
+                </button>
+              </div>
+              <button type="submit" disabled={createBatch.isPending || !form.name || thumbUploading}
+                className="h-11 self-end rounded-2xl text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                {createBatch.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Course"}
+              </button>
             </div>
           </motion.form>
         )}
       </AnimatePresence>
 
-      {/* Batch list */}
+      {/* ── Course list ── */}
       {batchList.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Layout className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="font-medium">No batches yet</p>
-          <p className="text-sm mt-1">Create your first batch to start enrolling students.</p>
+        <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
+          <Layout className="w-12 h-12 text-slate-200 mb-3" />
+          <p className="text-sm font-bold text-slate-400">No courses yet</p>
+          <p className="text-xs text-slate-300 mt-1">Create your first course to start enrolling students.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {batchList.map((b: any) => (
-            <div key={b.id}>
-              {/* Batch card header */}
+        <div className="space-y-4">
+          {batchList.map((b: any, _bIdx: number) => {
+            const sc = statusColor[b.status] ?? statusColor.inactive;
+            const enrolled = b.studentCount ?? 0;
+            const max = b.maxStudents ?? 60;
+            const pct = Math.min(100, Math.round((enrolled / max) * 100));
+            const examStyle = EXAM_STYLES[b.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
+            return (
+            <motion.div
+              key={b.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: _bIdx * 0.05 }}
+            >
+              {/* Course card header */}
               <button
                 onClick={() => setExpandedId(expandedId === b.id ? "" : b.id)}
-                className="w-full bg-card border border-border rounded-2xl px-5 py-4 flex items-center justify-between hover:bg-secondary/30 transition-colors text-left"
+                className="w-full bg-white border border-slate-100 rounded-3xl px-5 py-4 flex items-center gap-4 hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all text-left group"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Layout className="w-5 h-5 text-primary" />
+                <CourseThumbnail name={b.name} examTarget={b.examTarget} imageUrl={b.thumbnailUrl} className="w-16 h-16" />
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-black text-slate-900 text-base truncate group-hover:text-blue-700 transition-colors">{b.name}</p>
+                    <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${sc.pill}`}>
+                      {b.status}
+                    </span>
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{b.name}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-xs text-muted-foreground uppercase">{b.examTarget} · Class {b.class}</span>
-                      {b.teacher?.fullName && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <GraduationCap className="w-3 h-3" /> {b.teacher.fullName}
-                        </span>
-                      )}
+                  <p className="text-[11px] text-slate-400 font-semibold uppercase mb-2">
+                    {b.examTarget?.toUpperCase()} · Class {b.class}
+                    {b.teacher?.fullName && ` · ${b.teacher.fullName}`}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden max-w-[200px]">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ delay: _bIdx * 0.05 + 0.3, duration: 0.6 }}
+                        className="h-full rounded-full"
+                        style={{ background: `linear-gradient(90deg, ${examStyle.from}, ${examStyle.to})` }}
+                      />
                     </div>
+                    <span className="text-[11px] font-black text-slate-500">{enrolled}/{max} students</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>{b.studentCount ?? 0}/{b.maxStudents}</span>
-                  </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusColor[b.status] ?? statusColor.inactive}`}>
-                    {b.status}
-                  </span>
-                  {/* Deactivate / Complete / Activate */}
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Deactivate / Activate / Complete */}
                   {b.status === "active" && (
-                    <button
-                      onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "inactive"); }}
-                      title="Deactivate batch"
-                      className="text-muted-foreground hover:text-amber-500 transition-colors"
-                    >
+                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "inactive"); }}
+                      title="Deactivate course"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all">
                       <PauseCircle className="w-4 h-4" />
                     </button>
                   )}
                   {b.status === "inactive" && (
-                    <button
-                      onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
-                      title="Re-activate batch"
-                      className="text-muted-foreground hover:text-emerald-500 transition-colors"
-                    >
+                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
+                      title="Re-activate course"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all">
                       <PlayCircle className="w-4 h-4" />
                     </button>
                   )}
                   {b.status !== "completed" && (
-                    <button
-                      onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "completed"); }}
+                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "completed"); }}
                       title="Mark as completed"
-                      className="text-muted-foreground hover:text-blue-500 transition-colors"
-                    >
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all">
                       <CheckCircle2 className="w-4 h-4" />
                     </button>
                   )}
-                  {/* Edit */}
-                  <button
-                    onClick={e => { e.stopPropagation(); setEditBatch(b); }}
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    title="Edit batch"
-                  >
+                  <button onClick={e => { e.stopPropagation(); setEditBatch(b); }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    title="Edit course">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  {/* Delete */}
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDelete(b.id); }}
-                    className="text-muted-foreground hover:text-red-500 transition-colors"
-                    title="Delete batch"
-                  >
+                  <button onClick={e => { e.stopPropagation(); handleDelete(b.id); }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                    title="Delete course">
                     <Trash2 className="w-4 h-4" />
                   </button>
-                  {expandedId === b.id
-                    ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-blue-400 transition-colors">
+                    {expandedId === b.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </div>
                 </div>
               </button>
 
@@ -1249,23 +1402,23 @@ const BatchesPage = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="bg-card border border-t-0 border-border rounded-b-2xl overflow-hidden"
+                    className="bg-white border border-t-0 border-slate-100 rounded-b-3xl overflow-hidden shadow-sm"
                   >
                     {/* Tabs */}
-                    <div className="flex overflow-x-auto border-b border-border bg-secondary/20 scrollbar-none">
+                    <div className="flex overflow-x-auto border-b border-slate-100 bg-slate-50 scrollbar-none">
                       {([
-                        { id: "students", label: "Students", icon: <Users className="w-4 h-4" /> },
-                        { id: "teacher", label: "Teachers", icon: <GraduationCap className="w-4 h-4" /> },
-                        { id: "attendance", label: "Attendance", icon: <Calendar className="w-4 h-4" /> },
-                        { id: "performance", label: "Performance", icon: <BarChart3 className="w-4 h-4" /> },
+                        { id: "students",    label: "Students",    icon: <Users className="w-4 h-4" />       },
+                        { id: "teacher",     label: "Teachers",    icon: <GraduationCap className="w-4 h-4" /> },
+                        { id: "attendance",  label: "Attendance",  icon: <Calendar className="w-4 h-4" />     },
+                        { id: "performance", label: "Performance", icon: <BarChart3 className="w-4 h-4" />    },
                       ] as { id: BatchTab; label: string; icon: React.ReactNode }[]).map(tab => (
                         <button
                           key={tab.id}
                           onClick={() => setBatchTab(prev => ({ ...prev, [b.id]: tab.id }))}
-                          className={`shrink-0 px-4 py-3 text-sm font-semibold transition-colors flex items-center gap-2 ${
+                          className={`shrink-0 px-5 py-3.5 text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2 ${
                             (batchTab[b.id] ?? "students") === tab.id
-                              ? "text-primary border-b-2 border-primary"
-                              : "text-muted-foreground hover:text-foreground"
+                              ? "text-blue-700 border-b-2 border-blue-600 bg-white"
+                              : "text-slate-400 hover:text-slate-700"
                           }`}
                         >
                           {tab.icon} {tab.label}
@@ -1273,19 +1426,20 @@ const BatchesPage = () => {
                       ))}
                     </div>
 
-                    {(batchTab[b.id] ?? "students") === "students" && <StudentImportPanel batchId={b.id} batchName={b.name} />}
-                    {(batchTab[b.id] ?? "students") === "teacher" && <TeacherAssignPanel batchId={b.id} teachers={teacherList} />}
-                    {(batchTab[b.id] ?? "students") === "attendance" && <AttendanceTab batchId={b.id} />}
+                    {(batchTab[b.id] ?? "students") === "students"    && <StudentImportPanel batchId={b.id} batchName={b.name} />}
+                    {(batchTab[b.id] ?? "students") === "teacher"     && <TeacherAssignPanel batchId={b.id} teachers={teacherList} />}
+                    {(batchTab[b.id] ?? "students") === "attendance"  && <AttendanceTab batchId={b.id} />}
                     {(batchTab[b.id] ?? "students") === "performance" && <PerformanceTab batchId={b.id} />}
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-          ))}
+            </motion.div>
+            );
+          })}
         </div>
       )}
 
-      {/* Edit Batch Modal */}
+      {/* Edit Course Modal */}
       <AnimatePresence>
         {editBatch && (
           <EditBatchModal
@@ -1295,7 +1449,7 @@ const BatchesPage = () => {
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
 

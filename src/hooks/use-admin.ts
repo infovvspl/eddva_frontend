@@ -16,6 +16,7 @@ export const adminKeys = {
   subjects: ["admin", "subjects"] as const,
   chapters: (subjectId: string) => ["admin", "chapters", subjectId] as const,
   topics: (chapterId: string) => ["admin", "topics", chapterId] as const,
+  topicResources: (topicId: string) => ["admin", "topic-resources", topicId] as const,
   questions: (params?: any) => ["admin", "questions", params] as const,
   lectures: ["admin", "lectures"] as const,
   dashboard: ["admin", "dashboard"] as const,
@@ -247,6 +248,43 @@ export function useCreateTopic() {
   return useMutation({
     mutationFn: adminApi.createTopic,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "topics"] }),
+  });
+}
+
+export function useTopicResources(topicId: string) {
+  return useQuery({
+    queryKey: adminKeys.topicResources(topicId),
+    queryFn: () => adminApi.listTopicResources(topicId),
+    enabled: !!topicId,
+  });
+}
+
+export function useUploadTopicResource(topicId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      file: File;
+      type: adminApi.TopicResourceType;
+      title: string;
+      description?: string;
+      sortOrder?: number;
+    }) => adminApi.uploadTopicResource({ topicId, ...payload }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+  });
+}
+
+export function useDeleteTopicResource(topicId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (resourceId: string) => adminApi.deleteTopicResource(resourceId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+  });
+}
+
+export function useUploadBatchThumbnail() {
+  return useMutation({
+    mutationFn: ({ batchId, file }: { batchId: string; file: File }) =>
+      adminApi.uploadBatchThumbnail(batchId, file),
   });
 }
 

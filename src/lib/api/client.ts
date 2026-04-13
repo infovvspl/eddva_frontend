@@ -53,19 +53,28 @@ export const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Public endpoints that must not carry auth or tenant headers
+const PUBLIC_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/otp", "/auth/forgot", "/auth/reset"];
+const isPublicEndpoint = (url = "") => PUBLIC_ENDPOINTS.some((p) => url.includes(p));
+
 // ---------------------------------------------------------------------------
 // Request interceptor — attach token
 // ---------------------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = tokenStorage.getAccess();
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    // Attach tenant ID header when on a tenant subdomain
+    // Always attach subdomain header — backend needs it even for login
+    // to know which tenant to authenticate against
     const subdomain = getSubdomain();
     if (subdomain && config.headers) {
       config.headers["X-Tenant-Subdomain"] = subdomain;
+    }
+
+    // Auth header only for non-public endpoints
+    if (!isPublicEndpoint(config.url)) {
+      const token = tokenStorage.getAccess();
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -103,13 +112,22 @@ apiClient.interceptors.response.use(
 
     // If 401 and we haven't already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // If no refresh token and no access token, this is a login attempt — just reject
+      // Never attempt a token refresh for auth endpoints themselves
+      const url = originalRequest.url || "";
+      const isAuthEndpoint = ["/auth/login", "/auth/otp", "/auth/refresh", "/auth/forgot", "/auth/reset"].some(
+        (p) => url.includes(p)
+      );
+      if (isAuthEndpoint) {
+        return Promise.reject(error);
+      }
+
       const accessToken = tokenStorage.getAccess();
       const refreshToken = tokenStorage.getRefresh();
+      // No tokens at all — just reject
       if (!refreshToken && !accessToken) {
         return Promise.reject(error);
       }
-      // If we have a token but no refresh token, clear and redirect
+      // Access token but no refresh token — clear stale state and redirect
       if (!refreshToken) {
         tokenStorage.clear();
         window.location.href = "/login";

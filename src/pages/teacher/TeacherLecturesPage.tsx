@@ -1722,15 +1722,28 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [topicId, setTopicId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: subjects } = useSubjects();
+  const { data: chapters } = useChapters(subjectId);
+  const { data: topics } = useTopics(chapterId);
+
+  const subjectList: any[] = Array.isArray(subjects) ? subjects : [];
+  const chapterList: any[] = Array.isArray(chapters) ? chapters : [];
+  const topicList: any[] = Array.isArray(topics) ? topics : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!topicId) { toast({ title: "Please select a topic", variant: "destructive" }); return; }
     setIsSubmitting(true);
     try {
       await createLecture.mutateAsync({
         batchId, title, description: description || undefined,
         type: "live",
+        topicId,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
       });
       toast({ title: "Live class scheduled!", description: "Students have been notified and it's saved in their calendar." });
@@ -1775,6 +1788,31 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
                     className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
                     <option value="">Select batch…</option>
                     {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                {/* Subject → Chapter → Topic */}
+                <div className="space-y-1.5">
+                  <Label>Subject *</Label>
+                  <select required value={subjectId} onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                    <option value="">Select subject…</option>
+                    {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Chapter *</Label>
+                  <select required value={chapterId} onChange={e => { setChapterId(e.target.value); setTopicId(""); }} disabled={!subjectId}
+                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
+                    <option value="">Select chapter…</option>
+                    {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5 col-span-2">
+                  <Label>Topic *</Label>
+                  <select required value={topicId} onChange={e => setTopicId(e.target.value)} disabled={!chapterId}
+                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
+                    <option value="">Select topic…</option>
+                    {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5 col-span-2">
@@ -1838,7 +1876,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
           {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-7 py-4 border-t border-border">
             <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting || !batchId || !title || !scheduledAt} className="gap-2 px-6">
+            <Button type="submit" disabled={isSubmitting || !batchId || !topicId || !title || !scheduledAt} className="gap-2 px-6">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
               Schedule Live Class
             </Button>
@@ -2189,49 +2227,69 @@ const TeacherLecturesPage = () => {
       {showSchedule && <ScheduleLiveModal key="schedule" onClose={() => setShowSchedule(false)} batches={batchList} />}
     </AnimatePresence>
 
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20"
+    >
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Lectures</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{recorded.length} recorded · {live.length} live classes</p>
+          <h1 className="text-2xl font-black text-slate-900">Lectures</h1>
+          <p className="text-sm text-slate-400 mt-0.5">{recorded.length} recorded · {live.length} live classes</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowSchedule(true)} className="gap-2">
-            <Radio className="w-4 h-4 text-red-500" /> Schedule Live
-          </Button>
-          <Button onClick={() => setShowUpload(true)} className="gap-2">
+          <button
+            onClick={() => setShowSchedule(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+          >
+            <Radio className="w-4 h-4" /> Schedule Live
+          </button>
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-opacity hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
+          >
             <Plus className="w-4 h-4" /> Upload Lecture
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* Tabs + Filter */}
+      {/* ── Tabs + Filter ── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex bg-secondary rounded-xl p-1 gap-1">
+        <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
           {([
-            { key: "recorded", label: "Recorded", icon: Video },
-            { key: "live", label: "Live Classes", icon: Radio },
+            { key: "recorded", label: "Recorded",     icon: Video },
+            { key: "live",     label: "Live Classes", icon: Radio },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={cn("flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                tab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-              <t.icon className="w-4 h-4" /> {t.label}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                tab === t.key
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-400 hover:text-slate-600"
+              )}>
+              <t.icon className="w-3.5 h-3.5" /> {t.label}
             </button>
           ))}
         </div>
+
         {batchList.length > 1 && (
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setFilterBatch("")}
-              className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                !filterBatch ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+              className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                !filterBatch
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
               All
             </button>
             {batchList.map(b => (
               <button key={b.id} onClick={() => setFilterBatch(b.id)}
-                className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                  filterBatch === b.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                  filterBatch === b.id
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
                 {b.name}
               </button>
             ))}
@@ -2239,15 +2297,17 @@ const TeacherLecturesPage = () => {
         )}
       </div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       {isLoading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
       ) : tab === "recorded" ? (
         recorded.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <Video className="w-14 h-14 mx-auto mb-4 opacity-25" />
-            <p className="font-medium">No recorded lectures yet</p>
-            <p className="text-sm mt-1">Click "Upload Lecture" to get started.</p>
+          <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
+            <Video className="w-14 h-14 text-slate-200 mb-3" />
+            <p className="text-sm font-bold text-slate-400">No recorded lectures yet</p>
+            <p className="text-xs text-slate-300 mt-1">Click "Upload Lecture" to get started.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -2266,10 +2326,10 @@ const TeacherLecturesPage = () => {
         )
       ) : (
         live.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <Radio className="w-14 h-14 mx-auto mb-4 opacity-25" />
-            <p className="font-medium">No live classes scheduled</p>
-            <p className="text-sm mt-1">Click "Schedule Live" to schedule your first class.</p>
+          <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
+            <Radio className="w-14 h-14 text-slate-200 mb-3" />
+            <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
+            <p className="text-xs text-slate-300 mt-1">Click "Schedule Live" to schedule your first class.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

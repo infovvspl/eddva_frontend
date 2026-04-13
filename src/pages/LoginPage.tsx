@@ -14,7 +14,7 @@ import loginIllustration from "@/assets/bg.png";
 const B = "#3B82F6"; // Softer Blue
 const P = "#A855F7"; // Softer Purple
 const G = "#10B981"; // Emerald
-const SOFT_BG = "#F8FAFC"; // Very light slate
+
 
 type View = "login" | "forgot" | "forgot-sent" | "reset" | "set-password";
 
@@ -147,7 +147,16 @@ const LoginPage = () => {
     setError(""); setSetPwLoading(true);
     try {
       await authApi.setPassword(setPwNew);
-      if (pendingUser) redirectUser({ ...pendingUser, isFirstLogin: false });
+      if (pendingUser) {
+        const user = { ...pendingUser, isFirstLogin: false };
+        setUser(user);
+        // Institute admins must complete teacher profile setup before dashboard
+        if (user.role === "institute_admin") {
+          navigate("/admin/onboard");
+        } else {
+          redirectUser(user);
+        }
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to set password. Please try again.");
     } finally { setSetPwLoading(false); }
