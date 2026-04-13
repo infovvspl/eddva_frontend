@@ -55,6 +55,7 @@ import StudentAiStudyPage from "./pages/student/StudentAiStudyPage";
 import StudentTopicQuizPage from "./pages/student/StudentTopicQuizPage";
 import StudentPYQPage from "./pages/student/StudentPYQPage";
 import PYQManagementPage from "./pages/admin/PYQManagementPage";
+import ReportsPage from "./pages/admin/ReportsPage";
 import LiveClassRoom from "./pages/live/LiveClassRoom";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
@@ -83,7 +84,7 @@ const AdminRoutes = () => (
     <Route path="/admin/mock-tests" element={<MockTestsPage />} />
     <Route path="/admin/lectures" element={<LecturesPage />} />
     <Route path="/admin/calendar" element={<AdminCalendarPage />} />
-    <Route path="/admin/reports" element={<PlaceholderPage title="Reports" />} />
+    <Route path="/admin/reports" element={<ReportsPage />} />
     <Route path="/admin/settings" element={<AdminSettingsPage />} />
   </Route>
 );
@@ -102,14 +103,20 @@ const TeacherRoutes = () => (
       path="/teacher/onboarding"
       element={<ProtectedRoute allowedRoles={["teacher"]}><TeacherOnboardingPage /></ProtectedRoute>}
     />
-    {/* Student detail — full-page within DashboardLayout is fine here */}
+    {/* Institute Admin onboarding — same teacher profile form, redirects to /admin after */}
+    <Route
+      path="/admin/onboard"
+      element={<ProtectedRoute allowedRoles={["institute_admin"]}><TeacherOnboardingPage /></ProtectedRoute>}
+    />
+    {/* Student detail */}
     <Route
       path="/teacher/students/:studentId"
       element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}
     >
       <Route index element={<TeacherStudentDetailPage />} />
     </Route>
-    <Route element={<ProtectedRoute allowedRoles={["teacher"]}><DashboardLayout /></ProtectedRoute>}>
+    {/* Teacher pages — institute_admin can access all of these */}
+    <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
       <Route path="/teacher/lectures" element={<TeacherLecturesPage />} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />

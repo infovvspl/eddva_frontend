@@ -304,7 +304,7 @@ export default function TeacherOnboardingPage() {
         if (user) setUser({ ...user, teacherProfile: { id: "", userId: user.id, tenantId: user.tenantId || "", onboardingComplete: true } });
       }
       toast({ title: "Onboarding complete!", description: "Welcome aboard. Your profile is all set." });
-      navigate("/teacher");
+      navigate(user?.role === "institute_admin" ? "/admin" : "/teacher");
     } catch {
       toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
     }
@@ -317,7 +317,7 @@ export default function TeacherOnboardingPage() {
     if (user) {
       setUser({ ...user, teacherProfile: { id: "", userId: user.id, tenantId: user.tenantId || "", onboardingComplete: false } });
     }
-    navigate("/teacher");
+    navigate(user?.role === "institute_admin" ? "/admin" : "/teacher");
   };
 
   // ── Render steps ───────────────────────────────────────────────────────────

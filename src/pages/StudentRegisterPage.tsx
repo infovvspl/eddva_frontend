@@ -182,8 +182,11 @@ const StudentRegisterPage = () => {
     }
     if (s === 2) {
       if (form.phone.length < 10) return "Enter a valid 10-digit phone number.";
+      if (form.altPhone.length < 10) return "Enter a valid 10-digit alternate phone number.";
       if (!form.address.trim()) return "Address is required.";
+      if (!form.postOffice.trim()) return "Post office is required.";
       if (!form.city.trim()) return "City is required.";
+      if (!form.landmark.trim()) return "Landmark / Tehsil is required.";
       if (form.pinCode.length < 6) return "Enter a valid 6-digit pin code.";
       return null;
     }
@@ -211,19 +214,19 @@ const StudentRegisterPage = () => {
     if (err) { setError(err); return; }
     setError(""); setLoading(true);
     try {
-      await apiClient.post("/auth/student/register", {
-        fullName:      form.name,
-        careOf:        form.careOf,
-        phoneNumber:   `+91${form.phone}`,
-        altPhone:      form.altPhone ? `+91${form.altPhone}` : undefined,
-        email:         form.email,
-        address:       form.address,
-        postOffice:    form.postOffice,
-        city:          form.city,
-        landmark:      form.landmark,
-        state:         form.state,
-        pinCode:       form.pinCode,
-        password:      form.password,
+      await apiClient.post("/auth/register", {
+        fullName:               form.name,
+        careOf:                 form.careOf,
+        phoneNumber:            `+91${form.phone}`,
+        alternatePhoneNumber:   `+91${form.altPhone}`,
+        email:                  form.email,
+        address:                form.address,
+        postOffice:             form.postOffice,
+        city:                   form.city,
+        landmark:               form.landmark,
+        state:                  form.state,
+        pinCode:                form.pinCode,
+        password:               form.password,
       });
       setSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
@@ -351,13 +354,17 @@ const StudentRegisterPage = () => {
                     {step === 2 && (
                       <>
                         <div className="grid grid-cols-2 gap-4">
-                           <Field icon={<Smartphone className="h-5 w-5" />} label="Mobile" placeholder="9876543210" value={form.phone} onChange={set("phone")} numeric maxLength={10} disabled={loading} />
-                           <Field icon={<Smartphone className="h-5 w-5" />} label="Alt. Mobile" placeholder="Optional" value={form.altPhone} onChange={set("altPhone")} numeric maxLength={10} disabled={loading} />
+                          <Field icon={<Smartphone className="h-5 w-5" />} label="Mobile *" placeholder="9876543210" value={form.phone} onChange={set("phone")} numeric maxLength={10} disabled={loading} />
+                          <Field icon={<Smartphone className="h-5 w-5" />} label="Alt. Mobile *" placeholder="9876543210" value={form.altPhone} onChange={set("altPhone")} numeric maxLength={10} disabled={loading} />
                         </div>
-                        <Field icon={<Home className="h-5 w-5" />} label="Address" placeholder="Building, Street, Area" value={form.address} onChange={set("address")} disabled={loading} />
+                        <Field icon={<Home className="h-5 w-5" />} label="Address *" placeholder="Building, Street, Area" value={form.address} onChange={set("address")} disabled={loading} />
                         <div className="grid grid-cols-2 gap-4">
-                          <Field icon={<MapPin className="h-5 w-5" />} label="City" placeholder="City" value={form.city} onChange={set("city")} disabled={loading} />
-                          <Field icon={<Hash className="h-5 w-5" />} label="PIN Code" placeholder="6-digit" value={form.pinCode} onChange={set("pinCode")} numeric maxLength={6} disabled={loading} />
+                          <Field icon={<MapPin className="h-5 w-5" />} label="Post Office *" placeholder="Post Office" value={form.postOffice} onChange={set("postOffice")} disabled={loading} />
+                          <Field icon={<MapPin className="h-5 w-5" />} label="City *" placeholder="City" value={form.city} onChange={set("city")} disabled={loading} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Field icon={<MapPin className="h-5 w-5" />} label="Landmark / Tehsil *" placeholder="Landmark" value={form.landmark} onChange={set("landmark")} disabled={loading} />
+                          <Field icon={<Hash className="h-5 w-5" />} label="PIN Code *" placeholder="6-digit" value={form.pinCode} onChange={set("pinCode")} numeric maxLength={6} disabled={loading} />
                         </div>
                         <div className="relative group">
                           <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1">State</label>

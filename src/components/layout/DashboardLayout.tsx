@@ -4,11 +4,12 @@ import { useLogout } from "@/hooks/use-auth";
 import type { UserRole } from "@/lib/types";
 import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
-  BookOpen, GraduationCap, FolderOpen, Calendar, FileText,
-  Video, HelpCircle, Layout, BarChart,
+  BookOpen, GraduationCap, Calendar, FileText,
+  Video, Layout, BarChart,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
-  LayoutDashboard, Layers, ClipboardList, Headphones,
+  LayoutDashboard, ClipboardList, Headphones,
 } from "lucide-react";
+
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
@@ -16,7 +17,6 @@ import edvaLogo from "@/assets/EDVA LOGO 04.png";
 
 const BLUE = "#013889";
 const BLUE_M = "#0257c8";
-const BLUE_L = "#E6EEF8";
 
 interface NavItem {
   label: string;
@@ -35,15 +35,18 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Settings",      path: "/super-admin/settings",       icon: Settings   },
   ],
   institute_admin: [
-    { label: "Dashboard",   path: "/admin",               icon: Home         },
-    { label: "Batches",     path: "/admin/batches",        icon: Layout       },
-    { label: "Students",    path: "/admin/students",       icon: Users        },
-    { label: "Content",     path: "/admin/content",        icon: FolderOpen   },
-    { label: "Mock Tests",  path: "/admin/mock-tests",     icon: BookOpen     },
-    { label: "PYQ Bank",    path: "/admin/pyq",            icon: FileText     },
-    { label: "Lectures",    path: "/admin/lectures",       icon: Video        },
-    { label: "Calendar",    path: "/admin/calendar",       icon: Calendar     },
-    { label: "Settings",    path: "/admin/settings",       icon: Settings     },
+    { label: "Dashboard",    path: "/admin",               icon: Home          },
+    { label: "Courses",       path: "/admin/batches",        icon: Layout        },
+    { label: "Students",     path: "/admin/students",       icon: Users         },
+    { label: "Content",      path: "/admin/content",        icon: GraduationCap },
+    { label: "Lectures",     path: "/teacher/lectures",     icon: Video         },
+    { label: "Doubt Queue",  path: "/teacher/doubts",       icon: MessageSquare },
+    { label: "Analytics",    path: "/teacher/analytics",    icon: BarChart      },
+    { label: "AI Tools",     path: "/teacher/ai-tools",     icon: Sparkles      },
+    { label: "Mock Tests",   path: "/admin/mock-tests",     icon: BookOpen      },
+    { label: "PYQ Bank",     path: "/admin/pyq",            icon: FileText      },
+    { label: "Calendar",     path: "/admin/calendar",       icon: Calendar      },
+    { label: "Settings",     path: "/admin/settings",       icon: Settings      },
   ],
   teacher: [
     { label: "Dashboard",       path: "/teacher",           icon: Home            },
@@ -86,8 +89,21 @@ const DashboardLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role === "teacher" && user.teacherProfile === null) {
-    return <Navigate to="/teacher/onboarding" replace />;
+  // Onboarding guard — only redirect once. After the user sees onboarding
+  // (whether they complete or skip it), we store a flag in localStorage so
+  // we never force-redirect them again, even if teacherProfile is null.
+  const onboardingSeenKey = `onboarding_seen_${user.id}`;
+  const onboardingSeen = localStorage.getItem(onboardingSeenKey) === "true";
+
+  if (!onboardingSeen) {
+    if (user.role === "teacher" && user.teacherProfile === null) {
+      localStorage.setItem(onboardingSeenKey, "true");
+      return <Navigate to="/teacher/onboarding" replace />;
+    }
+    if (user.role === "institute_admin" && user.teacherProfile === null) {
+      localStorage.setItem(onboardingSeenKey, "true");
+      return <Navigate to="/admin/onboard" replace />;
+    }
   }
 
   const navItems = navByRole[user.role];

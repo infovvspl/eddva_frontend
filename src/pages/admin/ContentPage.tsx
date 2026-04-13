@@ -1,22 +1,306 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Plus, Loader2, FolderOpen, ChevronRight, BookOpen, FileText, Trash2, X, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { useSubjects, useCreateSubject, useDeleteSubject, useChapters, useCreateChapter, useTopics, useCreateTopic } from "@/hooks/use-admin";
+import React, { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus, Loader2, ChevronRight, BookOpen, FileText, X, Lock,
+  Layers, Hash, Clock, Upload, Trash2, ExternalLink,
+  FileQuestion, Film, BookMarked, PenLine,
+} from "lucide-react";
+import {
+  useSubjects, useCreateSubject,
+  useChapters, useCreateChapter,
+  useTopics, useCreateTopic,
+  useTopicResources, useUploadTopicResource, useDeleteTopicResource,
+} from "@/hooks/use-admin";
+import type { TopicResourceType } from "@/lib/api/admin";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const _API_ORIGIN = (() => {
+  try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
+  catch { return "http://localhost:3000"; }
+})();
+function resolveMediaUrl(url?: string) {
+  if (!url) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${_API_ORIGIN}${url}`;
+}
+
+// ─── Exam badge ───────────────────────────────────────────────────────────────
+
+const EXAM_COLORS: Record<string, { from: string; to: string }> = {
+  jee:     { from: "#1D4ED8", to: "#4F46E5" },
+  neet:    { from: "#059669", to: "#0D9488" },
+  both:    { from: "#7C3AED", to: "#C026D3" },
+  default: { from: "#0F172A", to: "#334155" },
+};
+
+function ExamBadge({ target }: { target: string }) {
+  const c = EXAM_COLORS[target?.toLowerCase()] ?? EXAM_COLORS.default;
+  return (
+    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white"
+      style={{ background: `linear-gradient(135deg, ${c.from}, ${c.to})` }}>
+      {target?.toUpperCase() || "—"}
+    </span>
+  );
+}
+
+// ─── Resource type config ─────────────────────────────────────────────────────
+
+const RESOURCE_TYPES: { value: TopicResourceType; label: string; icon: React.ComponentType<{ className?: string }>; color: string; accept: string }[] = [
+  { value: "pdf",   label: "PDF Notes",  icon: FileText,     color: "bg-red-100 text-red-600",     accept: ".pdf"                  },
+  { value: "dpp",   label: "DPP",        icon: PenLine,      color: "bg-orange-100 text-orange-600", accept: ".pdf,.doc,.docx"      },
+  { value: "quiz",  label: "Quiz",       icon: FileQuestion, color: "bg-violet-100 text-violet-600", accept: ".pdf,.doc,.docx,.json" },
+  { value: "video", label: "Video",      icon: Film,         color: "bg-blue-100 text-blue-600",   accept: "video/*,.mp4,.mkv"     },
+  { value: "notes", label: "Notes",      icon: BookMarked,   color: "bg-emerald-100 text-emerald-600", accept: ".pdf,.doc,.docx,.txt" },
+];
+
+function resourceConfig(type: TopicResourceType) {
+  return RESOURCE_TYPES.find(r => r.value === type) ?? RESOURCE_TYPES[0];
+}
+
+function formatSize(bytes?: number) {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// ─── Topic Resources Panel ────────────────────────────────────────────────────
+
+function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicName: string }) {
+  const { data: resources = [], isLoading } = useTopicResources(topicId);
+  const uploadResource = useUploadTopicResource(topicId);
+  const deleteResource = useDeleteTopicResource(topicId);
+
+  const [uploadType, setUploadType] = useState<TopicResourceType>("pdf");
+  const [uploadName, setUploadName] = useState("");
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { toast.error("File must be 5 MB or smaller"); return; }
+    const title = uploadName.trim() || file.name.replace(/\.[^.]+$/, "");
+    try {
+      await uploadResource.mutateAsync({ file, type: uploadType, title });
+      toast.success(`${resourceConfig(uploadType).label} uploaded`);
+      setUploadName("");
+      setShowUploadForm(false);
+    } catch {
+      toast.error("Upload failed");
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this resource?")) return;
+    try {
+      await deleteResource.mutateAsync(id);
+      toast.success("Deleted");
+    } catch {
+      toast.error("Delete failed");
+    }
+  };
+
+  const cfg = resourceConfig(uploadType);
+
+  return (
+    <div className="flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-slate-100 shrink-0">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Resources</p>
+        <p className="text-sm font-black text-slate-900 mt-0.5 truncate">{topicName}</p>
+        <p className="text-[10px] text-slate-400 mt-0.5">{resources.length} file{resources.length !== 1 ? "s" : ""}</p>
+      </div>
+
+      {/* Type selector */}
+      <div className="px-3 pt-3 flex gap-1.5 flex-wrap shrink-0">
+        {RESOURCE_TYPES.map(rt => {
+          const Icon = rt.icon;
+          return (
+            <button
+              key={rt.value}
+              onClick={() => setUploadType(rt.value)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                uploadType === rt.value ? rt.color + " ring-1 ring-current" : "bg-slate-100 text-slate-400 hover:text-slate-700"
+              )}
+            >
+              <Icon className="w-3 h-3" /> {rt.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Upload zone */}
+      <div className="px-3 pt-3 shrink-0">
+        <div
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => setShowUploadForm(!showUploadForm)}
+          className={cn(
+            "border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all",
+            dragging
+              ? "border-blue-400 bg-blue-50"
+              : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
+          )}
+        >
+          <Upload className={cn("w-5 h-5 mx-auto mb-1.5 transition-colors", dragging ? "text-blue-500" : "text-slate-300")} />
+          <p className="text-xs font-bold text-slate-500">
+            {dragging ? "Drop to upload" : `Upload ${cfg.label}`}
+          </p>
+          <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop</p>
+        </div>
+
+        <AnimatePresence>
+          {showUploadForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="pt-3 space-y-2">
+                <input
+                  placeholder={`${cfg.label} title (optional)`}
+                  value={uploadName}
+                  onChange={e => setUploadName(e.target.value)}
+                  className="w-full h-9 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
+                />
+                <input ref={fileRef} type="file" accept={cfg.accept} className="hidden"
+                  onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+                <button
+                  onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+                  disabled={uploadResource.isPending}
+                  className="w-full h-9 flex items-center justify-center gap-2 rounded-xl text-white text-xs font-black disabled:opacity-50 hover:opacity-90 transition-opacity"
+                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
+                >
+                  {uploadResource.isPending
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading…</>
+                    : <><Upload className="w-3.5 h-3.5" /> Choose File</>}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Resource list */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 mt-2">
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+          </div>
+        ) : resources.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-slate-200">
+            <BookMarked className="w-10 h-10 mb-2" />
+            <p className="text-sm font-semibold text-slate-400">No resources yet</p>
+            <p className="text-xs text-slate-300 mt-0.5">Upload PDFs, DPPs, quizzes or videos</p>
+          </div>
+        ) : (
+          resources.map((r, i) => {
+            const rc = resourceConfig(r.type);
+            const Icon = rc.icon;
+            return (
+              <motion.div
+                key={r.id}
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group"
+              >
+                <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", rc.color)}>
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-800 truncate">{r.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md", rc.color)}>
+                      {rc.label}
+                    </span>
+                    {r.fileSize && (
+                      <span className="text-[10px] text-slate-400">{formatSize(r.fileSize)}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <a href={resolveMediaUrl(r.fileUrl)} target="_blank" rel="noreferrer"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                  <button onClick={() => handleDelete(r.id)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Field component ──────────────────────────────────────────────────────────
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-1">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls = "h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors w-full";
+
+// ─── Panel shell ──────────────────────────────────────────────────────────────
+
+function Panel({ title, count, onAdd, addLabel, showForm, children }: {
+  title: string; count: number; onAdd: () => void;
+  addLabel: string; showForm: boolean; children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{title}</p>
+          <p className="text-xl font-black text-slate-900 mt-0.5 leading-none">{count}</p>
+        </div>
+        <button onClick={onAdd}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black text-white transition-opacity hover:opacity-90"
+          style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+          {showForm ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+          {showForm ? "Cancel" : addLabel}
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-1">{children}</div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 const ContentPage = () => {
   const { data: subjects, isLoading } = useSubjects();
   const createSubject = useCreateSubject();
-  const deleteSubject = useDeleteSubject();
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
-  const [selectedChapter, setSelectedChapter] = useState<string>("");
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedChapter, setSelectedChapter] = useState("");
+  const [selectedTopic, setSelectedTopic]   = useState("");
+
   const [showSubjectForm, setShowSubjectForm] = useState(false);
   const [showChapterForm, setShowChapterForm] = useState(false);
-  const [showTopicForm, setShowTopicForm] = useState(false);
+  const [showTopicForm,   setShowTopicForm]   = useState(false);
+
   const [subjectForm, setSubjectForm] = useState({ name: "", examTarget: "jee" });
   const [chapterForm, setChapterForm] = useState({ name: "" });
-  const [topicForm, setTopicForm] = useState({ name: "", estimatedStudyMinutes: 30, gatePassPercentage: 70 });
+  const [topicForm,   setTopicForm]   = useState({ name: "", estimatedStudyMinutes: 30, gatePassPercentage: 70 });
 
   const { data: chapters, isLoading: chaptersLoading } = useChapters(selectedSubject);
   const createChapter = useCreateChapter();
@@ -25,12 +309,16 @@ const ContentPage = () => {
 
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
-  const topicList = Array.isArray(topics) ? topics : [];
+  const topicList   = Array.isArray(topics)   ? topics   : [];
+
+  const selectedSubjectObj = subjectList.find(s => s.id === selectedSubject);
+  const selectedChapterObj = chapterList.find(c => c.id === selectedChapter);
+  const selectedTopicObj   = topicList.find(t => t.id === selectedTopic);
 
   const handleCreateSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     await createSubject.mutateAsync(subjectForm);
-    setSubjectForm({ name: "", examTarget: "JEE" });
+    setSubjectForm({ name: "", examTarget: "jee" });
     setShowSubjectForm(false);
   };
 
@@ -54,206 +342,255 @@ const ContentPage = () => {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   }
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <PageHeader title="Content" subtitle="Subject, Chapter & Topic management" />
+  // Layout: 4 panels when topic selected, 3 otherwise
+  const showResources = !!selectedTopic;
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1 text-sm mb-6 flex-wrap">
-        <button onClick={() => { setSelectedSubject(""); setSelectedChapter(""); }} className={`font-medium ${!selectedSubject ? "text-foreground" : "text-primary hover:underline"}`}>
-          Subjects
-        </button>
-        {selectedSubject && (
-          <>
-            <ChevronRight className="w-3 h-3 text-muted-foreground" />
-            <button onClick={() => setSelectedChapter("")} className={`font-medium ${!selectedChapter ? "text-foreground" : "text-primary hover:underline"}`}>
-              {subjectList.find((s) => s.id === selectedSubject)?.name || "Chapters"}
-            </button>
-          </>
-        )}
-        {selectedChapter && (
-          <>
-            <ChevronRight className="w-3 h-3 text-muted-foreground" />
-            <span className="text-foreground font-medium">
-              {chapterList.find((c) => c.id === selectedChapter)?.name || "Topics"}
-            </span>
-          </>
-        )}
+  return (
+    <div className="max-w-[1600px] mx-auto p-6 lg:p-8 pb-20">
+
+      {/* ── Header ── */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <h1 className="text-2xl font-black text-slate-900">Content Library</h1>
+        <p className="text-sm text-slate-400 mt-0.5">Subjects → Chapters → Topics → Resources</p>
+      </motion.div>
+
+      {/* ── Breadcrumb ── */}
+      <div className="flex items-center gap-2 text-sm font-bold mb-6 flex-wrap">
+        <button
+          onClick={() => { setSelectedSubject(""); setSelectedChapter(""); setSelectedTopic(""); }}
+          className={cn("transition-colors", selectedSubject ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}
+        >Subjects</button>
+        {selectedSubjectObj && (<>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <button onClick={() => { setSelectedChapter(""); setSelectedTopic(""); }}
+            className={cn("transition-colors", selectedChapter ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
+            {selectedSubjectObj.name}
+          </button>
+        </>)}
+        {selectedChapterObj && (<>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <button onClick={() => setSelectedTopic("")}
+            className={cn("transition-colors", selectedTopic ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
+            {selectedChapterObj.name}
+          </button>
+        </>)}
+        {selectedTopicObj && (<>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <span className="text-slate-900">{selectedTopicObj.name}</span>
+        </>)}
       </div>
 
-      {/* ── Subjects View ── */}
-      {!selectedSubject && (
-        <>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Subjects ({subjectList.length})</h3>
-            <Button size="sm" onClick={() => setShowSubjectForm(!showSubjectForm)} className="gap-1.5">
-              {showSubjectForm ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-              {showSubjectForm ? "Cancel" : "Add Subject"}
-            </Button>
-          </div>
+      {/* ── Panels grid ── */}
+      <div className={cn(
+        "grid gap-5",
+        showResources ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1 lg:grid-cols-3"
+      )}>
 
-          {showSubjectForm && (
-            <form onSubmit={handleCreateSubject} className="bg-card border border-border rounded-2xl p-4 mb-4 flex gap-3 flex-wrap">
-              <input required placeholder="Subject Name (e.g. Physics)" value={subjectForm.name}
-                onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
-                className="h-10 flex-1 min-w-[200px] px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
-              <select value={subjectForm.examTarget} onChange={(e) => setSubjectForm({ ...subjectForm, examTarget: e.target.value })}
-                className="h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary">
-                <option value="jee">JEE</option><option value="neet">NEET</option><option value="both">Both</option>
-              </select>
-              <Button type="submit" size="sm" disabled={createSubject.isPending} className="h-10">
-                {createSubject.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
-              </Button>
-            </form>
-          )}
+        {/* ── Subjects ── */}
+        <Panel title="Subjects" count={subjectList.length} addLabel="Add Subject"
+          showForm={showSubjectForm} onAdd={() => setShowSubjectForm(!showSubjectForm)}>
+          <AnimatePresence>
+            {showSubjectForm && (
+              <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                onSubmit={handleCreateSubject} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-2 space-y-3">
+                <Field label="Subject Name">
+                  <input required placeholder="e.g. Physics" value={subjectForm.name}
+                    onChange={e => setSubjectForm({ ...subjectForm, name: e.target.value })} className={inputCls} />
+                </Field>
+                <Field label="Exam Target">
+                  <select value={subjectForm.examTarget} onChange={e => setSubjectForm({ ...subjectForm, examTarget: e.target.value })} className={inputCls}>
+                    <option value="jee">JEE</option><option value="neet">NEET</option><option value="both">Both</option>
+                  </select>
+                </Field>
+                <button type="submit" disabled={createSubject.isPending || !subjectForm.name}
+                  className="w-full h-9 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                  {createSubject.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Create Subject"}
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
 
           {subjectList.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">No subjects yet</p>
-              <p className="text-sm mt-1">Create subjects to start building your content library.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-slate-300">
+              <BookOpen className="w-10 h-10 mb-2" />
+              <p className="text-sm font-semibold text-slate-400">No subjects yet</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {subjectList.map((s) => (
-                <button key={s.id} onClick={() => setSelectedSubject(s.id)}
-                  className="bg-card border border-border rounded-2xl p-5 text-left hover:shadow-md hover:border-primary/30 transition-all group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-foreground">{s.name}</h4>
-                        <p className="text-xs text-muted-foreground">{s.examTarget} · {s.chapters?.length || 0} chapters</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── Chapters View ── */}
-      {selectedSubject && !selectedChapter && (
-        <>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Chapters ({chapterList.length})</h3>
-            <Button size="sm" onClick={() => setShowChapterForm(!showChapterForm)} className="gap-1.5">
-              {showChapterForm ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-              {showChapterForm ? "Cancel" : "Add Chapter"}
-            </Button>
-          </div>
-
-          {showChapterForm && (
-            <form onSubmit={handleCreateChapter} className="bg-card border border-border rounded-2xl p-4 mb-4 flex gap-3">
-              <input required placeholder="Chapter Name" value={chapterForm.name}
-                onChange={(e) => setChapterForm({ name: e.target.value })}
-                className="h-10 flex-1 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
-              <Button type="submit" size="sm" disabled={createChapter.isPending} className="h-10">
-                {createChapter.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
-              </Button>
-            </form>
-          )}
-
-          {chaptersLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : chapterList.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">No chapters yet</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {chapterList.map((c, i) => (
-                <button key={c.id} onClick={() => setSelectedChapter(c.id)}
-                  className="w-full bg-card border border-border rounded-xl p-4 text-left hover:border-primary/30 transition-all flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-muted-foreground w-6">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="text-sm font-medium text-foreground">{c.name}</span>
-                    <span className="text-xs text-muted-foreground">{c.topics?.length || 0} topics</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── Topics View ── */}
-      {selectedChapter && (
-        <>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Topics ({topicList.length})</h3>
-            <Button size="sm" onClick={() => setShowTopicForm(!showTopicForm)} className="gap-1.5">
-              {showTopicForm ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-              {showTopicForm ? "Cancel" : "Add Topic"}
-            </Button>
-          </div>
-
-          {showTopicForm && (
-            <form onSubmit={handleCreateTopic} className="bg-card border border-border rounded-2xl p-4 mb-4 flex gap-3 flex-wrap items-end">
-              <input required placeholder="Topic Name" value={topicForm.name}
-                onChange={(e) => setTopicForm({ ...topicForm, name: e.target.value })}
-                className="h-10 flex-1 min-w-[200px] px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-muted-foreground px-1">Study mins</label>
-                <input type="number" placeholder="30" value={topicForm.estimatedStudyMinutes}
-                  onChange={(e) => setTopicForm({ ...topicForm, estimatedStudyMinutes: +e.target.value })}
-                  className="h-10 w-28 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+          ) : subjectList.map((s, i) => (
+            <motion.button key={s.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+              onClick={() => { setSelectedSubject(s.id); setSelectedChapter(""); setSelectedTopic(""); }}
+              className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
+                selectedSubject === s.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "hover:bg-slate-50 border border-transparent hover:border-slate-100")}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white font-black text-sm"
+                style={{ background: `linear-gradient(135deg, ${(EXAM_COLORS[s.examTarget?.toLowerCase()] ?? EXAM_COLORS.default).from}, ${(EXAM_COLORS[s.examTarget?.toLowerCase()] ?? EXAM_COLORS.default).to})` }}>
+                {s.name.charAt(0)}
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-muted-foreground px-1 flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Gate lock %
-                </label>
-                <input type="number" min={0} max={100} placeholder="70" value={topicForm.gatePassPercentage}
-                  onChange={(e) => setTopicForm({ ...topicForm, gatePassPercentage: +e.target.value })}
-                  className="h-10 w-24 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
-              </div>
-              <Button type="submit" size="sm" disabled={createTopic.isPending} className="h-10">
-                {createTopic.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
-              </Button>
-            </form>
-          )}
-
-          {topicsLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : topicList.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">No topics yet</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {topicList.map((t, i) => (
-                <div key={t.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-xs font-bold text-muted-foreground w-6">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="text-sm font-medium text-foreground">{t.name}</span>
-                    {t.estimatedStudyMinutes && (
-                      <span className="text-xs text-muted-foreground">{t.estimatedStudyMinutes} min</span>
-                    )}
-                    <span className="text-xs flex items-center gap-1 text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                      <Lock className="w-3 h-3" /> {t.gatePassPercentage ?? 70}%
-                    </span>
-                  </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${t.isActive ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
-                    {t.isActive ? "Active" : "Inactive"}
-                  </span>
+              <div className="flex-1 min-w-0">
+                <p className={cn("text-sm font-bold truncate", selectedSubject === s.id ? "text-white" : "text-slate-800")}>{s.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <ExamBadge target={s.examTarget} />
+                  <span className={cn("text-[10px]", selectedSubject === s.id ? "text-white/60" : "text-slate-400")}>{s.chapters?.length ?? 0} ch</span>
                 </div>
-              ))}
+              </div>
+              <ChevronRight className={cn("w-4 h-4 shrink-0", selectedSubject === s.id ? "text-white/60" : "text-slate-200 group-hover:text-blue-500")} />
+            </motion.button>
+          ))}
+        </Panel>
+
+        {/* ── Chapters ── */}
+        <Panel title={selectedSubjectObj ? `Chapters · ${selectedSubjectObj.name}` : "Chapters"} count={chapterList.length}
+          addLabel="Add Chapter" showForm={showChapterForm}
+          onAdd={() => { if (selectedSubject) setShowChapterForm(!showChapterForm); }}>
+          {!selectedSubject ? (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-200">
+              <Layers className="w-10 h-10 mb-2" />
+              <p className="text-sm font-semibold text-slate-400">Select a subject first</p>
             </div>
+          ) : chaptersLoading ? (
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
+          ) : (
+            <>
+              <AnimatePresence>
+                {showChapterForm && (
+                  <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                    onSubmit={handleCreateChapter} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-2 space-y-3">
+                    <Field label="Chapter Name">
+                      <input required placeholder="e.g. Kinematics" value={chapterForm.name}
+                        onChange={e => setChapterForm({ name: e.target.value })} className={inputCls} />
+                    </Field>
+                    <button type="submit" disabled={createChapter.isPending || !chapterForm.name}
+                      className="w-full h-9 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                      {createChapter.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Create Chapter"}
+                    </button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+              {chapterList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-300">
+                  <FileText className="w-10 h-10 mb-2" />
+                  <p className="text-sm font-semibold text-slate-400">No chapters yet</p>
+                </div>
+              ) : chapterList.map((c, i) => (
+                <motion.button key={c.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                  onClick={() => { setSelectedChapter(c.id); setSelectedTopic(""); }}
+                  className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
+                    selectedChapter === c.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "hover:bg-slate-50 border border-transparent hover:border-slate-100")}>
+                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0",
+                    selectedChapter === c.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500")}>
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("text-sm font-bold truncate", selectedChapter === c.id ? "text-white" : "text-slate-800")}>{c.name}</p>
+                    <p className={cn("text-[10px] mt-0.5", selectedChapter === c.id ? "text-white/60" : "text-slate-400")}>{c.topics?.length ?? 0} topics</p>
+                  </div>
+                  <ChevronRight className={cn("w-4 h-4 shrink-0", selectedChapter === c.id ? "text-white/60" : "text-slate-200 group-hover:text-blue-500")} />
+                </motion.button>
+              ))}
+            </>
           )}
-        </>
-      )}
-    </motion.div>
+        </Panel>
+
+        {/* ── Topics ── */}
+        <Panel title={selectedChapterObj ? `Topics · ${selectedChapterObj.name}` : "Topics"} count={topicList.length}
+          addLabel="Add Topic" showForm={showTopicForm}
+          onAdd={() => { if (selectedChapter) setShowTopicForm(!showTopicForm); }}>
+          {!selectedChapter ? (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-200">
+              <Hash className="w-10 h-10 mb-2" />
+              <p className="text-sm font-semibold text-slate-400">Select a chapter first</p>
+            </div>
+          ) : topicsLoading ? (
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
+          ) : (
+            <>
+              <AnimatePresence>
+                {showTopicForm && (
+                  <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                    onSubmit={handleCreateTopic} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-2 space-y-3">
+                    <Field label="Topic Name">
+                      <input required placeholder="e.g. Newton's Laws" value={topicForm.name}
+                        onChange={e => setTopicForm({ ...topicForm, name: e.target.value })} className={inputCls} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Study mins">
+                        <input type="number" value={topicForm.estimatedStudyMinutes}
+                          onChange={e => setTopicForm({ ...topicForm, estimatedStudyMinutes: +e.target.value })} className={inputCls} />
+                      </Field>
+                      <Field label="Gate lock %">
+                        <input type="number" min={0} max={100} value={topicForm.gatePassPercentage}
+                          onChange={e => setTopicForm({ ...topicForm, gatePassPercentage: +e.target.value })} className={inputCls} />
+                      </Field>
+                    </div>
+                    <button type="submit" disabled={createTopic.isPending || !topicForm.name}
+                      className="w-full h-9 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                      {createTopic.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Create Topic"}
+                    </button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+              {topicList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-300">
+                  <FileText className="w-10 h-10 mb-2" />
+                  <p className="text-sm font-semibold text-slate-400">No topics yet</p>
+                </div>
+              ) : topicList.map((t, i) => (
+                <motion.button key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                  onClick={() => setSelectedTopic(selectedTopic === t.id ? "" : t.id)}
+                  className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
+                    selectedTopic === t.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "border border-slate-100 hover:border-blue-100 hover:shadow-sm bg-white")}>
+                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0",
+                    selectedTopic === t.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500")}>
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("text-sm font-bold truncate", selectedTopic === t.id ? "text-white" : "text-slate-800")}>{t.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {t.estimatedStudyMinutes && (
+                        <span className={cn("flex items-center gap-1 text-[10px]", selectedTopic === t.id ? "text-white/60" : "text-slate-400")}>
+                          <Clock className="w-3 h-3" />{t.estimatedStudyMinutes}m
+                        </span>
+                      )}
+                      <span className={cn("flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md",
+                        selectedTopic === t.id ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600")}>
+                        <Lock className="w-3 h-3" />{t.gatePassPercentage ?? 70}%
+                      </span>
+                      <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-md",
+                        selectedTopic === t.id
+                          ? "bg-white/20 text-white"
+                          : t.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400")}>
+                        {t.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  </div>
+                  <Upload className={cn("w-3.5 h-3.5 shrink-0 transition-colors",
+                    selectedTopic === t.id ? "text-white/60" : "text-slate-200 group-hover:text-blue-500")} />
+                </motion.button>
+              ))}
+            </>
+          )}
+        </Panel>
+
+        {/* ── Resources panel (appears when topic selected) ── */}
+        <AnimatePresence>
+          {showResources && selectedTopicObj && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <TopicResourcesPanel topicId={selectedTopic} topicName={selectedTopicObj.name} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      </div>
+    </div>
   );
 };
 

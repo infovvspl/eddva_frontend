@@ -31,6 +31,7 @@ export interface Batch {
   updatedAt: string;
   studentCount?: number;
   teacherCount?: number;
+  thumbnailUrl?: string;
 }
 
 export interface CreateBatchPayload {
@@ -42,6 +43,7 @@ export interface CreateBatchPayload {
   feeAmount?: number;
   startDate?: string;
   endDate?: string;
+  thumbnailUrl?: string;
 }
 
 export interface Teacher {
@@ -121,6 +123,20 @@ export interface Topic {
   estimatedStudyMinutes?: number;
   gatePassPercentage?: number;
   isActive: boolean;
+}
+
+export type TopicResourceType = "pdf" | "dpp" | "quiz" | "video" | "notes";
+
+export interface TopicResource {
+  id: string;
+  topicId: string;
+  type: TopicResourceType;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileSize?: number;
+  sortOrder?: number;
+  createdAt: string;
 }
 
 export interface Question {
@@ -451,6 +467,79 @@ export async function createTopic(payload: { chapterId: string; name: string; so
 
 export async function deleteTopic(id: string) {
   const res = await apiClient.delete(`/content/topics/${id}`);
+  return extractData<{ message: string }>(res);
+}
+
+// ---------------------------------------------------------------------------
+// Batch thumbnail upload
+// ---------------------------------------------------------------------------
+
+export async function uploadBatchThumbnail(batchId: string, file: File): Promise<{ thumbnailUrl: string }> {
+  // Step 1 — upload the image file.
+  // Primary route: POST /content/batches/:id/thumbnail (requires backend restart if newly added).
+  // Fallback route: POST /auth/upload/avatar (always available, returns { url }).
+  let thumbnailUrl = "";
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    const primary = await apiClient.post(`/content/batches/${batchId}/thumbnail`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    thumbnailUrl = extractData<{ thumbnailUrl: string }>(primary)?.thumbnailUrl ?? "";
+  } catch (primaryErr: any) {
+    if (primaryErr?.response?.status === 404) {
+      // Backend not yet restarted — fall back to avatar upload endpoint
+      const fd2 = new FormData();
+      fd2.append("file", file);
+      const fallback = await apiClient.post("/auth/upload/avatar", fd2, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      thumbnailUrl = extractData<{ url: string }>(fallback)?.url ?? "";
+    } else {
+      throw primaryErr;
+    }
+  }
+
+  if (!thumbnailUrl) throw new Error("Upload returned no URL");
+
+  // Step 2 — persist the URL on the batch record
+  await apiClient.patch(`/batches/${batchId}`, { thumbnailUrl });
+  return { thumbnailUrl };
+}
+
+// ---------------------------------------------------------------------------
+// Topic Resources (PDFs, DPPs, quizzes, etc.)
+// ---------------------------------------------------------------------------
+
+export async function listTopicResources(topicId: string) {
+  const res = await apiClient.get(`/content/topics/${topicId}/resources`);
+  return extractData<TopicResource[]>(res) ?? [];
+}
+
+export async function uploadTopicResource(payload: {
+  topicId: string;
+  file: File;
+  type: TopicResourceType;
+  title: string;
+  description?: string;
+  sortOrder?: number;
+}) {
+  const fd = new FormData();
+  fd.append("file", payload.file);
+  fd.append("type", payload.type);
+  fd.append("title", payload.title);
+  if (payload.description) fd.append("description", payload.description);
+  if (payload.sortOrder != null) fd.append("sortOrder", String(payload.sortOrder));
+  const res = await apiClient.post(
+    `/content/topics/${payload.topicId}/resources/upload`,
+    fd,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return extractData<TopicResource>(res);
+}
+
+export async function deleteTopicResource(resourceId: string) {
+  const res = await apiClient.delete(`/content/topics/resources/${resourceId}`);
   return extractData<{ message: string }>(res);
 }
 
