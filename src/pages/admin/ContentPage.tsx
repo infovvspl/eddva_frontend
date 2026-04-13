@@ -1,17 +1,19 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, ChevronRight, BookOpen, FileText, X, Lock,
   Layers, Hash, Clock, Upload, Trash2, ExternalLink,
-  FileQuestion, Film, BookMarked, PenLine,
+  FileQuestion, Film, BookMarked, PenLine, GraduationCap, Trophy,
 } from "lucide-react";
 import {
   useSubjects, useCreateSubject,
   useChapters, useCreateChapter,
   useTopics, useCreateTopic,
   useTopicResources, useUploadTopicResource, useDeleteTopicResource,
+  useScopeResources, useUploadScopeResource, useDeleteScopeResource,
 } from "@/hooks/use-admin";
-import type { TopicResourceType } from "@/lib/api/admin";
+import { useBatches } from "@/hooks/use-admin";
+import type { TopicResourceType, ScopeLevel, ScopeResourceType, Batch } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -111,7 +113,7 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
   const cfg = resourceConfig(uploadType);
 
   return (
-    <div className="flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
+    <div className="flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden h-full">
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-100 shrink-0">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Resources</p>
@@ -124,14 +126,9 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
         {RESOURCE_TYPES.map(rt => {
           const Icon = rt.icon;
           return (
-            <button
-              key={rt.value}
-              onClick={() => setUploadType(rt.value)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-                uploadType === rt.value ? rt.color + " ring-1 ring-current" : "bg-slate-100 text-slate-400 hover:text-slate-700"
-              )}
-            >
+            <button key={rt.value} onClick={() => setUploadType(rt.value)}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                uploadType === rt.value ? rt.color + " ring-1 ring-current" : "bg-slate-100 text-slate-400 hover:text-slate-700")}>
               <Icon className="w-3 h-3" /> {rt.label}
             </button>
           );
@@ -140,49 +137,30 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
 
       {/* Upload zone */}
       <div className="px-3 pt-3 shrink-0">
-        <div
-          onDragOver={e => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
+        <div onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)} onDrop={handleDrop}
           onClick={() => setShowUploadForm(!showUploadForm)}
-          className={cn(
-            "border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all",
-            dragging
-              ? "border-blue-400 bg-blue-50"
-              : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
-          )}
-        >
+          className={cn("border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all",
+            dragging ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300 hover:bg-slate-50")}>
           <Upload className={cn("w-5 h-5 mx-auto mb-1.5 transition-colors", dragging ? "text-blue-500" : "text-slate-300")} />
-          <p className="text-xs font-bold text-slate-500">
-            {dragging ? "Drop to upload" : `Upload ${cfg.label}`}
-          </p>
-          <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop</p>
+          <p className="text-xs font-bold text-slate-500">{dragging ? "Drop to upload" : `Upload ${cfg.label}`}</p>
+          <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop · max 5 MB</p>
         </div>
 
         <AnimatePresence>
           {showUploadForm && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
               <div className="pt-3 space-y-2">
-                <input
-                  placeholder={`${cfg.label} title (optional)`}
-                  value={uploadName}
+                <input placeholder={`${cfg.label} title (optional)`} value={uploadName}
                   onChange={e => setUploadName(e.target.value)}
-                  className="w-full h-9 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
-                />
+                  className="w-full h-9 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors" />
                 <input ref={fileRef} type="file" accept={cfg.accept} className="hidden"
                   onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
-                <button
-                  onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+                <button onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
                   disabled={uploadResource.isPending}
                   className="w-full h-9 flex items-center justify-center gap-2 rounded-xl text-white text-xs font-black disabled:opacity-50 hover:opacity-90 transition-opacity"
-                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
-                >
-                  {uploadResource.isPending
-                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading…</>
-                    : <><Upload className="w-3.5 h-3.5" /> Choose File</>}
+                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                  {uploadResource.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading…</> : <><Upload className="w-3.5 h-3.5" /> Choose File</>}
                 </button>
               </div>
             </motion.div>
@@ -193,9 +171,7 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
       {/* Resource list */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 mt-2">
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-          </div>
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-500" /></div>
         ) : resources.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-slate-200">
             <BookMarked className="w-10 h-10 mb-2" />
@@ -207,25 +183,16 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
             const rc = resourceConfig(r.type);
             const Icon = rc.icon;
             return (
-              <motion.div
-                key={r.id}
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group"
-              >
+              <motion.div key={r.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
                 <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", rc.color)}>
                   <Icon className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-slate-800 truncate">{r.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md", rc.color)}>
-                      {rc.label}
-                    </span>
-                    {r.fileSize && (
-                      <span className="text-[10px] text-slate-400">{formatSize(r.fileSize)}</span>
-                    )}
+                    <span className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md", rc.color)}>{rc.label}</span>
+                    {r.fileSize && <span className="text-[10px] text-slate-400">{formatSize(r.fileSize)}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -242,6 +209,278 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
             );
           })
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tests & PYQs Panel ───────────────────────────────────────────────────────
+
+const SCOPE_TYPE_CONFIG: Record<ScopeResourceType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; accept: string }> = {
+  mock_test: { label: "Mock Test", icon: Trophy,       color: "bg-rose-100 text-rose-600",  accept: ".pdf,.doc,.docx,.zip,.json" },
+  pyq:       { label: "PYQ",       icon: GraduationCap, color: "bg-amber-100 text-amber-600", accept: ".pdf,.doc,.docx,.zip,.json" },
+};
+
+const SCOPE_LEVEL_CONFIG: Record<ScopeLevel, { label: string; color: string; activeRing: string }> = {
+  course:  { label: "Course",  color: "bg-violet-100 text-violet-700", activeRing: "ring-violet-400" },
+  subject: { label: "Subject", color: "bg-blue-100 text-blue-700",     activeRing: "ring-blue-400"   },
+  chapter: { label: "Chapter", color: "bg-indigo-100 text-indigo-700", activeRing: "ring-indigo-400" },
+  topic:   { label: "Topic",   color: "bg-emerald-100 text-emerald-700", activeRing: "ring-emerald-400" },
+};
+
+function TestsAndPYQsPanel({
+  batches,
+  selectedSubjectId, selectedSubjectName,
+  selectedChapterId, selectedChapterName,
+  selectedTopicId,   selectedTopicName,
+}: {
+  batches: Batch[];
+  selectedSubjectId: string; selectedSubjectName: string;
+  selectedChapterId: string; selectedChapterName: string;
+  selectedTopicId:   string; selectedTopicName:   string;
+}) {
+  const [level, setLevel]           = useState<ScopeLevel>("course");
+  const [batchId, setBatchId]       = useState("");
+  const [uploadType, setUploadType] = useState<ScopeResourceType>("mock_test");
+  const [uploadName, setUploadName] = useState("");
+  const [showForm, setShowForm]     = useState(false);
+  const [dragging, setDragging]     = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Auto-select the deepest available level when tree selection changes
+  useEffect(() => {
+    if (selectedTopicId)   { setLevel("topic"); }
+    else if (selectedChapterId) { setLevel("chapter"); }
+    else if (selectedSubjectId) { setLevel("subject"); }
+    else                        { setLevel("course"); }
+  }, [selectedTopicId, selectedChapterId, selectedSubjectId]);
+
+  const scopeId = level === "course"   ? batchId
+                : level === "subject"  ? selectedSubjectId
+                : level === "chapter"  ? selectedChapterId
+                : selectedTopicId;
+
+  const scopeName = level === "course"   ? (batches.find(b => b.id === batchId)?.name ?? "")
+                  : level === "subject"  ? selectedSubjectName
+                  : level === "chapter"  ? selectedChapterName
+                  : selectedTopicName;
+
+  const levelEnabled: Record<ScopeLevel, boolean> = {
+    course:  true,
+    subject: !!selectedSubjectId,
+    chapter: !!selectedChapterId,
+    topic:   !!selectedTopicId,
+  };
+
+  const { data: resources = [], isLoading } = useScopeResources(level, scopeId);
+  const uploadResource = useUploadScopeResource(level, scopeId);
+  const deleteResource = useDeleteScopeResource(level, scopeId);
+
+  const handleFile = async (file: File) => {
+    if (!scopeId) { toast.error(level === "course" ? "Select a course first" : "Make a selection first"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("File must be 5 MB or smaller"); return; }
+    const title = uploadName.trim() || file.name.replace(/\.[^.]+$/, "");
+    try {
+      await uploadResource.mutateAsync({ file, type: uploadType, title });
+      toast.success(`${SCOPE_TYPE_CONFIG[uploadType].label} uploaded`);
+      setUploadName("");
+      setShowForm(false);
+    } catch {
+      toast.error("Upload failed");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this file?")) return;
+    try {
+      await deleteResource.mutateAsync(id);
+      toast.success("Deleted");
+    } catch {
+      toast.error("Delete failed");
+    }
+  };
+
+  const cfg = SCOPE_TYPE_CONFIG[uploadType];
+  const lcfg = SCOPE_LEVEL_CONFIG[level];
+
+  return (
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-slate-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Mock Tests & PYQs</p>
+            <p className="text-lg font-black text-slate-900 mt-0.5 leading-none">
+              {scopeName || <span className="text-slate-300 text-sm font-semibold">Select a scope below</span>}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={cn("text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full", lcfg.color)}>
+              {lcfg.label}
+            </span>
+            <span className="text-sm font-bold text-slate-400">{resources.length} file{resources.length !== 1 ? "s" : ""}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-5">
+        {/* ── Level selector ── */}
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Scope Level</p>
+          <div className="flex gap-2 flex-wrap">
+            {(["course", "subject", "chapter", "topic"] as ScopeLevel[]).map(l => {
+              const lc = SCOPE_LEVEL_CONFIG[l];
+              const enabled = levelEnabled[l];
+              return (
+                <button key={l} disabled={!enabled} onClick={() => setLevel(l)}
+                  className={cn(
+                    "px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all",
+                    !enabled
+                      ? "opacity-30 cursor-not-allowed bg-slate-100 text-slate-400"
+                      : level === l
+                        ? lc.color + " ring-2 " + lc.activeRing + " shadow-sm"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  )}>
+                  {lc.label}
+                  {!enabled && <span className="ml-1 opacity-50">—</span>}
+                </button>
+              );
+            })}
+          </div>
+          {level === "course" && !selectedSubjectId && (
+            <p className="text-[10px] text-slate-400 mt-1.5">Select a subject/chapter/topic in the tree above to enable deeper scopes</p>
+          )}
+        </div>
+
+        {/* ── Course batch selector ── */}
+        {level === "course" && (
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Select Course</p>
+            <select value={batchId} onChange={e => setBatchId(e.target.value)}
+              className="w-full h-10 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors">
+              <option value="">— Choose a course —</option>
+              {batches.map(b => <option key={b.id} value={b.id}>{b.name} ({b.examTarget?.toUpperCase()})</option>)}
+            </select>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* ── Left: Upload ── */}
+          <div className="space-y-4">
+            {/* Type selector */}
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">File Type</p>
+              <div className="flex gap-2">
+                {(["mock_test", "pyq"] as ScopeResourceType[]).map(t => {
+                  const tc = SCOPE_TYPE_CONFIG[t];
+                  const Icon = tc.icon;
+                  return (
+                    <button key={t} onClick={() => setUploadType(t)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all",
+                        uploadType === t ? tc.color + " ring-2 ring-current shadow-sm" : "bg-slate-100 text-slate-400 hover:text-slate-700"
+                      )}>
+                      <Icon className="w-3.5 h-3.5" /> {tc.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Upload zone */}
+            <div
+              onDragOver={e => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+              onClick={() => setShowForm(!showForm)}
+              className={cn(
+                "border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all",
+                dragging ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
+              )}>
+              <Upload className={cn("w-6 h-6 mx-auto mb-2 transition-colors", dragging ? "text-blue-500" : "text-slate-300")} />
+              <p className="text-sm font-bold text-slate-500">
+                {dragging ? "Drop to upload" : `Upload ${cfg.label}`}
+              </p>
+              <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop · PDF, DOC, ZIP · max 5 MB</p>
+            </div>
+
+            <AnimatePresence>
+              {showForm && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                  <div className="space-y-2">
+                    <input placeholder={`${cfg.label} title (optional)`} value={uploadName}
+                      onChange={e => setUploadName(e.target.value)}
+                      className="w-full h-10 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors" />
+                    <input ref={fileRef} type="file" accept={cfg.accept} className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+                    <button
+                      onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+                      disabled={uploadResource.isPending || (level === "course" && !batchId)}
+                      className="w-full h-10 flex items-center justify-center gap-2 rounded-xl text-white text-sm font-black disabled:opacity-50 hover:opacity-90 transition-opacity"
+                      style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                      {uploadResource.isPending
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
+                        : <><Upload className="w-4 h-4" /> Choose File</>}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Right: File list ── */}
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Uploaded Files</p>
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {isLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-500" /></div>
+              ) : !scopeId ? (
+                <div className="flex flex-col items-center justify-center py-10 text-slate-200 border-2 border-dashed border-slate-100 rounded-2xl">
+                  <FileQuestion className="w-8 h-8 mb-2" />
+                  <p className="text-xs font-semibold text-slate-400">
+                    {level === "course" ? "Select a course" : `Select a ${level}`}
+                  </p>
+                </div>
+              ) : resources.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-slate-200 border-2 border-dashed border-slate-100 rounded-2xl">
+                  <Trophy className="w-8 h-8 mb-2" />
+                  <p className="text-xs font-semibold text-slate-400">No files yet</p>
+                  <p className="text-[10px] text-slate-300 mt-0.5">Upload a mock test or PYQ</p>
+                </div>
+              ) : (
+                resources.map((r, i) => {
+                  const tc = SCOPE_TYPE_CONFIG[r.type];
+                  const Icon = tc.icon;
+                  return (
+                    <motion.div key={r.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
+                      <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", tc.color)}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">{r.title}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md", tc.color)}>{tc.label}</span>
+                          {r.fileSize && <span className="text-[10px] text-slate-400">{formatSize(r.fileSize)}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href={resolveMediaUrl(r.fileUrl)} target="_blank" rel="noreferrer"
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <button onClick={() => handleDelete(r.id)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -289,10 +528,11 @@ function Panel({ title, count, onAdd, addLabel, showForm, children }: {
 
 const ContentPage = () => {
   const { data: subjects, isLoading } = useSubjects();
+  const { data: batches = [] } = useBatches();
   const createSubject = useCreateSubject();
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedChapter, setSelectedChapter] = useState("");
-  const [selectedTopic, setSelectedTopic]   = useState("");
+  const [selectedTopic,   setSelectedTopic]   = useState("");
 
   const [showSubjectForm, setShowSubjectForm] = useState(false);
   const [showChapterForm, setShowChapterForm] = useState(false);
@@ -310,6 +550,7 @@ const ContentPage = () => {
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
   const topicList   = Array.isArray(topics)   ? topics   : [];
+  const batchList   = Array.isArray(batches)  ? batches  : [];
 
   const selectedSubjectObj = subjectList.find(s => s.id === selectedSubject);
   const selectedChapterObj = chapterList.find(c => c.id === selectedChapter);
@@ -345,24 +586,23 @@ const ContentPage = () => {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   }
 
-  // Layout: 4 panels when topic selected, 3 otherwise
   const showResources = !!selectedTopic;
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-8 pb-20">
+    <div className="max-w-[1600px] mx-auto p-6 lg:p-8 pb-20 space-y-6">
 
       {/* ── Header ── */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-black text-slate-900">Content Library</h1>
         <p className="text-sm text-slate-400 mt-0.5">Subjects → Chapters → Topics → Resources</p>
       </motion.div>
 
       {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2 text-sm font-bold mb-6 flex-wrap">
-        <button
-          onClick={() => { setSelectedSubject(""); setSelectedChapter(""); setSelectedTopic(""); }}
-          className={cn("transition-colors", selectedSubject ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}
-        >Subjects</button>
+      <div className="flex items-center gap-2 text-sm font-bold flex-wrap">
+        <button onClick={() => { setSelectedSubject(""); setSelectedChapter(""); setSelectedTopic(""); }}
+          className={cn("transition-colors", selectedSubject ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
+          Subjects
+        </button>
         {selectedSubjectObj && (<>
           <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
           <button onClick={() => { setSelectedChapter(""); setSelectedTopic(""); }}
@@ -383,11 +623,8 @@ const ContentPage = () => {
         </>)}
       </div>
 
-      {/* ── Panels grid ── */}
-      <div className={cn(
-        "grid gap-5",
-        showResources ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1 lg:grid-cols-3"
-      )}>
+      {/* ── Content tree panels ── */}
+      <div className={cn("grid gap-5", showResources ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1 lg:grid-cols-3")}>
 
         {/* ── Subjects ── */}
         <Panel title="Subjects" count={subjectList.length} addLabel="Add Subject"
@@ -575,21 +812,29 @@ const ContentPage = () => {
           )}
         </Panel>
 
-        {/* ── Resources panel (appears when topic selected) ── */}
+        {/* ── Topic Resources panel ── */}
         <AnimatePresence>
           {showResources && selectedTopicObj && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
               <TopicResourcesPanel topicId={selectedTopic} topicName={selectedTopicObj.name} />
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
+
+      {/* ── Mock Tests & PYQs section ── */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <TestsAndPYQsPanel
+          batches={batchList}
+          selectedSubjectId={selectedSubject}
+          selectedSubjectName={selectedSubjectObj?.name ?? ""}
+          selectedChapterId={selectedChapter}
+          selectedChapterName={selectedChapterObj?.name ?? ""}
+          selectedTopicId={selectedTopic}
+          selectedTopicName={selectedTopicObj?.name ?? ""}
+        />
+      </motion.div>
+
     </div>
   );
 };

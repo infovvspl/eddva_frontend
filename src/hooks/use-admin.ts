@@ -17,6 +17,7 @@ export const adminKeys = {
   chapters: (subjectId: string) => ["admin", "chapters", subjectId] as const,
   topics: (chapterId: string) => ["admin", "topics", chapterId] as const,
   topicResources: (topicId: string) => ["admin", "topic-resources", topicId] as const,
+  scopeResources: (level: string, scopeId: string) => ["admin", "scope-resources", level, scopeId] as const,
   questions: (params?: any) => ["admin", "questions", params] as const,
   lectures: ["admin", "lectures"] as const,
   dashboard: ["admin", "dashboard"] as const,
@@ -278,6 +279,35 @@ export function useDeleteTopicResource(topicId: string) {
   return useMutation({
     mutationFn: (resourceId: string) => adminApi.deleteTopicResource(resourceId),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Scope Resources (Mock Tests & PYQs)
+// ---------------------------------------------------------------------------
+
+export function useScopeResources(level: adminApi.ScopeLevel, scopeId: string) {
+  return useQuery({
+    queryKey: adminKeys.scopeResources(level, scopeId),
+    queryFn: () => adminApi.listScopeResources(level, scopeId),
+    enabled: !!scopeId,
+  });
+}
+
+export function useUploadScopeResource(level: adminApi.ScopeLevel, scopeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { file: File; type: adminApi.ScopeResourceType; title: string; description?: string }) =>
+      adminApi.uploadScopeResource({ level, scopeId, ...payload }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.scopeResources(level, scopeId) }),
+  });
+}
+
+export function useDeleteScopeResource(level: adminApi.ScopeLevel, scopeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (resourceId: string) => adminApi.deleteScopeResource(level, resourceId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.scopeResources(level, scopeId) }),
   });
 }
 
