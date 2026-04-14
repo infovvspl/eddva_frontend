@@ -29,46 +29,46 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-100 pb-10">
+        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
-            <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Protocol Management</h2>
-            <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">System Settings</h1>
-            <p className="text-slate-400 text-[17px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
+            <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Protocol Management</h2>
+            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-black text-slate-900 tracking-tight leading-tight">System Settings</h1>
+            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
           </div>
-          <Button 
+          <Button
             onClick={handleSave}
-            className="h-14 px-8 bg-white text-gray-900 rounded-[20px] font-black flex gap-3 shadow-2xl hover:bg-gray-100 transition-all text-[15px]"
+            className="h-10 md:h-12 px-6 md:px-8 bg-white text-gray-900 rounded-[20px] font-black flex gap-2 shadow-2xl hover:bg-gray-100 transition-all text-sm"
           >
-            {isSaving ? <Zap className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 stroke-[2.5]" />}
+            {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 stroke-[2.5]" />}
             Execute Sync
           </Button>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Sidebar Navigation */}
-          <div className="lg:col-span-4 space-y-3">
+          <div className="lg:col-span-4 space-y-2">
             {sections.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
-                className={`w-full flex items-center gap-5 p-5 rounded-[28px] transition-all text-left border-2 ${
+                className={`w-full flex items-center gap-4 p-4 rounded-[20px] transition-all text-left border-2 ${
                   activeSection === s.id
                     ? "bg-white border-slate-100 shadow-xl shadow-slate-200/40"
                     : "bg-slate-50 border-transparent hover:bg-white hover:border-slate-100 text-slate-400"
                 }`}
               >
-                <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center transition-all ${
+                <div className={`w-10 h-10 rounded-[14px] flex items-center justify-center transition-all shrink-0 ${
                   activeSection === s.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "bg-white text-gray-600 border border-slate-100"
                 }`}>
-                  <s.icon className={`w-6 h-6 ${activeSection === s.id ? 'stroke-[2.5]' : ''}`} />
+                  <s.icon className={`w-5 h-5 ${activeSection === s.id ? 'stroke-[2.5]' : ''}`} />
                 </div>
                 <div>
-                  <p className={`text-[13px] font-black uppercase tracking-tight ${activeSection === s.id ? "text-slate-900" : "text-slate-500"}`}>
+                  <p className={`text-xs font-black uppercase tracking-tight ${activeSection === s.id ? "text-slate-900" : "text-slate-500"}`}>
                     {s.label}
                   </p>
-                  <p className="text-[11px] font-bold opacity-50 mt-0.5">{s.desc}</p>
+                  <p className="text-[10px] font-bold opacity-50 mt-0.5">{s.desc}</p>
                 </div>
               </button>
             ))}
@@ -82,7 +82,7 @@ const SettingsPage = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-white border border-slate-100 rounded-[44px] p-10 shadow-sm relative overflow-hidden group"
+                className="bg-white border border-slate-100 rounded-[28px] md:rounded-[44px] p-5 md:p-8 shadow-sm relative overflow-hidden group"
               >
                 <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-50/20 blur-[60px] translate-x-12 -translate-y-12 opacity-0 group-hover:opacity-100 transition-opacity" />
                 {activeSection === "general" && (

@@ -36,41 +36,41 @@ const UsersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-12 flex flex-col md:row sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-100 pb-10">
+        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
-            <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Platform Control</h2>
-            <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">Master Directory</h1>
-            <p className="text-slate-400 text-[17px] mt-1 font-semibold">Managing permissions for global educational members</p>
+            <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Platform Control</h2>
+            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-black text-slate-900 tracking-tight leading-tight">Master Directory</h1>
+            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing permissions for global educational members</p>
           </div>
-          <div className="flex gap-4">
-            <Button variant="outline" className="h-14 px-8 rounded-2xl border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-[15px]">
-              <Download className="w-5 h-5 mr-3" /> Export Logs
+          <div className="flex gap-3">
+            <Button variant="outline" className="h-10 md:h-12 px-5 md:px-8 rounded-2xl border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-sm">
+              <Download className="w-4 h-4 mr-2" /> Export Logs
             </Button>
-            <Button className="h-14 px-8 bg-white text-gray-900 rounded-2xl font-black hover:bg-gray-100 shadow-2xl transition-all text-[15px]">
-              <UserPlus className="w-5 h-5 mr-3" /> Provision New Account
+            <Button className="h-10 md:h-12 px-5 md:px-8 bg-white text-gray-900 rounded-2xl font-black hover:bg-gray-100 shadow-2xl transition-all text-sm">
+              <UserPlus className="w-4 h-4 mr-2" /> Provision Account
             </Button>
           </div>
         </header>
 
         {/* Filter Bar */}
-        <div className="bg-slate-50/50 p-6 rounded-[32px] border border-slate-100 mb-8 flex flex-wrap items-center gap-6">
-          <div className="relative flex-1 min-w-[320px]">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600" />
+        <div className="bg-slate-50/50 p-4 md:p-5 rounded-[24px] md:rounded-[32px] border border-slate-100 mb-6 flex flex-wrap items-center gap-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
             <input
               type="text"
               placeholder="Search by full name, phone, or unique ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-14 pl-14 pr-6 bg-white border border-slate-100 rounded-[24px] text-[15px] font-semibold text-slate-800 placeholder:text-gray-600 focus:border-indigo-500/30 transition-all outline-none shadow-sm"
+              className="w-full h-11 md:h-12 pl-11 pr-5 bg-white border border-slate-100 rounded-[16px] text-sm font-semibold text-slate-800 placeholder:text-gray-500 focus:border-indigo-500/30 transition-all outline-none shadow-sm"
             />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="h-14 px-6 bg-white border border-slate-100 rounded-[24px] text-[14px] font-black text-slate-600 outline-none cursor-pointer hover:bg-slate-50 transition-all shadow-sm uppercase tracking-tight"
+              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-black text-slate-600 outline-none cursor-pointer hover:bg-slate-50 transition-all shadow-sm uppercase tracking-tight"
             >
               <option value="all">Every Role</option>
               <option value="super_admin">Core Admins</option>
@@ -96,12 +96,12 @@ const UsersPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-secondary/50 border-b border-border">
-                    <th className="text-left px-6 py-5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">User Details</th>
-                    <th className="text-left px-6 py-5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Access Role</th>
-                    <th className="text-left px-6 py-5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Organization</th>
-                    <th className="text-left px-6 py-5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
-                    <th className="text-left px-6 py-5 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Last Active</th>
-                    <th className="px-6 py-5"></th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-black uppercase tracking-widest text-muted-foreground">User Details</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Access Role</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Organization</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-black uppercase tracking-widest text-muted-foreground">Last Active</th>
+                    <th className="px-5 md:px-7 py-4"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -115,48 +115,48 @@ const UsersPage = () => {
                       const userStatus = (user.status || "active").toLowerCase();
                       return (
                         <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="group hover:bg-slate-50 transition-colors">
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-5">
-                              <div className="w-12 h-12 rounded-[18px] bg-slate-100 flex items-center justify-center text-[13px] font-black text-slate-400 border border-slate-50 group-hover:bg-white group-hover:text-white transition-all shadow-sm">
+                          <td className="px-5 md:px-7 py-4">
+                            <div className="flex items-center gap-3 md:gap-4">
+                              <div className="w-10 h-10 rounded-[14px] bg-slate-100 flex items-center justify-center text-xs font-black text-slate-400 border border-slate-50 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm shrink-0">
                                 {name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                               </div>
                               <div>
-                                <p className="text-[15px] font-black text-slate-900 leading-tight mb-1.5">{name}</p>
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{phone}</p>
+                                <p className="text-sm font-black text-slate-900 leading-tight mb-0.5">{name}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{phone}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-8 py-6">
-                            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] border text-[10px] font-black uppercase tracking-[0.1em] shadow-sm ${config.color}`}>
-                              <Icon className="w-3.5 h-3.5" /> {config.label}
+                          <td className="px-5 md:px-7 py-4">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border text-[10px] font-black uppercase tracking-[0.1em] shadow-sm ${config.color}`}>
+                              <Icon className="w-3 h-3" /> {config.label}
                             </span>
                           </td>
-                          <td className="px-8 py-6">
-                            <p className="text-[14px] font-black text-slate-700 leading-tight">{user.tenant?.name || "Global Core"}</p>
-                            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tight">{user.tenant?.subdomain ? `${user.tenant.subdomain}.edva.in` : "PLATFORM_WIDE"}</p>
+                          <td className="px-5 md:px-7 py-4">
+                            <p className="text-sm font-black text-slate-700 leading-tight">{user.tenant?.name || "Global Core"}</p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-tight">{user.tenant?.subdomain ? `${user.tenant.subdomain}.edva.in` : "PLATFORM_WIDE"}</p>
                           </td>
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`w-2 h-2 rounded-full ${userStatus === "active" ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_12px_rgba(225,29,72,0.4)]"}`} />
-                              <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${userStatus === "active" ? "text-emerald-600" : "text-rose-600"}`}>
+                          <td className="px-5 md:px-7 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1.5 h-1.5 rounded-full ${userStatus === "active" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.4)]"}`} />
+                              <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${userStatus === "active" ? "text-emerald-600" : "text-rose-600"}`}>
                                 {userStatus === 'active' ? 'Verified' : 'Suspended'}
                               </span>
                             </div>
                           </td>
-                          <td className="px-8 py-6 text-[12px] font-black text-slate-400 tracking-tight">
+                          <td className="px-5 md:px-7 py-4 text-[11px] font-black text-slate-400 tracking-tight">
                             {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : "Never Accessed"}
                           </td>
-                          <td className="px-8 py-6 text-right">
-                            <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                              <button className="p-3 bg-white border border-slate-100 text-gray-600 hover:text-indigo-600 hover:shadow-lg rounded-[14px] transition-all" title="View Audit Logs">
-                                <Eye className="w-5 h-5" />
+                          <td className="px-5 md:px-7 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                              <button className="p-2.5 bg-white border border-slate-100 text-gray-600 hover:text-indigo-600 hover:shadow-lg rounded-[12px] transition-all" title="View Audit Logs">
+                                <Eye className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleToggleStatus(user.id, userStatus)}
-                                className="p-3 bg-white border border-slate-100 text-gray-600 hover:text-rose-600 hover:shadow-lg rounded-[14px] transition-all"
+                                className="p-2.5 bg-white border border-slate-100 text-gray-600 hover:text-rose-600 hover:shadow-lg rounded-[12px] transition-all"
                                 title={userStatus === "suspended" ? "Reinstate Access" : "Revoke Access"}
                               >
-                                <Ban className="w-5 h-5" />
+                                <Ban className="w-4 h-4" />
                               </button>
                             </div>
                           </td>

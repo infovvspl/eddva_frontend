@@ -53,21 +53,21 @@ const AnnouncementsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-100 pb-10">
+        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
-            <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Platform Communication</h2>
-            <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">Broadcast Hub</h1>
-            <p className="text-slate-400 text-[17px] mt-1 font-semibold">Managing global announcements and system alerts</p>
+            <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Platform Communication</h2>
+            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-black text-slate-900 tracking-tight leading-tight">Broadcast Hub</h1>
+            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing global announcements and system alerts</p>
           </div>
           <Button
             onClick={() => setShowForm(!showForm)}
-            className={`h-14 px-8 rounded-2xl font-black flex gap-3 transition-all active:scale-95 text-[15px] shadow-2xl ${
+            className={`h-10 md:h-12 px-6 md:px-8 rounded-2xl font-black flex gap-2 transition-all active:scale-95 text-sm shadow-2xl ${
               showForm ? "bg-white border-2 border-slate-100 text-slate-400 hover:text-slate-900 shadow-none" : "bg-white text-gray-900 hover:bg-gray-100"
             }`}
           >
-            {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5 stroke-[3]" />}
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4 stroke-[3]" />}
             {showForm ? "Close Editor" : "New Broadcast"}
           </Button>
         </header>
@@ -76,12 +76,12 @@ const AnnouncementsPage = () => {
         <AnimatePresence>
           {showForm && (
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="mb-12">
-              <div className="bg-slate-50/50 border border-slate-100 rounded-[44px] p-10 shadow-sm relative overflow-hidden group">
-                <div className="flex items-center gap-4 mb-10 text-slate-900">
-                  <div className="h-12 w-12 rounded-[18px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                    <Sparkles className="h-6 w-6" />
+              <div className="bg-slate-50/50 border border-slate-100 rounded-[28px] md:rounded-[44px] p-5 md:p-8 shadow-sm relative overflow-hidden group">
+                <div className="flex items-center gap-3 mb-7 text-slate-900">
+                  <div className="h-10 w-10 md:h-12 md:w-12 rounded-[16px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                    <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
                   </div>
-                  <h3 className="text-xl font-black">Draft Broadcast Message</h3>
+                  <h3 className="text-lg md:text-xl font-black">Draft Broadcast Message</h3>
                 </div>
 
                 {error && (
@@ -146,15 +146,15 @@ const AnnouncementsPage = () => {
         ) : (
           <div className="space-y-6">
             {announcementList.map((a: any, i: number) => (
-              <motion.div key={a.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="group bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all relative overflow-hidden">
+              <motion.div key={a.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="group bg-white p-5 md:p-7 rounded-[24px] md:rounded-[44px] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all relative overflow-hidden">
                 <div className="flex items-start justify-between relative z-10">
-                  <div className="flex items-start gap-6">
-                    <div className="w-14 h-14 rounded-[20px] bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors">
-                      <Megaphone className="w-6 h-6 text-slate-400 group-hover:text-white transition-colors" />
+                  <div className="flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-[16px] bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors">
+                      <Megaphone className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <h4 className="text-[19px] font-black text-slate-900 tracking-tight leading-tight">{a.title}</h4>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <h4 className="text-base md:text-[17px] font-black text-slate-900 tracking-tight leading-tight">{a.title}</h4>
                         <span className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border ${getBadgeColor(a.targetRole || "all")}`}>
                           {a.targetRole || "Global Access"}
                         </span>
