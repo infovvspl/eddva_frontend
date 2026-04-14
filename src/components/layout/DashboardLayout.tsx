@@ -7,7 +7,7 @@ import {
   BookOpen, GraduationCap, Calendar, FileText,
   Video, Layout, BarChart,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
-  LayoutDashboard, ClipboardList, Headphones, Library, Activity, Zap, Layers, ChevronRight
+  LayoutDashboard, ClipboardList, Headphones, Library, Activity, Layers, ChevronRight, Bell
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
@@ -272,20 +272,18 @@ const DashboardLayout = () => {
                 <div className="hidden sm:flex items-center gap-4">
                    <div className="w-px h-5 bg-slate-100" />
                    <div className="flex items-center gap-3">
-                      <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                      <span className="text-[9px] font-bold text-slate-900 uppercase tracking-[0.2em]">{user.tenantName}</span>
+                      <Building2 className="w-5 h-5 text-indigo-600" />
+                      <span className="text-sm font-bold text-slate-900 uppercase tracking-[0.1em]">{user.tenantName}</span>
                    </div>
                 </div>
               )}
            </div>
-           
+
            <div className="flex items-center gap-6">
-              <div className="hidden sm:flex items-center gap-3 px-5 py-2 rounded-full bg-slate-50 border border-slate-100 shadow-inner">
-                 <Zap className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                 <span className="text-[9px] font-bold text-slate-900 uppercase tracking-widest">
-                    SYNCING
-                 </span>
-              </div>
+              <button className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative">
+                 <Bell className="w-5 h-5" />
+                 <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm"></span>
+              </button>
               <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-sm text-[10px] font-bold">
                  {user.name[0]}
               </div>
