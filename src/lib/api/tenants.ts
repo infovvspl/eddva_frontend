@@ -109,3 +109,40 @@ export async function activateTenant(id: string) {
   const res = await apiClient.patch(`/admin/tenants/${id}`, { status: "active" });
   return extractData<TenantResponse>(res);
 }
+
+// ---------------------------------------------------------------------------
+// Enrollments (super-admin)
+// ---------------------------------------------------------------------------
+
+export interface Enrollment {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentEmail?: string;
+  studentPhone?: string;
+  batchId: string;
+  batchName: string;
+  examTarget?: string;
+  tenantId: string;
+  tenantName: string;
+  enrolledAt: string;
+  status?: string;
+}
+
+export interface EnrollmentListResponse {
+  items: Enrollment[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export interface EnrollmentParams {
+  tenantId?: string;
+  batchId?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listEnrollments(params?: EnrollmentParams) {
+  const res = await apiClient.get("/super-admin/enrollments", { params });
+  return extractData<EnrollmentListResponse>(res);
+}

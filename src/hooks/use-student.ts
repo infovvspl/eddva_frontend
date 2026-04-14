@@ -5,6 +5,10 @@ import * as studentApi from "@/lib/api/student";
 
 export const studentKeys = {
   me: ["student", "me"] as const,
+  publicBatches: (examTarget?: string) => ["student", "public-batches", examTarget] as const,
+  myCourses: ["student", "my-courses"] as const,
+  courseCurriculum: (batchId: string) => ["student", "my-courses", batchId] as const,
+  courseTopicDetail: (batchId: string, topicId: string) => ["student", "my-courses", batchId, "topics", topicId] as const,
   dashboard: ["student", "dashboard"] as const,
   subjects: (examTarget?: string) => ["student", "subjects", examTarget] as const,
   chapters: (subjectId: string) => ["student", "chapters", subjectId] as const,
@@ -35,6 +39,46 @@ export function useStudentMe() {
     queryKey: studentKeys.me,
     queryFn: studentApi.getMe,
     staleTime: 60_000,
+  });
+}
+
+export function usePublicBatches(examTarget?: string) {
+  return useQuery({
+    queryKey: studentKeys.publicBatches(examTarget),
+    queryFn: () => studentApi.getPublicBatches(examTarget),
+    enabled: !!examTarget,
+    staleTime: 60_000,
+  });
+}
+
+// ─── My Courses ───────────────────────────────────────────────────────────────
+
+export function useMyCourses() {
+  return useQuery({
+    queryKey: studentKeys.myCourses,
+    queryFn: studentApi.getMyCourses,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useCourseCurriculum(batchId: string) {
+  return useQuery({
+    queryKey: studentKeys.courseCurriculum(batchId),
+    queryFn: () => studentApi.getCourseCurriculum(batchId),
+    enabled: !!batchId,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useCourseTopicDetail(batchId: string, topicId: string) {
+  return useQuery({
+    queryKey: studentKeys.courseTopicDetail(batchId, topicId),
+    queryFn: () => studentApi.getCourseTopicDetail(batchId, topicId),
+    enabled: !!batchId && !!topicId,
+    staleTime: 30_000,
+    retry: false,
   });
 }
 
@@ -200,6 +244,16 @@ export function useWeeklyPlan(startDate: string, endDate: string) {
     queryFn: () => studentApi.getWeeklyPlan(startDate, endDate),
     enabled: !!startDate && !!endDate,
     staleTime: 60_000,
+  });
+}
+
+export function useWeeklyPlanGrouped(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: [...studentKeys.weeklyPlan(startDate, endDate), "grouped"],
+    queryFn: () => studentApi.getWeeklyPlanGrouped(startDate, endDate),
+    enabled: !!startDate && !!endDate,
+    staleTime: 60_000,
+    retry: false,
   });
 }
 
@@ -524,5 +578,84 @@ export function useProgressReport(studentId?: string) {
     queryKey: ['progress-report', studentId ?? 'self'],
     queryFn: () => studentApi.getProgressReport(studentId),
     staleTime: 60_000,
+  });
+}
+
+// ─── Weekly Activity ──────────────────────────────────────────────────────────
+
+export function useWeeklyActivity() {
+  return useQuery({
+    queryKey: ["student", "weekly-activity"] as const,
+    queryFn: studentApi.getWeeklyActivity,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+// ─── Continue Learning ────────────────────────────────────────────────────────
+
+export function useContinueLearning() {
+  return useQuery({
+    queryKey: ["student", "continue-learning"] as const,
+    queryFn: studentApi.getContinueLearning,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+// ─── Student Profile (full) ───────────────────────────────────────────────────
+
+export function useStudentProfile() {
+  return useQuery({
+    queryKey: ["student", "profile"] as const,
+    queryFn: studentApi.getStudentProfile,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useUpdateStudentProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: studentApi.UpdateStudentProfilePayload) =>
+      studentApi.updateStudentProfile(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["student", "profile"] });
+      qc.invalidateQueries({ queryKey: studentKeys.me });
+    },
+  });
+}
+
+// ─── All Public Batches (no exam-target filter) ───────────────────────────────
+
+export function useAllPublicBatches() {
+  return useQuery({
+    queryKey: ["student", "all-public-batches"] as const,
+    queryFn: () => studentApi.getPublicBatches(undefined),
+    staleTime: 60_000,
+  });
+}
+
+// ─── Discover Batches ─────────────────────────────────────────────────────────
+
+export function useDiscoverBatches(enabled = true) {
+  return useQuery({
+    queryKey: ["student", "discover-batches"] as const,
+    queryFn: studentApi.discoverBatches,
+    staleTime: Infinity,
+    retry: false,
+    enabled,
+  });
+}
+
+export function useEnrollInBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (batchId: string) => studentApi.enrollInBatch(batchId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: studentKeys.myCourses });
+      qc.invalidateQueries({ queryKey: studentKeys.me });
+      qc.invalidateQueries({ queryKey: ["student", "discover-batches"] });
+    },
   });
 }

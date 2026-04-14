@@ -5,7 +5,8 @@ import {
   ClipboardList, Clock, ChevronRight, Loader2,
   CheckCircle, XCircle, AlertTriangle, BarChart3,
   Target, ArrowLeft, Flame, BookOpen, Sparkles,
-  Brain, Trophy, Search, Play,
+  Brain, Trophy, Search, Play, Monitor, Zap, Layers,
+  ArrowRight, ShieldCheck, BrainCircuit, Activity, Info
 } from "lucide-react";
 import {
   getMockTests, startSession, submitAnswer, submitSession,
@@ -16,11 +17,8 @@ import type {
   AiQuizData, AiQuizQuestion, AiQuizResult,
 } from "@/lib/api/student";
 import { toast } from "sonner";
-
-// ─── Design Tokens ─────────────────────────────────────────────────────────────
-const BLUE   = "#013889";
-const BLUE_M = "#0257c8";
-const BLUE_L = "#E6EEF8";
+import { CardGlass } from "@/components/shared/CardGlass";
+import { cn } from "@/lib/utils";
 
 // ─── Timer ────────────────────────────────────────────────────────────────────
 function useTimer(initialSeconds: number, running: boolean, onExpire: () => void) {
@@ -55,55 +53,58 @@ function QuestionCard({
 
   return (
     <motion.div
-      key={question.id}
-      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-      className="space-y-4"
+      key={question.id} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+      className="space-y-10"
     >
-      <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="text-xs font-black px-3 py-1 rounded-xl" style={{ background: BLUE_L, color: BLUE }}>
-            Q{index + 1} / {total}
+      <CardGlass className="p-10 sm:p-14 border-white relative overflow-hidden bg-white/40">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 blur-[50px] rounded-full pointer-events-none" />
+        
+        <div className="flex items-center gap-4 mb-10 flex-wrap">
+          <span className="text-[10px] font-black px-4 py-2 rounded-xl bg-slate-900 text-white uppercase tracking-[0.2em] shadow-xl">
+            Probe {index + 1} / {total}
           </span>
-          <span className="text-xs font-bold text-gray-400 capitalize bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">{question.difficulty}</span>
-          {"topic" in question && question.topic && (
-            <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 truncate max-w-[150px]">{question.topic.name}</span>
-          )}
-          <div className="ml-auto flex items-center gap-1.5 text-[11px] font-black tracking-wider">
-            <span className="text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">+{question.marksCorrect}</span>
-            {question.marksWrong > 0 && <span className="text-red-500 bg-red-50 px-2 py-1 rounded-lg border border-red-100">-{question.marksWrong}</span>}
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50">Impact: {question.difficulty}</span>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">+{question.marksCorrect} Pts</span>
+            {question.marksWrong > 0 && <span className="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1.5 rounded-xl border border-red-100">-{question.marksWrong} Pts</span>}
           </div>
         </div>
-        <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">{question.content}</p>
-      </div>
+        
+        <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-relaxed uppercase italic tracking-tighter select-none">
+           {question.content}
+        </p>
+      </CardGlass>
 
       {isInteger ? (
-        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-          <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-3 block text-center">Type your integer answer</label>
+        <CardGlass className="p-12 border-indigo-500/10 bg-indigo-50/50">
+          <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 block text-center italic">Numerical Identity Entry</label>
           <input
             type="number" value={intVal}
             onChange={e => { setIntVal(e.target.value); onSelect(e.target.value); }}
             placeholder="0"
-            className="w-full max-w-xs mx-auto block bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-3xl font-black text-gray-900 text-center focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all placeholder-gray-300"
+            className="w-full max-w-sm mx-auto block bg-white border border-slate-100 rounded-[2.5rem] px-10 py-8 text-5xl font-black text-slate-900 text-center focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder-slate-100 shadow-inner"
           />
-        </div>
+        </CardGlass>
       ) : (
-        <div className="space-y-2.5">
-          {question.options?.map(opt => {
-            const sel = selected.includes(opt.id);
+        <div className="grid grid-cols-1 gap-4">
+          {question.options?.map((opt, i) => {
+            const isSelected = selected.includes(opt.id);
             return (
               <motion.button
-                whileHover={!sel ? { scale: 1.01 } : {}} whileTap={{ scale: 0.99 }}
+                whileHover={{ scale: 1.01, x: 10 }} whileTap={{ scale: 0.99 }}
                 key={opt.id} onClick={() => onSelect(opt.id)}
-                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-left transition-all
-                  ${sel ? "shadow-md" : "bg-white border-gray-100 text-gray-800 hover:border-blue-200"}`}
-                style={sel ? { background: BLUE_L, borderColor: BLUE, color: BLUE } : {}}
+                className={cn(
+                  "w-full flex items-center gap-6 px-8 py-6 rounded-[2rem] border-2 text-left transition-all",
+                  isSelected ? "bg-slate-900 border-slate-900 text-white shadow-2xl scale-[1.02]" : "bg-white/60 border-white text-slate-800 hover:bg-white hover:border-slate-200"
+                )}
               >
-                <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors
-                  ${sel ? "border-transparent" : "border-gray-200 text-gray-500"}`}
-                  style={sel ? { background: BLUE, color: "#fff" } : {}}>
-                  {opt.optionLabel}
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors",
+                  isSelected ? "bg-white text-slate-900 border-transparent shadow-lg" : "bg-slate-50 border-slate-100 text-slate-300"
+                )}>
+                  {String.fromCharCode(65 + i)}
                 </div>
-                <span className="text-sm font-medium leading-relaxed flex-1">{opt.content}</span>
+                <span className="text-lg font-black uppercase italic tracking-tight flex-1">{opt.content}</span>
               </motion.button>
             );
           })}
@@ -113,249 +114,78 @@ function QuestionCard({
   );
 }
 
-// ─── Results: Teacher Quiz ────────────────────────────────────────────────────
-function TeacherQuizResults({ result, mockTest, onBack }: {
-  result: SessionResult; mockTest: MockTestListItem; onBack: () => void;
-}) {
-  const total = result.totalCorrect + result.totalWrong + result.totalSkipped;
-  const accuracy = total > 0 ? (result.totalCorrect / total) * 100 : 0;
-  const passingPct = mockTest.passingMarks && mockTest.totalMarks
-    ? (mockTest.passingMarks / mockTest.totalMarks) * 100 : 70;
-  const passed = accuracy >= passingPct;
-  const eb = result.errorBreakdown;
-
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-      className="min-h-screen flex items-center justify-center p-4" style={{ background: "#F5F7FB" }}>
-      <div className="bg-white border border-gray-100 rounded-3xl shadow-sm w-full max-w-lg p-6 sm:p-8">
-        <div className="text-center mb-6">
-          <div
-            className="w-20 h-20 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg"
-            style={{ background: passed ? `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` : "linear-gradient(135deg, #f59e0b, #d97706)" }}
-          >
-            {passed ? <Trophy className="w-10 h-10 text-white" /> : <Flame className="w-10 h-10 text-white" />}
-          </div>
-          <h1 className="text-2xl font-black text-gray-900">{passed ? "Topic Unlocked!" : "Quiz Complete"}</h1>
-          <p className="text-gray-400 font-medium mt-1 text-sm">{mockTest.title}</p>
-        </div>
-
-        <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-2xl mb-6 text-sm font-bold
-          ${passed ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                   : "bg-amber-50 text-amber-600 border border-amber-100"}`}>
-          {passed ? <><CheckCircle className="w-4 h-4" /> Passed — Next topic unlocked</>
-                  : <><Target className="w-4 h-4" /> Need {passingPct.toFixed(0)}% to pass — Keep practising</>}
-        </div>
-
-        <ScoreRing accuracy={accuracy} score={result.totalScore} outOf={mockTest.totalMarks}
-          correct={result.totalCorrect} wrong={result.totalWrong} skipped={result.totalSkipped} />
-
-        {eb && result.totalWrong > 0 && <ErrorBreakdown eb={eb} totalWrong={result.totalWrong} />}
-
-        <div className="mt-6">
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onBack}
-            className="w-full py-4 rounded-2xl text-white font-black text-sm flex items-center justify-center gap-2 transition-all shadow-md"
-            style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}>
-            <ArrowLeft className="w-4 h-4" /> Back to Topic
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Results: AI Quiz ─────────────────────────────────────────────────────────
-function AiQuizResults({ result, quizData, reviewMap, onBack }: {
-  result: AiQuizResult; quizData: AiQuizData;
-  reviewMap: Record<string, string[]>; onBack: () => void;
-}) {
-  const [showReview, setShowReview] = useState(false);
-
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-      className="min-h-screen p-4 py-8" style={{ background: "#F5F7FB" }}>
-      <div className="bg-white border border-gray-100 rounded-3xl shadow-sm w-full max-w-lg mx-auto p-6 sm:p-8">
-        <div className="text-center mb-6">
-          <div
-            className="w-20 h-20 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg"
-            style={{ background: result.passed ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #f59e0b, #d97706)" }}
-          >
-            {result.passed ? <Trophy className="w-10 h-10 text-white" /> : <Flame className="w-10 h-10 text-white" />}
-          </div>
-          <h1 className="text-2xl font-black text-gray-900">{result.passed ? "Passed!" : "Quiz Complete"}</h1>
-          <div className="flex items-center justify-center gap-1.5 mt-2">
-            <span className="inline-flex items-center gap-1 bg-violet-50 text-violet-600 px-3 py-1 rounded-full text-xs font-bold border border-violet-100">
-              <Sparkles className="w-3.5 h-3.5" /> AI-Generated Quiz
-            </span>
-          </div>
-        </div>
-
-        <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-2xl mb-6 text-sm font-bold
-          ${result.passed ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                          : "bg-amber-50 text-amber-600 border border-amber-100"}`}>
-          {result.passed ? <><CheckCircle className="w-4 h-4" /> Passed — Next topic unlocked</>
-                         : <><Target className="w-4 h-4" /> Need 70%+ to pass — Keep practising</>}
-        </div>
-
-        <ScoreRing
-          accuracy={result.accuracy} score={result.score} outOf={result.totalMarks}
-          correct={Math.round((result.accuracy / 100) * quizData.questions.length)}
-          wrong={quizData.questions.length - Math.round((result.accuracy / 100) * quizData.questions.length)}
-          skipped={0}
-        />
-
-        {result.xpEarned > 0 && (
-          <div className="flex items-center justify-center gap-2 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-6">
-            <Trophy className="w-4 h-4 text-amber-500" />
-            <span className="text-sm font-black text-amber-600">+{result.xpEarned} XP Earned!</span>
-          </div>
-        )}
-
-        <button onClick={() => setShowReview(v => !v)}
-          className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-sm font-bold hover:bg-gray-100 transition-colors text-gray-800">
-          <span className="flex items-center gap-2"><Brain className="w-4 h-4 text-violet-500" /> Review Answers</span>
-          <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showReview ? "rotate-90" : ""}`} />
-        </button>
-
-        <AnimatePresence>
-          {showReview && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden mb-6">
-              <div className="space-y-3">
-                {quizData.questions.map((q, i) => {
-                  const selected = reviewMap[q.id] ?? [];
-                  const correctOpts = q.options.filter(o => o.isCorrect);
-                  const correct = correctOpts.map(o => o.id);
-                  const isRight = selected.length > 0 && selected.every(s => correct.includes(s));
-                  const skipped = selected.length === 0;
-                  return (
-                    <div key={q.id} className={`rounded-2xl border p-4 ${isRight ? "border-emerald-100 bg-emerald-50" : !skipped ? "border-red-100 bg-red-50" : "border-gray-200 bg-gray-50"}`}>
-                      <div className="flex items-start gap-2 mb-3">
-                        <span className={`mt-0.5 shrink-0 ${isRight ? "text-emerald-500" : !skipped ? "text-red-500" : "text-gray-400"}`}>
-                          {isRight ? <CheckCircle className="w-4 h-4" /> : !skipped ? <XCircle className="w-4 h-4" /> : <Target className="w-4 h-4" />}
-                        </span>
-                        <p className="text-sm font-bold text-gray-900 leading-relaxed">Q{i + 1}. {q.content}</p>
-                      </div>
-
-                      <div className="space-y-1.5 ml-6 mb-3">
-                        {q.options.map(opt => {
-                          const wasSelected = selected.includes(opt.id);
-                          let cls = "text-gray-500";
-                          if (opt.isCorrect && wasSelected) cls = "bg-emerald-100 text-emerald-700 font-bold border border-emerald-200";
-                          else if (opt.isCorrect) cls = "bg-emerald-50 text-emerald-600 font-bold border border-emerald-100";
-                          else if (wasSelected) cls = "bg-red-100 text-red-700 line-through border border-red-200";
-                          return (
-                            <div key={opt.id} className={`text-xs px-3 py-2 rounded-xl flex items-center gap-2 ${cls}`}>
-                              <span className="shrink-0 font-black">{opt.optionLabel}.</span>
-                              <span className="flex-1 font-medium">{opt.content}</span>
-                              {opt.isCorrect && <CheckCircle className="w-3.5 h-3.5 shrink-0 text-emerald-500" />}
-                              {wasSelected && !opt.isCorrect && <XCircle className="w-3.5 h-3.5 shrink-0 text-red-500" />}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {!isRight && (
-                        <div className="ml-6 mb-3 flex items-start gap-1.5 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                          <p className="text-xs text-emerald-700">
-                            <span className="font-black">Correct answer: </span>
-                            <span className="font-medium">{correctOpts.map(o => `${o.optionLabel}. ${o.content}`).join(", ")}</span>
-                          </p>
-                        </div>
-                      )}
-
-                      {q.explanation && (
-                        <div className="ml-6 flex items-start gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                          <p className="text-xs text-gray-600 font-medium leading-relaxed">{q.explanation}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onBack}
-          className="w-full py-4 rounded-2xl text-white font-black text-sm flex items-center justify-center gap-2 transition-all shadow-md"
-          style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Topic
-        </motion.button>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Shared sub-components ────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
 function ScoreRing({ accuracy, score, outOf, correct, wrong, skipped }: {
   accuracy: number; score: number; outOf: number;
   correct: number; wrong: number; skipped: number;
 }) {
-  const color = accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444";
   return (
-    <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 mb-6 flex items-center gap-6">
-      <div className="relative w-24 h-24 shrink-0">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
-          <circle cx="48" cy="48" r="40" fill="none" stroke="#E5E7EB" strokeWidth="10" />
-          <circle cx="48" cy="48" r="40" fill="none" stroke={color} strokeWidth="10"
-            strokeDasharray={`${2 * Math.PI * 40}`}
-            strokeDashoffset={`${2 * Math.PI * 40 * (1 - accuracy / 100)}`}
-            strokeLinecap="round" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-black text-gray-900">{accuracy.toFixed(0)}%</span>
-        </div>
-      </div>
-      <div className="flex-1">
-        <p className="text-3xl font-black text-gray-900">{score}</p>
-        <p className="text-xs font-bold text-gray-400 mb-2 tracking-wide uppercase">out of {outOf} pts</p>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg"><CheckCircle className="w-3 h-3" />{correct}</span>
-          <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-lg"><XCircle className="w-3 h-3" />{wrong}</span>
-          {skipped > 0 && <span className="text-xs font-bold text-gray-500">{skipped} skipped</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ErrorBreakdown({ eb, totalWrong }: { eb: any; totalWrong: number }) {
-  return (
-    <div className="bg-white border border-gray-100 rounded-3xl p-6 mb-6 shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <BarChart3 className="w-5 h-5 text-gray-400" />
-        <p className="text-base font-black text-gray-900">Error Analysis</p>
-      </div>
-      <div className="space-y-3">
-        {[
-          { key: "conceptual", label: "Concept gaps",   color: "#ef4444" },
-          { key: "silly",      label: "Silly mistakes", color: "#f59e0b" },
-          { key: "time",       label: "Time pressure",  color: "#6366f1" },
-          { key: "guess",      label: "Guessed",        color: "#8b5cf6" },
-        ].map(({ key, label, color }) => {
-          const val = eb[key] ?? 0;
-          if (!val) return null;
-          return (
-            <div key={key}>
-              <div className="flex justify-between mb-1.5">
-                <span className="text-xs font-bold text-gray-500">{label}</span>
-                <span className="text-xs font-black text-gray-900">{val} / {totalWrong}</span>
-              </div>
-              <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: `${(val / totalWrong) * 100}%` }}
-                  transition={{ duration: 0.6 }} className="h-full rounded-full" style={{ background: color }} />
-              </div>
+    <CardGlass className="p-10 border-white bg-slate-900 text-white relative overflow-hidden mb-10">
+       <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Sync Results Manifest</h3>
+       <div className="flex items-center gap-10 flex-col sm:flex-row">
+          <div className="relative w-32 h-32 shrink-0">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+              <motion.circle cx="50" cy="50" r="45" fill="none"
+                stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
+                strokeWidth="10" strokeDasharray="283"
+                initial={{ strokeDashoffset: 283 }}
+                animate={{ strokeDashoffset: 283 * (1 - accuracy/100) }}
+                transition={{ duration: 2, ease: "easeOut" }}
+                strokeLinecap="round" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+               <span className="text-3xl font-black italic">{accuracy.toFixed(0)}%</span>
             </div>
-          );
-        })}
-      </div>
-    </div>
+          </div>
+          <div className="text-center sm:text-left">
+            <p className="text-5xl font-black italic text-emerald-400 leading-none mb-2">{score}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-6">Total Sync Points / {outOf}</p>
+            <div className="flex items-center justify-center sm:justify-start gap-4">
+               <div className="px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-black italic border border-emerald-500/20">{correct} Valid</div>
+               <div className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 text-xs font-black italic border border-red-500/20">{wrong} Error</div>
+            </div>
+          </div>
+       </div>
+    </CardGlass>
   );
 }
 
-// ─── Quiz runner (shared top bar + question nav) ──────────────────────────────
+function ErrorAnalysis({ eb, totalWrong }: { eb: any; totalWrong: number }) {
+  return (
+    <CardGlass className="p-10 border-white bg-white/60 mb-10">
+       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10 flex items-center gap-2">
+         <BarChart3 className="w-4 h-4" /> Neural Drift Scan
+       </h3>
+       <div className="space-y-6">
+         {[
+           { key: "conceptual", label: "LOGIC VOIDS", color: "#ef4444" },
+           { key: "silly",      label: "SILLY SYNAPSE ERRORS", color: "#f59e0b" },
+           { key: "time",       label: "TEMPORAL LAG", color: "#6366f1" },
+           { key: "guess",      label: "UNVERIFIED GUESSES", color: "#8b5cf6" },
+         ].map(({ key, label, color }) => {
+           const val = eb[key] ?? 0;
+           if (!val) return null;
+           return (
+             <div key={key}>
+               <div className="flex justify-between items-end mb-3">
+                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{label}</span>
+                 <span className="text-sm font-black text-slate-400 italic">{val} / {totalWrong}</span>
+               </div>
+               <div className="h-2 rounded-full bg-slate-100 overflow-hidden p-0.5">
+                 <motion.div initial={{ width: 0 }} animate={{ width: `${(val / totalWrong) * 100}%` }}
+                   transition={{ duration: 0.6 }} className="h-full rounded-full" style={{ background: color }} />
+               </div>
+             </div>
+           );
+         })}
+       </div>
+    </CardGlass>
+  );
+}
+
+// ─── Quiz Runner ──────────────────────────────────────────────────────────────
 function QuizRunner({
   title, isAi, questions, seconds, timerDanger,
   answers, currentQ, setCurrentQ,
@@ -369,81 +199,93 @@ function QuizRunner({
   onSelect: (v: string) => void; onNext: () => void; onSubmit: () => void;
 }) {
   const q = questions[currentQ];
-  if (!q) return null;
-  const selected = answers[q.id] ?? [];
   const isLast = currentQ === questions.length - 1;
+  const selected = q ? (answers[q.id] || []) : [];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#F5F7FB" }}>
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-2">
-              {isAi ? <Sparkles className="w-4 h-4 text-violet-500 shrink-0" /> : <ClipboardList className="w-4 h-4 text-gray-400 shrink-0" style={{ color: BLUE }} />}
-              <span className="font-black text-gray-900 text-sm truncate">{title}</span>
-            </div>
-            {isAi && <span className="text-[10px] font-bold text-violet-500 mt-0.5">AI QUIZ</span>}
-          </div>
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border
-              ${timerDanger ? "bg-red-50 border-red-100 text-red-500 animate-pulse" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
-              <Clock className="w-3.5 h-3.5" />{fmt(seconds)}
-            </div>
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onSubmit}
-              className="px-4 py-2 rounded-xl text-white text-xs font-black transition-colors shrink-0 shadow-sm"
-              style={{ background: BLUE }}>
-              Submit
-            </motion.button>
-          </div>
-        </div>
-        <div className="h-1 bg-gray-100">
-          <div className="h-full transition-all duration-300"
-            style={{ width: `${((currentQ + 1) / questions.length) * 100}%`, background: BLUE }} />
-        </div>
-      </div>
+    <div className="flex flex-col space-y-12">
+        <CardGlass className="px-10 py-6 border-white bg-white/60 flex items-center justify-between sticky top-0 z-50">
+           <div className="flex items-center gap-6">
+              <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shadow-xl", isAi ? "bg-purple-600 text-white" : "bg-slate-900 text-white")}>
+                 {isAi ? <Sparkles className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
+              </div>
+              <div className="min-w-0">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{isAi ? "AI GENERATED PROBE" : "CURRICULUM SYNC"}</p>
+                 <h3 className="text-lg font-black text-slate-900 uppercase italic leading-none truncate max-w-[200px] sm:max-w-none">{title}</h3>
+              </div>
+           </div>
 
-      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 sm:py-8 flex flex-col">
-        <div className="flex-1">
-          <AnimatePresence mode="wait">
-            <QuestionCard key={q.id} question={q} index={currentQ} total={questions.length}
-              selected={selected} onSelect={onSelect} />
-          </AnimatePresence>
+           <div className="flex items-center gap-8">
+              <div className={cn(
+                 "flex items-center gap-4 px-6 py-2.5 rounded-xl border transition-all shadow-xl",
+                 timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
+              )}>
+                 <Clock className="w-5 h-5" />
+                 <span className="text-xl font-black italic tracking-tighter tabular-nums leading-none">{fmt(seconds)}</span>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={onSubmit}
+                className="hidden sm:flex px-10 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
+              >
+                Finalize Sync
+              </motion.button>
+           </div>
+        </CardGlass>
+
+        <div className="h-1.5 bg-slate-200/50 rounded-full relative overflow-hidden">
+           <motion.div initial={{ width: 0 }} animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+             className={cn("h-full shadow-lg", isAi ? "bg-purple-600 shadow-purple-500/20" : "bg-blue-600 shadow-blue-500/20")} />
         </div>
 
-        <div className="mt-8 flex items-center justify-between bg-white border border-gray-100 rounded-3xl p-3 shadow-sm">
-          <button onClick={() => setCurrentQ(Math.max(currentQ - 1, 0))} disabled={currentQ === 0}
-            className="px-5 py-2.5 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30">
-            Prev
-          </button>
-          <div className="flex items-center gap-1.5 overflow-x-auto px-2 scrollbar-none">
-            {questions.map((_, i) => {
-              const isAns = answers[questions[i].id]?.length > 0;
-              const isCurr = i === currentQ;
-              return (
-                <button key={i} onClick={() => setCurrentQ(i)}
-                  className={`shrink-0 rounded-full transition-all
-                    ${isCurr ? "w-6 h-2.5" : "w-2.5 h-2.5"}
-                    ${isCurr ? "" : isAns ? "" : "bg-gray-200 hover:bg-gray-300"}`}
-                  style={isCurr ? { background: BLUE } : isAns ? { background: BLUE_M, opacity: 0.5 } : {}}
-                />
-              );
-            })}
-          </div>
-          <button onClick={onNext}
-            className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all shadow-sm
-              ${isLast ? "bg-emerald-500 text-white"
-                : selected.length ? "text-white"
-                : "bg-gray-100 text-gray-400"}`}
-            style={!isLast && selected.length ? { background: BLUE } : {}}>
-            {isLast ? "Finish" : "Next"}
-          </button>
+        <div className="max-w-4xl mx-auto w-full">
+           <AnimatePresence mode="wait">
+              <QuestionCard
+                key={q.id} question={q} index={currentQ} total={questions.length}
+                selected={selected} onSelect={onSelect}
+              />
+           </AnimatePresence>
         </div>
-      </div>
+
+        <div className="max-w-4xl mx-auto w-full">
+           <CardGlass className="p-5 border-white bg-white/60 flex items-center justify-between gap-10 shadow-2xl">
+              <button
+                onClick={() => setCurrentQ(Math.max(currentQ - 1, 0))}
+                disabled={currentQ === 0}
+                className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-950 hover:text-white transition-all disabled:opacity-20 shadow-sm"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+
+              <div className="flex-1 flex justify-center items-center gap-3 overflow-x-auto scrollbar-none px-4">
+                 {questions.map((_, i) => (
+                   <button key={i} onClick={() => setCurrentQ(i)}
+                     className={cn(
+                        "shrink-0 transition-all border shadow-sm",
+                        i === currentQ ? "w-8 h-8 rounded-lg bg-slate-900 border-slate-900 scale-110" : 
+                        answers[questions[i].id]?.length > 0 ? (isAi ? "w-5 h-5 rounded bg-purple-500/40 border-purple-500/10" : "w-5 h-5 rounded bg-blue-500/40 border-blue-500/10") : "w-5 h-5 rounded bg-white border-slate-100"
+                     )}
+                   />
+                 ))}
+              </div>
+
+              <button
+                onClick={onNext}
+                className={cn(
+                  "w-16 h-16 rounded-2xl flex items-center justify-center transition-all shadow-xl",
+                  isLast ? "bg-emerald-500 text-white shadow-emerald-500/20" : 
+                  selected.length > 0 ? (isAi ? "bg-purple-600 text-white shadow-purple-500/20" : "bg-blue-600 text-white shadow-blue-500/20") : "bg-white border border-slate-100 text-slate-200"
+                )}
+              >
+                {isLast ? <CheckCircle className="w-6 h-6" /> : <ArrowRight className="w-6 h-6" />}
+              </button>
+           </CardGlass>
+        </div>
     </div>
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 type Stage = "loading" | "no_quiz" | "ai_generating" | "info" | "ai_info" | "quiz" | "ai_quiz" | "submitting" | "ai_submitting" | "results" | "ai_results";
 
 export default function StudentTopicQuizPage() {
@@ -460,7 +302,6 @@ export default function StudentTopicQuizPage() {
   const [answers, setAnswers]     = useState<Record<string, string[]>>({});
   const [teacherResult, setTeacherResult] = useState<SessionResult | null>(null);
   const [aiResult, setAiResult]   = useState<AiQuizResult | null>(null);
-  const [error, setError]         = useState("");
 
   const durationSec = (
     stage === "quiz" ? (mockTest?.durationMinutes ?? 30) :
@@ -488,60 +329,49 @@ export default function StudentTopicQuizPage() {
       .catch(() => setStage("no_quiz"));
   }, [topicId]);
 
-  // ── Teacher quiz ──────────────────────────────────────────────────────────
   const handleTeacherStart = async () => {
     if (!mockTest) return;
-    setStage("loading"); setError("");
+    setStage("loading");
     try {
       const sess = await startSession(mockTest.id);
       setSession(sess); setQuestions(sess.questions ?? []); setCurrentQ(0); setAnswers({}); setStage("quiz");
-    } catch (err: any) { setError(err?.response?.data?.message ?? "Failed to start quiz."); setStage("info"); }
+    } catch (err: any) { toast.error(err?.response?.data?.message ?? "Link failure."); setStage("info"); }
   };
 
   const handleTeacherSelect = async (optionId: string) => {
     const q = questions[currentQ] as QuizQuestion;
     if (!q || !session) return;
-    const isInteger = q.type === "integer";
     const isMulti = q.type === "mcq_multi";
-    let next: string[];
-    if (isInteger) next = [optionId];
-    else if (isMulti) {
-      const prev = answers[q.id] ?? [];
-      next = prev.includes(optionId) ? prev.filter(id => id !== optionId) : [...prev, optionId];
-    } else next = [optionId];
+    const next = q.type === "integer" ? [optionId] : isMulti ? (answers[q.id]?.includes(optionId) ? answers[q.id].filter(id => id !== optionId) : [...(answers[q.id] || []), optionId]) : [optionId];
     setAnswers(a => ({ ...a, [q.id]: next }));
-    try { await submitAnswer(session.id, { questionId: q.id, selectedOptionIds: isInteger ? undefined : next, integerResponse: isInteger ? optionId : undefined }); } catch { /* ok */ }
+    try { await submitAnswer(session.id, { questionId: q.id, selectedOptionIds: q.type === "integer" ? undefined : next, integerResponse: q.type === "integer" ? optionId : undefined }); } catch {}
   };
 
   const handleTeacherSubmit = async (timedOut: boolean) => {
     if (!session) return;
-    if (timedOut) toast.warning("Time's up!");
+    if (timedOut) toast.warning("Protocol Timeout!");
     setStage("submitting");
     try { const res = await submitSession(session.id); setTeacherResult(res); setStage("results"); }
-    catch (err: any) { toast.error(err?.response?.data?.message ?? "Submit failed."); setStage("quiz"); }
+    catch (err) { setStage("quiz"); }
   };
 
-  // ── AI quiz ───────────────────────────────────────────────────────────────
   const handleAiGenerate = async () => {
-    setStage("ai_generating"); setError("");
+    setStage("ai_generating");
     try { const data = await generateAiQuiz(topicId); setAiQuizData(data); setStage("ai_info"); }
-    catch (err: any) { setError(err?.response?.data?.message ?? "AI failed to generate quiz."); setStage("no_quiz"); }
+    catch (err) { setStage("no_quiz"); }
   };
 
-  const handleAiStart = () => {
-    if (!aiQuizData) return;
-    setQuestions(aiQuizData.questions); setCurrentQ(0); setAnswers({}); setStage("ai_quiz");
-  };
+  const handleAiStart = () => { if (aiQuizData) { setQuestions(aiQuizData.questions); setCurrentQ(0); setAnswers({}); setStage("ai_quiz"); } };
 
   const handleAiSelect = (optionId: string) => {
     const q = questions[currentQ]; if (!q) return;
-    const prev = answers[q.id] ?? [];
-    const next = prev.includes(optionId) ? prev.filter(id => id !== optionId) : [optionId];
+    const isMulti = q.type === "mcq_multi";
+    const next = q.type === "integer" ? [optionId] : isMulti ? (answers[q.id]?.includes(optionId) ? answers[q.id].filter(id => id !== optionId) : [...(answers[q.id] || []), optionId]) : [optionId];
     setAnswers(a => ({ ...a, [q.id]: next }));
   };
 
   const handleAiSubmit = async (timedOut: boolean) => {
-    if (timedOut) toast.warning("Time's up!");
+    if (timedOut) toast.warning("Timeout!");
     if (!aiQuizData) return;
     setStage("ai_submitting");
     const qs = aiQuizData.questions;
@@ -552,184 +382,106 @@ export default function StudentTopicQuizPage() {
       if (sel.length > 0 && sel.every(s => correctIds.includes(s))) correct++;
       else if (sel.length > 0) wrong++;
     });
-    const score = correct * 4 - wrong;
-    const accuracy = qs.length > 0 ? (correct / qs.length) * 100 : 0;
     try {
-      const res = await completeAiQuiz(topicId, { score: Math.max(0, score), totalMarks: aiQuizData.totalMarks, accuracy, correctCount: correct, wrongCount: wrong });
+      const res = await completeAiQuiz(topicId, { score: Math.max(0, correct * 4 - wrong), totalMarks: aiQuizData.totalMarks, accuracy: qs.length ? (correct/qs.length)*100 : 0, correctCount: correct, wrongCount: wrong });
       setAiResult(res); setStage("ai_results");
-    } catch (err: any) { toast.error(err?.response?.data?.message ?? "Submit failed."); setStage("ai_quiz"); }
+    } catch { setStage("ai_quiz"); }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  if (stage === "loading" || stage === "ai_generating" || stage === "submitting" || stage === "ai_submitting") {
-    const msgs: Record<string, string> = { loading: "Preparing quiz...", ai_generating: "AI is crafting your quiz questions…", submitting: "Analysing your answers...", ai_submitting: "Calculating your score..." };
-    const isAiGen = stage === "ai_generating";
+  if (["loading", "ai_generating", "submitting", "ai_submitting"].includes(stage)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-5">
-        {isAiGen ? (
-          <div className="relative">
-            <div className="w-20 h-20 rounded-3xl bg-violet-100 flex items-center justify-center shadow-inner">
-              <Sparkles className="w-10 h-10 text-violet-500 animate-pulse" />
-            </div>
-            <div className="absolute -inset-4 rounded-3xl border-2 border-violet-200 animate-ping opacity-50" />
-          </div>
-        ) : (
-          <Loader2 className="w-12 h-12 animate-spin" style={{ color: BLUE }} />
-        )}
-        <p className="text-gray-500 font-bold tracking-wide uppercase text-sm mt-2">{msgs[stage]}</p>
+      <div className="py-40 flex flex-col items-center justify-center text-center gap-10">
+         <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl">
+            <Loader2 className={cn("w-12 h-12 animate-spin", stage.startsWith("ai") ? "text-purple-600" : "text-blue-600")} />
+         </div>
+         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Synchronizing Neural Modules...</p>
       </div>
     );
   }
 
   if (stage === "no_quiz") {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="min-h-screen flex items-center justify-center p-4" style={{ background: "#F5F7FB" }}>
-        <div className="w-full max-w-lg">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 mb-6 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          <div className="text-center mb-8 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-gray-50 border border-gray-100">
-              <BookOpen className="w-8 h-8 text-gray-300" />
-            </div>
-            <h2 className="text-xl font-black text-gray-900 mb-1">No Quiz Available</h2>
-            <p className="text-sm text-gray-400 font-medium tracking-wide">Your teacher hasn't created a quiz for this topic yet.</p>
-          </div>
-          {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm font-bold rounded-2xl px-5 py-4 mb-5 shadow-sm">
-              <AlertTriangle className="w-5 h-5 shrink-0" /> {error}
-            </div>
-          )}
-          <div className="relative overflow-hidden rounded-3xl shadow-lg border-2 border-violet-200 p-8" style={{ background: "linear-gradient(135deg, #F5F3FF, #EEF2FF)" }}>
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm text-violet-500">
-                  <Sparkles className="w-7 h-7" />
-                </div>
-                <div>
-                  <h3 className="font-black text-gray-900 text-lg">AI-Generated Quiz</h3>
-                  <p className="text-sm font-bold text-violet-500">Instant personalized practice</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 font-medium leading-relaxed">
-                Our AI will instantly generate 5 targeted questions. Complete it to update your progress exactly like a real quiz.
-              </p>
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiGenerate}
-                className="w-full py-4 rounded-2xl text-white text-sm font-black transition-all shadow-md flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
-                <Sparkles className="w-4 h-4" /> Generate Practice Quiz
-              </motion.button>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+      <div className="py-20 flex flex-col items-center justify-center text-center">
+         <div className="w-full max-w-lg">
+            <header className="text-center mb-12">
+               <button onClick={() => navigate(-1)} className="w-12 h-12 rounded-2xl bg-white/60 border border-white flex items-center justify-center text-slate-400 hover:bg-slate-900 hover:text-white transition-all mx-auto mb-10"><ArrowLeft className="w-6 h-6" /></button>
+               <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Sync Point Absent</h2>
+               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none">Curriculum sector has no pre-defined probes.</p>
+            </header>
+            
+            <CardGlass className="p-10 border-purple-500/20 bg-purple-50/60 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 blur-[50px] rounded-full pointer-events-none" />
+               <div className="w-16 h-16 rounded-[1.5rem] bg-purple-600 text-white flex items-center justify-center shadow-xl mb-10"><Sparkles className="w-8 h-8" /></div>
+               <h3 className="text-xl font-black text-slate-900 uppercase italic mb-3">AI Override Protocol</h3>
+               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">Generate a personalized 5-question matrix to propagate sector progress.</p>
+               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiGenerate}
+                 className="w-full py-6 rounded-[2rem] bg-purple-600 text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
+                 Activate AI Probe
+               </motion.button>
+            </CardGlass>
+         </div>
+      </div>
     );
   }
 
   if (stage === "ai_info" && aiQuizData) {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="min-h-screen flex items-center justify-center p-4" style={{ background: "#F5F7FB" }}>
-        <div className="w-full max-w-lg">
-          <button onClick={() => setStage("no_quiz")} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 mb-6 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-sm">
-            <div className="w-16 h-16 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center mb-6">
-              <Sparkles className="w-8 h-8 text-violet-500" />
-            </div>
-            <h1 className="text-2xl font-black text-gray-900 mb-1">AI Quiz Ready</h1>
-            <p className="text-sm font-bold text-gray-400 mb-6">{aiQuizData.topicName}</p>
-
-            <div className="space-y-3 mb-8">
-              <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl p-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                  <Clock className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="font-black text-gray-900">{aiQuizData.durationMinutes} minutes</p>
-                  <p className="text-xs font-bold text-gray-400 tracking-wide uppercase">Time limit</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl p-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  <Target className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="font-black text-gray-900">{aiQuizData.passingMarks} / {aiQuizData.totalMarks} marks</p>
-                  <p className="text-xs font-bold text-gray-400 tracking-wide uppercase">Passing score (70%)</p>
-                </div>
-              </div>
-            </div>
-
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiStart}
-              className="w-full py-4 rounded-2xl text-white font-black text-base shadow-md flex items-center justify-center gap-2"
-              style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>
-              Start AI Quiz <ChevronRight className="w-5 h-5" />
-            </motion.button>
-          </div>
-        </div>
-      </motion.div>
+      <div className="py-20 flex items-center justify-center p-6">
+         <div className="w-full max-w-lg">
+            <CardGlass className="p-10 border-white bg-white/60">
+               <div className="w-16 h-16 rounded-[1.5rem] bg-purple-600 text-white flex items-center justify-center shadow-xl mb-10"><BrainCircuit className="w-8 h-8" /></div>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Neural Matrix Ready</p>
+               <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-8 leading-none">{aiQuizData.topicName}</h1>
+               <div className="grid grid-cols-2 gap-4 mb-10">
+                  <div className="p-5 rounded-2xl bg-white border border-slate-50 shadow-sm">
+                     <Clock className="w-4 h-4 text-purple-600 mb-2" />
+                     <p className="text-xs font-black text-slate-900 uppercase">{aiQuizData.durationMinutes}m Cycle</p>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-white border border-slate-50 shadow-sm">
+                     <Target className="w-4 h-4 text-emerald-500 mb-2" />
+                     <p className="text-xs font-black text-slate-900 uppercase">70% Threshold</p>
+                  </div>
+               </div>
+               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiStart}
+                 className="w-full py-6 rounded-[2rem] bg-purple-600 text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
+                 Enter Simulation
+               </motion.button>
+            </CardGlass>
+         </div>
+      </div>
     );
   }
 
   if (stage === "info" && mockTest) {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="min-h-screen flex items-center justify-center p-4" style={{ background: "#F5F7FB" }}>
-        <div className="w-full max-w-lg">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 mb-6 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-sm">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style={{ background: BLUE_L }}>
-              <ClipboardList className="w-8 h-8" style={{ color: BLUE }} />
-            </div>
-            <h1 className="text-2xl font-black text-gray-900 mb-1">{mockTest.title}</h1>
-            <p className="text-sm font-bold text-gray-400 mb-6 tracking-wide uppercase">Topic Quiz</p>
-
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm font-bold rounded-2xl px-5 py-4 mb-5 shadow-sm">
-                <AlertTriangle className="w-5 h-5 shrink-0" /> {error}
-              </div>
-            )}
-
-            <div className="space-y-3 mb-8">
-              <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl p-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                  <Clock className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="font-black text-gray-900">{mockTest.durationMinutes} min</p>
-                  <p className="text-xs font-bold text-gray-400 tracking-wide uppercase">Time Limit</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl p-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  <Target className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="font-black text-gray-900">{mockTest.passingMarks ?? Math.ceil(mockTest.totalMarks * 0.7)} / {mockTest.totalMarks}</p>
-                  <p className="text-xs font-bold text-gray-400 tracking-wide uppercase">Passing Score</p>
-                </div>
-              </div>
-            </div>
-
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleTeacherStart}
-              className="w-full py-4 rounded-2xl text-white font-black text-base shadow-md flex items-center justify-center gap-2"
-              style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}>
-              Start Quiz <ChevronRight className="w-5 h-5" />
-            </motion.button>
-          </div>
-        </div>
-      </motion.div>
+      <div className="py-20 flex items-center justify-center p-6 text-center">
+         <div className="w-full max-w-lg">
+            <CardGlass className="p-10 border-white bg-white/60 text-center">
+               <div className="w-20 h-20 rounded-[2rem] bg-slate-900 text-white flex items-center justify-center shadow-2xl mx-auto mb-10"><ClipboardList className="w-10 h-10" /></div>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Curriculum Probe Manifest</p>
+               <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-10 leading-none">{mockTest.title}</h1>
+               <div className="flex gap-4 mb-10">
+                  <div className="flex-1 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm">
+                     <Activity className="w-5 h-5 text-blue-600 mx-auto mb-3" />
+                     <p className="text-[10px] font-black text-slate-900 uppercase">{mockTest.durationMinutes}m Window</p>
+                  </div>
+                  <div className="flex-1 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm">
+                     <Target className="w-5 h-5 text-emerald-500 mx-auto mb-3" />
+                     <p className="text-[10px] font-black text-slate-900 uppercase">70% Sync</p>
+                  </div>
+               </div>
+               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleTeacherStart}
+                 className="w-full py-6 rounded-[2.5rem] bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
+                 Begin Synchronization
+               </motion.button>
+            </CardGlass>
+         </div>
+      </div>
     );
   }
 
   if (stage === "quiz" || stage === "ai_quiz") {
-    return <QuizRunner title={stage === "ai_quiz" ? aiQuizData?.topicName ?? "AI Quiz" : mockTest?.title ?? "Topic Quiz"}
+    return <QuizRunner title={stage === "ai_quiz" ? aiQuizData?.topicName ?? "" : mockTest?.title ?? ""}
       isAi={stage === "ai_quiz"} questions={questions} seconds={seconds} timerDanger={timerDanger} answers={answers}
       currentQ={currentQ} setCurrentQ={setCurrentQ} onSelect={stage === "quiz" ? handleTeacherSelect : handleAiSelect}
       onNext={() => { if (currentQ < questions.length - 1) setCurrentQ(currentQ + 1); else stage === "quiz" ? handleTeacherSubmit(false) : handleAiSubmit(false); }}
@@ -737,11 +489,80 @@ export default function StudentTopicQuizPage() {
   }
 
   if (stage === "results" && teacherResult && mockTest) {
-    return <TeacherQuizResults result={teacherResult} mockTest={mockTest} onBack={() => navigate(`/student/learn/topic/${topicId}`)} />;
+    const accuracy = (teacherResult.totalCorrect / Math.max(questions.length, 1)) * 100;
+    const passed = accuracy >= (mockTest.passingMarks ? (mockTest.passingMarks/mockTest.totalMarks)*100 : 70);
+    return (
+      <div className="py-20 flex items-center justify-center p-6">
+         <div className="w-full max-w-4xl">
+            <div className="text-center mb-16">
+               <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl", passed ? "bg-emerald-500 text-white" : "bg-amber-500 text-white")}>
+                  {passed ? <CheckCircle className="w-10 h-10" /> : <Flame className="w-10 h-10" />}
+               </div>
+               <h1 className="text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">{passed ? "Sector Verified" : "Sync Incomplete"}</h1>
+               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{mockTest.title}</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+               <ScoreRing accuracy={accuracy} score={teacherResult.totalScore} outOf={mockTest.totalMarks} correct={teacherResult.totalCorrect} wrong={teacherResult.totalWrong} skipped={teacherResult.totalSkipped} />
+               {teacherResult.errorBreakdown && <ErrorAnalysis eb={teacherResult.errorBreakdown} totalWrong={teacherResult.totalWrong} />}
+            </div>
+            <button onClick={() => navigate(-1)} className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Directory <ArrowRight className="w-6 h-6" /></button>
+         </div>
+      </div>
+    );
   }
 
   if (stage === "ai_results" && aiResult && aiQuizData) {
-    return <AiQuizResults result={aiResult} quizData={aiQuizData} reviewMap={answers} onBack={() => navigate(`/student/learn/topic/${topicId}`)} />;
+    const [showReview, setShowReview] = useState(false);
+    return (
+      <div className="py-20 px-6">
+         <div className="w-full max-w-4xl mx-auto">
+            <div className="text-center mb-16">
+               <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl", aiResult.passed ? "bg-emerald-500 text-white" : "bg-purple-600 text-white")}>
+                  {aiResult.passed ? <CheckCircle className="w-10 h-10" /> : <Activity className="w-10 h-10" />}
+               </div>
+               <h1 className="text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">{aiResult.passed ? "Neural Pass" : "Simulation Logged"}</h1>
+               <div className="flex items-center justify-center gap-3"><Sparkles className="w-4 h-4 text-purple-500" /><p className="text-xs font-black text-purple-500 uppercase tracking-widest">AI Synthesis Result</p></div>
+            </div>
+            <ScoreRing accuracy={aiResult.accuracy} score={aiResult.score} outOf={aiResult.totalMarks} correct={Math.round((aiResult.accuracy/100)*questions.length)} wrong={questions.length - Math.round((aiResult.accuracy/100)*questions.length)} skipped={0} />
+            
+            <CardGlass className="p-8 border-white mb-10 overflow-hidden">
+               <button onClick={() => setShowReview(!showReview)} className="w-full flex items-center justify-between">
+                  <div className="flex items-center gap-4"><Info className="w-5 h-5 text-slate-400" /><span className="text-sm font-black text-slate-900 uppercase italic">Review Logic Patterns</span></div>
+                  <ChevronRight className={cn("w-6 h-6 text-slate-300 transition-transform", showReview && "rotate-90")} />
+               </button>
+               <AnimatePresence>
+                  {showReview && (
+                     <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="pt-10 space-y-6">
+                        {aiQuizData.questions.map((q, i) => {
+                           const sel = answers[q.id] || [];
+                           const correct = q.options.filter(o => o.isCorrect).map(o => o.id);
+                           const isRight = sel.length > 0 && sel.every(s => correct.includes(s));
+                           return (
+                              <div key={i} className={cn("p-6 rounded-[2rem] border transition-all", isRight ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
+                                 <div className="flex gap-4 mb-4">
+                                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
+                                       {isRight ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                    </div>
+                                    <p className="text-base font-black text-slate-900 uppercase italic">{q.content}</p>
+                                 </div>
+                              </div>
+                           );
+                        })}
+                     </motion.div>
+                  )}
+               </AnimatePresence>
+            </CardGlass>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
+               <CardGlass className="p-8 border-amber-400/20 bg-amber-50/60 flex items-center gap-6">
+                  <Trophy className="w-10 h-10 text-amber-500" />
+                  <div><p className="text-2xl font-black italic text-slate-900">+{aiResult.xpEarned} XP</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rank Growth Points</p></div>
+               </CardGlass>
+               <button onClick={() => navigate(-1)} className="p-8 rounded-[2.5rem] bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Sector <ArrowRight className="w-6 h-6" /></button>
+            </div>
+         </div>
+      </div>
+    );
   }
 
   return null;

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,64 +6,64 @@
 
 @layer base {
   :root {
-    --background: 210 33% 98%;
-    --foreground: 222 47% 11%;
+    --background: 0 0% 100%;
+    --foreground: 222 20% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 20% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 222 20% 18%;
 
-    --primary: 215 85% 37%;
+    --primary: 230 80% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 215 85% 31%;
+    --primary-dark: 230 80% 50%;
 
-    --secondary: 210 28% 94%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 210 20% 98%;
+    --secondary-foreground: 222 20% 18%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 40%;
+    --muted: 210 20% 99%;
+    --muted-foreground: 215 16% 50%;
 
-    --accent: 191 80% 42%;
+    --accent: 230 80% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 84% 32%;
+    --success: 150 80% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 33 93% 46%;
+    --warning: 30 90% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --ai: 215 85% 37%;
+    --ai: 230 80% 60%;
     --ai-foreground: 0 0% 100%;
 
-    --info: 199 89% 48%;
+    --info: 210 90% 60%;
     --info-foreground: 0 0% 100%;
 
-    --border: 214 24% 88%;
-    --border-light: 210 20% 92%;
-    --input: 214 24% 88%;
-    --ring: 215 85% 37%;
+    --border: 220 15% 94%;
+    --border-light: 220 15% 97%;
+    --input: 220 15% 94%;
+    --ring: 230 80% 60%;
 
-    --radius: 0.75rem;
+    --radius: 1.5rem;
 
     --surface: 0 0% 100%;
-    --surface-2: 210 33% 97%;
+    --surface-2: 210 20% 99%;
 
-    --sidebar-background: 210 33% 97%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 215 85% 37%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 20% 18%;
+    --sidebar-primary: 230 80% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 28% 94%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 24% 88%;
-    --sidebar-ring: 215 85% 37%;
+    --sidebar-accent: 210 20% 98%;
+    --sidebar-accent-foreground: 222 20% 18%;
+    --sidebar-border: 220 15% 94%;
+    --sidebar-ring: 230 80% 60%;
   }
 
-  /* Dark theme removed — light only */
+  /* Lucid aesthetics — pure light */
 }
 
 @layer base {
@@ -155,5 +155,21 @@
 
   .card-surface-elevated {
     @apply bg-surface-2 border border-border rounded-xl;
+  }
+
+  /* ── Institute admin panel: all bold weights → medium (500) ── */
+  .font-poppins .font-bold,
+  .font-poppins .font-semibold,
+  .font-poppins .font-black,
+  .font-poppins .font-extrabold,
+  .font-poppins h1,
+  .font-poppins h2,
+  .font-poppins h3,
+  .font-poppins h4,
+  .font-poppins h5,
+  .font-poppins h6,
+  .font-poppins b,
+  .font-poppins strong {
+    font-weight: 500;
   }
 }

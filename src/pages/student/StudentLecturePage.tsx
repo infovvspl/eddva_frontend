@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -7,11 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, BookOpen, CheckCircle, XCircle, Clock,
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
-  Maximize, RotateCcw, AlertCircle, Trophy, FileText,
-  Radio, Calendar, Tag, Layers, FlaskConical, GraduationCap,
-  MessageCircle, LinkIcon, Loader2, Lock,
+  Maximize, RotateCcw, Trophy, Tag, Layers, FlaskConical,
+  MessageCircle, Loader2, Lock,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { apiClient, extractData } from "@/lib/api/client";
 import {
@@ -30,13 +28,11 @@ import { useStudentMe } from "@/hooks/use-student";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
 import { FormulasTab } from "@/components/lecture/FormulasTab";
-import { DownloadNotesButton } from "@/components/lecture/DownloadNotesButton";
+import { CardGlass } from "@/components/shared/CardGlass";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
-const BLUE = "#2563EB";
-const BLUE_VIBRANT = "#3B82F6";
-const PURPLE = "#7C3AED";
-const PURPLE_GLOW = "#A855F7";
+const INDIGO = "#4F46E5";
+const SLATE_TECH = "#475569";
 
 // ─── Fetch helpers ─────────────────────────────────────────────────────────
 
@@ -122,21 +118,21 @@ function QuizPopup({
       initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
       animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+      className="absolute inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 rounded-[3.5rem]"
     >
-      <div className="bg-white/90 border border-gray-200 rounded-[3rem] w-full max-w-lg shadow-[0_48px_96px_-24px_rgba(0,0,0,0.8)] overflow-hidden">
+      <CardGlass className="border-gray-200 bg-white/95 rounded-[3rem] w-full max-w-lg shadow-3xl overflow-hidden p-0">
         <div className="px-10 pt-10 pb-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              Quest {questionIndex + 1} of {total}
+            <span className="text-[9px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-500 border border-indigo-100">
+              Checkpoint {questionIndex + 1} of {total}
             </span>
           </div>
         </div>
         <div className="px-10 pb-8">
-          <p className="text-[11px] font-black text-blue-500/60 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> {question.segmentTitle}
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5" /> {question.segmentTitle}
           </p>
-          <p className="text-xl font-black text-white leading-relaxed mb-10">{question.questionText}</p>
+          <p className="text-xl font-bold text-slate-800 leading-tight mb-10">{question.questionText}</p>
           <div className="space-y-4">
             {question.options.map((opt) => {
               const isSelected = selected === opt.label;
@@ -147,55 +143,53 @@ function QuizPopup({
                 <button key={opt.label} onClick={() => state === "asking" && setSelected(opt.label)}
                   disabled={state !== "asking"}
                   className={cn(
-                    "w-full flex items-center gap-5 px-7 py-5 rounded-[2rem] border-2 text-left text-sm font-bold transition-all",
-                    state === "asking" && !isSelected && "border-white/5 bg-white/5 hover:bg-white/10 hover:border-gray-200",
-                    state === "asking" && isSelected && "border-blue-500 bg-blue-500/10 text-blue-400",
-                    showResult && isCorrect && "border-emerald-500 bg-emerald-500/10 text-emerald-400",
-                    showResult && isWrong && "border-red-500 bg-red-500/10 text-red-400",
-                    showResult && !isCorrect && !isWrong && "border-white/5 opacity-50 text-white/40",
+                    "w-full flex items-center gap-5 px-6 py-4 rounded-2xl border text-left text-sm font-bold transition-all",
+                    state === "asking" && !isSelected && "border-slate-100 bg-white hover:bg-slate-50",
+                    state === "asking" && isSelected && "border-indigo-600 bg-indigo-50/30 text-indigo-600",
+                    showResult && isCorrect && "border-emerald-500 bg-emerald-50 text-emerald-600 shadow-sm",
+                    showResult && isWrong && "border-red-500 bg-red-50 text-red-600 shadow-sm",
+                    showResult && !isCorrect && !isWrong && "border-slate-50 opacity-40 grayscale",
                   )}>
                   <span className={cn(
-                    "w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shrink-0 transition-all",
-                    state === "asking" && isSelected ? "bg-blue-500 text-white shadow-2xl" : "bg-white/10 text-white/50",
-                    showResult && isCorrect && "bg-emerald-500 text-white shadow-2xl",
-                    showResult && isWrong && "bg-red-500 text-white shadow-2xl",
+                    "w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-bold shrink-0 transition-all",
+                    state === "asking" && isSelected ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-50 text-slate-400 border border-slate-100",
+                    showResult && isCorrect ? "bg-emerald-500 text-white shadow-lg" : "",
+                    showResult && isWrong ? "bg-red-500 text-white shadow-lg" : "",
                   )}>
                     {opt.label}
                   </span>
-                  <span className="flex-1 text-white/80">{opt.text}</span>
+                  <span className="flex-1 text-slate-700 font-bold">{opt.text}</span>
                 </button>
               );
             })}
           </div>
         </div>
-        <div className="p-10 bg-black/40 border-t border-white/5">
+        <div className="p-10 bg-slate-50 border-t border-slate-100">
           {state === "asking" ? (
-            <motion.button whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSubmit} disabled={!selected || isSubmitting}
-              className="w-full py-6 rounded-[1.75rem] text-white text-sm font-black flex items-center justify-center gap-4 transition-all disabled:opacity-50 relative group shadow-2xl overflow-hidden"
-              style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_VIBRANT})` }}>
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-              Finalize Choice <ChevronRight className="w-5 h-5" />
+            <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={handleSubmit} disabled={!selected || isSubmitting}
+              className="w-full py-5 rounded-2xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg hover:bg-indigo-600 transition-all disabled:opacity-50">
+              Submit Response <ChevronRight className="w-4 h-4" />
             </motion.button>
           ) : (
-            <div className="space-y-5">
-              <div className={cn("flex items-start gap-5 rounded-[2rem] px-7 py-6 border",
-                state === "correct" ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20")}>
-                {state === "correct" ? <CheckCircle className="w-7 h-7 text-emerald-400 shrink-0 mt-0.5" /> : <XCircle className="w-7 h-7 text-red-400 shrink-0 mt-0.5" />}
+            <div className="space-y-4">
+              <div className={cn("flex items-start gap-5 rounded-2xl px-6 py-5 border",
+                state === "correct" ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
+                {state === "correct" ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />}
                 <div>
-                  <p className={cn("text-lg font-black mb-1", state === "correct" ? "text-emerald-400" : "text-red-400")}>
-                    {state === "correct" ? "Neural Link Secured!" : "Synchronization Error"}
+                  <p className={cn("text-base font-bold mb-1", state === "correct" ? "text-emerald-600" : "text-red-600")}>
+                    {state === "correct" ? "Synchronized Successfully" : "Sync Error Detected"}
                   </p>
-                  {result?.explanation && <p className="text-sm font-semibold leading-relaxed text-white/60">{result.explanation}</p>}
+                  {result?.explanation && <p className="text-[11px] font-bold leading-relaxed text-slate-400 uppercase tracking-tight">{result.explanation}</p>}
                 </div>
               </div>
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onClose}
-                className="w-full py-6 rounded-[1.75rem] text-gray-900 text-sm font-black flex items-center justify-center gap-4 transition-all shadow-xl bg-white/10 hover:bg-white/20 border border-white/5">
-                Resume Expedition <Play className="w-4.5 h-4.5 fill-white" />
+              <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} onClick={onClose}
+                className="w-full py-4 rounded-2xl text-slate-800 text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm bg-white border border-slate-100">
+                Continue Expedition <Play className="w-3.5 h-3.5 fill-current" />
               </motion.button>
             </div>
           )}
         </div>
-      </div>
+      </CardGlass>
     </motion.div>
   );
 }
@@ -283,16 +277,10 @@ function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative bg-[#020617] rounded-[3.5rem] overflow-hidden aspect-video group shadow-[0_32px_120px_-20px_rgba(0,0,0,0.9)] ring-1 ring-white/5"
+      className="relative bg-black rounded-3xl overflow-hidden aspect-video group shadow-xl ring-1 ring-slate-100"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Cinematic Dynamic Ambient Glow */}
-      <div className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-700 opacity-30 group-hover:opacity-100">
-        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-blue-600/10 blur-[120px] rounded-full -ml-32 -mt-32" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-600/10 blur-[120px] rounded-full -mr-32 -mb-32" />
-      </div>
-
       {isYouTube ? (
         <iframe
           src={`${src.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}?enablejsapi=1`}
@@ -311,7 +299,7 @@ function VideoPlayer({
               v.currentTime = resumeAt;
               const mins = Math.floor(resumeAt / 60);
               const secs = String(Math.floor(resumeAt % 60)).padStart(2, "0");
-              setResumeToast(`Resuming chapter at ${mins}:${secs}`);
+              setResumeToast(`Resuming at ${mins}:${secs}`);
               setTimeout(() => setResumeToast(null), 3000);
             }
           }}
@@ -328,87 +316,69 @@ function VideoPlayer({
         )}
       </AnimatePresence>
 
-      {/* Floating Resume toast */}
       <AnimatePresence>
         {resumeToast && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            className="absolute top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-white/5 backdrop-blur-3xl text-gray-900 text-[12px] font-black px-8 py-4 rounded-3xl border border-gray-200 shadow-2xl ring-1 ring-white/10">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_15px_rgba(37,99,235,0.8)]" /> {resumeToast}
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white/90 backdrop-blur-xl text-slate-800 text-[8px] font-bold uppercase tracking-widest px-6 py-3 rounded-2xl border border-slate-100 shadow-lg">
+            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> {resumeToast}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Floating Doubt Assist */}
       {!isYouTube && (
-        <div className="absolute top-8 right-8 z-40 transition-all duration-500 origin-right" style={{ opacity: hovered && !activeQuiz ? 1 : 0, scale: hovered ? 1 : 0.8 }}>
-          <button onClick={onDoubtClick} className="flex items-center gap-3 bg-black/40 backdrop-blur-2xl text-gray-900 px-7 py-4 rounded-[1.5rem] shadow-2xl border border-gray-200 hover:bg-white/10 transition-all group/doubt">
-            <MessageCircle className="w-5 h-5 text-blue-400 font-black group-hover/doubt:scale-110 transition-transform" />
-            <span className="text-xs font-black tracking-tight">Vocalize Doubt</span>
+        <div className="absolute top-6 right-6 z-40" style={{ opacity: hovered && !activeQuiz ? 1 : 0 }}>
+          <button onClick={onDoubtClick} className="flex items-center gap-2.5 bg-white/80 backdrop-blur-xl text-slate-800 px-5 py-3 rounded-xl shadow-lg border border-white hover:bg-white transition-all">
+            <MessageCircle className="w-4 h-4 text-indigo-500" />
+            <span className="text-[9px] font-bold tracking-widest uppercase">Vocalize Doubt</span>
           </button>
         </div>
       )}
 
       {!isYouTube && (
-        <div className="absolute bottom-10 left-10 right-10 z-40 transition-all duration-500 transform"
+        <div className="absolute bottom-6 left-6 right-6 z-40 transition-all duration-500"
           style={{
             opacity: hovered || !playing ? 1 : 0,
-            translateY: hovered || !playing ? "0px" : "20px"
+            transform: hovered || !playing ? "translateY(0)" : "translateY(10px)"
           }}
         >
-          {/* Aero Floating Console */}
-          <div className="bg-black/40 backdrop-blur-3xl border border-gray-200 rounded-[2.5rem] px-10 py-8 shadow-[0_24px_50px_rgba(0,0,0,0.5)]">
-            <div className="relative mb-8 group/progress">
-              <div className="h-2 bg-white/5 rounded-full cursor-pointer relative hover:h-3 transition-all" onClick={seek}>
-                <div className="h-full rounded-full shadow-[0_0_20px_rgba(37,99,235,0.6)] relative overflow-hidden"
-                  style={{ width: `${progressPct}%`, background: `linear-gradient(90deg, ${BLUE} 0%, ${BLUE_VIBRANT} 100%)` }}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" style={{ backgroundSize: "200% 100%" }} />
-                </div>
+          <div className="bg-white/90 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-5 shadow-xl">
+            <div className="relative mb-5">
+              <div className="h-1 bg-slate-100 rounded-full cursor-pointer relative" onClick={seek}>
+                <div className="h-full rounded-full bg-indigo-600" style={{ width: `${progressPct}%` }} />
                 {checkpoints.map(cp => (
                   <div key={cp.id}
-                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white bg-blue-500 -translate-x-1/2 shadow-2xl cursor-help hover:scale-125 transition-transform"
-                    style={{ left: `${cp.triggerAtPercent}%` }} title={cp.segmentTitle} />
+                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-white bg-indigo-400 -translate-x-1/2"
+                    style={{ left: `${cp.triggerAtPercent}%` }} />
                 ))}
               </div>
             </div>
 
-            <div className="flex items-center gap-8">
-              <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-all transform hover:scale-110 active:scale-95">
-                {playing ? <Pause className="w-10 h-10 fill-white" /> : <Play className="w-10 h-10 fill-white" />}
+            <div className="flex items-center gap-6">
+              <button onClick={togglePlay} className="text-slate-800 hover:text-indigo-600 transition-all">
+                {playing ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
               </button>
-
               <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, v.currentTime - 10); }}
-                className="text-white/40 hover:text-white transition-colors">
-                <RotateCcw className="w-7 h-7" />
+                className="text-slate-300 hover:text-slate-600 transition-colors">
+                <RotateCcw className="w-5 h-5" />
               </button>
-
-              <div className="flex items-center gap-3">
-                <span className="text-gray-900 font-mono text-[13px] font-black tracking-widest bg-white/5 px-4 py-2.5 rounded-2xl border border-white/5 tabular-nums">
-                  {fmt(localTime)} <span className="opacity-20 mx-1">|</span> {fmt(duration)}
-                </span>
-              </div>
-
+              <span className="text-slate-400 font-mono text-[9px] font-bold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 tabular-nums">
+                {fmt(localTime)} / {fmt(duration)}
+              </span>
               <div className="flex-1" />
-
-              <div className="flex items-center gap-6">
-                <div className="bg-white/5 px-2 rounded-2xl backdrop-blur-xl border border-white/5 ring-1 ring-white/5">
-                  <SpeedControl videoRef={videoRef} />
-                </div>
-
-                <div className="flex items-center gap-4 bg-white/5 rounded-2xl px-5 py-2.5 backdrop-blur-xl border border-white/5">
-                  <button onClick={() => { setMuted(m => !m); if (videoRef.current) videoRef.current.muted = !muted; }}
-                    className="text-white/40 hover:text-white transition-colors">
-                    {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                  </button>
-                  <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume}
-                    onChange={e => { const v = parseFloat(e.target.value); setVolume(v); if (videoRef.current) videoRef.current.volume = v; }}
-                    className="w-16 accent-blue-500 cursor-pointer" />
-                </div>
-
-                <button onClick={() => containerRef.current?.requestFullscreen()}
-                  className="text-white/40 hover:text-white transition-all p-3 bg-white/5 rounded-2xl backdrop-blur-xl border border-white/5 hover:scale-105 active:scale-95">
-                  <Maximize className="w-5 h-5" />
+              <SpeedControl videoRef={videoRef} />
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5">
+                <button onClick={() => { setMuted(m => !m); if (videoRef.current) videoRef.current.muted = !muted; }}
+                  className="text-slate-300 hover:text-slate-600">
+                  {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                 </button>
+                <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume}
+                  onChange={e => { const v = parseFloat(e.target.value); setVolume(v); if (videoRef.current) videoRef.current.volume = v; }}
+                  className="w-16 accent-indigo-500 cursor-pointer h-1" />
               </div>
+              <button onClick={() => containerRef.current?.requestFullscreen()}
+                className="text-slate-300 hover:text-slate-600 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                <Maximize className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -421,40 +391,38 @@ function VideoPlayer({
 
 function NotesPanel({ lecture }: { lecture: Lecture }) {
   return (
-    <div className="h-full overflow-y-auto space-y-6 pr-2 custom-scrollbar">
+    <div className="h-full overflow-y-auto space-y-6 pr-2 scrollbar-none">
       {(lecture.aiKeyConcepts?.length ?? 0) > 0 && (
-        <div className="bg-white/5 border border-gray-200 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
-          <div className="absolute -top-12 -right-12 w-24 h-24 bg-blue-500/10 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-1000" />
-          <p className="text-[10px] font-black tracking-[0.25em] text-blue-400 uppercase mb-6 flex items-center gap-4">
-            <Tag className="w-4 h-4" /> Core Synthesis
+        <CardGlass className="border-slate-100 bg-white/40 p-6 shadow-sm">
+          <p className="text-[8px] font-bold tracking-widest text-indigo-500 uppercase mb-5 flex items-center gap-2.5">
+            <Tag className="w-3.5 h-3.5" /> CORE SYNTHESIS
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {lecture.aiKeyConcepts!.map((c, i) => (
-              <span key={i} className="px-5 py-2.5 rounded-[1.25rem] text-[11px] font-black bg-white/5 text-white/70 border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all cursor-default">
+              <span key={i} className="px-3 py-1.5 rounded-xl text-[9px] font-bold bg-white text-slate-500 border border-slate-100 uppercase tracking-tight">
                 {c}
               </span>
             ))}
           </div>
-        </div>
+        </CardGlass>
       )}
-      <div className="bg-white/5 border border-gray-200 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-2xl relative min-h-[400px]">
+      <CardGlass className="border-slate-100 bg-white/40 p-8 shadow-sm min-h-[400px]">
         {lecture.aiNotesMarkdown ? (
           <div>
-            <p className="text-[10px] font-black tracking-[0.25em] text-emerald-400 uppercase mb-8 flex items-center gap-4">
-              <BookOpen className="w-5 h-5" /> Neural Transcription
+            <p className="text-[8px] font-bold tracking-widest text-indigo-500 uppercase mb-6 flex items-center gap-2.5">
+              <BookOpen className="w-3.5 h-3.5" /> NEURAL TRANSCRIPTION
             </p>
-            <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600 prose-strong:text-blue-400 prose-code:bg-white/5 prose-code:text-emerald-400 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:before:content-none prose-code:after:content-none prose-ul:text-gray-600">
+            <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-headings:font-bold prose-headings:tracking-tight prose-p:text-slate-500 prose-p:font-bold prose-p:text-[11px] prose-p:leading-relaxed prose-strong:text-indigo-600 prose-code:bg-slate-50 prose-code:text-emerald-600 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-lg prose-code:before:content-none prose-code:after:content-none">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{lecture.aiNotesMarkdown}</ReactMarkdown>
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-500/20 mb-6" />
-            <p className="font-black text-white uppercase tracking-[0.3em] text-xs">Architecting Insights...</p>
-            <p className="text-sm font-medium text-white/30 mt-2">Our AI is processing the neural cache.</p>
+            <Loader2 className="w-8 h-8 animate-spin text-slate-100 mb-5" />
+            <p className="font-bold text-slate-300 uppercase tracking-widest text-[8px]">Architecting Insights...</p>
           </div>
         )}
-      </div>
+      </CardGlass>
     </div>
   );
 }
@@ -468,62 +436,52 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
   const answered = savedResponses ?? [];
   const correct = answered.filter(r => r.isCorrect).length;
   return (
-    <div className="space-y-6 overflow-y-auto h-full pr-2 custom-scrollbar">
+    <div className="space-y-6 overflow-y-auto h-full pr-2 scrollbar-none">
       {answered.length > 0 && (
-        <div className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-indigo-600/10 border border-gray-200 rounded-[2.5rem] p-8 shadow-2xl shadow-blue-500/5">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-gray-200 shadow-inner">
-              <Trophy className="w-9 h-9 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
+        <CardGlass className="bg-slate-900 rounded-3xl p-6 shadow-xl border-none">
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+              <Trophy className="w-6 h-6 text-amber-500" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 mb-1">Retrieval Accuracy</p>
-              <p className="text-xl font-black text-white">{correct} of {answered.length} Quests <span className="text-blue-400 opacity-60 ml-2">— {Math.round((correct / answered.length) * 100)}%</span></p>
+              <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">RETRIEVAL ACCURACY</p>
+              <p className="text-base font-bold text-white tracking-tight uppercase leading-none mt-1">
+                {correct} of {answered.length} CHECKPOINTS 
+                <span className="text-indigo-400 ml-2">{Math.round((correct / Math.max(answered.length, 1)) * 100)}%</span>
+              </p>
             </div>
           </div>
-        </div>
+        </CardGlass>
       )}
-      <div className="space-y-5">
+      <div className="space-y-4">
         {checkpoints.map((cp, i) => {
           const response = answered.find(r => r.questionId === cp.id);
           return (
-            <div key={cp.id} className={cn("rounded-[2.5rem] border p-8 text-sm shadow-xl transition-all relative overflow-hidden group",
-              response?.isCorrect ? "bg-emerald-500/5 border-emerald-500/10" :
-                response ? "bg-red-500/5 border-red-500/10" : "bg-white/5 border-white/5 hover:border-gray-200")}>
-
-              <div className="relative z-10 flex items-start gap-6">
-                <span className={cn("w-12 h-12 rounded-[1.25rem] flex items-center justify-center border shadow-2xl text-xs font-black shrink-0",
-                  response?.isCorrect ? "bg-emerald-500/20 border-emerald-500/20 text-emerald-400" :
-                    response ? "bg-red-500/20 border-red-500/20 text-red-400" : "bg-white/5 border-gray-200 text-white/30")}>
-                  Q{i + 1}
+            <CardGlass key={cp.id} className={cn("p-6 rounded-3xl border shadow-xs transition-all relative overflow-hidden",
+              response?.isCorrect ? "bg-emerald-50/30 border-emerald-100" :
+                response ? "bg-red-50/30 border-red-100" : "bg-white/40 border-slate-100/50")}>
+              <div className="flex items-start gap-5">
+                <span className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-[9px] font-bold shrink-0 shadow-xs",
+                  response?.isCorrect ? "bg-emerald-500 text-white" :
+                    response ? "bg-red-500 text-white" : "bg-slate-50 text-slate-300 border border-slate-100")}>
+                  C{i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-3 flex items-center gap-3">
-                    <Clock className="w-4 h-4" /> {cp.segmentTitle}
-                  </p>
-                  <p className="text-lg font-bold text-white/90 leading-relaxed mb-6">{cp.questionText}</p>
+                  <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-2.5">{cp.segmentTitle}</p>
+                  <p className="text-[13px] font-bold text-slate-700 leading-tight tracking-tight mb-5">{cp.questionText}</p>
                   {response ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4 bg-gray-200/50 p-5 rounded-[1.5rem] border border-white/5">
-                        <div className={cn("w-2.5 h-2.5 rounded-full", response.isCorrect ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" : "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]")} />
-                        <span className="text-[11px] font-black text-white/30 uppercase tracking-widest mr-2">Selection:</span>
-                        <span className="text-md font-bold text-white">{response.selectedOption}</span>
-                      </div>
-                      {!response.isCorrect && (
-                        <div className="flex items-center gap-4 bg-emerald-500/5 p-5 rounded-[1.5rem] border border-emerald-500/10">
-                          <CheckCircle className="w-5 h-5 text-emerald-500" />
-                          <span className="text-[11px] font-black text-emerald-500/60 uppercase tracking-widest mr-2">Correction:</span>
-                          <span className="text-md font-black text-emerald-400">{cp.correctOption}</span>
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2.5 bg-white border border-slate-100 p-3 rounded-xl shadow-xs">
+                       <div className={cn("w-2 h-2 rounded-full", response.isCorrect ? "bg-emerald-500" : "bg-red-500")} />
+                       <span className="text-[11px] font-bold text-slate-600">{response.selectedOption}</span>
                     </div>
                   ) : (
-                    <div className="inline-flex items-center gap-3 text-[11px] font-black text-white/20 bg-white/5 px-6 py-3 rounded-2xl uppercase tracking-widest border border-white/5">
-                      <Lock className="w-4 h-4" /> Locked in Stasis
+                    <div className="inline-flex items-center gap-2 text-[8px] font-bold text-slate-200 uppercase tracking-widest">
+                       <Lock className="w-3 h-3" /> Locked in Stasis
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            </CardGlass>
           );
         })}
       </div>
@@ -531,11 +489,9 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
   );
 }
 
-// ─── Tab types ─────────────────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────────────────────────────
 
 type TabKey = "notes" | "formulas" | "quiz" | "doubt";
-
-// ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function StudentLecturePage() {
   const { id } = useParams<{ id: string }>();
@@ -544,18 +500,15 @@ export default function StudentLecturePage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("notes");
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoHovered, setVideoHovered] = useState(false);
+  const [, setVideoHovered] = useState(false);
   const [doubtTimestamp, setDoubtTimestamp] = useState(0);
 
   const [topicProgress, setTopicProgress] = useState<TopicProgress | null>(null);
-  const [nextLecture, setNextLecture] = useState<Lecture | null>(null);
   const [mockTestId, setMockTestId] = useState<string | null>(null);
   const [completionReward, setCompletionReward] = useState<LectureCompletionReward | null>(null);
 
   const { watchPct: liveWatchPct, currentTime: liveCurrentTime } = useWatchPercentage(videoRef);
-  const { data: me } = useStudentMe();
 
-  // Queries
   const { data: lecture, isLoading: lectureLoading, error: lectureError } = useQuery({
     queryKey: ["student", "lecture", id],
     queryFn: () => fetchLecture(id!),
@@ -579,53 +532,36 @@ export default function StudentLecturePage() {
     if (!lecture?.topicId) return;
     const topicId = lecture.topicId;
     getTopicProgress(topicId).then(p => setTopicProgress(p)).catch(() => setTopicProgress(null));
-    fetchSiblingLectures(topicId).then(siblings => {
-      const currentIndex = siblings.findIndex(s => s.id === id);
-      if (currentIndex !== -1 && currentIndex < siblings.length - 1) setNextLecture(siblings[currentIndex + 1]);
-    });
     fetchMockTestForTopic(topicId).then(mtId => setMockTestId(mtId));
   }, [lecture?.topicId, id]);
 
-  const handleCloseDoubt = () => { setActiveTab("notes"); };
-
   const handleCompletion = useCallback((reward: LectureCompletionReward) => {
     setCompletionReward(reward);
-    toast.success(reward.message, { duration: 4000 });
+    toast.success(reward.message);
     qc.invalidateQueries({ queryKey: ["student", "plan"] });
     qc.invalidateQueries({ queryKey: ["student", "me"] });
-    if (reward.mockTestId) setMockTestId(reward.mockTestId);
   }, [qc]);
 
   useLectureProgress(id ?? "", videoRef, handleCompletion);
 
   if (lectureLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#020617] gap-8">
-      <div className="relative">
-        <div className="w-24 h-24 rounded-full border-4 border-blue-500/10 border-t-blue-500 animate-[spin_1.5s_linear_infinite]" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <motion.div animate={{ scale: [0.8, 1.1, 0.8] }} transition={{ repeat: Infinity, duration: 2 }}>
-            <Sparkles className="w-10 h-10 text-blue-500 drop-shadow-[0_0_15px_rgba(37,99,235,0.8)]" />
-          </motion.div>
-        </div>
+    <div className="py-40 flex flex-col items-center justify-center gap-8">
+      <div className="w-16 h-16 rounded-3xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+         <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
       </div>
-      <p className="text-[11px] font-black text-blue-400 uppercase tracking-[0.5em] animate-pulse">Initializing Neural Link</p>
+      <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest animate-pulse">Initializing Neural Link...</p>
     </div>
   );
 
-  const isAccessLocked = (lectureError as any)?.response?.status === 403 || (lectureError as any)?.status === 403;
+  const isAccessLocked = (lectureError as any)?.response?.status === 403;
   if (isAccessLocked) return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#020617] text-center px-10">
-      <div className="w-28 h-28 rounded-[2.5rem] bg-white/5 border border-gray-200 flex items-center justify-center shadow-3xl mb-10 group hover:border-red-500/20 transition-all duration-500">
-        <Lock className="w-14 h-14 text-slate-500 group-hover:text-red-500 transition-colors" />
+    <div className="py-40 flex flex-col items-center justify-center text-center px-10">
+      <div className="w-20 h-20 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-sm mb-10">
+        <Lock className="w-8 h-8 text-slate-200" />
       </div>
-      <div>
-        <p className="text-3xl font-black text-white mb-4 italic tracking-tight">Expedition Overridden</p>
-        <p className="text-slate-500 font-bold max-w-sm mb-12 uppercase text-[11px] tracking-widest leading-loose">Access depends on chapter finalization (90%+ progress requirement).</p>
-      </div>
-      <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(-1)}
-        className="px-12 py-6 rounded-[1.75rem] bg-white text-slate-900 font-black text-sm shadow-2xl hover:bg-blue-50 transition-all">
-        Reverse Coarse
-      </motion.button>
+      <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-tight mb-4">Expedition Overridden</h2>
+      <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest max-w-sm leading-relaxed mb-12">Access depends on chapter finalization (90%+ progress requirement).</p>
+      <button onClick={() => navigate(-1)} className="px-12 py-5 rounded-2xl bg-slate-900 text-white font-bold text-[9px] uppercase tracking-widest shadow-lg hover:bg-indigo-600 transition-colors">Reverse Coarse</button>
     </div>
   );
 
@@ -642,175 +578,129 @@ export default function StudentLecturePage() {
     { key: "notes", label: "Intel", icon: BookOpen },
     { key: "formulas", label: "Formulae", icon: FlaskConical },
     ...(checkpoints.length > 0 ? [{ key: "quiz" as const, label: "Quests", icon: Sparkles }] : []),
+    { key: "doubt", label: "Query", icon: MessageCircle },
   ];
 
-  const handleDoubtClick = () => { setDoubtTimestamp(liveCurrentTime); setActiveTab("doubt"); };
-  const handleTakeQuiz = () => {
-    const path = mockTestId ? `/student/quiz?mockTestId=${mockTestId}` : `/student/quiz?topicId=${lecture.topicId}`;
-    navigate(path);
-  };
-
   return (
-    <div className="min-h-screen relative bg-[#020617] overflow-x-hidden selection:bg-blue-500/30 selection:text-blue-200 custom-scrollbar">
-      {/* ── Aero Dynamic Background ── */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
-        <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-blue-600/10 blur-[180px] rounded-full -mr-96 -mt-96 animate-pulse" style={{ animationDuration: "10s" }} />
-        <div className="absolute top-1/2 left-0 w-[800px] h-[800px] bg-purple-600/10 blur-[180px] rounded-full -ml-96 animate-pulse" style={{ animationDuration: "12s" }} />
-      </div>
-
-      {/* ── Modern Top Bar ── */}
-      <nav className="sticky top-0 z-50 bg-[#020617]/40 backdrop-blur-3xl border-b border-white/5 px-10 py-8 flex items-center gap-10">
-        <motion.button
-          whileHover={{ scale: 1.1, x: -5 }} whileTap={{ scale: 0.95 }}
-          onClick={() => navigate(-1)}
-          className="w-14 h-14 flex items-center justify-center rounded-[1.75rem] bg-white/5 border border-gray-200 hover:bg-white/10 transition-all shadow-2xl"
-        >
-          <ArrowLeft className="w-6 h-6 text-white" />
-        </motion.button>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-5 mb-2">
-            <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-5 py-2 rounded-2xl uppercase tracking-[0.3em] border border-blue-500/20 shadow-inner">
-              {lecture.topic?.name ?? "Segment"}
-            </span>
-            {isLive && (
-              <span className="flex items-center gap-3 bg-red-500/10 text-red-500 text-[10px] font-black px-5 py-2 rounded-2xl uppercase tracking-[0.3em] border border-red-500/20">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shadow-[0_0_15px_rgba(239,68,68,0.8)]" /> Active Frequency
-              </span>
-            )}
-          </div>
-          <h1 className="font-black text-white text-2xl sm:text-3xl truncate tracking-tight italic uppercase">{lecture.title}</h1>
-        </div>
-
-        {displayWatchPct > 0 && !isLive && (
-          <div className="hidden lg:flex items-center gap-8 px-10 py-5 rounded-[2.5rem] border border-gray-200 bg-white/5 backdrop-blur-3xl shadow-3xl hover:bg-white/10 transition-colors">
-            <div>
-              <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.25em] mb-2">Neural Assimilation</p>
-              <div className="flex items-center gap-5">
-                <div className="w-48 h-2 bg-white/10 rounded-full overflow-hidden p-0.5">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${displayWatchPct}%` }} className="h-full bg-blue-500 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.8)]" />
-                </div>
-                <span className="text-sm font-black text-white tabular-nums">{Math.round(displayWatchPct)}%</span>
+    <div className="flex flex-col space-y-12 pb-32">
+        {/* Status Terminal */}
+        <CardGlass className="px-8 py-5 border-white bg-white/40 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+           <div className="flex items-center gap-5">
+              <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg group hover:bg-indigo-600 transition-all">
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              </button>
+              <div className="min-w-0">
+                 <div className="flex items-center gap-2.5 mb-1">
+                    <span className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100/50">{lecture.topic?.name ?? "Segment"}</span>
+                    {isLive && <span className="flex items-center gap-2 text-[8px] font-bold text-red-500 uppercase tracking-widest bg-red-50 px-2.5 py-1 rounded-lg border border-red-100/50"><div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live</span>}
+                 </div>
+                 <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none truncate max-w-[400px] uppercase">{lecture.title}</h1>
               </div>
-            </div>
-          </div>
-        )}
-      </nav>
+           </div>
 
-      <main className="relative z-10 max-w-[1800px] mx-auto px-10 py-12 grid grid-cols-1 xl:grid-cols-4 gap-12">
-        {/* ── Cinematic Arena ── */}
-        <div className="xl:col-span-3 space-y-12">
-
-          {/* Aero Cinema Video */}
-          <div className="relative p-2 rounded-[4rem] bg-white/5 border border-white/5 shadow-3xl">
-            <VideoPlayer
-              src={videoSrc} checkpoints={checkpoints} lectureId={id!} videoRef={videoRef} onDoubtClick={handleDoubtClick}
-              onVideoHoverChange={setVideoHovered} currentTime={liveCurrentTime} resumeAt={savedProgress?.lastPositionSeconds}
-            />
-          </div>
-
-          {/* Vitals Feed */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-            <div className="xl:col-span-12">
-              <div className="flex flex-wrap gap-5">
-                {[
-                  { icon: Clock, label: "Duration", value: duration ?? "--", color: "text-blue-400", bg: "bg-blue-400/5", border: "border-blue-400/10" },
-                  { icon: Layers, label: "Modality", value: isLive ? "Live Sync" : "Neural Cache", color: "text-purple-400", bg: "bg-purple-400/5", border: "border-purple-400/10" },
-                  { icon: Calendar, label: "Timestamp", value: fmtDate(lecture.createdAt), color: "text-emerald-400", bg: "bg-emerald-400/5", border: "border-emerald-400/10" },
-                  { icon: Trophy, label: "Status", value: isRevisionMode ? "Mastered" : "Initiate", color: "text-amber-400", bg: "bg-amber-400/5", border: "border-amber-400/10" },
-                ].map((stat, i) => (
-                  <div key={i} className={cn("flex-1 min-w-[200px] backdrop-blur-3xl rounded-[2.5rem] px-8 py-7 shadow-2xl flex items-center gap-6 border transition-all hover:scale-105 group", stat.bg, stat.border)}>
-                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center shrink-0 shadow-inner group-hover:rotate-12 transition-transform">
-                      <stat.icon className={cn("w-7 h-7", stat.color)} />
+           <div className="flex items-center gap-10">
+              {!isLive && (
+                 <div className="hidden lg:flex flex-col items-end">
+                    <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-1.5">ABSORPTION RATE</p>
+                    <div className="flex items-center gap-4">
+                       <div className="w-28 h-1 bg-slate-100/50 rounded-full overflow-hidden border border-slate-100/30">
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${displayWatchPct}%` }} className="h-full bg-indigo-600 shadow-xs" />
+                       </div>
+                       <span className="text-[9px] font-bold text-slate-700 tracking-tighter">{Math.round(displayWatchPct)}%</span>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.25em] mb-1">{stat.label}</p>
-                      <p className="text-md font-black text-white uppercase tracking-tight">{stat.value}</p>
-                    </div>
-                  </div>
-                ))}
+                 </div>
+              )}
+           </div>
+        </CardGlass>
+
+        {/* Main Arena */}
+        <div className="max-w-[1700px] mx-auto w-full grid grid-cols-1 xl:grid-cols-4 gap-12">
+           <div className="xl:col-span-3 space-y-12">
+              <div className="p-2 rounded-[4rem] bg-white border border-white shadow-3xl">
+                 <VideoPlayer
+                   src={videoSrc} checkpoints={checkpoints} lectureId={id!} videoRef={videoRef} onDoubtClick={() => { setDoubtTimestamp(liveCurrentTime); setActiveTab("doubt"); }}
+                   onVideoHoverChange={setVideoHovered} currentTime={liveCurrentTime} resumeAt={savedProgress?.lastPositionSeconds}
+                 />
               </div>
-            </div>
 
-            <div className="xl:col-span-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 {[
+                   { icon: Clock, label: "Duration", value: duration ?? "--", color: "text-indigo-600", bg: "bg-indigo-50" },
+                   { icon: Layers, label: "Type", value: isLive ? "Live" : "Recorded", color: "text-slate-600", bg: "bg-slate-50" },
+                   { icon: Calendar, label: "Date", value: fmtDate(lecture.createdAt), color: "text-slate-600", bg: "bg-slate-50" },
+                 ].map((stat, i) => (
+                   <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${stat.bg}`}>
+                       <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                     </div>
+                     <div>
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                       <p className="text-sm font-bold text-slate-800">{stat.value}</p>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+
               {quizUnlocked && !isLive && (
                 <motion.button
-                  whileHover={{ y: -5, scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                  onClick={handleTakeQuiz}
-                  className="w-full relative overflow-hidden p-10 rounded-[3.5rem] border border-blue-500/20 bg-gradient-to-br from-blue-600/10 via-indigo-600/10 to-transparent backdrop-blur-3xl shadow-3xl group text-left"
+                  whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}
+                  onClick={() => navigate(mockTestId ? `/student/quiz?mockTestId=${mockTestId}` : `/student/quiz?topicId=${lecture.topicId}`)}
+                  className="w-full flex items-center justify-between px-8 py-6 rounded-2xl bg-slate-900 text-white shadow-xl group transition-all"
                 >
-                  <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 blur-[100px] rounded-full -mr-96 -mt-96 group-hover:scale-150 transition-transform duration-1000" />
-                  <div className="relative flex items-center justify-between gap-10">
-                    <div className="flex items-center gap-10">
-                      <div className="w-24 h-24 rounded-[2rem] bg-blue-600 flex items-center justify-center shadow-[0_20px_50px_rgba(37,99,235,0.4)] group-hover:rotate-6 transition-transform">
-                        <Sparkles className="w-12 h-12 text-white" />
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg group-hover:rotate-3 transition-transform">
+                         <Sparkles className="w-6 h-6" />
                       </div>
-                      <div>
-                        <h4 className="text-3xl font-black text-white italic uppercase tracking-tight">Initiate Topic Quest</h4>
-                        <p className="text-lg text-white/40 font-bold mt-2">Validate neural links and acquire bonus EXP for your rank.</p>
+                      <div className="text-left">
+                         <h4 className="text-base font-bold">Take Quiz</h4>
+                         <p className="text-xs text-slate-400 mt-0.5">Test your understanding and earn XP</p>
                       </div>
-                    </div>
-                    <div className="w-16 h-16 rounded-full bg-white/5 border border-gray-200 flex items-center justify-center group-hover:bg-blue-600 group-hover:translate-x-3 transition-all">
-                      <ChevronRight className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
+                   </div>
+                   <ChevronRight className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </motion.button>
               )}
-            </div>
-          </div>
+           </div>
+
+           <aside className="xl:col-span-1 flex flex-col gap-8">
+              <div className="flex gap-2 p-2 rounded-[2rem] bg-white border border-slate-100 shadow-sm">
+                 {tabs.map(t => (
+                   <button key={t.key} onClick={() => setActiveTab(t.key)}
+                     className={cn("flex-1 py-5 rounded-[1.5rem] flex flex-col items-center gap-2 transition-all",
+                       activeTab === t.key ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:text-slate-900")}>
+                      <t.icon className="w-5 h-5" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">{t.label}</span>
+                   </button>
+                 ))}
+              </div>
+
+              <div className="flex-1">
+                 <AnimatePresence mode="wait">
+                    {activeTab === "notes" && (
+                      <motion.div key="notes" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <NotesPanel lecture={lecture} />
+                      </motion.div>
+                    )}
+                    {activeTab === "formulas" && (
+                      <motion.div key="formulas" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <FormulasTab formulas={lecture.aiFormulas?.map(f => ({ name: "N/A", latex: f, description: "" })) ?? []} />
+                      </motion.div>
+                    )}
+                    {activeTab === "quiz" && (
+                      <motion.div key="quiz" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <QuizSummaryPanel checkpoints={checkpoints} savedResponses={savedProgress?.quizResponses} />
+                      </motion.div>
+                    )}
+                    {activeTab === "doubt" && (
+                      <motion.div key="doubt" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <CardGlass className="p-1 border-white shadow-2xl overflow-hidden bg-white/60">
+                          <AskDoubtPanel lectureId={id!} topicId={lecture.topicId} topicName={lecture.topic?.name ?? "General"} lectureTitle={lecture.title} timestampSeconds={doubtTimestamp} onClose={() => setActiveTab("notes")} />
+                        </CardGlass>
+                      </motion.div>
+                    )}
+                 </AnimatePresence>
+              </div>
+           </aside>
         </div>
-
-        {/* ── Aero Sidebar ── */}
-        <aside className="xl:col-span-1 h-[calc(100vh-14rem)] sticky top-40 flex flex-col gap-10 min-w-0">
-
-          {/* Premium High-Contrast Tabs */}
-          <div className="bg-white/5 p-2 rounded-[2.5rem] border border-white/5 backdrop-blur-3xl flex gap-1.5 shadow-2xl">
-            {[...tabs, { key: "doubt", label: "Query", icon: MessageCircle }].map(t => (
-              <button key={t.key} onClick={() => setActiveTab(t.key as any)}
-                className={cn("flex-1 px-3 py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.1em] transition-all flex flex-col items-center gap-3",
-                  activeTab === t.key ? "bg-white text-slate-900 shadow-2xl shadow-white/10 scale-105" : "text-white/40 hover:text-white/60 hover:bg-white/5")}>
-                <t.icon className={cn("w-5 h-5", activeTab === t.key ? "text-slate-900" : "text-white/20")} />
-                <span className="hidden lg:block">{t.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1 min-h-0 bg-white/2 rounded-[3.5rem] border border-white/5 p-2 shadow-inner group">
-            <div className="h-full overflow-hidden">
-              <AnimatePresence mode="wait">
-                {activeTab === "notes" && (
-                  <motion.div key="notes" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
-                    <NotesPanel lecture={lecture} />
-                  </motion.div>
-                )}
-                {activeTab === "formulas" && (
-                  <motion.div key="formulas" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
-                    <FormulasTab formulas={lecture.aiFormulas?.map(f => ({ name: "N/A", latex: f, description: "" })) ?? []} />
-                  </motion.div>
-                )}
-                {activeTab === "quiz" && (
-                  <motion.div key="quiz" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
-                    <QuizSummaryPanel checkpoints={checkpoints} savedResponses={savedProgress?.quizResponses} />
-                  </motion.div>
-                )}
-                {activeTab === "doubt" && (
-                  <motion.div key="doubt" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
-                    <div className="bg-white/5 border border-gray-200 rounded-[3rem] h-full overflow-hidden flex flex-col p-1 shadow-2xl shadow-purple-500/5">
-                      <AskDoubtPanel lectureId={id!} topicId={lecture.topicId} topicName={lecture.topic?.name ?? "General"} lectureTitle={lecture.title} timestampSeconds={doubtTimestamp} onClose={handleCloseDoubt} />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          <div className="mt-auto">
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <DownloadNotesButton lecture={lecture} />
-            </motion.div>
-          </div>
-        </aside>
-      </main>
     </div>
   );
 }

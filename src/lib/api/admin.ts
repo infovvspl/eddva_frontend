@@ -17,6 +17,7 @@ export interface DashboardStats {
 export interface Batch {
   id: string;
   name: string;
+  description?: string;
   examTarget: string;
   class: string;
   teacherId: string;
@@ -39,6 +40,7 @@ export interface Batch {
 
 export interface CreateBatchPayload {
   name: string;
+  description?: string;
   examTarget: string;
   class: string;
   teacherId?: string;
@@ -98,6 +100,7 @@ export interface Student {
 
 export interface Subject {
   id: string;
+  batchId?: string | null;
   name: string;
   examTarget: string;
   icon?: string;
@@ -129,7 +132,7 @@ export interface Topic {
   isActive: boolean;
 }
 
-export type TopicResourceType = "pdf" | "dpp" | "quiz" | "video" | "notes";
+export type TopicResourceType = "pdf" | "dpp" | "pyq" | "quiz" | "video" | "notes" | "link";
 
 export interface TopicResource {
   id: string;
@@ -137,8 +140,9 @@ export interface TopicResource {
   type: TopicResourceType;
   title: string;
   description?: string;
-  fileUrl: string;
-  fileSize?: number;
+  fileUrl?: string | null;
+  externalUrl?: string | null;
+  fileSizeKb?: number;
   sortOrder?: number;
   createdAt: string;
 }
@@ -222,6 +226,36 @@ export async function updateBatch(id: string, payload: Partial<CreateBatchPayloa
 
 export async function deleteBatch(id: string) {
   const res = await apiClient.delete(`/batches/${id}`);
+  return extractData<{ message: string }>(res);
+}
+
+export async function generateInviteLink(batchId: string) {
+  const res = await apiClient.post(`/batches/${batchId}/invite-link`);
+  return extractData<{ inviteUrl: string }>(res);
+}
+
+export interface BatchPreview {
+  id: string;
+  name: string;
+  description?: string;
+  examTarget: string;
+  class: string;
+  isPaid: boolean;
+  feeAmount?: number;
+  thumbnailUrl?: string;
+  maxStudents: number;
+  enrolledCount: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export async function getBatchPreview(token: string) {
+  const res = await apiClient.get(`/batches/join/preview`, { params: { token } });
+  return extractData<BatchPreview>(res);
+}
+
+export async function joinBatchByToken(token: string) {
+  const res = await apiClient.post(`/batches/join`, { token });
   return extractData<{ message: string }>(res);
 }
 
@@ -416,12 +450,13 @@ export async function listStudents(params?: { page?: number; limit?: number; sea
 // Content - Subjects
 // ---------------------------------------------------------------------------
 
-export async function listSubjects() {
-  const res = await apiClient.get("/content/subjects");
+export async function listSubjects(batchId?: string) {
+  const params = batchId ? `?batchId=${batchId}` : "";
+  const res = await apiClient.get(`/content/subjects${params}`);
   return extractData<Subject[]>(res);
 }
 
-export async function createSubject(payload: { name: string; examTarget: string; icon?: string; colorCode?: string }) {
+export async function createSubject(payload: { name: string; examTarget: string; batchId?: string; icon?: string; colorCode?: string }) {
   const res = await apiClient.post("/content/subjects", payload);
   return extractData<Subject>(res);
 }
@@ -614,9 +649,23 @@ export async function uploadTopicResource(payload: {
   return extractData<TopicResource>(res);
 }
 
-export async function deleteTopicResource(resourceId: string) {
-  const res = await apiClient.delete(`/content/topics/resources/${resourceId}`);
+export async function deleteTopicResource(resourceId: string, topicId: string) {
+  const res = await apiClient.delete(`/content/topics/${topicId}/resources/${resourceId}`);
   return extractData<{ message: string }>(res);
+}
+
+export async function addTopicResourceLink(payload: {
+  topicId: string;
+  title: string;
+  type: TopicResourceType;
+  externalUrl: string;
+  description?: string;
+}) {
+  const res = await apiClient.post(
+    `/content/topics/${payload.topicId}/resources/link`,
+    { title: payload.title, type: payload.type, externalUrl: payload.externalUrl, description: payload.description },
+  );
+  return extractData<TopicResource>(res);
 }
 
 // ---------------------------------------------------------------------------
@@ -645,6 +694,22 @@ export async function bulkCreateQuestions(questions: any[]) {
 // ---------------------------------------------------------------------------
 // Content - Lectures
 // ---------------------------------------------------------------------------
+
+export interface CreateLecturePayload {
+  batchId: string;
+  topicId?: string;
+  title: string;
+  description?: string;
+  type: "live" | "recorded";
+  videoUrl?: string;
+  scheduledAt?: string;
+  liveMeetingUrl?: string;
+}
+
+export async function createLecture(dto: CreateLecturePayload) {
+  const res = await apiClient.post("/content/lectures", dto);
+  return extractData<any>(res);
+}
 
 export async function listLectures() {
   const res = await apiClient.get("/content/lectures");

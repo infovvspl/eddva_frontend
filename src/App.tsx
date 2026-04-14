@@ -20,8 +20,10 @@ import AnnouncementsPage from "./pages/super-admin/AnnouncementsPage";
 import PlatformStatsPage from "./pages/super-admin/PlatformStatsPage";
 import SettingsPage from "./pages/super-admin/SettingsPage";
 import SuperAdminLoginPage from "./pages/super-admin/SuperAdminLoginPage";
+import EnrollmentsPage from "./pages/super-admin/EnrollmentsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import BatchesPage from "./pages/admin/BatchesPage";
+import BatchDetailPage from "./pages/admin/BatchDetailPage";
 import TeachersPage from "./pages/admin/TeachersPage";
 import TeacherDetailPage from "./pages/admin/TeacherDetailPage";
 import StudentsPage from "./pages/admin/StudentsPage";
@@ -44,7 +46,8 @@ import TeacherProfilePage from "./pages/teacher/TeacherProfilePage";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import BattleArena from "./pages/student/BattleArena";
 import StudentLecturePage from "./pages/student/StudentLecturePage";
-import StudentLearnPage, { TopicDetailPage } from "./pages/student/StudentLearnPage";
+import StudentLearnPage from "./pages/student/StudentLearnPage";
+import TopicDetailPage from "./pages/student/StudentLearnPage";
 import StudentLecturesPage from "./pages/student/StudentLecturesPage";
 import StudentDoubtsPage from "./pages/student/StudentDoubtsPage";
 import StudentStudyPlanPage from "./pages/student/StudentStudyPlanPage";
@@ -54,11 +57,15 @@ import DiagnosticTestPage from "./pages/student/DiagnosticTestPage";
 import StudentAiStudyPage from "./pages/student/StudentAiStudyPage";
 import StudentTopicQuizPage from "./pages/student/StudentTopicQuizPage";
 import StudentPYQPage from "./pages/student/StudentPYQPage";
+import StudentCoursesPage from "./pages/student/StudentCoursesPage";
+import StudentCourseDetailPage from "./pages/student/StudentCourseDetailPage";
+import StudentCourseTopicPage from "./pages/student/StudentCourseTopicPage";
 import PYQManagementPage from "./pages/admin/PYQManagementPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import LiveClassRoom from "./pages/live/LiveClassRoom";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
+import JoinBatchPage from "./pages/JoinBatchPage";
 
 // Landing Pages
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
@@ -76,6 +83,7 @@ const AdminRoutes = () => (
   <Route element={<ProtectedRoute allowedRoles={["institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
     <Route path="/admin" element={<AdminDashboard />} />
     <Route path="/admin/batches" element={<BatchesPage />} />
+    <Route path="/admin/batches/:id" element={<BatchDetailPage />} />
     <Route path="/admin/teachers" element={<TeachersPage />} />
     <Route path="/admin/teachers/:id" element={<TeacherDetailPage />} />
     <Route path="/admin/students" element={<StudentsPage />} />
@@ -103,12 +111,10 @@ const TeacherRoutes = () => (
       path="/teacher/onboarding"
       element={<ProtectedRoute allowedRoles={["teacher"]}><TeacherOnboardingPage /></ProtectedRoute>}
     />
-    {/* Institute Admin onboarding — same teacher profile form, redirects to /admin after */}
     <Route
       path="/admin/onboard"
       element={<ProtectedRoute allowedRoles={["institute_admin"]}><TeacherOnboardingPage /></ProtectedRoute>}
     />
-    {/* Student detail */}
     <Route
       path="/teacher/students/:studentId"
       element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}
@@ -125,50 +131,32 @@ const TeacherRoutes = () => (
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
+      <Route path="/live/:lectureId" element={<LiveClassRoom />} />
     </Route>
   </>
 );
 
 const StudentRoutes = () => (
-  <>
-    {/* Diagnostic test — full-page, mandatory, no DashboardLayout, skips diagnostic guard to avoid redirect loop */}
-    <Route
-      path="/student/diagnostic"
-      element={<ProtectedRoute allowedRoles={["student"]} skipDiagnosticGuard><DiagnosticTestPage /></ProtectedRoute>}
-    />
-    {/* Full-page live class room — outside DashboardLayout */}
-    <Route
-      path="/live/:lectureId"
-      element={<ProtectedRoute allowedRoles={["student", "teacher"]}><LiveClassRoom /></ProtectedRoute>}
-    />
-    {/* Full-page lecture player — outside DashboardLayout */}
-    <Route
-      path="/student/lectures/:id"
-      element={<ProtectedRoute allowedRoles={["student"]}><StudentLecturePage /></ProtectedRoute>}
-    />
-    {/* Full-page AI study session — outside DashboardLayout */}
-    <Route
-      path="/student/ai-study/:topicId"
-      element={<ProtectedRoute allowedRoles={["student"]}><StudentAiStudyPage /></ProtectedRoute>}
-    />
-    {/* Full-page topic quiz — outside DashboardLayout */}
-    <Route
-      path="/student/quiz"
-      element={<ProtectedRoute allowedRoles={["student"]}><StudentTopicQuizPage /></ProtectedRoute>}
-    />
-    <Route element={<ProtectedRoute allowedRoles={["student"]}><DashboardLayout /></ProtectedRoute>}>
-      <Route path="/student" element={<StudentDashboard />} />
-      <Route path="/student/learn" element={<StudentLearnPage />} />
-      <Route path="/student/learn/topic/:topicId" element={<TopicDetailPage />} />
-      <Route path="/student/lectures" element={<StudentLecturesPage />} />
-      <Route path="/student/battle" element={<BattleArena />} />
-      <Route path="/student/doubts" element={<StudentDoubtsPage />} />
-      <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
-      <Route path="/student/study-plan" element={<StudentStudyPlanPage />} />
-      <Route path="/student/profile" element={<StudentProfilePage />} />
-      <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
-    </Route>
-  </>
+  <Route element={<ProtectedRoute allowedRoles={["student"]}><DashboardLayout /></ProtectedRoute>}>
+    <Route path="/student" element={<StudentDashboard />} />
+    <Route path="/student/learn" element={<StudentLearnPage />} />
+    <Route path="/student/learn/topic/:topicId" element={<TopicDetailPage />} />
+    <Route path="/student/lectures" element={<StudentLecturesPage />} />
+    <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
+    <Route path="/student/battle" element={<BattleArena />} />
+    <Route path="/student/doubts" element={<StudentDoubtsPage />} />
+    <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
+    <Route path="/student/study-plan" element={<StudentStudyPlanPage />} />
+    <Route path="/student/profile" element={<StudentProfilePage />} />
+    <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
+    <Route path="/student/courses" element={<StudentCoursesPage />} />
+    <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
+    <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
+    <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
+    <Route path="/student/ai-study/:topicId" element={<StudentAiStudyPage />} />
+    <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
+    <Route path="/live/:lectureId" element={<LiveClassRoom />} />
+  </Route>
 );
 
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
@@ -176,6 +164,8 @@ const TenantRoutes = () => (
   <Routes>
     <Route path="/" element={<LoginPage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/join" element={<JoinBatchPage />} />
     {AdminRoutes()}
     {PYQRoute()}
     {TeacherRoutes()}
@@ -184,7 +174,7 @@ const TenantRoutes = () => (
   </Routes>
 );
 
-/** Routes for the main platform domain (edva.in / localhost) */
+/** Routes for the main platform domain */
 const PlatformRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
@@ -197,6 +187,7 @@ const PlatformRoutes = () => (
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/join" element={<JoinBatchPage />} />
     <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
 
     <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
@@ -205,6 +196,7 @@ const PlatformRoutes = () => (
       <Route path="/super-admin/tenants/new" element={<NewInstitutePage />} />
       <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
       <Route path="/super-admin/users" element={<UsersPage />} />
+      <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
       <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />

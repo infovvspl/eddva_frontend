@@ -8,11 +8,9 @@ import type { UserRole } from "@/lib/types";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
-  /** Set true on the /student/diagnostic route itself to prevent redirect loop */
-  skipDiagnosticGuard?: boolean;
 }
 
-export default function ProtectedRoute({ children, allowedRoles, skipDiagnosticGuard }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const location = useLocation();
   const { user, isAuthenticated } = useAuthStore();
   const hasToken = !!tokenStorage.getAccess();
@@ -38,18 +36,6 @@ export default function ProtectedRoute({ children, allowedRoles, skipDiagnosticG
   // Role check
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/login" replace />;
-  }
-
-  // Diagnostic guard — student must complete diagnostic before accessing any student page
-  if (
-    !skipDiagnosticGuard &&
-    user?.role === "student" &&
-    user.studentProfile !== undefined &&   // studentProfile has been loaded
-    user.studentProfile !== null &&
-    !user.studentProfile.diagnosticCompleted &&
-    !location.pathname.startsWith("/student/diagnostic")
-  ) {
-    return <Navigate to="/student/diagnostic" replace />;
   }
 
   return <>{children}</>;

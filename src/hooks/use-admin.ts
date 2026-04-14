@@ -200,8 +200,11 @@ export function useStudents(params?: { page?: number; limit?: number; search?: s
 // ---------------------------------------------------------------------------
 // Content
 // ---------------------------------------------------------------------------
-export function useSubjects() {
-  return useQuery({ queryKey: adminKeys.subjects, queryFn: adminApi.listSubjects });
+export function useSubjects(batchId?: string) {
+  return useQuery({
+    queryKey: batchId ? [...adminKeys.subjects, batchId] : adminKeys.subjects,
+    queryFn: () => adminApi.listSubjects(batchId),
+  });
 }
 
 export function useCreateSubject() {
@@ -277,7 +280,16 @@ export function useUploadTopicResource(topicId: string) {
 export function useDeleteTopicResource(topicId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (resourceId: string) => adminApi.deleteTopicResource(resourceId),
+    mutationFn: (resourceId: string) => adminApi.deleteTopicResource(resourceId, topicId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+  });
+}
+
+export function useAddTopicResourceLink(topicId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { title: string; type: adminApi.TopicResourceType; externalUrl: string; description?: string }) =>
+      adminApi.addTopicResourceLink({ topicId, ...payload }),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
   });
 }
@@ -312,14 +324,30 @@ export function useDeleteScopeResource(level: adminApi.ScopeLevel, scopeId: stri
 }
 
 export function useUploadBatchThumbnail() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ batchId, file }: { batchId: string; file: File }) =>
       adminApi.uploadBatchThumbnail(batchId, file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.batches }),
+  });
+}
+
+export function useGenerateInviteLink() {
+  return useMutation({
+    mutationFn: (batchId: string) => adminApi.generateInviteLink(batchId),
   });
 }
 
 export function useLectures() {
   return useQuery({ queryKey: adminKeys.lectures, queryFn: adminApi.listLectures });
+}
+
+export function useCreateLecture() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.createLecture,
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.lectures }),
+  });
 }
 
 export function useUnpublishLecture() {
