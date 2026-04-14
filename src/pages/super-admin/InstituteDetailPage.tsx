@@ -84,59 +84,59 @@ const InstituteDetailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-10 font-sans text-slate-900">
-      <header className="max-w-7xl mx-auto mb-12 border-b border-slate-100 pb-10">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-[11px] font-black uppercase tracking-[0.2em] mb-6">
-          <ChevronLeft className="w-5 h-5" /> Return to Directory
+    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
+      <header className="max-w-7xl mx-auto mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-[11px] font-black uppercase tracking-[0.2em] mb-5">
+          <ChevronLeft className="w-4 h-4" /> Return to Directory
         </button>
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-[28px] bg-slate-100 flex items-center justify-center text-[32px] font-black text-slate-400 border border-slate-50 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 md:w-18 md:h-18 rounded-[20px] bg-slate-100 flex items-center justify-center text-2xl md:text-[28px] font-black text-slate-400 border border-slate-50 shadow-sm shrink-0">
               {(tenant.name || "?")[0]}
             </div>
             <div>
-              <div className="flex items-center gap-4 mb-2">
-                <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">{tenant.name}</h1>
-                <div className={`text-[10px] font-black px-4 py-1.5 rounded-full border shadow-sm flex items-center gap-1.5 uppercase tracking-[0.15em] ${statusStyles[status] || statusStyles.active}`}>
+              <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                <h1 className="text-[24px] md:text-[32px] lg:text-[38px] font-black text-slate-900 tracking-tight leading-tight">{tenant.name}</h1>
+                <div className={`text-[10px] font-black px-3 py-1 rounded-full border shadow-sm flex items-center gap-1.5 uppercase tracking-[0.15em] ${statusStyles[status] || statusStyles.active}`}>
                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
                    {status === 'active' ? 'Operational' : status === 'trial' ? 'Trial Hub' : 'Suspended'}
                 </div>
               </div>
-              <p className="text-slate-400 font-bold text-[15px] uppercase tracking-tight flex items-center gap-2">
-                <Globe className="w-4 h-4 text-indigo-500" /> {tenant.subdomain}<span className="opacity-40">.edva.in</span>
+              <p className="text-slate-400 font-bold text-sm uppercase tracking-tight flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5 text-indigo-500" /> {tenant.subdomain}<span className="opacity-40">.edva.in</span>
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" className="h-14 px-8 rounded-[20px] border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-[15px]">
-              <ArrowUpCircle className="w-5 h-5 mr-3" /> Upgrade Quota
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="h-10 md:h-12 px-5 md:px-8 rounded-[20px] border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-sm">
+              <ArrowUpCircle className="w-4 h-4 mr-2" /> Upgrade Quota
             </Button>
             <Button
               onClick={handleSuspendToggle}
               disabled={suspendMutation.isPending || activateMutation.isPending}
-              className={`h-14 px-8 rounded-[20px] font-black shadow-2xl transition-all text-[15px] ${
+              className={`h-10 md:h-12 px-5 md:px-8 rounded-[20px] font-black shadow-2xl transition-all text-sm ${
                 status === "suspended"
                   ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
                   : "bg-white text-gray-900 hover:bg-gray-100 shadow-slate-900/20"
               }`}
             >
-              {status === "suspended" ? <Shield className="w-5 h-5 mr-3" /> : <Ban className="w-5 h-5 mr-3" />}
+              {status === "suspended" ? <Shield className="w-4 h-4 mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
               {status === "suspended" ? "Reinstate Hub" : "Revoke Access"}
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-6">
+      <main className="max-w-7xl mx-auto space-y-5">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {statsCards.map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-8 rounded-[36px] border border-slate-100 shadow-sm relative overflow-hidden group">
-              <div className="flex justify-between items-start mb-6">
-                <div className={`p-4 rounded-[20px] ${s.bg} ${s.color} transition-transform group-hover:scale-110`}><s.icon className="w-6 h-6" /></div>
+            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-5 md:p-7 rounded-[24px] md:rounded-[36px] border border-slate-100 shadow-sm relative overflow-hidden group">
+              <div className="flex justify-between items-start mb-4">
+                <div className={`p-3 rounded-[16px] ${s.bg} ${s.color} transition-transform group-hover:scale-110`}><s.icon className="w-5 h-5" /></div>
               </div>
-              <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">{s.label}</p>
-              <h3 className="text-[32px] font-black text-slate-900 mt-1 leading-none">{s.value}</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{s.label}</p>
+              <h3 className="text-xl md:text-[28px] font-black text-slate-900 mt-1 leading-none">{s.value}</h3>
               <div className="absolute top-0 right-0 h-24 w-24 bg-indigo-50/30 opacity-0 group-hover:opacity-100 blur-[40px] transition-opacity translate-x-12 -translate-y-12" />
             </motion.div>
           ))}
@@ -154,10 +154,10 @@ const InstituteDetailPage = () => {
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
             {activeTab === "overview" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white rounded-[44px] border border-slate-100 shadow-sm p-10">
-                  <h3 className="text-xl font-black text-slate-900 mb-10 flex items-center gap-3">
-                    <Building2 className="w-6 h-6 text-indigo-600" /> Administrative Profile
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-7">
+                <div className="lg:col-span-2 bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
+                  <h3 className="text-base md:text-lg font-black text-slate-900 mb-7 flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-indigo-600" /> Administrative Profile
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
                     {[
@@ -178,9 +178,9 @@ const InstituteDetailPage = () => {
                     ))}
                   </div>
                 </div>
-                <div className="bg-white rounded-[44px] p-10 text-gray-900 shadow-2xl shadow-slate-900/40 relative overflow-hidden">
-                  <h3 className="text-xl font-black mb-10 relative z-10">Quota Intelligence</h3>
-                  <div className="space-y-10 relative z-10">
+                <div className="bg-white rounded-[28px] md:rounded-[44px] p-5 md:p-8 text-gray-900 shadow-2xl shadow-slate-900/40 relative overflow-hidden">
+                  <h3 className="text-base md:text-lg font-black mb-7 relative z-10">Quota Intelligence</h3>
+                  <div className="space-y-7 relative z-10">
                     <UsageProgress label="Active Learner Hub" current={studentCount} total={studentLimit} color="bg-indigo-500" inverse />
                     <UsageProgress label="Faculty Hub Slots" current={teacherCount} total={teacherLimit} color="bg-purple-500" inverse />
                   </div>

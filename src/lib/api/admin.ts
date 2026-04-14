@@ -24,7 +24,8 @@ export interface Batch {
   teacher?: { id: string; fullName: string };
   maxStudents: number;
   isPaid: boolean;
-  feeAmount: number;
+  feeAmount: number | null;
+  /** Platform fee percentage (default 20) */
   platformFeePercent: number;
   status: string;
   startDate: string;
@@ -506,6 +507,78 @@ export async function createTopic(payload: { chapterId: string; name: string; so
 export async function deleteTopic(id: string) {
   const res = await apiClient.delete(`/content/topics/${id}`);
   return extractData<{ message: string }>(res);
+}
+
+// ---------------------------------------------------------------------------
+// Scope Resources (Mock Tests & PYQs at Course / Subject / Chapter / Topic)
+// ---------------------------------------------------------------------------
+
+export type ScopeLevel = "course" | "subject" | "chapter" | "topic";
+export type ScopeResourceType = "mock_test" | "pyq";
+
+export interface ScopeResource {
+  id: string;
+  type: ScopeResourceType;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileSize?: number;
+  sortOrder?: number;
+  createdAt: string;
+}
+
+const _scopeListUrl: Record<ScopeLevel, (id: string) => string> = {
+  course:  id => `/content/batches/${id}/resources`,
+  subject: id => `/content/subjects/${id}/resources`,
+  chapter: id => `/content/chapters/${id}/resources`,
+  topic:   id => `/content/topics/${id}/resources`,
+};
+
+const _scopeUploadUrl: Record<ScopeLevel, (id: string) => string> = {
+  course:  id => `/content/batches/${id}/resources/upload`,
+  subject: id => `/content/subjects/${id}/resources/upload`,
+  chapter: id => `/content/chapters/${id}/resources/upload`,
+  topic:   id => `/content/topics/${id}/resources/upload`,
+};
+
+const _scopeDeleteUrl: Record<ScopeLevel, (id: string) => string> = {
+  course:  id => `/content/batches/resources/${id}`,
+  subject: id => `/content/subjects/resources/${id}`,
+  chapter: id => `/content/chapters/resources/${id}`,
+  topic:   id => `/content/topics/resources/${id}`,
+};
+
+export async function listScopeResources(level: ScopeLevel, scopeId: string): Promise<ScopeResource[]> {
+  try {
+    const res = await apiClient.get(_scopeListUrl[level](scopeId));
+    const all = extractData<any[]>(res) ?? [];
+    return all.filter((r: any) => r.type === "mock_test" || r.type === "pyq");
+  } catch {
+    return [];
+  }
+}
+
+export async function uploadScopeResource(payload: {
+  level: ScopeLevel;
+  scopeId: string;
+  file: File;
+  type: ScopeResourceType;
+  title: string;
+  description?: string;
+}): Promise<ScopeResource> {
+  const fd = new FormData();
+  fd.append("file", payload.file);
+  fd.append("type", payload.type);
+  fd.append("title", payload.title);
+  if (payload.description) fd.append("description", payload.description);
+  const res = await apiClient.post(_scopeUploadUrl[payload.level](payload.scopeId), fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return extractData<ScopeResource>(res);
+}
+
+export async function deleteScopeResource(level: ScopeLevel, resourceId: string): Promise<void> {
+  await apiClient.delete(_scopeDeleteUrl[level](resourceId));
 }
 
 // ---------------------------------------------------------------------------

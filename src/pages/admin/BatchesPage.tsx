@@ -5,8 +5,9 @@ import {
   Plus, Loader2, Trash2, Users, X, ChevronRight,
   UserPlus, Upload, Download, Copy, Check, AlertCircle,
   Layout, Calendar, GraduationCap, BarChart3, Edit2,
-  Trophy, TrendingDown, TrendingUp, DollarSign, CheckCircle2,
-  PauseCircle, PlayCircle, ImageIcon,
+  Trophy, TrendingDown, TrendingUp, CheckCircle2,
+  PauseCircle, PlayCircle, ImageIcon, IndianRupee, BadgePercent,
+  Building2, Sparkles, Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -961,7 +962,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
     examTarget: batch.examTarget ?? "jee",
     class: batch.class ?? "11",
     maxStudents: batch.maxStudents ?? 60,
-    isPaid: batch.isPaid ?? false,
+    isPaid: batch.isPaid ?? (batch.feeAmount ? true : false),
     feeAmount: batch.feeAmount ? String(batch.feeAmount) : "",
     startDate: batch.startDate ? batch.startDate.split("T")[0] : "",
     endDate: batch.endDate ? batch.endDate.split("T")[0] : "",
@@ -1020,155 +1021,204 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg bg-white border border-slate-100 rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-black text-slate-900">Edit Course</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-slate-900 flex items-center justify-center">
+              <Edit2 className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900">Edit Course</h3>
+              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[240px]">{batch.name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {error && (
-          <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 mb-4">
-            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1 block">Course Name *</label>
-            <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-              className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1 block">Course Description</label>
-            <textarea
-              rows={3}
-              placeholder="What will students learn? Topics covered, prerequisites, outcomes…"
-              value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">Exam Target</label>
-              <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
-                className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                <option value="jee">JEE</option>
-                <option value="neet">NEET</option>
-                <option value="both">Both / General</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">Class Level</label>
-              <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-                className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                {["8","9","10","11","12","DROPPER"].map(c => (
-                  <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">Max Students</label>
-              <input type="number" min={1} value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
-                className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">Start Date</label>
-              <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
-                className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">End Date</label>
-              <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
-                className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400" />
-            </div>
-          </div>
-
-          {/* Pricing */}
-          <div className="space-y-3">
-            <label className="text-xs font-semibold text-slate-500 block">Course Pricing</label>
-            <div className="flex gap-3">
-              <button type="button"
-                onClick={() => setForm({ ...form, isPaid: false, feeAmount: "" })}
-                className={`flex-1 h-10 rounded-2xl border-2 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                  !form.isPaid ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300"
-                }`}>
-                <CheckCircle2 className={`w-4 h-4 ${!form.isPaid ? "text-emerald-500" : "text-slate-300"}`} />
-                Free
-              </button>
-              <button type="button"
-                onClick={() => setForm({ ...form, isPaid: true })}
-                className={`flex-1 h-10 rounded-2xl border-2 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                  form.isPaid ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300"
-                }`}>
-                <DollarSign className={`w-4 h-4 ${form.isPaid ? "text-blue-500" : "text-slate-300"}`} />
-                Paid
-              </button>
-            </div>
-            {form.isPaid && (
-              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Fee Amount (₹) *</label>
-                  <input type="number" min={1} required={form.isPaid}
-                    placeholder="Enter fee amount in INR"
-                    value={form.feeAmount} onChange={e => setForm({ ...form, feeAmount: e.target.value })}
-                    className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400" />
-                </div>
-                <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-2xl px-3 py-2.5">
-                  <DollarSign className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <p className="text-xs text-blue-700">
-                    <span className="font-black">Revenue split:</span>{" "}
-                    <span className="font-semibold">80% → Your Institute</span>
-                    <span className="text-blue-300 mx-1">·</span>
-                    <span className="font-semibold">20% → Platform</span>
-                    {form.feeAmount && Number(form.feeAmount) > 0 && (
-                      <span className="text-blue-500 ml-1">(₹{Math.round(Number(form.feeAmount) * 0.8)} per student)</span>
-                    )}
-                  </p>
-                </div>
-              </motion.div>
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-5">
+            {error && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
             )}
+
+            {/* Basic Info */}
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Course Name *</label>
+                  <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                    className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Exam Target</label>
+                  <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                    <option value="jee">JEE</option>
+                    <option value="neet">NEET</option>
+                    <option value="both">Both / General</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Class Level</label>
+                  <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                    {["8","9","10","11","12","DROPPER"].map(c => (
+                      <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Max Students</label>
+                  <input type="number" value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Start Date</label>
+                  <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">End Date</label>
+                  <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Pricing</p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button type="button"
+                  onClick={() => setForm({ ...form, isPaid: false, feeAmount: "" })}
+                  className={`relative flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${
+                    !form.isPaid ? "border-emerald-400 bg-emerald-50/60" : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                    !form.isPaid ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-400"
+                  }`}>
+                    <Unlock className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className={`text-xs font-black ${!form.isPaid ? "text-emerald-700" : "text-slate-500"}`}>Free</p>
+                    <p className="text-[10px] text-slate-400">Open access</p>
+                  </div>
+                  {!form.isPaid && <div className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-emerald-500 flex items-center justify-center"><Check className="w-2 h-2 text-white" /></div>}
+                </button>
+                <button type="button"
+                  onClick={() => setForm({ ...form, isPaid: true })}
+                  className={`relative flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${
+                    form.isPaid ? "border-blue-400 bg-blue-50/60" : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                    form.isPaid ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
+                  }`}>
+                    <IndianRupee className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className={`text-xs font-black ${form.isPaid ? "text-blue-700" : "text-slate-500"}`}>Paid</p>
+                    <p className="text-[10px] text-slate-400">Set a fee</p>
+                  </div>
+                  {form.isPaid && <div className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-blue-600 flex items-center justify-center"><Check className="w-2 h-2 text-white" /></div>}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {form.isPaid && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-3">
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                      <input type="number" required={form.isPaid} min={1} placeholder="Enter fee amount"
+                        value={form.feeAmount} onChange={e => setForm({ ...form, feeAmount: e.target.value })}
+                        className="w-full h-11 pl-8 pr-4 bg-white border-2 border-blue-200 rounded-xl text-sm font-black text-slate-800 outline-none focus:border-blue-500 transition-all placeholder:font-normal placeholder:text-slate-400" />
+                    </div>
+                    {form.feeAmount && Number(form.feeAmount) > 0 && (() => {
+                      const total = Number(form.feeAmount);
+                      const platform = Math.round(total * 0.2 * 100) / 100;
+                      const institute = Math.round(total * 0.8 * 100) / 100;
+                      return (
+                        <div className="rounded-xl overflow-hidden border border-slate-100">
+                          <div className="bg-slate-900 px-3 py-2 flex items-center gap-2">
+                            <BadgePercent className="w-3 h-3 text-slate-400" />
+                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Revenue Split</span>
+                          </div>
+                          <div className="flex h-1.5">
+                            <div className="bg-amber-400" style={{ width: "20%" }} />
+                            <div className="bg-emerald-500 flex-1" />
+                          </div>
+                          <div className="p-3 grid grid-cols-2 gap-2 bg-white">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                                <Building2 className="w-3 h-3 text-amber-600" />
+                              </div>
+                              <div>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Platform (20%)</p>
+                                <p className="text-sm font-black text-amber-600">₹{platform.toLocaleString("en-IN")}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                                <GraduationCap className="w-3 h-3 text-emerald-600" />
+                              </div>
+                              <div>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">You Earn (80%)</p>
+                                <p className="text-sm font-black text-emerald-600">₹{institute.toLocaleString("en-IN")}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Thumbnail */}
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Thumbnail</p>
+              <input ref={editThumbRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { if (e.target.files?.[0]) handleEditThumbFile(e.target.files[0]); }} />
+              <button type="button" onClick={() => editThumbRef.current?.click()}
+                className="w-full h-24 flex flex-col items-center justify-center gap-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-sm text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden relative">
+                {editThumbUploading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /><span className="text-xs">Uploading…</span></>
+                ) : editThumbPreview ? (
+                  <>
+                    <img src={editThumbPreview} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="" />
+                    <span className="relative z-10 flex items-center gap-1 text-xs font-bold bg-white/90 px-3 py-1.5 rounded-xl shadow-sm">
+                      <ImageIcon className="w-3.5 h-3.5" /> Change thumbnail
+                    </span>
+                  </>
+                ) : (
+                  <><ImageIcon className="w-6 h-6 opacity-30" /><span className="text-xs font-semibold">Click to upload thumbnail</span></>
+                )}
+              </button>
+            </div>
           </div>
 
-          {/* Thumbnail */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" /> Course Thumbnail
-            </label>
-            <input ref={editThumbRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleEditThumbFile(e.target.files[0]); e.target.value = ""; }} />
-            <button type="button" onClick={() => editThumbRef.current?.click()}
-              className="w-full h-28 flex flex-col items-center justify-center gap-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-sm text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors overflow-hidden relative">
-              {editThumbUploading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /><span className="text-xs font-semibold">Uploading…</span></>
-              ) : editThumbPreview ? (
-                <>
-                  <img src={editThumbPreview} className="absolute inset-0 w-full h-full object-cover" alt="" />
-                  <span className="relative z-10 flex items-center gap-1.5 text-xs font-semibold bg-white/80 backdrop-blur-sm text-slate-700 px-3 py-1.5 rounded-xl shadow-sm">
-                    <ImageIcon className="w-3.5 h-3.5" /> Change thumbnail
-                  </span>
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="w-7 h-7 opacity-30" />
-                  <span className="text-xs font-semibold">Upload thumbnail</span>
-                  <span className="text-[11px] text-slate-300">PNG, JPG, WEBP · max 5 MB</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          <div className="flex gap-3 pt-1">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-2xl">Cancel</Button>
-            <Button type="submit" disabled={updateBatch.isPending || editThumbUploading} className="flex-1 rounded-2xl">
-              {updateBatch.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : "Save Changes"}
+          {/* Footer */}
+          <div className="px-6 pb-6 flex gap-3">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-2xl h-11">Cancel</Button>
+            <Button type="submit" disabled={updateBatch.isPending || editThumbUploading || (form.isPaid && !form.feeAmount)}
+              className="flex-1 rounded-2xl h-11 font-black" style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+              {updateBatch.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
             </Button>
           </div>
         </form>
@@ -1308,7 +1358,8 @@ const BatchesPage = () => {
       <AnimatePresence>
         {showForm && (
           <motion.form
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
             onSubmit={handleCreate}
             className="bg-white border border-slate-100 rounded-3xl p-6 space-y-5 shadow-sm overflow-hidden"
           >
@@ -1407,7 +1458,7 @@ const BatchesPage = () => {
                       ? "border-blue-500 bg-blue-50 text-blue-700"
                       : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300"
                   }`}>
-                  <DollarSign className={`w-4 h-4 ${form.isPaid ? "text-blue-500" : "text-slate-300"}`} />
+                  <IndianRupee className={`w-4 h-4 ${form.isPaid ? "text-blue-500" : "text-slate-300"}`} />
                   Paid Course
                 </button>
               </div>
@@ -1426,7 +1477,7 @@ const BatchesPage = () => {
                   </div>
                   {/* Revenue split info */}
                   <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
-                    <DollarSign className="w-4 h-4 text-blue-500 shrink-0" />
+                    <IndianRupee className="w-4 h-4 text-blue-500 shrink-0" />
                     <div className="flex-1 text-xs text-blue-700">
                       <span className="font-black">Revenue split:</span>
                       {" "}
@@ -1531,13 +1582,15 @@ const BatchesPage = () => {
                     <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${sc.pill}`}>
                       {b.status}
                     </span>
+                    {/* Paid / Free badge */}
                     {b.isPaid ? (
-                      <span className="shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
-                        ₹{b.feeAmount}
+                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                        <IndianRupee className="w-2.5 h-2.5" />
+                        {Number(b.feeAmount).toLocaleString("en-IN")}
                       </span>
                     ) : (
-                      <span className="shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-                        Free
+                      <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        FREE
                       </span>
                     )}
                   </div>
