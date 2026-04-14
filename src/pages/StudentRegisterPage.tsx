@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Smartphone, Mail, MapPin, Lock, Eye, EyeOff,
@@ -143,6 +143,8 @@ const StatCard = ({
 /* ════════════════════════════════════════════════════ */
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
@@ -229,7 +231,8 @@ const StudentRegisterPage = () => {
         password:               form.password,
       });
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 3000);
+      const loginUrl = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login";
+      setTimeout(() => navigate(loginUrl), 3000);
     } catch (e: any) {
       setError(e?.response?.data?.message || "Registration failed. Please try again.");
     } finally { setLoading(false); }

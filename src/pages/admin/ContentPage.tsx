@@ -1,211 +1,508 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Loader2, ChevronRight, BookOpen, FileText, X, Lock,
-  Layers, Hash, Clock, Upload, Trash2, ExternalLink,
-  FileQuestion, Film, BookMarked, PenLine, GraduationCap, Trophy,
+  Plus, Loader2, BookOpen, FileText, X,
+  Layers, Upload, Trash2, ExternalLink, Link2,
+  FileQuestion, BookMarked, PenLine, Search,
+  ChevronDown, ChevronRight, ChevronLeft, GraduationCap, Hash,
+  AlertCircle, Check, Youtube, MoreVertical,
+  FolderOpen, Folder, Play, Eye, LayoutGrid, Users,
 } from "lucide-react";
 import {
+  useBatches,
   useSubjects, useCreateSubject,
   useChapters, useCreateChapter,
   useTopics, useCreateTopic,
-  useTopicResources, useUploadTopicResource, useDeleteTopicResource,
-  useScopeResources, useUploadScopeResource, useDeleteScopeResource,
+  useTopicResources, useUploadTopicResource, useDeleteTopicResource, useAddTopicResourceLink,
 } from "@/hooks/use-admin";
-import { useBatches } from "@/hooks/use-admin";
-import type { TopicResourceType, ScopeLevel, ScopeResourceType, Batch } from "@/lib/api/admin";
+import type { TopicResourceType, Subject, Chapter, Topic, TopicResource } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const _API_ORIGIN = (() => {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const API_ORIGIN = (() => {
   try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
   catch { return "http://localhost:3000"; }
 })();
-function resolveMediaUrl(url?: string) {
-  if (!url) return url;
+
+function resolveUrl(url?: string | null) {
+  if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${_API_ORIGIN}${url}`;
+  return `${API_ORIGIN}${url}`;
 }
 
-// ─── Exam badge ───────────────────────────────────────────────────────────────
+function isYouTube(url: string) {
+  return url.includes("youtube.com") || url.includes("youtu.be");
+}
 
-const EXAM_COLORS: Record<string, { from: string; to: string }> = {
-  jee:     { from: "#1D4ED8", to: "#4F46E5" },
-  neet:    { from: "#059669", to: "#0D9488" },
-  both:    { from: "#7C3AED", to: "#C026D3" },
-  default: { from: "#0F172A", to: "#334155" },
-};
+function getYouTubeId(url: string) {
+  const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?.[1] ?? null;
+}
 
-function ExamBadge({ target }: { target: string }) {
-  const c = EXAM_COLORS[target?.toLowerCase()] ?? EXAM_COLORS.default;
+function fmtSize(kb?: number) {
+  if (!kb) return "";
+  if (kb < 1024) return `${kb} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+// ─── Resource type config ──────────────────────────────────────────────────────
+
+const RES_TYPES: {
+  value: TopicResourceType; label: string; shortLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string; bg: string; border: string; isUrl?: boolean; accept?: string;
+}[] = [
+  { value: "pdf",   label: "PDF Notes",  shortLabel: "PDF",     icon: FileText,     color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200",   accept: ".pdf" },
+  { value: "dpp",   label: "DPP",        shortLabel: "DPP",     icon: PenLine,      color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200", accept: ".pdf,.doc,.docx" },
+  { value: "pyq",   label: "PYQ",        shortLabel: "PYQ",     icon: FileQuestion, color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200", accept: ".pdf,.doc,.docx" },
+  { value: "notes", label: "Notes",      shortLabel: "Notes",   icon: BookMarked,   color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
+  { value: "video", label: "YouTube",    shortLabel: "YouTube", icon: Youtube,      color: "text-rose-600",    bg: "bg-rose-50",    border: "border-rose-200",  isUrl: true },
+  { value: "link",  label: "Link",       shortLabel: "Link",    icon: Link2,        color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200",  isUrl: true },
+];
+
+function rCfg(type: TopicResourceType) {
+  return RES_TYPES.find(r => r.value === type) ?? RES_TYPES[0];
+}
+
+// ─── Inline Editable Input ────────────────────────────────────────────────────
+
+function InlineAdd({
+  placeholder, onSave, onCancel, loading,
+}: { placeholder: string; onSave: (v: string) => void; onCancel: () => void; loading?: boolean }) {
+  const [val, setVal] = useState("");
   return (
-    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white"
-      style={{ background: `linear-gradient(135deg, ${c.from}, ${c.to})` }}>
-      {target?.toUpperCase() || "—"}
-    </span>
+    <div className="flex items-center gap-1.5 py-1">
+      <input
+        autoFocus
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter" && val.trim()) onSave(val.trim()); if (e.key === "Escape") onCancel(); }}
+        placeholder={placeholder}
+        className="flex-1 h-8 px-3 text-sm bg-white border-2 border-blue-400 rounded-xl outline-none placeholder:text-slate-300"
+      />
+      <button
+        onClick={() => val.trim() && onSave(val.trim())}
+        disabled={loading || !val.trim()}
+        className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 transition-colors shrink-0"
+      >
+        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+      </button>
+      <button
+        onClick={onCancel}
+        className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors shrink-0"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
   );
 }
 
-// ─── Resource type config ─────────────────────────────────────────────────────
+// ─── Resource Card ─────────────────────────────────────────────────────────────
 
-const RESOURCE_TYPES: { value: TopicResourceType; label: string; icon: React.ComponentType<{ className?: string }>; color: string; accept: string }[] = [
-  { value: "pdf",   label: "PDF Notes",  icon: FileText,     color: "bg-red-100 text-red-600",     accept: ".pdf"                  },
-  { value: "dpp",   label: "DPP",        icon: PenLine,      color: "bg-orange-100 text-orange-600", accept: ".pdf,.doc,.docx"      },
-  { value: "quiz",  label: "Quiz",       icon: FileQuestion, color: "bg-violet-100 text-violet-600", accept: ".pdf,.doc,.docx,.json" },
-  { value: "video", label: "Video",      icon: Film,         color: "bg-blue-100 text-blue-600",   accept: "video/*,.mp4,.mkv"     },
-  { value: "notes", label: "Notes",      icon: BookMarked,   color: "bg-emerald-100 text-emerald-600", accept: ".pdf,.doc,.docx,.txt" },
-];
+function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
+  const cfg = rCfg(r.type);
+  const Icon = cfg.icon;
+  const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
+  const ytId = r.externalUrl ? getYouTubeId(r.externalUrl) : null;
+  const [showMenu, setShowMenu] = useState(false);
 
-function resourceConfig(type: TopicResourceType) {
-  return RESOURCE_TYPES.find(r => r.value === type) ?? RESOURCE_TYPES[0];
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden hover:border-slate-200 hover:shadow-md transition-all"
+    >
+      {/* YouTube thumbnail strip */}
+      {ytId && (
+        <div className="relative h-28 bg-slate-900 overflow-hidden">
+          <img
+            src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+            alt={r.title}
+            className="w-full h-full object-cover opacity-80"
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+              <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+            </div>
+          </div>
+          <div className={cn("absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white", "bg-red-600")}>
+            <Youtube className="w-2.5 h-2.5" /> YouTube
+          </div>
+        </div>
+      )}
+
+      {/* Non-YouTube file type banner */}
+      {!ytId && (
+        <div className={cn("flex items-center gap-2 px-3 py-2 border-b", cfg.bg, cfg.border)}>
+          <Icon className={cn("w-3.5 h-3.5", cfg.color)} />
+          <span className={cn("text-[10px] font-black uppercase tracking-widest", cfg.color)}>{cfg.shortLabel}</span>
+          {r.fileSizeKb && <span className="ml-auto text-[10px] text-slate-400">{fmtSize(r.fileSizeKb)}</span>}
+        </div>
+      )}
+
+      <div className="p-3">
+        <p className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">{r.title}</p>
+        {r.description && <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{r.description}</p>}
+        {r.externalUrl && !ytId && (
+          <p className="text-[10px] text-blue-500 mt-1 truncate">{r.externalUrl}</p>
+        )}
+      </div>
+
+      {/* Action row */}
+      <div className="flex items-center justify-between px-3 pb-3">
+        {href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 hover:text-blue-700">
+            <ExternalLink className="w-3 h-3" />
+            {ytId ? "Watch" : r.type === "pdf" || r.type === "dpp" || r.type === "pyq" ? "View PDF" : "Open"}
+          </a>
+        ) : <span />}
+        <button
+          onClick={onDelete}
+          className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </motion.div>
+  );
 }
 
-function formatSize(bytes?: number) {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+// ─── Upload Panel ──────────────────────────────────────────────────────────────
 
-// ─── Topic Resources Panel ────────────────────────────────────────────────────
-
-function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicName: string }) {
+function UploadPanel({ topicId, topicName }: { topicId: string; topicName: string }) {
   const { data: resources = [], isLoading } = useTopicResources(topicId);
-  const uploadResource = useUploadTopicResource(topicId);
-  const deleteResource = useDeleteTopicResource(topicId);
+  const upload = useUploadTopicResource(topicId);
+  const deleteRes = useDeleteTopicResource(topicId);
+  const addLink = useAddTopicResourceLink(topicId);
 
-  const [uploadType, setUploadType] = useState<TopicResourceType>("pdf");
-  const [uploadName, setUploadName] = useState("");
-  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [activeType, setActiveType] = useState<TopicResourceType>("pdf");
+  const [mode, setMode] = useState<"upload" | "link">("upload");
+  const [title, setTitle] = useState("");
+  const [urlInput, setUrlInput] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [filterType, setFilterType] = useState<TopicResourceType | "all">("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const activeCfg = rCfg(activeType);
+  const isUrlType = activeCfg.isUrl;
+
   const handleFile = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) { toast.error("File must be 5 MB or smaller"); return; }
-    const title = uploadName.trim() || file.name.replace(/\.[^.]+$/, "");
+    if (file.size > 5 * 1024 * 1024) { toast.error("File must be ≤ 5 MB"); return; }
+    const t = title.trim() || file.name.replace(/\.[^.]+$/, "");
     try {
-      await uploadResource.mutateAsync({ file, type: uploadType, title });
-      toast.success(`${resourceConfig(uploadType).label} uploaded`);
-      setUploadName("");
-      setShowUploadForm(false);
-    } catch {
-      toast.error("Upload failed");
-    }
+      await upload.mutateAsync({ file, type: activeType, title: t });
+      toast.success(`${activeCfg.label} uploaded`);
+      setTitle("");
+      if (fileRef.current) fileRef.current.value = "";
+    } catch { toast.error("Upload failed — please try again"); }
+  };
+
+  const handleAddLink = async () => {
+    if (!urlInput.trim()) { toast.error("Paste a URL first"); return; }
+    const t = title.trim() || (isYouTube(urlInput) ? "YouTube Video" : "External Link");
+    const type: TopicResourceType = isYouTube(urlInput) ? "video" : activeType;
+    try {
+      await addLink.mutateAsync({ title: t, type, externalUrl: urlInput.trim() });
+      toast.success("Link saved");
+      setTitle(""); setUrlInput("");
+    } catch { toast.error("Failed to save link"); }
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
+    e.preventDefault(); setDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this resource?")) return;
-    try {
-      await deleteResource.mutateAsync(id);
-      toast.success("Deleted");
-    } catch {
-      toast.error("Delete failed");
-    }
+  const handleDelete = async (r: TopicResource) => {
+    if (!confirm(`Delete "${r.title}"?`)) return;
+    try { await deleteRes.mutateAsync(r.id); toast.success("Deleted"); }
+    catch { toast.error("Delete failed"); }
   };
 
-  const cfg = resourceConfig(uploadType);
+  const filtered = filterType === "all" ? resources : resources.filter(r => r.type === filterType);
+  const typeCounts = RES_TYPES.map(rt => ({ ...rt, count: resources.filter(r => r.type === rt.value).length }));
 
   return (
-    <div className="flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden h-full">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-100 shrink-0">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Resources</p>
-        <p className="text-sm font-black text-slate-900 mt-0.5 truncate">{topicName}</p>
-        <p className="text-[10px] text-slate-400 mt-0.5">{resources.length} file{resources.length !== 1 ? "s" : ""}</p>
-      </div>
-
-      {/* Type selector */}
-      <div className="px-3 pt-3 flex gap-1.5 flex-wrap shrink-0">
-        {RESOURCE_TYPES.map(rt => {
-          const Icon = rt.icon;
-          return (
-            <button key={rt.value} onClick={() => setUploadType(rt.value)}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-                uploadType === rt.value ? rt.color + " ring-1 ring-current" : "bg-slate-100 text-slate-400 hover:text-slate-700")}>
-              <Icon className="w-3 h-3" /> {rt.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Upload zone */}
-      <div className="px-3 pt-3 shrink-0">
-        <div onDragOver={e => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)} onDrop={handleDrop}
-          onClick={() => setShowUploadForm(!showUploadForm)}
-          className={cn("border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all",
-            dragging ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300 hover:bg-slate-50")}>
-          <Upload className={cn("w-5 h-5 mx-auto mb-1.5 transition-colors", dragging ? "text-blue-500" : "text-slate-300")} />
-          <p className="text-xs font-bold text-slate-500">{dragging ? "Drop to upload" : `Upload ${cfg.label}`}</p>
-          <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop · max 5 MB</p>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* ── Header ── */}
+      <div className="px-6 py-4 border-b border-slate-100 shrink-0 bg-white">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-400 mb-0.5">Topic Resources</p>
+            <h2 className="text-lg font-black text-slate-900 leading-tight">{topicName}</h2>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+            <Layers className="w-3.5 h-3.5" />
+            <span className="font-bold">{resources.length} item{resources.length !== 1 ? "s" : ""}</span>
+          </div>
         </div>
 
-        <AnimatePresence>
-          {showUploadForm && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-              <div className="pt-3 space-y-2">
-                <input placeholder={`${cfg.label} title (optional)`} value={uploadName}
-                  onChange={e => setUploadName(e.target.value)}
-                  className="w-full h-9 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors" />
-                <input ref={fileRef} type="file" accept={cfg.accept} className="hidden"
-                  onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
-                <button onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
-                  disabled={uploadResource.isPending}
-                  className="w-full h-9 flex items-center justify-center gap-2 rounded-xl text-white text-xs font-black disabled:opacity-50 hover:opacity-90 transition-opacity"
-                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
-                  {uploadResource.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading…</> : <><Upload className="w-3.5 h-3.5" /> Choose File</>}
+        {/* Type count pills */}
+        {resources.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            <button
+              onClick={() => setFilterType("all")}
+              className={cn("px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all",
+                filterType === "all" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              )}
+            >
+              All ({resources.length})
+            </button>
+            {typeCounts.filter(t => t.count > 0).map(t => {
+              const Icon = t.icon;
+              return (
+                <button key={t.value}
+                  onClick={() => setFilterType(t.value)}
+                  className={cn("flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all",
+                    filterType === t.value ? cn(t.bg, t.color, t.border) : "bg-slate-100 text-slate-500 hover:bg-slate-200 border-transparent"
+                  )}
+                >
+                  <Icon className="w-3 h-3" /> {t.shortLabel} ({t.count})
                 </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Resource list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 mt-2">
-        {isLoading ? (
-          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-500" /></div>
-        ) : resources.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-gray-800">
-            <BookMarked className="w-10 h-10 mb-2" />
-            <p className="text-sm font-semibold text-slate-400">No resources yet</p>
-            <p className="text-xs text-gray-600 mt-0.5">Upload PDFs, DPPs, quizzes or videos</p>
+      {/* ── Add Resource Section ── */}
+      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/60 shrink-0">
+        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3">Add Resource</p>
+
+        {/* Type selector */}
+        <div className="grid grid-cols-6 gap-1.5 mb-3">
+          {RES_TYPES.map(rt => {
+            const Icon = rt.icon;
+            const sel = activeType === rt.value;
+            return (
+              <button
+                key={rt.value}
+                onClick={() => { setActiveType(rt.value); setMode(rt.isUrl ? "link" : "upload"); }}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2 rounded-xl border text-center transition-all",
+                  sel ? cn(rt.bg, rt.color, rt.border, "shadow-sm") : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600"
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-[9px] font-black uppercase tracking-wide leading-none">{rt.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mode toggle for file types */}
+        {!isUrlType && (
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-0.5 mb-3 w-fit">
+            {(["upload", "link"] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className={cn("px-4 py-1.5 rounded-[10px] text-[11px] font-black uppercase tracking-wide transition-all",
+                  mode === m ? "bg-slate-900 text-white shadow-sm" : "text-slate-400 hover:text-slate-700"
+                )}>
+                {m === "upload" ? "Upload File" : "Paste URL"}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Title input */}
+        <input
+          placeholder="Title (auto-filled from filename if empty)"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          className="w-full h-9 px-3.5 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors mb-2"
+        />
+
+        {/* Upload or Link input */}
+        {(mode === "link" || isUrlType) ? (
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                {isYouTube(urlInput)
+                  ? <Youtube className="w-4 h-4 text-red-500" />
+                  : <Link2 className="w-4 h-4 text-slate-400" />}
+              </div>
+              <input
+                placeholder="https://youtube.com/... or any URL"
+                value={urlInput}
+                onChange={e => setUrlInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleAddLink(); }}
+                className="w-full h-9 pl-9 pr-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
+              />
+            </div>
+            <button
+              onClick={handleAddLink}
+              disabled={addLink.isPending || !urlInput.trim()}
+              className="h-9 px-4 rounded-xl font-black text-white text-xs flex items-center gap-1.5 disabled:opacity-40 transition-opacity shrink-0"
+              style={{ background: "linear-gradient(135deg, #013889,#0257c8)" }}
+            >
+              {addLink.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              Save
+            </button>
           </div>
         ) : (
-          resources.map((r, i) => {
-            const rc = resourceConfig(r.type);
-            const Icon = rc.icon;
+          <div
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}
+            className={cn(
+              "relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
+              dragging
+                ? "border-blue-400 bg-blue-50 scale-[1.01]"
+                : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30"
+            )}
+          >
+            {upload.isPending ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                <p className="text-sm font-bold text-blue-600">Uploading…</p>
+              </div>
+            ) : (
+              <>
+                <div className={cn("w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center", activeCfg.bg)}>
+                  <Upload className={cn("w-5 h-5", activeCfg.color)} />
+                </div>
+                <p className="text-sm font-bold text-slate-600">
+                  Drop {activeCfg.label} here or <span className="text-blue-600">browse</span>
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Max 5 MB · {activeCfg.accept?.split(",").join(", ")}</p>
+              </>
+            )}
+            <input ref={fileRef} type="file" accept={activeCfg.accept} className="hidden"
+              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+          </div>
+        )}
+      </div>
+
+      {/* ── Resource Grid ── */}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        {isLoading ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>
+        ) : resources.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mb-4">
+              <Layers className="w-8 h-8 text-slate-300" />
+            </div>
+            <p className="text-base font-black text-slate-500">No resources yet</p>
+            <p className="text-sm text-slate-400 mt-1 max-w-xs">
+              Upload a PDF, add a DPP or PYQ file, or paste a YouTube link above.
+            </p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-sm text-slate-400">No {filterType} resources yet.</p>
+            <button onClick={() => setFilterType("all")} className="text-xs text-blue-500 font-bold mt-1 hover:underline">Show all</button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <AnimatePresence>
+              {filtered.map(r => (
+                <ResourceCard key={r.id} r={r} onDelete={() => handleDelete(r)} />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tree Navigator ────────────────────────────────────────────────────────────
+// Shows Subjects → Chapters → Topics in a single scroll pane
+
+type TreeState = {
+  subjectId: string | null;
+  chapterId: string | null;
+};
+
+function TreeNav({
+  batchId, examTarget, selectedTopic, onSelectTopic, onAddSubject,
+}: {
+  batchId: string;
+  examTarget: string;
+  selectedTopic: { topic: Topic; chapter: Chapter; subject: Subject } | null;
+  onSelectTopic: (topic: Topic, chapter: Chapter, subject: Subject) => void;
+  onAddSubject: () => void;
+}) {
+  const { data: subjects = [], isLoading: sLoading } = useSubjects(batchId);
+  const createChapter = useCreateChapter();
+  const createTopic = useCreateTopic();
+  const [search, setSearch] = useState("");
+  const [openSubjects, setOpenSubjects] = useState<Set<string>>(new Set());
+  const [openChapters, setOpenChapters] = useState<Set<string>>(new Set());
+  const [addingChapter, setAddingChapter] = useState<string | null>(null); // subjectId
+  const [addingTopic, setAddingTopic] = useState<string | null>(null);     // chapterId
+
+  const toggleSubject = (id: string) =>
+    setOpenSubjects(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const toggleChapter = (id: string) =>
+    setOpenChapters(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const matchSearch = (name: string) => name.toLowerCase().includes(search.toLowerCase());
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 py-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-black text-slate-700">Subjects &amp; Topics</p>
+          <button
+            onClick={onAddSubject}
+            className="flex items-center gap-1 h-7 px-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-black transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" /> Subject
+          </button>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          <input
+            placeholder="Search topics…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full h-8 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Tree */}
+      <div className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
+        {sLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-400" /></div>
+        ) : subjects.length === 0 ? (
+          <div className="text-center py-10 px-4">
+            <GraduationCap className="w-8 h-8 mx-auto text-slate-200 mb-2" />
+            <p className="text-xs text-slate-400 font-semibold">No subjects yet</p>
+            <button onClick={onAddSubject} className="text-xs text-blue-500 font-bold mt-2 hover:underline">+ Add first subject</button>
+          </div>
+        ) : (
+          subjects.map(subject => {
+            const subOpen = openSubjects.has(subject.id);
             return (
-              <motion.div key={r.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
-                <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", rc.color)}>
-                  <Icon className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-slate-800 truncate">{r.title}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md", rc.color)}>{rc.label}</span>
-                    {r.fileSize && <span className="text-[10px] text-slate-400">{formatSize(r.fileSize)}</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a href={resolveMediaUrl(r.fileUrl)} target="_blank" rel="noreferrer"
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                  <button onClick={() => handleDelete(r.id)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </motion.div>
+              <SubjectTree
+                key={subject.id}
+                subject={subject}
+                open={subOpen}
+                onToggle={() => toggleSubject(subject.id)}
+                search={search}
+                openChapters={openChapters}
+                onToggleChapter={toggleChapter}
+                addingChapter={addingChapter}
+                setAddingChapter={setAddingChapter}
+                addingTopic={addingTopic}
+                setAddingTopic={setAddingTopic}
+                createChapter={createChapter}
+                createTopic={createTopic}
+                selectedTopicId={selectedTopic?.topic.id ?? null}
+                onSelectTopic={onSelectTopic}
+                matchSearch={matchSearch}
+              />
             );
           })
         )}
@@ -214,627 +511,627 @@ function TopicResourcesPanel({ topicId, topicName }: { topicId: string; topicNam
   );
 }
 
-// ─── Tests & PYQs Panel ───────────────────────────────────────────────────────
+function SubjectTree({
+  subject, open, onToggle, search, openChapters, onToggleChapter,
+  addingChapter, setAddingChapter, addingTopic, setAddingTopic,
+  createChapter, createTopic, selectedTopicId, onSelectTopic, matchSearch,
+}: any) {
+  const { data: chapters = [], isLoading } = useChapters(open || search ? subject.id : "");
 
-const SCOPE_TYPE_CONFIG: Record<ScopeResourceType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; accept: string }> = {
-  mock_test: { label: "Mock Test", icon: Trophy,       color: "bg-rose-100 text-rose-600",  accept: ".pdf,.doc,.docx,.zip,.json" },
-  pyq:       { label: "PYQ",       icon: GraduationCap, color: "bg-amber-100 text-amber-600", accept: ".pdf,.doc,.docx,.zip,.json" },
-};
+  const visibleChapters = search
+    ? chapters.filter((ch: Chapter) => matchSearch(ch.name) ||
+        (ch as any).topics?.some?.((t: Topic) => matchSearch(t.name)))
+    : chapters;
 
-const SCOPE_LEVEL_CONFIG: Record<ScopeLevel, { label: string; color: string; activeRing: string }> = {
-  course:  { label: "Course",  color: "bg-violet-100 text-violet-700", activeRing: "ring-violet-400" },
-  subject: { label: "Subject", color: "bg-blue-100 text-blue-700",     activeRing: "ring-blue-400"   },
-  chapter: { label: "Chapter", color: "bg-indigo-100 text-indigo-700", activeRing: "ring-indigo-400" },
-  topic:   { label: "Topic",   color: "bg-emerald-100 text-emerald-700", activeRing: "ring-emerald-400" },
-};
-
-function TestsAndPYQsPanel({
-  batches,
-  selectedSubjectId, selectedSubjectName,
-  selectedChapterId, selectedChapterName,
-  selectedTopicId,   selectedTopicName,
-}: {
-  batches: Batch[];
-  selectedSubjectId: string; selectedSubjectName: string;
-  selectedChapterId: string; selectedChapterName: string;
-  selectedTopicId:   string; selectedTopicName:   string;
-}) {
-  const [level, setLevel]           = useState<ScopeLevel>("course");
-  const [batchId, setBatchId]       = useState("");
-  const [uploadType, setUploadType] = useState<ScopeResourceType>("mock_test");
-  const [uploadName, setUploadName] = useState("");
-  const [showForm, setShowForm]     = useState(false);
-  const [dragging, setDragging]     = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  // Auto-select the deepest available level when tree selection changes
-  useEffect(() => {
-    if (selectedTopicId)   { setLevel("topic"); }
-    else if (selectedChapterId) { setLevel("chapter"); }
-    else if (selectedSubjectId) { setLevel("subject"); }
-    else                        { setLevel("course"); }
-  }, [selectedTopicId, selectedChapterId, selectedSubjectId]);
-
-  const scopeId = level === "course"   ? batchId
-                : level === "subject"  ? selectedSubjectId
-                : level === "chapter"  ? selectedChapterId
-                : selectedTopicId;
-
-  const scopeName = level === "course"   ? (batches.find(b => b.id === batchId)?.name ?? "")
-                  : level === "subject"  ? selectedSubjectName
-                  : level === "chapter"  ? selectedChapterName
-                  : selectedTopicName;
-
-  const levelEnabled: Record<ScopeLevel, boolean> = {
-    course:  true,
-    subject: !!selectedSubjectId,
-    chapter: !!selectedChapterId,
-    topic:   !!selectedTopicId,
-  };
-
-  const { data: resources = [], isLoading } = useScopeResources(level, scopeId);
-  const uploadResource = useUploadScopeResource(level, scopeId);
-  const deleteResource = useDeleteScopeResource(level, scopeId);
-
-  const handleFile = async (file: File) => {
-    if (!scopeId) { toast.error(level === "course" ? "Select a course first" : "Make a selection first"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("File must be 5 MB or smaller"); return; }
-    const title = uploadName.trim() || file.name.replace(/\.[^.]+$/, "");
+  const handleAddChapter = async (name: string) => {
     try {
-      await uploadResource.mutateAsync({ file, type: uploadType, title });
-      toast.success(`${SCOPE_TYPE_CONFIG[uploadType].label} uploaded`);
-      setUploadName("");
-      setShowForm(false);
-    } catch {
-      toast.error("Upload failed");
-    }
+      await createChapter.mutateAsync({ subjectId: subject.id, name });
+      toast.success("Chapter created");
+      setAddingChapter(null);
+      if (!open) onToggle();
+    } catch { toast.error("Failed to create chapter"); }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this file?")) return;
-    try {
-      await deleteResource.mutateAsync(id);
-      toast.success("Deleted");
-    } catch {
-      toast.error("Delete failed");
-    }
-  };
-
-  const cfg = SCOPE_TYPE_CONFIG[uploadType];
-  const lcfg = SCOPE_LEVEL_CONFIG[level];
+  const accentColor = subject.colorCode ?? "#3B82F6";
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Mock Tests & PYQs</p>
-            <p className="text-lg font-black text-slate-900 mt-0.5 leading-none">
-              {scopeName || <span className="text-slate-300 text-sm font-semibold">Select a scope below</span>}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={cn("text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full", lcfg.color)}>
-              {lcfg.label}
+    <div className="rounded-2xl overflow-hidden border border-slate-100">
+      {/* Subject row */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-white hover:bg-slate-50 transition-colors text-left group"
+      >
+        <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-transform"
+          style={{ background: `${accentColor}18`, color: accentColor }}>
+          <GraduationCap className="w-3.5 h-3.5" />
+        </div>
+        <span className="text-sm font-black text-slate-800 flex-1 truncate">{subject.name}</span>
+        <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full shrink-0"
+          style={{ background: `${accentColor}15`, color: accentColor }}>
+          {subject.examTarget?.toUpperCase()}
+        </span>
+        <ChevronDown className={cn("w-4 h-4 text-slate-400 shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {/* Chapters */}
+      <AnimatePresence>
+        {(open || search) && (
+          <motion.div
+            initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-slate-50/80 border-t border-slate-100 px-2 py-1.5 space-y-0.5">
+              {/* Add chapter input */}
+              {addingChapter === subject.id && (
+                <div className="px-1">
+                  <InlineAdd
+                    placeholder="Chapter name…"
+                    onSave={handleAddChapter}
+                    onCancel={() => setAddingChapter(null)}
+                    loading={createChapter.isPending}
+                  />
+                </div>
+              )}
+
+              {isLoading ? (
+                <div className="flex justify-center py-3"><Loader2 className="w-4 h-4 animate-spin text-blue-400" /></div>
+              ) : chapters.length === 0 && !addingChapter ? (
+                <div className="text-center py-3">
+                  <p className="text-[11px] text-slate-400">No chapters — </p>
+                  <button onClick={() => setAddingChapter(subject.id)}
+                    className="text-[11px] text-blue-500 font-bold hover:underline">add one</button>
+                </div>
+              ) : (
+                visibleChapters.map((chapter: Chapter) => (
+                  <ChapterTree
+                    key={chapter.id}
+                    chapter={chapter}
+                    subjectId={subject.id}
+                    open={openChapters.has(chapter.id)}
+                    onToggle={() => onToggleChapter(chapter.id)}
+                    search={search}
+                    addingTopic={addingTopic}
+                    setAddingTopic={setAddingTopic}
+                    createTopic={createTopic}
+                    selectedTopicId={selectedTopicId}
+                    onSelectTopic={(t: Topic) => onSelectTopic(t, chapter, subject)}
+                    matchSearch={matchSearch}
+                    accentColor={accentColor}
+                  />
+                ))
+              )}
+
+              {/* Add chapter button */}
+              {addingChapter !== subject.id && (
+                <button
+                  onClick={() => setAddingChapter(subject.id)}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all"
+                >
+                  <Plus className="w-3 h-3" /> Add Chapter
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ChapterTree({
+  chapter, open, onToggle, search, addingTopic, setAddingTopic,
+  createTopic, selectedTopicId, onSelectTopic, matchSearch, accentColor,
+}: any) {
+  const { data: topics = [], isLoading } = useTopics(open || search ? chapter.id : "");
+
+  const visibleTopics = search ? topics.filter((t: Topic) => matchSearch(t.name)) : topics;
+
+  const handleAddTopic = async (name: string) => {
+    try {
+      await createTopic.mutateAsync({ chapterId: chapter.id, name, estimatedStudyMinutes: 60 });
+      toast.success("Topic created");
+      setAddingTopic(null);
+      if (!open) onToggle();
+    } catch { toast.error("Failed to create topic"); }
+  };
+
+  return (
+    <div className="ml-2">
+      {/* Chapter row */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-white transition-colors text-left group"
+      >
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {open
+            ? <FolderOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            : <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+          <span className="text-xs font-bold text-slate-700 truncate">{chapter.name}</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {topics.length > 0 && (
+            <span className="text-[9px] font-black bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full">
+              {topics.length}
             </span>
-            <span className="text-sm font-bold text-slate-400">{resources.length} file{resources.length !== 1 ? "s" : ""}</span>
+          )}
+          <ChevronRight className={cn("w-3 h-3 text-slate-300 transition-transform", open && "rotate-90")} />
+        </div>
+      </button>
+
+      {/* Topics */}
+      <AnimatePresence>
+        {(open || search) && (
+          <motion.div
+            initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="ml-4 border-l-2 pl-2 pb-1 space-y-0.5" style={{ borderColor: `${accentColor}30` }}>
+              {/* Add topic input */}
+              {addingTopic === chapter.id && (
+                <InlineAdd
+                  placeholder="Topic name…"
+                  onSave={handleAddTopic}
+                  onCancel={() => setAddingTopic(null)}
+                  loading={createTopic.isPending}
+                />
+              )}
+
+              {isLoading ? (
+                <div className="py-2 flex justify-center"><Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" /></div>
+              ) : visibleTopics.length === 0 && !addingTopic ? (
+                <button onClick={() => setAddingTopic(chapter.id)}
+                  className="w-full text-left text-[11px] text-slate-400 hover:text-blue-500 py-1.5 px-2 font-semibold">
+                  + Add first topic
+                </button>
+              ) : (
+                visibleTopics.map((t: Topic) => {
+                  const sel = selectedTopicId === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => onSelectTopic(t)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all text-xs font-semibold",
+                        sel
+                          ? "text-white shadow-sm"
+                          : "text-slate-600 hover:bg-white hover:text-slate-900"
+                      )}
+                      style={sel ? { background: accentColor } : {}}
+                    >
+                      <Hash className={cn("w-3 h-3 shrink-0", sel ? "text-white/60" : "text-slate-300")} />
+                      <span className="flex-1 truncate">{t.name}</span>
+                    </button>
+                  );
+                })
+              )}
+
+              {/* Add topic button */}
+              {addingTopic !== chapter.id && (
+                <button
+                  onClick={() => setAddingTopic(chapter.id)}
+                  className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:text-blue-500 hover:bg-white rounded-xl transition-all"
+                >
+                  <Plus className="w-3 h-3" /> Add Topic
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Add Subject Modal ────────────────────────────────────────────────────────
+
+const PRESET_SUBJECTS = [
+  { name: "Physics",          color: "#3B82F6", icon: "⚡" },
+  { name: "Chemistry",        color: "#10B981", icon: "🧪" },
+  { name: "Mathematics",      color: "#F59E0B", icon: "📐" },
+  { name: "Biology",          color: "#22C55E", icon: "🧬" },
+  { name: "English",          color: "#8B5CF6", icon: "📝" },
+  { name: "History",          color: "#EC4899", icon: "📜" },
+  { name: "Computer Science", color: "#0EA5E9", icon: "💻" },
+  { name: "Geography",        color: "#14B8A6", icon: "🌍" },
+  { name: "Economics",        color: "#F97316", icon: "📊" },
+];
+
+function AddSubjectModal({ batchId, examTarget, onClose }: { batchId: string; examTarget: string; onClose: () => void }) {
+  const createSubject = useCreateSubject();
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#3B82F6");
+  const [error, setError] = useState("");
+
+  const handleCreate = async (subjectName: string, subjectColor?: string) => {
+    if (!subjectName.trim()) return;
+    setError("");
+    try {
+      await createSubject.mutateAsync({ name: subjectName.trim(), examTarget, batchId, colorCode: subjectColor ?? color });
+      toast.success(`${subjectName} added`);
+      onClose();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || "Failed to create subject");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">Add Subject</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Choose from presets or create custom</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {/* Preset grid */}
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2.5">Quick add</p>
+            <div className="grid grid-cols-3 gap-2">
+              {PRESET_SUBJECTS.map(s => (
+                <button
+                  key={s.name}
+                  onClick={() => handleCreate(s.name, s.color)}
+                  disabled={createSubject.isPending}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm text-left transition-all disabled:opacity-40"
+                >
+                  <span className="text-base">{s.icon}</span>
+                  <span className="text-xs font-bold text-slate-700 leading-tight">{s.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom subject */}
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2.5">Custom subject</p>
+            <div className="flex gap-2 mb-3">
+              <input
+                placeholder="Subject name…"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleCreate(name); }}
+                className="flex-1 h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-blue-400 transition-colors"
+              />
+            </div>
+            {/* Color */}
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Color:</p>
+              {["#3B82F6","#8B5CF6","#10B981","#F59E0B","#EF4444","#EC4899","#0EA5E9","#F97316"].map(c => (
+                <button key={c} onClick={() => setColor(c)}
+                  className={cn("w-6 h-6 rounded-full transition-all", color === c && "ring-2 ring-offset-2 ring-slate-400 scale-110")}
+                  style={{ background: c }} />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="p-5 space-y-5">
-        {/* ── Level selector ── */}
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Scope Level</p>
-          <div className="flex gap-2 flex-wrap">
-            {(["course", "subject", "chapter", "topic"] as ScopeLevel[]).map(l => {
-              const lc = SCOPE_LEVEL_CONFIG[l];
-              const enabled = levelEnabled[l];
-              return (
-                <button key={l} disabled={!enabled} onClick={() => setLevel(l)}
-                  className={cn(
-                    "px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all",
-                    !enabled
-                      ? "opacity-30 cursor-not-allowed bg-slate-100 text-slate-400"
-                      : level === l
-                        ? lc.color + " ring-2 " + lc.activeRing + " shadow-sm"
-                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  )}>
-                  {lc.label}
-                  {!enabled && <span className="ml-1 opacity-50">—</span>}
-                </button>
-              );
-            })}
+        <div className="px-6 pb-6">
+          <button
+            onClick={() => handleCreate(name)}
+            disabled={createSubject.isPending || !name.trim()}
+            className="w-full h-11 rounded-2xl text-white text-sm font-black disabled:opacity-40 flex items-center justify-center gap-2 transition-opacity"
+            style={{ background: "linear-gradient(135deg, #013889,#0257c8)" }}
+          >
+            {createSubject.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Create {name.trim() || "Subject"}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Course Card (used in grid) ───────────────────────────────────────────────
+
+function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
+  const statusColor =
+    batch.status === "active" ? "#10B981" :
+    batch.status === "completed" ? "#3B82F6" : "#94A3B8";
+  const statusBg =
+    batch.status === "active" ? "bg-emerald-50 text-emerald-700" :
+    batch.status === "completed" ? "bg-blue-50 text-blue-700" :
+    "bg-slate-100 text-slate-500";
+
+  return (
+    <motion.button
+      whileHover={{ y: -3, scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="group bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 text-left overflow-hidden transition-all w-full"
+    >
+      {/* Thumbnail or gradient */}
+      {batch.thumbnailUrl ? (
+        <img
+          src={resolveUrl(batch.thumbnailUrl)}
+          alt={batch.name}
+          className="w-full h-36 object-cover"
+        />
+      ) : (
+        <div className="w-full h-36 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-3xl bg-white/70 backdrop-blur-sm shadow-sm flex items-center justify-center">
+            <GraduationCap className="w-8 h-8 text-blue-400" />
           </div>
-          {level === "course" && !selectedSubjectId && (
-            <p className="text-[10px] text-slate-400 mt-1.5">Select a subject/chapter/topic in the tree above to enable deeper scopes</p>
+        </div>
+      )}
+
+      <div className="p-4">
+        {/* Badges row */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full", statusBg)}>
+            {batch.status}
+          </span>
+          {batch.examTarget && (
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+              {batch.examTarget}
+            </span>
+          )}
+          {batch.class && (
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+              Class {batch.class}
+            </span>
           )}
         </div>
 
-        {/* ── Course batch selector ── */}
-        {level === "course" && (
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Select Course</p>
-            <select value={batchId} onChange={e => setBatchId(e.target.value)}
-              className="w-full h-10 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors">
-              <option value="">— Choose a course —</option>
-              {batches.map(b => <option key={b.id} value={b.id}>{b.name} ({b.examTarget?.toUpperCase()})</option>)}
-            </select>
-          </div>
+        {/* Name */}
+        <h3 className="text-sm font-black text-slate-900 leading-snug mb-1 group-hover:text-blue-700 transition-colors line-clamp-2">
+          {batch.name}
+        </h3>
+
+        {/* Description */}
+        {batch.description && (
+          <p className="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">{batch.description}</p>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* ── Left: Upload ── */}
-          <div className="space-y-4">
-            {/* Type selector */}
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">File Type</p>
-              <div className="flex gap-2">
-                {(["mock_test", "pyq"] as ScopeResourceType[]).map(t => {
-                  const tc = SCOPE_TYPE_CONFIG[t];
-                  const Icon = tc.icon;
+        {/* Stats row */}
+        <div className="flex items-center gap-3 pt-3 border-t border-slate-100 mt-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
+            <Users className="w-3 h-3" />
+            {batch.enrolledCount ?? 0} enrolled
+          </div>
+          {batch.isPaid && batch.feeAmount && (
+            <div className="text-[11px] font-black text-emerald-600 ml-auto">
+              ₹{Number(batch.feeAmount).toLocaleString()}
+            </div>
+          )}
+          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-400 transition-colors ml-auto" />
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+const ContentPage = () => {
+  const { data: batches = [], isLoading: batchesLoading } = useBatches();
+  const batchList = Array.isArray(batches) ? batches : [];
+
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<{
+    topic: Topic; chapter: Chapter; subject: Subject;
+  } | null>(null);
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [batchSearch, setBatchSearch] = useState("");
+
+  const selectedBatch = batchList.find(b => b.id === selectedBatchId);
+
+  const filteredBatches = batchList.filter(b =>
+    b.name.toLowerCase().includes(batchSearch.toLowerCase())
+  );
+
+  const handleSelectBatch = (id: string) => {
+    if (id !== selectedBatchId) {
+      setSelectedBatchId(id);
+      setSelectedEntry(null);
+    }
+  };
+
+  const handleBack = () => {
+    setSelectedBatchId(null);
+    setSelectedEntry(null);
+    setBatchSearch("");
+  };
+
+  // ── Phase 1: No course selected — full-width course grid ──────────────────
+  if (!selectedBatch) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] bg-slate-50 p-6">
+        {/* Page header */}
+        <div className="mb-6">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Content Manager</p>
+          <h1 className="text-2xl font-black text-slate-900">Your Courses</h1>
+          <p className="text-sm text-slate-500 mt-1">Select a course to manage its subjects, chapters, topics and resources.</p>
+        </div>
+
+        {/* Search */}
+        <div className="relative max-w-sm mb-6">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            placeholder="Search courses…"
+            value={batchSearch}
+            onChange={e => setBatchSearch(e.target.value)}
+            className="w-full h-10 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-400 shadow-sm transition-colors"
+          />
+        </div>
+
+        {/* Course cards grid */}
+        {batchesLoading ? (
+          <div className="flex justify-center py-24">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+          </div>
+        ) : filteredBatches.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-28 text-center">
+            <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center mb-4">
+              <BookOpen className="w-10 h-10 text-slate-300" />
+            </div>
+            <p className="text-lg font-black text-slate-500">
+              {batchSearch ? "No courses match your search" : "No courses yet"}
+            </p>
+            {!batchSearch && (
+              <p className="text-sm text-slate-400 mt-1">Create a course from the Batches page first.</p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <AnimatePresence>
+              {filteredBatches.map(b => (
+                <motion.div
+                  key={b.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <CourseCard batch={b} onClick={() => handleSelectBatch(b.id)} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Phase 2: Course selected — header + tree + content ───────────────────
+  const statusBg =
+    selectedBatch.status === "active" ? "bg-emerald-100 text-emerald-700" :
+    selectedBatch.status === "completed" ? "bg-blue-100 text-blue-700" :
+    "bg-slate-100 text-slate-500";
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-50 overflow-hidden">
+
+      {/* ── Course Header Bar ── */}
+      <div className="shrink-0 bg-white border-b border-slate-200 px-5 py-3">
+        <div className="flex items-center gap-3">
+          {/* Back */}
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 font-bold transition-colors shrink-0 group"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            Courses
+          </button>
+
+          <span className="text-slate-200 text-lg shrink-0">/</span>
+
+          {/* Course identity */}
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-sm font-black text-slate-900 truncate">{selectedBatch.name}</h1>
+                <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0", statusBg)}>
+                  {selectedBatch.status}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium leading-none mt-0.5">
+                {[selectedBatch.examTarget, selectedBatch.class ? `Class ${selectedBatch.class}` : null, selectedBatch.enrolledCount != null ? `${selectedBatch.enrolledCount} students` : null].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+          </div>
+
+          {/* Breadcrumb trail — shows when topic is selected */}
+          {selectedEntry && (
+            <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-2xl px-3 py-1.5 flex-wrap max-w-md">
+              <span className="font-semibold" style={{ color: selectedEntry.subject.colorCode ?? "#6B7280" }}>
+                {selectedEntry.subject.name}
+              </span>
+              <ChevronRight className="w-3 h-3 shrink-0 text-slate-300" />
+              <span className="font-semibold text-amber-600">{selectedEntry.chapter.name}</span>
+              <ChevronRight className="w-3 h-3 shrink-0 text-slate-300" />
+              <span className="font-bold text-slate-700">{selectedEntry.topic.name}</span>
+            </div>
+          )}
+
+          {/* Add Subject */}
+          <button
+            onClick={() => setShowAddSubject(true)}
+            className="flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-white text-xs font-black shrink-0 hover:opacity-90 transition-opacity"
+            style={{ background: "linear-gradient(135deg,#013889,#0257c8)" }}
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Subject
+          </button>
+        </div>
+      </div>
+
+      {/* ── Body: Tree + Content ── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* Left: Tree Navigator */}
+        <div className="w-72 shrink-0 flex flex-col bg-white border-r border-slate-200 overflow-hidden">
+          <TreeNav
+            batchId={selectedBatch.id}
+            examTarget={selectedBatch.examTarget}
+            selectedTopic={selectedEntry}
+            onSelectTopic={(topic, chapter, subject) => setSelectedEntry({ topic, chapter, subject })}
+            onAddSubject={() => setShowAddSubject(true)}
+          />
+        </div>
+
+        {/* Right: Resource workspace */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
+          {!selectedEntry ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center gap-5">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-50 to-violet-50 flex items-center justify-center">
+                <Layers className="w-10 h-10 text-blue-300" />
+              </div>
+              <div className="max-w-sm">
+                <p className="text-lg font-black text-slate-700">Select a Topic</p>
+                <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+                  Expand any subject in the tree on the left, open a chapter, then click a topic to start managing its resources.
+                </p>
+              </div>
+              {/* Resource type guide */}
+              <div className="grid grid-cols-3 gap-2 mt-1 w-full max-w-xs">
+                {RES_TYPES.map(rt => {
+                  const Icon = rt.icon;
                   return (
-                    <button key={t} onClick={() => setUploadType(t)}
-                      className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all",
-                        uploadType === t ? tc.color + " ring-2 ring-current shadow-sm" : "bg-slate-100 text-slate-400 hover:text-slate-700"
-                      )}>
-                      <Icon className="w-3.5 h-3.5" /> {tc.label}
-                    </button>
+                    <div key={rt.value} className={cn("flex items-center gap-2 px-3 py-2 rounded-2xl border", rt.bg, rt.border)}>
+                      <Icon className={cn("w-3.5 h-3.5 shrink-0", rt.color)} />
+                      <span className={cn("text-xs font-bold", rt.color)}>{rt.label}</span>
+                    </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* Upload zone */}
-            <div
-              onDragOver={e => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-              onClick={() => setShowForm(!showForm)}
-              className={cn(
-                "border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all",
-                dragging ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
-              )}>
-              <Upload className={cn("w-6 h-6 mx-auto mb-2 transition-colors", dragging ? "text-blue-500" : "text-slate-300")} />
-              <p className="text-sm font-bold text-slate-500">
-                {dragging ? "Drop to upload" : `Upload ${cfg.label}`}
-              </p>
-              <p className="text-[10px] text-slate-300 mt-0.5">click or drag & drop · PDF, DOC, ZIP · max 5 MB</p>
-            </div>
-
-            <AnimatePresence>
-              {showForm && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                  <div className="space-y-2">
-                    <input placeholder={`${cfg.label} title (optional)`} value={uploadName}
-                      onChange={e => setUploadName(e.target.value)}
-                      className="w-full h-10 px-3.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors" />
-                    <input ref={fileRef} type="file" accept={cfg.accept} className="hidden"
-                      onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
-                    <button
-                      onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
-                      disabled={uploadResource.isPending || (level === "course" && !batchId)}
-                      className="w-full h-10 flex items-center justify-center gap-2 rounded-xl text-white text-sm font-black disabled:opacity-50 hover:opacity-90 transition-opacity"
-                      style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
-                      {uploadResource.isPending
-                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
-                        : <><Upload className="w-4 h-4" /> Choose File</>}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* ── Right: File list ── */}
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Uploaded Files</p>
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-              {isLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-500" /></div>
-              ) : !scopeId ? (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-200 border-2 border-dashed border-slate-100 rounded-2xl">
-                  <FileQuestion className="w-8 h-8 mb-2" />
-                  <p className="text-xs font-semibold text-slate-400">
-                    {level === "course" ? "Select a course" : `Select a ${level}`}
-                  </p>
-                </div>
-              ) : resources.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-200 border-2 border-dashed border-slate-100 rounded-2xl">
-                  <Trophy className="w-8 h-8 mb-2" />
-                  <p className="text-xs font-semibold text-slate-400">No files yet</p>
-                  <p className="text-[10px] text-slate-300 mt-0.5">Upload a mock test or PYQ</p>
-                </div>
-              ) : (
-                resources.map((r, i) => {
-                  const tc = SCOPE_TYPE_CONFIG[r.type];
-                  const Icon = tc.icon;
-                  return (
-                    <motion.div key={r.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
-                      <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", tc.color)}>
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-800 truncate">{r.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md", tc.color)}>{tc.label}</span>
-                          {r.fileSize && <span className="text-[10px] text-slate-400">{formatSize(r.fileSize)}</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <a href={resolveMediaUrl(r.fileUrl)} target="_blank" rel="noreferrer"
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                        <button onClick={() => handleDelete(r.id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+          ) : (
+            <UploadPanel topicId={selectedEntry.topic.id} topicName={selectedEntry.topic.name} />
+          )}
         </div>
       </div>
-    </div>
-  );
-}
 
-// ─── Field component ──────────────────────────────────────────────────────────
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-1">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-const inputCls = "h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors w-full";
-
-// ─── Panel shell ──────────────────────────────────────────────────────────────
-
-function Panel({ title, count, onAdd, addLabel, showForm, children }: {
-  title: string; count: number; onAdd: () => void;
-  addLabel: string; showForm: boolean; children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{title}</p>
-          <p className="text-xl font-black text-slate-900 mt-0.5 leading-none">{count}</p>
-        </div>
-        <button onClick={onAdd}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black text-white transition-opacity hover:opacity-90"
-          style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
-          {showForm ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-          {showForm ? "Cancel" : addLabel}
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">{children}</div>
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-const ContentPage = () => {
-  const { data: subjects, isLoading } = useSubjects();
-  const { data: batches = [] } = useBatches();
-  const createSubject = useCreateSubject();
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [selectedChapter, setSelectedChapter] = useState("");
-  const [selectedTopic,   setSelectedTopic]   = useState("");
-
-  const [showSubjectForm, setShowSubjectForm] = useState(false);
-  const [showChapterForm, setShowChapterForm] = useState(false);
-  const [showTopicForm,   setShowTopicForm]   = useState(false);
-
-  const [subjectForm, setSubjectForm] = useState({ name: "", examTarget: "jee" });
-  const [chapterForm, setChapterForm] = useState({ name: "" });
-  const [topicForm,   setTopicForm]   = useState({ name: "", estimatedStudyMinutes: 30, gatePassPercentage: 70 });
-
-  const { data: chapters, isLoading: chaptersLoading } = useChapters(selectedSubject);
-  const createChapter = useCreateChapter();
-  const { data: topics, isLoading: topicsLoading } = useTopics(selectedChapter);
-  const createTopic = useCreateTopic();
-
-  const subjectList = Array.isArray(subjects) ? subjects : [];
-  const chapterList = Array.isArray(chapters) ? chapters : [];
-  const topicList   = Array.isArray(topics)   ? topics   : [];
-  const batchList   = Array.isArray(batches)  ? batches  : [];
-
-  const selectedSubjectObj = subjectList.find(s => s.id === selectedSubject);
-  const selectedChapterObj = chapterList.find(c => c.id === selectedChapter);
-  const selectedTopicObj   = topicList.find(t => t.id === selectedTopic);
-
-  const handleCreateSubject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createSubject.mutateAsync(subjectForm);
-    setSubjectForm({ name: "", examTarget: "jee" });
-    setShowSubjectForm(false);
-  };
-
-  const handleCreateChapter = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createChapter.mutateAsync({ subjectId: selectedSubject, name: chapterForm.name });
-    setChapterForm({ name: "" });
-    setShowChapterForm(false);
-  };
-
-  const handleCreateTopic = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createTopic.mutateAsync({
-      chapterId: selectedChapter,
-      name: topicForm.name,
-      estimatedStudyMinutes: topicForm.estimatedStudyMinutes,
-      gatePassPercentage: topicForm.gatePassPercentage,
-    });
-    setTopicForm({ name: "", estimatedStudyMinutes: 30, gatePassPercentage: 70 });
-    setShowTopicForm(false);
-  };
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-  }
-
-  const showResources = !!selectedTopic;
-
-  return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-8 pb-20 space-y-6">
-
-      {/* ── Header ── */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-black text-slate-900">Content Library</h1>
-        <p className="text-sm text-slate-400 mt-0.5">Subjects → Chapters → Topics → Resources</p>
-      </motion.div>
-
-      {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2 text-sm font-bold flex-wrap">
-        <button onClick={() => { setSelectedSubject(""); setSelectedChapter(""); setSelectedTopic(""); }}
-          className={cn("transition-colors", selectedSubject ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
-          Subjects
-        </button>
-        {selectedSubjectObj && (<>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-          <button onClick={() => { setSelectedChapter(""); setSelectedTopic(""); }}
-            className={cn("transition-colors", selectedChapter ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
-            {selectedSubjectObj.name}
-          </button>
-        </>)}
-        {selectedChapterObj && (<>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-          <button onClick={() => setSelectedTopic("")}
-            className={cn("transition-colors", selectedTopic ? "text-blue-600 hover:text-blue-800" : "text-slate-900 cursor-default")}>
-            {selectedChapterObj.name}
-          </button>
-        </>)}
-        {selectedTopicObj && (<>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-          <span className="text-slate-900">{selectedTopicObj.name}</span>
-        </>)}
-      </div>
-
-      {/* ── Content tree panels ── */}
-      <div className={cn("grid gap-5", showResources ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1 lg:grid-cols-3")}>
-
-        {/* ── Subjects ── */}
-        <Panel title="Subjects" count={subjectList.length} addLabel="Add Subject"
-          showForm={showSubjectForm} onAdd={() => setShowSubjectForm(!showSubjectForm)}>
-          <AnimatePresence>
-            {showSubjectForm && (
-              <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                onSubmit={handleCreateSubject} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-2 space-y-3">
-                <Field label="Subject Name">
-                  <input required placeholder="e.g. Physics" value={subjectForm.name}
-                    onChange={e => setSubjectForm({ ...subjectForm, name: e.target.value })} className={inputCls} />
-                </Field>
-                <Field label="Exam Target">
-                  <select value={subjectForm.examTarget} onChange={e => setSubjectForm({ ...subjectForm, examTarget: e.target.value })} className={inputCls}>
-                    <option value="jee">JEE</option><option value="neet">NEET</option><option value="both">Both</option>
-                  </select>
-                </Field>
-                <button type="submit" disabled={createSubject.isPending || !subjectForm.name}
-                  className="w-full h-9 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
-                  {createSubject.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Create Subject"}
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
-
-          {subjectList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-              <BookOpen className="w-10 h-10 mb-2" />
-              <p className="text-sm font-semibold text-slate-400">No subjects yet</p>
-            </div>
-          ) : subjectList.map((s, i) => (
-            <motion.button key={s.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-              onClick={() => { setSelectedSubject(s.id); setSelectedChapter(""); setSelectedTopic(""); }}
-              className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
-                selectedSubject === s.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "hover:bg-slate-50 border border-transparent hover:border-slate-100")}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white font-black text-sm"
-                style={{ background: `linear-gradient(135deg, ${(EXAM_COLORS[s.examTarget?.toLowerCase()] ?? EXAM_COLORS.default).from}, ${(EXAM_COLORS[s.examTarget?.toLowerCase()] ?? EXAM_COLORS.default).to})` }}>
-                {s.name.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={cn("text-sm font-bold truncate", selectedSubject === s.id ? "text-white" : "text-slate-800")}>{s.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <ExamBadge target={s.examTarget} />
-                  <span className={cn("text-[10px]", selectedSubject === s.id ? "text-white/60" : "text-slate-400")}>{s.chapters?.length ?? 0} ch</span>
-                </div>
-              </div>
-              <ChevronRight className={cn("w-4 h-4 shrink-0", selectedSubject === s.id ? "text-white/60" : "text-gray-800 group-hover:text-blue-500")} />
-            </motion.button>
-          ))}
-        </Panel>
-
-        {/* ── Chapters ── */}
-        <Panel title={selectedSubjectObj ? `Chapters · ${selectedSubjectObj.name}` : "Chapters"} count={chapterList.length}
-          addLabel="Add Chapter" showForm={showChapterForm}
-          onAdd={() => { if (selectedSubject) setShowChapterForm(!showChapterForm); }}>
-          {!selectedSubject ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-800">
-              <Layers className="w-10 h-10 mb-2" />
-              <p className="text-sm font-semibold text-slate-400">Select a subject first</p>
-            </div>
-          ) : chaptersLoading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
-          ) : (
-            <>
-              <AnimatePresence>
-                {showChapterForm && (
-                  <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                    onSubmit={handleCreateChapter} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-2 space-y-3">
-                    <Field label="Chapter Name">
-                      <input required placeholder="e.g. Kinematics" value={chapterForm.name}
-                        onChange={e => setChapterForm({ name: e.target.value })} className={inputCls} />
-                    </Field>
-                    <button type="submit" disabled={createChapter.isPending || !chapterForm.name}
-                      className="w-full h-9 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90"
-                      style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
-                      {createChapter.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Create Chapter"}
-                    </button>
-                  </motion.form>
-                )}
-              </AnimatePresence>
-              {chapterList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-                  <FileText className="w-10 h-10 mb-2" />
-                  <p className="text-sm font-semibold text-slate-400">No chapters yet</p>
-                </div>
-              ) : chapterList.map((c, i) => (
-                <motion.button key={c.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                  onClick={() => { setSelectedChapter(c.id); setSelectedTopic(""); }}
-                  className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
-                    selectedChapter === c.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "hover:bg-slate-50 border border-transparent hover:border-slate-100")}>
-                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0",
-                    selectedChapter === c.id ? "bg-white/20 text-gray-900" : "bg-slate-100 text-slate-500")}>
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("text-sm font-bold truncate", selectedChapter === c.id ? "text-white" : "text-slate-800")}>{c.name}</p>
-                    <p className={cn("text-[10px] mt-0.5", selectedChapter === c.id ? "text-white/60" : "text-slate-400")}>{c.topics?.length ?? 0} topics</p>
-                  </div>
-                  <ChevronRight className={cn("w-4 h-4 shrink-0", selectedChapter === c.id ? "text-white/60" : "text-gray-800 group-hover:text-blue-500")} />
-                </motion.button>
-              ))}
-            </>
-          )}
-        </Panel>
-
-        {/* ── Topics ── */}
-        <Panel title={selectedChapterObj ? `Topics · ${selectedChapterObj.name}` : "Topics"} count={topicList.length}
-          addLabel="Add Topic" showForm={showTopicForm}
-          onAdd={() => { if (selectedChapter) setShowTopicForm(!showTopicForm); }}>
-          {!selectedChapter ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-800">
-              <Hash className="w-10 h-10 mb-2" />
-              <p className="text-sm font-semibold text-slate-400">Select a chapter first</p>
-            </div>
-          ) : topicsLoading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
-          ) : (
-            <>
-              <AnimatePresence>
-                {showTopicForm && (
-                  <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                    onSubmit={handleCreateTopic} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-2 space-y-3">
-                    <Field label="Topic Name">
-                      <input required placeholder="e.g. Newton's Laws" value={topicForm.name}
-                        onChange={e => setTopicForm({ ...topicForm, name: e.target.value })} className={inputCls} />
-                    </Field>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="Study mins">
-                        <input type="number" value={topicForm.estimatedStudyMinutes}
-                          onChange={e => setTopicForm({ ...topicForm, estimatedStudyMinutes: +e.target.value })} className={inputCls} />
-                      </Field>
-                      <Field label="Gate lock %">
-                        <input type="number" min={0} max={100} value={topicForm.gatePassPercentage}
-                          onChange={e => setTopicForm({ ...topicForm, gatePassPercentage: +e.target.value })} className={inputCls} />
-                      </Field>
-                    </div>
-                    <button type="submit" disabled={createTopic.isPending || !topicForm.name}
-                      className="w-full h-9 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90"
-                      style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
-                      {createTopic.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Create Topic"}
-                    </button>
-                  </motion.form>
-                )}
-              </AnimatePresence>
-              {topicList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-                  <FileText className="w-10 h-10 mb-2" />
-                  <p className="text-sm font-semibold text-slate-400">No topics yet</p>
-                </div>
-              ) : topicList.map((t, i) => (
-                <motion.button key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                  onClick={() => setSelectedTopic(selectedTopic === t.id ? "" : t.id)}
-                  className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all group",
-                    selectedTopic === t.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : "border border-slate-100 hover:border-blue-100 hover:shadow-sm bg-white")}>
-                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0",
-                    selectedTopic === t.id ? "bg-white/20 text-gray-900" : "bg-slate-100 text-slate-500")}>
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("text-sm font-bold truncate", selectedTopic === t.id ? "text-white" : "text-slate-800")}>{t.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      {t.estimatedStudyMinutes && (
-                        <span className={cn("flex items-center gap-1 text-[10px]", selectedTopic === t.id ? "text-white/60" : "text-slate-400")}>
-                          <Clock className="w-3 h-3" />{t.estimatedStudyMinutes}m
-                        </span>
-                      )}
-                      <span className={cn("flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md",
-                        selectedTopic === t.id ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600")}>
-                        <Lock className="w-3 h-3" />{t.gatePassPercentage ?? 70}%
-                      </span>
-                      <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-md",
-                        selectedTopic === t.id
-                          ? "bg-white/20 text-gray-900"
-                          : t.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400")}>
-                        {t.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                  </div>
-                  <Upload className={cn("w-3.5 h-3.5 shrink-0 transition-colors",
-                    selectedTopic === t.id ? "text-white/60" : "text-gray-800 group-hover:text-blue-500")} />
-                </motion.button>
-              ))}
-            </>
-          )}
-        </Panel>
-
-        {/* ── Topic Resources panel ── */}
-        <AnimatePresence>
-          {showResources && selectedTopicObj && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
-              <TopicResourcesPanel topicId={selectedTopic} topicName={selectedTopicObj.name} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* ── Mock Tests & PYQs section ── */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <TestsAndPYQsPanel
-          batches={batchList}
-          selectedSubjectId={selectedSubject}
-          selectedSubjectName={selectedSubjectObj?.name ?? ""}
-          selectedChapterId={selectedChapter}
-          selectedChapterName={selectedChapterObj?.name ?? ""}
-          selectedTopicId={selectedTopic}
-          selectedTopicName={selectedTopicObj?.name ?? ""}
-        />
-      </motion.div>
-
+      {/* Add Subject Modal */}
+      <AnimatePresence>
+        {showAddSubject && selectedBatch && (
+          <AddSubjectModal
+            key="add-subject"
+            batchId={selectedBatch.id}
+            examTarget={selectedBatch.examTarget}
+            onClose={() => setShowAddSubject(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

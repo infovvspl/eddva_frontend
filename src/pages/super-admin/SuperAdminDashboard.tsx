@@ -1,20 +1,14 @@
-﻿import { motion } from "framer-motion";
-import { Building2, Users, DollarSign, ArrowUpRight, ChevronRight, Zap, Loader2, AlertCircle, GraduationCap, Plus, Server } from "lucide-react";
+import { motion } from "framer-motion";
+import { Building2, Users, DollarSign, ChevronRight, Zap, Loader2, AlertCircle, GraduationCap, Plus, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { usePlatformStats } from "@/hooks/use-stats";
 import { useTenants } from "@/hooks/use-tenants";
 
-const statusStyles = {
-  active: "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
-  trial: "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
-  suspended: "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",
-};
-
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const { data: platformStats, isLoading: statsLoading, error: statsError } = usePlatformStats();
-  const { data: tenantsData, isLoading: tenantsLoading, error: tenantsError } = useTenants({ limit: 5 });
+  const { data: tenantsData, isLoading: tenantsLoading } = useTenants({ limit: 5 });
 
   const tenants = (tenantsData as any)?.items || (Array.isArray(tenantsData) ? tenantsData : []);
 
@@ -26,9 +20,9 @@ const SuperAdminDashboard = () => {
 
   const topMetrics = [
     { label: "Partner Institutes", value: platformStats?.totalTenants ?? 0, trend: "+12.5%", icon: Building2, color: "indigo" },
-    { label: "Active Faculty",    value: "1.2K", trend: "+5.2%",  icon: GraduationCap, color: "purple" },
-    { label: "Global Students",  value: formatCount(platformStats?.totalStudents), trend: "+18.4%", icon: Users, color: "sky" },
-    { label: "Platform Revenue", value: "₹42.8L", trend: "+22.1%", icon: DollarSign, color: "emerald" },
+    { label: "Active Faculty",     value: "1.2K",  trend: "+5.2%",  icon: GraduationCap, color: "purple" },
+    { label: "Global Students",   value: formatCount(platformStats?.totalStudents), trend: "+18.4%", icon: Users, color: "sky" },
+    { label: "Platform Revenue",  value: "₹42.8L", trend: "+22.1%", icon: DollarSign, color: "emerald" },
   ];
 
   return (
@@ -94,10 +88,10 @@ const SuperAdminDashboard = () => {
         ))}
       </div>
 
-      {/* Error state */}
+      {/* ── Error state ──────────────────────────────────────────────────────── */}
       {statsError && (
         <div className="flex items-center gap-2 p-4 rounded-2xl bg-destructive/5 border border-destructive/20 text-destructive text-sm font-medium">
-          <AlertCircle className="w-4 h-4" />
+          <AlertCircle className="w-4 h-4 shrink-0" />
           Failed to load platform stats. Please check your connection.
         </div>
       )}
@@ -150,7 +144,7 @@ const SuperAdminDashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="absolute top-0 right-[-10%] h-full w-[40%] bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
+            <div className="absolute top-0 right-[-10%] h-full w-[40%] bg-gradient-to-l from-indigo-400/20 to-transparent pointer-events-none" />
           </motion.div>
 
           <section className="bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm overflow-hidden">
@@ -168,7 +162,7 @@ const SuperAdminDashboard = () => {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left min-w-[480px]">
                 <thead>
                   <tr className="bg-slate-50/50">
                     <th className="px-5 md:px-8 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Institute</th>
@@ -219,10 +213,10 @@ const SuperAdminDashboard = () => {
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-5 ml-1">Control Hub</h4>
             <div className="space-y-2.5">
               {[
-                { label: "Add New Institute", icon: Building2, path: "/super-admin/tenants/new", color: "bg-indigo-600" },
-                { label: "Manage Platform Users", icon: Users, path: "/super-admin/users", color: "bg-purple-600" },
-                { label: "Global Announcements", icon: Zap, path: "/super-admin/announcements", color: "bg-emerald-600" },
-                { label: "System Health & API", icon: Server, path: "/super-admin/stats", color: "bg-white" },
+                { label: "Add New Institute",       icon: Building2, path: "/super-admin/tenants/new", color: "bg-indigo-600" },
+                { label: "Manage Platform Users",   icon: Users,     path: "/super-admin/users",       color: "bg-purple-600" },
+                { label: "Global Announcements",    icon: Zap,       path: "/super-admin/announcements", color: "bg-emerald-600" },
+                { label: "System Health & API",     icon: Server,    path: "/super-admin/stats",       color: "bg-slate-700" },
               ].map((act) => (
                 <button
                   key={act.label}
@@ -253,8 +247,8 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </motion.div>
   );

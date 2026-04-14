@@ -23,6 +23,7 @@ import SuperAdminLoginPage from "./pages/super-admin/SuperAdminLoginPage";
 import EnrollmentsPage from "./pages/super-admin/EnrollmentsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import BatchesPage from "./pages/admin/BatchesPage";
+import BatchDetailPage from "./pages/admin/BatchDetailPage";
 import TeachersPage from "./pages/admin/TeachersPage";
 import TeacherDetailPage from "./pages/admin/TeacherDetailPage";
 import StudentsPage from "./pages/admin/StudentsPage";
@@ -63,6 +64,7 @@ import ReportsPage from "./pages/admin/ReportsPage";
 import LiveClassRoom from "./pages/live/LiveClassRoom";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
+import JoinBatchPage from "./pages/JoinBatchPage";
 
 // Landing Pages
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
@@ -80,6 +82,7 @@ const AdminRoutes = () => (
   <Route element={<ProtectedRoute allowedRoles={["institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
     <Route path="/admin" element={<AdminDashboard />} />
     <Route path="/admin/batches" element={<BatchesPage />} />
+    <Route path="/admin/batches/:id" element={<BatchDetailPage />} />
     <Route path="/admin/teachers" element={<TeachersPage />} />
     <Route path="/admin/teachers/:id" element={<TeacherDetailPage />} />
     <Route path="/admin/students" element={<StudentsPage />} />
@@ -160,6 +163,8 @@ const TenantRoutes = () => (
   <Routes>
     <Route path="/" element={<LoginPage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/join" element={<JoinBatchPage />} />
     {AdminRoutes()}
     {PYQRoute()}
     {TeacherRoutes()}
@@ -181,6 +186,7 @@ const PlatformRoutes = () => (
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/join" element={<JoinBatchPage />} />
     <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
 
     <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
