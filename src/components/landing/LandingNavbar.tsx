@@ -28,12 +28,12 @@ export const LandingNavbar = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100/80 bg-white/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <div className="landing-shell flex items-center justify-between py-3.5">
         <Link to="/" className="flex items-center">
-          <img src={edvaLogo} alt="EDDVA" className="h-10 w-auto object-contain" />
+          <img src={edvaLogo} alt="EDDVA" className="h-8 w-auto object-contain sm:h-9" />
         </Link>
 
-        <nav className="hidden items-center gap-10 md:flex">
+        <nav className="hidden items-center gap-6 lg:gap-8 md:flex">
           {navLinks.map(link => (
             <Link key={link.name} to={link.href}
               className="group relative text-[14px] font-black uppercase tracking-widest text-gray-500 transition-colors hover:text-blue-600">
@@ -78,12 +78,12 @@ export const LandingNavbar = () => {
 
         <div className="hidden items-center gap-4 md:flex">
           <Link to="/login"
-            className="rounded-xl px-5 py-2.5 text-[14px] font-bold text-gray-600 transition-all hover:text-blue-600 hover:bg-blue-50/50">
+            className="rounded-xl px-4 py-2.5 text-[14px] font-bold text-gray-600 transition-all hover:bg-blue-50/50 hover:text-blue-600">
             Login
           </Link>
           <motion.div whileHover={{ scale: 1.05, boxShadow: `0 12px 30px ${B}33` }} whileTap={{ scale: 0.95 }}>
             <Link to="/register"
-              className="relative overflow-hidden rounded-2xl px-7 py-3 text-[14px] font-black text-white shadow-lg flex items-center gap-2"
+              className="landing-button relative flex items-center gap-2 overflow-hidden text-white shadow-lg"
               style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
               Register Free <Sparkles className="h-4 w-4" />
             </Link>
@@ -98,7 +98,7 @@ export const LandingNavbar = () => {
       <AnimatePresence>
         {menuOpen && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-gray-100 bg-white px-6 pb-6 md:hidden">
+            className="overflow-hidden border-t border-gray-100 bg-white px-4 pb-6 sm:px-5 md:hidden">
             {navLinks.map(link => (
               <Link key={link.name} to={link.href}
                 onClick={() => setMenuOpen(false)}
@@ -125,7 +125,7 @@ export const LandingNavbar = () => {
                 Login
               </Link>
               <Link to="/register" onClick={() => setMenuOpen(false)}
-                className="block rounded-2xl py-3.5 text-center text-[15px] font-black text-white shadow-lg"
+                className="landing-button block text-center text-white shadow-lg"
                 style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
                 Register Free
               </Link>

@@ -49,7 +49,7 @@ export default function LandingCoursesPage() {
         {/* ── Hero ── */}
         <section className="relative overflow-hidden pt-20 pb-12 lg:pt-32 lg:pb-16">
           <div className="absolute inset-0 -z-10" style={{ background: SG }} />
-          <div className="mx-auto max-w-7xl px-5 text-center">
+          <div className="landing-shell text-center">
             <FadeUp>
               <h1 className={TYPO.h1}>
                 Explore our <span style={gText()}>Mastery Courses.</span>
@@ -64,7 +64,7 @@ export default function LandingCoursesPage() {
                 <input 
                   type="text" 
                   placeholder="Search for courses, subjects or instructors..." 
-                  className="w-full h-16 rounded-[2rem] border border-gray-100 bg-white/60 pl-16 pr-6 text-gray-900 shadow-2xl backdrop-blur-xl transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-100 outline-none"
+                  className="h-14 w-full rounded-[2rem] border border-gray-100 bg-white/60 pl-14 pr-5 text-gray-900 shadow-2xl backdrop-blur-xl outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-100 sm:h-16 sm:pl-16 sm:pr-6"
                 />
               </div>
             </FadeUp>
@@ -72,8 +72,8 @@ export default function LandingCoursesPage() {
         </section>
 
         {/* ── Course Grid ── */}
-        <section className="py-20 bg-white">
-          <div className="mx-auto max-w-7xl px-5">
+        <section className="landing-section bg-white">
+          <div className="landing-shell">
             {/* Filter Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-12 pb-8 border-b border-gray-100">
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none w-full sm:w-auto">
@@ -165,8 +165,8 @@ export default function LandingCoursesPage() {
         </section>
 
         {/* ── FAQ Section ── */}
-        <section className="py-24 bg-slate-50">
-          <div className="mx-auto max-w-4xl px-5 text-center">
+        <section className="landing-section bg-slate-50">
+          <div className="landing-shell-narrow text-center">
             <FadeUp>
               <h2 className={TYPO.h2 + " mb-12"}>Frequently Asked Questions</h2>
               <div className="space-y-4 text-left">

@@ -2,11 +2,11 @@ import React from "react";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
 
 export const LandingFooter = () => (
-  <footer className="border-t border-gray-100 bg-white py-16">
-    <div className="mx-auto max-w-7xl px-6">
-      <div className="grid gap-12 md:grid-cols-4">
+  <footer className="border-t border-gray-100 bg-white py-14 sm:py-16">
+    <div className="landing-shell">
+      <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-4">
         <div>
-          <img src={edvaLogo} alt="EDDVA" className="mb-5 h-10 w-auto object-contain" />
+          <img src={edvaLogo} alt="EDDVA" className="mb-5 h-9 w-auto object-contain" />
           <p className="max-w-xs text-[14px] leading-relaxed text-gray-500">
             India's AI-powered EdTech platform for JEE, NEET & beyond. Smarter learning, brighter futures.
           </p>
@@ -29,7 +29,7 @@ export const LandingFooter = () => (
           </div>
         ))}
       </div>
-      <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 sm:flex-row">
+      <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 sm:flex-row">
         <p className="text-[13px] text-gray-400">© 2025 EDDVA — Education Plus Advancement. All rights reserved.</p>
         <p className="text-[13px] text-gray-400">Made with ❤️ in India</p>
       </div>

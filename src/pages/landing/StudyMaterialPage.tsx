@@ -102,7 +102,7 @@ export default function StudyMaterialPage() {
               <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                 <BookOpen className="h-3 w-3" /> Study Material
               </span>
-              <h1 className="mb-5 text-[40px] font-extrabold leading-[1.15] tracking-tight text-white lg:text-[58px]">
+              <h1 className="landing-title-hero mb-5 text-white">
                 Explore{" "}
                 <span style={{ background:`linear-gradient(135deg, ${content.color}, ${P})`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
                   {content.title}
@@ -146,7 +146,7 @@ export default function StudyMaterialPage() {
 
         {/* ── Simple Navigation ── */}
         <section className="sticky top-20 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100">
-           <div className="mx-auto max-w-7xl px-6">
+           <div className="landing-shell">
               <div className="flex items-center justify-between gap-8 h-20">
                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                     {Object.keys(CONTENT_MAP).map(key => (
@@ -178,8 +178,8 @@ export default function StudyMaterialPage() {
         </section>
 
         {/* ── Standard Grid ── */}
-        <section className="py-20">
-           <div className="mx-auto max-w-7xl px-6">
+        <section className="landing-section">
+           <div className="landing-shell">
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                  {content.items.map((item: any, i: number) => (
                    <FadeUp key={item.id} delay={i * 0.05}>
@@ -218,15 +218,15 @@ export default function StudyMaterialPage() {
         </section>
 
         {/* ── Subdued CTA ── */}
-        <section className="bg-gray-50 py-32 border-t border-gray-100">
-           <div className="mx-auto max-w-4xl px-6 text-center">
+        <section className="border-t border-gray-100 bg-gray-50 py-20 sm:py-24 xl:py-28">
+           <div className="landing-shell-narrow text-center">
               <FadeUp>
                  <div className="mb-8 flex justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white border border-gray-100 text-blue-600 shadow-sm">
                        <Brain className="h-8 w-8" />
                     </div>
                  </div>
-                 <h2 className="text-[32px] lg:text-[44px] font-black text-gray-900 tracking-tight">Need a study plan?</h2>
+                 <h2 className="landing-title-section text-gray-900">Need a study plan?</h2>
                  <p className="mt-6 text-gray-500 text-[18px] font-medium max-w-2xl mx-auto">
                     Let our AI Assistant help you find the best resources based on your recent performance and goals.
                  </p>

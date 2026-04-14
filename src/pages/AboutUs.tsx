@@ -35,17 +35,17 @@ export default function AboutUs() {
   return (
     <LandingLayout>
       {/* ─── HERO SECTION ─── */}
-      <section className="relative overflow-hidden py-24 pb-48">
+      <section className="relative overflow-hidden pb-24 pt-16 sm:pb-32 sm:pt-20 xl:pb-40 xl:pt-24">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50 via-white to-purple-50" />
         
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-col items-center gap-16 lg:grid lg:grid-cols-2 lg:text-left">
+        <div className="landing-shell">
+          <div className="flex flex-col items-center gap-10 lg:grid lg:grid-cols-2 lg:gap-12 lg:text-left xl:gap-16">
             <FadeUp>
               <Label color="blue">Our Mission</Label>
-              <h1 className="mt-8 text-[48px] font-extrabold leading-[1.1] tracking-tight text-gray-900 lg:text-[64px]">
+              <h1 className="landing-title-hero mt-8 text-gray-900">
                 Building the <span style={{ background: `linear-gradient(135deg, ${B}, ${P})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Future of Learning</span>
               </h1>
-              <p className="mt-8 text-[20px] font-medium leading-relaxed text-gray-500">
+              <p className="landing-copy-lead mt-6 max-w-xl text-gray-500">
                 At EDDVA, we believe that education is not one-size-fits-all. We are leveraging AI to create personalized educational experiences that adapt to every student's pace, style, and dreams.
               </p>
               
@@ -62,13 +62,13 @@ export default function AboutUs() {
             </FadeUp>
 
             <div className="relative flex justify-center">
-              <div className="relative h-[400px] w-full max-w-md overflow-hidden rounded-[32px] shadow-2xl">
+              <div className="relative h-[320px] w-full max-w-md overflow-hidden rounded-[32px] shadow-2xl sm:h-[360px] lg:h-[400px]">
                  <img src={heroImg} className="h-full w-full object-cover" alt="Education at EDDVA" />
                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 to-transparent" />
               </div>
               
               {/* Floating badges */}
-              <div className="absolute -left-8 top-12 z-20 flex animate-bounce items-center gap-3 rounded-2xl bg-white p-4 shadow-xl">
+              <div className="absolute -left-4 top-10 z-20 hidden animate-bounce items-center gap-3 rounded-2xl bg-white p-4 shadow-xl sm:flex lg:-left-8 lg:top-12">
                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Star className="h-5 w-5" /></div>
                  <div>
                     <p className="text-[13px] font-black text-gray-900">4.9/5 Rating</p>
@@ -76,7 +76,7 @@ export default function AboutUs() {
                  </div>
               </div>
               
-              <div className="absolute -right-4 bottom-12 z-20 flex animate-pulse items-center gap-3 rounded-2xl bg-white p-4 shadow-xl">
+              <div className="absolute -right-2 bottom-10 z-20 hidden animate-pulse items-center gap-3 rounded-2xl bg-white p-4 shadow-xl sm:flex lg:-right-4 lg:bottom-12">
                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><Award className="h-5 w-5" /></div>
                  <div>
                     <p className="text-[13px] font-black text-gray-900">92% Pass Rate</p>
@@ -89,10 +89,10 @@ export default function AboutUs() {
       </section>
 
       {/* ─── STORY TIMELINE ─── */}
-      <section className="py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section bg-white">
+        <div className="landing-shell">
           <FadeUp className="mb-20 text-center">
-             <h2 className="text-[36px] font-black tracking-tight text-gray-900">Our Journey So Far</h2>
+             <h2 className="landing-title-section text-gray-900">Our Journey So Far</h2>
              <p className="mt-4 text-gray-500 font-medium">How we transformed from an idea to India's fastest growing EdTech platform.</p>
           </FadeUp>
 
@@ -127,8 +127,8 @@ export default function AboutUs() {
       </section>
 
       {/* ─── MISSION & VISION ─── */}
-      <section className="py-24 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section bg-gray-50">
+        <div className="landing-shell">
           <div className="grid gap-8 md:grid-cols-2">
             <FadeUp>
               <div className="h-full rounded-[40px] border border-white bg-white/60 p-10 shadow-sm backdrop-blur-xl transition-all hover:bg-white/80">
@@ -174,11 +174,11 @@ export default function AboutUs() {
       {/* ─── TEAM SECTION ─── */}
 
       {/* ─── TEAM SECTION ─── */}
-      <section className="py-24 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section bg-gray-50">
+        <div className="landing-shell">
           <FadeUp className="mb-20 text-center">
              <Label color="teal">The Minds Behind EDDVA</Label>
-             <h2 className="mt-6 text-[36px] font-black tracking-tight text-gray-900">Meet Our Dream Team</h2>
+             <h2 className="landing-title-section mt-6 text-gray-900">Meet Our Dream Team</h2>
           </FadeUp>
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -220,8 +220,8 @@ export default function AboutUs() {
       </section>
 
       {/* ─── CULTURE VIDEO ─── */}
-      <section className="py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section bg-white">
+        <div className="landing-shell">
           <FadeUp className="relative overflow-hidden rounded-[48px] bg-gray-900 aspect-video">
              <img src={cultureImg} className="h-full w-full object-cover opacity-60" alt="Learn Explore Discover Create" />
              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
@@ -232,7 +232,7 @@ export default function AboutUs() {
                 >
                    <PlayCircle className="h-12 w-12" />
                 </motion.button>
-                <h3 className="text-[32px] font-black text-white">Behind The Scenes</h3>
+                <h3 className="landing-title-feature text-white">Behind The Scenes</h3>
                 <p className="text-white/60 font-medium">Experience the culture of India's most innovative AI lab.</p>
              </div>
           </FadeUp>

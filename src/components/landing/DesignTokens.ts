@@ -8,10 +8,10 @@ export const IN = "#6366F1";  // Indigo
 
 /* ── Typography Scale (Home Page Match) ── */
 export const TYPO = {
-  h1: "text-[44px] lg:text-[58px] font-extrabold leading-[1.1] tracking-tight",
-  h2: "text-[36px] lg:text-[43px] font-extrabold tracking-tight leading-tight",
+  h1: "text-[clamp(2.5rem,3.1vw+1.6rem,3.85rem)] font-extrabold leading-[1.05] tracking-tight",
+  h2: "text-[clamp(2rem,1.5vw+1.5rem,2.8rem)] font-extrabold tracking-tight leading-[1.1]",
   p: "text-[16px] font-medium leading-relaxed text-gray-500",
-  cardTitle: "text-[18px] lg:text-[22px] font-extrabold tracking-tight leading-tight", // Slightly smaller than section title
+  cardTitle: "text-[clamp(1.125rem,0.5vw+1rem,1.35rem)] font-extrabold tracking-tight leading-tight",
   label: "text-[11px] font-black uppercase tracking-[0.12em] text-blue-600",
   small: "text-[12px] font-bold text-gray-400 uppercase tracking-widest",
 };

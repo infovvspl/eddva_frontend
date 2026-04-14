@@ -190,12 +190,12 @@ export default function CareerPage() {
           />
 
           <div className="relative z-10 flex h-full items-center">
-            <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
+            <div className="landing-shell-wide">
               <FadeUp>
                 <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                   <Calendar className="h-3 w-3" /> Upcoming Exams 2025
                 </span>
-                <h1 className="mb-5 text-[46px] font-extrabold leading-[1.1] tracking-tight text-white lg:text-[66px]">
+                <h1 className="landing-title-hero mb-5 text-white">
                   Your Next Big<br />
                   <span style={{ background: "linear-gradient(135deg,#FBBF24,#F59E0B,#FCD34D)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                     Exam is Coming.
@@ -209,7 +209,7 @@ export default function CareerPage() {
                     href="#exams"
                     whileHover={{ scale: 1.04, boxShadow: "0 16px 40px rgba(251,191,36,0.35)" }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-gray-900 shadow-lg"
+                    className="landing-button flex items-center gap-2 text-gray-900 shadow-lg"
                     style={{ background: "linear-gradient(135deg,#FBBF24,#F59E0B)" }}
                   >
                     View All Exams <ArrowRight className="h-4 w-4" />
@@ -218,7 +218,7 @@ export default function CareerPage() {
                     href="/study-material"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-gray-900 backdrop-blur-sm hover:bg-white/15 transition-all"
+                    className="landing-button flex items-center gap-2 border border-gray-200 bg-white/10 text-gray-900 backdrop-blur-sm transition-all hover:bg-white/15"
                   >
                     Start Preparing <ChevronRight className="h-4 w-4" />
                   </motion.a>
@@ -253,7 +253,7 @@ export default function CareerPage() {
 
         {/* ══ QUICK STATS ══ */}
         <section className="bg-white py-12">
-          <div className="mx-auto max-w-7xl px-6">
+          <div className="landing-shell">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { icon: <Target className="h-6 w-6" />,     val: "8+",    label: "Major Exams",      color: B },
@@ -279,16 +279,16 @@ export default function CareerPage() {
         </section>
 
         {/* ══ UPCOMING EXAMS LIST ══ */}
-        <section className="py-20 lg:py-28" id="exams"
+        <section className="landing-section" id="exams"
           style={{ background: "linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 55%,#F5F3FF 100%)" }}>
-          <div className="mx-auto max-w-7xl px-6">
+          <div className="landing-shell">
             <FadeUp className="mb-3 text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-blue-600">
                 <Calendar className="h-3 w-3" /> Exam Calendar 2025
               </span>
             </FadeUp>
             <FadeUp delay={0.05} className="mb-4 text-center">
-              <h2 className="text-[34px] font-extrabold tracking-tight lg:text-[44px]">
+              <h2 className="landing-title-section">
                 Upcoming <span style={gText()}>Exams</span>
               </h2>
             </FadeUp>
@@ -453,14 +453,14 @@ export default function CareerPage() {
         </section>
 
         {/* ══ PREP CTA ══ */}
-        <section className="bg-white py-20 text-center">
-          <div className="mx-auto max-w-3xl px-6">
+        <section className="landing-section bg-white text-center">
+          <div className="landing-shell-narrow">
             <FadeUp>
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-blue-500" />
                 <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">Start Free — No Credit Card</span>
               </div>
-              <h2 className="mb-5 text-[36px] font-extrabold leading-tight tracking-tight lg:text-[48px]">
+              <h2 className="landing-title-feature mb-5">
                 Ready to crack your <span style={gText()}>exam?</span>
               </h2>
               <p className="mx-auto mb-10 max-w-lg text-[16px] font-medium leading-relaxed text-gray-500">
@@ -469,13 +469,13 @@ export default function CareerPage() {
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <motion.a href="/study-material"
                   whileHover={{ scale: 1.05, boxShadow: `0 20px 48px ${B}44` }} whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 rounded-2xl px-8 py-4 text-[15px] font-bold text-white shadow-xl"
+                  className="landing-button flex items-center gap-2 text-white shadow-xl"
                   style={{ background: grad() }}>
                   Start Preparing Free <ArrowRight className="h-4 w-4" />
                 </motion.a>
                 <motion.a href="/about"
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 rounded-2xl border-2 border-gray-200 px-8 py-4 text-[15px] font-bold text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                  className="landing-button flex items-center gap-2 border-2 border-gray-200 text-gray-700 transition-all hover:border-blue-300 hover:bg-blue-50">
                   Learn About EDDVA <ChevronRight className="h-4 w-4" />
                 </motion.a>
               </div>

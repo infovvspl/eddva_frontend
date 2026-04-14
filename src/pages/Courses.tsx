@@ -167,17 +167,17 @@ export default function Courses() {
   return (
     <LandingLayout>
       {/* ─── HERO SECTION ─── */}
-      <section className="relative overflow-hidden py-24 pb-32">
+      <section className="relative overflow-hidden pb-20 pt-16 sm:pb-24 sm:pt-20 xl:pb-28 xl:pt-24">
         <div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(135deg, #ffffff 0%, #F0F7FF 45%, #F5F3FF 100%)" }} />
         <div className="absolute inset-0 -z-10 opacity-[0.05]" style={{ backgroundImage: `radial-gradient(circle, ${B} 1.5px, transparent 1.5px)`, backgroundSize: "36px 36px" }} />
         
-        <div className="mx-auto max-w-7xl px-6 text-center">
+        <div className="landing-shell text-center">
           <FadeUp>
             <Label color="purple">Master Your Future</Label>
-            <h1 className="mx-auto mt-6 max-w-4xl text-[48px] font-extrabold leading-[1.1] tracking-tight text-gray-900 lg:text-[64px]">
+            <h1 className="landing-title-hero mx-auto mt-6 max-w-4xl text-gray-900">
               Master Your Future with <span style={{ background: `linear-gradient(135deg, ${B}, ${P})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AI-Powered Learning</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-[18px] font-medium leading-relaxed text-gray-500">
+            <p className="landing-copy-lead mx-auto mt-6 max-w-2xl text-gray-500">
               Interactive, personalized courses tailored precisely for your exam success and skill growth.
             </p>
 
@@ -187,7 +187,7 @@ export default function Courses() {
                 <input 
                   type="text" 
                   placeholder="Search courses (e.g. JEE Physics, Python for Kids...)"
-                  className="h-16 w-full rounded-[24px] border border-white bg-white/40 pl-16 pr-6 text-[16px] font-bold text-gray-800 shadow-2xl backdrop-blur-xl outline-none transition-all focus:border-blue-200 focus:bg-white/80"
+                  className="h-14 w-full rounded-[24px] border border-white bg-white/40 pl-14 pr-5 text-[15px] font-bold text-gray-800 shadow-2xl backdrop-blur-xl outline-none transition-all focus:border-blue-200 focus:bg-white/80 sm:h-16 sm:pl-16 sm:pr-6 sm:text-[16px]"
                 />
               </div>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -204,7 +204,7 @@ export default function Courses() {
 
       {/* ─── STICKY FILTERS ─── */}
       <div className="sticky top-[73px] z-[40] border-y border-gray-100 bg-white/80 py-4 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
+        <div className="landing-shell flex items-center justify-between">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide sm:pb-0">
             {["All", "Competitive", "School", "Govt", "Skill-based"].map(type => (
               <button 
@@ -239,8 +239,8 @@ export default function Courses() {
       </div>
 
       {/* ─── CONTINUE LEARNING ─── */}
-      <section className="py-16 bg-white">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section-tight bg-white">
+        <div className="landing-shell">
           <div className="mb-10 flex items-center justify-between">
             <h2 className="text-[28px] font-black tracking-tight text-gray-900">Continue Learning</h2>
             <button className="text-[14px] font-bold text-blue-600 hover:underline">View Progress</button>
@@ -275,10 +275,10 @@ export default function Courses() {
       </section>
 
       {/* ─── MAIN CATALOG BENTO ─── */}
-      <section className="py-20 bg-gray-50/50">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section bg-gray-50/50">
+        <div className="landing-shell">
           <FadeUp className="mb-14 text-center">
-            <h2 className="text-[36px] font-black tracking-tight text-gray-900">Explore Catalog</h2>
+            <h2 className="landing-title-section text-gray-900">Explore Catalog</h2>
             <p className="mt-4 text-gray-500 font-medium">Bespoke curriculum designed by India's top educators and AI specialized tools.</p>
           </FadeUp>
 
@@ -301,8 +301,8 @@ export default function Courses() {
       </section>
 
       {/* ─── QUICK CONCEPTS VIDEOS ─── */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section bg-white">
+        <div className="landing-shell">
           <FadeUp className="mb-12">
             <h2 className="text-[32px] font-black tracking-tight text-gray-900">Quick Concepts</h2>
             <p className="text-gray-500 font-medium">Short 2-5 minute bites for those hard-to-grasp topics.</p>
@@ -335,15 +335,15 @@ export default function Courses() {
       </section>
 
       {/* ─── AI PICKED FOR YOU ─── */}
-      <section className="py-24" style={{ background: "linear-gradient(135deg, #EEF4FF 0%, #F5F3FF 100%)" }}>
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="landing-section" style={{ background: "linear-gradient(135deg, #EEF4FF 0%, #F5F3FF 100%)" }}>
+        <div className="landing-shell">
           <div className="flex flex-col items-center gap-12 lg:grid lg:grid-cols-2">
             <FadeUp>
                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2">
                   <Brain className="h-4 w-4 text-blue-600" />
                   <span className="text-[12px] font-black uppercase tracking-widest text-blue-600">AI Synergy</span>
                </div>
-               <h2 className="mt-6 text-[40px] font-black leading-tight text-gray-900">Picked for You,<br /><span className="text-blue-600">Based on behavior</span></h2>
+               <h2 className="landing-title-section mt-6 text-gray-900">Picked for You,<br /><span className="text-blue-600">Based on behavior</span></h2>
                <p className="mt-6 text-[18px] font-medium leading-relaxed text-gray-500">
                   Our neural engine analyzes your strengths and previous mock test performance to suggest modules that give you the highest mark-jump potential.
                </p>

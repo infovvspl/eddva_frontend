@@ -49,12 +49,12 @@ export default function AboutUsPage() {
 
           {/* content */}
           <div className="relative z-10 flex h-full items-center">
-            <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
+            <div className="landing-shell-wide">
               <FadeUp>
                 <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                   <Sparkles className="h-3 w-3" /> About EDDVA
                 </span>
-                <h1 className="mb-5 text-[46px] font-extrabold leading-[1.1] tracking-tight text-white lg:text-[64px]">
+                <h1 className="landing-title-hero mb-5 text-white">
                   Learn · Explore<br />
                   <span style={{ background:"linear-gradient(135deg,#60A5FA,#A78BFA)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
                     Discover · Create
@@ -88,7 +88,7 @@ export default function AboutUsPage() {
 
         {/* ── Education Visual Banner ── */}
         <section className="bg-white pt-16 pb-0">
-          <div className="mx-auto max-w-7xl px-5">
+          <div className="landing-shell">
             <FadeUp>
               <div className="relative overflow-hidden rounded-3xl shadow-2xl">
                 <img
@@ -130,8 +130,8 @@ export default function AboutUsPage() {
         </section>
 
         {/* ── Mission & Vision ── */}
-        <section className="py-24 bg-white">
-          <div className="mx-auto max-w-7xl px-5">
+        <section className="landing-section bg-white">
+          <div className="landing-shell">
             <div className="grid gap-12 lg:grid-cols-2">
               <FadeUp>
                 <div className="h-full rounded-[2.5rem] bg-slate-50 p-10 lg:p-14 border border-slate-100 flex flex-col justify-between group hover:shadow-2xl transition-all duration-500">
@@ -179,8 +179,8 @@ export default function AboutUsPage() {
         </section>
 
         {/* ── Core Values ── */}
-        <section className="py-24 bg-slate-50 relative overflow-hidden">
-          <div className="mx-auto max-w-7xl px-5 relative z-10">
+        <section className="landing-section relative overflow-hidden bg-slate-50">
+          <div className="landing-shell relative z-10">
             <div className="mb-16 text-center">
               <FadeUp>
                 <h2 className={TYPO.h2 + " mb-4"}>
@@ -212,8 +212,8 @@ export default function AboutUsPage() {
         </section>
 
         {/* ── Join the Journey ── */}
-        <section className="py-24 bg-white text-center">
-          <div className="mx-auto max-w-4xl px-5">
+        <section className="landing-section bg-white text-center">
+          <div className="landing-shell-narrow">
             <FadeUp>
               <div className="mb-10 flex justify-center">
                 <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-gray-900 text-white shadow-2xl relative">
@@ -229,11 +229,11 @@ export default function AboutUsPage() {
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  className="rounded-2xl px-10 py-4 font-bold text-white shadow-xl"
+                  className="landing-button text-white shadow-xl"
                   style={{ background: grad() }}>
                   Join as a Student
                 </motion.button>
-                <button className="rounded-2xl border-2 border-slate-200 px-10 py-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                <button className="landing-button border-2 border-slate-200 text-slate-700 transition-colors hover:bg-slate-50">
                   Contact Us
                 </button>
               </div>

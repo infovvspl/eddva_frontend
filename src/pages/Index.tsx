@@ -96,7 +96,7 @@ const Index = () => {
         <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.025]"
           style={{ backgroundImage:`radial-gradient(circle, #3B82F6 1.5px, transparent 1.5px)`, backgroundSize:"30px 30px" }} />
 
-        <div className="mx-auto max-w-7xl px-5">
+        <div className="landing-shell">
           <div className="grid items-center gap-10 pb-0 lg:grid-cols-2 lg:gap-16">
             {/* ─ Left copy ─ */}
             <div className="pt-4 lg:pt-0">
@@ -108,7 +108,7 @@ const Index = () => {
               </motion.div>
 
               <motion.h1 initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.6, delay:0.1 }}
-                className="mb-5 text-[44px] font-extrabold leading-[1.1] tracking-tight lg:text-[58px]">
+                className="landing-title-hero mb-5">
                 Smarter Learning.
                 <br />
                 <span style={gText()}>Brighter Futures.</span>
@@ -123,13 +123,13 @@ const Index = () => {
                 className="mb-10 flex flex-wrap gap-3">
                 <motion.div whileHover={{ scale:1.04, boxShadow:`0 16px 40px ${B}40` }} whileTap={{ scale:0.97 }}>
                   <Link to="/register"
-                    className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
+                    className="landing-button flex items-center gap-2 text-white shadow-lg"
                     style={{ background: grad() }}>
                     Start Learning <ArrowRight className="h-4 w-4" />
                   </Link>
                 </motion.div>
                 <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                  className="flex items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-7 py-3.5 text-[15px] font-bold text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                  className="landing-button flex items-center gap-2 border-2 border-gray-200 bg-white text-gray-700 transition-all hover:border-blue-300 hover:bg-blue-50">
                   Explore Exams <ChevronRight className="h-4 w-4" />
                 </motion.a>
               </motion.div>
@@ -192,13 +192,13 @@ const Index = () => {
 
 
       {/* ══════════════════════ EXAM CATEGORIES ══════════════════════ */}
-      <section className="bg-white py-20 lg:py-28" id="exams">
-        <div className="mx-auto max-w-7xl px-5">
+      <section className="landing-section bg-white" id="exams">
+        <div className="landing-shell">
           <FadeUp className="mb-4 text-center">
             <SLabel>Exam Categories</SLabel>
           </FadeUp>
           <FadeUp delay={0.05} className="mb-5 text-center">
-            <h2 className="text-[36px] font-extrabold tracking-tight lg:text-[44px]">
+            <h2 className="landing-title-section">
               Choose Your <span style={gText()}>Exam Path</span>
             </h2>
           </FadeUp>
@@ -297,9 +297,9 @@ const Index = () => {
 
 
       {/* ══════════════════════ ABOUT ══════════════════════ */}
-      <section className="py-20 lg:py-28" id="about"
+      <section className="landing-section" id="about"
         style={{ background:"linear-gradient(160deg, #EFF6FF 0%, #F5F3FF 100%)" }}>
-        <div className="mx-auto max-w-7xl px-5">
+        <div className="landing-shell">
           <div className="grid items-center gap-14 lg:grid-cols-2">
 
             {/* About image panel */}
@@ -339,7 +339,7 @@ const Index = () => {
             {/* Text */}
             <FadeUp delay={0.15}>
               <SLabel>About EDDVA</SLabel>
-              <h2 className="mt-5 text-[36px] font-extrabold leading-tight tracking-tight lg:text-[42px]">
+              <h2 className="landing-title-section mt-5">
                 The AI-powered learning platform built for{" "}
                 <span style={gText()}>real results</span>
               </h2>
@@ -379,12 +379,12 @@ const Index = () => {
 
 
       {/* ══════════════════════ HOW IT WORKS ══════════════════════ */}
-      <section className="py-20 lg:py-28" id="how"
+      <section className="landing-section" id="how"
         style={{ background:"linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 55%,#F5F3FF 100%)" }}>
-        <div className="mx-auto max-w-7xl px-5">
+        <div className="landing-shell">
           <FadeUp className="mb-4 text-center"><SLabel>How It Works</SLabel></FadeUp>
           <FadeUp delay={0.05} className="mb-4 text-center">
-            <h2 className="text-[36px] font-extrabold tracking-tight lg:text-[44px]">
+            <h2 className="landing-title-section">
               Four steps to <span style={gText()}>exam success</span>
             </h2>
           </FadeUp>
@@ -464,12 +464,12 @@ const Index = () => {
 
         {/* Banner hero strip */}
         <div className="relative z-10 pb-0 pt-20 lg:pt-28">
-          <div className="mx-auto max-w-7xl px-5">
+          <div className="landing-shell">
             <FadeUp className="mb-12 text-center">
               <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
                 <Sparkles className="h-3 w-3" /> Our Learning Philosophy
               </span>
-              <h2 className="mt-3 text-[38px] font-extrabold leading-tight tracking-tight text-white lg:text-[52px]">
+              <h2 className="landing-title-feature mt-3 text-white">
                 Learn · Explore · <span style={{ background:"linear-gradient(135deg,#60A5FA,#A78BFA)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Discover · Create</span>
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-[16px] font-medium text-white/60">
@@ -481,14 +481,14 @@ const Index = () => {
 
         {/* Cards container — white overlay at bottom */}
         <div className="relative z-10 py-10 lg:py-14" style={{ background:"linear-gradient(180deg, transparent 0%, rgba(248,250,252,0.03) 100%)" }}>
-        <div className="mx-auto max-w-7xl px-5">
+        <div className="landing-shell">
 
           {/* Header row */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <FadeUp><SLabel>Continue Learning</SLabel></FadeUp>
               <FadeUp delay={0.05} className="mt-3">
-                <h2 className="text-[34px] font-extrabold tracking-tight text-white lg:text-[40px]">
+                <h2 className="landing-title-feature text-white">
                   Pick up where <span style={gText()}>you left off</span>
                 </h2>
               </FadeUp>
@@ -597,11 +597,11 @@ const Index = () => {
 
 
       {/* ══════════════════════ YOUTUBE SECTION ══════════════════════ */}
-      <section className="bg-white py-20 lg:py-28" id="videos">
-        <div className="mx-auto max-w-7xl px-5">
+      <section className="landing-section bg-white" id="videos">
+        <div className="landing-shell">
           <FadeUp className="mb-3 text-center"><SLabel color="#FF0000">YouTube</SLabel></FadeUp>
           <FadeUp delay={0.05} className="mb-3 text-center">
-            <h2 className="text-[36px] font-extrabold tracking-tight lg:text-[44px]">
+            <h2 className="landing-title-section">
               Explore More From{" "}
               <span className="relative inline-block">
                 <span className="relative z-10" style={gText("#FF0000","#FF6B00")}>EDDVA!</span>
@@ -691,11 +691,11 @@ const Index = () => {
 
 
       {/* ══════════════════════ TESTIMONIALS ══════════════════════ */}
-      <section className="py-20 lg:py-28" style={{ background:"linear-gradient(160deg,#F5F3FF 0%,#EFF6FF 100%)" }}>
-        <div className="mx-auto max-w-7xl px-5">
+      <section className="landing-section" style={{ background:"linear-gradient(160deg,#F5F3FF 0%,#EFF6FF 100%)" }}>
+        <div className="landing-shell">
           <FadeUp className="mb-4 text-center"><SLabel>Student Stories</SLabel></FadeUp>
           <FadeUp delay={0.05} className="mb-3 text-center">
-            <h2 className="text-[34px] font-extrabold tracking-tight lg:text-[42px]">
+            <h2 className="landing-title-section">
               Real students, <span style={gText()}>real results</span>
             </h2>
           </FadeUp>
@@ -792,7 +792,7 @@ const Index = () => {
         <motion.div animate={{ scale:[1,1.1,1], opacity:[0.15,0.25,0.15] }} transition={{ duration:10, repeat:Infinity, ease:"easeInOut" as const, delay:3 }}
           className="pointer-events-none absolute -right-16 bottom-1/4 h-56 w-56 rounded-full blur-3xl" style={{ background:P }} />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-5 py-24 lg:py-32">
+        <div className="relative z-10 landing-shell py-20 sm:py-24 xl:py-28">
           <div className="grid items-center gap-12 lg:grid-cols-2">
 
             {/* LEFT — text content */}
@@ -801,7 +801,7 @@ const Index = () => {
                 <Award className="h-3.5 w-3.5 text-yellow-400" />
                 <span className="text-[11px] font-black uppercase tracking-widest text-white/80">Career & Growth</span>
               </div>
-              <h2 className="mb-5 text-[38px] font-extrabold leading-tight tracking-tight text-white lg:text-[50px]">
+              <h2 className="landing-title-feature mb-5 text-white">
                 Build Your{" "}
                 <span className="relative inline-block">
                   <span style={{ background:"linear-gradient(135deg,#FBBF24,#F59E0B)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
@@ -879,7 +879,7 @@ const Index = () => {
 
 
       {/* ══════════════════════ APP DOWNLOAD ══════════════════════ */}
-      <section className="relative overflow-hidden py-20 lg:py-28" id="app" style={{ background:"#FEFCE8" }}>
+      <section className="landing-section relative overflow-hidden" id="app" style={{ background:"#FEFCE8" }}>
         {/* doodle watermark bg */}
         <div className="pointer-events-none absolute inset-0 select-none overflow-hidden opacity-[0.07]">
           {[
@@ -901,7 +901,7 @@ const Index = () => {
           ))}
         </div>
 
-        <div className="mx-auto max-w-7xl px-5">
+        <div className="landing-shell">
           {/* ── Top rating badges ── */}
           <FadeUp className="mb-14 flex flex-wrap items-center justify-center gap-10">
             {[
@@ -942,7 +942,7 @@ const Index = () => {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             {/* LEFT */}
             <FadeUp>
-              <h2 className="mb-4 text-[40px] font-extrabold leading-[1.1] tracking-tight text-gray-900 lg:text-[52px]">
+              <h2 className="landing-title-feature mb-4 text-gray-900">
                 Join over{" "}
                 <em className="not-italic font-black" style={gText()}>500K+ learners</em>
                 <br />across India!
@@ -999,7 +999,7 @@ const Index = () => {
             {/* RIGHT — floating phone */}
             <FadeUp delay={0.2} className="flex justify-center">
               <motion.div animate={{ y:[0,-12,0] }} transition={{ duration:5, repeat:Infinity, ease:"easeInOut" as const }}
-                className="relative w-[260px]">
+                className="relative w-[220px] sm:w-[240px] lg:w-[252px]">
                 <div className="overflow-hidden rounded-[40px] border-[5px] border-gray-800 bg-white shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
                   {/* status bar */}
                   <div className="flex items-center justify-between bg-gray-900 px-4 py-2.5">
@@ -1063,11 +1063,11 @@ const Index = () => {
                   style={{ background:"#FDE68A" }} />
                 {/* floating atoms */}
                 <motion.div animate={{ rotate:360 }} transition={{ duration:12, repeat:Infinity, ease:"linear" as const }}
-                  className="absolute -left-10 top-20 text-[40px] select-none">⚛️</motion.div>
+                  className="absolute -left-10 top-20 text-[28px] select-none sm:text-[36px]">⚛️</motion.div>
                 <motion.div animate={{ y:[0,-8,0] }} transition={{ duration:3, repeat:Infinity, ease:"easeInOut" as const }}
-                  className="absolute -right-8 top-32 text-[32px] select-none">📐</motion.div>
+                  className="absolute -right-8 top-32 text-[24px] select-none sm:text-[30px]">📐</motion.div>
                 <motion.div animate={{ y:[0,8,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" as const, delay:1 }}
-                  className="absolute -left-8 bottom-24 text-[28px] select-none">🧪</motion.div>
+                  className="absolute -left-8 bottom-24 text-[22px] select-none sm:text-[26px]">🧪</motion.div>
               </motion.div>
             </FadeUp>
           </div>
@@ -1076,14 +1076,14 @@ const Index = () => {
 
 
       {/* ══════════════════════ FINAL CTA ══════════════════════ */}
-      <section className="bg-white py-24 text-center">
-        <div className="mx-auto max-w-4xl px-5">
+      <section className="landing-section bg-white text-center">
+        <div className="landing-shell-narrow">
           <FadeUp>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5">
               <Sparkles className="h-3.5 w-3.5 text-blue-500" />
               <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">Start Free — No Credit Card</span>
             </div>
-            <h2 className="mb-5 text-[40px] font-extrabold leading-tight tracking-tight lg:text-[52px]">
+            <h2 className="landing-title-feature mb-5">
               Ready to ace your <span style={gText()}>exam?</span>
             </h2>
             <p className="mb-10 mx-auto max-w-xl text-[17px] font-medium leading-relaxed text-gray-500">
@@ -1092,13 +1092,13 @@ const Index = () => {
             <div className="flex flex-wrap items-center justify-center gap-3">
               <motion.div whileHover={{ scale:1.05, boxShadow:`0 20px 48px ${B}44` }} whileTap={{ scale:0.97 }}>
                 <Link to="/register"
-                  className="flex items-center gap-2 rounded-2xl px-8 py-4 text-[16px] font-bold text-white shadow-xl"
+                  className="landing-button flex items-center gap-2 text-white shadow-xl"
                   style={{ background: grad() }}>
                   Start Learning Free <ArrowRight className="h-5 w-5" />
                 </Link>
               </motion.div>
               <motion.a href="#how" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                className="flex items-center gap-2 rounded-2xl border-2 border-gray-200 px-8 py-4 text-[16px] font-bold text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                className="landing-button flex items-center gap-2 border-2 border-gray-200 text-gray-700 transition-all hover:border-blue-300 hover:bg-blue-50">
                 See How It Works <ChevronRight className="h-5 w-5" />
               </motion.a>
             </div>

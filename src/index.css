@@ -81,6 +81,57 @@
   }
 }
 
+@layer components {
+  .landing-shell {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-5 lg:px-6;
+  }
+
+  .landing-shell-wide {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-5 lg:px-6;
+  }
+
+  .landing-shell-narrow {
+    @apply mx-auto w-full max-w-4xl px-4 sm:px-5 lg:px-6;
+  }
+
+  .landing-section {
+    @apply py-16 sm:py-20 xl:py-24;
+  }
+
+  .landing-section-tight {
+    @apply py-12 sm:py-16 xl:py-20;
+  }
+
+  .landing-copy-lead {
+    @apply text-[15px] font-medium leading-relaxed sm:text-[16px] xl:text-[17px];
+  }
+
+  .landing-button {
+    @apply rounded-2xl px-6 py-3 text-[14px] font-bold sm:px-7 sm:py-3.5 sm:text-[15px];
+  }
+
+  .landing-title-hero {
+    font-size: clamp(2.5rem, 3.1vw + 1.6rem, 3.85rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+  }
+
+  .landing-title-section {
+    font-size: clamp(2rem, 1.5vw + 1.5rem, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+  }
+
+  .landing-title-feature {
+    font-size: clamp(1.75rem, 1.2vw + 1.4rem, 2.35rem);
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+  }
+}
+
 @layer utilities {
   .text-gradient-brand {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-warning;

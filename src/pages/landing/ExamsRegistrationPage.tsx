@@ -61,14 +61,14 @@ export default function ExamsRegistrationPage() {
       <main className="min-h-screen pt-20" style={{ background: BG_STUDIO }}>
         
         {/* ── Minimal Hero with Banner ── */}
-        <section className="relative overflow-hidden py-32 lg:py-48 text-center border-b border-gray-50">
+        <section className="relative overflow-hidden border-b border-gray-50 py-20 text-center sm:py-24 xl:py-32">
            {/* Background Image with Overlay */}
            <div className="absolute inset-0 -z-10 bg-gray-50">
               <img src={bannerImg} alt="Exams Info" className="h-full w-full object-cover opacity-30" />
               <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, transparent, ${BG_STUDIO})` }} />
            </div>
            
-           <div className="mx-auto max-w-4xl px-6 relative z-10">
+           <div className="landing-shell-narrow relative z-10">
               <FadeUp>
                  <div className="mb-8 flex justify-center">
                     <div className="flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/50 px-4 py-1.5 backdrop-blur-sm">
@@ -76,7 +76,7 @@ export default function ExamsRegistrationPage() {
                        <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">Exam Tracker 2025</span>
                     </div>
                  </div>
-                 <h1 className="text-[44px] lg:text-[60px] font-black tracking-tight text-gray-900 leading-[1.1]">
+                 <h1 className="landing-title-hero text-gray-900">
                     Upcoming <br/>
                     <span style={gText()}>National Exams.</span>
                  </h1>
@@ -89,7 +89,7 @@ export default function ExamsRegistrationPage() {
 
         {/* ── Filter Bar ── */}
         <section className="sticky top-20 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100">
-           <div className="mx-auto max-w-7xl px-6 h-18 flex items-center justify-between">
+           <div className="landing-shell flex min-h-[72px] items-center justify-between gap-4 py-4">
               <div className="flex items-center gap-6">
                  <button className="text-[14px] font-black text-gray-900 border-b-2 border-gray-900 pb-1">All Exams</button>
                  <button className="text-[14px] font-bold text-gray-400 hover:text-gray-900">Engineering</button>
@@ -111,8 +111,8 @@ export default function ExamsRegistrationPage() {
         </section>
 
         {/* ── Exam Timeline Grid ── */}
-        <section className="py-24">
-           <div className="mx-auto max-w-7xl px-6">
+        <section className="landing-section">
+           <div className="landing-shell">
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                  {exams.map((exam, i) => (
                    <FadeUp key={exam.id} delay={i * 0.05}>
@@ -172,15 +172,15 @@ export default function ExamsRegistrationPage() {
         </section>
 
         {/* ── Subdued Minimal CTA ── */}
-        <section className="bg-gray-50 py-32 border-t border-gray-100">
-           <div className="mx-auto max-w-3xl px-6 text-center">
+        <section className="border-t border-gray-100 bg-gray-50 py-20 sm:py-24 xl:py-28">
+           <div className="landing-shell-narrow text-center">
               <FadeUp>
                  <div className="mb-10 flex justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white border border-gray-100 shadow-sm">
                        <ArrowRight className="h-8 w-8 text-blue-600" />
                     </div>
                  </div>
-                 <h2 className="text-[32px] lg:text-[40px] font-black text-gray-900 tracking-tight">Need Exam Preparation?</h2>
+                 <h2 className="landing-title-feature text-gray-900">Need Exam Preparation?</h2>
                  <p className="mt-6 text-gray-500 text-lg font-medium leading-relaxed">
                     Once you've registered, navigate to our <Link to="/courses" className="text-blue-600 underline">Courses</Link> or <Link to="/study-material" className="text-blue-600 underline">Study Material</Link> hub to start your journey.
                  </p>
