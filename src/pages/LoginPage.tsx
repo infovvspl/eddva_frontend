@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff,
@@ -40,6 +40,8 @@ const StatCard = ({
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
   const { setUser } = useAuthStore();
 
   const [view, setView] = useState<View>("login");
@@ -103,6 +105,10 @@ const LoginPage = () => {
 
   const redirectUser = (user: ReturnType<typeof buildUser>) => {
     setUser(user);
+    // If there's a returnTo (e.g. /join?token=xxx), send student there instead of dashboard
+    if (returnTo && user.role === "student") {
+      navigate(returnTo); return;
+    }
     if (user.role === "student" && user.studentProfile && !user.studentProfile.diagnosticCompleted) {
       navigate("/student/diagnostic"); return;
     }
