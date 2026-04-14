@@ -147,12 +147,12 @@ const DashboardLayout = () => {
       {/* ── Brand ── */}
       <div className="h-24 px-8 flex items-center gap-4 shrink-0 border-b border-slate-100/50">
         <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm group cursor-pointer overflow-hidden transition-all duration-500 hover:rotate-6">
-           <img src={edvaLogo} alt="EDVA" className="w-7 h-7 object-contain" />
+           <img src={edvaLogo} alt="EDDVA" className="w-7 h-7 object-contain" />
         </div>
         {sidebarOpen && (
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="min-w-0">
             <span className="text-sm font-bold text-slate-900 block truncate">
-              EDVA
+              EDDVA
             </span>
             {user.tenantName && (
               <span className="text-[10px] font-medium text-slate-500 block truncate">{user.tenantName}</span>
@@ -162,9 +162,9 @@ const DashboardLayout = () => {
       </div>
 
       {/* ── Nav ── */}
-      <nav className="flex-1 py-10 px-4 overflow-y-auto space-y-1 scrollbar-none relative z-10">
+      <nav className="flex-1 py-6 px-4 overflow-y-auto space-y-1 scrollbar-none relative z-10">
         {sidebarOpen && (
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] px-5 mb-4 text-slate-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
             {section.main}
           </p>
         )}
@@ -294,7 +294,7 @@ const DashboardLayout = () => {
         <main className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
            <div className={cn(
              "mx-auto w-full transition-all duration-1000",
-             location.pathname.includes("/live") || location.pathname.includes("/quiz") ? "max-w-none p-0" : "max-w-[1700px] p-8 lg:p-12 pb-24"
+             location.pathname.includes("/live") || location.pathname.includes("/quiz") ? "max-w-none p-0" : "max-w-[1700px] p-4 lg:p-6 pb-24"
            )}>
               <Outlet />
            </div>
