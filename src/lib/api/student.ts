@@ -174,9 +174,71 @@ export interface TopicDetailWithContent {
   resources: TopicResource[];
 }
 
+// Raw shape returned by backend (nested enrollment record)
+interface RawEnrollment {
+  enrollmentId?: string;
+  enrollmentStatus?: string;
+  enrolledAt?: string;
+  feePaid?: boolean;
+  batch?: {
+    id: string;
+    name: string;
+    examTarget?: string;
+    class?: string;
+    thumbnailUrl?: string | null;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    teacher?: { id: string; fullName: string };
+  };
+  subjects?: string[];
+  progress?: {
+    totalLectures?: number;
+    watchedLectures?: number;
+    completedTopics?: number;
+    inProgressTopics?: number;
+    totalTopics?: number;
+    completedLectures?: number;
+    overallPct?: number;
+  };
+}
+
+function normalizeEnrollment(raw: RawEnrollment): MyCourse {
+  const batch = raw.batch ?? {} as NonNullable<RawEnrollment["batch"]>;
+  const p = raw.progress ?? {};
+  const total = p.totalLectures ?? 0;
+  const watched = p.watchedLectures ?? 0;
+  const overallPct = p.overallPct ?? (total > 0 ? Math.round((watched / total) * 100) : 0);
+  return {
+    id: batch.id ?? raw.enrollmentId ?? "",
+    name: batch.name ?? "",
+    examTarget: batch.examTarget ?? "",
+    class: batch.class ?? "",
+    thumbnailUrl: batch.thumbnailUrl ?? undefined,
+    status: batch.status ?? raw.enrollmentStatus ?? "active",
+    enrolledAt: raw.enrolledAt,
+    teacher: batch.teacher,
+    progress: {
+      completedTopics: p.completedTopics ?? 0,
+      totalTopics: p.totalTopics ?? 0,
+      completedLectures: p.completedLectures ?? watched,
+      totalLectures: total,
+      overallPct,
+    },
+  };
+}
+
 export async function getMyCourses(): Promise<MyCourse[]> {
   const res = await apiClient.get("/students/my-courses");
-  return extractData<MyCourse[]>(res) ?? [];
+  const raw = extractData<unknown[]>(res) ?? [];
+  // Support both flat MyCourse[] (if backend already flattens) and
+  // nested enrollment[] (current backend shape).
+  return raw.map((item: any) => {
+    if (item && typeof item === "object" && "batch" in item) {
+      return normalizeEnrollment(item as RawEnrollment);
+    }
+    return item as MyCourse;
+  });
 }
 
 export async function getCourseCurriculum(batchId: string): Promise<CourseCurriculum> {

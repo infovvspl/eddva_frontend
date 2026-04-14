@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, CheckCircle, CheckCircle2, ChevronRight, Clock, Flame, Image as ImageIcon,
+  ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, ChevronRight, Clock, Flame, Image as ImageIcon,
   MoreVertical, Play, MessageSquare, Send, Sparkles, BookOpen, Target, LayoutGrid,
   Lock, Maximize2, RotateCcw, Volume2, Award, FileText, BarChart2
 } from "lucide-react";

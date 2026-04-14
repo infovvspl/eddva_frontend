@@ -105,4 +105,20 @@
   .card-surface-elevated {
     @apply bg-surface-2 border border-border rounded-xl;
   }
+
+  /* ── Institute admin panel: all bold weights → medium (500) ── */
+  .font-poppins .font-bold,
+  .font-poppins .font-semibold,
+  .font-poppins .font-black,
+  .font-poppins .font-extrabold,
+  .font-poppins h1,
+  .font-poppins h2,
+  .font-poppins h3,
+  .font-poppins h4,
+  .font-poppins h5,
+  .font-poppins h6,
+  .font-poppins b,
+  .font-poppins strong {
+    font-weight: 500;
+  }
 }

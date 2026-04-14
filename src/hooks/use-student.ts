@@ -626,6 +626,16 @@ export function useUpdateStudentProfile() {
   });
 }
 
+// ─── All Public Batches (no exam-target filter) ───────────────────────────────
+
+export function useAllPublicBatches() {
+  return useQuery({
+    queryKey: ["student", "all-public-batches"] as const,
+    queryFn: () => studentApi.getPublicBatches(undefined),
+    staleTime: 60_000,
+  });
+}
+
 // ─── Discover Batches ─────────────────────────────────────────────────────────
 
 export function useDiscoverBatches(enabled = true) {

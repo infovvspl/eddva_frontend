@@ -141,7 +141,7 @@ const DashboardLayout = () => {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-white/20 backdrop-blur-3xl border-r border-slate-100 relative overflow-hidden">
+    <div className="flex flex-col h-full bg-white border-r border-slate-100 relative overflow-hidden" style={{ boxShadow: "4px 0 24px rgba(0,0,0,0.06)" }}>
       {/* ── Brand ── */}
       <div className="h-24 px-8 flex items-center gap-4 shrink-0 border-b border-slate-100/50">
         <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm group cursor-pointer overflow-hidden transition-all duration-500 hover:rotate-6">
@@ -186,7 +186,7 @@ const DashboardLayout = () => {
                 <div className={cn(
                   "flex items-center justify-center rounded-xl shrink-0 transition-all duration-500",
                   sidebarOpen ? "w-7 h-7" : "w-10 h-10",
-                  isActive ? "bg-indigo-600 text-white shadow-lg" : "bg-transparent text-slate-300 group-hover:text-slate-500"
+                  isActive ? "bg-indigo-600 text-white shadow-lg" : "bg-transparent text-slate-600 group-hover:text-slate-800"
                 )}>
                   <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
                 </div>
@@ -232,7 +232,10 @@ const DashboardLayout = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-white text-slate-900 selection:bg-indigo-600/10 font-sans">
+    <div
+      className={cn("flex min-h-screen text-slate-900 selection:bg-indigo-600/10", user.role === "institute_admin" ? "font-poppins" : "font-sans bg-white")}
+      style={user.role === "institute_admin" ? { background: "#F5F8FC" } : undefined}
+    >
       <AeroBackground />
       
       {/* ── Desktop Sidebar ── */}
@@ -257,7 +260,7 @@ const DashboardLayout = () => {
 
       {/* ── Main Area ── */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <header className="h-20 shrink-0 flex items-center justify-between px-10 border-b border-slate-100 bg-white/40 backdrop-blur-3xl sticky top-0 z-[60]">
+        <header className="h-20 shrink-0 flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 z-[60] backdrop-blur-3xl" style={{ background: user.role === "institute_admin" ? "rgba(245,248,252,0.85)" : "rgba(255,255,255,0.4)" }}>
            <div className="flex items-center gap-6">
               <button
                 onClick={() => window.innerWidth < 1024 ? setMobileSidebarOpen(!mobileSidebarOpen) : setSidebarOpen(!sidebarOpen)}
@@ -270,7 +273,7 @@ const DashboardLayout = () => {
                    <div className="w-px h-5 bg-slate-100" />
                    <div className="flex items-center gap-3">
                       <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">{user.tenantName}</span>
+                      <span className="text-[9px] font-bold text-slate-900 uppercase tracking-[0.2em]">{user.tenantName}</span>
                    </div>
                 </div>
               )}
@@ -279,7 +282,7 @@ const DashboardLayout = () => {
            <div className="flex items-center gap-6">
               <div className="hidden sm:flex items-center gap-3 px-5 py-2 rounded-full bg-slate-50 border border-slate-100 shadow-inner">
                  <Zap className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                 <span className="text-[9px] font-bold text-slate-900 uppercase tracking-widest">
                     SYNCING
                  </span>
               </div>
