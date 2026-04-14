@@ -103,9 +103,6 @@ const LoginPage = () => {
 
   const redirectUser = (user: ReturnType<typeof buildUser>) => {
     setUser(user);
-    if (user.role === "student" && user.studentProfile && !user.studentProfile.diagnosticCompleted) {
-      navigate("/student/diagnostic"); return;
-    }
     const paths: Record<string, string> = {
       super_admin:     "/super-admin",
       institute_admin: "/admin",

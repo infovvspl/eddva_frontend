@@ -28,6 +28,36 @@ export interface Topic {
   estimatedStudyMinutes?: number;
 }
 
+// ─── Public Batch Listing (for students browsing courses) ─────────────────────
+
+export interface PublicBatch {
+  id: string;
+  name: string;
+  examTarget: string;
+  class: string;
+  status: string;
+  isPaid: boolean;
+  feeAmount: number | null;
+  maxStudents: number;
+  startDate?: string;
+  endDate?: string;
+  thumbnailUrl?: string;
+  studentCount?: number;
+  teacher?: { id: string; fullName: string };
+}
+
+export async function getPublicBatches(examTarget?: string): Promise<PublicBatch[]> {
+  const q = new URLSearchParams();
+  if (examTarget && examTarget !== "other") q.set("examTarget", examTarget);
+  q.set("status", "active");
+  try {
+    const res = await apiClient.get(`/batches?${q}`);
+    return extractData<PublicBatch[]>(res) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getSubjects(examTarget?: string): Promise<Subject[]> {
   const q = examTarget ? `?examTarget=${examTarget}` : "";
   const res = await apiClient.get(`/content/subjects${q}`);
@@ -42,6 +72,121 @@ export async function getChapters(subjectId: string): Promise<Chapter[]> {
 export async function getTopics(chapterId: string): Promise<Topic[]> {
   const res = await apiClient.get(`/content/topics?chapterId=${chapterId}`);
   return extractData<Topic[]>(res) ?? [];
+}
+
+// ─── My Courses (enrolled) ────────────────────────────────────────────────────
+
+export interface MyCourseProgress {
+  completedTopics: number;
+  totalTopics: number;
+  completedLectures: number;
+  totalLectures: number;
+  overallPct: number;
+}
+
+export interface MyCourse {
+  id: string;
+  name: string;
+  examTarget: string;
+  class: string;
+  thumbnailUrl?: string;
+  status: string;
+  enrolledAt?: string;
+  teacher?: { id: string; fullName: string };
+  progress: MyCourseProgress;
+}
+
+export interface CourseTopic {
+  id: string;
+  name: string;
+  sortOrder?: number;
+  estimatedStudyMinutes?: number;
+  status: "locked" | "unlocked" | "in_progress" | "completed";
+  completedAt?: string;
+  progressPct?: number;
+}
+
+export interface CourseChapter {
+  id: string;
+  name: string;
+  sortOrder?: number;
+  topics: CourseTopic[];
+}
+
+export interface CourseSubject {
+  id: string;
+  name: string;
+  examTarget?: string;
+  colorCode?: string;
+  chapters: CourseChapter[];
+}
+
+export interface CourseCurriculum {
+  batch: {
+    id: string;
+    name: string;
+    examTarget: string;
+    class: string;
+    thumbnailUrl?: string;
+    teacher?: { id: string; fullName: string };
+    startDate?: string;
+    endDate?: string;
+  };
+  subjects: CourseSubject[];
+  progress: MyCourseProgress;
+}
+
+export interface TopicLecture {
+  id: string;
+  title: string;
+  description?: string;
+  duration?: number;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  watchProgress?: number;
+  isCompleted?: boolean;
+  sortOrder?: number;
+  createdAt?: string;
+}
+
+export interface TopicResource {
+  id: string;
+  type: string;
+  title: string;
+  fileUrl: string;
+  fileSize?: number;
+  sortOrder?: number;
+}
+
+export interface TopicDetailWithContent {
+  topic: {
+    id: string;
+    name: string;
+    estimatedStudyMinutes?: number;
+    gatePassPercentage?: number;
+    status: string;
+    progressPct?: number;
+    completedAt?: string;
+  };
+  chapter: { id: string; name: string };
+  subject:  { id: string; name: string };
+  lectures:  TopicLecture[];
+  resources: TopicResource[];
+}
+
+export async function getMyCourses(): Promise<MyCourse[]> {
+  const res = await apiClient.get("/students/my-courses");
+  return extractData<MyCourse[]>(res) ?? [];
+}
+
+export async function getCourseCurriculum(batchId: string): Promise<CourseCurriculum> {
+  const res = await apiClient.get(`/students/my-courses/${batchId}`);
+  return extractData<CourseCurriculum>(res);
+}
+
+export async function getCourseTopicDetail(batchId: string, topicId: string): Promise<TopicDetailWithContent> {
+  const res = await apiClient.get(`/students/my-courses/${batchId}/topics/${topicId}`);
+  return extractData<TopicDetailWithContent>(res);
 }
 
 // ─── Topic Progress ────────────────────────────────────────────────────────────
@@ -293,6 +438,16 @@ export async function getWeeklyPlan(startDate: string, endDate: string): Promise
   const grouped = extractData<Record<string, StudyPlanItem[]>>(res) ?? {};
   if (Array.isArray(grouped)) return grouped;
   return Object.values(grouped).flat();
+}
+
+export async function getWeeklyPlanGrouped(startDate: string, endDate: string): Promise<Record<string, StudyPlanItem[]>> {
+  const res = await apiClient.get(`/study-plans?startDate=${startDate}&endDate=${endDate}`);
+  const data = extractData<Record<string, StudyPlanItem[]> | StudyPlanItem[]>(res) ?? {};
+  if (Array.isArray(data)) {
+    const today = new Date().toISOString().split("T")[0];
+    return data.length ? { [today]: data } : {};
+  }
+  return data as Record<string, StudyPlanItem[]>;
 }
 
 export async function generatePlan(): Promise<{ message: string }> {
@@ -951,4 +1106,105 @@ export async function getProgressReport(studentId?: string): Promise<ProgressRep
     : `/assessments/progress/report`;
   const res = await apiClient.get(url);
   return extractData<ProgressReport>(res);
+}
+
+// ─── Weekly Activity ──────────────────────────────────────────────────────────
+
+export interface DailyActivity {
+  date: string;
+  xpEarned: number;
+  minutesStudied: number;
+  tasksCompleted: number;
+}
+
+export async function getWeeklyActivity(): Promise<DailyActivity[]> {
+  try {
+    const res = await apiClient.get("/students/weekly-activity");
+    return extractData<DailyActivity[]>(res) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+// ─── Continue Learning ────────────────────────────────────────────────────────
+
+export interface ContinueLearningItem {
+  topicId: string;
+  topicName: string;
+  subjectName: string;
+  chapterName: string;
+  progressPct: number;
+  lastStudiedAt?: string;
+  estimatedMinutes?: number;
+  batchId?: string;
+}
+
+export async function getContinueLearning(): Promise<ContinueLearningItem[]> {
+  try {
+    const res = await apiClient.get("/students/continue-learning");
+    return extractData<ContinueLearningItem[]>(res) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+// ─── Student Profile ──────────────────────────────────────────────────────────
+
+export interface StudentProfile {
+  id: string;
+  fullName: string;
+  phone?: string;
+  email?: string;
+  city?: string;
+  profilePictureUrl?: string;
+  examTarget?: string;
+  currentClass?: string;
+  examYear?: number;
+  targetCollege?: string;
+  dailyStudyHours?: number;
+  preferredLanguage?: string;
+  streakDays: number;
+  xpPoints: number;
+  currentEloTier?: string;
+  diagnosticCompleted: boolean;
+  rank?: number;
+}
+
+export interface UpdateStudentProfilePayload {
+  fullName?: string;
+  city?: string;
+  examTarget?: string;
+  currentClass?: string;
+  examYear?: number;
+  targetCollege?: string;
+  dailyStudyHours?: number;
+  preferredLanguage?: string;
+}
+
+export async function getStudentProfile(): Promise<StudentProfile> {
+  const res = await apiClient.get("/students/profile");
+  return extractData<StudentProfile>(res);
+}
+
+export async function updateStudentProfile(payload: UpdateStudentProfilePayload): Promise<StudentProfile> {
+  const res = await apiClient.patch("/students/profile", payload);
+  return extractData<StudentProfile>(res);
+}
+
+// ─── Discover Batches (post-login modal) ─────────────────────────────────────
+
+export interface DiscoverBatchesResult {
+  isFirstLogin: boolean;
+  studentPreferences: { examTarget: string; class: string };
+  availableBatches: PublicBatch[];
+}
+
+export async function discoverBatches(): Promise<DiscoverBatchesResult> {
+  const res = await apiClient.get("/students/discover-batches");
+  return extractData<DiscoverBatchesResult>(res);
+}
+
+export async function enrollInBatch(batchId: string): Promise<{ message: string }> {
+  const res = await apiClient.post(`/students/enroll/${batchId}`, {});
+  return extractData<{ message: string }>(res);
 }

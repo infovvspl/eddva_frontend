@@ -3,22 +3,27 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, CheckCircle, XCircle, ChevronRight,
-  Trophy, RefreshCw, Play, RotateCcw, Calendar, Zap, Filter,
-  Loader2, Target,
+  Trophy, RotateCcw, Play, Calendar, Zap, Filter,
+  Loader2, Target, Monitor, Info, Layers, ArrowRight, Brain, Sparkles,
 } from "lucide-react";
 import { useStartPYQSession, useSubmitPYQAnswer } from "@/hooks/use-student";
 import type { PYQQuestion, PYQSubmitResult } from "@/lib/api/student";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CardGlass } from "@/components/shared/CardGlass";
+import { cn } from "@/lib/utils";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
-const BLUE   = "#013889";
-const BLUE_M = "#0257c8";
-const BLUE_L = "#E6EEF8";
+const BLUE   = "#2563EB";
+const EMERALD = "#10B981";
+const ORANGE = "#F59E0B";
 
 const EXAM_LABELS: Record<string, string> = {
-  jee_mains: "JEE Mains", jee_advanced: "JEE Advanced", neet: "NEET",
+  jee_mains: "JEE Mains", 
+  jee_advanced: "JEE Advanced", 
+  neet: "NEET",
 };
+
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - 1999 }, (_, i) => CURRENT_YEAR - i);
 
@@ -26,9 +31,9 @@ type QuizPhase = "setup" | "quiz" | "result";
 interface SessionResult { questionId: string; isCorrect: boolean; xpAwarded: number; }
 
 const difficultyStyle: Record<string, { color: string; bg: string }> = {
-  easy:   { color: "#059669", bg: "#ECFDF5" },
-  medium: { color: "#d97706", bg: "#FFFBEB" },
-  hard:   { color: "#ef4444", bg: "#FEF2F2" },
+  easy:   { color: EMERALD, bg: "rgba(16, 185, 129, 0.1)" },
+  medium: { color: ORANGE,  bg: "rgba(245, 158, 11, 0.1)"  },
+  hard:   { color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)"  },
 };
 
 // ─── Quiz Question ─────────────────────────────────────────────────────────────
@@ -48,7 +53,7 @@ function QuizQuestion({ question, qNumber, total, onNext, isLast }: {
 
   async function handleSubmit() {
     const timeTaken = Math.round((Date.now() - startTime) / 1000);
-    const payload: Record<string, unknown> = { timeTakenSeconds: timeTaken };
+    const payload: Record<string, any> = { timeTakenSeconds: timeTaken };
     if (question.type === "integer") payload.integerResponse = intInput;
     else payload.selectedOptionIds = selected;
     const res = await submitMutation.mutateAsync({ topicId: question.topicId, questionId: question.id, payload });
@@ -58,211 +63,157 @@ function QuizQuestion({ question, qNumber, total, onNext, isLast }: {
   const canSubmit = question.type === "integer" ? intInput.trim() !== "" : selected.length > 0;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-      {/* Progress */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-bold text-gray-500 shrink-0">{qNumber} / {total}</span>
-        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: BLUE_L }}>
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: BLUE_M }}
-            initial={{ width: 0 }}
-            animate={{ width: `${(qNumber / total) * 100}%` }}
-            transition={{ duration: 0.4 }}
-          />
-        </div>
-      </div>
-
-      {/* Question Card */}
-      <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-        {/* Meta badges */}
-        <div className="flex items-center gap-2 flex-wrap mb-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black" style={{ background: BLUE_L, color: BLUE }}>
-            <Calendar className="w-3 h-3" /> {question.pyqYear}
-          </span>
-          <span className="px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 bg-gray-50">
-            {EXAM_LABELS[question.pyqExam] ?? question.pyqExam}
-          </span>
-          {question.pyqShift && (
-            <span className="px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 bg-gray-50">
-              {question.pyqShift}
-            </span>
-          )}
-          <span className="px-3 py-1.5 rounded-xl text-xs font-bold capitalize" style={diff}>
-            {question.difficulty}
-          </span>
-        </div>
-
-        {/* Question text */}
-        <p className="text-sm leading-relaxed text-gray-800 font-medium whitespace-pre-wrap mb-4">
-          {question.questionText}
-        </p>
-        {question.questionImageUrl && (
-          <img src={question.questionImageUrl} alt="question" className="max-h-48 rounded-xl object-contain mb-4" />
-        )}
-
-        {/* Options / Integer */}
-        {question.type === "integer" ? (
-          <div className="space-y-3">
-            <input
-              type="text" value={intInput} onChange={e => setIntInput(e.target.value)}
-              disabled={isAnswered} placeholder="Enter integer answer"
-              className="border border-gray-200 rounded-2xl px-4 py-3 text-sm w-56 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 disabled:opacity-60 transition-all"
-            />
-            {submitResult && (
-              <p className="text-sm text-gray-700">
-                Correct answer: <span className="font-black text-green-600">{submitResult.correctIntegerAnswer}</span>
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {question.options.map(opt => {
-              const isSel = selected.includes(opt.id);
-              const isCorrectOpt = correctIds.includes(opt.id);
-              let style: React.CSSProperties = { background: "#F9FAFB", borderColor: "#E5E7EB", color: "#374151" };
-              if (isAnswered) {
-                if (isCorrectOpt)      style = { background: "#ECFDF5", borderColor: "#6EE7B7", color: "#065F46" };
-                else if (isSel)        style = { background: "#FEF2F2", borderColor: "#FCA5A5", color: "#991B1B" };
-                else                   style = { background: "#F9FAFB", borderColor: "#E5E7EB", color: "#9CA3AF", opacity: 0.6 };
-              } else if (isSel) {
-                style = { background: BLUE_L, borderColor: BLUE_M, color: BLUE };
-              }
-              return (
-                <motion.div
-                  key={opt.id}
-                  whileHover={!isAnswered ? { scale: 1.01 } : {}}
-                  onClick={() => {
-                    if (isAnswered) return;
-                    if (question.type === "mcq_single") setSelected([opt.id]);
-                    else setSelected(prev => prev.includes(opt.id) ? prev.filter(x => x !== opt.id) : [...prev, opt.id]);
-                  }}
-                  className="rounded-2xl border-2 px-4 py-3.5 text-sm transition-all select-none"
-                  style={{ ...style, cursor: isAnswered ? "default" : "pointer" }}
-                >
-                  {opt.text}
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Submit */}
-        {!isAnswered && (
-          <motion.button
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={handleSubmit}
-            disabled={!canSubmit || submitMutation.isPending}
-            className="mt-5 w-full py-3.5 rounded-2xl text-white text-sm font-black flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-            style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})`, boxShadow: `0 4px 16px ${BLUE}30` }}
-          >
-            {submitMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Answer"}
-          </motion.button>
-        )}
-
-        {/* Result */}
-        {isAnswered && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5 space-y-4">
-            {/* Correct / Wrong banner */}
-            <div
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm"
-              style={submitResult.isCorrect
-                ? { background: "#ECFDF5", color: "#065F46" }
-                : { background: "#FEF2F2", color: "#991B1B" }}
-            >
-              {submitResult.isCorrect
-                ? <><CheckCircle className="w-5 h-5" /> Correct!
-                    {submitResult.xpAwarded > 0 && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black">
-                        <Zap className="w-3 h-3" /> +{submitResult.xpAwarded} XP
-                      </span>
-                    )}
-                  </>
-                : <><XCircle className="w-5 h-5" /> Incorrect</>}
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+      <div className="flex items-center justify-between gap-6">
+         <div className="flex items-center gap-4 flex-1">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Node: {qNumber} / {total}</span>
+            <div className="w-full h-1.5 rounded-full bg-white border border-slate-100 overflow-hidden relative shadow-inner">
+               <motion.div className="absolute inset-0 bg-blue-600 rounded-full" initial={{ width: 0 }} animate={{ width: `${(qNumber / total) * 100}%` }} />
             </div>
-
-            {/* Explanation */}
-            {submitResult.explanation && (
-              <div className="p-4 rounded-2xl" style={{ background: BLUE_L, border: `1px solid ${BLUE_M}25` }}>
-                <span className="font-black text-xs block mb-1" style={{ color: BLUE }}>Explanation</span>
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{submitResult.explanation}</p>
-              </div>
-            )}
-
-            {/* Next button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => onNext({ questionId: question.id, isCorrect: submitResult.isCorrect, xpAwarded: submitResult.xpAwarded })}
-              className="w-full py-3.5 rounded-2xl text-white text-sm font-black flex items-center justify-center gap-2 transition-all"
-              style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})`, boxShadow: `0 4px 16px ${BLUE}30` }}
-            >
-              {isLast ? <><Trophy className="w-4 h-4" /> See Results</> : <><ChevronRight className="w-4 h-4" /> Next Question</>}
-            </motion.button>
-          </motion.div>
-        )}
+         </div>
       </div>
+
+      <CardGlass className="p-10 border-white bg-white/60 shadow-3xl">
+        <div className="relative">
+          <div className="flex items-center gap-3 flex-wrap mb-8">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100 italic">
+              <Calendar className="w-3.5 h-3.5" /> Paper: {question.pyqYear}
+            </span>
+            <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-950 text-white">
+              {EXAM_LABELS[question.pyqExam] ?? question.pyqExam}
+            </span>
+            <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest" style={{ background: diff.bg, color: diff.color }}>
+              Intensity: {question.difficulty}
+            </span>
+          </div>
+
+          <p className="text-xl font-bold text-slate-900 leading-relaxed mb-8 select-all">{question.questionText}</p>
+
+          {question.questionImageUrl && (
+            <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 mb-8 overflow-hidden">
+               <img src={question.questionImageUrl} alt="Optical Feed" className="max-h-64 rounded-xl object-contain mx-auto" />
+            </div>
+          )}
+
+          {question.type === "integer" ? (
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Numerical Matrix Input</label>
+              <input
+                type="text" value={intInput} onChange={e => setIntInput(e.target.value)}
+                disabled={isAnswered} placeholder="Input Float/Integer..."
+                className="w-full sm:w-64 border-2 border-slate-100 rounded-2xl px-6 py-4 text-sm font-black text-slate-900 bg-white focus:border-blue-500 outline-none transition-all shadow-inner uppercase tracking-widest"
+              />
+              {submitResult && (
+                <div className="p-6 rounded-2xl border-2 border-emerald-500/20 bg-emerald-50 text-emerald-900 mt-4">
+                  <p className="text-sm font-black uppercase italic tracking-widest">Verification Complete: <span className="text-xl underline">{submitResult.correctIntegerAnswer}</span></p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {question.options.map((opt, i) => {
+                const isSel = selected.includes(opt.id);
+                const isCorrectOpt = correctIds.includes(opt.id);
+                
+                let cardStyle = "bg-white border-slate-100 text-slate-900 shadow-sm";
+                if (isAnswered) {
+                  if (isCorrectOpt)      cardStyle = "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20";
+                  else if (isSel)        cardStyle = "bg-red-500 text-white border-red-600 shadow-red-500/20";
+                  else                   cardStyle = "bg-slate-50 border-slate-200 text-slate-300 opacity-60 shadow-none";
+                } else if (isSel) {
+                  cardStyle = "bg-slate-950 text-white border-slate-950 shadow-xl";
+                }
+
+                return (
+                  <motion.div
+                    key={opt.id}
+                    whileHover={!isAnswered ? { x: 8 } : {}}
+                    onClick={() => {
+                      if (isAnswered) return;
+                      if (question.type === "mcq_single") setSelected([opt.id]);
+                      else setSelected(prev => prev.includes(opt.id) ? prev.filter(x => x !== opt.id) : [...prev, opt.id]);
+                    }}
+                    className={cn("flex items-center gap-6 rounded-2xl border-2 px-6 py-5 transition-all select-none cursor-pointer", cardStyle)}
+                  >
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border transition-colors", isAnswered && isCorrectOpt ? "bg-white text-emerald-600" : isAnswered && isSel ? "bg-white text-red-600" : isSel ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400")}>{String.fromCharCode(65 + i)}</div>
+                    <div className="text-base font-black uppercase italic tracking-tight">{opt.text}</div>
+                    {(isAnswered && isCorrectOpt) && <CheckCircle className="ml-auto w-6 h-6 text-white" />}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-10 pt-10 border-t border-slate-100">
+             {!isAnswered ? (
+               <button onClick={handleSubmit} disabled={!canSubmit || submitMutation.isPending} className="w-full py-6 rounded-3xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest flex items-center justify-center gap-4 transition-all disabled:opacity-50 shadow-xl">
+                 {submitMutation.isPending ? <><Loader2 className="w-5 h-5 animate-spin" /> DISPATCHING DATA...</> : <><Sparkles className="w-5 h-5" /> VERIFY SOLUTION</>}
+               </button>
+             ) : (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                   <div className={cn("flex items-center gap-6 p-8 rounded-3xl border-2", submitResult.isCorrect ? "bg-emerald-500/5 border-emerald-500/20" : "bg-red-500/5 border-red-500/20")}>
+                      <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl", submitResult.isCorrect ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>{submitResult.isCorrect ? <CheckCircle className="w-8 h-8" /> : <XCircle className="w-8 h-8" />}</div>
+                      <div>
+                         <p className={cn("text-[10px] font-black uppercase tracking-widest mb-1", submitResult.isCorrect ? "text-emerald-600" : "text-red-600")}>{submitResult.isCorrect ? "Precision: Optimal" : "Sequence Error"}</p>
+                         <h3 className="text-xl font-black text-slate-900 uppercase italic leading-none">{submitResult.isCorrect ? "Neural Link Verified" : "Module Correction Required"}</h3>
+                      </div>
+                      {submitResult.xpAwarded > 0 && <div className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-400 text-white shadow-lg"><Zap className="w-4 h-4 fill-white" /><span className="text-sm font-black uppercase tracking-widest">+{submitResult.xpAwarded} XP</span></div>}
+                   </div>
+
+                   {submitResult.explanation && (
+                     <CardGlass className="p-8 border-blue-500/10 bg-white/60">
+                        <div className="flex items-center gap-3 mb-6"><Brain className="w-5 h-5 text-blue-500" /><div><p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Synthesis</p><p className="text-base font-black text-slate-900 uppercase italic leading-none">Path Reconstruction</p></div></div>
+                        <p className="text-slate-700 font-bold leading-relaxed whitespace-pre-wrap">{submitResult.explanation}</p>
+                     </CardGlass>
+                   )}
+
+                   <button onClick={() => onNext({ questionId: question.id, isCorrect: submitResult.isCorrect, xpAwarded: submitResult.xpAwarded })} className="w-full py-6 rounded-3xl bg-slate-950 text-white text-xs font-black uppercase tracking-widest flex items-center justify-center gap-4 transition-all shadow-xl">
+                     {isLast ? <><Trophy className="w-5 h-5" /> TERMINATE SESSION</> : <><ArrowRight className="w-5 h-5" /> NEXT MODULE SCAN</>}
+                   </button>
+                </motion.div>
+             )}
+          </div>
+        </div>
+      </CardGlass>
     </motion.div>
   );
 }
 
-// ─── Result Screen ─────────────────────────────────────────────────────────────
-function ResultScreen({ results, total, onRestart }: {
-  results: SessionResult[]; total: number; onRestart: () => void;
-}) {
+function ResultScreen({ results, total, onRestart }: { results: SessionResult[]; total: number; onRestart: () => void }) {
   const correct  = results.filter(r => r.isCorrect).length;
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
   const totalXP  = results.reduce((s, r) => s + r.xpAwarded, 0);
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-      <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm text-center">
-        <div
-          className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center shadow-lg"
-          style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}
-        >
-          <Trophy className="w-10 h-10 text-white" />
-        </div>
-        <h2 className="text-2xl font-black text-gray-900">Quiz Complete!</h2>
-        <p className="text-gray-400 text-sm mt-1 mb-7">Here's how you did</p>
+      <CardGlass className="p-12 text-center border-white bg-white/60 shadow-3xl">
+         <div className="w-24 h-24 rounded-[3rem] mx-auto mb-8 flex items-center justify-center shadow-2xl bg-indigo-600 text-white"><Trophy className="w-10 h-10" /></div>
+         <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Simulation <span className="text-blue-600">Complete</span></h2>
+         <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-12">Data Extraction: Successful</p>
 
-        <div className="grid grid-cols-3 gap-4 max-w-xs mx-auto mb-8">
-          {[
-            { val: correct, label: "Correct", color: "#059669", bg: "#ECFDF5" },
-            { val: `${accuracy}%`, label: "Accuracy", color: BLUE, bg: BLUE_L },
-            { val: `+${totalXP}`, label: "XP Earned", color: "#d97706", bg: "#FFFBEB" },
-          ].map(stat => (
-            <div key={stat.label} className="rounded-2xl p-3.5" style={{ background: stat.bg }}>
-              <div className="text-2xl font-black" style={{ color: stat.color }}>{stat.val}</div>
-              <div className="text-xs font-semibold text-gray-400 mt-0.5">{stat.label}</div>
-            </div>
-          ))}
-        </div>
+         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto mb-16">
+           {[
+             { val: correct, label: "Resolved", color: EMERALD, bg: "bg-emerald-500/5", icon: <CheckCircle className="w-5 h-5" /> },
+             { val: `${accuracy}%`, label: "Accuracy", color: BLUE, bg: "bg-blue-500/5", icon: <Target className="w-5 h-5" /> },
+             { val: `+${totalXP}`, label: "XP Yield", color: ORANGE, bg: "bg-amber-500/5", icon: <Zap className="w-5 h-5 fill-current" /> },
+           ].map(stat => (
+             <div key={stat.label} className={cn("rounded-3xl p-8 border border-white shadow-xl bg-white", stat.bg)}>
+               <div className="flex justify-center mb-4" style={{ color: stat.color }}>{stat.icon}</div>
+               <div className="text-3xl font-black italic tracking-tighter mb-1" style={{ color: stat.color }}>{stat.val}</div>
+               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</div>
+             </div>
+           ))}
+         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-          onClick={onRestart}
-          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-white text-sm font-black transition-all"
-          style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})`, boxShadow: `0 4px 16px ${BLUE}30` }}
-        >
-          <RotateCcw className="w-4 h-4" /> Practice Again
-        </motion.button>
-      </div>
+         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button onClick={onRestart} className="flex items-center gap-4 px-12 py-6 rounded-3xl bg-slate-950 text-white text-xs font-black uppercase tracking-widest shadow-xl"><RotateCcw className="w-5 h-5" /> New Session</button>
+            <button onClick={() => window.history.back()} className="flex items-center gap-4 px-12 py-6 rounded-3xl bg-white border border-slate-100 text-slate-600 text-xs font-black uppercase tracking-widest">Return to Nexus</button>
+         </div>
+      </CardGlass>
     </motion.div>
   );
 }
 
-// ─── Cache helpers ─────────────────────────────────────────────────────────────
-function buildCacheKey(topicId: string, filters: Record<string, unknown>) {
-  return `pyq_session:${topicId}:${JSON.stringify(filters)}`;
-}
-function readCache(key: string): PYQQuestion[] | null {
-  try { const r = sessionStorage.getItem(key); if (!r) return null; const p = JSON.parse(r) as PYQQuestion[]; return p.length > 0 ? p : null; } catch { return null; }
-}
-function writeCache(key: string, questions: PYQQuestion[]) {
-  try { sessionStorage.setItem(key, JSON.stringify(questions)); } catch {}
-}
-
-// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function StudentPYQPage() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate    = useNavigate();
@@ -276,11 +227,10 @@ export default function StudentPYQPage() {
   const [exam, setExam]                 = useState("all");
   const [difficulty, setDifficulty]     = useState("all");
   const [questionType, setQuestionType] = useState("all");
-  const [cachedCount, setCachedCount]   = useState(0);
   const startSession = useStartPYQSession();
 
   function activeFilters() {
-    const f: Record<string, unknown> = {};
+    const f: Record<string, any> = {};
     if (startYear !== "all") f.startYear = parseInt(startYear);
     if (endYear !== "all") f.endYear = parseInt(endYear);
     if (exam !== "all") f.exam = exam;
@@ -289,186 +239,57 @@ export default function StudentPYQPage() {
     return f;
   }
 
-  useEffect(() => {
-    const cached = readCache(buildCacheKey(topicId!, activeFilters()));
-    setCachedCount(cached?.length ?? 0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicId, startYear, endYear, exam, difficulty, questionType]);
-
   async function handleStart() {
-    const filters = activeFilters();
-    const cacheKey = buildCacheKey(topicId!, filters);
-    const cached = readCache(cacheKey);
-    if (cached) { setQuestions(cached); setCurrentIndex(0); setResults([]); setPhase("quiz"); return; }
-    const payload: Record<string, unknown> = { limit: 200, ...filters };
+    const payload: Record<string, any> = { limit: 200, ...activeFilters() };
     const data = await startSession.mutateAsync({ topicId: topicId!, payload });
-    if (!data.questions.length) { toast.error("Could not generate questions. Please try again."); return; }
-    writeCache(cacheKey, data.questions);
-    setQuestions(data.questions);
-    setCurrentIndex(0);
-    setResults([]);
-    setPhase("quiz");
+    if (!data.questions.length) { toast.error("No modules retrieved for these parameters."); return; }
+    setQuestions(data.questions); setCurrentIndex(0); setResults([]); setPhase("quiz");
   }
-
-  function handleNext(result: SessionResult) {
-    const newResults = [...results, result];
-    setResults(newResults);
-    const next = currentIndex + 1;
-    if (next >= questions.length) setPhase("result");
-    else setCurrentIndex(next);
-  }
-
-  function handleRestart() {
-    setPhase("setup"); setQuestions([]); setCurrentIndex(0); setResults([]);
-  }
-
-  const selClass = "w-full border border-gray-200 rounded-xl text-sm text-gray-700 bg-gray-50 focus:border-blue-400 transition-all";
 
   return (
-    <div className="min-h-screen p-5 sm:p-6" style={{ background: "#F5F7FB" }}>
-      <div className="max-w-2xl mx-auto space-y-5">
-
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => phase === "quiz" ? handleRestart() : navigate(-1)}
-            className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
-          >
-            <ArrowLeft className="w-4 h-4 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-xl font-black text-gray-900">PYQ Practice</h1>
-            <p className="text-sm text-gray-400 font-medium">Previous Year Questions</p>
-          </div>
-        </div>
-
-        {/* Setup */}
-        {phase === "setup" && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: BLUE_L }}>
-                  <Filter className="w-5 h-5" style={{ color: BLUE }} />
-                </div>
-                <div>
-                  <h2 className="font-black text-gray-900 text-base">Configure Session</h2>
-                  <p className="text-xs text-gray-400">Choose your filters to start practicing</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {/* Year range */}
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: "From Year", val: startYear, set: setStartYear },
-                    { label: "To Year",   val: endYear,   set: setEndYear   },
-                  ].map(f => (
-                    <div key={f.label}>
-                      <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">{f.label}</label>
-                      <Select value={f.val} onValueChange={f.set}>
-                        <SelectTrigger className={selClass}><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Years</SelectItem>
-                          {YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Exam */}
-                <div>
-                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Exam</label>
-                  <Select value={exam} onValueChange={setExam}>
-                    <SelectTrigger className={selClass}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Exams</SelectItem>
-                      {Object.entries(EXAM_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Difficulty */}
-                <div>
-                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Difficulty</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {["all", "easy", "medium", "hard"].map(d => (
-                      <button key={d}
-                        onClick={() => setDifficulty(d)}
-                        className="py-2.5 rounded-xl text-xs font-bold border-2 transition-all capitalize"
-                        style={difficulty === d
-                          ? d === "all" ? { background: BLUE, color: "#fff", borderColor: BLUE }
-                          : d === "easy" ? { background: "#ECFDF5", color: "#059669", borderColor: "#6EE7B7" }
-                          : d === "medium" ? { background: "#FFFBEB", color: "#d97706", borderColor: "#FCD34D" }
-                          : { background: "#FEF2F2", color: "#ef4444", borderColor: "#FCA5A5" }
-                          : { background: "#F9FAFB", color: "#9CA3AF", borderColor: "#E5E7EB" }}
-                      >
-                        {d === "all" ? "All" : d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Question Type */}
-                <div>
-                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Question Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { val: "all",        label: "All Types"    },
-                      { val: "mcq_single", label: "MCQ (Single)" },
-                      { val: "mcq_multi",  label: "MCQ (Multi)"  },
-                      { val: "integer",    label: "Integer"      },
-                    ].map(opt => (
-                      <button key={opt.val}
-                        onClick={() => setQuestionType(opt.val)}
-                        className="py-2.5 rounded-xl text-xs font-bold border-2 transition-all"
-                        style={questionType === opt.val
-                          ? { background: BLUE_L, color: BLUE, borderColor: BLUE_M }
-                          : { background: "#F9FAFB", color: "#9CA3AF", borderColor: "#E5E7EB" }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                className="mt-6 w-full py-4 rounded-2xl text-white text-sm font-black flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})`, boxShadow: `0 4px 16px ${BLUE}30` }}
-                onClick={handleStart}
-                disabled={startSession.isPending}
-              >
-                {startSession.isPending ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating questions…</>
-                ) : cachedCount > 0 ? (
-                  <><Play className="w-4 h-4" /> Start Practice <span className="opacity-70 text-xs">({cachedCount} ready)</span></>
-                ) : (
-                  <><Play className="w-4 h-4" /> Start Practice</>
-                )}
-              </motion.button>
+    <div className="flex flex-col space-y-12 pb-32">
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+          <div className="flex items-center gap-6">
+            <button onClick={() => phase === "quiz" ? setPhase("setup") : navigate(-1)} className="w-14 h-14 rounded-2xl bg-white border border-white flex items-center justify-center hover:bg-slate-950 hover:text-white transition-all shadow-xl group"><ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" /></button>
+            <div>
+               <div className="flex items-center gap-3 mb-1"><Monitor className="w-4 h-4 text-blue-600" /><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Node Archive Lab</span></div>
+               <h1 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">PYQ <span className="not-italic text-blue-600">Practice</span> Unit</h1>
             </div>
-          </motion.div>
-        )}
+          </div>
+          {phase === "quiz" && (
+             <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white shadow-xl border border-white">
+                <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center"><Zap className="w-5 h-5 fill-white" /></div>
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Est. XP Yield</p><p className="text-lg font-black text-slate-900 leading-none">+{questions.length * 15}</p></div>
+             </div>
+          )}
+        </header>
 
-        {/* Quiz */}
-        {phase === "quiz" && questions.length > 0 && (
-          <QuizQuestion
-            key={questions[currentIndex].id}
-            question={questions[currentIndex]}
-            qNumber={currentIndex + 1}
-            total={questions.length}
-            onNext={handleNext}
-            isLast={currentIndex === questions.length - 1}
-          />
-        )}
+        <div className="max-w-4xl mx-auto w-full">
+          {phase === "setup" && (
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+              <CardGlass className="p-12 border-white bg-white/60 shadow-3xl">
+                <div className="flex items-center gap-6 mb-12">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-950 text-white shadow-xl"><Filter className="w-8 h-8" /></div>
+                  <div><h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Configure Simulation</h2><p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Calibration Nodes</p></div>
+                </div>
 
-        {/* Results */}
-        {phase === "result" && (
-          <ResultScreen results={results} total={questions.length} onRestart={handleRestart} />
-        )}
-      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-6"><label className="text-[10px] font-black uppercase tracking-widest text-slate-900 ml-2">Temporal Range</label><div className="grid grid-cols-2 gap-4"><Select value={startYear} onValueChange={setStartYear}><SelectTrigger className="w-full h-16 rounded-2xl border-white bg-white font-black uppercase text-[10px] tracking-widest px-6 shadow-sm"><SelectValue /></SelectTrigger><SelectContent>{YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select><Select value={endYear} onValueChange={setEndYear}><SelectTrigger className="w-full h-16 rounded-2xl border-white bg-white font-black uppercase text-[10px] tracking-widest px-6 shadow-sm"><SelectValue /></SelectTrigger><SelectContent>{YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select></div></div>
+                  <div className="space-y-6"><label className="text-[10px] font-black uppercase tracking-widest text-slate-900 ml-2">Examination Node</label><Select value={exam} onValueChange={setExam}><SelectTrigger className="w-full h-16 rounded-2xl border-white bg-white font-black uppercase text-[10px] tracking-widest px-6 shadow-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(EXAM_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l.toUpperCase()}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-6 md:col-span-2"><label className="text-[10px] font-black uppercase tracking-widest text-slate-900 ml-2">Matrix Structure</label><div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{[{v:"all",l:"ALL"},{v:"mcq_single",l:"MCQ_S"},{v:"mcq_multi",l:"MCQ_M"},{v:"integer",l:"NUMERICAL"}].map(opt => <button key={opt.v} onClick={() => setQuestionType(opt.v)} className={cn("py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all shadow-sm", questionType === opt.v ? "bg-blue-600 text-white border-blue-600 shadow-xl" : "bg-white text-slate-400 border-white hover:border-blue-100")}>{opt.l}</button>)}</div></div>
+                </div>
+
+                <button className="mt-16 w-full py-8 rounded-3xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-xl shadow-blue-500/20" onClick={handleStart} disabled={startSession.isPending}>{startSession.isPending ? <><Loader2 className="w-6 h-6 animate-spin" /> DISPATCHING QUERY…</> : <><Play className="w-6 h-6" /> INITIALIZE SIMULATION</>}</button>
+              </CardGlass>
+            </motion.div>
+          )}
+
+          {phase === "quiz" && questions.length > 0 && (
+            <QuizQuestion key={questions[currentIndex].id} question={questions[currentIndex]} qNumber={currentIndex + 1} total={questions.length} onNext={handleNext} isLast={currentIndex === questions.length - 1} />
+          )}
+
+          {phase === "result" && <ResultScreen results={results} total={questions.length} onRestart={() => setPhase("setup")} />}
+        </div>
     </div>
   );
 }
