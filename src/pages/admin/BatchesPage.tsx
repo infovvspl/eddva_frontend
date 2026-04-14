@@ -4,8 +4,9 @@ import {
   Plus, Loader2, Trash2, Users, X, ChevronDown, ChevronRight,
   UserPlus, Upload, Download, Copy, Check, AlertCircle,
   Layout, Calendar, GraduationCap, BarChart3, Edit2,
-  Trophy, TrendingDown, TrendingUp, DollarSign, CheckCircle2,
-  PauseCircle, PlayCircle, ImageIcon,
+  Trophy, TrendingDown, TrendingUp, CheckCircle2,
+  PauseCircle, PlayCircle, ImageIcon, IndianRupee, BadgePercent,
+  Building2, Sparkles, Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -955,7 +956,8 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
     class: batch.class ?? "11",
     teacherId: batch.teacher?.id ?? batch.teacherId ?? "",
     maxStudents: batch.maxStudents ?? 60,
-    feeAmount: batch.feeAmount ?? "",
+    isPaid: batch.isPaid ?? (batch.feeAmount ? true : false),
+    feeAmount: batch.feeAmount ? String(batch.feeAmount) : "",
     startDate: batch.startDate ? batch.startDate.split("T")[0] : "",
     endDate: batch.endDate ? batch.endDate.split("T")[0] : "",
     thumbnailUrl: batch.thumbnailUrl ?? "",
@@ -967,7 +969,6 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
   const handleEditThumbFile = async (file: File) => {
     if (file.size > 5 * 1024 * 1024) { toast.error("Thumbnail must be 5 MB or smaller"); return; }
     setEditThumbUploading(true);
-    // Show local preview immediately
     const reader = new FileReader();
     reader.onload = e => setEditThumbPreview(e.target?.result as string);
     reader.readAsDataURL(file);
@@ -993,7 +994,8 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
         class: form.class,
         teacherId: form.teacherId || undefined,
         maxStudents: form.maxStudents,
-        feeAmount: form.feeAmount ? Number(form.feeAmount) : undefined,
+        isPaid: form.isPaid,
+        feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         thumbnailUrl: form.thumbnailUrl || undefined,
@@ -1006,99 +1008,211 @@ function EditBatchModal({ batch, teachers, onClose }: { batch: any; teachers: an
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-black text-slate-900">Edit Course</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
-        </div>
-        {error && (
-          <div className="flex items-start gap-2 bg-red-500/5 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
-            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-red-600">{error}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-slate-900 flex items-center justify-center">
+              <Edit2 className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900">Edit Course</h3>
+              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[240px]">{batch.name}</p>
+            </div>
           </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Batch Name *</label>
-              <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
-            </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-5">
+            {error && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {/* Basic Info */}
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Exam Target</label>
-              <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                <option value="jee">JEE</option>
-                <option value="neet">NEET</option>
-                <option value="both">Both / General</option>
-              </select>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Course Name *</label>
+                  <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                    className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Exam Target</label>
+                  <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                    <option value="jee">JEE</option>
+                    <option value="neet">NEET</option>
+                    <option value="both">Both / General</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Class Level</label>
+                  <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                    {["8","9","10","11","12","DROPPER"].map(c => (
+                      <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Assign Teacher</label>
+                  <select value={form.teacherId} onChange={e => setForm({ ...form, teacherId: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                    <option value="">None</option>
+                    {teachers.map((t: any) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Max Students</label>
+                  <input type="number" value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Start Date</label>
+                  <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">End Date</label>
+                  <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+              </div>
             </div>
+
+            {/* Pricing */}
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Class Level</label>
-              <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                {["8","9","10","11","12","DROPPER"].map(c => (
-                  <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
-                ))}
-              </select>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Pricing</p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button type="button"
+                  onClick={() => setForm({ ...form, isPaid: false, feeAmount: "" })}
+                  className={`relative flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${
+                    !form.isPaid ? "border-emerald-400 bg-emerald-50/60" : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                    !form.isPaid ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-400"
+                  }`}>
+                    <Unlock className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className={`text-xs font-black ${!form.isPaid ? "text-emerald-700" : "text-slate-500"}`}>Free</p>
+                    <p className="text-[10px] text-slate-400">Open access</p>
+                  </div>
+                  {!form.isPaid && <div className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-emerald-500 flex items-center justify-center"><Check className="w-2 h-2 text-white" /></div>}
+                </button>
+                <button type="button"
+                  onClick={() => setForm({ ...form, isPaid: true })}
+                  className={`relative flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${
+                    form.isPaid ? "border-blue-400 bg-blue-50/60" : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                    form.isPaid ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
+                  }`}>
+                    <IndianRupee className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className={`text-xs font-black ${form.isPaid ? "text-blue-700" : "text-slate-500"}`}>Paid</p>
+                    <p className="text-[10px] text-slate-400">Set a fee</p>
+                  </div>
+                  {form.isPaid && <div className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-blue-600 flex items-center justify-center"><Check className="w-2 h-2 text-white" /></div>}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {form.isPaid && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-3">
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                      <input type="number" required={form.isPaid} min={1} placeholder="Enter fee amount"
+                        value={form.feeAmount} onChange={e => setForm({ ...form, feeAmount: e.target.value })}
+                        className="w-full h-11 pl-8 pr-4 bg-white border-2 border-blue-200 rounded-xl text-sm font-black text-slate-800 outline-none focus:border-blue-500 transition-all placeholder:font-normal placeholder:text-slate-400" />
+                    </div>
+                    {form.feeAmount && Number(form.feeAmount) > 0 && (() => {
+                      const total = Number(form.feeAmount);
+                      const platform = Math.round(total * 0.2 * 100) / 100;
+                      const institute = Math.round(total * 0.8 * 100) / 100;
+                      return (
+                        <div className="rounded-xl overflow-hidden border border-slate-100">
+                          <div className="bg-slate-900 px-3 py-2 flex items-center gap-2">
+                            <BadgePercent className="w-3 h-3 text-slate-400" />
+                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Revenue Split</span>
+                          </div>
+                          <div className="flex h-1.5">
+                            <div className="bg-amber-400" style={{ width: "20%" }} />
+                            <div className="bg-emerald-500 flex-1" />
+                          </div>
+                          <div className="p-3 grid grid-cols-2 gap-2 bg-white">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                                <Building2 className="w-3 h-3 text-amber-600" />
+                              </div>
+                              <div>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Platform (20%)</p>
+                                <p className="text-sm font-black text-amber-600">₹{platform.toLocaleString("en-IN")}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                                <GraduationCap className="w-3 h-3 text-emerald-600" />
+                              </div>
+                              <div>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">You Earn (80%)</p>
+                                <p className="text-sm font-black text-emerald-600">₹{institute.toLocaleString("en-IN")}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Assign Teacher</label>
-              <select value={form.teacherId} onChange={e => setForm({ ...form, teacherId: e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                <option value="">None</option>
-                {teachers.map((t: any) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Max Students</label>
-              <input type="number" value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Fee Amount (₹)</label>
-              <input type="number" placeholder="0" value={form.feeAmount} onChange={e => setForm({ ...form, feeAmount: e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Start Date</label>
-              <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">End Date</label>
-              <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
-                className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary" />
-            </div>
+
             {/* Thumbnail */}
-            <div className="sm:col-span-2">
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block flex items-center gap-1">
-                <ImageIcon className="w-3 h-3" /> Course Thumbnail
-              </label>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Thumbnail</p>
               <input ref={editThumbRef} type="file" accept="image/*" className="hidden"
                 onChange={e => { if (e.target.files?.[0]) handleEditThumbFile(e.target.files[0]); }} />
               <button type="button" onClick={() => editThumbRef.current?.click()}
-                className="w-full h-24 flex flex-col items-center justify-center gap-2 bg-secondary border border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors overflow-hidden relative">
+                className="w-full h-24 flex flex-col items-center justify-center gap-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-sm text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden relative">
                 {editThumbUploading ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /><span className="text-xs">Uploading…</span></>
                 ) : editThumbPreview ? (
                   <>
                     <img src={editThumbPreview} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="" />
-                    <span className="relative z-10 flex items-center gap-1 text-xs font-semibold bg-white/80 px-3 py-1 rounded-lg">
+                    <span className="relative z-10 flex items-center gap-1 text-xs font-bold bg-white/90 px-3 py-1.5 rounded-xl shadow-sm">
                       <ImageIcon className="w-3.5 h-3.5" /> Change thumbnail
                     </span>
                   </>
                 ) : (
-                  <><ImageIcon className="w-6 h-6 opacity-40" /><span className="text-xs">Click to upload thumbnail</span></>
+                  <><ImageIcon className="w-6 h-6 opacity-30" /><span className="text-xs font-semibold">Click to upload thumbnail</span></>
                 )}
               </button>
             </div>
           </div>
-          <div className="flex gap-3 pt-1">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-            <Button type="submit" disabled={updateBatch.isPending || editThumbUploading} className="flex-1">
+
+          {/* Footer */}
+          <div className="px-6 pb-6 flex gap-3">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-2xl h-11">Cancel</Button>
+            <Button type="submit" disabled={updateBatch.isPending || editThumbUploading || (form.isPaid && !form.feeAmount)}
+              className="flex-1 rounded-2xl h-11 font-black" style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
               {updateBatch.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
             </Button>
           </div>
@@ -1123,12 +1237,11 @@ const BatchesPage = () => {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     name: "", examTarget: "jee", class: "11", teacherId: "",
-    maxStudents: 60, feeAmount: "", startDate: "", endDate: "",
+    maxStudents: 60, isPaid: false, feeAmount: "", startDate: "", endDate: "",
     thumbnailUrl: "",
   });
   const [thumbPreview, setThumbPreview] = useState<string>("");
   const [thumbFile, setThumbFile] = useState<File | null>(null);
-  const [thumbUploading, setThumbUploading] = useState(false);
   const thumbInputRef = useRef<HTMLInputElement>(null);
 
   const [expandedId, setExpandedId] = useState<string>("");
@@ -1148,7 +1261,8 @@ const BatchesPage = () => {
         class: form.class,
         teacherId: form.teacherId || undefined,
         maxStudents: form.maxStudents,
-        feeAmount: form.feeAmount ? Number(form.feeAmount) : undefined,
+        isPaid: form.isPaid,
+        feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
       });
@@ -1160,7 +1274,7 @@ const BatchesPage = () => {
           toast.error("Course created but thumbnail upload failed");
         }
       }
-      setForm({ name: "", examTarget: "jee", class: "11", teacherId: "", maxStudents: 60, feeAmount: "", startDate: "", endDate: "", thumbnailUrl: "" });
+      setForm({ name: "", examTarget: "jee", class: "11", teacherId: "", maxStudents: 60, isPaid: false, feeAmount: "", startDate: "", endDate: "", thumbnailUrl: "" });
       setThumbPreview("");
       setThumbFile(null);
       setShowForm(false);
@@ -1228,75 +1342,256 @@ const BatchesPage = () => {
       <AnimatePresence>
         {showForm && (
           <motion.form
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
             onSubmit={handleCreate}
-            className="bg-white border border-slate-100 rounded-3xl p-6 space-y-4 shadow-sm"
+            className="bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-200/60 overflow-hidden"
           >
-            <h3 className="font-black text-slate-900">New Course</h3>
-            {formError && (
-              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
-                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-600">{formError}</p>
+            {/* Form header */}
+            <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                  <Sparkles className="w-4.5 h-4.5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base">New Course</h3>
+                  <p className="text-[11px] text-slate-400 font-medium">Fill in the details to launch your course</p>
+                </div>
               </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <input required placeholder="Course Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
-              <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
-                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                <option value="jee">JEE</option>
-                <option value="neet">NEET</option>
-                <option value="both">Both / General</option>
-              </select>
-              <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                {["8", "9", "10", "11", "12", "DROPPER"].map(c => (
-                  <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
-                ))}
-              </select>
-              <select value={form.teacherId} onChange={e => setForm({ ...form, teacherId: e.target.value })}
-                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                <option value="">Assign Teacher (optional)</option>
-                {teacherList.map((t: any) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
-              </select>
-              <input type="number" placeholder="Max Students (default 60)" value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
-                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
-              <input type="number" placeholder="Fee Amount ₹ (optional)" value={form.feeAmount} onChange={e => setForm({ ...form, feeAmount: e.target.value })}
-                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400 px-1 font-semibold">Start Date</label>
-                <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
-                  className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
+              <button type="button" onClick={() => { setShowForm(false); setFormError(""); }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {formError && (
+                <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                  <p className="text-sm text-red-600">{formError}</p>
+                </div>
+              )}
+
+              {/* Section 1: Basic Info */}
+              <div>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Details</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Course Name *</label>
+                    <input required placeholder="e.g. JEE 2026 Batch A" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Exam Target</label>
+                    <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                      <option value="jee">JEE</option>
+                      <option value="neet">NEET</option>
+                      <option value="both">Both / General</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Class Level</label>
+                    <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                      {["8","9","10","11","12","DROPPER"].map(c => (
+                        <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Assign Teacher</label>
+                    <select value={form.teacherId} onChange={e => setForm({ ...form, teacherId: e.target.value })}
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                      <option value="">None (optional)</option>
+                      {teacherList.map((t: any) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Max Students</label>
+                    <input type="number" value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Start Date</label>
+                      <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
+                        className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 mb-1.5 block">End Date</label>
+                      <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
+                        className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400 px-1 font-semibold">End Date</label>
-                <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
-                  className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
+
+              {/* Section 2: Pricing — the beautiful part */}
+              <div>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Pricing</p>
+                {/* Free / Paid toggle */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, isPaid: false, feeAmount: "" })}
+                    className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left ${
+                      !form.isPaid
+                        ? "border-emerald-400 bg-emerald-50/60 shadow-sm shadow-emerald-100"
+                        : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                      !form.isPaid ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" : "bg-slate-200 text-slate-400"
+                    }`}>
+                      <Unlock className="w-4.5 h-4.5" />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-black transition-colors ${!form.isPaid ? "text-emerald-700" : "text-slate-500"}`}>Free</p>
+                      <p className="text-[11px] text-slate-400 font-medium">Open enrollment</p>
+                    </div>
+                    {!form.isPaid && (
+                      <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, isPaid: true })}
+                    className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left ${
+                      form.isPaid
+                        ? "border-blue-400 bg-blue-50/60 shadow-sm shadow-blue-100"
+                        : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                      form.isPaid ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-slate-200 text-slate-400"
+                    }`}>
+                      <IndianRupee className="w-4.5 h-4.5" />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-black transition-colors ${form.isPaid ? "text-blue-700" : "text-slate-500"}`}>Paid</p>
+                      <p className="text-[11px] text-slate-400 font-medium">Set enrollment fee</p>
+                    </div>
+                    {form.isPaid && (
+                      <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Paid: amount + revenue breakdown */}
+                <AnimatePresence>
+                  {form.isPaid && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-3">
+                        {/* Amount input */}
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                          <input
+                            type="number"
+                            required={form.isPaid}
+                            min={1}
+                            placeholder="Enter course fee amount"
+                            value={form.feeAmount}
+                            onChange={e => setForm({ ...form, feeAmount: e.target.value })}
+                            className="w-full h-12 pl-8 pr-4 bg-white border-2 border-blue-200 rounded-2xl text-base font-black text-slate-800 outline-none focus:border-blue-500 transition-all placeholder:font-normal placeholder:text-slate-400"
+                          />
+                        </div>
+
+                        {/* Revenue split card */}
+                        {form.feeAmount && Number(form.feeAmount) > 0 && (() => {
+                          const total = Number(form.feeAmount);
+                          const platform = Math.round(total * 0.2 * 100) / 100;
+                          const institute = Math.round(total * 0.8 * 100) / 100;
+                          return (
+                            <div className="rounded-2xl overflow-hidden border border-slate-100">
+                              <div className="bg-slate-900 px-4 py-2.5 flex items-center gap-2">
+                                <BadgePercent className="w-3.5 h-3.5 text-slate-400" />
+                                <span className="text-[11px] font-black text-slate-300 uppercase tracking-widest">Revenue Split</span>
+                              </div>
+                              <div className="bg-white">
+                                {/* Bar visualization */}
+                                <div className="flex h-2">
+                                  <div className="bg-amber-400 transition-all" style={{ width: "20%" }} />
+                                  <div className="bg-emerald-500 transition-all flex-1" />
+                                </div>
+                                <div className="p-4 grid grid-cols-2 gap-3">
+                                  <div className="flex items-start gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                                      <Building2 className="w-3.5 h-3.5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Platform (20%)</p>
+                                      <p className="text-lg font-black text-amber-600">₹{platform.toLocaleString("en-IN")}</p>
+                                      <p className="text-[10px] text-slate-400">EDDVA platform fee</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                                      <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Earnings (80%)</p>
+                                      <p className="text-lg font-black text-emerald-600">₹{institute.toLocaleString("en-IN")}</p>
+                                      <p className="text-[10px] text-slate-400">Goes to your institute</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              {/* Thumbnail picker */}
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400 px-1 font-semibold">Course Thumbnail</label>
+
+              {/* Section 3: Thumbnail */}
+              <div>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Course Thumbnail</p>
                 <input ref={thumbInputRef} type="file" accept="image/*" className="hidden"
                   onChange={e => { if (e.target.files?.[0]) handleThumbFile(e.target.files[0]); }} />
                 <button type="button" onClick={() => thumbInputRef.current?.click()}
-                  className="h-11 flex items-center justify-center gap-2 bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors overflow-hidden relative">
-                  {thumbUploading ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
-                  ) : thumbPreview ? (
+                  className="w-full h-28 flex flex-col items-center justify-center gap-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-sm text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition-all overflow-hidden relative">
+                  {thumbPreview ? (
                     <>
-                      <img src={thumbPreview} className="absolute inset-0 w-full h-full object-cover opacity-40" alt="" />
-                      <span className="relative z-10 flex items-center gap-1"><ImageIcon className="w-4 h-4" /> Change image</span>
+                      <img src={thumbPreview} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="" />
+                      <span className="relative z-10 flex items-center gap-1.5 text-xs font-bold bg-white/90 px-3 py-1.5 rounded-xl shadow-sm">
+                        <ImageIcon className="w-3.5 h-3.5" /> Change thumbnail
+                      </span>
                     </>
                   ) : (
-                    <><ImageIcon className="w-4 h-4" /> Upload thumbnail</>
+                    <>
+                      <ImageIcon className="w-7 h-7 opacity-30" />
+                      <span className="text-xs font-semibold">Click to upload a thumbnail (optional)</span>
+                    </>
                   )}
                 </button>
               </div>
-              <button type="submit" disabled={createBatch.isPending || !form.name || thumbUploading}
-                className="h-11 self-end rounded-2xl text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity hover:opacity-90"
-                style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
-                {createBatch.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Course"}
-              </button>
+
+              {/* Submit */}
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => { setShowForm(false); setFormError(""); }}
+                  className="flex-1 h-11 rounded-2xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">
+                  Cancel
+                </button>
+                <button type="submit"
+                  disabled={createBatch.isPending || !form.name || (form.isPaid && !form.feeAmount)}
+                  className="flex-1 h-11 rounded-2xl text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:opacity-90 hover:shadow-lg hover:shadow-blue-200"
+                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                  {createBatch.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                    <><Sparkles className="w-4 h-4" /> Create Course</>
+                  )}
+                </button>
+              </div>
             </div>
           </motion.form>
         )}
@@ -1332,11 +1627,22 @@ const BatchesPage = () => {
                 <CourseThumbnail name={b.name} examTarget={b.examTarget} imageUrl={b.thumbnailUrl} className="w-16 h-16" />
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <p className="font-black text-slate-900 text-base truncate group-hover:text-blue-700 transition-colors">{b.name}</p>
                     <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${sc.pill}`}>
                       {b.status}
                     </span>
+                    {/* Paid / Free badge */}
+                    {b.isPaid ? (
+                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                        <IndianRupee className="w-2.5 h-2.5" />
+                        {Number(b.feeAmount).toLocaleString("en-IN")}
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        FREE
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] text-slate-400 font-semibold uppercase mb-2">
                     {b.examTarget?.toUpperCase()} · Class {b.class}

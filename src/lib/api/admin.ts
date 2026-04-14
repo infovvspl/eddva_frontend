@@ -22,7 +22,10 @@ export interface Batch {
   teacherId: string;
   teacher?: { id: string; fullName: string };
   maxStudents: number;
-  feeAmount: number;
+  isPaid: boolean;
+  feeAmount: number | null;
+  /** Platform fee percentage (default 20) */
+  platformFeePercent: number;
   status: string;
   startDate: string;
   endDate: string;
@@ -40,6 +43,7 @@ export interface CreateBatchPayload {
   class: string;
   teacherId?: string;
   maxStudents?: number;
+  isPaid?: boolean;
   feeAmount?: number;
   startDate?: string;
   endDate?: string;
