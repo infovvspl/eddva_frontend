@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BattleArena
  *
  * Stages:
@@ -33,19 +33,20 @@ import { tokenStorage } from "@/lib/api/client";
 import { toast } from "sonner";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
-const BLUE   = "#2563EB";
+const BLUE   = "#4F46E5"; // Indigo-600
 const PURPLE = "#7C3AED";
 const CYAN   = "#06B6D4";
 const AMBER  = "#F59E0B";
 const EMERALD = "#10B981";
-const SLATE  = "#64748B";
+const SLATE  = "#94A3B8";
 
 const CardGlass = ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
   <motion.div 
-    whileHover={onClick ? { y: -5, scale: 1.01 } : {}}
+    whileHover={onClick ? { y: -2, scale: 1.005 } : {}}
+    whileTap={onClick ? { scale: 0.995 } : {}}
     onClick={onClick}
     className={cn(
-      "bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] shadow-2xl relative overflow-hidden transition-all duration-500",
+      "bg-white/30 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] relative overflow-hidden transition-all duration-500",
       onClick ? "cursor-pointer" : "",
       className
     )}
@@ -89,50 +90,50 @@ interface ModeConfig {
 const MODES: ModeConfig[] = [
   {
     mode: "quick_duel",
-    title: "Quick 1v1 Duel",
-    desc: "Instant matchmaking",
-    detail: "5 questions · 30s each",
+    title: "Quick Duel",
+    desc: "Matchmaking active",
+    detail: "5 modules · 30s period",
     icon: Zap,
-    iconBg: "bg-blue-600/10",
-    iconText: "text-blue-600",
-    accent: "hover:border-blue-600/40",
+    iconBg: "bg-indigo-50",
+    iconText: "text-indigo-600",
+    accent: "hover:border-indigo-100",
     questions: 5,
     seconds: 30,
   },
   {
     mode: "topic_battle",
-    title: "Topic Battle",
-    desc: "Pick your battlefield",
-    detail: "10 questions · 45s each",
+    title: "Sector Battle",
+    desc: "Define battlefield",
+    detail: "10 modules · 45s period",
     icon: Target,
-    iconBg: "bg-blue-500/10",
-    iconText: "text-blue-400",
-    accent: "hover:border-blue-500/40",
+    iconBg: "bg-blue-50",
+    iconText: "text-blue-500",
+    accent: "hover:border-blue-100",
     questions: 10,
     seconds: 45,
   },
   {
     mode: "daily",
-    title: "Daily Battle",
-    desc: "Everyone vs everyone",
-    detail: "Scheduled event · big prizes",
+    title: "Daily Probe",
+    desc: "Global sync",
+    detail: "Scheduled event · Core yield",
     icon: Globe,
-    iconBg: "bg-violet-500/10",
-    iconText: "text-violet-400",
-    accent: "hover:border-violet-500/40",
-    badge: "DAILY",
+    iconBg: "bg-violet-50",
+    iconText: "text-violet-500",
+    accent: "hover:border-violet-100",
+    badge: "GLOBAL",
     questions: 15,
     seconds: 60,
   },
   {
     mode: "challenge_friend",
-    title: "Challenge Friend",
-    desc: "Share a room code",
-    detail: "10 questions · your rules",
+    title: "Sync Friend",
+    desc: "Protocol share",
+    detail: "10 modules · Direct link",
     icon: UserPlus,
-    iconBg: "bg-emerald-500/10",
-    iconText: "text-emerald-400",
-    accent: "hover:border-emerald-500/40",
+    iconBg: "bg-emerald-50",
+    iconText: "text-emerald-500",
+    accent: "hover:border-emerald-100",
     questions: 10,
     seconds: 45,
   },
@@ -644,21 +645,21 @@ function BattleInProgress({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
         
         {/* Unit A: Player */}
-        <CardGlass className="p-8 border-blue-500/20 bg-blue-500/[0.02]">
+        <CardGlass className="p-8 border-indigo-100 bg-white/40">
            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-2xl bg-white border-2 border-blue-100 flex items-center justify-center text-2xl font-black text-slate-900 mb-4 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm">
                  {myName.charAt(0).toUpperCase()}
               </div>
-              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Unit Paragon</p>
-              <p className="text-lg font-black text-slate-900 uppercase italic truncate max-w-full mb-6">{myName}</p>
+              <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest mb-1">UNIT PARAGON</p>
+              <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{myName}</p>
               
               <div className="w-full space-y-2">
-                 <div className="flex justify-between text-[11px] font-black text-slate-400 uppercase italic">
-                    <span>Dominance</span>
-                    <span className="text-blue-600">{myScore}</span>
+                 <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                    <span>DOMINANCE</span>
+                    <span className="text-indigo-600">{myScore}</span>
                  </div>
-                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5">
-                    <motion.div animate={{ width: `${(myScore/totalRounds)*100}%` }} className="h-full bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)]" />
+                 <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                    <motion.div animate={{ width: `${(myScore/totalRounds)*100}%` }} className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
                  </div>
               </div>
            </div>
@@ -668,23 +669,23 @@ function BattleInProgress({
         <div className="flex flex-col items-center justify-center gap-6">
            <div className="relative">
               <motion.div 
-                animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full"
+                animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-x-[-20%] inset-y-[-20%] bg-indigo-500/5 blur-2xl rounded-full"
               />
-              <div className="relative w-28 h-28 rounded-full border-4 border-slate-900 flex flex-col items-center justify-center bg-white shadow-2xl z-10">
-                 <p className={cn("text-3xl font-black tabular-nums", timeLeft <= 5 ? "text-red-500 animate-pulse" : "text-slate-900")}>
+              <div className="relative w-24 h-24 rounded-full border border-slate-100 flex flex-col items-center justify-center bg-white shadow-xl z-10 transition-all duration-500">
+                 <p className={cn("text-2xl font-bold tabular-nums", timeLeft <= 5 ? "text-red-500 animate-pulse" : "text-slate-800")}>
                     {timeLeft}
                  </p>
-                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Seconds</p>
+                 <p className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">PERIOD</p>
               </div>
            </div>
 
            <div className="flex flex-col items-center gap-2">
-              <div className="px-5 py-2 rounded-full bg-white text-gray-900 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
-                 Nexus Round {roundNumber}/{totalRounds}
+              <div className="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-slate-500 text-[8px] font-bold uppercase tracking-widest shadow-sm">
+                 VECTOR {roundNumber}/{totalRounds}
               </div>
               {topicLabel && (
-                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full">
+                <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-50/50 border border-indigo-100/50 px-3 py-1 rounded-full">
                    {topicLabel}
                 </span>
               )}
@@ -692,21 +693,21 @@ function BattleInProgress({
         </div>
 
         {/* Unit B: Opponent */}
-        <CardGlass className="p-8 border-red-500/20 bg-red-500/[0.02]">
+        <CardGlass className="p-8 border-slate-100 bg-white/40">
            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-2xl bg-white border-2 border-red-100 flex items-center justify-center text-2xl font-black text-slate-900 mb-4 shadow-xl">
-                 {isBot ? <Sparkles className="w-8 h-8 text-purple-600" /> : opponentName.charAt(0).toUpperCase()}
+              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm">
+                 {isBot ? <Sparkles className="w-6 h-6 text-indigo-400" /> : opponentName.charAt(0).toUpperCase()}
               </div>
-              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">{isBot ? "Neural Construct" : "Enemy Paragon"}</p>
-              <p className="text-lg font-black text-slate-900 uppercase italic truncate max-w-full mb-6">{isBot ? "Battle Bot" : opponentName}</p>
+              <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-1">{isBot ? "NEURAL CONSTRUCT" : "ENEMY PARAGON"}</p>
+              <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{isBot ? "Battle Bot" : opponentName}</p>
 
               <div className="w-full space-y-2">
-                 <div className="flex justify-between text-[11px] font-black text-slate-400 uppercase italic">
-                    <span>Dominance</span>
-                    <span className="text-red-600">{oppScore}</span>
+                 <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                    <span>DOMINANCE</span>
+                    <span className="text-slate-500">{oppScore}</span>
                  </div>
-                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5">
-                    <motion.div animate={{ width: `${(oppScore/totalRounds)*100}%` }} className="h-full bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.4)]" />
+                 <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                    <motion.div animate={{ width: `${(oppScore/totalRounds)*100}%` }} className="h-full bg-slate-400" />
                  </div>
               </div>
            </div>
@@ -721,10 +722,10 @@ function BattleInProgress({
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
             className="space-y-8"
           >
-            <CardGlass className="p-12 border-white/80 text-center">
+            <CardGlass className="p-12 border-white/80 text-center bg-white/40">
                <div className="max-w-3xl mx-auto">
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight italic">
-                    "{currentQuestion.text}"
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-800 leading-tight tracking-tight">
+                    {currentQuestion.text}
                   </h2>
                </div>
             </CardGlass>
@@ -739,34 +740,34 @@ function BattleInProgress({
                 return (
                   <motion.button
                     key={opt.id}
-                    whileHover={!revealed && !answerSentRef.current ? { y: -4, scale: 1.02 } : {}}
-                    whileTap={!revealed && !answerSentRef.current ? { scale: 0.98 } : {}}
+                    whileHover={!revealed && !answerSentRef.current ? { y: -2 } : {}}
+                    whileTap={!revealed && !answerSentRef.current ? { scale: 0.99 } : {}}
                     onClick={() => !revealed && !answerSentRef.current && handleAnswer(opt.id)}
                     disabled={revealed || answerSentRef.current}
                     className={cn(
-                      "relative w-full text-left px-8 py-6 rounded-[2rem] border-2 transition-all group overflow-hidden",
-                      isCorrect  ? "border-emerald-500 bg-emerald-50 shadow-emerald-500/10" :
-                      isWrong    ? "border-red-500 bg-red-50 shadow-red-500/10" :
-                      isSelected ? "border-blue-600 bg-blue-50 shadow-blue-500/10" :
-                                   "border-white bg-white/40 backdrop-blur-md hover:border-blue-200 shadow-xl"
+                      "relative w-full text-left px-8 py-5 rounded-2xl border transition-all group overflow-hidden",
+                      isCorrect  ? "border-emerald-500 bg-emerald-50 shadow-sm" :
+                      isWrong    ? "border-red-500 bg-red-50 shadow-sm" :
+                      isSelected ? "border-indigo-600 bg-indigo-50/50 shadow-sm" :
+                                   "border-slate-100 bg-white shadow-sm hover:border-indigo-200"
                     )}
                   >
                     <div className="flex items-center gap-5 relative z-10">
                        <div className={cn(
-                         "w-10 h-10 rounded-xl border-2 flex items-center justify-center text-xs font-black shrink-0 transition-colors",
+                         "w-9 h-9 rounded-xl border flex items-center justify-center text-[10px] font-bold shrink-0 transition-colors",
                          isCorrect  ? "bg-emerald-500 text-white border-emerald-500" :
                          isWrong    ? "bg-red-500 text-white border-red-500" :
-                         isSelected ? "bg-blue-600 text-white border-blue-600" :
-                                      "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-blue-200"
+                         isSelected ? "bg-indigo-600 text-white border-indigo-600" :
+                                      "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-indigo-200"
                        )}>
                           {label}
                        </div>
-                       <span className={cn("text-base font-black uppercase italic tracking-tight", (revealed || isSelected) ? "text-slate-900" : "text-slate-600")}>
+                       <span className={cn("text-sm font-bold tracking-tight", (revealed || isSelected) ? "text-slate-800" : "text-slate-500")}>
                          {opt.text}
                        </span>
                     </div>
-                    {isCorrect && <CheckCircle2 className="absolute right-8 top-1/2 -translate-y-1/2 w-6 h-6 text-emerald-500" />}
-                    {isWrong   && <XCircle      className="absolute right-8 top-1/2 -translate-y-1/2 w-6 h-6 text-red-500" />}
+                    {isCorrect && <CheckCircle2 className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />}
+                    {isWrong   && <XCircle      className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />}
                   </motion.button>
                 );
               })}
@@ -850,81 +851,79 @@ function ResultScreen({
 
   return (
     <div className="max-w-4xl mx-auto py-12">
-      <CardGlass className="p-12 text-center border-white/80 overflow-hidden">
+      <CardGlass className="p-12 text-center border-slate-100 bg-white/60 overflow-hidden relative">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
+        
         <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="relative z-10"
         >
            <div className="flex justify-center mb-10">
               <div className={cn(
-                "w-32 h-32 rounded-[3rem] flex items-center justify-center shadow-2xl relative",
-                isWinner ? "bg-amber-400 text-white shadow-amber-500/40" : "bg-white text-white shadow-slate-900/40"
+                "w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg relative",
+                isWinner ? "bg-amber-50 text-amber-500 border border-amber-100" : "bg-slate-50 text-slate-400 border border-slate-100"
               )}>
-                 {isWinner ? <Trophy className="w-16 h-16" /> : <Swords className="w-16 h-16" />}
-                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border-2 border-dashed border-current opacity-20 rounded-[3.5rem]" />
+                 {isWinner ? <Trophy className="w-12 h-12" /> : <Swords className="w-12 h-12" />}
+                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border border-dashed border-current opacity-10 rounded-[2.5rem]" />
               </div>
            </div>
 
-           <h2 className={cn("text-5xl font-black uppercase italic tracking-tighter mb-4", isWinner ? "text-amber-500" : "text-slate-900")}>
-              {isWinner ? "Combat Zenith" : "Sector Compromised"}
+           <h2 className={cn("text-3xl font-bold tracking-tight mb-2", isWinner ? "text-amber-600" : "text-slate-800")}>
+              {isWinner ? "Protocol Excellence" : "Node Compromised"}
            </h2>
-           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.4em] mb-12">
-              {isWinner ? "Neural Link Dominance Established" : "Defensive Node Re-calibration Required"}
+           <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-12">
+              {isWinner ? "LUCID DOMINANCE ESTABLISHED" : "RE-CALIBRATION REQUIRED"}
            </p>
 
            {/* Scoreboard */}
-           <div className="grid grid-cols-3 gap-12 items-center mb-16">
+           <div className="grid grid-cols-3 gap-12 items-center mb-16 max-w-lg mx-auto">
               <div className="text-right">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">Your Impact</p>
-                 <p className="text-4xl font-black text-slate-900">{myRoundsWon}</p>
+                 <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-2">YOU</p>
+                 <p className="text-3xl font-bold text-slate-800">{myRoundsWon}</p>
               </div>
               <div className="flex flex-col items-center">
-                 <div className="w-px h-12 bg-slate-100" />
-                 <span className="text-xs font-black text-gray-600 my-2">VS</span>
-                 <div className="w-px h-12 bg-slate-100" />
+                 <div className="w-px h-10 bg-slate-100" />
+                 <span className="text-[9px] font-bold text-slate-400 my-2">VS</span>
+                 <div className="w-px h-10 bg-slate-100" />
               </div>
               <div className="text-left">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">Enemy Impact</p>
-                 <p className="text-4xl font-black text-slate-900">{opponentRoundsWon}</p>
+                 <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-2">OPPONENT</p>
+                 <p className="text-3xl font-bold text-slate-800">{opponentRoundsWon}</p>
               </div>
            </div>
 
            {/* Rewards Grid */}
-           <div className="grid grid-cols-2 gap-6 mb-16">
-              <div className="p-6 rounded-[2rem] bg-blue-50 border border-blue-100 flex flex-col items-center">
-                 <Zap className="w-6 h-6 text-blue-600 mb-2" />
-                 <p className="text-2xl font-black text-slate-900">+{xpEarned}</p>
-                 <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Neural XP Sync</p>
+           <div className="grid grid-cols-2 gap-4 mb-16 max-w-md mx-auto">
+              <div className="p-6 rounded-3xl bg-indigo-50/50 border border-indigo-100/50 flex flex-col items-center shadow-sm">
+                 <Zap className="w-5 h-5 text-indigo-500 mb-2" />
+                 <p className="text-xl font-bold text-slate-800">+{xpEarned}</p>
+                 <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest">YIELD XP</p>
               </div>
-              <div className="p-6 rounded-[2rem] bg-purple-50 border border-purple-100 flex flex-col items-center">
-                 <TrendingUp className="w-6 h-6 text-purple-600 mb-2" />
-                 <p className="text-2xl font-black text-slate-900">{newElo}</p>
-                 <p className="text-[9px] font-black text-purple-600 uppercase tracking-widest">ELO Resonance</p>
+              <div className="p-6 rounded-3xl bg-slate-50/50 border border-slate-100/50 flex flex-col items-center shadow-sm">
+                 <TrendingUp className="w-5 h-5 text-slate-400 mb-2" />
+                 <p className="text-xl font-bold text-slate-800">{newElo}</p>
+                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">ELO POS</p>
               </div>
            </div>
 
            {/* Actions */}
            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <motion.button
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                 onClick={onPlayAgain}
-                className="w-full sm:w-auto px-12 py-5 rounded-2xl bg-white text-white text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-blue-600 transition-all"
+                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 text-white text-[9px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-100 transition-all"
               >
-                 Return to Arena
+                 RE-INITIATE LINK
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                 onClick={onHome}
-                className="w-full sm:w-auto px-12 py-5 rounded-2xl bg-white border border-slate-100 text-slate-900 text-xs font-black uppercase tracking-widest shadow-xl hover:border-blue-200 transition-all"
+                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-white border border-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all"
               >
-                 Identity Hub
+                 LEAVE ARENA
               </motion.button>
            </div>
         </motion.div>
-        
-        {/* Decorative Background Elements */}
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full -ml-32 -mb-32" />
-        <div className={cn("absolute top-0 right-0 w-80 h-80 blur-[100px] rounded-full -mr-40 -mt-40", isWinner ? "bg-amber-500/10" : "bg-red-500/10")} />
       </CardGlass>
     </div>
   );
@@ -960,28 +959,28 @@ function TopicPicker({
       {/* Header */}
       <div className="flex items-center gap-6">
         <button onClick={onBack}
-          className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-sm group">
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all shadow-sm group">
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
         </button>
         <div>
-          <h2 className="text-3xl font-black text-slate-900 italic uppercase leading-none">Sector<br/><span className="not-italic text-blue-600">Selection</span></h2>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mt-2">Designate combat coordinates via neural curriculum.</p>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none">Sector <span className="text-indigo-600">Designation</span></h2>
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">Designate combat coordinates via neural curriculum.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <CardGlass className="p-8 border-slate-100 space-y-8">
+          <CardGlass className="p-8 border-slate-100 space-y-8 bg-white/40">
             {/* Subject */}
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Curriculum Subject</label>
+              <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Curriculum Subject</label>
               {subLoading ? (
                 <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
               ) : (
                 <select
                   value={subjectId}
                   onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
-                  className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+                  className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
                 >
                   <option value="">Select subject…</option>
                   {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -992,7 +991,7 @@ function TopicPicker({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Chapter */}
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Neural Chapter</label>
+                <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Lattice Chapter</label>
                 {chapLoading && subjectId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
@@ -1000,7 +999,7 @@ function TopicPicker({
                     value={chapterId}
                     onChange={e => { setChapterId(e.target.value); setTopicId(""); }}
                     disabled={!subjectId}
-                    className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
                   >
                     <option value="">Select chapter…</option>
                     {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -1010,7 +1009,7 @@ function TopicPicker({
 
               {/* Topic */}
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Target Topic</label>
+                <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Target Topic</label>
                 {topLoading && chapterId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
@@ -1018,7 +1017,7 @@ function TopicPicker({
                     value={topicId}
                     onChange={e => setTopicId(e.target.value)}
                     disabled={!chapterId}
-                    className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
                   >
                     <option value="">Select topic…</option>
                     {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1029,15 +1028,15 @@ function TopicPicker({
           </CardGlass>
 
           {topicId && selectedTopic && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Button
-                className="w-full h-16 rounded-2xl bg-white border-none text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3"
+                className="w-full h-16 rounded-[2.5rem] bg-slate-900 border-none text-white font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"
                 disabled={!topicId || loading}
                 onClick={() => topicId && selectedTopic && onSelect(topicId, selectedTopic.name)}
               >
                 {loading
-                  ? <><Loader2 className="w-5 h-5 animate-spin" /> Optimizing Link…</>
-                  : <><Swords className="w-5 h-5" /> Initiate Combat Sync</>
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> OPTIMIZING LINK…</>
+                  : <><Swords className="w-4 h-4" /> INITIATE COMBAT SYNC</>
                 }
               </Button>
             </motion.div>
@@ -1045,37 +1044,37 @@ function TopicPicker({
         </div>
 
         <div className="space-y-6">
-          <CardGlass className="p-8 border-blue-100 bg-blue-500/5">
+          <CardGlass className="p-8 border-indigo-100 bg-indigo-50/30">
              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
-                   <Target className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-md">
+                   <Target className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Mission Metadata</h3>
+                <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Protocol Metadata</h3>
              </div>
              
              {selectedTopic ? (
                <div className="space-y-6">
                   <div className="space-y-1">
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Node</p>
-                     <p className="text-lg font-black text-slate-900 leading-tight">{selectedTopic.name}</p>
+                     <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">ACTIVE NODE</p>
+                     <p className="text-base font-bold text-slate-700 leading-tight">{selectedTopic.name}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 pt-6 border-t border-blue-100">
+                  <div className="grid grid-cols-2 gap-4 pt-6 border-t border-indigo-100/50">
                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</p>
-                        <p className="text-sm font-black text-slate-900 tabular-nums">{selectedTopic.estimatedStudyMinutes || 10}m Sync</p>
+                        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">PERIOD</p>
+                        <p className="text-xs font-bold text-slate-700 tabular-nums">{selectedTopic.estimatedStudyMinutes || 10}M SYNC</p>
                      </div>
                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complexity</p>
-                        <div className="flex gap-1 mt-1">
-                           {[1, 2, 3, 4, 5].map(i => <div key={i} className={`h-1.5 w-4 rounded-full ${i <= 3 ? "bg-blue-500" : "bg-blue-200"}`} />)}
+                        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">ENTROPY</p>
+                        <div className="flex gap-1 mt-1.5">
+                           {[1, 2, 3, 4, 5].map(i => <div key={i} className={`h-1 w-3.5 rounded-full ${i <= 3 ? "bg-indigo-500" : "bg-indigo-100"}`} />)}
                         </div>
                      </div>
                   </div>
                </div>
              ) : (
                <div className="py-10 text-center space-y-4">
-                  <Info className="w-8 h-8 text-blue-300 mx-auto opacity-50" />
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Awaiting Designation</p>
+                  <Info className="w-7 h-7 text-indigo-200 mx-auto opacity-40" />
+                  <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">Awaiting Designation</p>
                </div>
              )}
           </CardGlass>
@@ -1109,40 +1108,40 @@ function JoinRoomScreen({
   return (
     <div className="max-w-xl mx-auto py-20 space-y-12">
       <div className="flex flex-col items-center text-center space-y-6">
-        <div className="w-20 h-20 rounded-[2rem] bg-emerald-500 text-white flex items-center justify-center shadow-2xl shadow-emerald-500/20">
-          <UserPlus className="w-10 h-10" />
+        <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-sm">
+          <UserPlus className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">Neural<br/><span className="not-italic text-emerald-600">Join Link</span></h2>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">Synchronize with a designated combat partner via room frequency.</p>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none">Neural <span className="text-indigo-600">Join Link</span></h2>
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">Designate combat coordinates via room frequency.</p>
         </div>
       </div>
 
-      <CardGlass className="p-10 border-emerald-100 flex flex-col items-center space-y-10">
+      <CardGlass className="p-10 border-slate-100 flex flex-col items-center space-y-10 bg-white/40">
         <div className="w-full space-y-4">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center block">Access Frequency Code</label>
+          <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 text-center block">FREQUENCY CODE</label>
           <input
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === "Enter" && handleJoin()}
             maxLength={8}
             placeholder="ALPHA-SYNC"
-            className="h-20 w-full text-center text-4xl font-black tracking-[0.2em] px-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] outline-none focus:border-emerald-500 focus:bg-white transition-all uppercase placeholder:text-gray-800"
+            className="h-16 w-full text-center text-2xl font-bold tracking-[0.2em] px-8 bg-white border border-slate-100 rounded-2xl outline-none focus:border-indigo-500 transition-all uppercase placeholder:text-slate-200 shadow-sm"
           />
         </div>
 
         <Button
-          className="w-full h-16 rounded-2xl bg-white text-white font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3"
+          className="w-full h-14 rounded-2xl bg-slate-900 text-white font-bold uppercase tracking-widest text-[10px] shadow-lg hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"
           disabled={code.trim().length < 4 || joinBattle.isPending}
           onClick={handleJoin}
         >
           {joinBattle.isPending
-            ? <><Loader2 className="w-5 h-5 animate-spin" /> Syncing Node…</>
-            : <><Swords className="w-5 h-5" /> Establish Link</>
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> SYNCING...</>
+            : <><Swords className="w-4 h-4" /> ESTABLISH LINK</>
           }
         </Button>
 
-        <button onClick={onBack} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">
+        <button onClick={onBack} className="text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-500 transition-colors">
           Abort Synchronization
         </button>
       </CardGlass>
@@ -1197,32 +1196,31 @@ function MatchmakingScreen({
     <div className="max-w-xl mx-auto py-20 space-y-12">
        <div className="flex flex-col items-center text-center space-y-10">
           {/* Cinematic Radar */}
-          <div className="relative w-48 h-48">
-            <div className="absolute inset-0 bg-blue-500/5 rounded-full blur-2xl animate-pulse" />
-            {[1, 2, 3].map(i => (
+          <div className="relative w-40 h-40">
+            <div className="absolute inset-x-[-10%] inset-y-[-10%] bg-indigo-500/5 rounded-full blur-2xl animate-pulse" />
+            {[1, 2].map(i => (
               <motion.div key={i}
-                className="absolute inset-0 rounded-full border border-blue-500/20"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1.5, opacity: 0 }}
-                transition={{ duration: 3, delay: i * 1, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 rounded-full border border-indigo-500/10"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1.4, opacity: 0 }}
+                transition={{ duration: 4, delay: i * 2, repeat: Infinity, ease: "linear" }}
               />
             ))}
-            <div className="absolute inset-0 rounded-[3rem] bg-white border border-slate-100 shadow-2xl flex items-center justify-center group overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent" />
-               <mode.icon className={cn("w-16 h-16 relative z-10 transition-transform group-hover:scale-110", mode.iconText)} />
-               <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -inset-1 border border-dashed border-blue-500/20 rounded-[3.5rem]" />
+            <div className="absolute inset-0 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl flex items-center justify-center group overflow-hidden">
+               <mode.icon className={cn("w-12 h-12 relative z-10 transition-transform group-hover:scale-110", mode.iconText)} />
+               <motion.div animate={{ rotate: 360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute -inset-1 border border-dashed border-indigo-500/10 rounded-[3rem]" />
             </div>
           </div>
 
           <div className="space-y-4">
-             <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">
-                Neural<br/><span className="not-italic text-blue-600">{isFriend ? "Partner Sync" : "Tactical Search"}</span>
+             <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none uppercase">
+                Neural <span className="text-indigo-600">{isFriend ? "Partner Sync" : "Lattice Search"}</span>
              </h2>
-             <div className="flex items-center justify-center gap-3 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600">
-                <Wifi className="w-3.5 h-3.5 animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest">{currentRoom.status === "waiting" ? "Pinging Neural Lattice..." : "Sync Established"}</span>
+             <div className="flex items-center justify-center gap-3 px-4 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600">
+                <Wifi className="w-3 h-3 animate-pulse" />
+                <span className="text-[8px] font-bold uppercase tracking-widest">{currentRoom.status === "waiting" ? "Pinging Lattice..." : "Sync Established"}</span>
              </div>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">
+             <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em]">
                 {topicName ? `Neural Sector: ${topicName}` : mode.detail}
              </p>
           </div>
@@ -1291,31 +1289,31 @@ function BattleLeaderboard() {
   if (!entries.length) return null;
 
   return (
-    <CardGlass className="p-8 border-white/60">
+    <CardGlass className="p-8 border-slate-100 bg-white/40">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-lg shadow-amber-500/20">
-             <Crown className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg">
+             <Crown className="w-4.5 h-4.5" />
           </div>
-          <h3 className="text-sm font-black text-slate-900 uppercase italic">Combat Elite</h3>
+          <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Combat Elite</h3>
         </div>
-        <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-red-500 text-white uppercase tracking-widest animate-pulse">Live Sync</span>
+        <span className="text-[8px] font-bold px-2 py-0.5 rounded-full bg-indigo-500 text-white uppercase tracking-widest">SYNC LIVE</span>
       </div>
 
       <div className="space-y-3">
         {entries.map((entry, i) => (
-          <div key={entry.studentId} className="flex items-center gap-4 p-3 rounded-2xl bg-white/40 border border-slate-50 hover:bg-white transition-all group">
-            <span className={cn("text-xs font-black w-6 text-center italic", i===0 ? "text-amber-500" : i===1 ? "text-slate-400" : i===2 ? "text-orange-600" : "text-gray-600")}>
-              #{i + 1}
+          <div key={entry.studentId} className="flex items-center gap-4 p-3 rounded-2xl bg-white border border-slate-100/50 hover:bg-slate-50 transition-all group">
+            <span className={cn("text-[10px] font-bold w-5 text-center", i===0 ? "text-indigo-600" : "text-slate-300")}>
+              {i + 1}
             </span>
             <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden">
-               {entry.avatarUrl ? <img src={entry.avatarUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-[10px] font-black">{entry.name.charAt(0)}</span>}
+               {entry.avatarUrl ? <img src={entry.avatarUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-[10px] font-bold">{entry.name.charAt(0)}</span>}
             </div>
             <div className="flex-1 min-w-0">
-               <p className="text-xs font-black text-slate-900 uppercase italic truncate">{entry.name}</p>
-               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{entry.eloTier || "Iron"}</p>
+               <p className="text-[11px] font-bold text-slate-700 uppercase truncate">{entry.name}</p>
+               <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">{entry.eloTier || "Iron"}</p>
             </div>
-            <span className="text-[10px] font-black text-blue-600 tabular-nums bg-blue-50 px-2 py-0.5 rounded-lg">{entry.score.toLocaleString()} XP</span>
+            <span className="text-[9px] font-bold text-indigo-500 tabular-nums">{entry.score.toLocaleString()}</span>
           </div>
         ))}
       </div>
@@ -1323,10 +1321,10 @@ function BattleLeaderboard() {
       {lb?.currentStudentRank && (
         <div className="mt-8 pt-6 border-t border-slate-100">
           <div className="flex items-center justify-between px-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Neural Link Rank</span>
+            <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Neural Link Rank</span>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-black text-slate-900 italic">#{lb.currentStudentRank.rank}</span>
-              <span className="text-[10px] font-black text-blue-600 tabular-nums">{lb.currentStudentRank.score.toLocaleString()} XP</span>
+              <span className="text-[10px] font-bold text-slate-800">#{lb.currentStudentRank.rank}</span>
+              <span className="text-[9px] font-bold text-indigo-500 tabular-nums">{lb.currentStudentRank.score.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -1343,19 +1341,19 @@ function TierProgress({ tier, xp }: { tier: string; xp: number }) {
   const progressPct = tierIdx >= 0 ? ((tierIdx + 1) / TIERS.length) * 100 : 14;
 
   return (
-    <CardGlass className="p-8 border-white/60">
+    <CardGlass className="p-8 border-slate-100 bg-white/40">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg", TIER_COLORS[tier]?.bg || "bg-slate-100")}>
-             <Shield className={cn("w-6 h-6", TIER_COLORS[tier]?.text || "text-slate-400")} />
+          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm", TIER_COLORS[tier]?.bg || "bg-slate-50")}>
+             <Shield className={cn("w-6 h-6", TIER_COLORS[tier]?.text || "text-slate-300")} />
           </div>
           <div>
-            <p className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{tier || "Iron"} Tier</p>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{xp.toLocaleString()} BATTLE XP</p>
+            <p className="text-base font-bold text-slate-800 uppercase tracking-tight">{tier || "Iron"} Tier</p>
+            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-none mt-1">{xp.toLocaleString()} BATTLE YIELD</p>
           </div>
         </div>
-        <div className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest", TIER_COLORS[tier]?.bg || "bg-slate-100", TIER_COLORS[tier]?.text || "text-slate-400")}>
-          {tierIdx >= 0 && tierIdx < TIERS.length - 1 ? `Target: ${TIERS[tierIdx + 1]}` : "Zenith Reach"}
+        <div className={cn("px-4 py-1.5 rounded-full text-[8px] font-bold uppercase tracking-widest", TIER_COLORS[tier]?.bg || "bg-slate-50", TIER_COLORS[tier]?.text || "text-slate-400")}>
+          {tierIdx >= 0 && tierIdx < TIERS.length - 1 ? `NEXT: ${TIERS[tierIdx + 1]}` : "Zenith Reach"}
         </div>
       </div>
 
@@ -1411,54 +1409,52 @@ function ModeCard({
     <CardGlass
       onClick={isDailyDisabled ? undefined : onSelect}
       className={cn(
-        "p-8 border-white/80 group",
-        isDailyDisabled ? "opacity-30 grayscale cursor-not-allowed shadow-none" : "hover:border-blue-200",
-        isDailyLive ? "ring-2 ring-violet-500/20 shadow-violet-500/10" : ""
+        "p-8 border-slate-100 group bg-white/40 overflow-hidden",
+        isDailyDisabled ? "opacity-30 grayscale cursor-not-allowed shadow-none" : "hover:border-indigo-100",
+        isDailyLive ? "ring-2 ring-indigo-500/10 shadow-indigo-500/5" : ""
       )}
     >
-      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[40px] rounded-full -mr-16 -mt-16 pointer-events-none" />
-      
-      <div className="flex items-center justify-between mb-8">
-        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform", mode.iconBg, mode.iconText)}>
-          <mode.icon className="w-7 h-7" />
+      <div className="flex items-center justify-between mb-8 relative z-10">
+        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border border-slate-100/50 shadow-sm group-hover:scale-105 transition-transform", mode.iconBg, mode.iconText)}>
+          <mode.icon className="w-5.5 h-5.5" />
         </div>
         {mode.badge && (
           <div className={cn(
-            "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm",
-            isDailyLive ? "bg-red-500 text-white animate-pulse" : "bg-white text-white"
+            "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest shadow-sm",
+            isDailyLive ? "bg-indigo-600 text-white animate-pulse" : "bg-white border border-slate-100 text-slate-400"
           )}>
-            {isDailyLive ? "● Combat Live" : mode.badge}
+            {isDailyLive ? "● LIVE ACTIVE" : mode.badge}
           </div>
         )}
       </div>
 
-      <div className="space-y-2 mb-8">
-        <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{mode.title}</h3>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
+      <div className="space-y-2 mb-8 relative z-10">
+        <h3 className="text-base font-bold text-slate-800 tracking-tight leading-tight">{mode.title}</h3>
+        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-loose">
           {mode.mode === "daily" && dailyInfo?.topicName
-            ? `Neural Zone: ${dailyInfo.topicName}`
+            ? `Zone: ${dailyInfo.topicName}`
             : mode.desc
           }
         </p>
       </div>
 
-      <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+      <div className="flex items-center justify-between pt-6 border-t border-slate-50 relative z-10">
         <div className="flex items-center gap-3">
           {mode.mode === "daily" && dailyInfo?.playerCount ? (
-            <span className="text-[10px] font-black text-violet-600 uppercase tracking-widest flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
+            <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5">
+              <Users className="w-3 h-3" />
               {dailyInfo.playerCount.toLocaleString()} ONLINE
             </span>
           ) : (
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-blue-500" />
+            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+              <Zap className="w-3 h-3 text-indigo-400" />
               {mode.questions} NODES
             </span>
           )}
         </div>
         
-        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-           <ArrowRight className="w-4 h-4" />
+        <div className="w-7 h-7 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-xs">
+           <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
     </CardGlass>
@@ -1487,24 +1483,24 @@ function HomeScreen({
       {/* 🛡️ Mission Directive Header */}
       <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
         <div className="space-y-4">
-           <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white text-gray-900 w-fit shadow-xl">
-             <Swords className="w-3.5 h-3.5 text-red-400" />
-             <span className="text-[9px] font-black uppercase tracking-[0.2em]">Neural Combat Frequency: Active</span>
+           <div className="flex items-center gap-3 px-4 py-1 rounded-full bg-slate-50 border border-slate-100 text-indigo-500 w-fit">
+             <Swords className="w-3 h-3" />
+             <span className="text-[8px] font-bold uppercase tracking-widest">COMBAT FREQUENCY ACTIVE</span>
            </div>
-           <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">
-              Combat<br/><span className="not-italic text-red-600">Terminal</span>
+           <h1 className="text-3xl font-bold text-slate-800 tracking-tight leading-none uppercase">
+              Combat <span className="text-indigo-600">Terminal</span>
            </h1>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">
-              {eloRating ? `SYNC Rating: ${eloRating} • ` : ""}Engage designated units to optimize ELO resonance.
+           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+              {eloRating ? `SYNC RATING: ${eloRating} • ` : ""}Engage units to optimize resonance.
            </p>
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
           onClick={onJoinFriend}
-          className="px-8 py-5 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-xl hover:border-emerald-200 transition-all group"
+          className="px-8 py-4 rounded-2xl bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest flex items-center gap-3 shadow-xl group border border-slate-800"
         >
-           <UserPlus className="w-5 h-5 text-emerald-500 group-hover:rotate-12 transition-transform" /> Neural Join Link
+           <UserPlus className="w-4 h-4" /> NEURAL JOIN LINK
         </motion.button>
       </div>
 
@@ -1513,15 +1509,15 @@ function HomeScreen({
          <div className="lg:col-span-3">
             <TierProgress tier={tier} xp={xp} />
          </div>
-         <CardGlass className="p-8 bg-white border-gray-200 text-gray-900 flex flex-col justify-center">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Unit Rank</p>
+         <CardGlass className="p-8 bg-white/40 border-slate-100 text-slate-800 flex flex-col justify-center">
+            <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-4">UNIT STATUS</p>
             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
-                  <TrendingUp className="w-7 h-7 text-blue-400" />
+               <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                  <Activity className="w-6 h-6 text-indigo-500" />
                </div>
                <div>
-                  <p className="text-2xl font-black italic uppercase leading-none">{tier}</p>
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-1">Status: Operational</p>
+                  <p className="text-xl font-bold uppercase leading-none">{tier}</p>
+                  <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mt-1.5">Operational</p>
                </div>
             </div>
          </CardGlass>
@@ -1531,29 +1527,29 @@ function HomeScreen({
       {dailyBattle && (
         <CardGlass 
           onClick={() => onModeSelect(MODES.find(m => m.mode === "daily")!)}
-          className="p-1 border-white/40 ring-1 ring-violet-500/20 shadow-violet-500/10"
+          className="p-1 border-indigo-100/50 bg-white/40 shadow-sm"
         >
-          <div className="bg-gradient-to-r from-violet-600/5 to-blue-600/5 p-8 rounded-[2.3rem] flex items-center justify-between group">
+          <div className="bg-indigo-50/30 p-8 rounded-[2.3rem] flex items-center justify-between group">
             <div className="flex items-center gap-8">
-              <div className="w-16 h-16 rounded-[2rem] bg-violet-600 text-white flex items-center justify-center shadow-2xl shadow-violet-600/30 group-hover:scale-110 transition-transform">
-                <Sparkles className="w-8 h-8" />
+              <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <Sparkles className="w-7 h-7" />
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-xl font-black text-slate-900 uppercase italic">Prime Objective</h3>
-                  <span className="text-[9px] font-black px-3 py-1 rounded-full bg-violet-600 text-white uppercase tracking-widest animate-pulse">
-                    {(dailyBattle as any).status === "active" ? "Combat Live" : "Synchronizing"}
+                  <h3 className="text-lg font-bold text-slate-800 tracking-tight uppercase">Prime Objective</h3>
+                  <span className="text-[8px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-widest">
+                    {(dailyBattle as any).status === "active" ? "Combat Live" : "Syncing"}
                   </span>
                 </div>
-                <p className="text-sm font-bold text-slate-500 uppercase tracking-tight">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                   {(dailyBattle as any).topicName
                     ? `Neural Sector: ${(dailyBattle as any).topicName}`
-                    : "Zero Domain • Global Neural Convergence"}
+                    : "Zero Domain • Neural Convergence"}
                 </p>
               </div>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-xl group-hover:translate-x-2 transition-all">
-               <ArrowRight className="w-6 h-6 text-violet-600" />
+            <div className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:translate-x-1 transition-all">
+               <ArrowRight className="w-5 h-5 text-indigo-600" />
             </div>
           </div>
         </CardGlass>
@@ -1656,12 +1652,12 @@ function BotPickerScreen({
       {/* Header */}
       <div className="flex items-center gap-6">
         <button onClick={onBack}
-          className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-sm group">
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all shadow-sm group">
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
         </button>
         <div>
-           <h2 className="text-3xl font-black text-slate-900 italic uppercase leading-none text-amber-500">Practice<br/><span className="not-italic text-slate-900">Construct</span></h2>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mt-2">Engage artificial intelligence units for curriculum mastery.</p>
+           <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none uppercase">Practice <span className="text-indigo-600">Construct</span></h2>
+           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">Engage artificial intelligence units for curriculum mastery.</p>
         </div>
       </div>
 
@@ -1672,27 +1668,26 @@ function BotPickerScreen({
             key={t.key}
             onClick={() => { setTestType(t.key); setSubjectId(""); setChapterId(""); setTopicId(""); setSubjectName(""); setChapterName(""); setTopicName(""); }}
             className={cn(
-              "p-6 rounded-[2rem] border-2 text-left transition-all relative group overflow-hidden",
+              "p-6 rounded-3xl border text-left transition-all relative group overflow-hidden",
               testType === t.key
-                ? "border-amber-500 bg-amber-500/5 shadow-xl shadow-amber-500/10"
-                : "border-slate-100 hover:border-amber-200 hover:bg-slate-50"
+                ? "border-indigo-600 bg-indigo-50/30"
+                : "border-slate-100 hover:border-indigo-200 bg-white/40"
             )}
           >
-             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-2xl rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform" />
-             <t.icon className={cn("w-6 h-6 mb-4 relative z-10", testType === t.key ? "text-amber-500" : "text-gray-600")} />
-             <p className={cn("text-sm font-black uppercase italic tracking-tight relative z-10", testType === t.key ? "text-slate-900" : "text-slate-400")}>
+             <t.icon className={cn("w-5 h-5 mb-4 relative z-10", testType === t.key ? "text-indigo-600" : "text-slate-300")} />
+             <p className={cn("text-[11px] font-bold uppercase tracking-tight relative z-10", testType === t.key ? "text-slate-800" : "text-slate-400")}>
                {t.label}
              </p>
-             <p className="text-[10px] font-bold text-slate-400 mt-1 relative z-10">{t.desc}</p>
+             <p className="text-[8px] font-bold text-slate-300 mt-1 relative z-10 leading-relaxed uppercase tracking-widest">{t.desc}</p>
           </button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         <div className="lg:col-span-3">
-          <CardGlass className="p-8 border-slate-100 space-y-8">
+          <CardGlass className="p-8 border-slate-100 space-y-8 bg-white/40">
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Lattice Subject</label>
+              <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Curriculum Subject</label>
               <select
                 value={subjectId}
                 onChange={e => {
@@ -1702,7 +1697,7 @@ function BotPickerScreen({
                   setChapterId(""); setChapterName("");
                   setTopicId(""); setTopicName("");
                 }}
-                className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-amber-500 transition-all appearance-none"
+                className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
               >
                 <option value="">Select subject…</option>
                 {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1711,8 +1706,8 @@ function BotPickerScreen({
 
             <div className="grid grid-cols-2 gap-6">
                {(testType === "chapter" || testType === "topic") && (
-                 <div className="space-y-3 font-black text-slate-400 uppercase tracking-widest text-[10px]">
-                    <label className="ml-1">Designated Chapter</label>
+                 <div className="space-y-3">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Lattice Chapter</label>
                     <select
                       value={chapterId}
                       onChange={e => {
@@ -1722,7 +1717,7 @@ function BotPickerScreen({
                         setTopicId(""); setTopicName("");
                       }}
                       disabled={!subjectId}
-                      className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-amber-500 disabled:opacity-30 transition-all appearance-none"
+                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
                     >
                       <option value="">Select chapter…</option>
                       {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -1731,8 +1726,8 @@ function BotPickerScreen({
                )}
 
                {testType === "topic" && (
-                 <div className="space-y-3 font-black text-slate-400 uppercase tracking-widest text-[10px]">
-                    <label className="ml-1">Neural Node</label>
+                 <div className="space-y-3">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Neural Node</label>
                     <select
                       value={topicId}
                       onChange={e => {
@@ -1741,7 +1736,7 @@ function BotPickerScreen({
                         setTopicName(topList.find(t => t.id === id)?.name ?? "");
                       }}
                       disabled={!chapterId}
-                      className="h-14 w-full px-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-amber-500 disabled:opacity-30 transition-all appearance-none"
+                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
                     >
                       <option value="">Select topic…</option>
                       {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1753,33 +1748,33 @@ function BotPickerScreen({
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-           <CardGlass className="p-8 border-amber-100 bg-amber-500/5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 block">Combat Iterations</label>
+           <CardGlass className="p-8 border-slate-100 bg-indigo-50/20">
+              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-6 block">ITERATIONS</label>
               <div className="grid grid-cols-2 gap-3">
                 {[5, 10, 15, 20].map(n => (
                   <button
                     key={n}
                     onClick={() => setCount(n)}
                     className={cn(
-                      "h-12 rounded-xl border-2 font-black text-sm transition-all shadow-sm",
+                      "h-11 rounded-xl border text-[10px] font-bold transition-all shadow-xs",
                       count === n
-                        ? "border-amber-500 bg-white text-amber-500 shadow-amber-500/10"
-                        : "border-white bg-white/50 text-slate-400 hover:border-amber-200"
+                        ? "border-indigo-600 bg-white text-indigo-600"
+                        : "border-slate-100 bg-white/50 text-slate-300 hover:border-indigo-200"
                     )}
                   >
-                    {n}
+                    {n} UNITS
                   </button>
                 ))}
               </div>
            </CardGlass>
            <Button
-             className="w-full h-16 rounded-[1.5rem] bg-amber-500 text-white font-black uppercase tracking-widest text-xs shadow-2xl hover:bg-amber-600 transition-all flex items-center justify-center gap-3"
+             className="w-full h-16 rounded-[2rem] bg-slate-900 border-none text-white font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"
              disabled={!canStart || loading}
              onClick={handleStart}
            >
              {loading
-               ? <><Loader2 className="w-5 h-5 animate-spin" /> Synchronizing…</>
-               : <><Bolt className="w-5 h-5" /> Engage AI Construct</>
+               ? <><Loader2 className="w-4 h-4 animate-spin" /> SYNCING…</>
+               : <><Bolt className="w-4 h-4" /> ENGAGE CONSTRUCT</>
              }
            </Button>
         </div>
@@ -1905,10 +1900,7 @@ const BattleArena = () => {
   }
 
   return (
-    <div className="min-h-screen relative bg-[#F8FAFC] custom-scrollbar selection:bg-red-600/10">
-      {/* ── Aero Dynamic Background ── */}
-   
-      <div className="relative z-10 px-6 sm:px-10 py-8 max-w-[1700px] mx-auto">
+    <div className="flex flex-col space-y-12 pb-32 selection:bg-red-600/10">
         <AnimatePresence mode="wait">
           {stage === "home" && (
             <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
@@ -1983,18 +1975,17 @@ const BattleArena = () => {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center min-h-[60vh] text-center"
             >
-              <div className="w-20 h-20 mb-8 rounded-[2rem] bg-red-50 text-red-500 flex items-center justify-center shadow-xl">
-                <AlertCircle className="w-10 h-10" />
+              <div className="w-16 h-16 mb-8 rounded-3xl bg-red-50 text-red-500 border border-red-100 flex items-center justify-center shadow-sm">
+                <AlertCircle className="w-7 h-7" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900 uppercase italic mb-2">Sync Interrupted</h2>
-              <p className="text-sm font-bold text-slate-400 max-w-sm mb-10 uppercase tracking-tight">{errorMsg || "Neural link failure detected."}</p>
-              <button onClick={reset} className="px-10 py-4 rounded-2xl bg-white text-gray-900 text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-2xl">
+              <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight mb-2">Sync Interrupted</h2>
+              <p className="text-[9px] font-bold text-slate-300 max-w-sm mb-10 uppercase tracking-widest leading-relaxed">{errorMsg || "Neural link failure detected via protocol."}</p>
+              <button onClick={reset} className="px-10 py-4 rounded-2xl bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest flex items-center gap-3 shadow-lg">
                 <ArrowLeft className="w-4 h-4" /> Reset Hub
               </button>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
     </div>
   );
 };

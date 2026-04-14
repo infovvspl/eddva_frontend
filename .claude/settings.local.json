@@ -93,7 +93,10 @@
       "Bash(curl -s http://localhost:3000/api/v1/content/subjects)",
       "Bash(curl -s http://localhost:3000/api/v1/notifications/unread-count)",
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMmVlNmZlNy1mYjY0LTQ0NDMtOTJlNS04MjY0MTEzNjYwNDgiLCJ0ZW5hbnRJZCI6IjE2NTQ2YjM5LTRiMGYtNDU1NS1iNDFjLTI1YTYzNWMzMTQ2MiIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzc0MjY3NjA2LCJleHAiOjE3NzQ4NzI0MDZ9.vqkHcXtYrej4Rrq8uokXkwo4u7clYbik3tNetRL4Qms\" __NEW_LINE_9661126a23010574__ echo \"=== Content Subjects ===\" curl -s -H \"Authorization: Bearer $TOKEN\" http://localhost:3000/api/v1/content/subjects)",
-      "Read(//c/Users/HP/Desktop/VVSPL/apexiq-arena/**)"
+      "Read(//c/Users/HP/Desktop/VVSPL/apexiq-arena/**)",
+      "Bash(grep -rn \"student.*batch\\\\|batch.*list\\\\|enrollment\" /d/edtech/eddva_frontend/src/pages/student/*.tsx)",
+      "Bash(wc -l \"d:\\\\edtech\\\\eddva_frontend\\\\src\\\\pages\\\\super-admin\"/*.tsx)",
+      "Bash(grep -l \"useTenants\\\\|usePlatformStats\" \"d:\\\\edtech\\\\eddva_frontend\\\\src\\\\hooks\"/*.ts)"
     ]
   }
 }

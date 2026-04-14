@@ -1,12 +1,3 @@
-/**
- * DiagnosticTestPage
- *
- * Mandatory first-login diagnostic test for students.
- * Flow:  INFO → LOADING → QUIZ → SUBMITTING → RESULTS → STUDY PLAN (backend auto-generates)
- *
- * Back button is disabled during the quiz. The test cannot be skipped.
- * On completion the backend marks student.diagnosticCompleted = true.
- */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,6 +7,8 @@ import {
   ClipboardList, Clock, ChevronRight, Loader2,
   CheckCircle, XCircle, AlertTriangle, Flame,
   BarChart3, Sparkles, BookOpen, Target, Brain,
+  Monitor, Zap, Layers, Info, ArrowLeft, ArrowRight,
+  ShieldCheck, BrainCircuit, Activity
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { patchDiagnosticCompleted } from "@/lib/auth-store";
@@ -25,18 +18,13 @@ import {
 } from "@/lib/api/student";
 import type { QuizQuestion, TestSession, SessionResult } from "@/lib/api/student";
 import { toast } from "sonner";
+import { CardGlass } from "@/components/shared/CardGlass";
+import { cn } from "@/lib/utils";
 
-// ─── Design Tokens ─────────────────────────────────────────────────────────────
-const BLUE   = "#013889";
-const BLUE_M = "#0257c8";
-const BLUE_L = "#E6EEF8";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+// ─── Stage Types ──────────────────────────────────────────────────────────────
 type Stage = "info" | "loading" | "quiz" | "submitting" | "results" | "generating_plan";
 
 // ─── Countdown Timer Hook ─────────────────────────────────────────────────────
-
 function useTimer(initialSeconds: number, onExpire: () => void) {
   const [seconds, setSeconds] = useState(initialSeconds);
   const cbRef = useRef(onExpire);
@@ -58,106 +46,70 @@ function formatTime(s: number) {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-// ─── Info Screen ──────────────────────────────────────────────────────────────
-
+// ─── Info Screen: Baseline Briefing ───────────────────────────────────────────
 function InfoScreen({ batchName, onStart }: { batchName: string; onStart: () => void }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: "#F5F7FB" }}
-    >
-      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100 rounded-full blur-[100px] opacity-50 -z-10 translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-[100px] opacity-40 -z-10 -translate-x-1/2 translate-y-1/2" style={{ background: BLUE_L }} />
-
-      <div className="w-full max-w-lg">
-        {/* Icon */}
-        <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border" style={{ background: BLUE_L, borderColor: `${BLUE}20` }}>
-          <ClipboardList className="w-12 h-12" style={{ color: BLUE }} />
-        </div>
-
-        <h1 className="text-3xl font-black text-gray-900 text-center mb-2 tracking-tight">
-          Diagnostic Test
-        </h1>
-        <p className="text-center text-gray-500 font-bold mb-10">
-          Before you start, let's understand your level
-        </p>
-
-        <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-6 sm:p-8 space-y-6 mb-8 relative">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 shadow-inner">
-              <BookOpen className="w-5 h-5 text-blue-500" />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 flex items-center justify-center p-6">
+      <div className="relative z-10 w-full max-w-4xl">
+         <header className="text-center mb-16">
+            <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center mx-auto mb-10 shadow-3xl">
+               <ShieldCheck className="w-12 h-12 text-blue-600" />
             </div>
-            <div className="pt-1">
-              <p className="font-black text-gray-900 text-base">AI-generated for your syllabus</p>
-              <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">
-                Questions are automatically created from <span className="text-gray-900 font-black bg-gray-50 px-1 rounded">{batchName || "your batch"}</span> topics — no teacher setup needed
-              </p>
+            <div className="flex items-center justify-center gap-3 mb-4">
+               <Monitor className="w-4 h-4 text-blue-500" />
+               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Baseline Assessment Protocol</span>
             </div>
-          </div>
+            <h1 className="text-4xl sm:text-6xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-6">
+               Diagnostic <span className="text-blue-600">Nexus</span>
+            </h1>
+            <p className="text-slate-500 font-bold text-lg uppercase tracking-widest max-w-xl mx-auto leading-relaxed">
+               Calibrating your neural path. Establish your cognitive baseline to activate the <span className="text-slate-900 italic underline decoration-blue-500/30">Aero Synthesis Engine</span>.
+            </p>
+         </header>
 
-          <div className="w-full h-px bg-gray-50" />
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {[
+               { icon: BrainCircuit, label: "AI ADAPTIVE", desc: `Personalized nodes for ${batchName || "your sector"} syllabus.`, color: "text-blue-500", bg: "bg-blue-50/50" },
+               { icon: Activity, label: "60 SYNC", desc: "60 minutes to complete the cognitive scan.", color: "text-amber-500", bg: "bg-amber-50/50" },
+               { icon: Zap, label: "PLAN ACTIVATE", desc: "Unlocks your 30-day structural study plan.", color: "text-purple-500", bg: "bg-purple-50/50" },
+            ].map((feature, i) => (
+              <CardGlass key={i} className={cn("p-8 border-white", feature.bg)}>
+                 <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-8 shadow-lg bg-white", feature.color)}>
+                    <feature.icon className="w-7 h-7" />
+                 </div>
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-3 text-slate-900">{feature.label}</h3>
+                 <p className="text-sm font-bold text-slate-400 leading-relaxed uppercase tracking-wide">{feature.desc}</p>
+              </CardGlass>
+            ))}
+         </div>
 
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0 shadow-inner">
-              <Clock className="w-5 h-5 text-amber-500" />
+         <CardGlass className="p-8 border-amber-500/20 bg-amber-50 text-amber-900 mb-12">
+            <div className="flex items-center gap-6">
+               <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg"><AlertTriangle className="w-6 h-6" /></div>
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Warning: Mandatory Protocol</p>
+                  <p className="text-base font-black uppercase italic leading-none">Termination during scan will result in data corruption. Backlinks disabled.</p>
+               </div>
             </div>
-            <div className="pt-1">
-              <p className="font-black text-gray-900 text-base">~20 minutes · AI-adaptive</p>
-              <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">Difficulty adjusts as you answer to find your true level</p>
-            </div>
-          </div>
+         </CardGlass>
 
-          <div className="w-full h-px bg-gray-50" />
-
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0 shadow-inner">
-              <Sparkles className="w-5 h-5 text-violet-500" />
-            </div>
-            <div className="pt-1">
-              <p className="font-black text-gray-900 text-base">Unlocks your AI study plan</p>
-              <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">Results build your personalised 30-day schedule</p>
-            </div>
-          </div>
-          
-          <div className="mt-8 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 px-4 py-3 rounded-2xl">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
-              <p className="text-sm font-bold text-amber-600">
-                This test is mandatory. You cannot skip or go back during the test.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <motion.button
-          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-          onClick={onStart}
-          className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
-          style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}
-        >
-          Start Diagnostic Test 🧪
-        </motion.button>
+         <motion.button
+           whileHover={{ scale: 1.02, boxShadow: "0 0 60px rgba(37,99,235,0.4)" }} whileTap={{ scale: 0.98 }}
+           onClick={onStart}
+           className="w-full py-8 rounded-[3rem] bg-blue-600 text-white text-xs font-black uppercase tracking-[0.5em] shadow-2xl transition-all"
+         >
+           Initialize Baseline Scan
+         </motion.button>
       </div>
     </motion.div>
   );
 }
 
-// ─── Question Card ────────────────────────────────────────────────────────────
-
+// ─── Question Card: Immersive Probe ───────────────────────────────────────────
 function QuestionCard({
-  question,
-  index,
-  total,
-  selected,
-  onSelect,
+  question, index, total, selected, onSelect,
 }: {
-  question: QuizQuestion;
-  index: number;
-  total: number;
-  selected: string[];
-  onSelect: (optionId: string) => void;
+  question: QuizQuestion; index: number; total: number; selected: string[]; onSelect: (optionId: string) => void;
 }) {
   const isInteger = question.type === "integer";
   const [intVal, setIntVal] = useState("");
@@ -165,53 +117,57 @@ function QuestionCard({
 
   return (
     <motion.div
-      key={question.id}
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="space-y-4"
+      key={question.id} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+      className="space-y-10"
     >
-      <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="text-xs font-black px-3 py-1 rounded-xl" style={{ background: BLUE_L, color: BLUE }}>
-            Q{index + 1} / {total}
+      <CardGlass className="p-10 sm:p-14 border-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 blur-[50px] rounded-full pointer-events-none" />
+        
+        <div className="flex items-center gap-4 mb-10 flex-wrap">
+          <span className="text-[10px] font-black px-4 py-2 rounded-xl bg-slate-900 text-white uppercase tracking-[0.2em] shadow-xl">
+            Probe {index + 1} / {total}
           </span>
-          <span className="text-xs font-bold text-gray-400 capitalize bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">{question.difficulty}</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50">Intensity: {question.difficulty}</span>
           {"topic" in question && question.topic && (
-            <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 truncate max-w-[150px]">{question.topic.name}</span>
+            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest border border-blue-100 px-3 py-1.5 rounded-xl bg-blue-50/50">{question.topic.name}</span>
           )}
         </div>
-        <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">{question.content}</p>
-      </div>
+        
+        <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-relaxed uppercase italic tracking-tighter select-none">
+           {question.content}
+        </p>
+      </CardGlass>
 
       {isInteger ? (
-        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-          <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-3 block text-center">Type your integer answer</label>
+        <CardGlass className="p-12 border-indigo-500/10 bg-indigo-50/50">
+          <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 block text-center italic">Numerical Matrix Input</label>
           <input
             type="number" value={intVal}
             onChange={e => { setIntVal(e.target.value); onSelect(e.target.value); }}
             placeholder="0"
-            className="w-full max-w-xs mx-auto block bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-3xl font-black text-gray-900 text-center focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all placeholder-gray-300"
+            className="w-full max-w-sm mx-auto block bg-white border border-slate-100 rounded-[2.5rem] px-10 py-8 text-5xl font-black text-slate-900 text-center focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder-slate-100 shadow-inner"
           />
-        </div>
+        </CardGlass>
       ) : (
-        <div className="space-y-2.5">
-          {question.options?.map(opt => {
+        <div className="grid grid-cols-1 gap-4">
+          {question.options?.map((opt, i) => {
             const isSelected = selected.includes(opt.id);
             return (
               <motion.button
-                whileHover={!isSelected ? { scale: 1.01 } : {}} whileTap={{ scale: 0.99 }}
+                whileHover={{ scale: 1.01, x: 10 }} whileTap={{ scale: 0.99 }}
                 key={opt.id} onClick={() => onSelect(opt.id)}
-                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-left transition-all
-                  ${isSelected ? "shadow-md" : "bg-white border-gray-100 text-gray-800 hover:border-blue-200"}`}
-                style={isSelected ? { background: BLUE_L, borderColor: BLUE, color: BLUE } : {}}
+                className={cn(
+                  "w-full flex items-center gap-6 px-8 py-6 rounded-[2rem] border-2 text-left transition-all",
+                  isSelected ? "bg-slate-900 border-slate-900 text-white shadow-2xl scale-[1.02]" : "bg-white/60 border-white text-slate-800 hover:bg-white hover:border-slate-200"
+                )}
               >
-                <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors
-                  ${isSelected ? "border-transparent" : "border-gray-200 text-gray-500"}`}
-                  style={isSelected ? { background: BLUE, color: "#fff" } : {}}>
-                  {opt.optionLabel}
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors",
+                  isSelected ? "bg-white text-slate-900 border-transparent shadow-lg" : "bg-slate-50 border-slate-100 text-slate-300"
+                )}>
+                  {String.fromCharCode(65 + i)}
                 </div>
-                <span className="text-sm font-medium leading-relaxed flex-1">{opt.content}</span>
+                <span className="text-lg font-black uppercase italic tracking-tight flex-1">{opt.content}</span>
               </motion.button>
             );
           })}
@@ -221,160 +177,140 @@ function QuestionCard({
   );
 }
 
-// ─── Results Screen ───────────────────────────────────────────────────────────
-
-function ResultsScreen({
-  result,
-  onContinue,
-}: {
-  result: SessionResult;
-  onContinue: () => void;
-}) {
+// ─── Results Screen: Diagnosis Manifest ───────────────────────────────────────
+function ResultsScreen({ result, onContinue }: { result: SessionResult; onContinue: () => void; }) {
   const accuracy = result.accuracy ?? (result.totalCorrect / Math.max(result.totalCorrect + result.totalWrong, 1)) * 100;
   const eb = result.errorBreakdown;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: "#F5F7FB" }}
-    >
-      <div className="w-full max-w-lg bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-sm">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-3xl bg-emerald-50 border border-emerald-100 mx-auto flex items-center justify-center mb-4 shadow-sm relative">
-            <CheckCircle className="w-10 h-10 text-emerald-500 relative z-10" />
-            <div className="absolute inset-0 bg-emerald-100 rounded-3xl blur-xl opacity-50 z-0" />
-          </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Diagnostic Complete!</h1>
-          <p className="text-gray-400 font-bold mt-2">Here's how you performed</p>
-        </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 flex items-center justify-center p-6">
+      <div className="relative z-10 w-full max-w-4xl">
+         <header className="text-center mb-16">
+            <div className="w-24 h-24 rounded-[3rem] bg-emerald-500 text-white flex items-center justify-center mx-auto mb-10 shadow-[0_20px_50px_rgba(16,185,129,0.3)]">
+               <CheckCircle className="w-12 h-12" />
+            </div>
+            <h1 className="text-4xl sm:text-6xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-4">
+               Baseline <span className="text-emerald-500">Established</span>
+            </h1>
+            <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-xs">Diagnostic Assessment Finalized</p>
+         </header>
 
-        {/* Score ring */}
-        <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 mb-6 flex items-center gap-6 shadow-inner">
-          <div className="relative w-24 h-24 shrink-0">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
-              <circle cx="48" cy="48" r="40" fill="none" stroke="#E5E7EB" strokeWidth="10" />
-              <circle cx="48" cy="48" r="40" fill="none"
-                stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
-                strokeWidth="10"
-                strokeDasharray={`${2 * Math.PI * 40}`}
-                strokeDashoffset={`${2 * Math.PI * 40 * (1 - accuracy / 100)}`}
-                strokeLinecap="round" />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xl font-black text-gray-900">{accuracy.toFixed(0)}%</span>
-            </div>
-          </div>
-          <div className="flex-1">
-            <p className="text-3xl font-black text-gray-900 mb-1">{result.totalScore}</p>
-            <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-3">Total Points</p>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
-                <CheckCircle className="w-3 h-3" />{result.totalCorrect}
-              </span>
-              <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg border border-red-100">
-                <XCircle className="w-3 h-3" />{result.totalWrong}
-              </span>
-              {result.totalSkipped > 0 && <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg border border-gray-200">{result.totalSkipped} skip</span>}
-            </div>
-          </div>
-        </div>
-
-        {/* Error breakdown */}
-        {eb && result.totalWrong > 0 && (
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 mb-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="w-5 h-5 text-gray-400" />
-              <p className="text-base font-black text-gray-900">Error Analysis</p>
-            </div>
-            <div className="space-y-3">
-              {[
-                { key: "conceptual", label: "Concept gaps",   color: "#ef4444" },
-                { key: "silly",      label: "Silly mistakes", color: "#f59e0b" },
-                { key: "time",       label: "Time pressure",  color: "#6366f1" },
-                { key: "guess",      label: "Guessed",        color: "#8b5cf6" },
-              ].map(({ key, label, color }) => {
-                const val = (eb as any)[key] ?? 0;
-                const pct = result.totalWrong > 0 ? (val / result.totalWrong) * 100 : 0;
-                if (!val) return null;
-                return (
-                  <div key={key}>
-                    <div className="flex justify-between mb-1.5">
-                      <span className="text-xs font-bold text-gray-500">{label}</span>
-                      <span className="text-xs font-black text-gray-900">{val}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.6 }}
-                        className="h-full rounded-full"
-                        style={{ background: color }}
-                      />
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
+            {/* Core Metrics */}
+            <CardGlass className="p-10 border-white bg-slate-900 text-white relative overflow-hidden">
+               <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
+               
+               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Neural Fidelity Score</h3>
+               
+               <div className="flex items-center gap-10">
+                  <div className="relative w-32 h-32 shrink-0">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+                      <motion.circle cx="50" cy="50" r="45" fill="none"
+                        stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
+                        strokeWidth="10"
+                        strokeDasharray="283"
+                        initial={{ strokeDashoffset: 283 }}
+                        animate={{ strokeDashoffset: 283 * (1 - accuracy/100) }}
+                        transition={{ duration: 2, ease: "easeOut" }}
+                        strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <span className="text-3xl font-black italic">{accuracy.toFixed(0)}%</span>
                     </div>
                   </div>
-                );
-              })}
+                  <div>
+                    <p className="text-5xl font-black italic text-emerald-400 leading-none mb-2">{result.totalScore}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-6">Aggregate Sync Points</p>
+                    <div className="flex items-center gap-4">
+                       <div className="px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-black italic border border-emerald-500/20">+{result.totalCorrect} Valid</div>
+                       <div className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 text-xs font-black italic border border-red-500/20">-{result.totalWrong} Error</div>
+                    </div>
+                  </div>
+               </div>
+            </CardGlass>
+
+            {/* Error Synthesis */}
+            {eb && result.totalWrong > 0 ? (
+               <CardGlass className="p-10 border-white bg-white/60">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10 flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Cognitive Drift Analysis</h3>
+                  <div className="space-y-6">
+                    {[
+                      { key: "conceptual", label: "CORRE CONCEPT GAPS", color: "#ef4444" },
+                      { key: "silly",      label: "SILLY SYNAPSE ERRORS", color: "#f59e0b" },
+                      { key: "time",       label: "TEMPORAL PRESSURE", color: "#6366f1" },
+                    ].map(({ key, label, color }) => {
+                      const val = (eb as any)[key] ?? 0;
+                      const pct = (val / result.totalWrong) * 100;
+                      if (!val) return null;
+                      return (
+                        <div key={key}>
+                          <div className="flex justify-between items-end mb-3">
+                             <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{label}</span>
+                             <span className="text-sm font-black text-slate-400 italic">{val}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden p-0.5 shadow-inner">
+                             <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} className="h-full rounded-full shadow-lg" style={{ background: color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+               </CardGlass>
+            ) : (
+                <CardGlass className="p-10 border-white bg-white/60 flex flex-col items-center justify-center text-center">
+                   <Zap className="w-12 h-12 text-yellow-400 fill-yellow-400 mb-6 animate-pulse" />
+                   <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2">Pristine Protocol</h3>
+                   <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">No significant cognitive drift detected. Neural paths are aligned.</p>
+                </CardGlass>
+            )}
+         </div>
+
+         <CardGlass className="p-10 border-purple-500/20 bg-purple-500/10 mb-12 flex flex-col sm:flex-row items-center gap-10">
+            <div className="w-20 h-20 rounded-[2rem] bg-white border border-purple-200 flex items-center justify-center shrink-0 shadow-xl">
+               <Sparkles className="w-10 h-10 text-purple-600" />
             </div>
-          </div>
-        )}
+            <div>
+               <h4 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Study Plan Generated</h4>
+               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                  The AI has successfully mapped your results into a <span className="text-purple-600 font-black italic decoration-purple-600/30 underline">30-day structural schedule</span>. Activation requested.
+               </p>
+            </div>
+         </CardGlass>
 
-        {/* AI study plan */}
-        <div className="bg-violet-50 border-2 border-violet-100 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-          <div className="w-10 h-10 rounded-xl bg-white border border-violet-200 flex items-center justify-center shrink-0 shadow-sm">
-            <Sparkles className="w-5 h-5 text-violet-500" />
-          </div>
-          <div className="pt-0.5">
-             <p className="text-sm font-black text-gray-900 mb-1">Study Plan Generated!</p>
-             <p className="text-[13px] font-medium text-gray-600 leading-relaxed">
-               AI has built your personalised 30-day schedule based on these exact results.
-             </p>
-          </div>
-        </div>
-
-        <motion.button
-          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-          onClick={onContinue}
-          className="w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all"
-          style={{ background: `linear-gradient(135deg, ${BLUE}, ${BLUE_M})` }}
-        >
-          View My Study Plan <ChevronRight className="w-4 h-4" />
-        </motion.button>
+         <motion.button
+           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+           onClick={onContinue}
+           className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6"
+         >
+           Access Study Plan <ArrowRight className="w-6 h-6" />
+         </motion.button>
       </div>
     </motion.div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function DiagnosticTestPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
   const authState   = useAuthStore();
-  const student     = authState.user?.studentProfile;
-  const batchId     = student?.batchId ?? "";
 
   const [stage, setStage]           = useState<Stage>("info");
   const [session, setSession]       = useState<TestSession | null>(null);
   const [questions, setQuestions]   = useState<QuizQuestion[]>([]);
   const [currentQ, setCurrentQ]     = useState(0);
-  const [answers, setAnswers]       = useState<Record<string, string[]>>({}); // questionId → selectedOptionIds
+  const [answers, setAnswers]       = useState<Record<string, string[]>>({});
   const [result, setResult]         = useState<SessionResult | null>(null);
-  const [error, setError]           = useState("");
   const [batchName, setBatchName]   = useState("");
 
-  const durationMinutes = 20;
+  const durationMinutes = 60;
 
-  // ── Timer ────────────────────────────────────────────────────────────────
   const handleTimeUp = useCallback(() => {
-    if (stage === "quiz" && session) {
-      handleSubmit(true);
-    }
+    if (stage === "quiz" && session) handleSubmit(true);
   }, [stage, session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { seconds } = useTimer(durationMinutes * 60, handleTimeUp);
 
-  // ── Disable browser back button during quiz ──────────────────────────────
   useEffect(() => {
     if (stage !== "quiz") return;
     const preventBack = (e: PopStateEvent) => {
@@ -386,270 +322,172 @@ export default function DiagnosticTestPage() {
     return () => window.removeEventListener("popstate", preventBack);
   }, [stage]);
 
-  // ── Start: auto-generate diagnostic from question bank ───────────────────
   const handleStart = async () => {
     setStage("loading");
-    setError("");
     try {
       const result = await generateDiagnosticSession();
-
       if (result.alreadyCompleted) {
-        // Diagnostic already done — sync state and redirect to study plan
         patchDiagnosticCompleted(useAuthStore.getState());
         queryClient.setQueryData(authKeys.me, (prev: any) => {
           if (!prev) return prev;
-          return {
-            ...prev,
-            studentProfile: prev.studentProfile
-              ? { ...prev.studentProfile, diagnosticCompleted: true }
-              : null,
-          };
+          return { ...prev, studentProfile: prev.studentProfile ? { ...prev.studentProfile, diagnosticCompleted: true } : null };
         });
         navigate("/student/study-plan");
         return;
       }
-
       const sess = result.session!;
       setBatchName(sess.mockTest?.title ?? "Diagnostic Test");
       setSession(sess);
       setQuestions(sess.questions ?? []);
       setStage("quiz");
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Failed to start diagnostic. Please try again.";
-      setError(msg);
+      toast.error(err?.response?.data?.message || "Failed to start diagnostic.");
       setStage("info");
     }
   };
 
-  // ── Select answer ────────────────────────────────────────────────────────
   const handleSelectOption = async (optionId: string) => {
     const q = questions[currentQ];
     if (!q || !session) return;
-
-    const isMulti   = q.type === "mcq_multi";
-    const isInteger = q.type === "integer";
-
-    let next: string[];
-    if (isInteger) {
-      next = [optionId]; // raw number string
-    } else if (isMulti) {
-      const prev = answers[q.id] ?? [];
-      next = prev.includes(optionId)
-        ? prev.filter(id => id !== optionId)
-        : [...prev, optionId];
-    } else {
-      next = [optionId];
-    }
-
+    let next: string[] = q.type === "mcq_multi" ? (answers[q.id]?.includes(optionId) ? answers[q.id].filter(id => id !== optionId) : [...(answers[q.id] || []), optionId]) : [optionId];
     setAnswers(a => ({ ...a, [q.id]: next }));
-
-    // Fire-and-forget answer submission
     try {
-      await submitAnswer(session.id, {
-        questionId: q.id,
-        selectedOptionIds: isInteger ? undefined : next,
-        integerResponse: isInteger ? optionId : undefined,
-      });
-    } catch {
-      // non-critical — answers are saved on submit too
-    }
+      await submitAnswer(session.id, { questionId: q.id, selectedOptionIds: q.type === "integer" ? undefined : next, integerResponse: q.type === "integer" ? optionId : undefined });
+    } catch {}
   };
 
-  // ── Navigate questions ────────────────────────────────────────────────────
-  const handleNext = () => {
-    if (currentQ < questions.length - 1) {
-      setCurrentQ(i => i + 1);
-    } else {
-      handleSubmit(false);
-    }
-  };
-
-  // ── Submit test ───────────────────────────────────────────────────────────
   const handleSubmit = async (timedOut: boolean) => {
     if (!session) return;
-    if (timedOut) toast.warning("Time's up! Submitting your answers...");
+    if (timedOut) toast.warning("Protocol Timeout: Submitting Data...");
     setStage("submitting");
     try {
       const res = await submitSession(session.id);
       setResult(res);
-      // Backend marks diagnosticCompleted = true — patch local store immediately
       patchDiagnosticCompleted(useAuthStore.getState());
-      // Sync the React Query /me cache directly
       queryClient.setQueryData(authKeys.me, (prev: any) => {
         if (!prev) return prev;
-        return {
-          ...prev,
-          studentProfile: prev.studentProfile
-            ? { ...prev.studentProfile, diagnosticCompleted: true }
-            : null,
-        };
+        return { ...prev, studentProfile: prev.studentProfile ? { ...prev.studentProfile, diagnosticCompleted: true } : null };
       });
       setStage("results");
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Failed to submit. Please try again.";
-      toast.error(msg);
+      toast.error(err?.response?.data?.message || "Submit Failure.");
       setStage("quiz");
     }
   };
 
-  // ── Navigate to study plan ────────────────────────────────────────────────
-  const handleViewPlan = () => {
-    navigate("/student/study-plan");
-  };
+  if (stage === "info") return <InfoScreen batchName={batchName} onStart={handleStart} />;
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
-  if (stage === "info") {
+  if (stage === "loading" || stage === "submitting" || stage === "generating_plan") {
     return (
-      <>
-        {error && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-50 border border-red-100 text-red-600 text-sm font-bold rounded-2xl px-5 py-4 flex items-center gap-2 shadow-sm">
-            <AlertTriangle className="w-5 h-5" /> {error}
-          </div>
-        )}
-        <InfoScreen batchName={batchName} onStart={handleStart} />
-      </>
-    );
-  }
-
-  if (stage === "loading") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: "#F5F7FB" }}>
-        <div className="relative">
-          <div className="w-24 h-24 rounded-3xl bg-white border border-gray-100 flex items-center justify-center shadow-sm z-10 relative">
-             <Loader2 className="w-10 h-10 animate-spin" style={{ color: BLUE }} />
-             <Sparkles className="w-6 h-6 text-violet-400 absolute -top-3 -right-3 animate-pulse drop-shadow-md" />
-          </div>
-          <div className="absolute inset-0 bg-blue-100 rounded-3xl animate-ping opacity-50 z-0" />
-        </div>
-        <div className="text-center">
-          <p className="text-gray-900 font-black text-xl mb-1 mt-2">Building diagnostic test...</p>
-          <p className="text-gray-500 font-bold text-sm">AI is generating personalised questions from your syllabus</p>
-        </div>
+      <div className="py-40 flex flex-col items-center justify-center text-center gap-10">
+         <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+         </div>
+         <div className="space-y-4">
+            <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">
+              {stage === "loading" ? "Synthesizing Diagnostic Matrix" : stage === "submitting" ? "Analyzing Neural Feed" : "Constructing Study Plan"}
+            </h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Structural integrity verification in progress...</p>
+         </div>
       </div>
     );
   }
 
-  if (stage === "submitting") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: "#F5F7FB" }}>
-        <Loader2 className="w-12 h-12 animate-spin" style={{ color: BLUE }} />
-        <p className="text-gray-500 font-black tracking-widest uppercase text-xs mt-2">Analysing your answers...</p>
-      </div>
-    );
-  }
+  if (stage === "results" && result) return <ResultsScreen result={result} onContinue={() => navigate("/student/study-plan")} />;
 
-  if (stage === "results" && result) {
-    return <ResultsScreen result={result} onContinue={handleViewPlan} />;
-  }
-
-  if (stage === "generating_plan") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: "#F5F7FB" }}>
-        <Sparkles className="w-12 h-12 animate-pulse text-violet-500" />
-        <div>
-          <p className="text-gray-900 font-black text-xl mb-1">Building your study plan...</p>
-          <p className="text-gray-500 font-bold text-sm">This takes a few seconds</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── QUIZ stage ────────────────────────────────────────────────────────────
   const q = questions[currentQ];
-  if (!q) return null;
-
-  const selectedOpts = answers[q.id] ?? [];
-  const isAnswered   = selectedOpts.length > 0;
-  const isLast       = currentQ === questions.length - 1;
-  const timerDanger  = seconds <= 60;
+  const selectedOpts = q ? (answers[q.id] ?? []) : [];
+  const timerDanger = seconds <= 180;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#F5F7FB" }}>
-      {/* Fixed top bar */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 mr-auto bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-xl">
-            <ClipboardList className="w-4 h-4" style={{ color: BLUE }} />
-            <span className="font-black text-gray-900 text-xs uppercase tracking-widest">Diagnostic</span>
+    <div className="flex flex-col space-y-12">
+       {/* Diagnostic Status Header */}
+       <CardGlass className="px-10 py-6 border-white bg-white/60 flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-6">
+             <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xl">
+                <ClipboardList className="w-5 h-5" />
+             </div>
+             <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Sector 01: Baseline</p>
+                <h3 className="text-xl font-black text-slate-900 uppercase italic leading-none">Diagnostic Scan</h3>
+             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border
-               ${timerDanger ? "bg-red-50 border-red-100 text-red-500 animate-pulse" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
-               <Clock className="w-3.5 h-3.5" />{formatTime(seconds)}
+          <div className="flex items-center gap-10">
+             <div className={cn(
+                "flex items-center gap-4 px-6 py-2.5 rounded-xl border transition-all shadow-xl",
+                timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
+             )}>
+                <Clock className="w-5 h-5" />
+                <span className="text-xl font-black italic tracking-tighter tabular-nums leading-none">{formatTime(seconds)}</span>
              </div>
-             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handleSubmit(false)}
-               className="px-4 py-2 rounded-xl text-white text-xs font-black transition-colors shrink-0 shadow-sm"
-               style={{ background: BLUE }}>
-               Submit
+             <motion.button
+               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+               onClick={() => handleSubmit(false)}
+               className="hidden sm:flex px-10 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
+             >
+               Finalize Scan
              </motion.button>
           </div>
-        </div>
+       </CardGlass>
 
-        {/* Progress bar */}
-        <div className="h-1 bg-gray-100">
-          <div
-            className="h-full transition-all duration-300"
-            style={{ width: `${((currentQ + 1) / questions.length) * 100}%`, background: BLUE }}
+       {/* Progress Tracker */}
+       <div className="h-1.5 bg-slate-200/50 rounded-full relative overflow-hidden">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+            className="h-full bg-blue-600 shadow-lg shadow-blue-500/20"
           />
-        </div>
-      </div>
+       </div>
 
-      {/* Question content */}
-      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 sm:py-8 flex flex-col">
-        <div className="flex-1">
+       {/* Question Core */}
+       <div className="max-w-4xl mx-auto w-full">
           <AnimatePresence mode="wait">
-            <QuestionCard
-              key={q.id}
-              question={q}
-              index={currentQ}
-              total={questions.length}
-              selected={selectedOpts}
-              onSelect={handleSelectOption}
-            />
+             {q && (
+                <QuestionCard
+                  key={q.id} question={q} index={currentQ} total={questions.length}
+                  selected={selectedOpts} onSelect={handleSelectOption}
+                />
+             )}
           </AnimatePresence>
-        </div>
+       </div>
 
-        {/* Navigation */}
-        <div className="mt-8 flex items-center justify-between bg-white border border-gray-100 rounded-3xl p-3 shadow-sm">
-          <button
-            onClick={() => setCurrentQ(i => Math.max(i - 1, 0))}
-            disabled={currentQ === 0}
-            className="px-5 py-2.5 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30"
-          >
-            Prev
-          </button>
+       {/* Navigation Terminal */}
+       <div className="max-w-4xl mx-auto w-full">
+          <CardGlass className="p-5 border-white bg-white/60 flex items-center justify-between gap-10 shadow-2xl">
+             <button
+               onClick={() => setCurrentQ(i => Math.max(i - 1, 0))}
+               disabled={currentQ === 0}
+               className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-950 hover:text-white transition-all disabled:opacity-20 shadow-sm"
+             >
+               <ArrowLeft className="w-6 h-6" />
+             </button>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto px-2 scrollbar-none">
-            {questions.map((_, i) => {
-               const isAns = answers[questions[i].id]?.length > 0;
-               const isCurr = i === currentQ;
-               return (
-                 <button key={i} onClick={() => setCurrentQ(i)}
-                   className={`shrink-0 rounded-full transition-all
-                     ${isCurr ? "w-6 h-2.5" : "w-2.5 h-2.5"}
-                     ${isCurr ? "" : isAns ? "" : "bg-gray-200 hover:bg-gray-300"}`}
-                   style={isCurr ? { background: BLUE } : isAns ? { background: BLUE_M, opacity: 0.5 } : {}}
-                 />
-               );
-             })}
-          </div>
+             <div className="flex-1 flex justify-center items-center gap-3 overflow-x-auto scrollbar-none px-4">
+                {questions.map((qId, i) => (
+                  <button 
+                    key={i} onClick={() => setCurrentQ(i)}
+                    className={cn(
+                       "shrink-0 transition-all border shadow-sm",
+                       i === currentQ ? "w-8 h-8 rounded-lg bg-slate-900 border-slate-900 scale-110" : 
+                       (answers[questions[i].id]?.length > 0) ? "w-5 h-5 rounded bg-blue-500/40 border-blue-500/10" : "w-5 h-5 rounded bg-white border-slate-100"
+                    )}
+                  />
+                ))}
+             </div>
 
-          <button
-            onClick={handleNext}
-            className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all shadow-sm
-              ${isLast
-                ? "bg-emerald-500 text-white"
-                : isAnswered
-                  ? "text-white"
-                  : "bg-gray-100 text-gray-400"}`}
-            style={!isLast && isAnswered ? { background: BLUE } : {}}
-          >
-            {isLast ? "Done" : "Next"}
-          </button>
-        </div>
-      </div>
+             <button
+               onClick={() => currentQ < questions.length - 1 ? setCurrentQ(i => i + 1) : handleSubmit(false)}
+               className={cn(
+                 "w-16 h-16 rounded-2xl flex items-center justify-center transition-all shadow-xl",
+                 currentQ === questions.length - 1 ? "bg-emerald-500 text-white shadow-emerald-500/20" : 
+                 selectedOpts.length > 0 ? "bg-blue-600 text-white shadow-blue-500/20" : "bg-white border border-slate-100 text-slate-200"
+               )}
+             >
+               {currentQ === questions.length - 1 ? <CheckCircle className="w-6 h-6" /> : <ArrowRight className="w-6 h-6" />}
+             </button>
+          </CardGlass>
+       </div>
     </div>
   );
 }

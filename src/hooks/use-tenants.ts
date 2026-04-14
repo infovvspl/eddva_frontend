@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tenantsApi } from "@/lib/api";
-import type { TenantCreatePayload, TenantListParams } from "@/lib/api/tenants";
+import type { TenantCreatePayload, TenantListParams, EnrollmentParams } from "@/lib/api/tenants";
 
 // ---------------------------------------------------------------------------
 // Query keys
@@ -10,6 +10,7 @@ export const tenantKeys = {
   list: (params?: TenantListParams) => ["tenants", "list", params] as const,
   detail: (id: string) => ["tenants", "detail", id] as const,
   stats: (id: string) => ["tenants", "stats", id] as const,
+  enrollments: (params?: EnrollmentParams) => ["tenants", "enrollments", params] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -88,5 +89,13 @@ export function useActivateTenant() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: tenantKeys.all });
     },
+  });
+}
+
+export function useEnrollments(params?: EnrollmentParams) {
+  return useQuery({
+    queryKey: tenantKeys.enrollments(params),
+    queryFn: () => tenantsApi.listEnrollments(params),
+    staleTime: 30_000,
   });
 }

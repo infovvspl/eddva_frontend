@@ -105,13 +105,6 @@ const LoginPage = () => {
 
   const redirectUser = (user: ReturnType<typeof buildUser>) => {
     setUser(user);
-    // If there's a returnTo (e.g. /join?token=xxx), send student there instead of dashboard
-    if (returnTo && user.role === "student") {
-      navigate(returnTo); return;
-    }
-    if (user.role === "student" && user.studentProfile && !user.studentProfile.diagnosticCompleted) {
-      navigate("/student/diagnostic"); return;
-    }
     const paths: Record<string, string> = {
       super_admin:     "/super-admin",
       institute_admin: "/admin",
