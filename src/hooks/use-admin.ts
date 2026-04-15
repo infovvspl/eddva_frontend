@@ -593,3 +593,19 @@ export function useImportPYQCSV() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Bulk Curriculum Import
+// ---------------------------------------------------------------------------
+
+export function useBulkImportCurriculum() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: adminApi.BulkImportPayload) => adminApi.bulkImportCurriculum(payload),
+    onSuccess: (_data, variables) => {
+      // Invalidate subjects for the affected batch
+      qc.invalidateQueries({ queryKey: adminKeys.subjects });
+      qc.invalidateQueries({ queryKey: ["admin", "subjects", variables.batchId] });
+    },
+  });
+}

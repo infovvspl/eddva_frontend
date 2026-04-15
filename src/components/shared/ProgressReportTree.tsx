@@ -78,7 +78,7 @@ function TopicRow({ topic }: { topic: TopicReportEntry }) {
             </div>
           )}
           {topic.aiSession?.completed && (
-            <Brain className="w-3.5 h-3.5 text-violet-400" title="AI session completed" />
+            <Brain className="w-3.5 h-3.5 text-violet-400" aria-label="AI session completed" />
           )}
         </div>
 

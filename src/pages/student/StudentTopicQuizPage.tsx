@@ -309,7 +309,6 @@ export default function StudentTopicQuizPage() {
   ) * 60;
 
   const isRunning = stage === "quiz" || stage === "ai_quiz";
-  const timerDanger = isRunning && seconds < 120;
 
   const handleTimeUp = useCallback(() => {
     if (stage === "quiz" && session) handleTeacherSubmit(true);
@@ -317,6 +316,7 @@ export default function StudentTopicQuizPage() {
   }, [stage, session]); // eslint-disable-line
 
   const seconds = useTimer(durationSec, isRunning, handleTimeUp);
+  const timerDanger = isRunning && seconds < 120;
 
   useEffect(() => {
     if (!topicId) { setStage("no_quiz"); return; }

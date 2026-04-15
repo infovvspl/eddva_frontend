@@ -8,7 +8,7 @@ import {
   ArrowLeft, BookOpen, CheckCircle, XCircle, Clock,
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
   Maximize, RotateCcw, Trophy, Tag, Layers, FlaskConical,
-  MessageCircle, Loader2, Lock,
+  MessageCircle, Loader2, Lock, Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiClient, extractData } from "@/lib/api/client";

@@ -664,7 +664,7 @@ export function QuizAnalyticsModal({ quiz, onClose }: { quiz: MockTest; onClose:
     : "bg-slate-100 text-slate-600 dark:bg-gray-100 dark:text-slate-400";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-background rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl border border-border">
 
         {/* Header */}
@@ -739,7 +739,7 @@ export function QuizAnalyticsModal({ quiz, onClose }: { quiz: MockTest; onClose:
           ) : tab === "questions" ? (
             <QuestionsTab quiz={q} />
           ) : (
-            <SettingsTab quiz={q} onPublish={publishM.mutateAsync} />
+            <SettingsTab quiz={q} onPublish={async () => { await publishM.mutateAsync(); }} />
           )}
         </div>
       </div>

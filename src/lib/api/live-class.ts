@@ -4,7 +4,7 @@ import type { ApiResponse } from "./client";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface LiveTokenResponse {
-  token: string;
+  token: string | null;
   channelName: string;
   uid: number;
   appId: string;

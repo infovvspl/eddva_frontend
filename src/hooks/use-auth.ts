@@ -56,7 +56,7 @@ export function useVerifyOtp() {
           tenantId: profile.tenantId,
           tenantName: profile.tenant?.name || profile.tenantName || "",
           isFirstLogin: (profile as any).isFirstLogin ?? false,
-          teacherProfile: meData.teacherProfile ?? null,
+          teacherProfile: (meData.teacherProfile ?? null) as any,
           studentProfile: studentRaw ? {
             id: studentRaw.id ?? "",
             batchId: studentRaw.batchId,
@@ -117,7 +117,7 @@ export function useMe(enabled = true) {
         tenantId: profile.tenantId,
         tenantName: profile.tenant?.name || profile.tenantName || "",
         isFirstLogin: (profile as any).isFirstLogin ?? false,
-        teacherProfile: meData.teacherProfile ?? null,
+        teacherProfile: (meData.teacherProfile ?? null) as any,
         studentProfile: studentRaw ? {
           id: studentRaw.id ?? "",
           batchId: studentRaw.batchId,
@@ -134,7 +134,7 @@ export function useMe(enabled = true) {
           currentEloTier: studentRaw.currentEloTier,
         } : null,
       };
-      setUser(user);
+      setUser(user as any);
       return user;
     },
     enabled,

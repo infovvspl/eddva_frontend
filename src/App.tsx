@@ -131,32 +131,42 @@ const TeacherRoutes = () => (
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
-      <Route path="/live/:lectureId" element={<LiveClassRoom />} />
     </Route>
+    {/* Live class room — full screen, no layout wrapper */}
+    <Route
+      path="/live/:lectureId"
+      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
+    />
   </>
 );
 
 const StudentRoutes = () => (
-  <Route element={<ProtectedRoute allowedRoles={["student"]}><DashboardLayout /></ProtectedRoute>}>
-    <Route path="/student" element={<StudentDashboard />} />
-    <Route path="/student/learn" element={<StudentLearnPage />} />
-    <Route path="/student/learn/topic/:topicId" element={<TopicDetailPage />} />
-    <Route path="/student/lectures" element={<StudentLecturesPage />} />
-    <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
-    <Route path="/student/battle" element={<BattleArena />} />
-    <Route path="/student/doubts" element={<StudentDoubtsPage />} />
-    <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
-    <Route path="/student/study-plan" element={<StudentStudyPlanPage />} />
-    <Route path="/student/profile" element={<StudentProfilePage />} />
-    <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
-    <Route path="/student/courses" element={<StudentCoursesPage />} />
-    <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
-    <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
-    <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
-    <Route path="/student/ai-study/:topicId" element={<StudentAiStudyPage />} />
-    <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
-    <Route path="/live/:lectureId" element={<LiveClassRoom />} />
-  </Route>
+  <>
+    <Route element={<ProtectedRoute allowedRoles={["student"]}><DashboardLayout /></ProtectedRoute>}>
+      <Route path="/student" element={<StudentDashboard />} />
+      <Route path="/student/learn" element={<StudentLearnPage />} />
+      <Route path="/student/learn/topic/:topicId" element={<TopicDetailPage />} />
+      <Route path="/student/lectures" element={<StudentLecturesPage />} />
+      <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
+      <Route path="/student/battle" element={<BattleArena />} />
+      <Route path="/student/doubts" element={<StudentDoubtsPage />} />
+      <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
+      <Route path="/student/study-plan" element={<StudentStudyPlanPage />} />
+      <Route path="/student/profile" element={<StudentProfilePage />} />
+      <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
+      <Route path="/student/courses" element={<StudentCoursesPage />} />
+      <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
+      <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
+      <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
+      <Route path="/student/ai-study/:topicId" element={<StudentAiStudyPage />} />
+      <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
+    </Route>
+    {/* Live class room — full screen, no layout wrapper */}
+    <Route
+      path="/live/:lectureId"
+      element={<ProtectedRoute allowedRoles={["student"]}><LiveClassRoom /></ProtectedRoute>}
+    />
+  </>
 );
 
 /** Routes for tenant subdomains (e.g. iit.edva.in) */

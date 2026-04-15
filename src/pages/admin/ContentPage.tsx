@@ -9,6 +9,7 @@ import {
   FolderOpen, Folder, Play, Eye, LayoutGrid, Users,
   Sparkles, Brain, FlaskConical, StickyNote, ListChecks,
   Lightbulb, BookText, Wand2, ChevronUp, Zap, Lock,
+  FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList,
 } from "lucide-react";
 import {
   useBatches,
@@ -16,8 +17,9 @@ import {
   useChapters, useCreateChapter,
   useTopics, useCreateTopic,
   useTopicResources, useUploadTopicResource, useDeleteTopicResource, useAddTopicResourceLink,
+  useBulkImportCurriculum,
 } from "@/hooks/use-admin";
-import type { TopicResourceType, Subject, Chapter, Topic, TopicResource } from "@/lib/api/admin";
+import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -724,6 +726,435 @@ function ChapterTree({
   );
 }
 
+// ─── Bulk Import Modal ────────────────────────────────────────────────────────
+
+const SAMPLE_JSON = `{
+  "subjects": [
+    {
+      "name": "Physics",
+      "colorCode": "#3B82F6",
+      "chapters": [
+        {
+          "name": "Kinematics",
+          "jeeWeightage": 8,
+          "neetWeightage": 4,
+          "topics": [
+            { "name": "Vectors", "estimatedStudyMinutes": 60 },
+            { "name": "Projectile Motion", "estimatedStudyMinutes": 90 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Chemistry",
+      "colorCode": "#10B981",
+      "chapters": [
+        {
+          "name": "Atomic Structure",
+          "jeeWeightage": 6,
+          "topics": [
+            { "name": "Bohr Model", "estimatedStudyMinutes": 60 }
+          ]
+        }
+      ]
+    }
+  ]
+}`;
+
+type ImportMode = "json" | "excel";
+type ImportStep = "input" | "preview" | "done";
+
+function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
+  batchId: string;
+  batchName: string;
+  examTarget: string;
+  onClose: () => void;
+}) {
+  const importMutation = useBulkImportCurriculum();
+  const [mode, setMode] = useState<ImportMode>("json");
+  const [step, setStep] = useState<ImportStep>("input");
+  const [jsonText, setJsonText] = useState(SAMPLE_JSON);
+  const [parseError, setParseError] = useState("");
+  const [parsedSubjects, setParsedSubjects] = useState<BulkImportSubject[]>([]);
+  const [result, setResult] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState("");
+
+  // Parse the Excel/CSV file client-side into the same BulkImportSubject[] shape
+  const parseExcelFile = async (file: File) => {
+    try {
+      const XLSX = await import("xlsx");
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+      // Expected columns: Subject | Chapter | Topic | JEE Weightage | NEET Weightage | Minutes
+      const subjectMap = new Map<string, Map<string, { topics: any[]; jee: number; neet: number }>>();
+      for (const row of rows) {
+        const subject = String(row["Subject"] || row["subject"] || "").trim();
+        const chapter = String(row["Chapter"] || row["chapter"] || "").trim();
+        const topic   = String(row["Topic"]   || row["topic"]   || "").trim();
+        if (!subject || !chapter || !topic) continue;
+        const jee   = Number(row["JEE Weightage"]  || row["jeeWeightage"]  || 0);
+        const neet  = Number(row["NEET Weightage"] || row["neetWeightage"] || 0);
+        const mins  = Number(row["Minutes"] || row["estimatedStudyMinutes"] || 60);
+
+        if (!subjectMap.has(subject)) subjectMap.set(subject, new Map());
+        const chapMap = subjectMap.get(subject)!;
+        if (!chapMap.has(chapter)) chapMap.set(chapter, { topics: [], jee, neet });
+        chapMap.get(chapter)!.topics.push({ name: topic, estimatedStudyMinutes: mins });
+      }
+
+      const subjects: BulkImportSubject[] = [];
+      for (const [subjectName, chapMap] of subjectMap.entries()) {
+        const chapters = [];
+        for (const [chapName, data] of chapMap.entries()) {
+          chapters.push({ name: chapName, jeeWeightage: data.jee, neetWeightage: data.neet, topics: data.topics });
+        }
+        subjects.push({ name: subjectName, chapters });
+      }
+
+      if (subjects.length === 0) {
+        setParseError("No valid rows found. Check the column names: Subject, Chapter, Topic, JEE Weightage, NEET Weightage, Minutes");
+        return;
+      }
+      setParseError("");
+      setParsedSubjects(subjects);
+      setStep("preview");
+    } catch (e: any) {
+      setParseError(`Failed to read file: ${e?.message ?? "Unknown error"}`);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    await parseExcelFile(file);
+  };
+
+  const handleParseJson = () => {
+    setParseError("");
+    try {
+      const parsed = JSON.parse(jsonText);
+      const subjects: BulkImportSubject[] = parsed.subjects ?? parsed;
+      if (!Array.isArray(subjects) || subjects.length === 0) throw new Error("subjects array is empty");
+      for (const s of subjects) {
+        if (!s.name) throw new Error(`Subject missing "name" field`);
+        if (!Array.isArray(s.chapters)) throw new Error(`Subject "${s.name}" missing "chapters" array`);
+        for (const c of s.chapters) {
+          if (!c.name) throw new Error(`Chapter missing "name" in subject "${s.name}"`);
+          if (!Array.isArray(c.topics)) throw new Error(`Chapter "${c.name}" missing "topics" array`);
+        }
+      }
+      setParsedSubjects(subjects);
+      setStep("preview");
+    } catch (e: any) {
+      setParseError(e?.message ?? "Invalid JSON");
+    }
+  };
+
+  const handleImport = async () => {
+    const payload: BulkImportPayload = { batchId, examTarget, subjects: parsedSubjects };
+    try {
+      const res = await importMutation.mutateAsync(payload);
+      setResult(res);
+      setStep("done");
+      toast.success(`Import complete — ${res.created.topics} topics created`);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Import failed");
+    }
+  };
+
+  const totalTopics = parsedSubjects.reduce((s, sub) =>
+    s + sub.chapters.reduce((cs, ch) => cs + ch.topics.length, 0), 0);
+  const totalChapters = parsedSubjects.reduce((s, sub) => s + sub.chapters.length, 0);
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 shrink-0">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-indigo-500" />
+              Bulk Import Curriculum
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {batchName} — Import subjects, chapters & topics in one shot
+            </p>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Step indicators */}
+        <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
+          {(["input", "preview", "done"] as ImportStep[]).map((s, i) => (
+            <React.Fragment key={s}>
+              <div className={cn(
+                "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all",
+                step === s ? "bg-indigo-600 text-white" :
+                (["input","preview","done"].indexOf(step) > i) ? "bg-emerald-100 text-emerald-700" :
+                "bg-slate-200 text-slate-400"
+              )}>
+                {(["input","preview","done"].indexOf(step) > i)
+                  ? <CheckCircle2 className="w-3 h-3" />
+                  : <span>{i + 1}</span>}
+                {s === "input" ? "Input" : s === "preview" ? "Preview" : "Done"}
+              </div>
+              {i < 2 && <ArrowRight className="w-3 h-3 text-slate-300 shrink-0" />}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ── Step 1: Input ── */}
+          {step === "input" && (
+            <div className="p-6 space-y-5">
+              {/* Mode toggle */}
+              <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
+                {([
+                  { id: "json", label: "Paste JSON", icon: ClipboardList },
+                  { id: "excel", label: "Upload Excel/CSV", icon: FileSpreadsheet },
+                ] as { id: ImportMode; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => { setMode(id); setParseError(""); }}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all",
+                      mode === id ? "bg-white shadow-sm text-indigo-700" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" /> {label}
+                  </button>
+                ))}
+              </div>
+
+              {mode === "json" ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-500">JSON Structure</p>
+                    <button
+                      onClick={() => setJsonText(SAMPLE_JSON)}
+                      className="text-xs text-indigo-600 font-bold hover:underline"
+                    >Load sample</button>
+                  </div>
+                  <textarea
+                    value={jsonText}
+                    onChange={e => setJsonText(e.target.value)}
+                    rows={14}
+                    spellCheck={false}
+                    className="w-full font-mono text-xs bg-slate-900 text-emerald-300 p-4 rounded-2xl border border-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none"
+                  />
+                  <p className="text-[11px] text-slate-400">
+                    Format: <code className="bg-slate-100 px-1 rounded">{"{ subjects: [{ name, colorCode?, chapters: [{ name, jeeWeightage?, neetWeightage?, topics: [{ name, estimatedStudyMinutes? }] }] }] }"}</code>
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Excel template info */}
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs text-indigo-700">
+                    <p className="font-bold mb-2">Required columns (header row):</p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {["Subject", "Chapter", "Topic", "JEE Weightage", "NEET Weightage", "Minutes"].map(col => (
+                        <code key={col} className="bg-white border border-indigo-200 px-2 py-1 rounded-lg font-bold">{col}</code>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-indigo-500">Each row = one topic. Repeat Subject/Chapter for multiple topics.</p>
+                  </div>
+
+                  {/* Drop zone */}
+                  <div
+                    className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <FileSpreadsheet className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    <p className="font-bold text-slate-600 text-sm">{fileName || "Click to upload Excel or CSV"}</p>
+                    <p className="text-xs text-slate-400 mt-1">.xlsx, .xls, .csv — max 5 MB</p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {parseError && (
+                <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-600 font-medium">{parseError}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 2: Preview ── */}
+          {step === "preview" && (
+            <div className="p-6 space-y-4">
+              {/* Stats banner */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Subjects", val: parsedSubjects.length, color: "text-indigo-600", bg: "bg-indigo-50" },
+                  { label: "Chapters", val: totalChapters, color: "text-amber-600", bg: "bg-amber-50" },
+                  { label: "Topics",   val: totalTopics,   color: "text-emerald-600", bg: "bg-emerald-50" },
+                ].map(s => (
+                  <div key={s.label} className={cn("rounded-2xl p-4 text-center", s.bg)}>
+                    <p className={cn("text-3xl font-black", s.color)}>{s.val}</p>
+                    <p className="text-xs font-bold text-slate-500 mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-slate-400 font-medium">
+                Existing subjects/chapters/topics with matching names will be skipped (no duplicates created).
+                New ones will be created under <strong className="text-slate-700">{batchName}</strong>.
+              </p>
+
+              {/* Tree preview */}
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {parsedSubjects.map((sub, si) => (
+                  <div key={si} className="bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100">
+                      <GraduationCap className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <span className="font-bold text-slate-800">{sub.name}</span>
+                      {sub.colorCode && (
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ background: sub.colorCode }} />
+                      )}
+                      <span className="ml-auto text-[11px] text-slate-400 font-medium">
+                        {sub.chapters.length} chapters · {sub.chapters.reduce((s, c) => s + c.topics.length, 0)} topics
+                      </span>
+                    </div>
+                    <div className="p-3 space-y-2">
+                      {sub.chapters.map((ch, ci) => (
+                        <div key={ci} className="ml-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <FolderOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span className="text-xs font-bold text-slate-700">{ch.name}</span>
+                            {ch.jeeWeightage ? (
+                              <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100">
+                                JEE {ch.jeeWeightage}%
+                              </span>
+                            ) : null}
+                            <span className="text-[11px] text-slate-400 ml-auto">{ch.topics.length} topics</span>
+                          </div>
+                          <div className="ml-5 flex flex-wrap gap-1">
+                            {ch.topics.map((t, ti) => (
+                              <span key={ti} className="text-[10px] font-semibold bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                                {t.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Done ── */}
+          {step === "done" && result && (
+            <div className="p-6 space-y-6 text-center">
+              <div className="w-20 h-20 rounded-3xl bg-emerald-100 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 mb-1">Import Successful!</h3>
+                <p className="text-sm text-slate-500">Your course curriculum has been updated.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-left">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-2">Created</p>
+                  {[
+                    { label: "Subjects", val: result.created.subjects },
+                    { label: "Chapters", val: result.created.chapters },
+                    { label: "Topics",   val: result.created.topics },
+                  ].map(r => (
+                    <div key={r.label} className="flex justify-between text-sm">
+                      <span className="text-slate-600 font-medium">{r.label}</span>
+                      <span className="font-black text-emerald-700">{r.val}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Skipped (exists)</p>
+                  {[
+                    { label: "Subjects", val: result.skipped.subjects },
+                    { label: "Chapters", val: result.skipped.chapters },
+                    { label: "Topics",   val: result.skipped.topics },
+                  ].map(r => (
+                    <div key={r.label} className="flex justify-between text-sm">
+                      <span className="text-slate-600 font-medium">{r.label}</span>
+                      <span className="font-black text-slate-500">{r.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between gap-3 shrink-0">
+          {step === "input" && (
+            <>
+              <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={mode === "json" ? handleParseJson : undefined}
+                disabled={mode === "excel"}
+                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-2xl hover:bg-indigo-700 transition-colors disabled:opacity-40"
+              >
+                Preview <ArrowRight className="w-4 h-4" />
+              </button>
+            </>
+          )}
+          {step === "preview" && (
+            <>
+              <button onClick={() => setStep("input")} className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors">
+                <ChevronLeft className="w-4 h-4" /> Back
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={importMutation.isPending}
+                className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white text-sm font-black rounded-2xl hover:from-indigo-700 hover:to-indigo-600 transition-all shadow-lg disabled:opacity-60"
+              >
+                {importMutation.isPending
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</>
+                  : <><Zap className="w-4 h-4" /> Import {totalTopics} Topics</>}
+              </button>
+            </>
+          )}
+          {step === "done" && (
+            <button
+              onClick={onClose}
+              className="w-full px-6 py-2.5 bg-slate-900 text-white text-sm font-black rounded-2xl hover:bg-slate-800 transition-colors"
+            >
+              Done — View Curriculum
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Add Subject Modal ────────────────────────────────────────────────────────
 
 const PRESET_SUBJECTS = [
@@ -757,7 +1188,7 @@ function AddSubjectModal({ batchId, examTarget, onClose }: { batchId: string; ex
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -1261,6 +1692,7 @@ const ContentPage = () => {
     topic: Topic; chapter: Chapter; subject: Subject;
   } | null>(null);
   const [showAddSubject, setShowAddSubject] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
   const [rightTab, setRightTab] = useState<"resources" | "ai">("resources");
 
@@ -1396,6 +1828,14 @@ const ContentPage = () => {
             </div>
           )}
 
+          {/* Bulk Import */}
+          <button
+            onClick={() => setShowBulkImport(true)}
+            className="flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-indigo-700 text-xs font-black shrink-0 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" /> Bulk Import
+          </button>
+
           {/* Add Subject */}
           <button
             onClick={() => setShowAddSubject(true)}
@@ -1505,6 +1945,15 @@ const ContentPage = () => {
             batchId={selectedBatch.id}
             examTarget={selectedBatch.examTarget}
             onClose={() => setShowAddSubject(false)}
+          />
+        )}
+        {showBulkImport && selectedBatch && (
+          <BulkImportModal
+            key="bulk-import"
+            batchId={selectedBatch.id}
+            batchName={selectedBatch.name}
+            examTarget={selectedBatch.examTarget}
+            onClose={() => setShowBulkImport(false)}
           />
         )}
       </AnimatePresence>

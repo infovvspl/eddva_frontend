@@ -143,20 +143,8 @@ const DashboardLayout = () => {
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-white border-r border-slate-100 relative overflow-hidden" style={{ boxShadow: "4px 0 24px rgba(0,0,0,0.06)" }}>
       {/* ── Brand ── */}
-      <div className="h-24 px-8 flex items-center gap-4 shrink-0 border-b border-slate-100/50">
-        <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm group cursor-pointer overflow-hidden transition-all duration-500 hover:rotate-6">
-           <img src={edvaLogo} alt="EDDVA" className="w-7 h-7 object-contain" />
-        </div>
-        {sidebarOpen && (
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="min-w-0">
-            <span className="text-sm font-bold text-slate-900 block truncate">
-              EDDVA
-            </span>
-            {user.tenantName && (
-              <span className="text-[10px] font-medium text-slate-500 block truncate">{user.tenantName}</span>
-            )}
-          </motion.div>
-        )}
+      <div className="h-24 px-4 flex items-center justify-center shrink-0 border-b border-slate-100/50">
+        <img src={edvaLogo} alt="EDDVA" className="h-16 w-auto max-w-full object-contain cursor-pointer transition-transform duration-500 hover:scale-105" />
       </div>
 
       {/* ── Nav ── */}

@@ -96,20 +96,40 @@ export interface MyCourse {
   progress: MyCourseProgress;
 }
 
+export interface CourseResource {
+  id: string;
+  type: "pdf" | "dpp" | "pyq" | "quiz" | "notes" | "video" | "link";
+  title: string;
+  fileUrl: string | null;
+  externalUrl: string | null;
+  fileSizeKb: number | null;
+  description: string | null;
+  /** injected by normalizer for context in flat lists */
+  topicId?: string;
+  topicName?: string;
+  subjectName?: string;
+  chapterName?: string;
+}
+
 export interface CourseTopic {
   id: string;
   name: string;
   sortOrder?: number;
   estimatedStudyMinutes?: number;
+  gatePassPercentage?: number;
   status: "locked" | "unlocked" | "in_progress" | "completed";
-  completedAt?: string;
-  progressPct?: number;
+  completedAt?: string | null;
+  bestAccuracy?: number;
+  lectures: { total: number; completed: number };
+  resources: CourseResource[];
 }
 
 export interface CourseChapter {
   id: string;
   name: string;
   sortOrder?: number;
+  jeeWeightage?: number;
+  neetWeightage?: number;
   topics: CourseTopic[];
 }
 
@@ -118,6 +138,8 @@ export interface CourseSubject {
   name: string;
   examTarget?: string;
   colorCode?: string;
+  icon?: string | null;
+  teacher?: { id: string; name: string } | null;
   chapters: CourseChapter[];
 }
 
@@ -127,10 +149,27 @@ export interface CourseCurriculum {
     name: string;
     examTarget: string;
     class: string;
-    thumbnailUrl?: string;
-    teacher?: { id: string; fullName: string };
-    startDate?: string;
-    endDate?: string;
+    thumbnailUrl?: string | null;
+    status?: string;
+    teacher?: { id: string; fullName: string } | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    isPaid?: boolean;
+    feeAmount?: number | null;
+  };
+  enrollment: {
+    id: string;
+    status: string;
+    enrolledAt: Date;
+    feePaid: number | null;
+  };
+  summary: {
+    totalSubjects: number;
+    totalTopics: number;
+    completedTopics: number;
+    totalLectures: number;
+    watchedLectures: number;
+    progressPercent: number;
   };
   subjects: CourseSubject[];
   progress: MyCourseProgress;
@@ -153,7 +192,8 @@ export interface TopicResource {
   id: string;
   type: string;
   title: string;
-  fileUrl: string;
+  fileUrl: string | null;
+  externalUrl?: string | null;
   fileSize?: number;
   sortOrder?: number;
 }
@@ -243,7 +283,57 @@ export async function getMyCourses(): Promise<MyCourse[]> {
 
 export async function getCourseCurriculum(batchId: string): Promise<CourseCurriculum> {
   const res = await apiClient.get(`/students/my-courses/${batchId}`);
-  return extractData<CourseCurriculum>(res);
+  const raw = extractData<any>(res);
+
+  // Map backend shape { batch, enrollment, summary, curriculum[] }
+  // → frontend shape { batch, enrollment, summary, subjects[], progress }
+  const subjects: CourseSubject[] = (raw?.curriculum ?? []).map((s: any) => ({
+    id:        s.id,
+    name:      s.name,
+    colorCode: s.colorCode ?? null,
+    icon:      s.icon ?? null,
+    teacher:   s.teacher ?? null,
+    chapters:  (s.chapters ?? []).map((c: any) => ({
+      id:            c.id,
+      name:          c.name,
+      jeeWeightage:  c.jeeWeightage,
+      neetWeightage: c.neetWeightage,
+      topics:        (c.topics ?? []).map((t: any) => ({
+        id:                    t.id,
+        name:                  t.name,
+        estimatedStudyMinutes: t.estimatedStudyMinutes,
+        gatePassPercentage:    t.gatePassPercentage,
+        status:                t.progress?.status ?? "locked",
+        completedAt:           t.progress?.completedAt ?? null,
+        bestAccuracy:          t.progress?.bestAccuracy ?? 0,
+        lectures:              t.lectures ?? { total: 0, completed: 0 },
+        resources:             (t.resources ?? []).map((r: any) => ({
+          id:          r.id,
+          type:        r.type,
+          title:       r.title,
+          fileUrl:     r.fileUrl ?? null,
+          externalUrl: r.externalUrl ?? null,
+          fileSizeKb:  r.fileSizeKb ?? null,
+          description: r.description ?? null,
+        })),
+      })),
+    })),
+  }));
+
+  const sm = raw?.summary ?? {};
+  return {
+    batch:      raw?.batch ?? {},
+    enrollment: raw?.enrollment ?? {},
+    summary:    sm,
+    subjects,
+    progress: {
+      completedTopics:   sm.completedTopics   ?? 0,
+      totalTopics:       sm.totalTopics       ?? 0,
+      completedLectures: sm.watchedLectures   ?? 0,
+      totalLectures:     sm.totalLectures     ?? 0,
+      overallPct:        sm.progressPercent   ?? 0,
+    },
+  } as CourseCurriculum;
 }
 
 export async function getCourseTopicDetail(batchId: string, topicId: string): Promise<TopicDetailWithContent> {
@@ -895,6 +985,7 @@ export interface AiPracticeQuestion {
 export interface AiStudySessionData {
   id: string;
   topicId: string;
+  topicName?: string;
   lessonMarkdown: string;
   keyConcepts: string[];
   formulas: string[];
@@ -1269,4 +1360,55 @@ export async function discoverBatches(): Promise<DiscoverBatchesResult> {
 export async function enrollInBatch(batchId: string): Promise<{ message: string }> {
   const res = await apiClient.post(`/students/enroll/${batchId}`, {});
   return extractData<{ message: string }>(res);
+}
+
+// ─── Public Batch Preview (no enrollment required) ────────────────────────────
+
+export interface PreviewTopic {
+  id: string;
+  name: string;
+  estimatedStudyMinutes: number;
+}
+
+export interface PreviewChapter {
+  id: string;
+  name: string;
+  jeeWeightage: number;
+  neetWeightage: number;
+  topics: PreviewTopic[];
+}
+
+export interface PreviewSubject {
+  id: string;
+  name: string;
+  icon: string | null;
+  colorCode: string | null;
+  teacher: { id: string; name: string } | null;
+  chapters: PreviewChapter[];
+}
+
+export interface BatchPreview {
+  id: string;
+  name: string;
+  examTarget: string;
+  class: string;
+  thumbnailUrl: string | null;
+  isPaid: boolean;
+  feeAmount: number | null;
+  maxStudents: number;
+  startDate: string | null;
+  endDate: string | null;
+  status: string;
+  teacher: { id: string; fullName: string } | null;
+  studentCount: number;
+  subjectNames: string[];
+  isEnrolled: boolean;
+  feePaid: number | null;
+  curriculum: PreviewSubject[];
+  totalTopics: number;
+}
+
+export async function getBatchPreview(batchId: string): Promise<BatchPreview> {
+  const res = await apiClient.get(`/students/batches/${batchId}`);
+  return extractData<BatchPreview>(res);
 }

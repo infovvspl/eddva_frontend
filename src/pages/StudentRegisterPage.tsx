@@ -38,13 +38,18 @@ const Field = ({
 }) => {
   const [focused, setFocused] = useState(false);
   return (
-    <div className={`relative group ${className}`}>
-      {label && <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1">{label}</label>}
+    <div className={`relative ${className}`}>
+      {label && (
+        <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
+          {label}
+        </label>
+      )}
       <div className={`
-        flex items-center gap-3 rounded-2xl border-2 transition-all duration-300 bg-slate-50/50
-        ${focused ? "border-blue-400/50 bg-white ring-8 ring-blue-500/5" : "border-slate-100/50 hover:border-slate-200"}
+        flex items-center gap-2.5 rounded-lg border bg-white transition-colors duration-150
+        ${focused ? "border-blue-500 ring-2 ring-blue-500/15" : "border-slate-200 hover:border-slate-300"}
+        ${disabled ? "opacity-60" : ""}
       `}>
-        <div className={`pl-4 transition-colors duration-300 ${focused ? "text-blue-500" : "text-gray-600"}`}>
+        <div className={`pl-3.5 transition-colors ${focused ? "text-blue-500" : "text-slate-400"}`}>
           {icon}
         </div>
         <input
@@ -56,7 +61,7 @@ const Field = ({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChange={e => onChange(numeric ? e.target.value.replace(/\D/g, "") : e.target.value)}
-          className="w-full bg-transparent px-2 py-4 text-[15px] font-semibold text-slate-800 outline-none placeholder:text-gray-600 disabled:opacity-50"
+          className="w-full bg-transparent pr-3.5 py-3 text-[14px] font-normal text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
         />
       </div>
     </div>
@@ -69,13 +74,18 @@ const PwField = ({
   const [show, setShow] = useState(false);
   const [focused, setFocused] = useState(false);
   return (
-    <div className="relative group">
-      {label && <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1">{label}</label>}
+    <div className="relative">
+      {label && (
+        <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
+          {label}
+        </label>
+      )}
       <div className={`
-        flex items-center gap-3 rounded-2xl border-2 transition-all duration-300 bg-slate-50/50
-        ${focused ? "border-blue-400/50 bg-white ring-8 ring-blue-500/5" : "border-slate-100/50 hover:border-slate-200"}
+        flex items-center gap-2.5 rounded-lg border bg-white transition-colors duration-150
+        ${focused ? "border-blue-500 ring-2 ring-blue-500/15" : "border-slate-200 hover:border-slate-300"}
+        ${disabled ? "opacity-60" : ""}
       `}>
-        <div className={`pl-4 transition-colors ${focused ? "text-blue-500" : "text-gray-600"}`}>
+        <div className={`pl-3.5 transition-colors ${focused ? "text-blue-500" : "text-slate-400"}`}>
           <Lock className="h-4 w-4" />
         </div>
         <input
@@ -86,10 +96,10 @@ const PwField = ({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChange={e => onChange(e.target.value)}
-          className="w-full bg-transparent px-2 py-4 text-[15px] font-semibold text-slate-800 outline-none placeholder:text-gray-600 disabled:opacity-50"
+          className="w-full bg-transparent py-3 text-[14px] font-normal text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
         />
         <button type="button" onClick={() => setShow(s => !s)}
-          className="pr-4 text-gray-600 hover:text-slate-600 transition-colors flex-shrink-0">
+          className="pr-3.5 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
@@ -347,9 +357,9 @@ const StudentRegisterPage = () => {
                     {/* STEP 1: IDENTITY */}
                     {step === 1 && (
                       <>
-                        <Field icon={<User className="h-5 w-5" />} label="Full Name" placeholder="Rahul Sharma" value={form.name} onChange={set("name")} disabled={loading} />
-                        <Field icon={<Users className="h-5 w-5" />} label="Parent / Guardian" placeholder="Father's or Mother's Name" value={form.careOf} onChange={set("careOf")} disabled={loading} />
-                        <Field icon={<Mail className="h-5 w-5" />} label="Email Address" type="email" placeholder="rahul@example.com" value={form.email} onChange={set("email")} disabled={loading} />
+                        <Field icon={<User className="h-4 w-4" />} label="Full Name" placeholder="Rahul Sharma" value={form.name} onChange={set("name")} disabled={loading} />
+                        <Field icon={<Users className="h-4 w-4" />} label="Parent / Guardian" placeholder="Father's or Mother's Name" value={form.careOf} onChange={set("careOf")} disabled={loading} />
+                        <Field icon={<Mail className="h-4 w-4" />} label="Email Address" type="email" placeholder="rahul@example.com" value={form.email} onChange={set("email")} disabled={loading} />
                       </>
                     )}
 
@@ -357,27 +367,27 @@ const StudentRegisterPage = () => {
                     {step === 2 && (
                       <>
                         <div className="grid grid-cols-2 gap-4">
-                          <Field icon={<Smartphone className="h-5 w-5" />} label="Mobile *" placeholder="9876543210" value={form.phone} onChange={set("phone")} numeric maxLength={10} disabled={loading} />
-                          <Field icon={<Smartphone className="h-5 w-5" />} label="Alt. Mobile *" placeholder="9876543210" value={form.altPhone} onChange={set("altPhone")} numeric maxLength={10} disabled={loading} />
+                          <Field icon={<Smartphone className="h-4 w-4" />} label="Mobile" placeholder="9876543210" value={form.phone} onChange={set("phone")} numeric maxLength={10} disabled={loading} />
+                          <Field icon={<Smartphone className="h-4 w-4" />} label="Alt. Mobile" placeholder="9876543210" value={form.altPhone} onChange={set("altPhone")} numeric maxLength={10} disabled={loading} />
                         </div>
-                        <Field icon={<Home className="h-5 w-5" />} label="Address *" placeholder="Building, Street, Area" value={form.address} onChange={set("address")} disabled={loading} />
+                        <Field icon={<Home className="h-4 w-4" />} label="Address" placeholder="Building, Street, Area" value={form.address} onChange={set("address")} disabled={loading} />
                         <div className="grid grid-cols-2 gap-4">
-                          <Field icon={<MapPin className="h-5 w-5" />} label="Post Office *" placeholder="Post Office" value={form.postOffice} onChange={set("postOffice")} disabled={loading} />
-                          <Field icon={<MapPin className="h-5 w-5" />} label="City *" placeholder="City" value={form.city} onChange={set("city")} disabled={loading} />
+                          <Field icon={<MapPin className="h-4 w-4" />} label="Post Office" placeholder="Post Office" value={form.postOffice} onChange={set("postOffice")} disabled={loading} />
+                          <Field icon={<MapPin className="h-4 w-4" />} label="City" placeholder="City" value={form.city} onChange={set("city")} disabled={loading} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                          <Field icon={<MapPin className="h-5 w-5" />} label="Landmark / Tehsil *" placeholder="Landmark" value={form.landmark} onChange={set("landmark")} disabled={loading} />
-                          <Field icon={<Hash className="h-5 w-5" />} label="PIN Code *" placeholder="6-digit" value={form.pinCode} onChange={set("pinCode")} numeric maxLength={6} disabled={loading} />
+                          <Field icon={<MapPin className="h-4 w-4" />} label="Landmark / Tehsil" placeholder="Landmark" value={form.landmark} onChange={set("landmark")} disabled={loading} />
+                          <Field icon={<Hash className="h-4 w-4" />} label="PIN Code" placeholder="6-digit" value={form.pinCode} onChange={set("pinCode")} numeric maxLength={6} disabled={loading} />
                         </div>
-                        <div className="relative group">
-                          <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1">State</label>
-                          <div className="flex items-center gap-3 rounded-2xl border-2 border-slate-100/50 bg-slate-50/50 px-4 py-3.5">
-                            <MapPin className="h-5 w-5 text-gray-600" />
+                        <div className="relative">
+                          <label className="mb-1.5 block text-[12px] font-medium text-slate-700">State</label>
+                          <div className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+                            <MapPin className="h-4 w-4 text-slate-400 ml-3.5" />
                             <select value={form.state} onChange={e => set("state")(e.target.value)}
-                              className="w-full bg-transparent text-[15px] font-semibold text-slate-800 outline-none appearance-none cursor-pointer">
+                              className="w-full bg-transparent py-3 text-[14px] font-normal text-slate-900 outline-none appearance-none cursor-pointer">
                               {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
-                            <ChevronDown className="h-4 w-4 text-gray-600" />
+                            <ChevronDown className="h-4 w-4 text-slate-400 mr-3.5" />
                           </div>
                         </div>
                       </>
@@ -431,7 +441,7 @@ const StudentRegisterPage = () => {
                           Continue <ArrowRight className="h-5 w-5" />
                         </ActionButton>
                       ) : (
-                        <ActionButton type="submit" onClick={handleSubmit} disabled={loading || form.password !== form.confirmPassword}>
+                        <ActionButton type="submit" onClick={() => handleSubmit(new Event("submit") as any)} disabled={loading || form.password !== form.confirmPassword}>
                           {loading ? <><Loader2 className="h-5 w-5 animate-spin" /> Finalizing...</> : <><GraduationCap className="h-5 w-5" /> Complete Registration</>}
                         </ActionButton>
                       )}

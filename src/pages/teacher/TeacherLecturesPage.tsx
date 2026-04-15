@@ -410,7 +410,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
 
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-      className="fixed inset-0 z-50 flex justify-end">
+      className="fixed inset-0 z-[200] flex justify-end">
       <div className="flex-1 bg-background/60 backdrop-blur-sm" onClick={onClose} />
       <div className="w-full max-w-4xl bg-card border-l border-border flex flex-col h-full shadow-2xl">
 
@@ -864,7 +864,7 @@ function StatsPanel({ lecture, onClose }: { lecture: Lecture; onClose: () => voi
   const { data: stats, isLoading } = useLectureStats(lecture.id);
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-      className="fixed inset-0 z-50 flex justify-end">
+      className="fixed inset-0 z-[200] flex justify-end">
       <div className="flex-1 bg-background/60 backdrop-blur-sm" onClick={onClose} />
       <div className="w-full max-w-md bg-card border-l border-border flex flex-col h-full shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -961,7 +961,7 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
 
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-      className="fixed inset-0 z-50 flex justify-end">
+      className="fixed inset-0 z-[200] flex justify-end">
       <div className="flex-1 bg-background/60 backdrop-blur-sm" onClick={onClose} />
       <div className="w-full max-w-2xl bg-card border-l border-border flex flex-col h-full shadow-2xl">
 
@@ -1494,7 +1494,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
@@ -1754,33 +1754,35 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-3xl shadow-2xl max-h-[90vh] flex flex-col">
+        className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col"
+        style={{ maxHeight: "min(90vh, 800px)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-border shrink-0">
+        <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-              <Radio className="w-5 h-5 text-red-500" />
+            <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+              <Radio className="w-4 h-4 text-red-500" />
             </div>
             <div>
-              <h2 className="font-bold text-foreground text-lg">Schedule Live Class</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Students will be notified and reminded automatically</p>
+              <h2 className="font-bold text-foreground text-base">Schedule Live Class</h2>
+              <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">Students will be notified and reminded automatically</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body — two-column layout */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-border">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-5 md:divide-y-0 md:divide-x divide-y divide-border">
 
             {/* Left — form fields */}
-            <div className="lg:col-span-3 p-7 space-y-5">
+            <div className="md:col-span-3 p-5 sm:p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5 col-span-2">
                   <Label>Batch *</Label>
@@ -1835,7 +1837,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
             </div>
 
             {/* Right — info panel */}
-            <div className="lg:col-span-2 p-7 flex flex-col gap-5 bg-secondary/30">
+            <div className="md:col-span-2 p-5 sm:p-6 flex flex-col gap-4 bg-secondary/30">
               <div>
                 <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <AlarmClock className="w-4 h-4 text-primary" /> What happens next
@@ -1871,12 +1873,13 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
                 </div>
               )}
             </div>
-          </div>
+          </div>{/* end two-col grid */}
+          </div>{/* end scroll area */}
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-7 py-4 border-t border-border">
+          <div className="shrink-0 flex items-center justify-end gap-3 px-5 sm:px-7 py-4 border-t border-border bg-card">
             <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting || !batchId || !topicId || !title || !scheduledAt} className="gap-2 px-6">
+            <Button type="submit" disabled={isSubmitting || !batchId || !topicId || !title || !scheduledAt} className="gap-2 px-5">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
               Schedule Live Class
             </Button>

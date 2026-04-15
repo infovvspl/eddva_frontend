@@ -14,7 +14,7 @@ const VIOLET = "#7C3AED";
 const SLATE_BG = "#F8FAFC";
 
 /* ── Platform Stat Component ── */
-const PlatformStat = ({ icon, label, value, delay }: { icon: any; label: string; value: string; delay: number }) => (
+const PlatformStat = ({ icon: Icon, label, value, delay }: { icon: any; label: string; value: string; delay: number }) => (
   <motion.div
     initial={{ opacity: 0, x: 20 }}
     animate={{ opacity: 1, x: 0 }}
@@ -22,7 +22,7 @@ const PlatformStat = ({ icon, label, value, delay }: { icon: any; label: string;
     className="flex items-center gap-4 group"
   >
     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white shadow-sm">
-      <icon className="h-5 w-5" />
+      <Icon className="h-5 w-5" />
     </div>
     <div>
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-0.5">{label}</p>

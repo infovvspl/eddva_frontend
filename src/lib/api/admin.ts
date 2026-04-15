@@ -35,6 +35,7 @@ export interface Batch {
   updatedAt: string;
   studentCount?: number;
   teacherCount?: number;
+  enrolledCount?: number;
   thumbnailUrl?: string;
 }
 
@@ -892,6 +893,49 @@ export async function getInstituteSubscription() {
 export async function updateBillingEmail(billingEmail: string) {
   const res = await apiClient.patch("/institute/settings/billing-email", { billingEmail });
   return extractData<any>(res);
+}
+
+// ---------------------------------------------------------------------------
+// Bulk Curriculum Import
+// ---------------------------------------------------------------------------
+
+export interface BulkImportTopic {
+  name: string;
+  estimatedStudyMinutes?: number;
+}
+
+export interface BulkImportChapter {
+  name: string;
+  jeeWeightage?: number;
+  neetWeightage?: number;
+  topics: BulkImportTopic[];
+}
+
+export interface BulkImportSubject {
+  name: string;
+  colorCode?: string;
+  chapters: BulkImportChapter[];
+}
+
+export interface BulkImportPayload {
+  batchId: string;
+  examTarget?: string;
+  subjects: BulkImportSubject[];
+}
+
+export interface BulkImportResult {
+  message: string;
+  created: { subjects: number; chapters: number; topics: number };
+  skipped: { subjects: number; chapters: number; topics: number };
+  curriculum: {
+    id: string; name: string;
+    chapters: { id: string; name: string; topics: { id: string; name: string }[] }[];
+  }[];
+}
+
+export async function bulkImportCurriculum(payload: BulkImportPayload): Promise<BulkImportResult> {
+  const res = await apiClient.post("/content/curriculum/bulk-import", payload);
+  return extractData<BulkImportResult>(res);
 }
 
 export async function getInstituteNotificationPrefs() {

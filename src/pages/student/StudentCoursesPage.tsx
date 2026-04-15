@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Play, FileText, FlaskConical, PenTool, CheckCircle, Clock, BookOpen, Search,
-  Filter, GraduationCap, ChevronRight, Activity, Library, ShieldCheck, Loader2,
-  Users, Sparkles, Star, ArrowRight, BookMarked, Trophy, Zap,
+  Play, FileText, FlaskConical, BookOpen, Search,
+  ShieldCheck, Loader2,
+  Users, Sparkles, ArrowRight, BookMarked, Trophy, Zap,
 } from "lucide-react";
-import { useMyCourses, useDiscoverBatches, useEnrollInBatch } from "@/hooks/use-student";
+import { useMyCourses, useDiscoverBatches } from "@/hooks/use-student";
 import type { MyCourse } from "@/lib/api/student";
 import type { PublicBatch } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 const _API_ORIGIN = (() => {
   try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; } catch { return ""; }
@@ -43,13 +42,11 @@ const EXAM_GRADIENTS: Record<string, string> = {
 // ─── Course Discovery (shown when 0 enrolled courses) ─────────────────────────
 
 function CourseDiscovery() {
+  const navigate = useNavigate();
   const { data: discoverData, isLoading } = useDiscoverBatches();
   const batches: PublicBatch[] = discoverData?.availableBatches ?? [];
-  const enrollMutation = useEnrollInBatch();
-  const [examFilter, setExamFilter]   = useState("all");
-  const [search, setSearch]           = useState("");
-  const [enrollingId, setEnrollingId] = useState<string | null>(null);
-  const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
+  const [examFilter, setExamFilter] = useState("all");
+  const [search, setSearch]         = useState("");
 
   const filtered = batches.filter(b => {
     if (examFilter !== "all" && b.examTarget !== examFilter) return false;
@@ -58,19 +55,11 @@ function CourseDiscovery() {
     return true;
   });
 
-  const handleEnroll = async (batch: PublicBatch) => {
-    if (enrollingId || enrolledIds.has(batch.id)) return;
-    setEnrollingId(batch.id);
-    try {
-      await enrollMutation.mutateAsync(batch.id);
-      setEnrolledIds(prev => new Set([...prev, batch.id]));
-      toast.success(`Enrolled in "${batch.name}"! 🎉`);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || "Enrollment failed. Please try again.";
-      toast.error(msg);
-    } finally {
-      setEnrollingId(null);
-    }
+  const handleViewCourse = (batch: PublicBatch) => {
+    // Navigate to detail page, passing batch data as state for instant display
+    navigate(`/student/courses/${batch.id}`, {
+      state: { preview: batch },
+    });
   };
 
   return (
@@ -185,8 +174,6 @@ function CourseDiscovery() {
           {filtered.map((batch, i) => {
             const thumb = resolveUrl(batch.thumbnailUrl);
             const gradient = EXAM_GRADIENTS[batch.examTarget] ?? EXAM_GRADIENTS.default;
-            const isEnrolled = enrolledIds.has(batch.id);
-            const isEnrolling = enrollingId === batch.id;
 
             return (
               <motion.div
@@ -259,32 +246,19 @@ function CourseDiscovery() {
                     )}
                   </div>
 
-                  {/* Enroll button */}
+                  {/* View Course button */}
                   <div className="mt-auto">
-                    {isEnrolled ? (
-                      <div className="w-full py-2.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-semibold flex items-center justify-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        Enrolled!
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleEnroll(batch)}
-                        disabled={!!enrollingId}
-                        className={cn(
-                          "w-full py-2.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all",
-                          "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-sm",
-                          "hover:from-indigo-700 hover:to-indigo-600 hover:shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5",
-                          "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
-                        )}
-                      >
-                        {isEnrolling ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /> Enrolling…</>
-                        ) : (
-                          <>{batch.isPaid ? <Zap className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                          {batch.isPaid ? `Enroll · ₹${batch.feeAmount?.toLocaleString()}` : "Enroll Free"}</>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleViewCourse(batch)}
+                      className={cn(
+                        "w-full py-2.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all",
+                        "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-sm",
+                        "hover:from-indigo-700 hover:to-indigo-600 hover:shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
+                      )}
+                    >
+                      {batch.isPaid ? <Zap className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                      {batch.isPaid ? `View · ₹${batch.feeAmount?.toLocaleString()}` : "View Course"}
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -300,6 +274,8 @@ function CourseDiscovery() {
 
 export default function StudentCoursesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showDiscover = searchParams.get("discover") === "1";
   const { data: courses = [], isLoading } = useMyCourses();
   const [activeTab, setActiveTab] = useState<"ongoing" | "completed" | "not_started">("ongoing");
   const [search, setSearch] = useState("");
@@ -310,10 +286,18 @@ export default function StudentCoursesPage() {
     </div>
   );
 
-  // ── No enrolments → show full discovery page ──────────────────────────────
-  if (courses.length === 0) {
+  // ── No enrolments OR user clicked "Discover More" → show discovery page ──
+  if (courses.length === 0 || showDiscover) {
     return (
       <div className="max-w-7xl mx-auto p-6 pb-24">
+        {showDiscover && courses.length > 0 && (
+          <button
+            onClick={() => setSearchParams({})}
+            className="mb-6 flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+          >
+            ← Back to My Courses
+          </button>
+        )}
         <CourseDiscovery />
       </div>
     );
@@ -481,7 +465,7 @@ export default function StudentCoursesPage() {
 
           {/* Browse more */}
           <button
-            onClick={() => {/* force discovery view by clearing courses — just navigate */}}
+            onClick={() => setSearchParams({ discover: "1" })}
             className="w-full p-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl text-white text-left shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all"
           >
             <Sparkles className="w-5 h-5 mb-2 opacity-80" />

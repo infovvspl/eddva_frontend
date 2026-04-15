@@ -751,7 +751,7 @@ function CsvImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 p-4">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6">
         <div className="flex items-center justify-between mb-5">
@@ -992,7 +992,7 @@ function CreateTestModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/30 p-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1332,7 +1332,7 @@ function AddQuestionModal({ mockTestId, existingIds, onClose }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/30 p-4 overflow-y-auto">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6 my-8">
         <div className="flex items-center justify-between mb-5">

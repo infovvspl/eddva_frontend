@@ -83,7 +83,7 @@ export default function ReportsPage() {
   const lecList: any[] = Array.isArray(lectures) ? lectures : [];
   const teachList: any[] = Array.isArray(teachers) ? teachers : [];
   const testList: any[] = Array.isArray(mockTests) ? mockTests : [];
-  const stats = dash?.stats ?? {};
+  const stats = (dash?.stats ?? {}) as { totalStudents?: number; openDoubts?: number; [key: string]: any };
 
   const activeBatches = batchList.filter((b) => b.status === "active").length;
   const publishedLecs = lecList.filter((l) => l.status === "published").length;

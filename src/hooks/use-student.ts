@@ -652,10 +652,24 @@ export function useEnrollInBatch() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (batchId: string) => studentApi.enrollInBatch(batchId),
-    onSuccess: () => {
+    onSuccess: (_data, batchId) => {
       qc.invalidateQueries({ queryKey: studentKeys.myCourses });
       qc.invalidateQueries({ queryKey: studentKeys.me });
       qc.invalidateQueries({ queryKey: ["student", "discover-batches"] });
+      // Invalidate the preview so the detail page re-checks enrollment status
+      qc.invalidateQueries({ queryKey: ["student", "batch-preview", batchId] });
+      // Invalidate the curriculum so it reloads now that we're enrolled
+      qc.invalidateQueries({ queryKey: studentKeys.courseCurriculum(batchId) });
     },
+  });
+}
+
+export function useBatchPreview(batchId: string) {
+  return useQuery({
+    queryKey: ["student", "batch-preview", batchId] as const,
+    queryFn: () => studentApi.getBatchPreview(batchId),
+    staleTime: 30_000,
+    retry: false,
+    enabled: !!batchId,
   });
 }

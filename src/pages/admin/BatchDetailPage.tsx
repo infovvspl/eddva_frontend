@@ -147,7 +147,7 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
@@ -521,7 +521,7 @@ function StudentsSection({ batchId, batchName }: { batchId: string; batchName: s
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               <h4 className="font-semibold text-emerald-800">
-                {bulkResult ? `${bulkResult.created} students imported` : "Student created!"}
+                {bulkResult ? `${bulkResult.summary.created} students imported` : "Student created!"}
               </h4>
               <button type="button" onClick={() => { setView("idle"); setSingleResult(null); setBulkResult(null); }}
                 className="ml-auto text-emerald-400 hover:text-emerald-600"><X className="w-4 h-4" /></button>
@@ -539,8 +539,8 @@ function StudentsSection({ batchId, batchName }: { batchId: string; batchName: s
                 </div>
               </div>
             )}
-            {bulkResult && bulkResult.failed > 0 && (
-              <p className="text-sm text-amber-700">{bulkResult.failed} failed — check CSV for duplicates</p>
+            {bulkResult && bulkResult.results.filter(r => r.status === 'error').length > 0 && (
+              <p className="text-sm text-amber-700">{bulkResult.results.filter(r => r.status === 'error').length} failed — check CSV for duplicates</p>
             )}
           </motion.div>
         )}

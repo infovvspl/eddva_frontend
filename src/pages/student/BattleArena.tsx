@@ -28,7 +28,7 @@ import {
   useBattleLeaderboard, useSubjects, useChapters, useTopics,
   useMyBattleElo,
 } from "@/hooks/use-student";
-import { BattleMode, BattleRoom } from "@/lib/api/student";
+import { BattleMode, BattleRoom, getBotPracticeQuestions } from "@/lib/api/student";
 import { tokenStorage } from "@/lib/api/client";
 import { toast } from "sonner";
 

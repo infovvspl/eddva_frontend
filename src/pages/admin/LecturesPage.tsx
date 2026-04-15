@@ -46,7 +46,7 @@ function StatsDrawer({ lectureId, title, onClose }: { lectureId: string; title: 
   const { data: stats, isLoading } = useLectureStats(lectureId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-300/50 p-4">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-gray-300/50 p-4">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -651,7 +651,7 @@ function ScheduleLectureModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
@@ -921,7 +921,7 @@ const LecturesPage = () => {
       {/* Unpublish confirm */}
       <AnimatePresence>
         {confirmUnpublish && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gray-300/50 p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}

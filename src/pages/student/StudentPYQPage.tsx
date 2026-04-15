@@ -246,6 +246,16 @@ export default function StudentPYQPage() {
     setQuestions(data.questions); setCurrentIndex(0); setResults([]); setPhase("quiz");
   }
 
+  const handleNext = (result: SessionResult) => {
+    const updated = [...results, result];
+    setResults(updated);
+    if (currentIndex >= questions.length - 1) {
+      setPhase("result");
+    } else {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-12 pb-32">
         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-10">

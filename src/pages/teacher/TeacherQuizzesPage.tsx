@@ -1369,7 +1369,7 @@ function LiveResultsDashboard({ quiz, onClose }: { quiz: MockTest; onClose: () =
     refetchInterval: 30_000, // auto-refresh every 30s
   });
 
-  const sessions = data?.data ?? [];
+  const sessions = (data as any)?.data ?? data ?? [];
   const submitted = sessions.filter(s => s.status === "completed");
   const totalStudents = sessions.length;
   const avgScore = submitted.length
@@ -1404,7 +1404,7 @@ function LiveResultsDashboard({ quiz, onClose }: { quiz: MockTest; onClose: () =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-300/50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] bg-gray-300/50 flex items-center justify-center p-4">
       <div className="bg-background rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
@@ -1686,7 +1686,7 @@ function CreateWizardModal({ onClose, onSuccess }: { onClose: () => void; onSucc
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-300/50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] bg-gray-300/50 flex items-center justify-center p-4">
       <div className="bg-background rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
           <h2 className="font-bold text-lg">Create New Quiz</h2>
