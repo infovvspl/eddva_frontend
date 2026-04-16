@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import {
   Loader2, AlertCircle, CheckCircle2, BookOpen,
   Users, Calendar, DollarSign, GraduationCap,
-  LogIn, UserPlus, Sparkles,
+  LogIn, UserPlus, Sparkles, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { apiClient } from "@/lib/api/client";
 import * as adminApi from "@/lib/api/admin";
 import type { BatchPreview } from "@/lib/api/admin";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
@@ -45,17 +46,66 @@ export default function JoinBatchPage() {
       .finally(() => setLoadingPreview(false));
   }, [token]);
 
+const loadRazorpay = () => {
+  return new Promise<boolean>((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
   const handleJoin = async () => {
     if (!user || user.role !== "student") return;
     setJoinError("");
     setJoining(true);
     try {
-      await adminApi.joinBatchByToken(token);
-      setJoined(true);
-      setTimeout(() => navigate("/student"), 2500);
+      if (preview?.isPaid) {
+        const res = await loadRazorpay();
+        if (!res) throw new Error("Razorpay SDK failed to load");
+
+        const orderData = await apiClient.post(`/batches/${preview.id}/checkout`);
+        const { orderId, amount, currency, key } = orderData.data;
+
+        const options = {
+          key, amount, currency,
+          name: preview.name,
+          description: "Course Enrollment",
+          order_id: orderId,
+          handler: async function (response: any) {
+             setJoining(true);
+             try {
+               await apiClient.post(`/batches/${preview.id}/verify-payment`, {
+                 razorpay_order_id: response.razorpay_order_id,
+                 razorpay_payment_id: response.razorpay_payment_id,
+                 razorpay_signature: response.razorpay_signature
+               });
+               setJoined(true);
+               setTimeout(() => navigate("/student"), 2500);
+             } catch (err: any) {
+               setJoinError(err?.response?.data?.message || "Payment verification failed");
+               setJoining(false);
+             }
+          },
+          prefill: { name: (user as any)?.fullName || "Student", contact: (user as any)?.phoneNumber || "" },
+          theme: { color: "#4f46e5" },
+          modal: { ondismiss: () => setJoining(false) }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", function (response: any) {
+           setJoinError(response.error.description);
+           setJoining(false);
+        });
+        rzp.open();
+      } else {
+        await adminApi.joinBatchByToken(token);
+        setJoined(true);
+        setTimeout(() => navigate("/student"), 2500);
+      }
     } catch (err: any) {
       setJoinError(err?.response?.data?.message || "Failed to join batch. Please try again.");
-    } finally {
       setJoining(false);
     }
   };
@@ -89,8 +139,7 @@ export default function JoinBatchPage() {
     );
   }
 
-  const spotsLeft = preview.maxStudents - preview.enrolledCount;
-  const enrolledPct = Math.min(100, Math.round((preview.enrolledCount / preview.maxStudents) * 100));
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 flex flex-col items-center justify-center p-4">
@@ -148,7 +197,7 @@ export default function JoinBatchPage() {
               <Users className="w-4 h-4 text-blue-500 shrink-0" />
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Enrolled</p>
-                <p className="text-sm font-black text-slate-800">{preview.enrolledCount} / {preview.maxStudents}</p>
+                <p className="text-sm font-black text-slate-800">{preview.enrolledCount} enrolled</p>
               </div>
             </div>
             <div className="flex items-center gap-2.5 bg-slate-50 rounded-2xl p-3">
@@ -174,21 +223,7 @@ export default function JoinBatchPage() {
             )}
           </div>
 
-          {/* Capacity bar */}
-          <div>
-            <div className="flex justify-between text-[11px] font-semibold text-slate-400 mb-1.5">
-              <span>{spotsLeft} spots remaining</span>
-              <span>{enrolledPct}% full</span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${enrolledPct}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className={`h-full rounded-full ${enrolledPct >= 90 ? "bg-red-500" : enrolledPct >= 70 ? "bg-amber-500" : "bg-emerald-500"}`}
-              />
-            </div>
-          </div>
+
 
           {/* Action area */}
           {joined ? (
@@ -214,12 +249,12 @@ export default function JoinBatchPage() {
               )}
               <button
                 onClick={handleJoin}
-                disabled={joining || spotsLeft <= 0}
+                disabled={joining}
                 className="w-full h-12 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 style={{ background: "linear-gradient(135deg, #3B82F6, #A855F7)" }}
               >
                 {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
-                {spotsLeft <= 0 ? "Batch is Full" : joining ? "Joining…" : "Join This Batch"}
+                {joining ? (preview?.isPaid ? "Processing…" : "Joining…") : (preview?.isPaid ? "Pay & Enroll" : "Join This Batch")}
               </button>
             </div>
           ) : user ? (
@@ -250,6 +285,31 @@ export default function JoinBatchPage() {
                 <LogIn className="w-4 h-4" />
                 I already have an account
               </button>
+            </div>
+          )}
+
+          {/* FAQ Accordion */}
+          {(preview as any).faqs && (preview as any).faqs.length > 0 && (
+            <div className="mt-8 pt-8 border-t border-slate-100">
+              <h3 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-slate-400" />
+                Frequently Asked Questions
+              </h3>
+              <div className="space-y-3">
+                {(preview as any).faqs.map((faq: any, i: number) => (
+                  <details key={i} className="group bg-slate-50 border border-slate-100 rounded-2xl md:rounded-xl overflow-hidden cursor-pointer relative open:bg-white open:border-slate-200 transition-colors">
+                    <summary className="font-semibold text-slate-800 text-sm p-4 list-none [&::-webkit-details-marker]:hidden flex justify-between items-center select-none">
+                      {faq.question}
+                      <span className="text-slate-400 group-open:rotate-180 transition-transform">
+                        <ChevronDown className="w-4 h-4" />
+                      </span>
+                    </summary>
+                    <div className="p-4 pt-0 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                      {faq.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
             </div>
           )}
         </div>

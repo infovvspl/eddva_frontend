@@ -15,6 +15,58 @@ import {
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
 
+// ─── Static plan data (shown when AI backend hasn't generated a plan yet) ─────
+
+const TODAY = new Date().toISOString().split("T")[0];
+
+const STATIC_PLANS: Record<string, StudyPlanItem[]> = {
+  jee: [
+    { id: "static-1", type: "lecture",     title: "Newton's Laws of Motion",             estimatedMinutes: 45, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-2", type: "practice",    title: "Forces & Free Body Diagrams",          estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-3", type: "lecture",     title: "Atomic Structure & Periodic Table",    estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-4", type: "revision",    title: "Quadratic Equations — Key Formulas",   estimatedMinutes: 20, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
+    { id: "static-5", type: "practice",    title: "Functions & Graphs Practice Set",      estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-6", type: "mock_test",   title: "JEE Mini Mock Test #1",                estimatedMinutes: 90, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
+  ],
+  neet: [
+    { id: "static-1", type: "lecture",     title: "Cell Structure & Organelles",          estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-2", type: "practice",    title: "Cell Division — Mitosis & Meiosis",    estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-3", type: "lecture",     title: "Laws of Motion & Work-Energy",         estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-4", type: "lecture",     title: "Biomolecules — Carbohydrates & Proteins", estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-5", type: "revision",    title: "Human Physiology Quick Revision",      estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
+    { id: "static-6", type: "mock_test",   title: "NEET Mini Mock Test #1",               estimatedMinutes: 90, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
+  ],
+  cbse_10: [
+    { id: "static-1", type: "lecture",     title: "Real Numbers — Euclid's Algorithm",    estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-2", type: "lecture",     title: "Chemical Reactions & Equations",       estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-3", type: "practice",    title: "Polynomials — Factorisation Set",      estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-4", type: "lecture",     title: "Life Processes — Nutrition & Respiration", estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-5", type: "revision",    title: "Electricity — Ohm's Law Revision",     estimatedMinutes: 20, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
+    { id: "static-6", type: "mock_test",   title: "Chapter Test: Acids, Bases & Salts",   estimatedMinutes: 45, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
+  ],
+  cbse_12: [
+    { id: "static-1", type: "lecture",     title: "Relations & Functions",                estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-2", type: "lecture",     title: "Electrochemistry — EMF & Galvanic Cells", estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-3", type: "practice",    title: "Integrals — Practice Set 1",           estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-4", type: "lecture",     title: "Genetics — Mendelian Inheritance",     estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-5", type: "revision",    title: "Current Electricity Revision",         estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
+    { id: "static-6", type: "mock_test",   title: "Board Pattern Mock Test #1",           estimatedMinutes: 90, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
+  ],
+  default: [
+    { id: "static-1", type: "lecture",     title: "Introduction to Your Syllabus",        estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-2", type: "practice",    title: "Concept Check — Practice Round",       estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-3", type: "revision",    title: "Core Formulas & Key Concepts",         estimatedMinutes: 20, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
+    { id: "static-4", type: "lecture",     title: "Deep Dive: Chapter 2 Fundamentals",    estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-5", type: "practice",    title: "Mixed Problem Set",                    estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
+    { id: "static-6", type: "mock_test",   title: "Weekly Assessment Test",               estimatedMinutes: 60, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
+  ],
+};
+
+function getStaticPlan(examTarget?: string): StudyPlanItem[] {
+  const key = (examTarget ?? "").toLowerCase();
+  return STATIC_PLANS[key] ?? STATIC_PLANS.default;
+}
+
 // ─── Type Config ───────────────────────────────────────────────────────────────
 const typeConfig: Record<StudyPlanItem["type"], {
   icon: any; color: string; bg: string; label: string; xp: number;
@@ -36,8 +88,10 @@ function TaskCard({ item }: { item: StudyPlanItem }) {
   const isDone = item.status === "completed";
   const isSkip = item.status === "skipped";
 
+  const isStatic = item.id.startsWith("static-");
+
   const handleStart = () => {
-    if (isDone || isSkip) return;
+    if (isDone || isSkip || isStatic) return;
     if (item.type === "lecture" && item.refId) navigate(`/student/lectures/${item.refId}`);
     else if (item.refId) navigate(`/student/quiz?topicId=${item.refId}`);
   };
@@ -82,14 +136,18 @@ function TaskCard({ item }: { item: StudyPlanItem }) {
             </div>
          ) : (
             <div className="flex items-center gap-1">
-               <button onClick={() => skip.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition" title="Skip Task">
-                  <SkipForward className="w-4 h-4" />
-               </button>
-               <button onClick={() => complete.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-emerald-50 hover:text-emerald-500 transition" title="Mark Complete">
-                  <CheckCircle className="w-4 h-4" />
-               </button>
-               <button onClick={handleStart} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-100 transition shadow-sm ml-1">
-                  <Play className="w-4 h-4 fill-current" /> Start
+               {!isStatic && (
+                 <>
+                   <button onClick={() => skip.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition" title="Skip Task">
+                     <SkipForward className="w-4 h-4" />
+                   </button>
+                   <button onClick={() => complete.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-emerald-50 hover:text-emerald-500 transition" title="Mark Complete">
+                     <CheckCircle className="w-4 h-4" />
+                   </button>
+                 </>
+               )}
+               <button onClick={handleStart} disabled={isStatic} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-100 transition shadow-sm ml-1 disabled:opacity-50 disabled:cursor-default">
+                  <Play className="w-4 h-4 fill-current" /> {isStatic ? "Preview" : "Start"}
                </button>
             </div>
          )}
@@ -100,11 +158,15 @@ function TaskCard({ item }: { item: StudyPlanItem }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function StudentStudyPlanPage() {
-  const { data: todayItems = [], isLoading } = useTodaysPlan();
+  const { data: todayItemsRaw = [], isLoading } = useTodaysPlan();
   const regenerate = useRegeneratePlan();
   const navigate = useNavigate();
   const { data: me } = useStudentMe();
   const streakDetails = me?.student?.streakDays || 0;
+
+  // Use static plan when backend hasn't generated one yet
+  const isStatic = todayItemsRaw.length === 0 && !isLoading;
+  const todayItems = isStatic ? getStaticPlan(me?.student?.examTarget) : todayItemsRaw;
 
   // Week map
   const weekDates = useMemo(() => {
@@ -248,27 +310,24 @@ export default function StudentStudyPlanPage() {
             </div>
 
             {/* 5. SUBJECT / CHAPTER BREAKDOWN & 2. DAILY TASK LIST */}
-            {stats.total === 0 ? (
-               <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center">
-                  <Sparkles className="w-12 h-12 text-indigo-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">No Study Plan Yet</h3>
-                  <p className="text-slate-500 mb-6 max-w-sm mx-auto">Generate a smart automated plan with AI to guide your study routine today.</p>
-                  <button onClick={() => regenerate.mutate()} disabled={regenerate.isPending} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 mx-auto disabled:opacity-50 transition-opacity">
-                     {regenerate.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />} Generate Smart Plan
-                  </button>
-               </div>
-            ) : (
-               <div className="space-y-8">
-                  {Object.entries(currentSubjects).map(([sub, items]) => (
-                     <div key={sub}>
-                        <h3 className="text-sm font-bold text-slate-400 tracking-wider uppercase mb-3 px-1">{sub} Tasks</h3>
-                        <div>
-                           {items.map(item => <TaskCard key={item.id} item={item} />)}
-                        </div>
-                     </div>
-                  ))}
-               </div>
+            {isStatic && (
+              <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-2xl mb-2">
+                <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
+                <p className="text-xs font-semibold text-indigo-700">
+                  This is a curated starter plan for <span className="font-extrabold">{(me?.student?.examTarget ?? "your exam").toUpperCase().replace("_", " ")}</span>. Your AI-personalised plan will appear here once your teacher assigns content.
+                </p>
+              </div>
             )}
+            <div className="space-y-8">
+               {Object.entries(currentSubjects).map(([sub, items]) => (
+                  <div key={sub}>
+                     <h3 className="text-sm font-bold text-slate-400 tracking-wider uppercase mb-3 px-1">{sub} Tasks</h3>
+                     <div>
+                        {items.map(item => <TaskCard key={item.id} item={item} />)}
+                     </div>
+                  </div>
+               ))}
+            </div>
 
          </div>
 

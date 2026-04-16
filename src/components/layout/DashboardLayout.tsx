@@ -50,16 +50,17 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Settings",      path: "/super-admin/settings",       icon: Settings   },
   ],
   institute_admin: [
-    { label: "Dashboard",    path: "/admin",               icon: Home          },
-    { label: "Courses",       path: "/admin/batches",        icon: Layout        },
-    { label: "Students",     path: "/admin/students",       icon: Users         },
-    { label: "Content",      path: "/admin/content",        icon: GraduationCap },
-    { label: "Lectures",     path: "/teacher/lectures",     icon: Video         },
-    { label: "Doubt Queue",  path: "/teacher/doubts",       icon: MessageSquare },
-    { label: "Analytics",    path: "/teacher/analytics",    icon: BarChart      },
-    { label: "Mock Tests",   path: "/admin/mock-tests",     icon: BookOpen      },
-    { label: "Calendar",     path: "/admin/calendar",       icon: Calendar      },
-    { label: "Settings",     path: "/admin/settings",       icon: Settings      },
+    { label: "Dashboard",      path: "/admin",                    icon: Home          },
+    { label: "Courses",        path: "/admin/batches",             icon: Layout        },
+    { label: "Students",       path: "/admin/students",            icon: Users         },
+    { label: "Content",        path: "/admin/content",             icon: GraduationCap },
+    { label: "Lectures",       path: "/teacher/lectures",          icon: Video         },
+    { label: "Doubt Queue",    path: "/teacher/doubts",            icon: MessageSquare },
+    { label: "Analytics",      path: "/teacher/analytics",         icon: BarChart      },
+    { label: "Mock Tests",     path: "/admin/mock-tests",          icon: BookOpen      },
+    { label: "Calendar",       path: "/admin/calendar",            icon: Calendar      },
+    { label: "Notifications",  path: "/admin/notifications",       icon: Bell          },
+    { label: "Settings",       path: "/admin/settings",            icon: Settings      },
   ],
   teacher: [
     { label: "Dashboard",       path: "/teacher",           icon: Home            },
@@ -137,7 +138,7 @@ const DashboardLayout = () => {
   }
 
   // ── Student preference (exam target) ─────────────────────────────────────
-  const { data: me } = useStudentMe();
+  const { data: me, isLoading: meLoading } = useStudentMe();
   const updateProfile = useUpdateStudentProfile();
 
   const [showPrefModal, setShowPrefModal]   = useState(false);
@@ -210,6 +211,28 @@ const DashboardLayout = () => {
     if (user.role === "institute_admin" && user.teacherProfile === null) {
       localStorage.setItem(onboardingSeenKey, "true");
       return <Navigate to="/admin/onboard" replace />;
+    }
+  }
+
+  // ── Student onboarding: redirect if no exam target has been set ──────────────
+  if (isStudent && location.pathname !== "/student/onboarding") {
+    const onboardKey = `student_onboarded_${user.id}`;
+    if (!localStorage.getItem(onboardKey)) {
+      if (meLoading) {
+        // Still fetching me — show a neutral loader so there's no content flash
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-slate-50 font-poppins">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          </div>
+        );
+      }
+      if (me !== undefined) {
+        if (!me?.student?.examTarget) {
+          return <Navigate to="/student/onboarding" replace />;
+        }
+        // Already has an exam target — mark as done so we never check again
+        localStorage.setItem(onboardKey, "1");
+      }
     }
   }
 
@@ -301,7 +324,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className={cn("flex min-h-screen text-slate-900 selection:bg-indigo-600/10", user.role === "institute_admin" ? "font-poppins" : "font-sans bg-white")}
+      className={cn("flex min-h-screen text-slate-900 selection:bg-indigo-600/10", (user.role === "institute_admin" || user.role === "student") ? "font-poppins" : "font-sans bg-white")}
       style={user.role === "institute_admin" ? { background: "#F5F8FC" } : undefined}
     >
       <AeroBackground />

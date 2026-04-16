@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import {
   BookOpen, Play, Loader2, Flame, Star, Trophy,
-  Clock, ChevronRight, GraduationCap, BarChart3, Zap,
+  Clock, ChevronRight, GraduationCap, BarChart3, Zap, CalendarDays,
 } from "lucide-react";
 import { useStudentMe, useMyCourses, useDiscoverBatches, useStudentDashboard } from "@/hooks/use-student";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,13 @@ function resolveUrl(url?: string | null) {
   if (!url) return undefined;
   if (url.startsWith("http")) return url;
   return `${_API_ORIGIN}${url}`;
+}
+
+function fmtDate(d?: string | null) {
+  if (!d) return null;
+  try {
+    return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  } catch { return null; }
 }
 
 const EXAM_COLORS: Record<string, string> = {
@@ -192,6 +199,12 @@ export default function StudentDashboard() {
                       </div>
                       <div className="p-4 flex flex-col flex-1">
                         <h3 className="font-bold text-slate-800 text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors">{batch.name}</h3>
+                        {(batch.startDate || batch.endDate) && (
+                          <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-1">
+                            <CalendarDays className="w-3 h-3 text-indigo-400 shrink-0" />
+                            {fmtDate(batch.startDate) ?? "—"} → {fmtDate(batch.endDate) ?? "—"}
+                          </p>
+                        )}
                         <div className="flex justify-between items-center mt-auto pt-3 text-xs font-semibold text-slate-400">
                           <span>{batch.examTarget?.toUpperCase()}</span>
                           <div className="flex items-center gap-1">
@@ -252,7 +265,15 @@ export default function StudentDashboard() {
                                 <BookOpen className="w-5 h-5 text-white/70" />
                               )}
                             </div>
-                            <span className="font-semibold text-slate-800 line-clamp-1">{course.name}</span>
+                            <div>
+                              <span className="font-semibold text-slate-800 line-clamp-1">{course.name}</span>
+                              {(course.startDate || course.endDate) && (
+                                <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                                  <CalendarDays className="w-3 h-3 text-indigo-400 shrink-0" />
+                                  {fmtDate(course.startDate) ?? "—"} → {fmtDate(course.endDate) ?? "—"}
+                                </p>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 text-slate-500 font-medium">
                             <span className="px-2 py-0.5 bg-slate-100 rounded-lg text-[11px] font-bold uppercase">{course.examTarget}</span>

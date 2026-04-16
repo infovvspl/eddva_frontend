@@ -12,17 +12,25 @@ export type NotificationType =
   | "plan_generated"
   | "mock_test_scheduled"
   | "rank_change"
+  | "course_view"
   | "general";
 
 export interface Notification {
   id: string;
   type: NotificationType;
   title: string;
+  /** backend field is `body`, older shape used `message` */
+  body?: string;
   message?: string;
   isRead: boolean;
+  status?: string;   // "pending" | "sent" | "read" | "failed"
   createdAt: string;
+  sentAt?: string;
+  readAt?: string;
   refId?: string;
   refType?: string;
+  /** parsed data blob from backend */
+  data?: Record<string, any>;
 }
 
 export interface NotificationsResult {

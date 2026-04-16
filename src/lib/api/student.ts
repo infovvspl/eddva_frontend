@@ -33,14 +33,15 @@ export interface Topic {
 export interface PublicBatch {
   id: string;
   name: string;
+  description?: string | null;
   examTarget: string;
   class: string;
   status: string;
   isPaid: boolean;
   feeAmount: number | null;
   maxStudents: number;
-  startDate?: string;
-  endDate?: string;
+  startDate?: string | null;
+  endDate?: string | null;
   thumbnailUrl?: string;
   studentCount?: number;
   teacher?: { id: string; fullName: string };
@@ -87,10 +88,13 @@ export interface MyCourseProgress {
 export interface MyCourse {
   id: string;
   name: string;
+  description?: string | null;
   examTarget: string;
   class: string;
   thumbnailUrl?: string;
   status: string;
+  startDate?: string | null;
+  endDate?: string | null;
   enrolledAt?: string;
   teacher?: { id: string; fullName: string };
   progress: MyCourseProgress;
@@ -225,12 +229,13 @@ interface RawEnrollment {
   batch?: {
     id: string;
     name: string;
+    description?: string | null;
     examTarget?: string;
     class?: string;
     thumbnailUrl?: string | null;
     status?: string;
-    startDate?: string;
-    endDate?: string;
+    startDate?: string | null;
+    endDate?: string | null;
     teacher?: { id: string; fullName: string };
   };
   subjects?: string[];
@@ -254,10 +259,13 @@ function normalizeEnrollment(raw: RawEnrollment): MyCourse {
   return {
     id: batch.id ?? raw.enrollmentId ?? "",
     name: batch.name ?? "",
+    description: batch.description ?? null,
     examTarget: batch.examTarget ?? "",
     class: batch.class ?? "",
     thumbnailUrl: batch.thumbnailUrl ?? undefined,
     status: batch.status ?? raw.enrollmentStatus ?? "active",
+    startDate: batch.startDate ?? null,
+    endDate: batch.endDate ?? null,
     enrolledAt: raw.enrolledAt,
     teacher: batch.teacher,
     progress: {
@@ -691,6 +699,11 @@ export async function createDoubt(payload: CreateDoubtPayload): Promise<StudentD
 
 export async function markDoubtHelpful(id: string, isHelpful: boolean): Promise<StudentDoubt> {
   const res = await apiClient.patch(`/doubts/${id}/helpful`, { isHelpful });
+  return extractData<StudentDoubt>(res);
+}
+
+export async function requestAiForDoubt(id: string): Promise<StudentDoubt> {
+  const res = await apiClient.patch(`/doubts/${id}/request-ai`, {});
   return extractData<StudentDoubt>(res);
 }
 

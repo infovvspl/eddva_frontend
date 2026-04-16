@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Users, Search, ChevronRight, ChevronDown,
@@ -118,9 +118,7 @@ function CourseRow({ course, students, index, onStudentClick }: {
   course: any; students: any[]; index: number; onStudentClick: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const max = course.maxStudents ?? 100;
   const enrolled = students.length > 0 ? students.length : (course.studentCount ?? 0);
-  const pct = Math.min(100, Math.round((enrolled / max) * 100));
   const style = EXAM_STYLES[course.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
 
   return (
@@ -153,16 +151,7 @@ function CourseRow({ course, students, index, onStudentClick }: {
             {course.examTarget?.toUpperCase()} · Class {course.class}
           </p>
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${pct}%` }}
-                transition={{ delay: index * 0.06 + 0.3, duration: 0.6 }}
-                className="h-full rounded-full"
-                style={{ background: `linear-gradient(90deg, ${style.from}, ${style.to})` }}
-              />
-            </div>
-            <span className="text-[11px] font-black text-slate-500 shrink-0">{enrolled}/{max} students</span>
+            <span className="text-[11px] font-black text-slate-500 shrink-0">{enrolled} enrolled</span>
           </div>
         </div>
 

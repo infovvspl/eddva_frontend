@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, FileText, FlaskConical, BookOpen, Search,
-  ShieldCheck, Loader2,
+  ShieldCheck, Loader2, CalendarDays,
   Users, Sparkles, ArrowRight, BookMarked, Trophy, Zap,
 } from "lucide-react";
 import { useMyCourses, useDiscoverBatches, useStudentMe } from "@/hooks/use-student";
@@ -19,6 +19,13 @@ function resolveUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   if (url.startsWith("http")) return url;
   return `${_API_ORIGIN}${url}`;
+}
+
+function fmtDate(d?: string | null) {
+  if (!d) return null;
+  try {
+    return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  } catch { return null; }
 }
 
 // ─── Exam target filter config ────────────────────────────────────────────────
@@ -71,6 +78,11 @@ function CourseDiscovery() {
   });
 
   const handleViewCourse = (batch: PublicBatch) => {
+    // Track course view in background (fire-and-forget)
+    import("@/lib/api/client").then(({ apiClient }) => {
+      apiClient.post(`/batches/${batch.id}/view`).catch(e => console.error("Track view error", e));
+    });
+
     // Navigate to detail page, passing batch data as state for instant display
     navigate(`/student/courses/${batch.id}`, {
       state: { preview: batch },
@@ -202,7 +214,8 @@ function CourseDiscovery() {
                 <div className="relative h-44 overflow-hidden shrink-0">
                   {thumb ? (
                     <img src={thumb} alt={batch.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                   ) : (
                     <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                       <BookOpen className="w-10 h-10 text-white/50" />
@@ -241,9 +254,23 @@ function CourseDiscovery() {
                   </h3>
 
                   {batch.teacher && (
-                    <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mb-3">
+                    <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mb-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       {batch.teacher.fullName}
+                    </p>
+                  )}
+
+                  {batch.description && (
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-2 leading-relaxed">
+                      {batch.description}
+                    </p>
+                  )}
+
+                  {/* Start / End dates */}
+                  {(batch.startDate || batch.endDate) && (
+                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5 mb-2">
+                      <CalendarDays className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                      {fmtDate(batch.startDate) ?? "—"} → {fmtDate(batch.endDate) ?? "—"}
                     </p>
                   )}
 
@@ -253,12 +280,6 @@ function CourseDiscovery() {
                       <Users className="w-3.5 h-3.5" />
                       <span>{(batch.studentCount ?? 0).toLocaleString()} enrolled</span>
                     </div>
-                    {batch.maxStudents && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-300">·</span>
-                        <span>Max {batch.maxStudents}</span>
-                      </div>
-                    )}
                   </div>
 
                   {/* View Course button */}
@@ -281,6 +302,79 @@ function CourseDiscovery() {
           })}
         </motion.div>
       )}
+    </div>
+  );
+}
+
+// ─── Enrolled course card (needs its own state for img error) ─────────────────
+
+function EnrolledCourseCard({ course, onResume }: { course: MyCourse; onResume: () => void }) {
+  const navigate = useNavigate();
+  const [imgErr, setImgErr] = useState(false);
+  const pct = course.progress?.overallPct ?? 0;
+  const thumb = resolveUrl(course.thumbnailUrl);
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-6 group">
+      <div className="w-full sm:w-48 h-36 rounded-2xl bg-slate-100 overflow-hidden shrink-0 relative">
+        {thumb && !imgErr ? (
+          <img
+            src={thumb} alt={course.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImgErr(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100">
+            <BookOpen className="w-8 h-8 text-indigo-200" />
+          </div>
+        )}
+        {course.examTarget && (
+          <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur text-[10px] font-bold rounded-lg uppercase text-slate-700 shadow-sm">
+            {course.examTarget}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 flex flex-col justify-center">
+        <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1 mb-1">{course.name}</h3>
+        <p className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-1.5">
+          <ShieldCheck className="w-4 h-4 text-emerald-500" /> By {course.teacher?.fullName || "Expert Faculty"}
+        </p>
+
+        {(course.startDate || course.endDate) && (
+          <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mb-1">
+            <CalendarDays className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+            {fmtDate(course.startDate) ?? "—"} → {fmtDate(course.endDate) ?? "—"}
+          </p>
+        )}
+
+        {course.description && (
+          <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">{course.description}</p>
+        )}
+
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between text-xs font-semibold">
+            <span className="text-slate-600">Progress: {pct}%</span>
+            <span className="text-slate-500">{course.progress?.completedTopics || 0} / {course.progress?.totalTopics || 0} topics done</span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={onResume}
+            className="px-4 py-2 text-[13px] font-bold bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors flex items-center gap-2 border border-indigo-100/50">
+            <Play className="w-3 h-3 fill-current" /> Resume
+          </button>
+          <button className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" /> Notes
+          </button>
+          <button className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+            <FlaskConical className="w-3.5 h-3.5" /> Test
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -389,58 +483,13 @@ export default function StudentCoursesPage() {
 
           {/* Course cards */}
           <div className="space-y-6">
-            {filteredCourses.length > 0 ? filteredCourses.map(course => {
-              const pct = course.progress?.overallPct ?? 0;
-              const thumb = resolveUrl(course.thumbnailUrl);
-              return (
-                <div key={course.id} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-6 group">
-                  <div className="w-full sm:w-48 h-36 rounded-2xl bg-slate-100 overflow-hidden shrink-0 relative">
-                    {thumb ? (
-                      <img src={thumb} alt={course.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100">
-                        <BookOpen className="w-8 h-8 text-indigo-200" />
-                      </div>
-                    )}
-                    {course.examTarget && (
-                      <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur text-[10px] font-bold rounded-lg uppercase text-slate-700 shadow-sm">
-                        {course.examTarget}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-center">
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1 mb-1">{course.name}</h3>
-                    <p className="text-sm font-medium text-slate-500 mb-4 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-500" /> By {course.teacher?.fullName || "Expert Faculty"}
-                    </p>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-slate-600">Progress: {pct}%</span>
-                        <span className="text-slate-500">{course.progress?.completedTopics || 0} / {course.progress?.totalTopics || 0} topics done</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button onClick={() => navigate(`/student/courses/${course.id}`)}
-                        className="px-4 py-2 text-[13px] font-bold bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors flex items-center gap-2 border border-indigo-100/50">
-                        <Play className="w-3 h-3 fill-current" /> Resume
-                      </button>
-                      <button className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5" /> Notes
-                      </button>
-                      <button className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5">
-                        <FlaskConical className="w-3.5 h-3.5" /> Test
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            }) : (
+            {filteredCourses.length > 0 ? filteredCourses.map(course => (
+              <EnrolledCourseCard
+                key={course.id}
+                course={course}
+                onResume={() => navigate(`/student/courses/${course.id}`)}
+              />
+            )) : (
               <div className="py-20 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
                 <p className="text-slate-500 font-medium">No courses in this category.</p>
               </div>

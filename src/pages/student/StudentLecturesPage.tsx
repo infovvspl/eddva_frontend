@@ -6,7 +6,7 @@ import {
   Video, CheckCircle, Filter, Layers, Zap,
   X, ChevronRight, Eye, Monitor, ArrowRight
 } from "lucide-react";
-import { useStudentMe, useAllBatchLectures } from "@/hooks/use-student";
+import { useAllBatchLectures } from "@/hooks/use-student";
 import type { StudentLecture } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { CardGlass } from "@/components/shared/CardGlass";
@@ -172,9 +172,7 @@ export default function StudentLecturesPage() {
   const [tab, setTab] = useState<TabFilter>("all");
   const [search, setSearch] = useState("");
 
-  const { data: me } = useStudentMe();
-  const batchId = me?.student?.batchId;
-  const { data: lectures, isLoading } = useAllBatchLectures(batchId);
+  const { data: lectures, isLoading } = useAllBatchLectures(); // no batchId → all enrolled batches
 
   const counts = useMemo(() => {
     const all = lectures ?? [];

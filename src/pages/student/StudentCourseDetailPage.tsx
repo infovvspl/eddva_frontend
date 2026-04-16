@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,8 +8,10 @@ import {
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
   Youtube, File, ClipboardList, FlaskConical,
 } from "lucide-react";
-import { useCourseCurriculum, useBatchPreview, useEnrollInBatch } from "@/hooks/use-student";
-import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject } from "@/lib/api/student";
+import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, studentKeys } from "@/hooks/use-student";
+import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture } from "@/lib/api/student";
+import { apiClient, extractData } from "@/lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -502,7 +504,9 @@ function LockedBanner({ courseName, isPaid, feeAmount }: { courseName: string; i
 
 function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: BatchPreview }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const enrollMutation = useEnrollInBatch();
+  const [joining, setJoining] = useState(false);
   const thumbnail = resolveUrl(preview.thumbnailUrl);
   const gradient = preview.examTarget === "JEE"
     ? "from-orange-500 to-red-600"
@@ -514,13 +518,69 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
     enrollMutation.mutate(batchId, {
       onSuccess: () => {
         toast.success("Enrolled successfully! Loading your course…");
-        // React Query will invalidate and refetch curriculum; just re-navigate
         navigate(`/student/courses/${batchId}`, { replace: true });
       },
       onError: () => {
         toast.error("Enrollment failed. Please try again.");
       },
     });
+  };
+
+  const loadRazorpay = () =>
+    new Promise<boolean>((resolve) => {
+      if ((window as any).Razorpay) { resolve(true); return; }
+      const s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.body.appendChild(s);
+    });
+
+  const handleCheckout = async () => {
+    setJoining(true);
+    try {
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error("Razorpay SDK failed to load");
+
+      const orderData = await apiClient.post(`/batches/${batchId}/checkout`);
+      const { orderId, amount, currency, key } = extractData<{ orderId: string; amount: number; currency: string; key: string }>(orderData);
+
+      const rzp = new (window as any).Razorpay({
+        key, amount, currency,
+        name: preview.name,
+        description: "Course Enrollment",
+        order_id: orderId,
+        handler: async (response: any) => {
+          setJoining(true);
+          try {
+            await apiClient.post(`/batches/${batchId}/verify-payment`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            // Bust stale query cache so the enrolled view loads immediately
+            await queryClient.invalidateQueries({ queryKey: studentKeys.courseCurriculum(batchId) });
+            await queryClient.invalidateQueries({ queryKey: studentKeys.myCourses });
+            queryClient.invalidateQueries({ queryKey: ["student", "batch-preview", batchId] });
+            toast.success("Enrolled successfully! Loading your course…");
+            navigate(`/student/courses/${batchId}`, { replace: true });
+          } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Payment verification failed");
+            setJoining(false);
+          }
+        },
+        theme: { color: "#f59e0b" },
+        modal: { ondismiss: () => setJoining(false) },
+      });
+      rzp.on("payment.failed", (res: any) => {
+        toast.error(res.error.description);
+        setJoining(false);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Checkout failed. Please try again.");
+      setJoining(false);
+    }
   };
 
   return (
@@ -539,7 +599,8 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
         "relative rounded-3xl overflow-hidden mb-8 shadow-xl",
         thumbnail ? "" : `bg-gradient-to-br ${gradient}`
       )}>
-        {thumbnail && <img src={thumbnail} alt={preview.name} className="absolute inset-0 w-full h-full object-cover" />}
+        {thumbnail && <img src={thumbnail} alt={preview.name} className="absolute inset-0 w-full h-full object-cover"
+          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/30" />
         <div className="relative z-10 p-8 md:p-10">
           <div className="flex flex-col lg:flex-row gap-8">
@@ -619,12 +680,14 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
                       ))}
                     </div>
                     <button
-                      disabled
-                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg opacity-70 cursor-not-allowed"
+                      onClick={handleCheckout}
+                      disabled={joining}
+                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:from-amber-600 hover:to-orange-600 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
                     >
-                      <Zap className="w-4 h-4" /> Checkout · ₹{preview.feeAmount?.toLocaleString() ?? "—"}
+                      {joining
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+                        : <><Zap className="w-4 h-4" /> Checkout · ₹{preview.feeAmount?.toLocaleString() ?? "—"}</>}
                     </button>
-                    <p className="text-center text-xs text-slate-400">Payment gateway coming soon</p>
                   </>
                 ) : (
                   <>
@@ -962,159 +1025,327 @@ function LockedChapterAccordion({
   );
 }
 
+// ─── Lecture Card ─────────────────────────────────────────────────────────────
+
+function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: () => void }) {
+  const [imgErr, setImgErr] = useState(false);
+  const progress = lecture.studentProgress?.watchPercentage ?? 0;
+  const isCompleted = lecture.studentProgress?.isCompleted ?? false;
+  const isLive = lecture.type === "live";
+  const thumb = resolveUrl(lecture.thumbnailUrl);
+  const mins = lecture.videoDurationSeconds ? Math.ceil(lecture.videoDurationSeconds / 60) : null;
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group overflow-hidden flex flex-col"
+    >
+      {/* Thumbnail */}
+      <div className="relative h-36 bg-gradient-to-br from-slate-700 to-slate-900 overflow-hidden shrink-0">
+        {thumb && !imgErr ? (
+          <img src={thumb} alt={lecture.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={() => setImgErr(true)} />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-indigo-800 to-purple-900 flex items-center justify-center">
+            <Video className="w-8 h-8 text-white/30" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+        {/* Badges */}
+        {isCompleted && (
+          <span className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded-lg">
+            <CheckCircle2 className="w-3 h-3" /> Watched
+          </span>
+        )}
+        {isLive && (
+          <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-lg animate-pulse">
+            ● Live
+          </span>
+        )}
+        {mins && (
+          <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded-lg">
+            {mins}m
+          </span>
+        )}
+
+        {/* Play overlay */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+            <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+          </div>
+        </div>
+
+        {/* In-progress bar */}
+        {progress > 0 && !isCompleted && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+            <div className="h-full bg-indigo-400" style={{ width: `${progress}%` }} />
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="p-4 flex flex-col flex-1">
+        <h4 className="font-semibold text-slate-800 text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors mb-1 leading-snug">
+          {lecture.title}
+        </h4>
+        {lecture.topic && (
+          <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mb-2">{lecture.topic.name}</p>
+        )}
+        {progress > 0 && (
+          <div className="mt-auto pt-2">
+            <div className="flex justify-between text-[10px] text-slate-400 font-semibold mb-1">
+              <span>{isCompleted ? "Completed" : "In Progress"}</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={cn("h-full rounded-full", isCompleted ? "bg-emerald-500" : "bg-indigo-500")}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Lectures Tab ─────────────────────────────────────────────────────────────
+
+type LectureFilter = "all" | "completed" | "in_progress" | "not_started";
+
+function LecturesTabContent({
+  lectures, batchId, isLoading,
+}: { lectures: StudentLecture[]; batchId: string; isLoading: boolean }) {
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState<LectureFilter>("all");
+
+  const filtered = lectures.filter(l => {
+    const wp = l.studentProgress?.watchPercentage ?? 0;
+    const done = l.studentProgress?.isCompleted ?? false;
+    if (filter === "completed")   return done;
+    if (filter === "in_progress") return !done && wp > 0;
+    if (filter === "not_started") return wp === 0;
+    return true;
+  });
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+    </div>
+  );
+
+  if (lectures.length === 0) return (
+    <div className="py-20 text-center bg-white rounded-2xl border border-slate-100">
+      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+        <Video className="w-7 h-7 text-slate-300" />
+      </div>
+      <p className="font-semibold text-slate-500">No lectures available yet</p>
+      <p className="text-sm text-slate-400 mt-1">Lectures will appear here once your teacher adds them.</p>
+    </div>
+  );
+
+  const filterOpts: { id: LectureFilter; label: string; count: number }[] = [
+    { id: "all",         label: "All",         count: lectures.length },
+    { id: "in_progress", label: "In Progress", count: lectures.filter(l => !l.studentProgress?.isCompleted && (l.studentProgress?.watchPercentage ?? 0) > 0).length },
+    { id: "completed",   label: "Completed",   count: lectures.filter(l => l.studentProgress?.isCompleted).length },
+    { id: "not_started", label: "Not Started", count: lectures.filter(l => (l.studentProgress?.watchPercentage ?? 0) === 0).length },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Filter pills */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {filterOpts.map(f => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold border transition-all",
+              filter === f.id
+                ? "bg-indigo-600 text-white border-transparent shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+            )}
+          >
+            {f.label}
+            {f.count > 0 && (
+              <span className={cn("ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black",
+                filter === f.id ? "bg-white/20" : "bg-slate-100"
+              )}>
+                {f.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="py-12 text-center bg-white rounded-2xl border border-slate-100">
+          <p className="text-slate-400 font-medium">No lectures in this category</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map(lecture => (
+            <LectureCard
+              key={lecture.id}
+              lecture={lecture}
+              onClick={() => {
+                if (lecture.topicId) navigate(`/student/courses/${batchId}/topics/${lecture.topicId}`);
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
+
+type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material";
 
 export default function StudentCourseDetailPage() {
   const { batchId = "" } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
-  const { data, isLoading, isError } = useCourseCurriculum(batchId);
-  const { data: preview, isLoading: previewLoading } = useBatchPreview(isError ? batchId : "");
-  const [activeTab, setActiveTab] = useState<Tab>("curriculum");
-  const [search, setSearch] = useState("");
 
-  // ── Loading ──────────────────────────────────────────────────────────────
-  if (isLoading || (isError && previewLoading)) return (
-    <div className="py-40 flex flex-col items-center gap-4">
-      <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-      <p className="text-sm text-slate-400 font-medium">Loading course...</p>
+  // ── All hooks unconditionally at the top (Rules of Hooks) ────────────────
+
+  const { data: myCourses = [], isLoading: myCoursesLoading } = useMyCourses();
+  const isKnownEnrolled = myCourses.some(c => c.id === batchId);
+
+  const { data, isLoading, isError, refetch } = useCourseCurriculum(batchId);
+
+  const retryCount = useRef(0);
+  useEffect(() => {
+    if (isError && isKnownEnrolled && retryCount.current < 2) {
+      retryCount.current += 1;
+      const t = setTimeout(() => refetch(), 800 * retryCount.current);
+      return () => clearTimeout(t);
+    }
+  }, [isError, isKnownEnrolled, refetch]);
+
+  const enablePreview = isError && !isKnownEnrolled && !myCoursesLoading;
+  const { data: preview, isLoading: previewLoading } = useBatchPreview(enablePreview ? batchId : "");
+
+  const [activeTab, setActiveTab] = useState<EnrolledTab>("curriculum");
+  const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const { data: lectures = [], isLoading: lecturesLoading } = useAllBatchLectures(batchId);
+
+  // Derive subjects safely — empty array when data not yet loaded
+  const subjects = data?.subjects ?? [];
+
+  // All useMemo hooks before any early return
+  const dppList = useMemo(() => collectResources(subjects, ["dpp"]), [subjects]);
+  const pyqList = useMemo(() => collectResources(subjects, ["pyq"]), [subjects]);
+  const materialList = useMemo(
+    () => collectResources(subjects, ["pdf", "notes", "video", "link"]),
+    [subjects],
+  );
+  const allTopicsFlat = useMemo(
+    () => subjects.flatMap(s => s.chapters.flatMap(c =>
+      c.topics.map(t => ({ ...t, subjectName: s.name, chapterName: c.name }))
+    )),
+    [subjects],
+  );
+  const displaySubjects = activeSubjectId ? subjects.filter(s => s.id === activeSubjectId) : subjects;
+  const filteredSubjects = useMemo(() => {
+    if (!search.trim()) return displaySubjects;
+    const q = search.toLowerCase();
+    return displaySubjects.map(s => ({
+      ...s,
+      chapters: s.chapters.map(c => ({
+        ...c, topics: c.topics.filter(t => t.name.toLowerCase().includes(q)),
+      })).filter(c => c.topics.length > 0),
+    })).filter(s => s.chapters.length > 0);
+  }, [displaySubjects, search]);
+
+  // ── Guards & derivations (all hooks already called above) ────────────────
+
+  const stillLoading = isLoading || previewLoading || (myCoursesLoading && !isKnownEnrolled);
+  if (stillLoading) return (
+    <div className="flex items-center justify-center py-24">
+      <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
-  // ── Not enrolled → show preview page ─────────────────────────────────────
-  if (isError && preview) {
-    return <BatchPreviewPage batchId={batchId} preview={preview} />;
-  }
+  if (enablePreview && preview) return <BatchPreviewPage batchId={batchId} preview={preview} />;
+  if (enablePreview) return (
+    <div className="flex items-center justify-center py-24">
+      <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
-  if (isError || !data) return (
-    <div className="py-40 flex flex-col items-center text-center max-w-sm mx-auto gap-6">
-      <div className="w-20 h-20 rounded-3xl bg-red-50 flex items-center justify-center">
-        <AlertCircle className="w-10 h-10 text-red-400" />
-      </div>
-      <div>
-        <h3 className="text-xl font-bold text-slate-800 mb-2">Course not found</h3>
-        <p className="text-slate-500 text-sm">This course doesn't exist or has been removed.</p>
-      </div>
-      <button
-        onClick={() => navigate("/student/courses")}
-        className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-semibold rounded-2xl hover:-translate-y-0.5 transition-all shadow-lg"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Courses
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center py-24 gap-4">
+      <p className="text-slate-500 font-medium">Course data unavailable. Please try again.</p>
+      <button onClick={() => refetch()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700">
+        Retry
       </button>
     </div>
   );
 
-  const { batch, enrollment, summary, subjects, progress } = data;
-
-  // Paid + not paid yet → partial lock
-  const isUnpaid = (batch.isPaid && !enrollment?.feePaid);
-  // The curriculum itself is always returned (enrollment exists) but DPP/PYQ/material locked for unpaid
-  const resourcesLocked = !!isUnpaid;
+  const { batch, enrollment, summary } = data;
+  const progress = data.progress;
   const thumbnail = resolveUrl(batch.thumbnailUrl);
+  const nextTopic = allTopicsFlat.find(t => t.status !== "completed" && t.status !== "locked") ?? null;
+  const isUnpaid = batch.isPaid && !enrollment?.feePaid;
+  const resourcesLocked = !!isUnpaid;
 
-  // Collected resources per tab
-  const dppList = useMemo(() => collectResources(subjects, ["dpp"]), [subjects]);
-  const pyqList = useMemo(() => collectResources(subjects, ["pyq"]), [subjects]);
-  const materialList = useMemo(() => collectResources(subjects, ["pdf", "notes", "video", "link"]), [subjects]);
-
-  // Curriculum search filter
-  const filteredSubjects = useMemo(() => {
-    if (!search.trim()) return subjects;
-    const q = search.toLowerCase();
-    return subjects.map(s => ({
-      ...s,
-      chapters: s.chapters.map(c => ({
-        ...c,
-        topics: c.topics.filter(t => t.name.toLowerCase().includes(q)),
-      })).filter(c => c.topics.length > 0),
-    })).filter(s => s.chapters.length > 0);
-  }, [subjects, search]);
-
-  const TABS: { id: Tab; label: string; count?: number; icon: React.ReactNode }[] = [
-    { id: "curriculum", label: "Curriculum", icon: <Layers className="w-4 h-4" /> },
-    { id: "dpp",        label: "DPP",        count: dppList.length,      icon: <ClipboardList className="w-4 h-4" /> },
-    { id: "pyq",        label: "PYQ",        count: pyqList.length,      icon: <Trophy className="w-4 h-4" /> },
-    { id: "material",   label: "Study Material", count: materialList.length, icon: <BookOpen className="w-4 h-4" /> },
+  const TABS: { id: EnrolledTab; label: string; count?: number; icon: React.ReactNode }[] = [
+    { id: "curriculum", label: "Curriculum",    icon: <Layers className="w-4 h-4" /> },
+    { id: "lectures",   label: "Lectures",      count: lectures.length || undefined,       icon: <Video className="w-4 h-4" /> },
+    { id: "dpp",        label: "DPP",           count: dppList.length || undefined,        icon: <ClipboardList className="w-4 h-4" /> },
+    { id: "pyq",        label: "PYQ",           count: pyqList.length || undefined,        icon: <Trophy className="w-4 h-4" /> },
+    { id: "material",   label: "Notes",         count: materialList.length || undefined,   icon: <BookOpen className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto pb-24">
+    <div className="max-w-7xl mx-auto pb-24 space-y-6">
 
       {/* ── Back ── */}
-      <button
-        onClick={() => navigate("/student/courses")}
-        className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors mb-6 group"
-      >
+      <button onClick={() => navigate("/student/courses")}
+        className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         My Courses
       </button>
 
-      {/* ── Hero Banner ── */}
-      <div className={cn(
-        "relative rounded-3xl overflow-hidden mb-8 shadow-xl",
-        thumbnail ? "" : "bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800"
-      )}>
+      {/* ── HERO ── */}
+      <div className={cn("relative rounded-3xl overflow-hidden shadow-xl", !thumbnail && "bg-gradient-to-br from-indigo-700 to-purple-800")}>
         {thumbnail && (
-          <img src={thumbnail} alt={batch.name} className="absolute inset-0 w-full h-full object-cover" />
+          <img src={thumbnail} alt={batch.name} className="absolute inset-0 w-full h-full object-cover"
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
         )}
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/92 via-slate-900/75 to-slate-900/40" />
 
         <div className="relative z-10 p-8 md:p-10">
           <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left info */}
             <div className="flex-1 min-w-0">
-              {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-xs font-bold text-white uppercase tracking-wide">
-                  {batch.examTarget}
-                </span>
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-xs font-bold text-white uppercase tracking-wide">
-                  Class {batch.class}
-                </span>
-                {batch.isPaid && (
-                  <span className="px-3 py-1 bg-amber-500/80 backdrop-blur-sm rounded-xl text-xs font-bold text-white">
-                    {enrollment?.feePaid ? "✓ Enrolled" : `₹${batch.feeAmount?.toLocaleString() ?? "—"}`}
-                  </span>
-                )}
-                {!batch.isPaid && (
-                  <span className="px-3 py-1 bg-emerald-500/80 backdrop-blur-sm rounded-xl text-xs font-bold text-white">FREE</span>
-                )}
+                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-[11px] font-bold text-white uppercase tracking-wide">{batch.examTarget}</span>
+                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-[11px] font-bold text-white uppercase tracking-wide">Class {batch.class}</span>
+                {batch.isPaid
+                  ? <span className="px-3 py-1 bg-amber-500/80 rounded-xl text-[11px] font-bold text-white">{enrollment?.feePaid ? "✓ Paid" : `₹${batch.feeAmount?.toLocaleString() ?? "—"}`}</span>
+                  : <span className="px-3 py-1 bg-emerald-500/80 rounded-xl text-[11px] font-bold text-white">FREE</span>
+                }
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-4">{batch.name}</h1>
+              <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-3">{batch.name}</h1>
 
               {batch.teacher && (
-                <p className="text-indigo-200 text-sm font-medium mb-6 flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" />
-                  {batch.teacher.fullName}
+                <p className="text-indigo-200 text-sm font-medium mb-5 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4" /> {batch.teacher.fullName}
                 </p>
               )}
 
-              {/* Stats row */}
-              <div className="flex flex-wrap gap-6 text-sm text-white/80 font-medium mb-6">
-                <span className="flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-indigo-300" />
-                  {summary?.totalSubjects ?? subjects.length} Subjects
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-indigo-300" />
-                  {summary?.totalTopics ?? progress.totalTopics} Topics
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Video className="w-4 h-4 text-indigo-300" />
-                  {summary?.totalLectures ?? progress.totalLectures} Lectures
-                </span>
-                {dppList.length > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <ClipboardList className="w-4 h-4 text-orange-300" />
-                    {dppList.length} DPPs
-                  </span>
-                )}
-                {pyqList.length > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <Trophy className="w-4 h-4 text-violet-300" />
-                    {pyqList.length} PYQs
-                  </span>
-                )}
+              {/* Stats pills */}
+              <div className="flex flex-wrap gap-4 text-sm text-white/80 font-medium mb-5">
+                <span className="flex items-center gap-1.5"><Layers className="w-4 h-4 text-indigo-300" />{summary?.totalSubjects ?? subjects.length} Subjects</span>
+                <span className="flex items-center gap-1.5"><BookOpen className="w-4 h-4 text-indigo-300" />{summary?.totalTopics ?? progress.totalTopics} Topics</span>
+                <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-indigo-300" />{summary?.totalLectures ?? progress.totalLectures} Lectures</span>
+                {dppList.length > 0 && <span className="flex items-center gap-1.5"><ClipboardList className="w-4 h-4 text-orange-300" />{dppList.length} DPPs</span>}
+                {pyqList.length > 0 && <span className="flex items-center gap-1.5"><Trophy className="w-4 h-4 text-violet-300" />{pyqList.length} PYQs</span>}
               </div>
 
               {/* Progress bar */}
@@ -1123,27 +1354,23 @@ export default function StudentCourseDetailPage() {
                   <span>Overall Progress</span>
                   <span className="text-white font-bold">{progress.overallPct}%</span>
                 </div>
-                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-2.5 bg-white/20 rounded-full overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress.overallPct}%` }}
-                    transition={{ duration: 1 }}
-                    className="h-full bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full"
+                    initial={{ width: 0 }} animate={{ width: `${progress.overallPct}%` }} transition={{ duration: 1 }}
+                    className="h-full bg-gradient-to-r from-indigo-400 to-purple-300 rounded-full"
                   />
                 </div>
-                <p className="text-xs text-white/50 mt-1.5">
-                  {progress.completedTopics} of {progress.totalTopics} topics completed
-                </p>
+                <p className="text-xs text-white/50 mt-1.5">{progress.completedTopics} of {progress.totalTopics} topics completed</p>
               </div>
             </div>
 
-            {/* Right: quick action card */}
-            <div className="lg:w-64 shrink-0 flex flex-col gap-3">
+            {/* Right action card */}
+            <div className="lg:w-56 shrink-0 flex flex-col gap-3">
               <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-5 space-y-3">
                 {[
-                  { label: "Topics Done", val: `${progress.completedTopics}/${progress.totalTopics}`, icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" /> },
+                  { label: "Topics Done", val: `${progress.completedTopics}/${progress.totalTopics}`,     icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" /> },
                   { label: "Lectures",    val: `${progress.completedLectures}/${progress.totalLectures}`, icon: <Video className="w-4 h-4 text-blue-400" /> },
-                  { label: "Progress",    val: `${progress.overallPct}%`, icon: <BarChart3 className="w-4 h-4 text-purple-400" /> },
+                  { label: "Accuracy",    val: `${progress.overallPct}%`,                                 icon: <BarChart3 className="w-4 h-4 text-purple-400" /> },
                 ].map(s => (
                   <div key={s.label} className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-white/60 text-sm">{s.icon}{s.label}</div>
@@ -1154,9 +1381,8 @@ export default function StudentCourseDetailPage() {
 
               <button
                 onClick={() => {
-                  const firstIncomplete = subjects.flatMap(s => s.chapters.flatMap(c => c.topics)).find(t => t.status !== "completed");
-                  if (firstIncomplete) navigate(`/student/courses/${batchId}/topics/${firstIncomplete.id}`);
-                  else navigate(`/student/lectures`);
+                  if (nextTopic) navigate(`/student/courses/${batchId}/topics/${nextTopic.id}`);
+                  else navigate("/student/lectures");
                 }}
                 className="w-full py-3 bg-white text-indigo-700 font-bold rounded-2xl hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2 shadow-lg"
               >
@@ -1168,37 +1394,126 @@ export default function StudentCourseDetailPage() {
         </div>
       </div>
 
-      {/* ── Unpaid locked notice ── */}
-      {isUnpaid && (
-        <div className="mb-6">
-          <LockedBanner courseName={batch.name} isPaid={batch.isPaid} feeAmount={batch.feeAmount} />
+      {/* ── Unpaid notice ── */}
+      {isUnpaid && <LockedBanner courseName={batch.name} isPaid={batch.isPaid} feeAmount={batch.feeAmount} />}
+
+      {/* ── MAIN LAYOUT ── */}
+      <div className="flex gap-6 items-start">
+
+        {/* ── LEFT SUBJECT SIDEBAR (sticky) ── */}
+        <div className="hidden lg:flex flex-col w-56 shrink-0 sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-50">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Navigate</p>
+            </div>
+            <div className="p-2 space-y-1">
+              {/* All subjects */}
+              <button
+                onClick={() => { setActiveSubjectId(null); setActiveTab("curriculum"); }}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all",
+                  !activeSubjectId && activeTab === "curriculum"
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                <Layers className="w-4 h-4 shrink-0" />
+                <span className="truncate">All Subjects</span>
+              </button>
+
+              {/* Per-subject */}
+              {subjects.map(s => {
+                const done  = s.chapters.reduce((a, c) => a + c.topics.filter(t => t.status === "completed").length, 0);
+                const total = s.chapters.reduce((a, c) => a + c.topics.length, 0);
+                const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+                const color = subjectColor(s.name);
+                const isActive = activeSubjectId === s.id && activeTab === "curriculum";
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => { setActiveSubjectId(s.id === activeSubjectId ? null : s.id); setActiveTab("curriculum"); }}
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 rounded-xl transition-all border",
+                      isActive ? "bg-indigo-50 border-indigo-200" : "border-transparent hover:bg-slate-50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.colorCode ?? color.bg }} />
+                      <span className={cn("text-xs font-semibold line-clamp-1", isActive ? "text-indigo-700" : "text-slate-700")}>{s.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: s.colorCode ?? color.bg }} />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 shrink-0">{pct}%</span>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {/* Divider + resource shortcuts */}
+              <div className="pt-2 mt-1 border-t border-slate-100 space-y-1">
+                {[
+                  { id: "lectures" as EnrolledTab, label: "Lectures", count: lectures.length, icon: <Video className="w-3.5 h-3.5" />, color: "text-blue-600" },
+                  { id: "dpp"      as EnrolledTab, label: "DPP",      count: dppList.length,  icon: <ClipboardList className="w-3.5 h-3.5" />, color: "text-orange-600" },
+                  { id: "pyq"      as EnrolledTab, label: "PYQ",      count: pyqList.length,  icon: <Trophy className="w-3.5 h-3.5" />,        color: "text-violet-600" },
+                  { id: "material" as EnrolledTab, label: "Notes",    count: materialList.length, icon: <BookOpen className="w-3.5 h-3.5" />, color: "text-teal-600" },
+                ].filter(r => r.count > 0 || r.id === "lectures").map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => { setActiveSubjectId(null); setActiveTab(r.id); }}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all",
+                      activeTab === r.id ? "bg-slate-100 text-slate-800" : "text-slate-500 hover:bg-slate-50"
+                    )}
+                  >
+                    <span className={cn("flex items-center gap-1.5", r.color)}>{r.icon}{r.label}</span>
+                    {r.count > 0 && <span className="text-slate-400 font-bold">{r.count}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* ── Main layout: left content + right sticky sidebar ── */}
-      <div className="flex flex-col lg:flex-row gap-8">
+        {/* ── MAIN CONTENT ── */}
+        <div className="flex-1 min-w-0 space-y-5">
 
-        {/* ── LEFT: Tabs + Content ── */}
-        <div className="flex-1 min-w-0">
+          {/* Continue Learning card */}
+          {nextTopic && activeTab === "curriculum" && (
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-5 flex items-center justify-between gap-4 text-white shadow-lg">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">
+                  {progress.overallPct > 0 ? "Continue Learning" : "Start Here"}
+                </p>
+                <p className="font-bold text-base line-clamp-1">{nextTopic.name}</p>
+                <p className="text-xs text-indigo-200 mt-0.5 line-clamp-1">{nextTopic.chapterName} · {nextTopic.subjectName}</p>
+              </div>
+              <button
+                onClick={() => navigate(`/student/courses/${batchId}/topics/${nextTopic.id}`)}
+                className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-700 font-bold rounded-xl hover:bg-indigo-50 transition-colors shadow-md text-sm whitespace-nowrap"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                {progress.overallPct > 0 ? "Continue" : "Start"}
+              </button>
+            </div>
+          )}
 
           {/* Tab Bar */}
-          <div className="flex items-center gap-1 bg-white rounded-2xl border border-slate-100 p-1.5 shadow-sm mb-6 overflow-x-auto">
+          <div className="flex items-center gap-1 bg-white rounded-2xl border border-slate-100 p-1.5 shadow-sm overflow-x-auto">
             {TABS.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); if (tab.id === "curriculum") {} else setActiveSubjectId(null); }}
                 className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all",
-                  activeTab === tab.id
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all",
+                  activeTab === tab.id ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 )}
               >
                 {tab.icon}
                 {tab.label}
                 {tab.count != null && tab.count > 0 && (
-                  <span className={cn(
-                    "text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                  <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-full",
                     activeTab === tab.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
                   )}>
                     {tab.count}
@@ -1211,12 +1526,39 @@ export default function StudentCourseDetailPage() {
           {/* ── CURRICULUM TAB ── */}
           {activeTab === "curriculum" && (
             <div className="space-y-4">
+              {/* Mobile: subject pills */}
+              <div className="flex lg:hidden items-center gap-2 overflow-x-auto pb-1">
+                <button
+                  onClick={() => setActiveSubjectId(null)}
+                  className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0",
+                    !activeSubjectId ? "bg-indigo-600 text-white border-transparent" : "bg-white text-slate-600 border-slate-200"
+                  )}
+                >
+                  All
+                </button>
+                {subjects.map(s => {
+                  const c = subjectColor(s.name);
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setActiveSubjectId(s.id === activeSubjectId ? null : s.id)}
+                      className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0",
+                        activeSubjectId === s.id ? "text-white border-transparent" : "bg-white text-slate-600 border-slate-200"
+                      )}
+                      style={activeSubjectId === s.id ? { background: s.colorCode ?? c.bg, borderColor: "transparent" } : {}}
+                    >
+                      {s.name}
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Search */}
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search topics..."
+                  placeholder="Search topics, chapters…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 shadow-sm"
@@ -1236,134 +1578,19 @@ export default function StudentCourseDetailPage() {
             </div>
           )}
 
-          {/* ── DPP TAB ── */}
-          {activeTab === "dpp" && (
-            <ResourceTab
-              resources={dppList}
-              isLocked={resourcesLocked}
-              emptyLabel="No DPPs available yet"
-            />
+          {/* ── LECTURES TAB ── */}
+          {activeTab === "lectures" && (
+            <LecturesTabContent lectures={lectures} batchId={batchId} isLoading={lecturesLoading} />
           )}
+
+          {/* ── DPP TAB ── */}
+          {activeTab === "dpp" && <ResourceTab resources={dppList} isLocked={resourcesLocked} emptyLabel="No DPPs available yet" />}
 
           {/* ── PYQ TAB ── */}
-          {activeTab === "pyq" && (
-            <ResourceTab
-              resources={pyqList}
-              isLocked={resourcesLocked}
-              emptyLabel="No PYQs available yet"
-            />
-          )}
+          {activeTab === "pyq" && <ResourceTab resources={pyqList} isLocked={resourcesLocked} emptyLabel="No PYQs available yet" />}
 
           {/* ── MATERIAL TAB ── */}
-          {activeTab === "material" && (
-            <ResourceTab
-              resources={materialList}
-              isLocked={resourcesLocked}
-              emptyLabel="No study materials added yet"
-            />
-          )}
-        </div>
-
-        {/* ── RIGHT: Sticky Info Sidebar ── */}
-        <div className="lg:w-72 shrink-0 space-y-5 lg:sticky lg:top-24 lg:self-start">
-
-          {/* Course info card */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-50">
-              <h3 className="font-bold text-slate-800 text-sm mb-3">Course Details</h3>
-              <dl className="space-y-3 text-sm">
-                {batch.teacher && (
-                  <div className="flex items-start gap-3">
-                    <GraduationCap className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                    <div>
-                      <dt className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Teacher</dt>
-                      <dd className="font-semibold text-slate-700">{batch.teacher.fullName}</dd>
-                    </div>
-                  </div>
-                )}
-                {batch.startDate && (
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                    <div>
-                      <dt className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Duration</dt>
-                      <dd className="font-semibold text-slate-700">
-                        {new Date(batch.startDate).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
-                        {batch.endDate && ` → ${new Date(batch.endDate).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}`}
-                      </dd>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-start gap-3">
-                  <Star className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                  <div>
-                    <dt className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Exam Target</dt>
-                    <dd className="font-semibold text-slate-700 uppercase">{batch.examTarget}</dd>
-                  </div>
-                </div>
-              </dl>
-            </div>
-
-            {/* Subjects quick view */}
-            <div className="p-5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-3">Subjects</p>
-              <div className="space-y-2">
-                {subjects.map(s => {
-                  const c = subjectColor(s.name);
-                  const total = s.chapters.reduce((a, ch) => a + ch.topics.length, 0);
-                  const done = s.chapters.reduce((a, ch) => a + ch.topics.filter(t => t.status === "completed").length, 0);
-                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                  return (
-                    <div key={s.id} className="flex items-center gap-3">
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: s.colorCode ?? c.bg }}
-                      >
-                        <GraduationCap className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-700 truncate">{s.name}</span>
-                          <span className="text-slate-400 shrink-0 ml-2">{pct}%</span>
-                        </div>
-                        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mt-1">
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: s.colorCode ?? c.bg }} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick resource counts */}
-          {(dppList.length > 0 || pyqList.length > 0 || materialList.length > 0) && (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-3">Resources</p>
-              <div className="space-y-2">
-                {[
-                  { label: "DPP Sheets",      count: dppList.length,      tab: "dpp" as Tab,      color: "text-orange-600", bg: "bg-orange-50", icon: <ClipboardList className="w-4 h-4" /> },
-                  { label: "Previous Year Qs", count: pyqList.length,      tab: "pyq" as Tab,      color: "text-violet-600", bg: "bg-violet-50", icon: <Trophy className="w-4 h-4" /> },
-                  { label: "Study Material",   count: materialList.length, tab: "material" as Tab, color: "text-blue-600",   bg: "bg-blue-50",   icon: <BookOpen className="w-4 h-4" /> },
-                ].filter(r => r.count > 0).map(r => (
-                  <button
-                    key={r.tab}
-                    onClick={() => setActiveTab(r.tab)}
-                    className={cn(
-                      "w-full flex items-center justify-between p-3 rounded-xl border transition-all hover:shadow-sm",
-                      activeTab === r.tab ? "border-indigo-200 bg-indigo-50" : "border-slate-100 hover:border-slate-200"
-                    )}
-                  >
-                    <div className={cn("flex items-center gap-2 text-sm font-semibold", r.color)}>
-                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", r.bg)}>{r.icon}</div>
-                      {r.label}
-                    </div>
-                    <span className="text-xs font-bold text-slate-500">{r.count}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" />}
         </div>
       </div>
     </div>
