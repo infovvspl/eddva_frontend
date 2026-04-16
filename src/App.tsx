@@ -68,8 +68,6 @@ import NotFound from "./pages/NotFound";
 import JoinBatchPage from "./pages/JoinBatchPage";
 
 // Landing Pages
-import { LandingNavbar } from "@/components/landing/LandingNavbar";
-import { LandingFooter } from "@/components/landing/LandingFooter";
 import AboutUsPage from "./pages/landing/AboutUsPage";
 import LandingCoursesPage from "./pages/landing/LandingCoursesPage";
 import ExamsRegistrationPage from "./pages/landing/ExamsRegistrationPage";
@@ -172,7 +170,7 @@ const StudentRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<LoginPage />} />
+    <Route path="/" element={<Index />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/join" element={<JoinBatchPage />} />

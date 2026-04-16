@@ -96,7 +96,8 @@
       "Read(//c/Users/HP/Desktop/VVSPL/apexiq-arena/**)",
       "Bash(grep -rn \"student.*batch\\\\|batch.*list\\\\|enrollment\" /d/edtech/eddva_frontend/src/pages/student/*.tsx)",
       "Bash(wc -l \"d:\\\\edtech\\\\eddva_frontend\\\\src\\\\pages\\\\super-admin\"/*.tsx)",
-      "Bash(grep -l \"useTenants\\\\|usePlatformStats\" \"d:\\\\edtech\\\\eddva_frontend\\\\src\\\\hooks\"/*.ts)"
+      "Bash(grep -l \"useTenants\\\\|usePlatformStats\" \"d:\\\\edtech\\\\eddva_frontend\\\\src\\\\hooks\"/*.ts)",
+      "Bash(grep -n \"LandingNavbar\\\\|LandingFooter\\\\|LandingLayout\" d:/edtech/eddva_frontend/src/pages/landing/*.tsx d:/edtech/eddva_frontend/src/pages/Index.tsx)"
     ]
   }
 }

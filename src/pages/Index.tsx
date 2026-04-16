@@ -11,14 +11,26 @@ import {
 } from "lucide-react";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
 import heroIllustration from "@/assets/online-learning-concept-vector-illustration_235222-1269.png";
-import aboutImg   from "@/assets/education-learning-study-concept-apacity-development-training-personal-development-mixed-media-business_1085052-1781.avif";
+import aboutImg   from "@/assets/eddva web img 2.png";
 import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";
 import careerImg  from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
 import aiImg from "@/assets/Learn with AI_ educational inspiration.png";
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { FadeUp, Label as SLabel, HeroBadge as FloatBadge } from "@/components/landing/LandingPrimitives";
 import { B, P, T, IN, grad, gText, SG } from "@/components/landing/DesignTokens";
+import bg1 from "@/assets/bg1.jpg";
+import bg2 from  "@/assets/bg2.jpg";
 
+
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.1, duration: 0.5 }
+  })
+};
 /* ── Data ── */
 const examCategories = [
   { id: "jee",   name: "IIT JEE",        icon: "⚛️", color: B,         tags: ["Class 11","Class 12","Dropper"], students: "32K+", desc: "Crack IIT with AI-powered Physics, Chemistry & Maths prep — adaptive tests and full syllabus coverage.", popular: true },
@@ -80,7 +92,38 @@ const Index = () => {
     (searchQuery === "" || e.name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-
+  const features = [
+  {
+    icon: "🚀",
+    title: "Future Learning",
+    desc: "AI-powered paths for tomorrow",
+    color: "from-blue-400 to-cyan-400"
+  },
+  {
+    icon: "💡",
+    title: "Knowledge Evolution",
+    desc: "Grow from basics to advanced",
+    color: "from-yellow-400 to-orange-400"
+  },
+  {
+    icon: "📈",
+    title: "Digital Growth",
+    desc: "Track real progress easily",
+    color: "from-green-400 to-emerald-400"
+  },
+  {
+    icon: "✨",
+    title: "Idea Spark",
+    desc: "Unlock creativity & curiosity",
+    color: "from-purple-400 to-pink-400"
+  },
+];
+const stats = [
+  { num:"50K+", label:"Students", color:"bg-blue-500" },
+  { num:"500+", label:"Courses", color:"bg-purple-500" },
+  { num:"99.9%", label:"Uptime", color:"bg-green-500" },
+  { num:"4.8★", label:"Rating", color:"bg-yellow-500" },
+];
   return (
     <LandingLayout>
 
@@ -185,11 +228,90 @@ const Index = () => {
         </div>
 
         {/* soft wave */}
-        <svg viewBox="0 0 1440 60" className="mt-0 w-full" style={{ marginBottom:"-2px" }}>
+        {/* <svg viewBox="0 0 1440 60" className="mt-0 w-full" style={{ marginBottom:"0px" }}>
           <path d="M0,40 C360,70 1080,10 1440,40 L1440,60 L0,60 Z" fill="white" />
-        </svg>
+        </svg> */}
       </section>
+        {/* ══════════════════════ ABOUT ══════════════════════ */}
+      <section className="landing-section" id="about"
+        style={{ background:"linear-gradient(160deg, #EFF6FF 0%, #F5F3FF 100%)" }}>
+        <div className="landing-shell">
+          <div className="grid items-center gap-14 lg:grid-cols-2">
 
+            {/* About image panel */}
+            <FadeUp>
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl"
+                style={{ boxShadow:"0 32px 80px rgba(59,130,246,0.18)" }}>
+                <img src={aboutImg} alt="Education & Learning" className="h-[480px] w-full object-cover object-center" />
+                {/* gradient overlay */}
+                <div className="absolute inset-0"
+                  style={{ background:"linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(15,23,42,0.75) 100%)" }} />
+                {/* floating stat pills */}
+                <div className="absolute bottom-6 left-5 right-5 flex flex-wrap gap-3">
+                  {[
+                    { icon:"⚡", val:"4,820 XP",   color:"#3B82F6", bg:"rgba(59,130,246,0.15)" },
+                    { icon:"🔥", val:"12-day Streak", color:"#F59E0B", bg:"rgba(245,158,11,0.15)" },
+                    { icon:"🎯", val:"89% Accuracy", color:"#10B981", bg:"rgba(16,185,129,0.15)" },
+                    { icon:"🏆", val:"Rank #3",      color:"#8B5CF6", bg:"rgba(139,92,246,0.15)" },
+                  ].map(s => (
+                    <motion.div key={s.val} whileHover={{ y:-3 }}
+                      className="flex items-center gap-2 rounded-2xl border border-gray-200 px-3.5 py-2 backdrop-blur-md"
+                      style={{ background:s.bg }}>
+                      <span className="text-[15px]">{s.icon}</span>
+                      <span className="text-[12px] font-bold text-white">{s.val}</span>
+                    </motion.div>
+                  ))}
+                </div>
+                {/* top label */}
+                <div className="absolute left-5 top-5">
+                  <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+                    <span className="text-[11px] font-bold text-white">Live Learning Platform</span>
+                  </div>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* Text */}
+            <FadeUp delay={0.15}>
+              <SLabel>About EDDVA</SLabel>
+              <h2 className="landing-title-section mt-5">
+                The AI-powered learning platform built for{" "}
+                <span style={gText()}>real results</span>
+              </h2>
+              <p className="mt-4 text-[16px] font-medium leading-relaxed text-gray-500">
+                EDDVA combines adaptive AI, expert-curated content and real-time analytics to give every student a personalized path to their target score — no matter the exam.
+              </p>
+
+              <div className="mt-8 space-y-4">
+                {[
+                  { icon:<Brain className="h-5 w-5" />,     color:B,  bg:"#EFF6FF", title:"Adaptive Learning",       desc:"Study plans that evolve with your performance every day." },
+                  { icon:<Zap className="h-5 w-5" />,       color:P,  bg:"#F5F3FF", title:"Smart Recommendations",   desc:"AI suggests what to study next based on gaps and exam date." },
+                  { icon:<BarChart className="h-5 w-5" />,  color:T,  bg:"#ECFDF5", title:"Performance Tracking",    desc:"Visual dashboards with subject-wise accuracy and trend charts." },
+                  { icon:<MessageCircle className="h-5 w-5" />, color:IN, bg:"#EEF2FF", title:"24/7 Doubt Solver",   desc:"Bilingual AI chatbot — Hindi + English, always available." },
+                ].map(item => (
+                  <motion.div key={item.title} whileHover={{ x:4 }}
+                    className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl" style={{ background:item.bg, color:item.color }}>
+                      {item.icon}
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-gray-900">{item.title}</p>
+                      <p className="text-[13px] text-gray-500">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
+                className="mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
+                style={{ background: grad() }}>
+                Start Your Journey <ArrowRight className="h-4 w-4" />
+              </motion.a>
+            </FadeUp>
+          </div>
+        </div>
+      </section>
 
       {/* ══════════════════════ EXAM CATEGORIES ══════════════════════ */}
       <section className="landing-section bg-white" id="exams">
@@ -295,91 +417,142 @@ const Index = () => {
         </div>
       </section>
 
+  {/* ══════════════════════ CAREER / FUTURE LEARNING ══════════════════════ */}
+ <section className="relative overflow-hidden bg-[#f8fafc]" id="career">
 
-      {/* ══════════════════════ ABOUT ══════════════════════ */}
-      <section className="landing-section" id="about"
-        style={{ background:"linear-gradient(160deg, #EFF6FF 0%, #F5F3FF 100%)" }}>
-        <div className="landing-shell">
-          <div className="grid items-center gap-14 lg:grid-cols-2">
+      {/* 🌈 Soft Corner Gradients */}
+      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-blue-200/40 blur-[120px] rounded-full" />
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-200/40 blur-[120px] rounded-full" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-pink-200/40 blur-[120px] rounded-full" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-yellow-200/40 blur-[120px] rounded-full" />
 
-            {/* About image panel */}
-            <FadeUp>
-              <div className="relative overflow-hidden rounded-3xl shadow-2xl"
-                style={{ boxShadow:"0 32px 80px rgba(59,130,246,0.18)" }}>
-                <img src={aboutImg} alt="Education & Learning" className="h-[480px] w-full object-cover object-center" />
-                {/* gradient overlay */}
-                <div className="absolute inset-0"
-                  style={{ background:"linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(15,23,42,0.75) 100%)" }} />
-                {/* floating stat pills */}
-                <div className="absolute bottom-6 left-5 right-5 flex flex-wrap gap-3">
-                  {[
-                    { icon:"⚡", val:"4,820 XP",   color:"#3B82F6", bg:"rgba(59,130,246,0.15)" },
-                    { icon:"🔥", val:"12-day Streak", color:"#F59E0B", bg:"rgba(245,158,11,0.15)" },
-                    { icon:"🎯", val:"89% Accuracy", color:"#10B981", bg:"rgba(16,185,129,0.15)" },
-                    { icon:"🏆", val:"Rank #3",      color:"#8B5CF6", bg:"rgba(139,92,246,0.15)" },
-                  ].map(s => (
-                    <motion.div key={s.val} whileHover={{ y:-3 }}
-                      className="flex items-center gap-2 rounded-2xl border border-gray-200 px-3.5 py-2 backdrop-blur-md"
-                      style={{ background:s.bg }}>
-                      <span className="text-[15px]">{s.icon}</span>
-                      <span className="text-[12px] font-bold text-white">{s.val}</span>
-                    </motion.div>
-                  ))}
-                </div>
-                {/* top label */}
-                <div className="absolute left-5 top-5">
-                  <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-                    <span className="text-[11px] font-bold text-white">Live Learning Platform</span>
+      {/* 🌫️ Optional Background Image */}
+      <img
+        src={bg1}
+        alt="bg"
+        className="absolute inset-0 w-full h-full object-cover opacity-10"
+      />
+
+      {/* CONTENT */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 grid lg:grid-cols-2 gap-16 items-center">
+
+        {/* LEFT */}
+        <div>
+          {/* Badge */}
+          <div className="mb-4 inline-flex items-center gap-2 bg-white/70 border border-gray-200 px-4 py-1 rounded-full backdrop-blur-md">
+            <span className="text-yellow-500 text-xs">🏆</span>
+            <span className="text-gray-700 text-xs tracking-widest font-semibold">
+              CAREER & GROWTH
+            </span>
+          </div>
+
+          {/* Heading */}
+          <h2 className="text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+            Build Your{" "}
+            <span className="bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+              Future
+            </span>
+            <br />
+            with EDDVA
+          </h2>
+
+          {/* Description */}
+          <p className="text-gray-600 max-w-lg mb-10 text-lg leading-relaxed">
+            From cracking your dream exam to building real-world skills —
+            EDDVA guides you at every step of your journey.
+          </p>
+
+          {/* ✨ FEATURE CARDS */}
+          <div className="grid grid-cols-2 gap-6 mb-10">
+            {features.map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -10 }}
+                className="group relative p-[1px] rounded-2xl"
+              >
+                {/* Gradient Border */}
+                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 blur-sm transition`} />
+
+                {/* Card */}
+                <div className="relative p-5 rounded-2xl bg-white border border-gray-200 shadow-sm group-hover:shadow-xl transition">
+
+                  {/* Icon */}
+                  <div className={`w-12 h-12 flex items-center justify-center rounded-xl text-xl mb-4 bg-gradient-to-br ${item.color} text-white shadow-md`}>
+                    {item.icon}
                   </div>
+
+                  {/* Text */}
+                  <h3 className="text-gray-900 font-semibold text-sm mb-1">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-gray-500 text-xs leading-relaxed">
+                    {item.desc}
+                  </p>
+
                 </div>
-              </div>
-            </FadeUp>
+              </motion.div>
+            ))}
+          </div>
 
-            {/* Text */}
-            <FadeUp delay={0.15}>
-              <SLabel>About EDDVA</SLabel>
-              <h2 className="landing-title-section mt-5">
-                The AI-powered learning platform built for{" "}
-                <span style={gText()}>real results</span>
-              </h2>
-              <p className="mt-4 text-[16px] font-medium leading-relaxed text-gray-500">
-                EDDVA combines adaptive AI, expert-curated content and real-time analytics to give every student a personalized path to their target score — no matter the exam.
-              </p>
+          {/* CTA */}
+          <div className="flex gap-4">
+            <Link
+              to="/register"
+              className="px-7 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:scale-105 transition shadow-md"
+            >
+              Start Your Journey →
+            </Link>
 
-              <div className="mt-8 space-y-4">
-                {[
-                  { icon:<Brain className="h-5 w-5" />,     color:B,  bg:"#EFF6FF", title:"Adaptive Learning",       desc:"Study plans that evolve with your performance every day." },
-                  { icon:<Zap className="h-5 w-5" />,       color:P,  bg:"#F5F3FF", title:"Smart Recommendations",   desc:"AI suggests what to study next based on gaps and exam date." },
-                  { icon:<BarChart className="h-5 w-5" />,  color:T,  bg:"#ECFDF5", title:"Performance Tracking",    desc:"Visual dashboards with subject-wise accuracy and trend charts." },
-                  { icon:<MessageCircle className="h-5 w-5" />, color:IN, bg:"#EEF2FF", title:"24/7 Doubt Solver",   desc:"Bilingual AI chatbot — Hindi + English, always available." },
-                ].map(item => (
-                  <motion.div key={item.title} whileHover={{ x:4 }}
-                    className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl" style={{ background:item.bg, color:item.color }}>
-                      {item.icon}
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-bold text-gray-900">{item.title}</p>
-                      <p className="text-[13px] text-gray-500">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                className="mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
-                style={{ background: grad() }}>
-                Start Your Journey <ArrowRight className="h-4 w-4" />
-              </motion.a>
-            </FadeUp>
+            <a
+              href="#about"
+              className="px-7 py-3 rounded-xl border border-gray-300 text-gray-800 bg-white hover:bg-gray-100 transition"
+            >
+              Learn More
+            </a>
           </div>
         </div>
-      </section>
+
+        {/* RIGHT - STATS */}
+        <div className="space-y-5">
+          {stats.map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ scale: 1.03 }}
+              className="flex items-center gap-5 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition"
+            >
+
+              {/* Color Bar */}
+              <div className={`w-2 h-12 rounded-full ${s.color}`} />
+
+              {/* Text */}
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{s.num}</p>
+                <p className="text-gray-500 text-sm">{s.label}</p>
+              </div>
+
+              {/* Arrow */}
+              <div className="ml-auto text-gray-300 group-hover:text-gray-500 transition">
+                →
+              </div>
+
+            </motion.div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+   
 
 
       {/* ══════════════════════ HOW IT WORKS ══════════════════════ */}
-      <section className="landing-section" id="how"
+      {/* <section className="landing-section" id="how"
         style={{ background:"linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 55%,#F5F3FF 100%)" }}>
         <div className="landing-shell">
           <FadeUp className="mb-4 text-center"><SLabel>How It Works</SLabel></FadeUp>
@@ -394,7 +567,7 @@ const Index = () => {
             </p>
           </FadeUp>
 
-          {/* Step cards */}
+  
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {howSteps.map((s, i) => {
               const gradTo = s.color === B ? IN : s.color === IN ? P : s.color === P ? T : T;
@@ -403,21 +576,21 @@ const Index = () => {
                   <motion.div
                     whileHover={{ y:-7, boxShadow:`0 28px 64px ${s.color}25` }}
                     className="relative flex flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white p-7 shadow-sm transition-all">
-                    {/* ghost number watermark */}
+          
                     <div className="pointer-events-none absolute -right-3 -top-3 text-[88px] font-black leading-none select-none"
                       style={{ color:`${s.color}0E` }}>{s.num}</div>
 
-                    {/* top bar accent */}
+            
                     <div className="absolute inset-x-0 top-0 h-1 rounded-t-3xl"
                       style={{ background:`linear-gradient(90deg, ${s.color}, ${gradTo})` }} />
 
-                    {/* icon */}
+                
                     <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg"
                       style={{ background:`linear-gradient(135deg, ${s.color}, ${gradTo})` }}>
                       {s.icon}
                     </div>
 
-                    {/* step chip */}
+             
                     <span className="mb-3 inline-flex w-fit items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest"
                       style={{ background:`${s.color}12`, color:s.color }}>
                       Step {s.num}
@@ -426,7 +599,7 @@ const Index = () => {
                     <h4 className="mb-2 text-[17px] font-extrabold text-gray-900">{s.title}</h4>
                     <p className="text-[13px] leading-relaxed text-gray-500">{s.desc}</p>
 
-                    {/* bottom arrow connector on desktop (except last) */}
+                   
                     {i < 3 && (
                       <div className="absolute -right-4 top-[46px] z-10 hidden h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-50 shadow-md lg:flex">
                         <ChevronRight className="h-4 w-4" style={{ color:s.color }} />
@@ -438,7 +611,7 @@ const Index = () => {
             })}
           </div>
 
-          {/* Bottom CTA strip */}
+      
           <FadeUp delay={0.45} className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <motion.a href="#exams" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
               className="flex items-center gap-2 rounded-2xl px-8 py-3.5 text-[15px] font-bold text-white shadow-lg"
@@ -448,12 +621,12 @@ const Index = () => {
             <p className="text-[13px] font-medium text-gray-400">Free forever · No credit card needed</p>
           </FadeUp>
         </div>
-      </section>
+      </section> */}
 
 
       {/* ══════════════════════ ONGOING COURSES ══════════════════════ */}
       <section id="courses" className="relative overflow-hidden">
-        {/* Full-bleed chalkboard background */}
+       
         <img
           src={coursesImg}
           alt=""
@@ -462,7 +635,7 @@ const Index = () => {
         />
         <div className="absolute inset-0" style={{ background:"linear-gradient(180deg, rgba(3,10,28,0.82) 0%, rgba(3,10,28,0.70) 60%, rgba(15,23,42,0.95) 100%)" }} />
 
-        {/* Banner hero strip */}
+  
         <div className="relative z-10 pb-0 pt-20 lg:pt-28">
           <div className="landing-shell">
             <FadeUp className="mb-12 text-center">
@@ -479,7 +652,7 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Cards container — white overlay at bottom */}
+  
         <div className="relative z-10 py-10 lg:py-14" style={{ background:"linear-gradient(180deg, transparent 0%, rgba(248,250,252,0.03) 100%)" }}>
         <div className="landing-shell">
 
@@ -691,7 +864,7 @@ const Index = () => {
 
 
       {/* ══════════════════════ TESTIMONIALS ══════════════════════ */}
-      <section className="landing-section" style={{ background:"linear-gradient(160deg,#F5F3FF 0%,#EFF6FF 100%)" }}>
+      {/* <section className="landing-section" style={{ background:"linear-gradient(160deg,#F5F3FF 0%,#EFF6FF 100%)" }}>
         <div className="landing-shell">
           <FadeUp className="mb-4 text-center"><SLabel>Student Stories</SLabel></FadeUp>
           <FadeUp delay={0.05} className="mb-3 text-center">
@@ -704,7 +877,6 @@ const Index = () => {
             <p className="text-[15px] font-bold text-gray-600">4.9 / 5 · 12,000+ reviews</p>
           </FadeUp>
 
-          {/* big featured testimonial */}
           <FadeUp delay={0.1} className="mb-6">
             <div className="relative overflow-hidden rounded-3xl p-8 text-white lg:p-12"
               style={{ background:`linear-gradient(135deg, ${B}, ${P})` }}>
@@ -729,7 +901,7 @@ const Index = () => {
                     </div>
                   </div>
                 </div>
-                {/* score improvement badge */}
+ 
                 <div className="flex flex-row items-center gap-4 lg:flex-col lg:items-end lg:justify-center">
                   <div className="rounded-2xl bg-white/15 p-4 text-center backdrop-blur-sm">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-white/60">Before</p>
@@ -747,19 +919,19 @@ const Index = () => {
             </div>
           </FadeUp>
 
-          {/* 3 standard cards */}
+    
           <div className="grid gap-5 md:grid-cols-3">
             {testimonials.map((t, i) => (
               <FadeUp key={t.name} delay={i * 0.1}>
                 <motion.div whileHover={{ y:-5, boxShadow:`0 20px 56px ${t.color}15` }}
                   className="flex flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                  {/* top: stars + quote mark */}
+         
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex gap-0.5">{Array(5).fill(0).map((_,j)=><Star key={j} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400"/>)}</div>
                     <span className="text-[32px] font-black leading-none" style={{ color:`${t.color}22` }}>"</span>
                   </div>
                   <p className="mb-5 flex-1 text-[14px] leading-relaxed text-gray-600">"{t.text}"</p>
-                  {/* divider */}
+      
                   <div className="mb-4 h-px" style={{ background:`linear-gradient(90deg, ${t.color}33, transparent)` }} />
                   <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl text-[16px] font-black text-white"
@@ -776,107 +948,10 @@ const Index = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
 
-      {/* ══════════════════════ CAREER / FUTURE LEARNING ══════════════════════ */}
-      <section className="relative overflow-hidden" id="career">
-        {/* full-bleed image */}
-        <img src={careerImg} alt="Future Learning" className="absolute inset-0 h-full w-full object-cover object-center" />
-        {/* dark overlay */}
-        <div className="absolute inset-0"
-          style={{ background:"linear-gradient(135deg, rgba(11,17,32,0.88) 0%, rgba(13,31,60,0.78) 50%, rgba(7,20,40,0.88) 100%)" }} />
-        {/* animated orb accents */}
-        <motion.div animate={{ scale:[1,1.15,1], opacity:[0.2,0.35,0.2] }} transition={{ duration:8, repeat:Infinity, ease:"easeInOut" as const }}
-          className="pointer-events-none absolute -left-20 top-1/4 h-64 w-64 rounded-full blur-3xl" style={{ background:B }} />
-        <motion.div animate={{ scale:[1,1.1,1], opacity:[0.15,0.25,0.15] }} transition={{ duration:10, repeat:Infinity, ease:"easeInOut" as const, delay:3 }}
-          className="pointer-events-none absolute -right-16 bottom-1/4 h-56 w-56 rounded-full blur-3xl" style={{ background:P }} />
-
-        <div className="relative z-10 landing-shell py-20 sm:py-24 xl:py-28">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-
-            {/* LEFT — text content */}
-            <FadeUp>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
-                <Award className="h-3.5 w-3.5 text-yellow-400" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-white/80">Career & Growth</span>
-              </div>
-              <h2 className="landing-title-feature mb-5 text-white">
-                Build Your{" "}
-                <span className="relative inline-block">
-                  <span style={{ background:"linear-gradient(135deg,#FBBF24,#F59E0B)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
-                    Future
-                  </span>
-                </span>
-                <br />with EDDVA
-              </h2>
-              <p className="mb-8 max-w-lg text-[16px] font-medium leading-relaxed text-white/65">
-                From cracking your dream exam to building knowledge that opens real-world doors — EDDVA is your partner at every step of your learning journey.
-              </p>
-
-              <div className="mb-8 grid grid-cols-2 gap-4">
-                {[
-                  { icon:"🚀", title:"Future Learning",     desc:"AI-powered paths built for tomorrow's world" },
-                  { icon:"💡", title:"Knowledge Evolution",  desc:"From basics to advanced — grow continuously" },
-                  { icon:"📈", title:"Digital Growth",       desc:"Track progress and see real improvements" },
-                  { icon:"✨", title:"Idea Spark",           desc:"Ignite curiosity and unlock your potential" },
-                ].map(item => (
-                  <motion.div key={item.title}
-                    whileHover={{ y:-4, boxShadow:"0 16px 40px rgba(0,0,0,0.4)" }}
-                    className="rounded-2xl border border-gray-200 bg-white/8 p-4 backdrop-blur-sm transition-all"
-                    style={{ background:"rgba(255,255,255,0.07)" }}>
-                    <div className="mb-2 text-2xl">{item.icon}</div>
-                    <p className="text-[13px] font-bold text-white">{item.title}</p>
-                    <p className="mt-1 text-[12px] leading-snug text-white/55">{item.desc}</p>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <motion.div whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                  <Link to="/register"
-                    className="flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-gray-900 shadow-lg"
-                    style={{ background:"linear-gradient(135deg,#FBBF24,#F59E0B)" }}>
-                    Start Your Journey <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </motion.div>
-                <motion.a href="#about" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                  className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-gray-900 backdrop-blur-sm hover:bg-white/15 transition-all">
-                  Learn About Us <ChevronRight className="h-4 w-4" />
-                </motion.a>
-              </div>
-            </FadeUp>
-
-            {/* RIGHT — glowing stat cards */}
-            <FadeUp delay={0.2} className="flex flex-col gap-5">
-              {[
-                { num:"50K+",  label:"Active Students",      icon:"🎓", color:"#3B82F6" },
-                { num:"500+",  label:"Expert-Made Courses",  icon:"📚", color:"#8B5CF6" },
-                { num:"99.9%", label:"Platform Uptime",      icon:"⚡", color:"#10B981" },
-                { num:"4.8★",  label:"Average App Rating",   icon:"⭐", color:"#F59E0B" },
-              ].map((s, i) => (
-                <motion.div key={s.label}
-                  initial={{ opacity:0, x:40 }} whileInView={{ opacity:1, x:0 }}
-                  viewport={{ once:true }} transition={{ duration:0.45, delay: i * 0.1 }}
-                  whileHover={{ x:-5, boxShadow:`0 16px 48px ${s.color}30` }}
-                  className="flex items-center gap-5 rounded-2xl border border-gray-200 p-5 backdrop-blur-sm transition-all"
-                  style={{ background:"rgba(255,255,255,0.06)", borderColor:`${s.color}30` }}>
-                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
-                    style={{ background:`${s.color}18`, border:`1px solid ${s.color}30` }}>
-                    {s.icon}
-                  </div>
-                  <div>
-                    <p className="text-[28px] font-extrabold leading-none text-white">{s.num}</p>
-                    <p className="mt-1 text-[13px] font-medium text-white/55">{s.label}</p>
-                  </div>
-                  <div className="ml-auto h-8 w-1 rounded-full" style={{ background:`linear-gradient(180deg, ${s.color}, transparent)` }} />
-                </motion.div>
-              ))}
-            </FadeUp>
-          </div>
-        </div>
-      </section>
-
+    
 
       {/* ══════════════════════ APP DOWNLOAD ══════════════════════ */}
       <section className="landing-section relative overflow-hidden" id="app" style={{ background:"#FEFCE8" }}>
@@ -1076,36 +1151,79 @@ const Index = () => {
 
 
       {/* ══════════════════════ FINAL CTA ══════════════════════ */}
-      <section className="landing-section bg-white text-center">
-        <div className="landing-shell-narrow">
-          <FadeUp>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-              <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">Start Free — No Credit Card</span>
-            </div>
-            <h2 className="landing-title-feature mb-5">
-              Ready to ace your <span style={gText()}>exam?</span>
-            </h2>
-            <p className="mb-10 mx-auto max-w-xl text-[17px] font-medium leading-relaxed text-gray-500">
-              Join 50,000+ students already on EDDVA. Start your free plan today — no credit card needed.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <motion.div whileHover={{ scale:1.05, boxShadow:`0 20px 48px ${B}44` }} whileTap={{ scale:0.97 }}>
-                <Link to="/register"
-                  className="landing-button flex items-center gap-2 text-white shadow-xl"
-                  style={{ background: grad() }}>
-                  Start Learning Free <ArrowRight className="h-5 w-5" />
-                </Link>
-              </motion.div>
-              <motion.a href="#how" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                className="landing-button flex items-center gap-2 border-2 border-gray-200 text-gray-700 transition-all hover:border-blue-300 hover:bg-blue-50">
-                See How It Works <ChevronRight className="h-5 w-5" />
-              </motion.a>
-            </div>
-          </FadeUp>
-        </div>
-      </section>
+<section className="relative overflow-hidden text-center" id="cta">
 
+  {/* 🌫️ Background Image */}
+  <img
+    src={bg2}
+    alt="background"
+    className="absolute inset-0 w-full h-full object-cover opacity-20"
+  />
+
+  {/* 🌈 Soft Gradient Overlay (light, not dark) */}
+  <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white/80 to-purple-50" />
+
+  {/* ✨ Corner Glow Effects */}
+  <div className="absolute top-0 left-0 w-[300px] h-[300px] bg-blue-200/40 blur-[120px] rounded-full" />
+  <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-purple-200/40 blur-[120px] rounded-full" />
+
+  {/* CONTENT */}
+  <div className="relative z-10 landing-shell-narrow py-20">
+
+    <FadeUp>
+      {/* Badge */}
+      <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/70 px-4 py-1.5 backdrop-blur-md shadow-sm">
+        <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+        <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">
+          Start Free — No Credit Card
+        </span>
+      </div>
+
+      {/* Heading */}
+      <h2 className="mb-5 text-4xl font-extrabold text-gray-900">
+        Ready to ace your{" "}
+        <span className="bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+          exam?
+        </span>
+      </h2>
+
+      {/* Description */}
+      <p className="mb-10 mx-auto max-w-xl text-lg text-gray-600 leading-relaxed">
+        Join 50,000+ students already on EDDVA. Start your free plan today — no credit card needed.
+      </p>
+
+      {/* CTA Buttons */}
+      <div className="flex flex-wrap items-center justify-center gap-4">
+
+        {/* Primary */}
+        <motion.div
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.96 }}
+        >
+          <Link
+            to="/register"
+            className="flex items-center gap-2 px-7 py-3 rounded-xl font-bold text-white shadow-lg"
+            style={{ background: grad() }}
+          >
+            Start Learning Free <ArrowRight className="h-5 w-5" />
+          </Link>
+        </motion.div>
+
+        {/* Secondary */}
+        <motion.a
+          href="#how"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.97 }}
+          className="flex items-center gap-2 px-7 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 hover:bg-gray-100 transition"
+        >
+          See How It Works <ChevronRight className="h-5 w-5" />
+        </motion.a>
+
+      </div>
+    </FadeUp>
+
+  </div>
+</section>
 
       {/* ══════════════════════ FOOTER ══════════════════════ */}
       {/* ── Footer and AI button are handled by LandingLayout ── */}

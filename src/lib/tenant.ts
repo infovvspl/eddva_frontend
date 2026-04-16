@@ -10,6 +10,10 @@ const MAIN_DOMAINS = ["localhost", "edva.in", "www"];
 /** Extract subdomain from current hostname, or null if on the main domain */
 export function getSubdomain(): string | null {
   const hostname = window.location.hostname; // e.g. "iit.localhost" or "iit.edva.in"
+
+  // IP addresses (IPv4) are never tenant subdomains
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return null;
+
   const parts = hostname.split(".");
 
   // localhost → no subdomain
