@@ -32,7 +32,7 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { data: me, isLoading: meLoading } = useStudentMe();
   const { data: courses = [], isLoading: coursesLoading } = useMyCourses();
-  const { data: discoverData } = useDiscoverBatches(courses.length === 0);
+  const { data: discoverData } = useDiscoverBatches(true);
   const { data: dash } = useStudentDashboard();
 
   const firstName   = me?.fullName?.split(" ")[0] || "Student";
@@ -43,14 +43,19 @@ export default function StudentDashboard() {
   const todayPlan   = (dash as any)?.todayPlan ?? [];
   const weakTopics  = (dash as any)?.weakTopics ?? [];
 
+  // Active exam target — updated preference takes effect immediately
+  const activeExamTarget = me?.student?.examTarget || discoverData?.studentPreferences?.examTarget || "";
+
   // Compute overall progress across enrolled courses
   const avgProgress =
     courses.length > 0
       ? Math.round(courses.reduce((s, c) => s + (c.progress?.overallPct ?? 0), 0) / courses.length)
       : 0;
 
-  // Discover batches for "New Courses" — only shown when 0 enrolments OR as suggestions
-  const discoverBatches = (discoverData?.availableBatches ?? []).slice(0, 3);
+  // Discover batches filtered by the student's exam preference
+  const discoverBatches = (discoverData?.availableBatches ?? [])
+    .filter(b => !activeExamTarget || (b.examTarget ?? "").toLowerCase() === activeExamTarget.toLowerCase())
+    .slice(0, 3);
 
   if (meLoading) {
     return (

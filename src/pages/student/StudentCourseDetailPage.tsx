@@ -217,13 +217,17 @@ function TopicRow({
   const isInProgress = topic.status === "in_progress";
   const locked = isLocked || topic.status === "locked";
 
+  // Prefer the pre-computed counts from the API; fall back to counting resources array
   const resourceCounts = useMemo(() => {
+    if (topic.resourceCounts && Object.keys(topic.resourceCounts).length > 0) {
+      return topic.resourceCounts;
+    }
     const counts: Record<string, number> = {};
     for (const r of topic.resources) {
       counts[r.type] = (counts[r.type] ?? 0) + 1;
     }
     return counts;
-  }, [topic.resources]);
+  }, [topic.resourceCounts, topic.resources]);
 
   const handleClick = () => {
     if (locked) { toast.error("Complete previous topics to unlock this one"); return; }
@@ -270,9 +274,10 @@ function TopicRow({
               <Clock className="w-3 h-3" /> {topic.estimatedStudyMinutes}m
             </span>
           )}
-          {topic.lectures.total > 0 && (
+          {(topic.lectureCount ?? topic.lectures.total) > 0 && (
             <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-              <Video className="w-3 h-3" /> {topic.lectures.completed}/{topic.lectures.total} lectures
+              <Video className="w-3 h-3" />
+              {topic.lectures.completed}/{topic.lectureCount ?? topic.lectures.total} lectures
             </span>
           )}
           {/* Resource badges */}
@@ -308,8 +313,12 @@ function ChapterAccordion({
 
   const completedCount = chapter.topics.filter(t => t.status === "completed").length;
   const allDone = completedCount === chapter.topics.length && chapter.topics.length > 0;
-  const totalResources = chapter.topics.reduce((s, t) => s + t.resources.length, 0);
-  const totalLectures = chapter.topics.reduce((s, t) => s + t.lectures.total, 0);
+  // Use pre-computed counts where available, fall back to derived values
+  const totalLectures = chapter.topics.reduce((s, t) => s + (t.lectureCount ?? t.lectures.total), 0);
+  const totalResources = chapter.topics.reduce((s, t) => {
+    if (t.resourceCounts) return s + Object.values(t.resourceCounts).reduce((a, b) => a + b, 0);
+    return s + t.resources.length;
+  }, 0);
 
   return (
     <div className={cn(
@@ -818,6 +827,22 @@ function LockedChapterAccordion({
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
 
+  // Aggregate resource counts across all topics in this chapter
+  const chapterResourceCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const t of chapter.topics) {
+      for (const [type, cnt] of Object.entries(t.resourceCounts ?? {})) {
+        counts[type] = (counts[type] ?? 0) + cnt;
+      }
+    }
+    return counts;
+  }, [chapter.topics]);
+
+  const chapterHasCounts = Object.keys(chapterResourceCounts).length > 0;
+
+  // Fallback icons to always show when no counts available
+  const FALLBACK_TYPES = ["pdf", "dpp", "notes", "quiz"] as const;
+
   return (
     <div className={cn(
       "rounded-2xl overflow-hidden border transition-all",
@@ -835,13 +860,33 @@ function LockedChapterAccordion({
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-slate-800 text-sm line-clamp-1">{chapter.name}</p>
-          <div className="flex items-center gap-3 mt-0.5">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-[11px] text-slate-400 font-medium">{chapter.topics.length} topics</span>
             {(chapter.jeeWeightage ?? 0) > 0 && (
               <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
                 JEE {chapter.jeeWeightage}%
               </span>
             )}
+            {/* Aggregate resource badges — with counts if available, icon-only otherwise */}
+            {chapterHasCounts
+              ? Object.entries(chapterResourceCounts).map(([type, count]) => {
+                  const meta = RESOURCE_META[type];
+                  if (!meta) return null;
+                  return (
+                    <span key={type} className={cn("flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border opacity-70", meta.bg, meta.color)}>
+                      <Lock className="w-2.5 h-2.5" /> {count} {meta.label}
+                    </span>
+                  );
+                })
+              : FALLBACK_TYPES.map(type => {
+                  const meta = RESOURCE_META[type];
+                  return (
+                    <span key={type} className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-50 border-slate-200 text-slate-400">
+                      <Lock className="w-2.5 h-2.5" /> {meta.label}
+                    </span>
+                  );
+                })
+            }
           </div>
         </div>
         <motion.div animate={{ rotate: open ? 180 : 0 }} className="shrink-0">
@@ -859,25 +904,56 @@ function LockedChapterAccordion({
             className="overflow-hidden"
           >
             <div className="bg-slate-50/50 border-t border-slate-100 p-3 space-y-2">
-              {chapter.topics.map(topic => (
-                <div
-                  key={topic.id}
-                  className="flex items-center gap-4 px-5 py-3.5 rounded-xl border border-slate-100 bg-white opacity-70"
-                >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
-                    <Lock className="w-4 h-4 text-slate-400" />
+              {chapter.topics.map(topic => {
+                const topicCounts = topic.resourceCounts ?? {};
+                const hasTopicCounts = Object.keys(topicCounts).length > 0;
+                return (
+                  <div
+                    key={topic.id}
+                    className="flex items-center gap-4 px-5 py-3.5 rounded-xl border border-slate-100 bg-white"
+                  >
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
+                      <Lock className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-slate-700 truncate">{topic.name}</p>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        {topic.estimatedStudyMinutes > 0 && (
+                          <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                            <Clock className="w-3 h-3" /> {topic.estimatedStudyMinutes}m
+                          </span>
+                        )}
+                        {(topic.lectureCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                            <Video className="w-3 h-3" /> {topic.lectureCount} lectures
+                          </span>
+                        )}
+                        {/* With counts: coloured badges. Without: icon-only fallback badges */}
+                        {hasTopicCounts
+                          ? Object.entries(topicCounts).map(([type, count]) => {
+                              const meta = RESOURCE_META[type];
+                              if (!meta) return null;
+                              return (
+                                <span key={type} className={cn("flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border opacity-70", meta.bg, meta.color)}>
+                                  <Lock className="w-2.5 h-2.5" /> {count} {meta.label}
+                                </span>
+                              );
+                            })
+                          : FALLBACK_TYPES.map(type => {
+                              const meta = RESOURCE_META[type];
+                              return (
+                                <span key={type} className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-slate-50 border-slate-200 text-slate-400">
+                                  <Lock className="w-2.5 h-2.5" /> {meta.label}
+                                </span>
+                              );
+                            })
+                        }
+                      </div>
+                    </div>
+                    <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-slate-700 truncate">{topic.name}</p>
-                    {topic.estimatedStudyMinutes > 0 && (
-                      <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium mt-0.5">
-                        <Clock className="w-3 h-3" /> {topic.estimatedStudyMinutes}m
-                      </span>
-                    )}
-                  </div>
-                  <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}
