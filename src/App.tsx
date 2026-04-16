@@ -59,9 +59,11 @@ import StudentTopicQuizPage from "./pages/student/StudentTopicQuizPage";
 import StudentPYQPage from "./pages/student/StudentPYQPage";
 import StudentCoursesPage from "./pages/student/StudentCoursesPage";
 import StudentCourseDetailPage from "./pages/student/StudentCourseDetailPage";
+import StudentOnboardingPage from "./pages/student/StudentOnboardingPage";
 import StudentCourseTopicPage from "./pages/student/StudentCourseTopicPage";
 import PYQManagementPage from "./pages/admin/PYQManagementPage";
 import ReportsPage from "./pages/admin/ReportsPage";
+import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 import LiveClassRoom from "./pages/live/LiveClassRoom";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
@@ -93,6 +95,7 @@ const AdminRoutes = () => (
     <Route path="/admin/lectures" element={<LecturesPage />} />
     <Route path="/admin/calendar" element={<AdminCalendarPage />} />
     <Route path="/admin/reports" element={<ReportsPage />} />
+    <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
     <Route path="/admin/settings" element={<AdminSettingsPage />} />
   </Route>
 );
@@ -142,6 +145,11 @@ const TeacherRoutes = () => (
 
 const StudentRoutes = () => (
   <>
+    {/* Onboarding — fullscreen, no layout wrapper to avoid redirect loop */}
+    <Route
+      path="/student/onboarding"
+      element={<ProtectedRoute allowedRoles={["student"]}><StudentOnboardingPage /></ProtectedRoute>}
+    />
     <Route element={<ProtectedRoute allowedRoles={["student"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/student" element={<StudentDashboard />} />
       <Route path="/student/learn" element={<StudentLearnPage />} />

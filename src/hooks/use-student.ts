@@ -337,6 +337,16 @@ export function useCreateDoubt() {
   });
 }
 
+export function useRequestAiForDoubt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => studentApi.requestAiForDoubt(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["student", "doubts"] });
+    },
+  });
+}
+
 export function useMarkDoubtHelpful() {
   const qc = useQueryClient();
   return useMutation({
