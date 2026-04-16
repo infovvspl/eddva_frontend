@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,7 +6,7 @@ import {
   ShieldCheck, Loader2,
   Users, Sparkles, ArrowRight, BookMarked, Trophy, Zap,
 } from "lucide-react";
-import { useMyCourses, useDiscoverBatches } from "@/hooks/use-student";
+import { useMyCourses, useDiscoverBatches, useStudentMe } from "@/hooks/use-student";
 import type { MyCourse } from "@/lib/api/student";
 import type { PublicBatch } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
@@ -43,15 +43,30 @@ const EXAM_GRADIENTS: Record<string, string> = {
 
 function CourseDiscovery() {
   const navigate = useNavigate();
+  const { data: me } = useStudentMe();
   const { data: discoverData, isLoading } = useDiscoverBatches();
   const batches: PublicBatch[] = discoverData?.availableBatches ?? [];
+
   const [examFilter, setExamFilter] = useState("all");
   const [search, setSearch]         = useState("");
+  const prefApplied = useRef(false);
 
+  // Once the student's preference loads, set it as the default (only once)
+  useEffect(() => {
+    if (prefApplied.current || !me?.student?.examTarget) return;
+    const et = me.student.examTarget.toUpperCase().replace(/-/g, "_");
+    if (EXAM_FILTERS.some(f => f.value === et)) {
+      setExamFilter(et);
+    }
+    prefApplied.current = true;
+  }, [me?.student?.examTarget]);
+
+  // Normalize batch examTarget to uppercase_underscore for comparison
   const filtered = batches.filter(b => {
-    if (examFilter !== "all" && b.examTarget !== examFilter) return false;
+    const bTarget = (b.examTarget ?? "").toUpperCase().replace(/-/g, "_");
+    if (examFilter !== "all" && bTarget !== examFilter) return false;
     if (search && !b.name.toLowerCase().includes(search.toLowerCase()) &&
-        !b.examTarget.toLowerCase().includes(search.toLowerCase())) return false;
+        !(b.examTarget ?? "").toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 

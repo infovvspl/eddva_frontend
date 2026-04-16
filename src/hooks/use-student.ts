@@ -668,7 +668,8 @@ export function useBatchPreview(batchId: string) {
   return useQuery({
     queryKey: ["student", "batch-preview", batchId] as const,
     queryFn: () => studentApi.getBatchPreview(batchId),
-    staleTime: 30_000,
+    staleTime: 0,       // always fetch fresh so resourceCounts are never served from stale cache
+    gcTime: 0,
     retry: false,
     enabled: !!batchId,
   });

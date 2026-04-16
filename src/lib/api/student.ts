@@ -120,6 +120,8 @@ export interface CourseTopic {
   status: "locked" | "unlocked" | "in_progress" | "completed";
   completedAt?: string | null;
   bestAccuracy?: number;
+  lectureCount?: number;
+  resourceCounts?: Record<string, number>;
   lectures: { total: number; completed: number };
   resources: CourseResource[];
 }
@@ -306,6 +308,8 @@ export async function getCourseCurriculum(batchId: string): Promise<CourseCurric
         status:                t.progress?.status ?? "locked",
         completedAt:           t.progress?.completedAt ?? null,
         bestAccuracy:          t.progress?.bestAccuracy ?? 0,
+        lectureCount:          t.lectureCount,
+        resourceCounts:        t.resourceCounts,
         lectures:              t.lectures ?? { total: 0, completed: 0 },
         resources:             (t.resources ?? []).map((r: any) => ({
           id:          r.id,
@@ -1368,6 +1372,8 @@ export interface PreviewTopic {
   id: string;
   name: string;
   estimatedStudyMinutes: number;
+  resourceCounts?: Record<string, number>; // e.g. { pdf: 2, dpp: 1, quiz: 3 }
+  lectureCount?: number;
 }
 
 export interface PreviewChapter {

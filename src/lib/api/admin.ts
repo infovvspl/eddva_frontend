@@ -869,6 +869,47 @@ export async function removeQuestionFromMockTest(mockTestId: string, questionId:
 // Institute Settings
 // ---------------------------------------------------------------------------
 
+export interface InstituteProfile {
+  instituteName: string;
+  adminName: string;
+  email: string;
+  orgImageUrl: string | null;
+  coursesOffered: string[];
+  yearsOfExperience: number | null;
+  classTypes: string[];   // e.g. ["online", "offline", "hybrid"]
+  teachingMode: string;   // e.g. "live", "recorded", "both"
+}
+
+export async function getInstituteProfile() {
+  const res = await apiClient.get("/institute/settings/profile");
+  return extractData<InstituteProfile>(res);
+}
+
+export async function updateInstituteProfile(payload: Partial<Omit<InstituteProfile, "orgImageUrl">>) {
+  const res = await apiClient.patch("/institute/settings/profile", payload);
+  return extractData<InstituteProfile>(res);
+}
+
+export async function uploadInstituteOrgImage(file: File): Promise<{ url: string }> {
+  const fd = new FormData();
+  fd.append("file", file);
+  // Try dedicated endpoint first; fall back to avatar upload if not yet deployed
+  try {
+    const res = await apiClient.post("/institute/settings/profile/image", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return extractData<{ url: string }>(res);
+  } catch (err: any) {
+    if (err?.response?.status === 404) {
+      const res = await apiClient.post("/auth/upload/avatar", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return { url: extractData<{ url: string }>(res)?.url ?? "" };
+    }
+    throw err;
+  }
+}
+
 export async function getInstituteBranding() {
   const res = await apiClient.get("/institute/settings/branding");
   return extractData<{ logoUrl: string | null; brandColor: string; welcomeMessage: string; name: string; subdomain: string }>(res);

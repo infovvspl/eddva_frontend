@@ -14,7 +14,7 @@ import heroIllustration from "@/assets/online-learning-concept-vector-illustrati
 import aboutImg   from "@/assets/education-learning-study-concept-apacity-development-training-personal-development-mixed-media-business_1085052-1781.avif";
 import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";
 import careerImg  from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
-
+import aiImg from "@/assets/Learn with AI_ educational inspiration.png";
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { FadeUp, Label as SLabel, HeroBadge as FloatBadge } from "@/components/landing/LandingPrimitives";
 import { B, P, T, IN, grad, gText, SG } from "@/components/landing/DesignTokens";
@@ -158,19 +158,19 @@ const Index = () => {
               {/* glow blob behind */}
               <div className="absolute inset-10 rounded-full blur-3xl opacity-20" style={{ background: grad() }} />
 
-              <img src={heroIllustration} alt="Student Learning"
-                className="relative z-10 w-full max-w-[520px] drop-shadow-2xl" />
+              <img src={aiImg} alt="Student Learning"
+                className="relative z-10 w-full max-w-[520px] " />
 
               {/* floating cards */}
-              <FloatBadge icon={<Zap className="h-4 w-4" />} label="XP Today" value="+240 pts"
+              {/* <FloatBadge icon={<Zap className="h-4 w-4" />} label="XP Today" value="+240 pts"
                 color={B} bg="#EFF6FF" drift={-8} delay={0} className="absolute left-2 top-16 z-20" />
               <FloatBadge icon={<TrendingUp className="h-4 w-4" />} label="Accuracy" value="89.4%"
                 color={T} bg="#ECFDF5" drift={8} delay={0.7} className="absolute bottom-16 right-2 z-20" />
               <FloatBadge icon={<Award className="h-4 w-4" />} label="Rank" value="#3 in Batch"
-                color={P} bg="#F5F3FF" drift={-6} delay={1.4} className="absolute right-10 top-8 z-20" />
+                color={P} bg="#F5F3FF" drift={-6} delay={1.4} className="absolute right-10 top-8 z-20" /> */}
 
               {/* AI insight bubble */}
-              <motion.div animate={{ y:[0,-6,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" as const, delay:2 }}
+              {/* <motion.div animate={{ y:[0,-6,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" as const, delay:2 }}
                 className="absolute bottom-32 left-2 z-20 max-w-[190px] rounded-2xl border border-gray-100 bg-white p-3 shadow-xl">
                 <div className="flex items-start gap-2">
                   <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
@@ -179,7 +179,7 @@ const Index = () => {
                     Chemistry needs attention — recovery plan ready! 🎯
                   </p>
                 </div>
-              </motion.div>
+              </motion.div> */}
             </motion.div>
           </div>
         </div>
