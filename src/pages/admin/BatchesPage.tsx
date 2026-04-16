@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -963,7 +963,6 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
     description: batch.description ?? "",
     examTarget: batch.examTarget ?? "jee",
     class: batch.class ?? "11",
-    maxStudents: batch.maxStudents ?? 60,
     isPaid: batch.isPaid ?? (batch.feeAmount ? true : false),
     feeAmount: batch.feeAmount ? String(batch.feeAmount) : "",
     startDate: batch.startDate ? batch.startDate.split("T")[0] : "",
@@ -1008,7 +1007,6 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
         description: form.description || undefined,
         examTarget: form.examTarget,
         class: form.class,
-        maxStudents: form.maxStudents,
         isPaid: form.isPaid,
         feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
@@ -1082,11 +1080,6 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                       <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Max Students</label>
-                  <input type="number" value={form.maxStudents} onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
-                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Start Date</label>
@@ -1244,7 +1237,7 @@ const BatchesPage = () => {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     name: "", description: "", examTarget: "jee", class: "11",
-    maxStudents: 60, isPaid: false, feeAmount: "", startDate: "", endDate: "",
+    isPaid: false, feeAmount: "", startDate: "", endDate: "",
   });
   const [thumbPreview, setThumbPreview] = useState<string>("");
   const [thumbFile, setThumbFile] = useState<File | null>(null);
@@ -1256,7 +1249,7 @@ const BatchesPage = () => {
   const batchList = Array.isArray(batches) ? batches : [];
 
   const resetForm = () => {
-    setForm({ name: "", description: "", examTarget: "jee", class: "11", maxStudents: 60, isPaid: false, feeAmount: "", startDate: "", endDate: "" });
+    setForm({ name: "", description: "", examTarget: "jee", class: "11", isPaid: false, feeAmount: "", startDate: "", endDate: "" });
     setThumbPreview("");
     setThumbFile(null);
     setFormError("");
@@ -1275,7 +1268,6 @@ const BatchesPage = () => {
         description: form.description || undefined,
         examTarget: form.examTarget,
         class: form.class,
-        maxStudents: form.maxStudents,
         isPaid: form.isPaid,
         feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
@@ -1419,14 +1411,8 @@ const BatchesPage = () => {
               />
             </div>
 
-            {/* Row 2: Max Students + Dates */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-500 px-1">Max Students</label>
-                <input type="number" min={1} value={form.maxStudents}
-                  onChange={e => setForm({ ...form, maxStudents: +e.target.value })}
-                  className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
-              </div>
+            {/* Row 2: Dates */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-500 px-1">Start Date</label>
                 <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
@@ -1561,8 +1547,6 @@ const BatchesPage = () => {
           {batchList.map((b: any, _bIdx: number) => {
             const sc = statusColor[b.status] ?? statusColor.inactive;
             const enrolled = b.studentCount ?? 0;
-            const max = b.maxStudents ?? 60;
-            const pct = Math.min(100, Math.round((enrolled / max) * 100));
             const examStyle = EXAM_STYLES[b.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
             return (
             <motion.div
@@ -1601,16 +1585,7 @@ const BatchesPage = () => {
                     {b.teacher?.fullName && ` · ${b.teacher.fullName}`}
                   </p>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden max-w-[200px]">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ delay: _bIdx * 0.05 + 0.3, duration: 0.6 }}
-                        className="h-full rounded-full"
-                        style={{ background: `linear-gradient(90deg, ${examStyle.from}, ${examStyle.to})` }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-black text-slate-500">{enrolled}/{max} students</span>
+                    <span className="text-[11px] font-black text-slate-500">{enrolled} students</span>
                   </div>
                 </div>
 

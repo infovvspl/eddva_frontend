@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch } from "@/hooks/use-student";
 import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject } from "@/lib/api/student";
+import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -494,6 +495,7 @@ function LockedBanner({ courseName, isPaid, feeAmount }: { courseName: string; i
 function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: BatchPreview }) {
   const navigate = useNavigate();
   const enrollMutation = useEnrollInBatch();
+  const [joining, setJoining] = useState(false);
   const thumbnail = resolveUrl(preview.thumbnailUrl);
   const gradient = preview.examTarget === "JEE"
     ? "from-orange-500 to-red-600"
@@ -505,13 +507,65 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
     enrollMutation.mutate(batchId, {
       onSuccess: () => {
         toast.success("Enrolled successfully! Loading your course…");
-        // React Query will invalidate and refetch curriculum; just re-navigate
         navigate(`/student/courses/${batchId}`, { replace: true });
       },
       onError: () => {
         toast.error("Enrollment failed. Please try again.");
       },
     });
+  };
+
+  const loadRazorpay = () =>
+    new Promise<boolean>((resolve) => {
+      if ((window as any).Razorpay) { resolve(true); return; }
+      const s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.body.appendChild(s);
+    });
+
+  const handleCheckout = async () => {
+    setJoining(true);
+    try {
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error("Razorpay SDK failed to load");
+
+      const orderData = await apiClient.post(`/batches/${batchId}/checkout`);
+      const { orderId, amount, currency, key } = orderData.data;
+
+      const rzp = new (window as any).Razorpay({
+        key, amount, currency,
+        name: preview.name,
+        description: "Course Enrollment",
+        order_id: orderId,
+        handler: async (response: any) => {
+          setJoining(true);
+          try {
+            await apiClient.post(`/batches/${batchId}/verify-payment`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            toast.success("Enrolled successfully! Loading your course…");
+            navigate(`/student/courses/${batchId}`, { replace: true });
+          } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Payment verification failed");
+            setJoining(false);
+          }
+        },
+        theme: { color: "#f59e0b" },
+        modal: { ondismiss: () => setJoining(false) },
+      });
+      rzp.on("payment.failed", (res: any) => {
+        toast.error(res.error.description);
+        setJoining(false);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Checkout failed. Please try again.");
+      setJoining(false);
+    }
   };
 
   return (
@@ -610,12 +664,14 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
                       ))}
                     </div>
                     <button
-                      disabled
-                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg opacity-70 cursor-not-allowed"
+                      onClick={handleCheckout}
+                      disabled={joining}
+                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:from-amber-600 hover:to-orange-600 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
                     >
-                      <Zap className="w-4 h-4" /> Checkout · ₹{preview.feeAmount?.toLocaleString() ?? "—"}
+                      {joining
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+                        : <><Zap className="w-4 h-4" /> Checkout · ₹{preview.feeAmount?.toLocaleString() ?? "—"}</>}
                     </button>
-                    <p className="text-center text-xs text-slate-400">Payment gateway coming soon</p>
                   </>
                 ) : (
                   <>

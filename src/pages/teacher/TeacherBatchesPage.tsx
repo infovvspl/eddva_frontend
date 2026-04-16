@@ -378,7 +378,7 @@ const TeacherBatchesPage = () => {
               <div className="flex items-center gap-4">
                 <div className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
-                  <span>{batch.studentCount ?? 0} / {batch.maxStudents}</span>
+                  <span>{batch.studentCount ?? 0} enrolled</span>
                 </div>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusColor[batch.status] ?? statusColor.inactive}`}>
                   {batch.status}

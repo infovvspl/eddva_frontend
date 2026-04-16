@@ -56,6 +56,11 @@ function CourseDiscovery() {
   });
 
   const handleViewCourse = (batch: PublicBatch) => {
+    // Track course view in background (fire-and-forget)
+    import("@/lib/api/client").then(({ apiClient }) => {
+      apiClient.post(`/batches/${batch.id}/view`).catch(e => console.error("Track view error", e));
+    });
+
     // Navigate to detail page, passing batch data as state for instant display
     navigate(`/student/courses/${batch.id}`, {
       state: { preview: batch },
@@ -238,12 +243,7 @@ function CourseDiscovery() {
                       <Users className="w-3.5 h-3.5" />
                       <span>{(batch.studentCount ?? 0).toLocaleString()} enrolled</span>
                     </div>
-                    {batch.maxStudents && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-300">·</span>
-                        <span>Max {batch.maxStudents}</span>
-                      </div>
-                    )}
+
                   </div>
 
                   {/* View Course button */}

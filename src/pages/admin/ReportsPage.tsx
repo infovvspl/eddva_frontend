@@ -184,7 +184,7 @@ export default function ReportsPage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-slate-50/50">
-                  {["Batch", "Class / Exam", "Students", "Capacity", "Status"].map((h) => (
+                  {["Batch", "Class / Exam", "Students", "Status"].map((h) => (
                     <th key={h} className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
                       {h}
                     </th>
@@ -193,7 +193,6 @@ export default function ReportsPage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {batchList.map((b: any) => {
-                  const fillPct = b.maxStudents > 0 ? (b.studentCount / b.maxStudents) * 100 : 0;
                   const statusStyle: Record<string, string> = {
                     active: "bg-emerald-50 text-emerald-600 border-emerald-200",
                     inactive: "bg-slate-100 text-slate-500 border-slate-200",
@@ -208,12 +207,6 @@ export default function ReportsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-slate-700">{b.studentCount}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <MiniBar pct={fillPct} color={fillPct > 90 ? "#EF4444" : BLUE} />
-                          <span className="text-xs font-bold text-slate-500">{b.maxStudents}</span>
-                        </div>
-                      </td>
                       <td className="px-6 py-4">
                         <span className={cn("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border", statusStyle[b.status] ?? statusStyle.inactive)}>
                           {b.status}

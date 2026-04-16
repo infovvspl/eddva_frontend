@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -86,8 +86,6 @@ function StatCard({ label, value, sub, icon: Icon, color, delay = 0, onClick }: 
 
 function CourseCard({ course, index, onClick }: { course: any; index: number; onClick: () => void }) {
   const enrolled = course.studentCount ?? 0;
-  const max = course.maxStudents ?? 100;
-  const pct = Math.min(100, Math.round((enrolled / max) * 100));
 
   return (
     <motion.div
@@ -115,15 +113,7 @@ function CourseCard({ course, index, onClick }: { course: any; index: number; on
           {course.examTarget?.toUpperCase()} · Class {course.class}
         </p>
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ delay: index * 0.07 + 0.3, duration: 0.6 }}
-              className="h-full bg-blue-500 rounded-full"
-            />
-          </div>
-          <span className="text-[11px] font-black text-slate-500 shrink-0">{enrolled}/{max}</span>
+          <span className="text-[11px] font-black text-slate-500 shrink-0">{enrolled} enrolled</span>
         </div>
       </div>
 
@@ -269,24 +259,14 @@ const AdminDashboard = () => {
             ) : (
               <div className="space-y-4">
                 {courses.slice(0, 5).map((c, i) => {
-                  const pct = Math.min(100, Math.round(((c.studentCount ?? 0) / (c.maxStudents ?? 1)) * 100));
                   const style = EXAM_STYLES[c.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
                   return (
-                    <div key={c.id}>
-                      <div className="flex items-center justify-between mb-1.5">
+                    <div key={c.id} className="flex items-center justify-between mb-1.5">
+                      <div>
                         <p className="text-xs font-bold text-slate-700 truncate max-w-[160px]">{c.name}</p>
-                        <span className="text-xs font-black text-slate-500">{c.studentCount ?? 0}</span>
+                        <p className="text-[10px] text-slate-400 mt-0.5">enrolled</p>
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${pct}%` }}
-                          transition={{ delay: i * 0.1 + 0.4, duration: 0.5 }}
-                          className="h-full rounded-full"
-                          style={{ background: `linear-gradient(90deg, ${style.from}, ${style.to})` }}
-                        />
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1">{pct}% capacity filled</p>
+                      <span className="text-sm font-black text-slate-500">{c.studentCount ?? 0}</span>
                     </div>
                   );
                 })}

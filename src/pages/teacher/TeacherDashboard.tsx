@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -124,8 +124,6 @@ const TeacherDashboard = () => {
   const batchFillData = batches.map(b => ({
     name:     b.name,
     enrolled: b.studentCount ?? 0,
-    open:     b.maxStudents - (b.studentCount ?? 0),
-    pct:      Math.round(((b.studentCount ?? 0) / b.maxStudents) * 100),
   }));
 
   const doubtsByStatus = (() => {
@@ -316,8 +314,7 @@ const TeacherDashboard = () => {
                 <XAxis type="number" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fill: "rgba(255,255,255,0.7)", fontWeight: 500 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="enrolled" name="Enrolled" stackId="a" fill={C.indigo} radius={[0, 0, 0, 0]} />
-                <Bar dataKey="open"     name="Open seats" stackId="a" fill="rgba(255,255,255,0.08)" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="enrolled" name="Enrolled" fill={C.indigo} radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
 
@@ -326,10 +323,7 @@ const TeacherDashboard = () => {
               {batchFillData.map(b => (
                 <div key={b.name} className="flex-1 bg-secondary/30 rounded-xl px-3 py-2">
                   <p className="text-xs text-muted-foreground truncate">{b.name}</p>
-                  <p className="text-lg font-bold mt-0.5" style={{ color: b.pct > 80 ? C.green : b.pct > 40 ? C.amber : C.red }}>
-                    {b.pct}%
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">{b.enrolled}/{b.enrolled + b.open} filled</p>
+                  <p className="text-[10px] font-bold text-muted-foreground mt-0.5">{b.enrolled} enrolled</p>
                 </div>
               ))}
             </div>
@@ -559,7 +553,7 @@ const TeacherDashboard = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden sm:block">
-                        <p className="text-sm font-bold text-foreground">{b.studentCount ?? 0}<span className="text-muted-foreground font-normal">/{b.maxStudents}</span></p>
+                        <p className="text-sm font-bold text-foreground">{b.studentCount ?? 0}</p>
                         <p className="text-xs text-muted-foreground">students</p>
                       </div>
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusBadge[b.status] ?? statusBadge.inactive}`}>

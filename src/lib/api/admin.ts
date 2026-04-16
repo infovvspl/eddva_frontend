@@ -22,7 +22,6 @@ export interface Batch {
   class: string;
   teacherId: string;
   teacher?: { id: string; fullName: string };
-  maxStudents: number;
   isPaid: boolean;
   feeAmount: number | null;
   /** Platform fee percentage (default 20) */
@@ -37,6 +36,7 @@ export interface Batch {
   teacherCount?: number;
   enrolledCount?: number;
   thumbnailUrl?: string;
+  faqs?: { question: string; answer: string }[];
 }
 
 export interface CreateBatchPayload {
@@ -45,12 +45,12 @@ export interface CreateBatchPayload {
   examTarget: string;
   class: string;
   teacherId?: string;
-  maxStudents?: number;
   isPaid?: boolean;
   feeAmount?: number;
   startDate?: string;
   endDate?: string;
   thumbnailUrl?: string;
+  faqs?: { question: string; answer: string }[];
 }
 
 export interface Teacher {
