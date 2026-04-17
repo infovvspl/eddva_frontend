@@ -88,6 +88,18 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   );
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL as string || "http://localhost:3000/api/v1")
+  .replace(/\/api\/v\d+$/, "");
+
+/** Converts relative /uploads/... paths from the backend into absolute URLs. */
+function resolveMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:")) return url;
+  return `${API_ORIGIN}${url}`;
+}
+
 // ─── Profile Tab ───────────────────────────────────────────────────────────────
 
 const CLASS_TYPE_OPTIONS = [
@@ -142,7 +154,12 @@ function ProfileTab() {
         classTypes: data.classTypes ?? [],
         teachingMode: data.teachingMode ?? "both",
       });
+<<<<<<< HEAD
       if (data.orgImageUrl) persistOrgImage(data.orgImageUrl);
+=======
+      // Resolve relative paths from the backend before storing
+      setOrgImageUrl(resolveMediaUrl(data.orgImageUrl) ?? null);
+>>>>>>> fab057d5cea7bc3cfca9bef8530010b902d1cd7f
     }
   }, [data, persistOrgImage]);
 
@@ -169,13 +186,32 @@ function ProfileTab() {
   const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+<<<<<<< HEAD
     setOrgImageUrl(URL.createObjectURL(file));
     try {
       const result = await uploadImage.mutateAsync(file);
       persistOrgImage(result.url);
       toast.success("Organisation image uploaded");
+=======
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = "";
+
+    const previousUrl = orgImageUrl;
+    // Show instant preview via blob URL
+    const blobUrl = URL.createObjectURL(file);
+    setOrgImageUrl(blobUrl);
+
+    try {
+      const result = await uploadImage.mutateAsync(file);
+      URL.revokeObjectURL(blobUrl);
+      // Resolve the returned URL (may be a relative /uploads/... path)
+      setOrgImageUrl(resolveMediaUrl(result.url) ?? result.url);
+      toast.success("Organisation logo updated");
+>>>>>>> fab057d5cea7bc3cfca9bef8530010b902d1cd7f
     } catch {
-      toast.error("Image upload failed");
+      URL.revokeObjectURL(blobUrl);
+      setOrgImageUrl(previousUrl);
+      toast.error("Image upload failed — please try again");
     }
   };
 
@@ -208,7 +244,7 @@ function ProfileTab() {
         <div className="relative shrink-0">
           <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border bg-secondary flex items-center justify-center">
             {orgImageUrl ? (
-              <img src={orgImageUrl} alt="Organisation" className="w-full h-full object-cover" />
+              <img src={resolveMediaUrl(orgImageUrl) ?? orgImageUrl} alt="Organisation" className="w-full h-full object-cover" />
             ) : (
               <Building2 className="w-8 h-8 text-muted-foreground" />
             )}
@@ -969,7 +1005,7 @@ const AdminSettingsPage = () => {
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* Tab content — centred with a sensible max-width */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
@@ -977,6 +1013,7 @@ const AdminSettingsPage = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.15 }}
+          className="max-w-3xl mx-auto"
         >
           {activeTab === "profile"       && <ProfileTab />}
           {activeTab === "branding"      && <BrandingTab />}
