@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import {
   useMyDoubts, useCreateDoubt, useMarkDoubtHelpful,
-  useRequestAiForDoubt, useMyCourses,
+  useRequestAiForDoubt, useMyCourses, useCourseCurriculum,
 } from "@/hooks/use-student";
 import { StudentDoubt, DoubtStatus } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
@@ -192,29 +192,79 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
 
 // ─── Ask Doubt Form (Modal) ───────────────────────────────────────────────────
 
+function SelectField({ label, value, onChange, disabled, placeholder, children }: {
+  label: string; value: string; onChange: (v: string) => void;
+  disabled?: boolean; placeholder: string; children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        disabled={disabled}
+        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <option value="">{placeholder}</option>
+        {children}
+      </select>
+    </div>
+  );
+}
+
 function AskDoubtModal({ onClose }: { onClose: () => void }) {
-  const [selectedBatchId, setSelectedBatchId] = useState("");
+  const [selectedBatchId,   setSelectedBatchId]   = useState("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [selectedChapterId, setSelectedChapterId] = useState("");
+  const [selectedTopicId,   setSelectedTopicId]   = useState("");
   const [question, setQuestion] = useState("");
+
   const { data: courses = [] } = useMyCourses();
+  const { data: curriculum, isLoading: curriculumLoading } = useCourseCurriculum(selectedBatchId);
   const createDoubt = useCreateDoubt();
 
-  const canSubmit = question.trim().length >= 10 && !createDoubt.isPending;
+  // Derive subject/chapter/topic lists from curriculum tree
+  const subjects = curriculum?.subjects ?? [];
+  const chapters = subjects.find(s => s.id === selectedSubjectId)?.chapters ?? [];
+  const topics   = chapters.find(c => c.id === selectedChapterId)?.topics   ?? [];
+
+  const canSubmit = selectedTopicId.length > 0 && question.trim().length >= 10 && !createDoubt.isPending;
+
+  function handleBatchChange(id: string) {
+    setSelectedBatchId(id);
+    setSelectedSubjectId("");
+    setSelectedChapterId("");
+    setSelectedTopicId("");
+  }
+  function handleSubjectChange(id: string) {
+    setSelectedSubjectId(id);
+    setSelectedChapterId("");
+    setSelectedTopicId("");
+  }
+  function handleChapterChange(id: string) {
+    setSelectedChapterId(id);
+    setSelectedTopicId("");
+  }
 
   function handleSubmit() {
     if (!canSubmit) return;
     createDoubt.mutate(
       {
+        topicId: selectedTopicId,
         questionText: question.trim(),
         source: "manual",
         explanationMode: "short",
-        skipAI: true,   // Teacher-first flow
+        skipAI: true,
       },
       {
         onSuccess: () => {
           toast.success("Doubt sent to your teacher!");
           onClose();
         },
-        onError: () => toast.error("Failed to submit. Please try again."),
+        onError: (err: any) => {
+          const msg = err?.response?.data?.message || err?.message || "Failed to submit. Please try again.";
+          toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+        },
       }
     );
   }
@@ -231,10 +281,10 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 40 }}
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
               <MessageSquare className="w-5 h-5 text-indigo-600" />
@@ -250,54 +300,89 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5">
-          {/* Batch selection (optional context) */}
-          {courses.length > 0 && (
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Related Course <span className="font-normal text-slate-400 normal-case">(optional)</span>
-              </label>
-              <select
-                value={selectedBatchId}
-                onChange={e => setSelectedBatchId(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all"
-              >
-                <option value="">Select a course (optional)</option>
-                {courses.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
+
+          {/* Course */}
+          <SelectField
+            label="Course *"
+            value={selectedBatchId}
+            onChange={handleBatchChange}
+            placeholder="Select your course"
+          >
+            {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </SelectField>
+
+          {/* Subject */}
+          <SelectField
+            label="Subject *"
+            value={selectedSubjectId}
+            onChange={handleSubjectChange}
+            disabled={!selectedBatchId || curriculumLoading}
+            placeholder={
+              !selectedBatchId ? "Select course first"
+              : curriculumLoading ? "Loading subjects…"
+              : subjects.length === 0 ? "No subjects in this course"
+              : "Select subject"
+            }
+          >
+            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </SelectField>
+
+          {/* Chapter */}
+          <SelectField
+            label="Chapter *"
+            value={selectedChapterId}
+            onChange={handleChapterChange}
+            disabled={!selectedSubjectId}
+            placeholder={!selectedSubjectId ? "Select subject first" : chapters.length === 0 ? "No chapters found" : "Select chapter"}
+          >
+            {chapters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </SelectField>
+
+          {/* Topic */}
+          <SelectField
+            label="Topic *"
+            value={selectedTopicId}
+            onChange={setSelectedTopicId}
+            disabled={!selectedChapterId}
+            placeholder={!selectedChapterId ? "Select chapter first" : topics.length === 0 ? "No topics found" : "Select topic"}
+          >
+            {topics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </SelectField>
 
           {/* Question textarea */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               Your Question <span className="text-red-400">*</span>
             </label>
             <textarea
               value={question}
               onChange={e => setQuestion(e.target.value)}
-              placeholder="Describe your doubt clearly. The more detail you provide, the better your teacher can help you..."
-              rows={5}
+              placeholder="Describe your doubt clearly. The more detail you provide, the better your teacher can help..."
+              rows={4}
               className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-300 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all resize-none"
             />
             <p className={cn("text-right text-[10px] mt-1 font-medium", question.length < 10 ? "text-slate-300" : "text-indigo-500")}>
-              {question.length} chars {question.length < 10 && question.length > 0 ? `(min 10)` : ""}
+              {question.length} chars {question.length > 0 && question.length < 10 ? "(min 10)" : ""}
             </p>
           </div>
 
-          {/* Info banner */}
+          {/* Info */}
           <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
             <User className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700 font-medium">
-              Your doubt will be sent to your teacher first. If the teacher doesn't respond, you can request an instant AI answer from the doubt card.
+              Sent directly to your teacher. No AI response until you request it from the doubt card.
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-6 pt-2 shrink-0">
+          {!selectedTopicId && question.trim().length >= 10 && (
+            <p className="text-xs text-red-500 font-medium mb-2 text-center">
+              Please select: {!selectedBatchId ? "Course" : !selectedSubjectId ? "Subject" : !selectedChapterId ? "Chapter" : "Topic"}
+            </p>
+          )}
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}

@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Film, UploadCloud, X, Loader2, PlayCircle } from "lucide-react";
+import { Film, X, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUpload } from "@/hooks/use-upload";
 import { FILE_LIMITS } from "@/lib/api/upload";
 
 interface LectureVideoUploadProps {
+  courseId: string;
   lectureId: string;
   currentUrl?: string | null;
   onUpload: (fileUrl: string) => void;
@@ -14,6 +15,7 @@ interface LectureVideoUploadProps {
 }
 
 export function LectureVideoUpload({
+  courseId,
   lectureId,
   currentUrl,
   onUpload,
@@ -22,19 +24,24 @@ export function LectureVideoUpload({
 }: LectureVideoUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [lastFailedFile, setLastFailedFile] = useState<File | null>(null);
 
   const { upload, uploading, progress, error, reset } = useUpload({
     type: "lecture-video",
+    courseId,
     lectureId,
     onSuccess: onUpload,
   });
 
   const handleFile = async (file: File) => {
     if (disabled || uploading) return;
+    setLastFailedFile(file);
     const url = await upload(file);
     if (!url) {
       if (fileRef.current) fileRef.current.value = "";
+      return;
     }
+    setLastFailedFile(null);
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -117,10 +124,23 @@ export function LectureVideoUpload({
         <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2">
           <X className="w-4 h-4 shrink-0" />
           <p>{error}</p>
+          {lastFailedFile && !uploading && (
+            <button
+              type="button"
+              onClick={() => void handleFile(lastFailedFile)}
+              className="ml-auto inline-flex items-center gap-1 text-xs font-medium underline hover:text-red-700"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Retry
+            </button>
+          )}
           <button 
             type="button" 
-            onClick={reset}
-            className="ml-auto text-xs underline font-medium hover:text-red-700"
+            onClick={() => {
+              setLastFailedFile(null);
+              reset();
+            }}
+            className={cn("text-xs underline font-medium hover:text-red-700", !lastFailedFile && "ml-auto")}
           >
             Dismiss
           </button>

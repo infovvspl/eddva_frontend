@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, ImageIcon, X, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,14 +25,16 @@ export function ThumbnailUpload({ courseId, currentUrl, onUpload, onRemove, clas
     onSuccess: (url) => { onUpload(url); },
   });
 
+  useEffect(() => {
+    setPreview(currentUrl ?? null);
+  }, [currentUrl]);
+
   const processFile = useCallback(async (file: File) => {
     const objectUrl = URL.createObjectURL(file);
     setPreview(objectUrl);
     const result = await upload(file);
-    if (!result) {
-      setPreview(currentUrl ?? null);
-      URL.revokeObjectURL(objectUrl);
-    }
+    if (!result) setPreview(currentUrl ?? null);
+    URL.revokeObjectURL(objectUrl);
   }, [upload, currentUrl]);
 
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {

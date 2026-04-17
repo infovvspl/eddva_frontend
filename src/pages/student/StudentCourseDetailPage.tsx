@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown, ChevronRight, BookOpen, Video, CheckCircle2, Lock,
@@ -1209,6 +1209,7 @@ type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material" | "moc
 export default function StudentCourseDetailPage() {
   const { batchId = "" } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // ── All hooks unconditionally at the top (Rules of Hooks) ────────────────
 
@@ -1229,7 +1230,11 @@ export default function StudentCourseDetailPage() {
   const enablePreview = isError && !isKnownEnrolled && !myCoursesLoading;
   const { data: preview, isLoading: previewLoading } = useBatchPreview(enablePreview ? batchId : "");
 
-  const [activeTab, setActiveTab] = useState<EnrolledTab>("curriculum");
+  const VALID_TABS: EnrolledTab[] = ["curriculum", "lectures", "dpp", "pyq", "material", "mock_test"];
+  const tabParam = searchParams.get("tab") as EnrolledTab | null;
+  const [activeTab, setActiveTab] = useState<EnrolledTab>(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : "curriculum"
+  );
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const { data: lectures = [], isLoading: lecturesLoading } = useAllBatchLectures(batchId);

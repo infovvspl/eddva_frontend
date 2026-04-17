@@ -263,7 +263,7 @@ export function useTopicResources(topicId: string) {
   });
 }
 
-export function useUploadTopicResource(topicId: string) {
+export function useUploadTopicResource(topicId: string, courseId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: {
@@ -272,10 +272,11 @@ export function useUploadTopicResource(topicId: string) {
       title: string;
       description?: string;
       sortOrder?: number;
-    }) => adminApi.uploadTopicResource({ topicId, ...payload }),
+    }) => adminApi.uploadTopicResource({ topicId, courseId, ...payload }),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
   });
 }
+
 
 export function useDeleteTopicResource(topicId: string) {
   const qc = useQueryClient();
@@ -306,14 +307,15 @@ export function useScopeResources(level: adminApi.ScopeLevel, scopeId: string) {
   });
 }
 
-export function useUploadScopeResource(level: adminApi.ScopeLevel, scopeId: string) {
+export function useUploadScopeResource(level: adminApi.ScopeLevel, scopeId: string, courseId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: { file: File; type: adminApi.ScopeResourceType; title: string; description?: string }) =>
-      adminApi.uploadScopeResource({ level, scopeId, ...payload }),
+      adminApi.uploadScopeResource({ level, scopeId, courseId, ...payload }),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.scopeResources(level, scopeId) }),
   });
 }
+
 
 export function useDeleteScopeResource(level: adminApi.ScopeLevel, scopeId: string) {
   const qc = useQueryClient();
@@ -328,7 +330,10 @@ export function useUploadBatchThumbnail() {
   return useMutation({
     mutationFn: ({ batchId, file }: { batchId: string; file: File }) =>
       adminApi.uploadBatchThumbnail(batchId, file),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.batches }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: adminKeys.batches });
+      qc.invalidateQueries({ queryKey: adminKeys.batch(vars.batchId) });
+    },
   });
 }
 
@@ -487,6 +492,10 @@ export function useSaveInstituteOnboarding() {
   });
 }
 
+<<<<<<< HEAD
+export function useInstituteProfile(enabled = true) {
+  return useQuery({ queryKey: settingsKeys.profile, queryFn: adminApi.getInstituteProfile, enabled });
+=======
 export function useInstituteProfile() {
   return useQuery({
     queryKey: settingsKeys.profile,
@@ -494,6 +503,7 @@ export function useInstituteProfile() {
     retry: 0,
     staleTime: Infinity,
   });
+>>>>>>> 909dfe411997289a263134507174ae22682a8f76
 }
 
 export function useUpdateInstituteProfile() {

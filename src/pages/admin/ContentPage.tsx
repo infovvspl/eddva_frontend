@@ -178,11 +178,12 @@ function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void 
 
 // ─── Upload Panel ──────────────────────────────────────────────────────────────
 
-function UploadPanel({ topicId, topicName }: { topicId: string; topicName: string }) {
+function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicName: string; batchId: string }) {
   const { data: resources = [], isLoading } = useTopicResources(topicId);
-  const upload = useUploadTopicResource(topicId);
+  const upload = useUploadTopicResource(topicId, batchId);
   const deleteRes = useDeleteTopicResource(topicId);
   const addLink = useAddTopicResourceLink(topicId);
+
 
   const [activeType, setActiveType] = useState<TopicResourceType>("pdf");
   const [mode, setMode] = useState<"upload" | "link">("upload");
@@ -1923,8 +1924,13 @@ const ContentPage = () => {
               {/* Tab content */}
               <div className="flex-1 overflow-hidden">
                 {rightTab === "resources" ? (
-                  <UploadPanel topicId={selectedEntry.topic.id} topicName={selectedEntry.topic.name} />
+                  <UploadPanel
+                    topicId={selectedEntry.topic.id}
+                    topicName={selectedEntry.topic.name}
+                    batchId={selectedBatch.id}
+                  />
                 ) : (
+
                   <AiContentPanel
                     topicName={selectedEntry.topic.name}
                     subjectName={selectedEntry.subject.name}

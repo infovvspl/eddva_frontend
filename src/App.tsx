@@ -62,6 +62,7 @@ import StudentCoursesPage from "./pages/student/StudentCoursesPage";
 import StudentCourseDetailPage from "./pages/student/StudentCourseDetailPage";
 import StudentOnboardingPage from "./pages/student/StudentOnboardingPage";
 import StudentCourseTopicPage from "./pages/student/StudentCourseTopicPage";
+import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
 import PYQManagementPage from "./pages/admin/PYQManagementPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
@@ -167,6 +168,7 @@ const StudentRoutes = () => (
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
       <Route path="/student/ai-study/:topicId" element={<StudentAiStudyPage />} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
+      <Route path="/student/notifications" element={<StudentNotificationsPage />} />
     </Route>
     {/* Live class room — full screen, no layout wrapper */}
     <Route

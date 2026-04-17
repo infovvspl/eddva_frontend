@@ -24,8 +24,15 @@ export interface UploadUrlResponse {
   fileUrl: string;
 }
 
+const s3UploadClient = axios.create({
+  withCredentials: false,
+});
+
+delete s3UploadClient.defaults.headers.common.Accept;
+delete s3UploadClient.defaults.headers.common.Authorization;
+
 export const getUploadUrl = async (params: GenerateUploadUrlParams): Promise<UploadUrlResponse> => {
-  const { data } = await api.post<UploadUrlResponse>('/upload/url', params);
+  const { data } = await api.post<UploadUrlResponse>('/upload-url', params);
   return data;
 };
 
@@ -34,10 +41,11 @@ export const uploadToS3 = async (
   uploadUrl: string,
   onProgress?: (progressEvent: any) => void
 ): Promise<void> => {
-  await axios.put(uploadUrl, file, {
+  await s3UploadClient.put(uploadUrl, file, {
     headers: {
       'Content-Type': file.type,
     },
+    withCredentials: false,
     onUploadProgress: onProgress,
   });
 };

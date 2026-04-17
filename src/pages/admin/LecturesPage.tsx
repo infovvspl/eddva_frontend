@@ -520,11 +520,12 @@ function LiveDetailsForm({
 }
 
 function RecordedDetailsForm({
-  value, onChange, lectureId,
+  value, onChange, lectureId, courseId,
 }: {
   value: { title: string; description: string; videoUrl: string };
   onChange: (v: typeof value) => void;
   lectureId: string;
+  courseId: string;
 }) {
   const [source, setSource] = useState<"upload" | "youtube">("youtube");
   const set = (k: keyof typeof value) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -585,6 +586,7 @@ function RecordedDetailsForm({
         {source === "upload" ? (
           <div className="space-y-3">
             <LectureVideoUpload
+              courseId={courseId}
               lectureId={lectureId}
               currentUrl={value.videoUrl}
               onUpload={(url) => onChange({ ...value, videoUrl: url })}
@@ -757,7 +759,7 @@ function ScheduleLectureModal({
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 overflow-y-auto">
                 {isLive
                   ? <LiveDetailsForm value={liveForm} onChange={setLiveForm} />
-                  : <RecordedDetailsForm value={recForm} onChange={setRecForm} lectureId={tempLectureId} />}
+                  : <RecordedDetailsForm value={recForm} onChange={setRecForm} lectureId={tempLectureId} courseId={selectedBatch.id} />}
               </motion.div>
             )}
           </AnimatePresence>

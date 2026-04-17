@@ -1,4 +1,6 @@
 import { apiClient, extractData } from "./client";
+import { uploadToS3 } from "./upload";
+
 
 // ---------------------------------------------------------------------------
 // Types
@@ -563,21 +565,34 @@ export async function listScopeResources(level: ScopeLevel, scopeId: string): Pr
 export async function uploadScopeResource(payload: {
   level: ScopeLevel;
   scopeId: string;
+  courseId: string; // Required for material S3 key namespacing
   file: File;
   type: ScopeResourceType;
   title: string;
   description?: string;
 }): Promise<ScopeResource> {
-  const fd = new FormData();
-  fd.append("file", payload.file);
-  fd.append("type", payload.type);
-  fd.append("title", payload.title);
-  if (payload.description) fd.append("description", payload.description);
-  const res = await apiClient.post(_scopeUploadUrl[payload.level](payload.scopeId), fd, {
-    headers: { "Content-Type": "multipart/form-data" },
+  const fileUrl = await uploadToS3(
+    {
+      type: "material",
+      courseId: payload.courseId,
+      fileName: payload.file.name,
+      contentType: payload.file.type,
+      fileSize: payload.file.size,
+    },
+    payload.file,
+  );
+
+  const res = await apiClient.post(_scopeUploadUrl[payload.level](payload.scopeId), {
+    title: payload.title,
+    type: payload.type,
+    description: payload.description,
+    fileUrl,
+    fileSizeKb: Math.round(payload.file.size / 1024),
   });
   return extractData<ScopeResource>(res);
 }
+
+
 
 export async function deleteScopeResource(level: ScopeLevel, resourceId: string): Promise<void> {
   await apiClient.delete(_scopeDeleteUrl[level](resourceId));
@@ -588,37 +603,18 @@ export async function deleteScopeResource(level: ScopeLevel, resourceId: string)
 // ---------------------------------------------------------------------------
 
 export async function uploadBatchThumbnail(batchId: string, file: File): Promise<{ thumbnailUrl: string }> {
-  // Step 1 — upload the image file.
-  // Primary route: POST /content/batches/:id/thumbnail (requires backend restart if newly added).
-  // Fallback route: POST /auth/upload/avatar (always available, returns { url }).
-  let thumbnailUrl = "";
-  try {
-    const fd = new FormData();
-    fd.append("file", file);
-    const primary = await apiClient.post(`/content/batches/${batchId}/thumbnail`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    thumbnailUrl = extractData<{ thumbnailUrl: string }>(primary)?.thumbnailUrl ?? "";
-  } catch (primaryErr: any) {
-    if (primaryErr?.response?.status === 404) {
-      // Backend not yet restarted — fall back to avatar upload endpoint
-      const fd2 = new FormData();
-      fd2.append("file", file);
-      const fallback = await apiClient.post("/auth/upload/avatar", fd2, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      thumbnailUrl = extractData<{ url: string }>(fallback)?.url ?? "";
-    } else {
-      throw primaryErr;
-    }
-  }
+  const fd = new FormData();
+  fd.append("file", file);
 
-  if (!thumbnailUrl) throw new Error("Upload returned no URL");
+  const res = await apiClient.post(
+    `/content/batches/${batchId}/thumbnail/upload`,
+    fd,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
 
-  // Step 2 — persist the URL on the batch record
-  await apiClient.patch(`/batches/${batchId}`, { thumbnailUrl });
-  return { thumbnailUrl };
+  return extractData<{ thumbnailUrl: string }>(res);
 }
+
 
 // ---------------------------------------------------------------------------
 // Topic Resources (PDFs, DPPs, quizzes, etc.)
@@ -631,6 +627,7 @@ export async function listTopicResources(topicId: string) {
 
 export async function uploadTopicResource(payload: {
   topicId: string;
+  courseId: string; // Required for material S3 key namespacing
   file: File;
   type: TopicResourceType;
   title: string;
@@ -639,17 +636,20 @@ export async function uploadTopicResource(payload: {
 }) {
   const fd = new FormData();
   fd.append("file", payload.file);
-  fd.append("type", payload.type);
   fd.append("title", payload.title);
+  fd.append("type", payload.type);
   if (payload.description) fd.append("description", payload.description);
   if (payload.sortOrder != null) fd.append("sortOrder", String(payload.sortOrder));
+
   const res = await apiClient.post(
-    `/content/topics/${payload.topicId}/resources/upload`,
+    `/content/topics/${payload.topicId}/resources/upload-file`,
     fd,
     { headers: { "Content-Type": "multipart/form-data" } },
   );
   return extractData<TopicResource>(res);
 }
+
+
 
 export async function deleteTopicResource(resourceId: string, topicId: string) {
   const res = await apiClient.delete(`/content/topics/${topicId}/resources/${resourceId}`);
@@ -926,28 +926,23 @@ export async function updateInstituteProfile(payload: Partial<Omit<InstituteProf
 }
 
 export async function uploadInstituteOrgImage(file: File): Promise<{ url: string }> {
-  const fd = new FormData();
-  fd.append("file", file);
+  // Unified S3 flow for profile image
+  const url = await uploadToS3(
+    {
+      type: "profile",
+      fileName: file.name,
+      contentType: file.type,
+      fileSize: file.size,
+    },
+    file
+  );
 
-  // Try the dedicated endpoint: POST /institute/settings/profile/image
-  // Backend returns { avatarUrl } (saves to user.profilePictureUrl)
-  try {
-    const res = await apiClient.post("/institute/settings/profile/image", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    const d = extractData<{ url?: string; avatarUrl?: string }>(res);
-    return { url: d?.url ?? d?.avatarUrl ?? "" };
-  } catch (err: any) {
-    if (err?.response?.status === 404) {
-      const res = await apiClient.post("/auth/upload/avatar", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const d = extractData<{ url?: string; avatarUrl?: string }>(res);
-      return { url: d?.url ?? d?.avatarUrl ?? "" };
-    }
-    throw err;
-  }
+  // Persist the URL on the profile
+  await apiClient.patch("/institute/settings/profile", { orgImageUrl: url });
+
+  return { url };
 }
+
 
 export async function getInstituteBranding() {
   const res = await apiClient.get("/institute/settings/branding");

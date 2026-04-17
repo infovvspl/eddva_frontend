@@ -1,4 +1,6 @@
 import { apiClient, extractData, tokenStorage } from "./client";
+import { uploadToS3 } from "./upload";
+
 
 // ---------------------------------------------------------------------------
 // Types
@@ -146,12 +148,21 @@ export async function completeTeacherOnboarding(payload: TeacherOnboardingPayloa
   return extractData(res);
 }
 
-/** Upload avatar image */
+/** Upload avatar image (unified S3 flow) */
 export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
-  const form = new FormData();
-  form.append("file", file);
-  const res = await apiClient.post("/auth/profile/avatar", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return extractData(res);
+  // Step 1 — Upload to S3
+  const fileUrl = await uploadToS3(
+    {
+      type: "profile",
+      fileName: file.name,
+      contentType: file.type,
+      fileSize: file.size,
+    },
+    file
+  );
+
+  // Step 2 — Confirm with backend and persist in DB
+  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
+  return extractData<{ avatarUrl: string }>(res);
 }
+
