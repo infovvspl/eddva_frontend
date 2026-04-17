@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Loader2, EyeOff, BarChart3, X, Play,
@@ -15,6 +16,7 @@ import {
 import type { Subject, Chapter, Topic } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -518,11 +520,13 @@ function LiveDetailsForm({
 }
 
 function RecordedDetailsForm({
-  value, onChange,
+  value, onChange, lectureId,
 }: {
   value: { title: string; description: string; videoUrl: string };
   onChange: (v: typeof value) => void;
+  lectureId: string;
 }) {
+  const [source, setSource] = useState<"upload" | "youtube">("youtube");
   const set = (k: keyof typeof value) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange({ ...value, [k]: e.target.value });
 
@@ -530,7 +534,7 @@ function RecordedDetailsForm({
     <div className="px-6 pt-5 pb-4 space-y-4">
       <div>
         <p className="text-sm font-black text-slate-700 mb-1">Upload a Recorded Lecture</p>
-        <p className="text-xs text-slate-400">Paste a YouTube or video URL. Students can watch it at their own pace.</p>
+        <p className="text-xs text-slate-400">Upload a video file to S3 or paste a YouTube URL.</p>
       </div>
 
       <div className="space-y-3">
@@ -555,18 +559,56 @@ function RecordedDetailsForm({
           />
         </div>
 
-        <div>
-          <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block flex items-center gap-1">
-            <Video className="w-3 h-3" /> Video URL *
-          </label>
-          <input
-            placeholder="https://youtube.com/watch?v=... or direct video link"
-            value={value.videoUrl}
-            onChange={set("videoUrl")}
-            className="w-full h-10 px-4 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
-          />
-          <p className="text-[10px] text-slate-400 mt-1">Supports YouTube, Vimeo, or any direct video URL.</p>
+        <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+          <button
+            type="button"
+            onClick={() => setSource("upload")}
+            className={cn(
+              "flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black transition-all",
+              source === "upload" ? "bg-white text-blue-600 shadow-sm shadow-blue-200/50" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            <Upload className="w-3.5 h-3.5" /> Upload File
+          </button>
+          <button
+            type="button"
+            onClick={() => setSource("youtube")}
+            className={cn(
+              "flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black transition-all",
+              source === "youtube" ? "bg-white text-rose-600 shadow-sm shadow-rose-200/50" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            <Youtube className="w-3.5 h-3.5" /> YouTube
+          </button>
         </div>
+
+        {source === "upload" ? (
+          <div className="space-y-3">
+            <LectureVideoUpload
+              lectureId={lectureId}
+              currentUrl={value.videoUrl}
+              onUpload={(url) => onChange({ ...value, videoUrl: url })}
+            />
+            {value.videoUrl && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-[10px] font-bold text-emerald-600 truncate">{value.videoUrl}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block flex items-center gap-1">
+              <Video className="w-3 h-3" /> YouTube Video URL *
+            </label>
+            <input
+              placeholder="https://youtube.com/watch?v=..."
+              value={value.videoUrl}
+              onChange={set("videoUrl")}
+              className="w-full h-10 px-4 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
+            />
+          </div>
+        )}
       </div>
 
       {/* Recorded badge */}
@@ -599,6 +641,7 @@ function ScheduleLectureModal({
 
   const [liveForm, setLiveForm] = useState({ title: "", description: "", scheduledAt: "", liveMeetingUrl: "" });
   const [recForm, setRecForm] = useState({ title: "", description: "", videoUrl: "" });
+  const [tempLectureId] = useState(() => uuidv4());
 
   const isLive = type === "live";
 
@@ -714,7 +757,7 @@ function ScheduleLectureModal({
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 overflow-y-auto">
                 {isLive
                   ? <LiveDetailsForm value={liveForm} onChange={setLiveForm} />
-                  : <RecordedDetailsForm value={recForm} onChange={setRecForm} />}
+                  : <RecordedDetailsForm value={recForm} onChange={setRecForm} lectureId={tempLectureId} />}
               </motion.div>
             )}
           </AnimatePresence>

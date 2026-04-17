@@ -488,7 +488,12 @@ export function useSaveInstituteOnboarding() {
 }
 
 export function useInstituteProfile() {
-  return useQuery({ queryKey: settingsKeys.profile, queryFn: adminApi.getInstituteProfile });
+  return useQuery({
+    queryKey: settingsKeys.profile,
+    queryFn: adminApi.getInstituteProfile,
+    retry: 0,
+    staleTime: Infinity,
+  });
 }
 
 export function useUpdateInstituteProfile() {

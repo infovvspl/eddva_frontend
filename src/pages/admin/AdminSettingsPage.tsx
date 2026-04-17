@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useAuthStore } from "@/lib/auth-store";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Palette, Calendar, CreditCard, Bell,
@@ -102,6 +103,9 @@ const TEACHING_MODE_OPTIONS = [
 ] as const;
 
 function ProfileTab() {
+  const { user } = useAuthStore();
+  const orgImageKey = `org_image_${user?.tenantId ?? "unknown"}`;
+
   const { data, isLoading } = useInstituteProfile();
   const updateProfile = useUpdateInstituteProfile();
   const uploadImage = useUploadInstituteOrgImage();
@@ -116,9 +120,16 @@ function ProfileTab() {
     classTypes: [] as string[],
     teachingMode: "both",
   });
-  const [orgImageUrl, setOrgImageUrl] = useState<string | null>(null);
+  const [orgImageUrl, setOrgImageUrl] = useState<string | null>(
+    () => localStorage.getItem(orgImageKey)
+  );
   const [courseInput, setCourseInput] = useState("");
   const [saved, setSaved] = useState(false);
+
+  const persistOrgImage = useCallback((url: string) => {
+    localStorage.setItem(orgImageKey, url);
+    setOrgImageUrl(url);
+  }, [orgImageKey]);
 
   useEffect(() => {
     if (data) {
@@ -131,9 +142,9 @@ function ProfileTab() {
         classTypes: data.classTypes ?? [],
         teachingMode: data.teachingMode ?? "both",
       });
-      setOrgImageUrl(data.orgImageUrl ?? null);
+      if (data.orgImageUrl) persistOrgImage(data.orgImageUrl);
     }
-  }, [data]);
+  }, [data, persistOrgImage]);
 
   const toggleClassType = (key: string) => {
     setForm(f => ({
@@ -158,11 +169,10 @@ function ProfileTab() {
   const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Show preview immediately
     setOrgImageUrl(URL.createObjectURL(file));
     try {
       const result = await uploadImage.mutateAsync(file);
-      setOrgImageUrl(result.url);
+      persistOrgImage(result.url);
       toast.success("Organisation image uploaded");
     } catch {
       toast.error("Image upload failed");

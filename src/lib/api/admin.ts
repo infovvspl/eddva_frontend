@@ -927,18 +927,19 @@ export async function updateInstituteProfile(payload: Partial<Omit<InstituteProf
 export async function uploadInstituteOrgImage(file: File): Promise<{ url: string }> {
   const fd = new FormData();
   fd.append("file", file);
-  // Try dedicated endpoint first; fall back to avatar upload if not yet deployed
   try {
     const res = await apiClient.post("/institute/settings/profile/image", fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return extractData<{ url: string }>(res);
+    const d = extractData<{ url?: string; avatarUrl?: string }>(res);
+    return { url: d?.url ?? d?.avatarUrl ?? "" };
   } catch (err: any) {
     if (err?.response?.status === 404) {
       const res = await apiClient.post("/auth/upload/avatar", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      return { url: extractData<{ url: string }>(res)?.url ?? "" };
+      const d = extractData<{ url?: string; avatarUrl?: string }>(res);
+      return { url: d?.url ?? d?.avatarUrl ?? "" };
     }
     throw err;
   }
