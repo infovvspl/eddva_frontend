@@ -42,21 +42,27 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  diagnostic: "bg-violet-500/10 text-violet-600",
-  full_mock: "bg-blue-500/10 text-blue-600",
-  mock: "bg-blue-500/10 text-blue-600",
-  chapter_test: "bg-emerald-500/10 text-emerald-600",
-  practice: "bg-amber-500/10 text-amber-600",
-  battle: "bg-orange-500/10 text-orange-600",
+  diagnostic:    "bg-violet-500/10 text-violet-600",
+  full_mock:     "bg-blue-500/10 text-blue-600",
+  subject_test:  "bg-sky-500/10 text-sky-600",
+  chapter_test:  "bg-emerald-500/10 text-emerald-600",
+  topic_test:    "bg-violet-500/10 text-violet-600",
+  subtopic_drill:"bg-fuchsia-500/10 text-fuchsia-600",
+  speed_test:    "bg-orange-500/10 text-orange-600",
+  pyq:           "bg-amber-500/10 text-amber-600",
+  revision:      "bg-teal-500/10 text-teal-600",
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  diagnostic: "Diagnostic",
-  full_mock: "Full Mock",
-  mock: "Mock Test",
-  chapter_test: "Chapter Test",
-  practice: "Practice",
-  battle: "Battle",
+  diagnostic:    "Diagnostic",
+  full_mock:     "Full Mock",
+  subject_test:  "Subject Test",
+  chapter_test:  "Chapter Test",
+  topic_test:    "Topic Test",
+  subtopic_drill:"Subtopic Drill",
+  speed_test:    "Speed Test",
+  pyq:           "PYQ",
+  revision:      "Revision",
 };
 
 const EXAM_CONFIGS: Record<string, { subjects: string[]; topics: string[]; description: string }> = {
@@ -825,6 +831,12 @@ const STEP_LABELS = ["Test Type", "Scope", "Details", "Questions"];
 
 type WizardStep = 0 | 1 | 2 | 3;
 
+const CATEGORY_TO_TYPE: Record<TestCategory, string> = {
+  subject: "subject_test",
+  chapter: "chapter_test",
+  topic:   "topic_test",
+};
+
 const TEST_CATEGORY_CONFIG: Record<TestCategory, {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -960,10 +972,13 @@ function CreateTestModal({
 
       const test = await createMockTest.mutateAsync({
         title: title.trim(),
+        type: testCategory ? CATEGORY_TO_TYPE[testCategory] : "topic_test",
         batchId,
         durationMinutes: durationMinutes || computedDuration,
         totalMarks: computedMarks || ids.length * 4,
         passingMarks: passingMarks !== "" ? passingMarks : undefined,
+        subjectId: scope.subjectId || undefined,
+        chapterId: scope.chapterId || undefined,
         topicId: scope.topicId || undefined,
         questionIds: ids,
       });

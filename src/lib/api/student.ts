@@ -524,7 +524,8 @@ export async function getMockTests(params?: {
   if (params?.topicId) q.set("topicId", params.topicId);
   if (params?.isPublished !== undefined) q.set("isPublished", String(params.isPublished));
   const res = await apiClient.get(`/assessments/mock-tests?${q}`);
-  return extractData<MockTestListItem[]>(res) ?? [];
+  const raw = extractData<MockTestListItem[] | { data: MockTestListItem[] }>(res);
+  return (Array.isArray(raw) ? raw : (raw as any)?.data) ?? [];
 }
 
 export async function getMockTestById(id: string): Promise<MockTestListItem & { questions: QuizQuestion[] }> {
