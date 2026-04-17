@@ -9,7 +9,7 @@ import {
   Mail, Phone, MapPin,
   GraduationCap, BarChart,
 } from "lucide-react";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import edvaLogo from "@/assets/eddva web logo.png";
 import heroIllustration from "@/assets/online-learning-concept-vector-illustration_235222-1269.png";
 import aboutImg   from "@/assets/eddva web img 2.png";
 import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";

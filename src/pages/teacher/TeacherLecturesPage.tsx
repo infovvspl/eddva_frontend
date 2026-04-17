@@ -1398,6 +1398,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const [videoFile, setVideoFile] = useState<File | null>(null); // actual File for upload
   const [uploadProgress, setUploadProgress] = useState(0);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user } = useAuthStore();
@@ -1449,31 +1450,36 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const handleThumbnail = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setThumbnailFile(file);
     const reader = new FileReader();
     reader.onload = ev => setThumbnailPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const uploadToS3 = async (endpoint: string, file: File, onProgress?: (pct: number) => void) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await apiClient.post(endpoint, form, {
+      timeout: 10 * 60 * 1000,
+      transformRequest: [(_data, headers) => { delete headers['Content-Type']; return form; }],
+      onUploadProgress: e => { if (e.total && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); },
+    });
+    const url: string = res.data?.data?.url ?? res.data?.url;
+    return url.startsWith('http') ? url : `${import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"}${url}`;
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
       let finalVideoUrl = videoUrl;
+      let finalThumbnailUrl: string | undefined;
 
-      // If a local file was selected, upload it first to get a real server URL
       if (videoFile) {
-        const form = new FormData();
-        form.append("file", videoFile);
-        const uploadRes = await apiClient.post("/content/lectures/upload-video", form, {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: e => {
-            if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
-          },
-        });
-        const relativeUrl: string = uploadRes.data?.data?.url ?? uploadRes.data?.url;
-        // Build absolute URL so Django (same machine) can download the file
-        // VITE_API_BASE_URL is a relative path (/api/v1), so we use VITE_BACKEND_URL instead
-        const backendBase = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-        finalVideoUrl = `${backendBase}${relativeUrl}`;
+        finalVideoUrl = await uploadToS3("/content/lectures/upload-video", videoFile, setUploadProgress);
+      }
+
+      if (thumbnailFile) {
+        finalThumbnailUrl = await uploadToS3("/content/lectures/upload-thumbnail", thumbnailFile);
       }
 
       const lecture = await createLecture.mutateAsync({
@@ -1483,6 +1489,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
         type: "recorded",
         topicId: topicId || undefined,
         videoUrl: finalVideoUrl || undefined,
+        thumbnailUrl: finalThumbnailUrl,
       });
       toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
       onClose();

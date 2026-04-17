@@ -5,7 +5,7 @@ import {
   Menu, X, ChevronDown, Sparkles, BookOpen, Library, 
   GraduationCap, Play 
 } from "lucide-react";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import edvaLogo from "@/assets/eddva web logo.png";
 import { B, P } from "./DesignTokens";
 
 export const LandingNavbar = () => {
@@ -30,7 +30,7 @@ export const LandingNavbar = () => {
     <header className="sticky top-0 z-50 border-b border-gray-100/80 bg-white/80 backdrop-blur-xl">
       <div className="landing-shell flex items-center justify-between py-3.5">
         <Link to="/" className="flex items-center">
-          <img src={edvaLogo} alt="EDDVA" className="h-8 w-auto object-contain sm:h-9" />
+          <img src={edvaLogo} alt="EDDVA" className=" object-contain" />
         </Link>
 
         <nav className="hidden items-center gap-6 lg:gap-8 md:flex">
