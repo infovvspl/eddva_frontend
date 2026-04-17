@@ -20,6 +20,7 @@ import edvaLogo from "@/assets/EDVA LOGO 04.png";
 import { useDiscoverBatches, useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { BatchDiscoveryModal } from "@/components/student/BatchDiscoveryModal";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 
 const EXAM_OPTIONS = [
   { key: "jee",     label: "JEE",           desc: "Joint Entrance Examination", color: "from-orange-400 to-red-500",    bg: "bg-orange-50",  border: "border-orange-300", text: "text-orange-600"  },
@@ -120,7 +121,7 @@ const DashboardLayout = () => {
   const isInstAdmin    = user?.role === "institute_admin";
 
   // ── Admin profile setup modal (shown once on first login) ────────────────
-  const { data: instProfile } = useInstituteProfile();
+  const { data: instProfile } = useInstituteProfile(isInstAdmin);
   const updateInstProfile = useUpdateInstituteProfile();
 
   const [showAdminProfileModal, setShowAdminProfileModal] = useState(false);
@@ -333,6 +334,7 @@ const DashboardLayout = () => {
   const notificationPath =
     user.role === "institute_admin" ? "/admin/notifications"
     : user.role === "super_admin"   ? "/super-admin/announcements"
+    : user.role === "student"       ? "/student/notifications"
     : null;
 
   const settingsPath =
@@ -488,7 +490,9 @@ const DashboardLayout = () => {
              "mx-auto w-full transition-all duration-1000",
              location.pathname.includes("/live") || location.pathname.includes("/quiz") ? "max-w-none p-0" : "max-w-[1700px] p-4 lg:p-6 pb-24"
            )}>
-              <Outlet />
+              <PageErrorBoundary>
+                <Outlet />
+              </PageErrorBoundary>
            </div>
         </main>
       </div>
