@@ -766,13 +766,16 @@ export interface MockTest {
 
 export interface CreateMockTestPayload {
   title: string;
+  type?: string;
   durationMinutes: number;
   totalMarks: number;
   passingMarks?: number;
-  batchId: string;         // required UUID — backend rejects if missing
+  batchId: string;
+  subjectId?: string;
+  chapterId?: string;
   topicId?: string;
   scheduledAt?: string;
-  questionIds: string[];   // required, non-empty array of question UUIDs
+  questionIds: string[];
 }
 
 export interface MockTestQuestion {
