@@ -1,21 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Play, Radio, Clock, Calendar, Search, Loader2,
-  Video, CheckCircle, Filter, Layers, Zap,
-  X, ChevronRight, Eye, Monitor, ArrowRight
+  Play, Clock, Search, Loader2, Video, BookOpen,
+  Bookmark, BookmarkCheck, Zap, Brain, AlertTriangle,
+  ChevronRight, Radio, Sparkles, RotateCcw,
+  MessageCircle, TrendingUp, Star, ArrowRight,
+  Eye, CheckCircle2, PlayCircle,
 } from "lucide-react";
 import { useAllBatchLectures } from "@/hooks/use-student";
 import type { StudentLecture } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
-import { CardGlass } from "@/components/shared/CardGlass";
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-function fmtDuration(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const _API_ORIGIN = (() => {
   try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; } catch { return ""; }
@@ -24,290 +21,759 @@ function resolveUrl(url?: string | null) {
   if (!url) return undefined;
   return url.startsWith("http") ? url : `${_API_ORIGIN}${url}`;
 }
+function fmtDuration(s: number) {
+  const m = Math.floor(s / 60);
+  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+}
 
-type TabFilter = "all" | "live" | "recorded" | "scheduled" | "completed";
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const TABS: { key: TabFilter; label: string }[] = [
-  { key: "all",       label: "ARCHIVE"   },
-  { key: "live",      label: "LIVE RADIUS" },
-  { key: "recorded",  label: "SYNTHESIZED" },
-  { key: "scheduled", label: "PROJECTED" },
-  { key: "completed", label: "ANALYZED"  },
+type MainTab = "all" | "continue" | "ai_insights" | "bookmarked";
+type SubjectChip = "all" | "physics" | "chemistry" | "biology" | "maths";
+type StatusChip  = "all" | "watched" | "unwatched" | "in_progress";
+
+const SUBJECT_CHIPS: { key: SubjectChip; label: string; color: string }[] = [
+  { key: "all",       label: "All",       color: "bg-indigo-600 text-white"          },
+  { key: "physics",   label: "Physics",   color: "bg-blue-100 text-blue-700"         },
+  { key: "chemistry", label: "Chemistry", color: "bg-violet-100 text-violet-700"     },
+  { key: "biology",   label: "Biology",   color: "bg-emerald-100 text-emerald-700"   },
+  { key: "maths",     label: "Maths",     color: "bg-orange-100 text-orange-700"     },
 ];
 
-// ─── Live Pulse Banner ─────────────────────────────────────────────────────────
-function LiveBanner({ lectures, onWatch }: { lectures: StudentLecture[]; onWatch: (id: string) => void }) {
-  if (!lectures.length) return null;
+const STATUS_CHIPS: { key: StatusChip; label: string; icon: React.ReactNode }[] = [
+  { key: "all",         label: "All",          icon: <Sparkles className="w-3 h-3" /> },
+  { key: "in_progress", label: "In Progress",  icon: <Play className="w-3 h-3" />     },
+  { key: "unwatched",   label: "Not Started",  icon: <Eye className="w-3 h-3" />      },
+  { key: "watched",     label: "Completed",    icon: <CheckCircle2 className="w-3 h-3" /> },
+];
+
+// ─── Bookmark store (localStorage) ────────────────────────────────────────────
+
+const BM_KEY = "lecture_bookmarks";
+function loadBookmarks(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(BM_KEY) ?? "[]")); }
+  catch { return new Set(); }
+}
+function saveBookmarks(set: Set<string>) {
+  localStorage.setItem(BM_KEY, JSON.stringify([...set]));
+}
+
+// ─── AI Insights Panel ────────────────────────────────────────────────────────
+
+function InsightPanel({ lectures }: { lectures: StudentLecture[] }) {
+  const navigate = useNavigate();
+
+  const weakTopics = useMemo(() => {
+    const map = new Map<string, { name: string; pct: number; count: number }>();
+    lectures.forEach(l => {
+      if (!l.topic) return;
+      const pct = l.studentProgress?.watchPercentage ?? 0;
+      const existing = map.get(l.topic.id);
+      if (!existing) map.set(l.topic.id, { name: l.topic.name, pct, count: 1 });
+      else map.set(l.topic.id, { name: l.topic.name, pct: (existing.pct + pct) / 2, count: existing.count + 1 });
+    });
+    return [...map.values()].filter(t => t.pct < 40 && t.count > 0).slice(0, 3);
+  }, [lectures]);
+
+  const strongTopics = useMemo(() => {
+    const map = new Map<string, { name: string; pct: number }>();
+    lectures.forEach(l => {
+      if (!l.topic) return;
+      const pct = l.studentProgress?.watchPercentage ?? 0;
+      const existing = map.get(l.topic.id);
+      if (!existing) map.set(l.topic.id, { name: l.topic.name, pct });
+      else map.set(l.topic.id, { name: l.topic.name, pct: Math.max(existing.pct, pct) });
+    });
+    return [...map.values()].filter(t => t.pct >= 80).slice(0, 3);
+  }, [lectures]);
+
+  const suggested = useMemo(() =>
+    lectures.find(l => {
+      const pct = l.studentProgress?.watchPercentage ?? 0;
+      return pct === 0 && l.status === "published";
+    }) ?? lectures.find(l => {
+      const pct = l.studentProgress?.watchPercentage ?? 0;
+      return pct > 0 && pct < 100;
+    }),
+  [lectures]);
+
+  const pendingDoubts = 0;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="mb-10"
-    >
-      {lectures.map(lec => (
-        <CardGlass 
-          key={lec.id} 
-          onClick={() => onWatch(lec.id)}
-          className="p-1 border-indigo-100 bg-white/40 shadow-sm"
-        >
-          <div className="rounded-3xl p-6 flex items-center gap-6 bg-white/40">
-             <div className="relative w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-                <Radio className="w-6 h-6 text-indigo-500 animate-pulse" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-indigo-500 flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                </span>
-             </div>
-             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-1">
-                   <span className="text-[8px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100/50">Neural Feed: Live</span>
-                </div>
-                <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">{lec.title}</h3>
-             </div>
-             <motion.button
-               whileHover={{ y: -2 }}
-               whileTap={{ scale: 0.98 }}
-               className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest shadow-lg hover:bg-indigo-600 transition-colors"
-             >
-                Engage Stream
-             </motion.button>
+    <div className="space-y-4">
+
+      {/* Weak Topics */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+        className="bg-white/70 backdrop-blur-xl rounded-2xl border border-amber-100 p-5 shadow-sm"
+      >
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
           </div>
-        </CardGlass>
-      ))}
-    </motion.div>
+          <div>
+            <p className="text-xs font-bold text-slate-800">Needs Attention</p>
+            <p className="text-[10px] text-slate-400">Topics below 40% progress</p>
+          </div>
+        </div>
+        {weakTopics.length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-3">Great job — no weak topics! 🎉</p>
+        ) : (
+          <div className="space-y-2.5">
+            {weakTopics.map((t, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-slate-700 truncate">{t.name}</p>
+                  <div className="mt-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${t.pct}%` }} />
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-amber-500 shrink-0">{Math.round(t.pct)}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Strong Topics */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+        className="bg-white/70 backdrop-blur-xl rounded-2xl border border-emerald-100 p-5 shadow-sm"
+      >
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-800">Mastered</p>
+            <p className="text-[10px] text-slate-400">Topics at 80%+ progress</p>
+          </div>
+        </div>
+        {strongTopics.length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-3">Keep watching to build mastery</p>
+        ) : (
+          <div className="space-y-2">
+            {strongTopics.map((t, i) => (
+              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                <Star className="w-3 h-3 text-emerald-500 shrink-0" />
+                <p className="text-[11px] font-semibold text-emerald-800 truncate flex-1">{t.name}</p>
+                <span className="text-[10px] font-bold text-emerald-600">{Math.round(t.pct)}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Suggested Next */}
+      {suggested && (
+        <motion.div
+          initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+          className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-5 shadow-lg shadow-indigo-500/20 relative overflow-hidden"
+        >
+          <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain className="w-4 h-4 text-indigo-200" />
+              <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">AI Recommends</p>
+            </div>
+            <p className="text-sm font-bold text-white leading-snug mb-3 line-clamp-2">{suggested.title}</p>
+            {suggested.topic && (
+              <p className="text-[10px] text-indigo-300 mb-3">{suggested.topic.name}</p>
+            )}
+            <button
+              onClick={() => navigate(`/student/lectures/${suggested.id}`)}
+              className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-colors w-full justify-center"
+            >
+              <PlayCircle className="w-3.5 h-3.5" /> Start Now
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Doubts Pending */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
+        className="bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-100 p-5 shadow-sm"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-indigo-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800">Doubts</p>
+              <p className="text-[10px] text-slate-400">{pendingDoubts > 0 ? `${pendingDoubts} pending` : "All resolved"}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate("/student/doubts")}
+            className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700"
+          >
+            View <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </motion.div>
+
+    </div>
   );
 }
 
-// ─── Lecture Card ──────────────────────────────────────────────────────────────
-function LectureCard({ lecture, onWatch }: { lecture: StudentLecture; onWatch: (id: string) => void }) {
-  const [imgErr, setImgErr] = useState(false);
-  const thumb = resolveUrl(lecture.thumbnailUrl);
-  const prog = lecture.studentProgress;
-  const watchPct = prog?.watchPercentage ?? 0;
-  const isDone = prog?.isCompleted ?? false;
-  const isLive = lecture.status === "live";
-  const isScheduled = lecture.status === "scheduled";
-  const isClickable = ["published", "live", "ended"].includes(lecture.status)
-    || (lecture.type === "live" && isScheduled);
+// ─── AI Insights Tab (full panel) ─────────────────────────────────────────────
 
-  const statusLabel = isLive ? "LIVE" : isScheduled ? "PROJECTED" : isDone ? "ANALYZED" : "RECAP";
-  const statusColor = isLive ? "bg-indigo-600" : isScheduled ? "bg-slate-400" : isDone ? "bg-emerald-500" : "bg-indigo-400";
+function AIInsightsTab({ lectures }: { lectures: StudentLecture[] }) {
+  const completed   = lectures.filter(l => l.studentProgress?.isCompleted).length;
+  const inProgress  = lectures.filter(l => {
+    const p = l.studentProgress?.watchPercentage ?? 0;
+    return p > 0 && !l.studentProgress?.isCompleted;
+  }).length;
+  const totalTime   = lectures.reduce((s, l) => s + (l.videoDurationSeconds ?? 0), 0);
+  const watchedTime = lectures.reduce((s, l) => {
+    const p = (l.studentProgress?.watchPercentage ?? 0) / 100;
+    return s + (l.videoDurationSeconds ?? 0) * p;
+  }, 0);
+  const overallPct  = lectures.length ? Math.round((completed / lectures.length) * 100) : 0;
+
+  const stats = [
+    { label: "Completed",   value: completed,                     icon: <CheckCircle2 className="w-4 h-4" />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+    { label: "In Progress", value: inProgress,                    icon: <Play className="w-4 h-4" />,         color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-100"    },
+    { label: "Total",       value: lectures.length,               icon: <Video className="w-4 h-4" />,        color: "text-indigo-600",  bg: "bg-indigo-50",  border: "border-indigo-100"  },
+    { label: "Hours Watched", value: `${Math.round(watchedTime / 3600)}h`, icon: <Clock className="w-4 h-4" />, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-100" },
+  ];
 
   return (
-    <CardGlass 
-      onClick={isClickable ? () => onWatch(lecture.id) : undefined}
+    <div className="space-y-8">
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {stats.map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+            className={cn("bg-white/70 backdrop-blur-xl rounded-2xl p-5 border shadow-sm flex flex-col gap-3", s.border)}
+          >
+            <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", s.bg, s.color)}>
+              {s.icon}
+            </div>
+            <div>
+              <p className="text-2xl font-black text-slate-900">{s.value}</p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">{s.label}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+        className="bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-100 p-6 shadow-sm"
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm font-bold text-slate-800">Overall Progress</p>
+            <p className="text-xs text-slate-400 mt-0.5">{fmtDuration(Math.round(watchedTime))} watched of {fmtDuration(totalTime)}</p>
+          </div>
+          <span className="text-2xl font-black text-indigo-600">{overallPct}%</span>
+        </div>
+        <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }} animate={{ width: `${overallPct}%` }} transition={{ duration: 1.2, ease: "easeOut" }}
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+          />
+        </div>
+      </motion.div>
+
+      {/* Topic breakdown */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+        className="bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-100 p-6 shadow-sm"
+      >
+        <p className="text-sm font-bold text-slate-800 mb-4">Topic Breakdown</p>
+        <TopicBreakdown lectures={lectures} />
+      </motion.div>
+    </div>
+  );
+}
+
+function TopicBreakdown({ lectures }: { lectures: StudentLecture[] }) {
+  const topics = useMemo(() => {
+    const map = new Map<string, { name: string; total: number; done: number; pct: number }>();
+    lectures.forEach(l => {
+      if (!l.topic) return;
+      const done = l.studentProgress?.isCompleted ? 1 : 0;
+      const existing = map.get(l.topic.id);
+      if (!existing) map.set(l.topic.id, { name: l.topic.name, total: 1, done, pct: l.studentProgress?.watchPercentage ?? 0 });
+      else map.set(l.topic.id, { ...existing, total: existing.total + 1, done: existing.done + done, pct: (existing.pct + (l.studentProgress?.watchPercentage ?? 0)) / 2 });
+    });
+    return [...map.values()].sort((a, b) => b.pct - a.pct);
+  }, [lectures]);
+
+  if (topics.length === 0) return <p className="text-xs text-slate-400 text-center py-4">No topics found</p>;
+
+  return (
+    <div className="space-y-3">
+      {topics.map((t, i) => (
+        <div key={i} className="flex items-center gap-4">
+          <div className="w-28 shrink-0">
+            <p className="text-[11px] font-semibold text-slate-700 truncate">{t.name}</p>
+            <p className="text-[10px] text-slate-400">{t.done}/{t.total} done</p>
+          </div>
+          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }} animate={{ width: `${Math.round(t.pct)}%` }} transition={{ duration: 0.8, delay: i * 0.05 }}
+              className={cn("h-full rounded-full", t.pct >= 80 ? "bg-emerald-400" : t.pct >= 40 ? "bg-indigo-400" : "bg-amber-400")}
+            />
+          </div>
+          <span className="text-[11px] font-bold text-slate-500 w-9 text-right shrink-0">{Math.round(t.pct)}%</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Lecture Card ─────────────────────────────────────────────────────────────
+
+function LectureCard({
+  lecture, bookmarked, onBookmark, onWatch, index,
+}: {
+  lecture: StudentLecture;
+  bookmarked: boolean;
+  onBookmark: (id: string) => void;
+  onWatch: (id: string) => void;
+  index: number;
+}) {
+  const [imgErr, setImgErr] = useState(false);
+  const thumb = resolveUrl(lecture.thumbnailUrl);
+  const pct = lecture.studentProgress?.watchPercentage ?? 0;
+  const isDone = lecture.studentProgress?.isCompleted ?? false;
+  const isLive = lecture.status === "live";
+  const isClickable = ["published", "live", "ended"].includes(lecture.status);
+
+  const aiSummary = useMemo(() => {
+    if (lecture.aiKeyConcepts?.length) return lecture.aiKeyConcepts.slice(0, 2).join(" · ");
+    if (lecture.description) return lecture.description.slice(0, 90) + (lecture.description.length > 90 ? "…" : "");
+    return null;
+  }, [lecture]);
+
+  const actionLabel = isDone ? "Revise" : pct > 0 ? "Resume" : "Start";
+  const actionIcon  = isDone ? <RotateCcw className="w-3.5 h-3.5" /> : pct > 0 ? <Play className="w-3.5 h-3.5 fill-current" /> : <PlayCircle className="w-3.5 h-3.5" />;
+  const actionColor = isDone ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
+    : pct > 0  ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-500/30"
+    : "bg-slate-900 text-white border-slate-900 hover:bg-indigo-600 hover:border-indigo-600";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.06, 0.4) }}
       className={cn(
-        "p-0 group border-slate-100 bg-white/40 transition-all duration-500",
-        !isClickable && "opacity-40 grayscale"
+        "bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-100/80 shadow-sm",
+        "hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5",
+        "transition-all duration-300 overflow-hidden group",
+        !isClickable && "opacity-50"
       )}
     >
-      <div className="relative aspect-video bg-slate-50 overflow-hidden">
+      {/* Thumbnail */}
+      <div className="relative h-44 overflow-hidden bg-slate-50">
         {thumb && !imgErr ? (
           <img src={thumb} alt={lecture.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-slate-100">
-            <Video className="w-10 h-10 text-slate-300 opacity-50" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100">
+            <Video className="w-10 h-10 text-indigo-200" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="absolute top-3 left-3">
-          <span className={cn(
-            "text-[7px] font-bold uppercase tracking-widest px-2 py-1 rounded-full text-white shadow-sm",
-            statusColor
-          )}>
-            {statusLabel}
-          </span>
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+
+        {/* Top badges */}
+        <div className="absolute top-3 left-3 flex gap-1.5">
+          {isLive && (
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm">
+              <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
+            </span>
+          )}
+          {isDone && (
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500 text-white text-[9px] font-bold uppercase">
+              <CheckCircle2 className="w-2.5 h-2.5" /> Done
+            </span>
+          )}
+          {!isLive && !isDone && pct > 0 && (
+            <span className="px-2 py-1 rounded-full bg-indigo-600 text-white text-[9px] font-bold uppercase">
+              {Math.round(pct)}%
+            </span>
+          )}
         </div>
+
+        {/* Bookmark button */}
+        <button
+          onClick={e => { e.stopPropagation(); onBookmark(lecture.id); }}
+          className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-sm"
+        >
+          {bookmarked
+            ? <BookmarkCheck className="w-3.5 h-3.5 text-indigo-600" />
+            : <Bookmark className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-400 transition-colors" />
+          }
+        </button>
+
+        {/* Duration */}
         {lecture.videoDurationSeconds && (
-          <div className="absolute bottom-3 left-3 flex items-center gap-2">
-             <div className="px-2 py-1 rounded-full bg-black/40 backdrop-blur-md text-[7px] font-bold text-white uppercase tracking-widest flex items-center gap-1.5">
-                <Clock className="w-3 h-3" />
-                {fmtDuration(lecture.videoDurationSeconds)}
-             </div>
+          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm">
+            <Clock className="w-2.5 h-2.5 text-white/80" />
+            <span className="text-[9px] font-bold text-white">{fmtDuration(lecture.videoDurationSeconds)}</span>
           </div>
         )}
-        {watchPct > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100">
-            <motion.div
-              className="h-full"
-              style={{ background: isDone ? "#10b981" : "#6366f1" }}
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(watchPct, 100)}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
-            />
+
+        {/* Progress bar */}
+        {pct > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+            <div className="h-full bg-indigo-400 transition-all" style={{ width: `${Math.min(pct, 100)}%` }} />
           </div>
         )}
       </div>
 
-      <div className="p-5">
-        <h4 className="text-sm font-bold text-slate-700 mb-4 line-clamp-2 tracking-tight group-hover:text-indigo-600 transition-colors leading-tight">
+      {/* Body */}
+      <div className="p-4">
+        {/* Topic chip */}
+        {lecture.topic && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full mb-2">
+            <BookOpen className="w-2.5 h-2.5" /> {lecture.topic.name}
+          </span>
+        )}
+
+        <h4 className="text-sm font-bold text-slate-800 leading-snug line-clamp-2 mb-2 group-hover:text-indigo-700 transition-colors">
           {lecture.title}
         </h4>
-        <div className="flex flex-col gap-2.5 mb-5">
-          {lecture.topic && (
-            <div className="flex items-center gap-2 text-[8px] font-bold text-slate-300 uppercase tracking-widest">
-               <Layers className="w-3.5 h-3.5 text-indigo-400/50" /> {lecture.topic.name}
-            </div>
-          )}
-          {watchPct > 0 && !isDone && (
-            <div className="flex items-center gap-2 text-[8px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50/50 w-fit px-2 py-0.5 rounded-full border border-indigo-100/50">
-               <Eye className="w-3.5 h-3.5" /> {Math.round(watchPct)}% EXTRAPOLATED
-            </div>
-          )}
-        </div>
-        <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-            <span className="text-[7px] font-bold text-slate-200 uppercase tracking-[0.2em]">{isClickable ? "LINK READY" : "ENCRYPTED"}</span>
-            <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all shadow-xs">
-                <ArrowRight className="w-4 h-4" />
-            </div>
+
+        {/* AI summary */}
+        {aiSummary && (
+          <div className="flex items-start gap-1.5 mb-3">
+            <Sparkles className="w-3 h-3 text-violet-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">{aiSummary}</p>
+          </div>
+        )}
+
+        {/* Action row */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
+          <button
+            onClick={() => isClickable && onWatch(lecture.id)}
+            disabled={!isClickable}
+            className={cn(
+              "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all",
+              actionColor
+            )}
+          >
+            {actionIcon} {actionLabel}
+          </button>
+
+          <button
+            onClick={() => isClickable && onWatch(lecture.id)}
+            className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
-    </CardGlass>
+    </motion.div>
+  );
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
+function EmptyState() {
+  const navigate = useNavigate();
+  return (
+    <div className="col-span-full flex flex-col items-center justify-center py-24 gap-6 text-center">
+      <div className="relative">
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 flex items-center justify-center shadow-sm">
+          <Video className="w-9 h-9 text-indigo-300" />
+        </div>
+        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shadow-md">
+          <Sparkles className="w-3 h-3 text-white" />
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-slate-800 mb-1">Start learning to unlock AI insights</h3>
+        <p className="text-sm text-slate-400 max-w-xs">Your AI study assistant will track your progress and suggest what to learn next.</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 justify-center">
+        <button onClick={() => navigate("/student/courses")}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-500/30">
+          <BookOpen className="w-4 h-4" /> Browse Courses
+        </button>
+        <button onClick={() => navigate("/student/learn")}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:border-indigo-300 hover:text-indigo-600 transition-colors">
+          <Brain className="w-4 h-4" /> Revise Last Lecture
+        </button>
+      </div>
+    </div>
   );
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function StudentLecturesPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<TabFilter>("all");
-  const [search, setSearch] = useState("");
+  const [tab, setTab]           = useState<MainTab>("all");
+  const [subject, setSubject]   = useState<SubjectChip>("all");
+  const [status, setStatus]     = useState<StatusChip>("all");
+  const [search, setSearch]     = useState("");
+  const [bookmarks, setBookmarks] = useState<Set<string>>(loadBookmarks);
 
-  const { data: lectures, isLoading } = useAllBatchLectures(); // no batchId → all enrolled batches
+  const { data: lectures, isLoading } = useAllBatchLectures();
+  const all = useMemo(() => lectures ?? [], [lectures]);
 
-  const counts = useMemo(() => {
-    const all = lectures ?? [];
-    return {
-      all: all.length,
-      live: all.filter(l => l.status === "live").length,
-      recorded: all.filter(l => l.type === "recorded").length,
-      scheduled: all.filter(l => l.status === "scheduled").length,
-      completed: all.filter(l => l.studentProgress?.isCompleted).length,
-    };
-  }, [lectures]);
-
-  const filtered = useMemo(() => {
-    let list = lectures ?? [];
-    if (tab === "live")      list = list.filter(l => l.status === "live");
-    else if (tab === "recorded")  list = list.filter(l => l.type === "recorded");
-    else if (tab === "scheduled") list = list.filter(l => l.status === "scheduled");
-    else if (tab === "completed") list = list.filter(l => l.studentProgress?.isCompleted);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(l =>
-        l.title.toLowerCase().includes(q) ||
-        l.topic?.name?.toLowerCase().includes(q)
-      );
-    }
-    return list.sort((a, b) => {
-      const order: Record<string, number> = { live: 0, scheduled: 1, published: 2, ended: 3, draft: 4, processing: 5 };
-      return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+  const toggleBookmark = useCallback((id: string) => {
+    setBookmarks(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      saveBookmarks(next);
+      return next;
     });
-  }, [lectures, tab, search]);
+  }, []);
 
-  const liveLectures = useMemo(() => (lectures ?? []).filter(l => l.status === "live"), [lectures]);
-
-  const handleWatch = (id: string) => {
-    const lec = (lectures ?? []).find(l => l.id === id);
-    if (lec?.type === "live" && (lec?.status === "live" || lec?.status === "scheduled")) {
+  const handleWatch = useCallback((id: string) => {
+    const lec = all.find(l => l.id === id);
+    if (lec?.type === "live" && (lec.status === "live" || lec.status === "scheduled")) {
       navigate(`/live/${id}`);
     } else {
       navigate(`/student/lectures/${id}`);
     }
-  };
+  }, [all, navigate]);
+
+  const filtered = useMemo(() => {
+    let list = all;
+
+    // Tab filter
+    if (tab === "continue")   list = list.filter(l => { const p = l.studentProgress?.watchPercentage ?? 0; return p > 0 && !l.studentProgress?.isCompleted; });
+    if (tab === "bookmarked") list = list.filter(l => bookmarks.has(l.id));
+
+    // Subject filter — uses topic.chapter.subject.name (joined from backend)
+    if (subject !== "all") {
+      list = list.filter(l => {
+        const subjectName = l.topic?.chapter?.subject?.name ?? "";
+        // Fallback: also check title/description in case subject relation is missing
+        const fallback = `${l.title} ${l.description ?? ""}`;
+        return subjectName.toLowerCase().includes(subject) || fallback.toLowerCase().includes(subject);
+      });
+    }
+
+    // Status filter
+    if (status === "watched")     list = list.filter(l => l.studentProgress?.isCompleted);
+    if (status === "unwatched")   list = list.filter(l => !(l.studentProgress?.watchPercentage ?? 0));
+    if (status === "in_progress") list = list.filter(l => { const p = l.studentProgress?.watchPercentage ?? 0; return p > 0 && !l.studentProgress?.isCompleted; });
+
+    // Search
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(l => l.title.toLowerCase().includes(q) || l.topic?.name?.toLowerCase().includes(q));
+    }
+
+    // Sort: live first, then in-progress, then unstarted, then completed
+    return list.sort((a, b) => {
+      const score = (l: StudentLecture) => {
+        if (l.status === "live") return 0;
+        const p = l.studentProgress?.watchPercentage ?? 0;
+        if (p > 0 && !l.studentProgress?.isCompleted) return 1;
+        if (p === 0) return 2;
+        return 3;
+      };
+      return score(a) - score(b);
+    });
+  }, [all, tab, subject, status, search, bookmarks]);
+
+  const liveLectures = useMemo(() => all.filter(l => l.status === "live"), [all]);
+  const continueLectures = useMemo(() => all.filter(l => { const p = l.studentProgress?.watchPercentage ?? 0; return p > 0 && !l.studentProgress?.isCompleted; }), [all]);
+
+  const TABS: { key: MainTab; label: string; count?: number; icon: React.ReactNode }[] = [
+    { key: "all",         label: "All Lectures",       count: all.length,               icon: <Video className="w-3.5 h-3.5" />         },
+    { key: "continue",    label: "Continue Watching",  count: continueLectures.length,  icon: <Play className="w-3.5 h-3.5" />          },
+    { key: "ai_insights", label: "AI Insights",        icon: <Brain className="w-3.5 h-3.5" />         },
+    { key: "bookmarked",  label: "Bookmarked",         count: bookmarks.size,           icon: <Bookmark className="w-3.5 h-3.5" />      },
+  ];
 
   return (
-    <div className="flex flex-col space-y-12 pb-32">
-        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
-          <div className="space-y-4">
-             <motion.div 
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2.5 px-4 py-1 rounded-full bg-slate-50 border border-slate-100 text-indigo-500 w-fit"
-             >
-                <Monitor className="w-3 h-3" />
-                <span className="text-[8px] font-bold uppercase tracking-widest">KNOWLEDGE ARCHIVE V2.0</span>
-             </motion.div>
-             <h1 className="text-3xl font-bold text-slate-800 tracking-tight leading-none uppercase">
-                Knowledge <span className="text-indigo-600">Gallery</span>
-             </h1>
+    <div className="min-h-screen pb-24 relative">
+      {/* Soft dot grid background */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.025]"
+        style={{ backgroundImage: "radial-gradient(circle, #6366f1 1px, transparent 1px)", backgroundSize: "28px 28px" }}
+      />
+
+      <div className="relative max-w-[1600px] mx-auto space-y-6">
+
+        {/* ── Header ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+        >
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Lectures Hub</span>
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 leading-none">Lectures</h1>
+            <p className="text-sm text-slate-400 mt-1">AI-powered learning sessions</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6">
-             <CardGlass className="px-6 py-4 border-slate-100 bg-white/40 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-500 flex items-center justify-center shadow-sm">
-                   <CheckCircle className="w-5 h-5" />
-                </div>
-                <div>
-                   <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">ANALYZED</p>
-                   <p className="text-xl font-bold text-slate-800 leading-none mt-1">{counts.completed}</p>
-                </div>
-             </CardGlass>
-          </div>
-        </header>
+          {/* Live pill */}
+          {liveLectures.length > 0 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              onClick={() => liveLectures[0] && handleWatch(liveLectures[0].id)}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-500/30 hover:bg-red-600 transition-colors"
+            >
+              <Radio className="w-4 h-4 animate-pulse" />
+              {liveLectures.length} Live Now
+            </motion.button>
+          )}
+        </motion.div>
 
-        <div className="flex gap-4 flex-col sm:flex-row items-center sticky top-0 z-40">
-          <div className="relative flex-1 group w-full">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+        {/* ── Smart Search ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="relative group"
+        >
+          {/* Gradient glow border */}
+          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-400 opacity-0 group-focus-within:opacity-100 transition-opacity blur-[2px]" />
+          <div className="relative flex items-center bg-white rounded-2xl border border-slate-200 shadow-sm group-focus-within:border-transparent transition-colors overflow-hidden">
+            <div className="pl-5 pr-2 shrink-0">
+              <Sparkles className="w-4 h-4 text-indigo-400 group-focus-within:text-indigo-600 transition-colors" />
+            </div>
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="QUERY ARCHIVE..."
-              className="w-full pl-14 pr-8 py-5 rounded-2xl bg-white border border-slate-100 text-xs font-bold text-slate-700 placeholder:text-slate-200 focus:outline-none focus:border-indigo-100 transition-all shadow-sm"
+              placeholder="Ask anything from your lectures..."
+              className="flex-1 py-4 pr-4 text-sm text-slate-700 placeholder:text-slate-400 bg-transparent focus:outline-none font-medium"
             />
+            {search && (
+              <button onClick={() => setSearch("")}
+                className="mr-4 w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors">
+                <span className="text-xs">✕</span>
+              </button>
+            )}
           </div>
-          
-          <div className="flex items-center gap-1.5 bg-white/40 p-1.5 rounded-2xl border border-slate-100 shadow-sm overflow-x-auto hide-scrollbar w-full sm:w-auto">
-            {TABS.map(t => {
-                const active = tab === t.key;
-                return (
-                  <motion.button
-                    key={t.key}
-                    whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}
-                    onClick={() => setTab(t.key)}
-                    className={cn(
-                      "flex items-center gap-3 px-6 py-3 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
-                      active ? "bg-slate-900 text-white shadow-md" : "text-slate-400 hover:text-slate-900"
-                    )}
-                  >
-                    {t.label}
-                    {counts[t.key] > 0 && (
-                      <span className={cn("px-1.5 py-0.5 rounded-full text-[7px] font-bold", active ? "bg-white/20 text-white" : "bg-indigo-50 text-indigo-400")}>
-                        {counts[t.key]}
-                      </span>
-                    )}
-                  </motion.button>
-                );
-              })}
-          </div>
-        </div>
+        </motion.div>
 
-        <LiveBanner lectures={liveLectures} onWatch={handleWatch} />
-
-        {isLoading ? (
-          <div className="py-40 flex flex-col items-center gap-6">
-             <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-             </div>
-             <p className="text-[9px] font-bold uppercase tracking-widest text-slate-300">Synchronizing Archive Data...</p>
+        {/* ── Filter Chips ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="flex flex-wrap gap-3"
+        >
+          {/* Subject */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {SUBJECT_CHIPS.map(c => (
+              <button key={c.key} onClick={() => setSubject(c.key)}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all",
+                  subject === c.key
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+                )}>
+                {c.label}
+              </button>
+            ))}
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="py-40 flex flex-col items-center text-center max-w-sm mx-auto">
-            <div className="w-16 h-16 rounded-3xl bg-white border border-slate-100 flex items-center justify-center shadow-sm mb-8">
-              <Video className="w-6 h-6 text-slate-200" />
+
+          <div className="w-px h-6 bg-slate-200 self-center hidden sm:block" />
+
+          {/* Status */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {STATUS_CHIPS.map(c => (
+              <button key={c.key} onClick={() => setStatus(c.key)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all",
+                  status === c.key
+                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800"
+                )}>
+                {c.icon} {c.label}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Tabs ── */}
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.12 }}
+          className="flex items-center gap-1 bg-slate-100/70 p-1 rounded-2xl w-fit overflow-x-auto"
+        >
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                tab === t.key
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              )}>
+              {t.icon}
+              {t.label}
+              {t.count !== undefined && t.count > 0 && (
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded-full text-[9px] font-bold",
+                  tab === t.key ? "bg-indigo-100 text-indigo-600" : "bg-slate-200 text-slate-500"
+                )}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </motion.div>
+
+        {/* ── Content ── */}
+        {tab === "ai_insights" ? (
+          isLoading ? (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 uppercase tracking-tight mb-2">Frequency Empty</h3>
-            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">No operative visual feeds found in this sector.</p>
-          </div>
+          ) : (
+            <AIInsightsTab lectures={all} />
+          )
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            <AnimatePresence mode="popLayout">
-              {filtered.map((lec, i) => (
-                <motion.div key={lec.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: Math.min(i * 0.05, 0.4) }} layout>
-                  <LectureCard lecture={lec} onWatch={handleWatch} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
+
+            {/* ── Lecture Feed ── */}
+            <div>
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                  <p className="text-xs text-slate-400 font-medium">Loading your lectures…</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <AnimatePresence mode="popLayout">
+                    {filtered.length === 0 ? (
+                      <EmptyState />
+                    ) : (
+                      filtered.map((lec, i) => (
+                        <motion.div key={lec.id} layout exit={{ opacity: 0, scale: 0.95 }}>
+                          <LectureCard
+                            lecture={lec}
+                            bookmarked={bookmarks.has(lec.id)}
+                            onBookmark={toggleBookmark}
+                            onWatch={handleWatch}
+                            index={i}
+                          />
+                        </motion.div>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+
+            {/* ── AI Insights Sidebar ── */}
+            {!isLoading && (
+              <div className="xl:block hidden">
+                <InsightPanel lectures={all} />
+              </div>
+            )}
           </div>
         )}
+
+      </div>
     </div>
   );
 }
