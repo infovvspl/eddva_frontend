@@ -24,6 +24,7 @@ export interface User {
   tenantId?: string;
   tenantName?: string;
   isFirstLogin?: boolean;
+  onboardingRequired?: boolean;
   teacherProfile?: TeacherProfile | null;
   studentProfile?: StudentProfile | null;
 }

@@ -33,6 +33,7 @@ export interface OtpVerifyResponse {
   refresh_token?: string;
   user?: AuthUser;
   isNewUser?: boolean;
+  onboardingRequired?: boolean;
 }
 
 export interface ProfileUpdatePayload {
