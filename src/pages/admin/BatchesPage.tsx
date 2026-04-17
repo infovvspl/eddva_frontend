@@ -7,7 +7,7 @@ import {
   Layout, Calendar, GraduationCap, BarChart3, Edit2,
   Trophy, TrendingDown, TrendingUp, CheckCircle2,
   PauseCircle, PlayCircle, ImageIcon, IndianRupee, BadgePercent,
-  Building2, Sparkles, Unlock,
+  Building2, Sparkles, Unlock, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -1605,11 +1605,17 @@ const BatchesPage = () => {
                       <PlayCircle className="w-4 h-4" />
                     </button>
                   )}
-                  {b.status !== "completed" && (
+                  {b.status !== "completed" ? (
                     <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "completed"); }}
                       title="Mark as completed"
                       className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all">
                       <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
+                      title="Mark as incomplete (reopen)"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-violet-500 bg-violet-50 hover:text-violet-700 hover:bg-violet-100 transition-all">
+                      <RotateCcw className="w-4 h-4" />
                     </button>
                   )}
                   <button onClick={e => { e.stopPropagation(); setEditBatch(b); }}

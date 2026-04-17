@@ -422,7 +422,8 @@ export async function listStudents(params?: { page?: number; limit?: number; sea
   for (const batch of batches) {
     try {
       const rosterRes = await apiClient.get(`/batches/${batch.id}/roster`);
-      const roster: any[] = extractData<any[]>(rosterRes) ?? [];
+      const rosterRaw = extractData<any>(rosterRes);
+      const roster: any[] = Array.isArray(rosterRaw) ? rosterRaw : (rosterRaw?.data ?? []);
       for (const s of roster) {
         const id = s.id || s.studentId || s.userId;
         if (id && !seen.has(id)) { seen.add(id); allStudents.push({ ...s, batchName: batch.name }); }
@@ -896,20 +897,29 @@ export async function updateInstituteProfile(payload: Partial<Omit<InstituteProf
 export async function uploadInstituteOrgImage(file: File): Promise<{ url: string }> {
   const fd = new FormData();
   fd.append("file", file);
-  // Try dedicated endpoint first; fall back to avatar upload if not yet deployed
+
+  // Try the dedicated endpoint: POST /institute/settings/profile/image
+  // Backend returns { avatarUrl } (saves to user.profilePictureUrl)
   try {
     const res = await apiClient.post("/institute/settings/profile/image", fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return extractData<{ url: string }>(res);
+    // Accept both { avatarUrl } and { url } — backend currently returns avatarUrl
+    const data = extractData<{ avatarUrl?: string; url?: string }>(res);
+    const url = data?.avatarUrl ?? data?.url ?? "";
+    if (!url) throw new Error("Upload returned no URL");
+    return { url };
   } catch (err: any) {
-    if (err?.response?.status === 404) {
-      const res = await apiClient.post("/auth/upload/avatar", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return { url: extractData<{ url: string }>(res)?.url ?? "" };
-    }
-    throw err;
+    if (err?.response?.status !== 404) throw err;
+
+    // 404 fallback: POST /auth/profile/avatar (always deployed)
+    const fallbackRes = await apiClient.post("/auth/profile/avatar", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    const fallbackData = extractData<{ avatarUrl?: string; url?: string }>(fallbackRes);
+    const url = fallbackData?.avatarUrl ?? fallbackData?.url ?? "";
+    if (!url) throw new Error("Fallback upload returned no URL");
+    return { url };
   }
 }
 

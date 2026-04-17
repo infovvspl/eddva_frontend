@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout } from "@/hooks/use-auth";
 import type { UserRole } from "@/lib/types";
@@ -11,7 +11,7 @@ import {
   ChevronDown, Loader2,
 } from "lucide-react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { AeroBackground } from "@/components/shared/AeroBackground";
@@ -60,7 +60,6 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Mock Tests",     path: "/admin/mock-tests",          icon: BookOpen      },
     { label: "Calendar",       path: "/admin/calendar",            icon: Calendar      },
     { label: "Notifications",  path: "/admin/notifications",       icon: Bell          },
-    { label: "Settings",       path: "/admin/settings",            icon: Settings      },
   ],
   teacher: [
     { label: "Dashboard",       path: "/teacher",           icon: Home            },
@@ -96,9 +95,28 @@ const DashboardLayout = () => {
   const { user } = useAuthStore();
   const logout = useLogout();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown on any outside click (production-grade)
+  const handleOutsideClick = useCallback((e: MouseEvent) => {
+    if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+      setShowUserMenu(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showUserMenu) {
+      document.addEventListener("mousedown", handleOutsideClick, true);
+    } else {
+      document.removeEventListener("mousedown", handleOutsideClick, true);
+    }
+    return () => document.removeEventListener("mousedown", handleOutsideClick, true);
+  }, [showUserMenu, handleOutsideClick]);
 
   usePresenceHeartbeat();
 
@@ -322,9 +340,19 @@ const DashboardLayout = () => {
     </div>
   );
 
+  const notificationPath =
+    user.role === "institute_admin" ? "/admin/notifications"
+    : user.role === "super_admin"   ? "/super-admin/announcements"
+    : null;
+
+  const settingsPath =
+    user.role === "institute_admin" ? "/admin/settings"
+    : user.role === "super_admin"   ? "/super-admin/settings"
+    : "/teacher/profile";
+
   return (
     <div
-      className={cn("flex min-h-screen text-slate-900 selection:bg-indigo-600/10", (user.role === "institute_admin" || user.role === "student") ? "font-poppins" : "font-sans bg-white")}
+      className={cn("flex h-screen overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "institute_admin" || user.role === "student") ? "font-poppins" : "font-sans bg-white")}
       style={user.role === "institute_admin" ? { background: "#F5F8FC" } : undefined}
     >
       <AeroBackground />
@@ -404,12 +432,63 @@ const DashboardLayout = () => {
                 </div>
               )}
 
-              <button className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative">
-                 <Bell className="w-5 h-5" />
-                 <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm"></span>
+              <button
+                onClick={() => notificationPath && navigate(notificationPath)}
+                className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm" />
               </button>
-              <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-sm text-[10px] font-bold">
-                 {user.name[0]}
+
+              {/* ── Institute avatar + dropdown ── */}
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(v => !v)}
+                  aria-haspopup="true"
+                  aria-expanded={showUserMenu}
+                  className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
+                >
+                  {instProfile?.orgImageUrl ? (
+                    <img src={instProfile.orgImageUrl} alt="Institute" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-indigo-600">{user.name[0]}</span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      role="menu"
+                      aria-label="User menu"
+                      className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                    >
+                      <div className="px-4 py-2.5 border-b border-slate-100">
+                        <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                        <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                      </div>
+                      <button
+                        role="menuitem"
+                        onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <Settings className="w-4 h-4 text-slate-400" />
+                        Settings
+                      </button>
+                      <button
+                        role="menuitem"
+                        onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
            </div>
         </header>

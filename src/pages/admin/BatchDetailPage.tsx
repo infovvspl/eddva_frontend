@@ -2,19 +2,18 @@ import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Loader2, Users, Edit2, Trash2, Upload, Download, X,
-  AlertCircle, Check, Copy, UserPlus, ImageIcon, DollarSign,
+  ArrowLeft, Loader2, Users, Edit2, Trash2, X,
+  Check, Copy, ImageIcon, DollarSign,
   BookOpen, GraduationCap, Plus,
   CheckCircle2, PauseCircle, PlayCircle, Link, Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-  useBatch, useBatchRoster, useCreateBatchStudent,
-  useBulkCreateBatchStudents, useUpdateBatch, useDeleteBatch,
+  useBatch,
+  useUpdateBatch, useDeleteBatch,
   useUploadBatchThumbnail, useGenerateInviteLink,
 } from "@/hooks/use-admin";
-import type { BatchStudentRow, BulkStudentResult } from "@/lib/api/admin";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -273,339 +272,6 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
   );
 }
 
-// ─── Students Section ─────────────────────────────────────────────────────────
-
-type ImportView = "idle" | "single" | "bulk" | "result";
-
-function StudentsSection({ batchId, batchName }: { batchId: string; batchName: string }) {
-  const { data: roster, isLoading } = useBatchRoster(batchId);
-  const createStudent = useCreateBatchStudent(batchId);
-  const bulkCreate = useBulkCreateBatchStudents(batchId);
-  const generateInvite = useGenerateInviteLink();
-
-  const [view, setView] = useState<ImportView>("idle");
-  const [singleForm, setSingleForm] = useState({ fullName: "", phoneNumber: "", email: "" });
-  const [singleError, setSingleError] = useState("");
-  const [singleResult, setSingleResult] = useState<{ tempPassword: string; fullName: string; email: string } | null>(null);
-  const [csvPreview, setCsvPreview] = useState<BatchStudentRow[]>([]);
-  const [bulkResult, setBulkResult] = useState<BulkStudentResult | null>(null);
-  const [inviteUrl, setInviteUrl] = useState<string>("");
-  const [inviteCopied, setInviteCopied] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const rosterList: any[] = (() => {
-    if (!roster) return [];
-    if (Array.isArray(roster)) return roster;
-    if ((roster as any).data) return (roster as any).data;
-    return [];
-  })();
-
-  const handleSingleCreate = async (e: React.FormEvent) => {
-    e.preventDefault(); setSingleError("");
-    try {
-      const res = await createStudent.mutateAsync(singleForm);
-      setSingleResult({ tempPassword: res.tempPassword, fullName: singleForm.fullName, email: singleForm.email });
-      setSingleForm({ fullName: "", phoneNumber: "", email: "" });
-      setView("result");
-    } catch (err: any) { setSingleError(err?.response?.data?.message || "Failed to create student."); }
-  };
-
-  const handleCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const lines = (ev.target?.result as string).split("\n").map(l => l.trim()).filter(Boolean);
-      if (!lines.length) return;
-      const header = lines[0].toLowerCase().split(",").map(h => h.trim());
-      const nameIdx = header.findIndex(h => h.includes("name"));
-      const phoneIdx = header.findIndex(h => h.includes("phone") || h.includes("mobile"));
-      const emailIdx = header.findIndex(h => h.includes("email") || h.includes("mail"));
-      const rows: BatchStudentRow[] = [];
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(",").map(c => c.trim());
-        const fullName = nameIdx >= 0 ? cols[nameIdx] : "";
-        const phoneNumber = phoneIdx >= 0 ? cols[phoneIdx] : "";
-        const email = emailIdx >= 0 ? cols[emailIdx] : "";
-        if (fullName && phoneNumber && email) rows.push({ fullName, phoneNumber, email });
-      }
-      setCsvPreview(rows);
-    };
-    reader.readAsText(file);
-  };
-
-  const handleGenerateInvite = async () => {
-    try {
-      const res = await generateInvite.mutateAsync(batchId);
-      setInviteUrl(res?.inviteUrl ?? "");
-    } catch { toast.error("Failed to generate invite link"); }
-  };
-
-  const copyInviteLink = () => {
-    navigator.clipboard.writeText(inviteUrl);
-    setInviteCopied(true);
-    setTimeout(() => setInviteCopied(false), 2000);
-  };
-
-  const downloadTemplate = () => {
-    const csv = "Full Name,Phone Number,Email\nArjun Sharma,+919876543210,arjun@example.com";
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url;
-    a.download = `students-template-${batchName.replace(/\s+/g, "-")}.csv`; a.click();
-  };
-
-  return (
-    <div className="space-y-6">
-
-      {/* ── Action bar ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-black text-slate-900">{rosterList.length} Student{rosterList.length !== 1 ? "s" : ""} Enrolled</p>
-          <p className="text-xs text-slate-400 mt-0.5">Enroll students directly or share an invite link for self-enrollment</p>
-        </div>
-        {view === "idle" && (
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setView("single")} className="gap-2 rounded-xl">
-              <UserPlus className="w-4 h-4" /> Add Student
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setView("bulk")} className="gap-2 rounded-xl">
-              <Upload className="w-4 h-4" /> Import CSV
-            </Button>
-            <Button size="sm" variant="outline" onClick={handleGenerateInvite} disabled={generateInvite.isPending} className="gap-2 rounded-xl">
-              {generateInvite.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link className="w-4 h-4" />}
-              Invite Link
-            </Button>
-            <Button size="sm" variant="ghost" onClick={downloadTemplate} className="gap-2 rounded-xl text-slate-400">
-              <Download className="w-4 h-4" /> Template
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* ── Invite link banner ── */}
-      <AnimatePresence>
-        {inviteUrl && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Link className="w-4 h-4 text-blue-500 shrink-0" />
-                <p className="text-sm font-semibold text-blue-800">Self-Enrollment Invite Link</p>
-              </div>
-              <button onClick={() => setInviteUrl("")} className="text-blue-300 hover:text-blue-600"><X className="w-4 h-4" /></button>
-            </div>
-            <p className="text-xs text-blue-500">Valid for 7 days. Students can use this link to enroll themselves into the course.</p>
-            <div className="flex items-center gap-2 bg-white border border-blue-200 rounded-xl px-4 py-2.5">
-              <span className="flex-1 text-xs text-slate-600 truncate font-mono">{inviteUrl}</span>
-              <button onClick={copyInviteLink}
-                className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors">
-                {inviteCopied ? <><Check className="w-3.5 h-3.5 text-emerald-500" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Add single student ── */}
-      <AnimatePresence>
-        {view === "single" && (
-          <motion.form initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            onSubmit={handleSingleCreate}
-            className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-slate-800">Add Student</h4>
-              <button type="button" onClick={() => { setView("idle"); setSingleError(""); }}
-                className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
-            </div>
-            {singleError && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
-                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                <p className="text-sm text-red-600">{singleError}</p>
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input required placeholder="Full Name *" value={singleForm.fullName}
-                onChange={e => setSingleForm({ ...singleForm, fullName: e.target.value })}
-                className="h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-400" />
-              <input required placeholder="+91xxxxxxxxxx *" value={singleForm.phoneNumber}
-                onChange={e => setSingleForm({ ...singleForm, phoneNumber: e.target.value })}
-                className="h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-400" />
-              <input required type="email" placeholder="Email *" value={singleForm.email}
-                onChange={e => setSingleForm({ ...singleForm, email: e.target.value })}
-                className="h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-400" />
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" size="sm"
-                disabled={createStudent.isPending || !singleForm.fullName || !singleForm.phoneNumber || !singleForm.email}>
-                {createStudent.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create & Enroll"}
-              </Button>
-              <Button type="button" size="sm" variant="ghost"
-                onClick={() => { setView("idle"); setSingleError(""); }}>Cancel</Button>
-            </div>
-          </motion.form>
-        )}
-      </AnimatePresence>
-
-      {/* ── Bulk CSV ── */}
-      <AnimatePresence>
-        {view === "bulk" && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-slate-800">Import from CSV</h4>
-              <button type="button" onClick={() => { setView("idle"); setCsvPreview([]); }}
-                className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
-            </div>
-            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCSV} />
-            {csvPreview.length === 0 ? (
-              <button type="button" onClick={() => fileRef.current?.click()}
-                className="w-full h-20 border-2 border-dashed border-slate-300 rounded-xl text-sm text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors flex flex-col items-center justify-center gap-2">
-                <Upload className="w-5 h-5" /> Click to select CSV file
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-slate-700">{csvPreview.length} students ready to import</p>
-                <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50 sticky top-0">
-                      <tr>
-                        <th className="text-left px-4 py-2 text-xs font-bold text-slate-500">Name</th>
-                        <th className="text-left px-4 py-2 text-xs font-bold text-slate-500">Phone</th>
-                        <th className="text-left px-4 py-2 text-xs font-bold text-slate-500">Email</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {csvPreview.map((r, i) => (
-                        <tr key={i} className="border-t border-slate-100">
-                          <td className="px-4 py-2 text-sm">{r.fullName}</td>
-                          <td className="px-4 py-2 text-sm text-slate-500">{r.phoneNumber}</td>
-                          <td className="px-4 py-2 text-sm text-slate-500">{r.email}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" disabled={bulkCreate.isPending}
-                    onClick={async () => {
-                      try {
-                        const res = await bulkCreate.mutateAsync(csvPreview);
-                        setBulkResult(res); setCsvPreview([]); setView("result");
-                      } catch (err: any) { toast.error(err?.response?.data?.message || "Bulk import failed."); }
-                    }}>
-                    {bulkCreate.isPending
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</>
-                      : `Import ${csvPreview.length} Students`}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setCsvPreview([])}>Clear</Button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Success result ── */}
-      <AnimatePresence>
-        {view === "result" && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-              <h4 className="font-semibold text-emerald-800">
-                {bulkResult ? `${bulkResult.summary.created} students imported` : "Student created!"}
-              </h4>
-              <button type="button" onClick={() => { setView("idle"); setSingleResult(null); setBulkResult(null); }}
-                className="ml-auto text-emerald-400 hover:text-emerald-600"><X className="w-4 h-4" /></button>
-            </div>
-            {singleResult && (
-              <div className="bg-white rounded-xl p-4 space-y-2">
-                <p className="font-semibold text-slate-800">{singleResult.fullName}</p>
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <span>{singleResult.email}</span><CopyBtn text={singleResult.email} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <code className="font-mono font-bold text-slate-800 bg-slate-100 px-3 py-1.5 rounded-lg text-sm">{singleResult.tempPassword}</code>
-                  <CopyBtn text={singleResult.tempPassword} />
-                  <span className="text-xs text-slate-400">Temporary password — share with student</span>
-                </div>
-              </div>
-            )}
-            {bulkResult && bulkResult.results.filter(r => r.status === 'error').length > 0 && (
-              <p className="text-sm text-amber-700">{bulkResult.results.filter(r => r.status === 'error').length} failed — check CSV for duplicates</p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Roster table ── */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-        </div>
-      ) : rosterList.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-          <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-          <p className="text-sm font-semibold text-slate-500">No students enrolled yet</p>
-          <p className="text-xs text-slate-400 mt-1">Add students above or share an invite link</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase">#</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase">Student</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase hidden sm:table-cell">Phone</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase hidden md:table-cell">Email</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase hidden lg:table-cell">Enrolled On</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rosterList.map((s: any, i: number) => (
-                <tr key={s.id ?? s.studentId ?? i} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-3.5 text-xs font-bold text-slate-400">{i + 1}</td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
-                        {(s.fullName || s.name || "S").charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-semibold text-slate-800">{s.fullName || s.name || "—"}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5 hidden sm:table-cell">
-                    <div className="flex items-center gap-1.5 text-slate-500">
-                      <span className="text-sm">{s.phoneNumber || s.phone || "—"}</span>
-                      {(s.phoneNumber || s.phone) && <CopyBtn text={s.phoneNumber || s.phone} />}
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5 hidden md:table-cell">
-                    <div className="flex items-center gap-1.5 text-slate-500">
-                      <span className="text-sm">{s.email || "—"}</span>
-                      {s.email && <CopyBtn text={s.email} />}
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5 hidden lg:table-cell text-xs text-slate-400">
-                    {s.enrolledAt
-                      ? new Date(s.enrolledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                      : "—"}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className={`text-[11px] font-bold uppercase px-2.5 py-1 rounded-full ${
-                      s.status === "active" ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
-                    }`}>{s.status || "active"}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── FAQ Section ──────────────────────────────────────────────────────────────
 
 function CourseFAQsSection({ batchId, initialFaqs = [] }: { batchId: string; initialFaqs: { question: string; answer: string }[] }) {
@@ -837,13 +503,18 @@ export default function BatchDetailPage() {
 
             {/* Info grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1">
-              <div className="bg-slate-50 rounded-2xl p-3.5 space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase">
+              <button
+                onClick={() => navigate(`/admin/students?batch=${encodeURIComponent(batch.name)}`)}
+                className="bg-blue-50 border border-blue-100 rounded-2xl p-3.5 space-y-2 text-left hover:bg-blue-100 hover:border-blue-200 transition-all group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-500 uppercase">
                   <Users className="w-3.5 h-3.5" /> Enrolled
                 </div>
-                <p className="text-2xl font-black text-slate-800">{enrolled}<span className="text-sm font-semibold text-slate-400"> students</span></p>
-                <div className="h-1.5 rounded-full overflow-hidden bg-slate-200 blur-[0.3px]" />
-              </div>
+                <p className="text-2xl font-black text-blue-700 group-hover:text-blue-800 transition-colors">
+                  {enrolled}<span className="text-sm font-semibold text-blue-400"> students</span>
+                </p>
+                <p className="text-[10px] font-semibold text-blue-400 group-hover:text-blue-600 transition-colors">View all students →</p>
+              </button>
 
               {/* Exam target */}
               <div className="bg-slate-50 rounded-2xl p-3.5 space-y-1">
@@ -899,20 +570,6 @@ export default function BatchDetailPage() {
           </div>
         </div>
       </motion.div>
-
-      {/* ── Students section ── */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
-            <Users className="w-4 h-4 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-base font-black text-slate-900">Students</h2>
-            <p className="text-xs text-slate-400">Enrolled students for this course</p>
-          </div>
-        </div>
-        <StudentsSection batchId={id!} batchName={batch.name} />
-      </div>
 
       {/* ── FAQs Section ── */}
       <CourseFAQsSection batchId={id!} initialFaqs={(batch as any).faqs || []} />
