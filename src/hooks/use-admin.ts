@@ -487,8 +487,18 @@ export function useSaveInstituteOnboarding() {
   });
 }
 
+<<<<<<< HEAD
 export function useInstituteProfile(enabled = true) {
   return useQuery({ queryKey: settingsKeys.profile, queryFn: adminApi.getInstituteProfile, enabled });
+=======
+export function useInstituteProfile() {
+  return useQuery({
+    queryKey: settingsKeys.profile,
+    queryFn: adminApi.getInstituteProfile,
+    retry: 0,
+    staleTime: Infinity,
+  });
+>>>>>>> 909dfe411997289a263134507174ae22682a8f76
 }
 
 export function useUpdateInstituteProfile() {

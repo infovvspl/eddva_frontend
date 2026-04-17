@@ -928,13 +928,29 @@ export async function updateInstituteProfile(payload: Partial<Omit<InstituteProf
 export async function uploadInstituteOrgImage(file: File): Promise<{ url: string }> {
   const fd = new FormData();
   fd.append("file", file);
+<<<<<<< HEAD
+=======
 
   // Try the dedicated endpoint: POST /institute/settings/profile/image
   // Backend returns { avatarUrl } (saves to user.profilePictureUrl)
+>>>>>>> fab057d5cea7bc3cfca9bef8530010b902d1cd7f
   try {
     const res = await apiClient.post("/institute/settings/profile/image", fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+<<<<<<< HEAD
+    const d = extractData<{ url?: string; avatarUrl?: string }>(res);
+    return { url: d?.url ?? d?.avatarUrl ?? "" };
+  } catch (err: any) {
+    if (err?.response?.status === 404) {
+      const res = await apiClient.post("/auth/upload/avatar", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const d = extractData<{ url?: string; avatarUrl?: string }>(res);
+      return { url: d?.url ?? d?.avatarUrl ?? "" };
+    }
+    throw err;
+=======
     // Accept both { avatarUrl } and { url } — backend currently returns avatarUrl
     const data = extractData<{ avatarUrl?: string; url?: string }>(res);
     const url = data?.avatarUrl ?? data?.url ?? "";
@@ -951,6 +967,7 @@ export async function uploadInstituteOrgImage(file: File): Promise<{ url: string
     const url = fallbackData?.avatarUrl ?? fallbackData?.url ?? "";
     if (!url) throw new Error("Fallback upload returned no URL");
     return { url };
+>>>>>>> fab057d5cea7bc3cfca9bef8530010b902d1cd7f
   }
 }
 

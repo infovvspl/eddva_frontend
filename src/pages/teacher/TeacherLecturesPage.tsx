@@ -1,4 +1,5 @@
-﻿import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -39,6 +40,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
+import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1399,6 +1401,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tempLectureId] = useState(() => uuidv4());
 
   const { user } = useAuthStore();
   // BatchSubjectTeacher.teacherId is a FK to User entity, so compare against user.id
@@ -1457,40 +1460,21 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      let finalVideoUrl = videoUrl;
-
-      // If a local file was selected, upload it first to get a real server URL
-      if (videoFile) {
-        const form = new FormData();
-        form.append("file", videoFile);
-        const uploadRes = await apiClient.post("/content/lectures/upload-video", form, {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: e => {
-            if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
-          },
-        });
-        const relativeUrl: string = uploadRes.data?.data?.url ?? uploadRes.data?.url;
-        // Build absolute URL so Django (same machine) can download the file
-        // VITE_API_BASE_URL is a relative path (/api/v1), so we use VITE_BACKEND_URL instead
-        const backendBase = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-        finalVideoUrl = `${backendBase}${relativeUrl}`;
-      }
-
       const lecture = await createLecture.mutateAsync({
         batchId,
         title,
         description: description || undefined,
         type: "recorded",
         topicId: topicId || undefined,
-        videoUrl: finalVideoUrl || undefined,
+        videoUrl: videoUrl || undefined,
       });
       toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
       onClose();
       // Kick off background AI processing — non-blocking
-      onSuccess(lecture.id, finalVideoUrl, topicId);
+      onSuccess(lecture.id, videoUrl, topicId);
     } catch (err: any) {
       toast({ title: err?.response?.data?.message || err?.message || "Upload failed", variant: "destructive" });
-    } finally { setIsSubmitting(false); setUploadProgress(0); }
+    } finally { setIsSubmitting(false); }
   };
 
   return (
@@ -1604,29 +1588,30 @@ function UploadModal({ onClose, onSuccess, batches }: {
               </div>
 
               {videoSource === "upload" ? (
-                <div className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-3 hover:border-primary/50 transition-colors cursor-pointer"
-                  onClick={() => fileRef.current?.click()}>
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Video className="w-6 h-6 text-primary" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground">Click to select video file</p>
-                  <p className="text-xs text-muted-foreground">MP4, MOV, AVI — max 2 GB</p>
-                  <input ref={fileRef} type="file" accept="video/*" className="hidden"
-                    onChange={e => {
-                      const f = e.target.files?.[0];
-                      if (f) { setVideoFile(f); setVideoUrl(f.name); }
-                    }} />
-                  {videoUrl && <p className="text-xs text-emerald-600 font-medium">✓ File selected</p>}
+                <div className="space-y-4">
+                  <LectureVideoUpload
+                    lectureId={tempLectureId}
+                    currentUrl={videoUrl}
+                    onUpload={(url) => setVideoUrl(url)}
+                  />
+                  {videoUrl && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-emerald-700">Video successfully uploaded</p>
+                        <p className="text-xs text-emerald-600 truncate">{videoUrl}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-1.5">
-                  <Label>YouTube Video URL</Label>
-                  <div className="flex gap-2 items-center">
-                    <Youtube className="w-5 h-5 text-red-500 shrink-0" />
-                    <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
-                      placeholder="https://youtube.com/watch?v=…" />
+                <div className="space-y-3">
+                  <Label>YouTube Video URL *</Label>
+                  <div className="relative">
+                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="pl-9" />
                   </div>
-                  <p className="text-xs text-muted-foreground">AI will transcribe the video audio for notes generation.</p>
+                  <p className="text-[10px] text-muted-foreground">Students will stream directly from YouTube.</p>
                 </div>
               )}
 
