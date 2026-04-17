@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown, ChevronRight, BookOpen, Video, CheckCircle2, Lock,
@@ -8,8 +8,8 @@ import {
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
   Youtube, File, ClipboardList, FlaskConical,
 } from "lucide-react";
-import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, studentKeys } from "@/hooks/use-student";
-import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture } from "@/lib/api/student";
+import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, studentKeys } from "@/hooks/use-student";
+import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture, MockTestListItem } from "@/lib/api/student";
 import { apiClient, extractData } from "@/lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -217,7 +217,7 @@ function TopicRow({
   const navigate = useNavigate();
   const isComplete = topic.status === "completed";
   const isInProgress = topic.status === "in_progress";
-  const locked = isLocked || topic.status === "locked";
+  const locked = false;
 
   // Prefer the pre-computed counts from the API; fall back to counting resources array
   const resourceCounts = useMemo(() => {
@@ -586,13 +586,15 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
   return (
     <div className="max-w-7xl mx-auto pb-24">
       {/* Back */}
-      <button
-        onClick={() => navigate("/student/courses")}
-        className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors mb-6 group"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Discover Courses
-      </button>
+      <div className="flex justify-end mb-6">
+        <button
+          onClick={() => navigate("/student/courses")}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors group"
+        >
+          Discover Courses
+          <ArrowLeft className="w-4 h-4 group-hover:translate-x-1 transition-transform rotate-180" />
+        </button>
+      </div>
 
       {/* Hero */}
       <div className={cn(
@@ -1202,11 +1204,12 @@ function LecturesTabContent({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material";
+type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material" | "mock_test";
 
 export default function StudentCourseDetailPage() {
   const { batchId = "" } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // ── All hooks unconditionally at the top (Rules of Hooks) ────────────────
 
@@ -1227,10 +1230,16 @@ export default function StudentCourseDetailPage() {
   const enablePreview = isError && !isKnownEnrolled && !myCoursesLoading;
   const { data: preview, isLoading: previewLoading } = useBatchPreview(enablePreview ? batchId : "");
 
-  const [activeTab, setActiveTab] = useState<EnrolledTab>("curriculum");
+  const VALID_TABS: EnrolledTab[] = ["curriculum", "lectures", "dpp", "pyq", "material", "mock_test"];
+  const tabParam = searchParams.get("tab") as EnrolledTab | null;
+  const [activeTab, setActiveTab] = useState<EnrolledTab>(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : "curriculum"
+  );
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const { data: lectures = [], isLoading: lecturesLoading } = useAllBatchLectures(batchId);
+  const { data: mockTestsRaw, isLoading: mockTestsLoading } = useMockTests({ batchId });
+  const mockTests: MockTestListItem[] = Array.isArray(mockTestsRaw) ? mockTestsRaw : (mockTestsRaw as any)?.items ?? [];
 
   // Derive subjects safely — empty array when data not yet loaded
   const subjects = data?.subjects ?? [];
@@ -1289,8 +1298,7 @@ export default function StudentCourseDetailPage() {
   const progress = data.progress;
   const thumbnail = resolveUrl(batch.thumbnailUrl);
   const nextTopic = allTopicsFlat.find(t => t.status !== "completed" && t.status !== "locked") ?? null;
-  const isUnpaid = batch.isPaid && !enrollment?.feePaid;
-  const resourcesLocked = !!isUnpaid;
+  const resourcesLocked = false;
 
   const TABS: { id: EnrolledTab; label: string; count?: number; icon: React.ReactNode }[] = [
     { id: "curriculum", label: "Curriculum",    icon: <Layers className="w-4 h-4" /> },
@@ -1298,17 +1306,20 @@ export default function StudentCourseDetailPage() {
     { id: "dpp",        label: "DPP",           count: dppList.length || undefined,        icon: <ClipboardList className="w-4 h-4" /> },
     { id: "pyq",        label: "PYQ",           count: pyqList.length || undefined,        icon: <Trophy className="w-4 h-4" /> },
     { id: "material",   label: "Notes",         count: materialList.length || undefined,   icon: <BookOpen className="w-4 h-4" /> },
+    { id: "mock_test", label: "Mock Tests", count: mockTests.length || undefined, icon: <FlaskConical className="w-4 h-4" /> },
   ];
 
   return (
     <div className="max-w-7xl mx-auto pb-24 space-y-6">
 
       {/* ── Back ── */}
-      <button onClick={() => navigate("/student/courses")}
-        className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors group">
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        My Courses
-      </button>
+      <div className="flex justify-end">
+        <button onClick={() => navigate("/student/courses")}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors group">
+          My Courses
+          <ArrowLeft className="w-4 h-4 group-hover:translate-x-1 transition-transform rotate-180" />
+        </button>
+      </div>
 
       {/* ── HERO ── */}
       <div className={cn("relative rounded-3xl overflow-hidden shadow-xl", !thumbnail && "bg-gradient-to-br from-indigo-700 to-purple-800")}>
@@ -1395,13 +1406,13 @@ export default function StudentCourseDetailPage() {
       </div>
 
       {/* ── Unpaid notice ── */}
-      {isUnpaid && <LockedBanner courseName={batch.name} isPaid={batch.isPaid} feeAmount={batch.feeAmount} />}
+      {/* LockedBanner removed — all content is freely accessible */}
 
       {/* ── MAIN LAYOUT ── */}
       <div className="flex gap-6 items-start">
 
-        {/* ── LEFT SUBJECT SIDEBAR (sticky) ── */}
-        <div className="hidden lg:flex flex-col w-56 shrink-0 sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
+        {/* ── RIGHT SUBJECT SIDEBAR (sticky) ── */}
+        <div className="hidden lg:flex flex-col w-56 shrink-0 sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto order-last">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-50">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Navigate</p>
@@ -1454,11 +1465,12 @@ export default function StudentCourseDetailPage() {
               {/* Divider + resource shortcuts */}
               <div className="pt-2 mt-1 border-t border-slate-100 space-y-1">
                 {[
-                  { id: "lectures" as EnrolledTab, label: "Lectures", count: lectures.length, icon: <Video className="w-3.5 h-3.5" />, color: "text-blue-600" },
-                  { id: "dpp"      as EnrolledTab, label: "DPP",      count: dppList.length,  icon: <ClipboardList className="w-3.5 h-3.5" />, color: "text-orange-600" },
-                  { id: "pyq"      as EnrolledTab, label: "PYQ",      count: pyqList.length,  icon: <Trophy className="w-3.5 h-3.5" />,        color: "text-violet-600" },
-                  { id: "material" as EnrolledTab, label: "Notes",    count: materialList.length, icon: <BookOpen className="w-3.5 h-3.5" />, color: "text-teal-600" },
-                ].filter(r => r.count > 0 || r.id === "lectures").map(r => (
+                  { id: "lectures"  as EnrolledTab, label: "Lectures",    count: lectures.length,    icon: <Video className="w-3.5 h-3.5" />,        color: "text-blue-600"   },
+                  { id: "dpp"       as EnrolledTab, label: "DPP",         count: dppList.length,     icon: <ClipboardList className="w-3.5 h-3.5" />, color: "text-orange-600" },
+                  { id: "pyq"       as EnrolledTab, label: "PYQ",         count: pyqList.length,     icon: <Trophy className="w-3.5 h-3.5" />,        color: "text-violet-600" },
+                  { id: "material"  as EnrolledTab, label: "Notes",       count: materialList.length, icon: <BookOpen className="w-3.5 h-3.5" />,     color: "text-teal-600"   },
+                  { id: "mock_test" as EnrolledTab, label: "Mock Tests",  count: mockTests.length,   icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-rose-600"   },
+                ].filter(r => r.count > 0 || r.id === "lectures" || r.id === "mock_test").map(r => (
                   <button
                     key={r.id}
                     onClick={() => { setActiveSubjectId(null); setActiveTab(r.id); }}
@@ -1477,7 +1489,7 @@ export default function StudentCourseDetailPage() {
         </div>
 
         {/* ── MAIN CONTENT ── */}
-        <div className="flex-1 min-w-0 space-y-5">
+        <div className="flex-1 min-w-0 space-y-5 order-first">
 
           {/* Continue Learning card */}
           {nextTopic && activeTab === "curriculum" && (
@@ -1591,6 +1603,44 @@ export default function StudentCourseDetailPage() {
 
           {/* ── MATERIAL TAB ── */}
           {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" />}
+
+          {/* ── MOCK TESTS TAB ── */}
+          {activeTab === "mock_test" && (
+            <div className="space-y-3">
+              {mockTestsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                </div>
+              ) : mockTests.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                  <FlaskConical className="w-10 h-10 mb-3 opacity-30" />
+                  <p className="font-semibold">No mock tests available yet</p>
+                </div>
+              ) : mockTests.map(mt => (
+                <div key={mt.id} className="flex items-center justify-between p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all group">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 group-hover:bg-rose-100 transition-colors">
+                      <FlaskConical className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900 text-sm truncate">{mt.title}</p>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <span className="text-[11px] text-slate-400 font-medium">{mt.durationMinutes} min</span>
+                        <span className="text-[11px] text-slate-400 font-medium">{mt.totalMarks} marks</span>
+                        {mt.type && <span className="text-[11px] font-semibold text-indigo-500 uppercase tracking-wide">{mt.type}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/student/mock-tests/${mt.id}`)}
+                    className="shrink-0 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" /> Start
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

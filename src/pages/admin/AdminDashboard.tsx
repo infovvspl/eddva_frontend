@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Users, BookOpen, HelpCircle, Loader2, ChevronRight,
-  Video, Sparkles, Radio, Plus, TrendingUp, BarChart2,
+  Video, Sparkles, Radio, Plus, BarChart2,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAdminDashboard, useBatches } from "@/hooks/use-admin";
@@ -85,7 +85,7 @@ function StatCard({ label, value, sub, icon: Icon, color, delay = 0, onClick }: 
 // ─── Course card for dashboard ────────────────────────────────────────────────
 
 function CourseCard({ course, index, onClick }: { course: any; index: number; onClick: () => void }) {
-  const enrolled = course.studentCount ?? 0;
+  const enrolled = course.studentCount ?? course.enrolledCount ?? 0;
 
   return (
     <motion.div
@@ -251,34 +251,6 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Course enrollment summary */}
-          <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 mb-5">Enrollment Overview</h3>
-            {courses.length === 0 ? (
-              <p className="text-sm text-gray-600 text-center py-4">No courses yet</p>
-            ) : (
-              <div className="space-y-4">
-                {courses.slice(0, 5).map((c, i) => {
-                  const style = EXAM_STYLES[c.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
-                  return (
-                    <div key={c.id} className="flex items-center justify-between mb-1.5">
-                      <div>
-                        <p className="text-xs font-bold text-slate-700 truncate max-w-[160px]">{c.name}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">enrolled</p>
-                      </div>
-                      <span className="text-sm font-black text-slate-500">{c.studentCount ?? 0}</span>
-                    </div>
-                  );
-                })}
-                {courses.length > 5 && (
-                  <button onClick={() => navigate("/admin/students")}
-                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" /> View all {courses.length} courses
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
 
         </div>
       </div>

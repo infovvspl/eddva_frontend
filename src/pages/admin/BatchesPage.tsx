@@ -7,7 +7,7 @@ import {
   Layout, Calendar, GraduationCap, BarChart3, Edit2,
   Trophy, TrendingDown, TrendingUp, CheckCircle2,
   PauseCircle, PlayCircle, ImageIcon, IndianRupee, BadgePercent,
-  Building2, Sparkles, Unlock,
+  Building2, Sparkles, Unlock, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -1556,8 +1556,16 @@ const BatchesPage = () => {
               transition={{ delay: _bIdx * 0.05 }}
             >
               {/* Course card header */}
-              <button
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/admin/batches/${b.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/admin/batches/${b.id}`);
+                  }
+                }}
                 className="w-full bg-white border border-slate-100 rounded-3xl px-5 py-4 flex items-center gap-4 hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all text-left group"
               >
                 <CourseThumbnail name={b.name} examTarget={b.examTarget} imageUrl={b.thumbnailUrl} className="w-16 h-16" />
@@ -1605,11 +1613,17 @@ const BatchesPage = () => {
                       <PlayCircle className="w-4 h-4" />
                     </button>
                   )}
-                  {b.status !== "completed" && (
+                  {b.status !== "completed" ? (
                     <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "completed"); }}
                       title="Mark as completed"
                       className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all">
                       <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
+                      title="Mark as incomplete (reopen)"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-violet-500 bg-violet-50 hover:text-violet-700 hover:bg-violet-100 transition-all">
+                      <RotateCcw className="w-4 h-4" />
                     </button>
                   )}
                   <button onClick={e => { e.stopPropagation(); setEditBatch(b); }}
@@ -1626,7 +1640,7 @@ const BatchesPage = () => {
                     <ChevronRight className="w-4 h-4" />
                   </div>
                 </div>
-              </button>
+              </div>
 
             </motion.div>
             );

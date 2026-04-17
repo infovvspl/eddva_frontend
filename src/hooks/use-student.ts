@@ -95,10 +95,11 @@ export function useStudentDashboard() {
 
 // ─── Content Tree ─────────────────────────────────────────────────────────────
 
-export function useSubjects(examTarget?: string) {
+export function useSubjects(examTarget?: string, batchId?: string) {
   return useQuery({
-    queryKey: studentKeys.subjects(examTarget),
-    queryFn: () => studentApi.getSubjects(examTarget),
+    queryKey: [...studentKeys.subjects(examTarget), batchId ?? ""] as const,
+    queryFn: () => studentApi.getSubjects(examTarget, batchId),
+    enabled: batchId ? batchId.length > 0 : true,
     staleTime: 5 * 60_000,
   });
 }
@@ -588,6 +589,8 @@ export function useProgressReport(studentId?: string) {
     queryKey: ['progress-report', studentId ?? 'self'],
     queryFn: () => studentApi.getProgressReport(studentId),
     staleTime: 60_000,
+    retry: false,
+    throwOnError: false,
   });
 }
 

@@ -75,21 +75,22 @@ const LoginPage = () => {
     "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-600 focus:bg-white focus:border-blue-400 focus:ring-8 focus:ring-blue-500/5 disabled:opacity-50 shadow-sm";
 
   /* ── helpers ── */
-  const buildUser = (meData: any) => {
+  const buildUser = (meData: any, loginMeta?: { onboardingRequired?: boolean }) => {
     const profile    = meData.user;
     const studentRaw = (meData as any).student as any | undefined;
     return {
-      id:             profile.id,
-      name:           profile.fullName || profile.name || "",
-      phone:          profile.phoneNumber || profile.phone || "",
-      email:          profile.email,
-      role:           profile.role as "super_admin" | "institute_admin" | "teacher" | "student",
-      avatar:         profile.avatar,
-      tenantId:       profile.tenantId,
-      tenantName:     profile.tenant?.name || profile.tenantName || "",
-      isFirstLogin:   profile.isFirstLogin ?? false,
-      teacherProfile: meData.teacherProfile ?? null,
-      studentProfile: studentRaw ? {
+      id:                 profile.id,
+      name:               profile.fullName || profile.name || "",
+      phone:              profile.phoneNumber || profile.phone || "",
+      email:              profile.email,
+      role:               profile.role as "super_admin" | "institute_admin" | "teacher" | "student",
+      avatar:             profile.avatar,
+      tenantId:           profile.tenantId,
+      tenantName:         profile.tenant?.name || profile.tenantName || "",
+      isFirstLogin:       profile.isFirstLogin ?? false,
+      onboardingRequired: loginMeta?.onboardingRequired ?? false,
+      teacherProfile:     meData.teacherProfile ?? null,
+      studentProfile:     studentRaw ? {
         id:                    studentRaw.id ?? "",
         batchId:               studentRaw.batchId,
         examTarget:            studentRaw.examTarget ?? "",
@@ -121,12 +122,12 @@ const LoginPage = () => {
     setError(""); setLoginLoading(true);
     try {
       const isEmail = identifier.includes("@");
-      await authApi.loginWithPassword(
+      const loginRes = await authApi.loginWithPassword(
         isEmail
           ? { email: identifier.trim(), password }
           : { phoneNumber: identifier.trim().startsWith("+") ? identifier.trim() : `+91${identifier.trim()}`, password }
       );
-      const user = buildUser(await authApi.getMe());
+      const user = buildUser(await authApi.getMe(), { onboardingRequired: loginRes.onboardingRequired });
       if (user.isFirstLogin) {
         setPendingUser(user);
         setView("set-password");
@@ -147,9 +148,9 @@ const LoginPage = () => {
     try {
       await authApi.setPassword(setPwNew);
       if (pendingUser) {
-        const user = { ...pendingUser, isFirstLogin: false };
+        const user = { ...pendingUser, isFirstLogin: false, onboardingRequired: true };
         setUser(user);
-        // Institute admins must complete teacher profile setup before dashboard
+        // Institute admins always complete onboarding on first-ever login
         if (user.role === "institute_admin") {
           navigate("/admin/onboard");
         } else {

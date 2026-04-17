@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, FileText, FlaskConical, BookOpen, Search,
   ShieldCheck, Loader2, CalendarDays,
-  Users, Sparkles, ArrowRight, BookMarked, Trophy, Zap,
+  Users, Sparkles, ArrowRight, BookMarked, Trophy, Zap, ClipboardList,
 } from "lucide-react";
 import { useMyCourses, useDiscoverBatches, useStudentMe } from "@/hooks/use-student";
 import type { MyCourse } from "@/lib/api/student";
@@ -367,11 +367,21 @@ function EnrolledCourseCard({ course, onResume }: { course: MyCourse; onResume: 
             className="px-4 py-2 text-[13px] font-bold bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors flex items-center gap-2 border border-indigo-100/50">
             <Play className="w-3 h-3 fill-current" /> Resume
           </button>
-          <button className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+          <button onClick={() => navigate(`/student/courses/${course.id}?tab=material`)}
+            className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-teal-600 rounded-xl hover:bg-teal-50 hover:border-teal-200 transition-colors flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" /> Notes
           </button>
-          <button className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+          <button onClick={() => navigate(`/student/courses/${course.id}?tab=mock_test`)}
+            className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-rose-600 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition-colors flex items-center gap-1.5">
             <FlaskConical className="w-3.5 h-3.5" /> Test
+          </button>
+          <button onClick={() => navigate(`/student/courses/${course.id}?tab=pyq`)}
+            className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-violet-600 rounded-xl hover:bg-violet-50 hover:border-violet-200 transition-colors flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5" /> PYQ
+          </button>
+          <button onClick={() => navigate(`/student/courses/${course.id}?tab=dpp`)}
+            className="px-4 py-2 text-[13px] font-semibold border border-slate-200 text-orange-600 rounded-xl hover:bg-orange-50 hover:border-orange-200 transition-colors flex items-center gap-1.5">
+            <ClipboardList className="w-3.5 h-3.5" /> DPP
           </button>
         </div>
       </div>

@@ -1,4 +1,6 @@
 import { apiClient, extractData } from "./client";
+import { uploadToS3 } from "./upload";
+
 
 // ─── Subjects / Chapters / Topics ─────────────────────────────────────────────
 
@@ -59,9 +61,12 @@ export async function getPublicBatches(examTarget?: string): Promise<PublicBatch
   }
 }
 
-export async function getSubjects(examTarget?: string): Promise<Subject[]> {
-  const q = examTarget ? `?examTarget=${examTarget}` : "";
-  const res = await apiClient.get(`/content/subjects${q}`);
+export async function getSubjects(examTarget?: string, batchId?: string): Promise<Subject[]> {
+  const q = new URLSearchParams();
+  if (examTarget) q.set("examTarget", examTarget);
+  if (batchId) q.set("batchId", batchId);
+  const qs = q.toString();
+  const res = await apiClient.get(`/content/subjects${qs ? `?${qs}` : ""}`);
   return extractData<Subject[]>(res) ?? [];
 }
 
@@ -255,7 +260,12 @@ function normalizeEnrollment(raw: RawEnrollment): MyCourse {
   const p = raw.progress ?? {};
   const total = p.totalLectures ?? 0;
   const watched = p.watchedLectures ?? 0;
-  const overallPct = p.overallPct ?? (total > 0 ? Math.round((watched / total) * 100) : 0);
+  const totalTopics = p.totalTopics ?? 0;
+  const completedTopics = p.completedTopics ?? 0;
+  // Prefer topic-based completion (more meaningful) over lecture watch count
+  const overallPct = p.overallPct
+    ?? (totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100)
+    : total > 0 ? Math.round((watched / total) * 100) : 0);
   return {
     id: batch.id ?? raw.enrollmentId ?? "",
     name: batch.name ?? "",
@@ -394,7 +404,11 @@ export interface StudentLecture {
   scheduledAt?: string;
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
-  topic?: { id: string; name: string };
+  topic?: {
+    id: string;
+    name: string;
+    chapter?: { id: string; name: string; subject?: { id: string; name: string } };
+  };
   isLocked?: boolean;
   studentProgress?: {
     watchPercentage: number;
@@ -524,7 +538,8 @@ export async function getMockTests(params?: {
   if (params?.topicId) q.set("topicId", params.topicId);
   if (params?.isPublished !== undefined) q.set("isPublished", String(params.isPublished));
   const res = await apiClient.get(`/assessments/mock-tests?${q}`);
-  return extractData<MockTestListItem[]>(res) ?? [];
+  const raw = extractData<MockTestListItem[] | { data: MockTestListItem[] }>(res);
+  return (Array.isArray(raw) ? raw : (raw as any)?.data) ?? [];
 }
 
 export async function getMockTestById(id: string): Promise<MockTestListItem & { questions: QuizQuestion[] }> {
@@ -676,6 +691,7 @@ export interface CreateDoubtPayload {
   source?: DoubtSource;
   sourceRefId?: string;
   explanationMode?: ExplanationMode;
+  skipAI?: boolean;
 }
 
 export async function getMyDoubts(params?: { status?: string; page?: number; limit?: number }): Promise<StudentDoubt[]> {
@@ -684,7 +700,9 @@ export async function getMyDoubts(params?: { status?: string; page?: number; lim
   if (params?.page) q.set("page", String(params.page));
   if (params?.limit) q.set("limit", String(params.limit));
   const res = await apiClient.get(`/doubts?${q}`);
-  return extractData<StudentDoubt[]>(res) ?? [];
+  const list = extractData<StudentDoubt[]>(res) ?? [];
+  // deduplicate by id (guards against accidental duplicate submissions)
+  return Array.from(new Map(list.map((d) => [d.id, d])).values());
 }
 
 export async function getDoubtById(id: string): Promise<StudentDoubt> {
@@ -913,6 +931,14 @@ export interface StudentMe {
     longestStreak?: number;
     targetCollege?: string;
     dailyStudyHours?: number;
+    address?: string;
+    careOf?: string;
+    alternatePhoneNumber?: string;
+    postOffice?: string;
+    city?: string;
+    landmark?: string;
+    state?: string;
+    pinCode?: string;
   };
 }
 
@@ -925,7 +951,7 @@ export async function getMe(): Promise<StudentMe> {
   return {
     id: u.id,
     fullName: u.fullName,
-    phone: u.phone,
+    phone: u.phoneNumber,
     email: u.email,
     city: u.city,
     profilePictureUrl: u.profilePictureUrl,
@@ -945,6 +971,14 @@ export async function getMe(): Promise<StudentMe> {
           longestStreak: s.longestStreak ?? 0,
           targetCollege: s.targetCollege,
           dailyStudyHours: s.dailyStudyHours,
+          address: s.address,
+          careOf: s.careOf,
+          alternatePhoneNumber: s.alternatePhoneNumber,
+          postOffice: s.postOffice,
+          city: s.city,
+          landmark: s.landmark,
+          state: s.state,
+          pinCode: s.pinCode,
         }
       : undefined,
   };
@@ -956,23 +990,38 @@ export async function updateProfile(payload: {
   targetCollege?: string;
   dailyStudyHours?: number;
   preferredLanguage?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  state?: string;
+  pinCode?: string;
+  careOf?: string;
+  alternatePhoneNumber?: string;
+  landmark?: string;
+  postOffice?: string;
 }): Promise<StudentMe> {
   const res = await apiClient.patch("/auth/profile", payload);
   return extractData<StudentMe>(res);
 }
 
 export async function uploadAvatar(file: File): Promise<string> {
-  const form = new FormData();
-  form.append("file", file);
-  const res = await apiClient.post("/auth/profile/avatar", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  // Step 1 — Upload to S3
+  const fileUrl = await uploadToS3(
+    {
+      type: "profile",
+      fileName: file.name,
+      contentType: file.type,
+      fileSize: file.size,
+    },
+    file
+  );
+
+  // Step 2 — Confirm with backend
+  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
   const data = extractData<{ avatarUrl: string }>(res);
-  const raw = data?.avatarUrl ?? "";
-  // Backend returns relative /uploads/... — make it absolute
-  const base = (import.meta.env.VITE_API_BASE_URL as string ?? "").replace(/\/api\/v1\/?$/, "");
-  return raw.startsWith("http") ? raw : `${base}${raw}`;
+  return data?.avatarUrl ?? fileUrl;
 }
+
 
 export async function logout(refreshToken: string): Promise<void> {
   await apiClient.post("/auth/logout", { refreshToken });
@@ -1290,7 +1339,8 @@ export interface DailyActivity {
 export async function getWeeklyActivity(): Promise<DailyActivity[]> {
   try {
     const res = await apiClient.get("/students/weekly-activity");
-    return extractData<DailyActivity[]>(res) ?? [];
+    const data = extractData<DailyActivity[]>(res);
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
