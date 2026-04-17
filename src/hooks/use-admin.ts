@@ -460,12 +460,32 @@ export function useRemoveQuestionFromMockTest(mockTestId: string) {
 // ---------------------------------------------------------------------------
 
 export const settingsKeys = {
+  onboarding:    ["institute", "settings", "onboarding"]    as const,
   profile:       ["institute", "settings", "profile"]       as const,
   branding:      ["institute", "settings", "branding"]      as const,
   subscription:  ["institute", "settings", "subscription"]  as const,
   notifications: ["institute", "settings", "notifications"] as const,
   calendar:      (y?: number, m?: number) => ["institute", "settings", "calendar", y, m] as const,
 };
+
+export function useInstituteOnboarding() {
+  return useQuery({
+    queryKey: settingsKeys.onboarding,
+    queryFn: adminApi.getInstituteOnboarding,
+    staleTime: 0,
+  });
+}
+
+export function useSaveInstituteOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.saveInstituteOnboarding,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: settingsKeys.onboarding });
+      qc.invalidateQueries({ queryKey: settingsKeys.branding });
+    },
+  });
+}
 
 export function useInstituteProfile() {
   return useQuery({ queryKey: settingsKeys.profile, queryFn: adminApi.getInstituteProfile });

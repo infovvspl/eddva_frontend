@@ -35,6 +35,7 @@ import AdminCalendarPage from "./pages/admin/AdminCalendarPage";
 import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherOnboardingPage from "./pages/teacher/TeacherOnboardingPage";
+import AdminOnboardingPage from "./pages/admin/AdminOnboardingPage";
 import TeacherBatchesPage from "./pages/teacher/TeacherBatchesPage";
 import TeacherLecturesPage from "./pages/teacher/TeacherLecturesPage";
 import TeacherStudentDetailPage from "./pages/teacher/TeacherStudentDetailPage";
@@ -114,7 +115,7 @@ const TeacherRoutes = () => (
     />
     <Route
       path="/admin/onboard"
-      element={<ProtectedRoute allowedRoles={["institute_admin"]}><TeacherOnboardingPage /></ProtectedRoute>}
+      element={<ProtectedRoute allowedRoles={["institute_admin"]}><AdminOnboardingPage /></ProtectedRoute>}
     />
     <Route
       path="/teacher/students/:studentId"

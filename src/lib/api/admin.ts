@@ -876,8 +876,39 @@ export interface InstituteProfile {
   orgImageUrl: string | null;
   coursesOffered: string[];
   yearsOfExperience: number | null;
-  classTypes: string[];   // e.g. ["online", "offline", "hybrid"]
-  teachingMode: string;   // e.g. "live", "recorded", "both"
+  classTypes: string[];
+  teachingMode: string;
+}
+
+export interface InstituteOnboardingData {
+  onboardingComplete: boolean;
+  name: string;
+  logoUrl: string | null;
+  brandColor: string;
+  city: string | null;
+  state: string | null;
+  coursesOffered: string[];
+  teachingMode: string | null;
+  adminAvatarUrl: string | null;
+}
+
+export interface InstituteOnboardingPayload {
+  name?: string;
+  logoUrl?: string;
+  city?: string;
+  state?: string;
+  coursesOffered?: string[];
+  teachingMode?: string;
+}
+
+export async function getInstituteOnboarding() {
+  const res = await apiClient.get("/institute/settings/onboarding");
+  return extractData<InstituteOnboardingData>(res);
+}
+
+export async function saveInstituteOnboarding(payload: InstituteOnboardingPayload) {
+  const res = await apiClient.post("/institute/settings/onboarding", payload);
+  return extractData<InstituteOnboardingData>(res);
 }
 
 export async function getInstituteProfile() {

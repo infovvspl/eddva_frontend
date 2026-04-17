@@ -4,10 +4,10 @@ import { useLogout } from "@/hooks/use-auth";
 import type { UserRole } from "@/lib/types";
 import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
-  BookOpen, GraduationCap, Calendar, FileText,
+  BookOpen, GraduationCap, Calendar,
   Video, Layout, BarChart,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
-  LayoutDashboard, ClipboardList, Headphones, Library, Activity, Layers, ChevronRight, Bell,
+  LayoutDashboard, ClipboardList, Headphones, Library, Bell,
   ChevronDown, Loader2,
 } from "lucide-react";
 
@@ -15,7 +15,6 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { AeroBackground } from "@/components/shared/AeroBackground";
-import { CardGlass } from "@/components/shared/CardGlass";
 import { motion, AnimatePresence } from "framer-motion";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
 import { useDiscoverBatches, useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
@@ -28,9 +27,6 @@ const EXAM_OPTIONS = [
   { key: "cbse_10", label: "CBSE Class 10", desc: "Board Examinations",          color: "from-blue-400 to-indigo-500",  bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-600"   },
   { key: "cbse_12", label: "CBSE Class 12", desc: "Board Examinations",          color: "from-violet-400 to-purple-500", bg: "bg-violet-50", border: "border-violet-300", text: "text-violet-600" },
 ] as const;
-
-const BLUE = "#3B82F6";
-const BLUE_VIBRANT = "#60A5FA";
 
 interface NavItem {
   label: string;
@@ -200,18 +196,12 @@ const DashboardLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const onboardingSeenKey = `onboarding_seen_${user.id}`;
-  const onboardingSeen = localStorage.getItem(onboardingSeenKey) === "true";
-
-  if (!onboardingSeen) {
-    if (user.role === "teacher" && user.teacherProfile === null) {
-      localStorage.setItem(onboardingSeenKey, "true");
-      return <Navigate to="/teacher/onboarding" replace />;
-    }
-    if (user.role === "institute_admin" && user.teacherProfile === null) {
-      localStorage.setItem(onboardingSeenKey, "true");
-      return <Navigate to="/admin/onboard" replace />;
-    }
+  // Redirect to onboarding — driven by backend flag (set at login) so it fires exactly once
+  if (user.role === "teacher" && user.teacherProfile === null) {
+    return <Navigate to="/teacher/onboarding" replace />;
+  }
+  if (user.role === "institute_admin" && user.onboardingRequired === true) {
+    return <Navigate to="/admin/onboard" replace />;
   }
 
   // ── Student onboarding: redirect if no exam target has been set ──────────────
