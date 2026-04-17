@@ -1,4 +1,6 @@
 import { apiClient, extractData } from "./client";
+import { uploadToS3 } from "./upload";
+
 
 // ─── Subjects / Chapters / Topics ─────────────────────────────────────────────
 
@@ -963,17 +965,23 @@ export async function updateProfile(payload: {
 }
 
 export async function uploadAvatar(file: File): Promise<string> {
-  const form = new FormData();
-  form.append("file", file);
-  const res = await apiClient.post("/auth/profile/avatar", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  // Step 1 — Upload to S3
+  const fileUrl = await uploadToS3(
+    {
+      type: "profile",
+      fileName: file.name,
+      contentType: file.type,
+      fileSize: file.size,
+    },
+    file
+  );
+
+  // Step 2 — Confirm with backend
+  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
   const data = extractData<{ avatarUrl: string }>(res);
-  const raw = data?.avatarUrl ?? "";
-  // Backend returns relative /uploads/... — make it absolute
-  const base = (import.meta.env.VITE_API_BASE_URL as string ?? "").replace(/\/api\/v1\/?$/, "");
-  return raw.startsWith("http") ? raw : `${base}${raw}`;
+  return data?.avatarUrl ?? fileUrl;
 }
+
 
 export async function logout(refreshToken: string): Promise<void> {
   await apiClient.post("/auth/logout", { refreshToken });

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Loader2, Trash2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,13 +31,19 @@ export function ProfileUpload({
   const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
   const { upload, uploading, progress, error } = useUpload({ type: "profile", onSuccess: onUpload });
 
+  useEffect(() => {
+    setPreview(currentUrl ?? null);
+  }, [currentUrl]);
+
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     // Instant local preview
-    setPreview(URL.createObjectURL(file));
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
     const url = await upload(file);
     if (!url) setPreview(currentUrl ?? null); // revert on failure
+    URL.revokeObjectURL(objectUrl);
     // reset input so same file can be re-selected
     e.target.value = "";
   };

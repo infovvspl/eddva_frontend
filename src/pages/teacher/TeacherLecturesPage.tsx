@@ -1590,6 +1590,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
               {videoSource === "upload" ? (
                 <div className="space-y-4">
                   <LectureVideoUpload
+                    courseId={batchId}
                     lectureId={tempLectureId}
                     currentUrl={videoUrl}
                     onUpload={(url) => setVideoUrl(url)}

@@ -154,12 +154,8 @@ function ProfileTab() {
         classTypes: data.classTypes ?? [],
         teachingMode: data.teachingMode ?? "both",
       });
-<<<<<<< HEAD
-      if (data.orgImageUrl) persistOrgImage(data.orgImageUrl);
-=======
-      // Resolve relative paths from the backend before storing
-      setOrgImageUrl(resolveMediaUrl(data.orgImageUrl) ?? null);
->>>>>>> fab057d5cea7bc3cfca9bef8530010b902d1cd7f
+      const resolved = resolveMediaUrl(data.orgImageUrl) ?? null;
+      if (resolved) persistOrgImage(resolved);
     }
   }, [data, persistOrgImage]);
 
@@ -186,13 +182,7 @@ function ProfileTab() {
   const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-<<<<<<< HEAD
-    setOrgImageUrl(URL.createObjectURL(file));
-    try {
-      const result = await uploadImage.mutateAsync(file);
-      persistOrgImage(result.url);
-      toast.success("Organisation image uploaded");
-=======
+
     // Reset input so the same file can be re-selected if needed
     e.target.value = "";
 
@@ -205,11 +195,11 @@ function ProfileTab() {
       const result = await uploadImage.mutateAsync(file);
       URL.revokeObjectURL(blobUrl);
       // Resolve the returned URL (may be a relative /uploads/... path)
-      setOrgImageUrl(resolveMediaUrl(result.url) ?? result.url);
+      const resolved = resolveMediaUrl(result.url) ?? result.url;
+      persistOrgImage(resolved);
       toast.success("Organisation logo updated");
->>>>>>> fab057d5cea7bc3cfca9bef8530010b902d1cd7f
     } catch {
-      URL.revokeObjectURL(blobUrl);
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
       setOrgImageUrl(previousUrl);
       toast.error("Image upload failed — please try again");
     }

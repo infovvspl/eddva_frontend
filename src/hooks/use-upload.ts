@@ -23,7 +23,7 @@ export interface UploadState {
   error: string | null;
 }
 
-export function useUpload({ type, courseId, onSuccess, onError }: UseUploadOptions) {
+export function useUpload({ type, courseId, lectureId, onSuccess, onError }: UseUploadOptions) {
   const { user } = useAuthStore();
   const [state, setState] = useState<UploadState>({
     uploading: false, progress: 0, fileUrl: null, error: null,
@@ -139,6 +139,9 @@ export function useMultiUpload(courseId?: string) {
       })
     );
 
+    if (results.length > 0) {
+      toast.success(`${results.length} file${results.length > 1 ? "s" : ""} uploaded successfully.`);
+    }
     return results;
   }, [user?.tenantId, courseId, files, addFiles]);
 

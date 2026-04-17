@@ -100,13 +100,13 @@ function FileRow({ file: f, onRemove, onRetry }: {
 
 export function MaterialsUpload({ courseId, onUploadComplete, className, disabled }: MaterialsUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const { files, uploadAll, retryFile, removeFile, clearAll, doneUrls, hasErrors, allDone } = useMultiUpload(courseId);
+  const { files, uploadAll, retryFile, removeFile, clearAll, hasErrors } = useMultiUpload(courseId);
   const isDragging = useRef(false);
 
   const handleFiles = useCallback(async (incoming: File[]) => {
     const urls = await uploadAll(incoming);
-    if (allDone && onUploadComplete) onUploadComplete([...doneUrls, ...urls]);
-  }, [uploadAll, allDone, doneUrls, onUploadComplete]);
+    if (urls.length > 0) onUploadComplete?.(urls);
+  }, [uploadAll, onUploadComplete]);
 
   const handleInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);

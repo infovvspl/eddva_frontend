@@ -1556,8 +1556,16 @@ const BatchesPage = () => {
               transition={{ delay: _bIdx * 0.05 }}
             >
               {/* Course card header */}
-              <button
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/admin/batches/${b.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/admin/batches/${b.id}`);
+                  }
+                }}
                 className="w-full bg-white border border-slate-100 rounded-3xl px-5 py-4 flex items-center gap-4 hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all text-left group"
               >
                 <CourseThumbnail name={b.name} examTarget={b.examTarget} imageUrl={b.thumbnailUrl} className="w-16 h-16" />
@@ -1632,7 +1640,7 @@ const BatchesPage = () => {
                     <ChevronRight className="w-4 h-4" />
                   </div>
                 </div>
-              </button>
+              </div>
 
             </motion.div>
             );

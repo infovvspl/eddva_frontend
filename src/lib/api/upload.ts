@@ -33,6 +33,13 @@ export interface DeleteFileRequest {
   key: string;
 }
 
+const s3UploadClient = axios.create({
+  withCredentials: false,
+});
+
+delete s3UploadClient.defaults.headers.common.Accept;
+delete s3UploadClient.defaults.headers.common.Authorization;
+
 // ---------------------------------------------------------------------------
 // File validation
 // ---------------------------------------------------------------------------
@@ -42,17 +49,21 @@ export const FILE_LIMITS = {
   thumbnail:           { maxMb: 10,   accept: ["image/jpeg", "image/png", "image/webp"] },
   material:            { maxMb: 10,   accept: ["application/pdf", "image/jpeg", "image/png", "image/webp"] },
   source:              { maxMb: 10,   accept: ["application/zip", "application/x-zip-compressed"] },
-  "lecture-video":     { maxMb: 10000, accept: ["video/mp4", "video/webm", "video/quicktime"] },
+  "lecture-video":     { maxMb: 10240, accept: ["video/mp4", "video/webm", "video/quicktime"] },
   "lecture-thumbnail": { maxMb: 10,   accept: ["image/jpeg", "image/png", "image/webp"] },
   "lecture-attachment":{ maxMb: 10,   accept: ["application/pdf", "image/jpeg", "image/png", "image/webp"] },
 } satisfies Record<UploadType, { maxMb: number; accept: string[] }>;
+
+function humanLimitLabel(type: UploadType): string {
+  return type === "lecture-video" ? "10GB" : "10MB";
+}
 
 export function validateFile(file: File, type: UploadType): string | null {
   const limit = FILE_LIMITS[type];
   const maxBytes = limit.maxMb * 1024 * 1024;
 
   if (file.size > maxBytes) {
-    return `File too large. Maximum size is ${limit.maxMb}MB.`;
+    return `File must be less than ${humanLimitLabel(type)}`;
   }
   if (limit.accept.length > 0 && !limit.accept.includes(file.type)) {
     const exts = limit.accept.map(t => t.split("/")[1]).join(", ");
@@ -61,14 +72,33 @@ export function validateFile(file: File, type: UploadType): string | null {
   return null;
 }
 
+function validateUploadPayload(payload: UploadUrlRequest): string | null {
+  if (payload.type === "profile") return null;
+
+  const lectureTypes: UploadType[] = ["lecture-video", "lecture-thumbnail", "lecture-attachment"];
+  const courseTypes: UploadType[] = ["thumbnail", "material", "source", ...lectureTypes];
+
+  if (courseTypes.includes(payload.type) && !payload.courseId) {
+    return "courseId is required for this upload.";
+  }
+
+  if (lectureTypes.includes(payload.type) && !payload.lectureId) {
+    return "lectureId is required for this upload.";
+  }
+
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Step 1 — Get pre-signed URL from backend
 // ---------------------------------------------------------------------------
 
 export async function requestUploadUrl(payload: UploadUrlRequest): Promise<UploadUrlResponse> {
-  const res = await apiClient.post("/upload/url", payload);
+  const res = await apiClient.post("/upload-url", payload);
   return extractData<UploadUrlResponse>(res);
 }
+
+export const getUploadUrl = requestUploadUrl;
 
 // ---------------------------------------------------------------------------
 // Step 2 — PUT file directly to S3 (no auth header, pre-signed URL)
@@ -77,10 +107,12 @@ export async function requestUploadUrl(payload: UploadUrlRequest): Promise<Uploa
 export async function putFileToS3(
   uploadUrl: string,
   file: File,
+  contentType = file.type,
   onProgress?: (e: UploadProgressEvent) => void,
 ): Promise<void> {
-  await axios.put(uploadUrl, file, {
-    headers: { "Content-Type": file.type },
+  await s3UploadClient.put(uploadUrl, file, {
+    headers: { "Content-Type": contentType },
+    withCredentials: false,
     onUploadProgress: (e) => {
       if (onProgress && e.total) {
         onProgress({
@@ -106,9 +138,14 @@ export async function uploadToS3(
 ): Promise<string> {
   const error = validateFile(file, payload.type);
   if (error) throw new Error(error);
+  const payloadError = validateUploadPayload(payload);
+  if (payloadError) throw new Error(payloadError);
+  if (payload.contentType !== file.type) {
+    throw new Error(`Upload content type mismatch. Expected ${payload.contentType}, received ${file.type}.`);
+  }
 
   const { uploadUrl, fileUrl } = await requestUploadUrl(payload);
-  await putFileToS3(uploadUrl, file, onProgress);
+  await putFileToS3(uploadUrl, file, payload.contentType, onProgress);
   return fileUrl;
 }
 
