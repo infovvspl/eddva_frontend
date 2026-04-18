@@ -11,11 +11,9 @@ import { apiClient } from "@/lib/api/client";
 import * as adminApi from "@/lib/api/admin";
 import type { BatchPreview } from "@/lib/api/admin";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { getApiOrigin } from "@/lib/api-config";
 
-const API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
-  catch { return "http://localhost:3000"; }
-})();
+const API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
 
 function resolveThumb(url?: string) {
   if (!url) return "";

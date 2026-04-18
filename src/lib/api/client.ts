@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
+import { getApiBaseUrl } from "@/lib/api-config";
 import { getSubdomain } from "@/lib/tenant";
 
 // ---------------------------------------------------------------------------
@@ -45,7 +46,7 @@ export const tokenStorage = {
 // ---------------------------------------------------------------------------
 // Axios instance
 // ---------------------------------------------------------------------------
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
+const BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

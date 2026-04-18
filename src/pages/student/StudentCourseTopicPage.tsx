@@ -12,10 +12,9 @@ import { useCourseTopicDetail } from "@/hooks/use-student";
 import type { TopicLecture, TopicResource, TopicDetailWithContent } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getApiOrigin } from "@/lib/api-config";
 
-const _API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; } catch { return ""; }
-})();
+const _API_ORIGIN = getApiOrigin();
 
 function resolveUrl(url?: string | null): string | undefined {
   if (!url) return undefined;

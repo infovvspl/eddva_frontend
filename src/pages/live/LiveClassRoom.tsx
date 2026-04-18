@@ -24,11 +24,15 @@ import {
   type LiveSessionInfo, type LiveChatMessage, type LivePoll,
 } from "@/lib/api/live-class";
 import { cn } from "@/lib/utils";
+import { getApiOrigin } from "@/lib/api-config";
 
 AgoraRTC.setLogLevel(4);
 
 const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID as string;
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string;
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL ||
+  import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/v\d+\/?$/, "") ||
+  getApiOrigin() ||
+  "http://127.0.0.1:3000") as string;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -777,7 +781,7 @@ export default function LiveClassRoom() {
   const [session, setSession] = useState<LiveSessionInfo | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [ended, setEnded] = useState(false);
-  const [endStats, setEndStats] = useState<{ duration: number; attendanceCount: number } | null>(null);
+  const [endStats, setEndStats] = useState<{ duration: number; attendanceCount: number; recordingUrl: string | null } | null>(null);
 
   // ── Agora
   const clientRef = useRef<IAgoraRTCClient | null>(null);
@@ -909,12 +913,16 @@ export default function LiveClassRoom() {
     });
 
     try {
-      await client.setClientRole(role);
+      await client.setClientRole(role === "host" ? "host" : "audience");
+      console.log("[Agora] appId:", AGORA_APP_ID);
+      console.log("[Agora] channelName:", channelName, "uid:", uid);
+      console.log("[Agora] token:", token ? token.substring(0, 30) + "..." : "NULL (App ID only mode)");
       await client.join(AGORA_APP_ID, channelName, token, uid);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to connect to the live class.");
-      return;
+    } catch (err: any) {
+      const code = err?.code ?? err?.message ?? String(err);
+      console.error("[Agora join failed] full error:", err);
+      clientRef.current = null;
+      throw new Error(`Failed to connect: ${code}`);
     }
 
     if (role === "host") {
@@ -947,9 +955,9 @@ export default function LiveClassRoom() {
   const connectSocket = useCallback((sessionId: string, uid: number) => {
     if (socketRef.current?.connected) return;
     setSocketSessionId(sessionId);
-    const socket = io(`${BACKEND_URL}/live`, {
+    const socket = io(`${SOCKET_URL}/live`, {
       path: "/socket.io",
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       auth: { token: localStorage.getItem("eddva_access_token") },
     });
     socketRef.current = socket;
@@ -1080,8 +1088,10 @@ export default function LiveClassRoom() {
       setSession((prev) => (prev ? { ...prev, status: "live", startedAt: new Date().toISOString() } : prev));
       await joinAgora(r.token, r.channelName, r.uid, "host");
       connectSocket(r.sessionId, r.uid);
-    } catch {
-      toast.error("Failed to start class");
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      toast.error(msg.startsWith("Failed to connect") ? msg : "Failed to start class — check console");
+      console.error("[handleStart]", err);
     } finally {
       setIsStarting(false);
     }
@@ -1094,8 +1104,10 @@ export default function LiveClassRoom() {
       const r = await getLiveClassToken(lectureId!, "host");
       await joinAgora(r.token, r.channelName, r.uid, "host");
       connectSocket(r.sessionId, r.uid);
-    } catch {
-      toast.error("Failed to rejoin class");
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      toast.error(msg.startsWith("Failed to connect") ? msg : "Failed to rejoin class — check console");
+      console.error("[handleRejoin]", err);
     } finally {
       setIsJoining(false);
     }
@@ -1107,7 +1119,7 @@ export default function LiveClassRoom() {
     setIsEnding(true);
     try {
       const r = await endLiveClass(lectureId!);
-      setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount });
+      setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount, recordingUrl: r.recordingUrl });
       setEnded(true);
       leaveAgora();
       socketRef.current?.disconnect();
@@ -1292,15 +1304,43 @@ export default function LiveClassRoom() {
               {isTeacher ? "Great job! Here's a quick summary:" : "Thanks for attending!"}
             </p>
             {endStats && (
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-slate-50 rounded-2xl p-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</p>
-                  <p className="text-2xl font-black text-slate-900">{formatDuration(endStats.duration * 1000)}</p>
+              <div className="space-y-3 mb-6">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</p>
+                    <p className="text-2xl font-black text-slate-900">{formatDuration(endStats.duration * 60 * 1000)}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Attended</p>
+                    <p className="text-2xl font-black text-slate-900">{endStats.attendanceCount}</p>
+                  </div>
                 </div>
-                <div className="bg-slate-50 rounded-2xl p-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Attended</p>
-                  <p className="text-2xl font-black text-slate-900">{endStats.attendanceCount}</p>
-                </div>
+                {endStats.recordingUrl ? (
+                  <a
+                    href={endStats.recordingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 w-full bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-left hover:bg-emerald-100 transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+                      <Video className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-emerald-800">Recording ready</p>
+                      <p className="text-[10px] text-emerald-600">Click to watch or share with students</p>
+                    </div>
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-3 w-full bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                    <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center shrink-0">
+                      <Video className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-amber-800">Recording processing</p>
+                      <p className="text-[10px] text-amber-600">Will be available in the lecture shortly</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <button
@@ -1384,6 +1424,31 @@ export default function LiveClassRoom() {
                   {isStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Go Live</>}
                 </button>
               )
+            ) : session?.status === "live" ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
+                  <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <p className="text-xs font-bold text-emerald-800">Class is live!</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setIsJoining(true);
+                    try {
+                      const r = await getLiveClassToken(lectureId!, "audience");
+                      await joinAgora(r.token, r.channelName, r.uid, "audience");
+                      connectSocket(r.sessionId, r.uid);
+                    } catch {
+                      toast.error("Could not join — please try again");
+                    } finally {
+                      setIsJoining(false);
+                    }
+                  }}
+                  disabled={isJoining}
+                  className="w-full h-12 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
+                >
+                  {isJoining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Join Now</>}
+                </button>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-amber-50 border border-amber-200">

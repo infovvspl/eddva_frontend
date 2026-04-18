@@ -137,7 +137,7 @@ export default function ReportsPage() {
           { label: "Students Online", val: presence?.studentsOnline ?? 0 },
           { label: "Active Classes", val: presence?.liveClassesRunning ?? 0 },
           { label: "Total Students", val: stats.totalStudents ?? 0 },
-          { label: "Open Doubts", val: stats.openDoubts ?? 0 },
+          { label: "Pending doubts", val: stats.openDoubts ?? 0 },
         ].map(({ label, val }) => (
           <div key={label} className="text-center">
             <p className="text-2xl font-extrabold text-white leading-none">{val}</p>

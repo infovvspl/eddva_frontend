@@ -11,8 +11,8 @@ export const teacherKeys = {
   lectures: (filters?: teacherApi.GetMyLecturesParams) =>
     ["teacher", "lectures", filters?.batchId ?? "", filters?.topicId ?? "", filters?.chapterId ?? "", filters?.subjectId ?? "", filters?.limit ?? 500] as const,
   lectureStats: (id: string) => ["teacher", "lecture-stats", id] as const,
-  doubtQueue: ["teacher", "doubt-queue"] as const,
-  allDoubts: (status?: string) => ["teacher", "all-doubts", status] as const,
+  doubtQueue: (batchId?: string) => ["teacher", "doubt-queue", batchId] as const,
+  allDoubts: (status?: string, batchId?: string) => ["teacher", "all-doubts", status, batchId] as const,
   doubt: (id: string) => ["teacher", "doubt", id] as const,
 };
 
@@ -95,18 +95,18 @@ export function useDeleteLecture() {
 
 // ─── Doubts ───────────────────────────────────────────────────────────────────
 
-export function useDoubtQueue() {
+export function useDoubtQueue(batchId?: string) {
   return useQuery({
-    queryKey: teacherKeys.doubtQueue,
-    queryFn: teacherApi.getDoubtQueue,
+    queryKey: teacherKeys.doubtQueue(batchId),
+    queryFn: () => teacherApi.getDoubtQueue(batchId),
     refetchInterval: 30_000,
   });
 }
 
-export function useAllDoubts(status?: string) {
+export function useAllDoubts(status?: string, batchId?: string) {
   return useQuery({
-    queryKey: teacherKeys.allDoubts(status),
-    queryFn: () => teacherApi.getAllDoubts(status ? { status } : undefined),
+    queryKey: teacherKeys.allDoubts(status, batchId),
+    queryFn: () => teacherApi.getAllDoubts({ status: status || undefined, batchId: batchId || undefined }),
   });
 }
 
@@ -119,7 +119,7 @@ export function useDoubtDetail(id: string) {
 }
 
 const invalidateDoubts = (qc: ReturnType<typeof useQueryClient>) => {
-  qc.invalidateQueries({ queryKey: teacherKeys.doubtQueue });
+  qc.invalidateQueries({ queryKey: ["teacher", "doubt-queue"] });
   qc.invalidateQueries({ queryKey: ["teacher", "all-doubts"] });
 };
 

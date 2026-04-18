@@ -38,6 +38,7 @@ import {
   type QuizCheckpoint, type WatchAnalytics,
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
+import { getApiOrigin } from "@/lib/api-config";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
@@ -1400,6 +1401,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const [videoFile, setVideoFile] = useState<File | null>(null); // actual File for upload
   const [uploadProgress, setUploadProgress] = useState(0);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tempLectureId] = useState(() => uuidv4());
 
@@ -1452,21 +1454,46 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const handleThumbnail = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setThumbnailFile(file);
     const reader = new FileReader();
     reader.onload = ev => setThumbnailPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
   };
 
+  const uploadToS3 = async (endpoint: string, file: File, onProgress?: (pct: number) => void) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await apiClient.post(endpoint, form, {
+      timeout: 10 * 60 * 1000,
+      transformRequest: [(_data, headers) => { delete headers['Content-Type']; return form; }],
+      onUploadProgress: e => { if (e.total && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); },
+    });
+    const url: string = res.data?.data?.url ?? res.data?.url;
+    return url.startsWith("http") ? url : `${import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000"}${url}`;
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      let finalVideoUrl = videoUrl;
+      let finalThumbnailUrl: string | undefined;
+
+      if (videoFile) {
+        finalVideoUrl = await uploadToS3("/content/lectures/upload-video", videoFile, setUploadProgress);
+      }
+
+      if (thumbnailFile) {
+        finalThumbnailUrl = await uploadToS3("/content/lectures/upload-thumbnail", thumbnailFile);
+      }
+
       const lecture = await createLecture.mutateAsync({
         batchId,
         title,
         description: description || undefined,
         type: "recorded",
         topicId: topicId || undefined,
-        videoUrl: videoUrl || undefined,
+        videoUrl: finalVideoUrl || undefined,
+        thumbnailUrl: finalThumbnailUrl,
       });
       toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
       onClose();

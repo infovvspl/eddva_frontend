@@ -9,6 +9,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useAdminDashboard, useBatches } from "@/hooks/use-admin";
 import { useAdminPresenceStats } from "@/hooks/use-presence";
 import { cn } from "@/lib/utils";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ─── Thumbnail generator ──────────────────────────────────────────────────────
 
@@ -19,10 +20,7 @@ const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> =
   default: { from: "#0F172A", to: "#334155", badge: "—" },
 };
 
-const _API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
-  catch { return "http://localhost:3000"; }
-})();
+const _API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
 function resolveMediaUrl(url?: string) {
   if (!url) return url;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -184,7 +182,7 @@ const AdminDashboard = () => {
           icon={BookOpen} color="bg-indigo-600" onClick={() => navigate("/admin/batches")} />
         <StatCard delay={0.16} label="Total Lectures" value={stats.totalLectures} sub="Published & recorded"
           icon={Video} color="bg-violet-600" onClick={() => navigate("/teacher/lectures")} />
-        <StatCard delay={0.24} label="Open Doubts" value={stats.openDoubts} sub="Awaiting your response"
+        <StatCard delay={0.24} label="Pending doubts" value={stats.openDoubts} sub="Open or escalated — needs attention"
           icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-600"}
           onClick={() => navigate("/teacher/doubts")} />
       </div>

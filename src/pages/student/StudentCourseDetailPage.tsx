@@ -14,10 +14,9 @@ import { apiClient, extractData } from "@/lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getApiOrigin } from "@/lib/api-config";
 
-const _API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; } catch { return ""; }
-})();
+const _API_ORIGIN = getApiOrigin();
 
 function resolveUrl(url?: string | null) {
   if (!url) return undefined;

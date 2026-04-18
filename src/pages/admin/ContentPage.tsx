@@ -24,13 +24,11 @@ import {
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
-  catch { return "http://localhost:3000"; }
-})();
+const API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
 
 function resolveUrl(url?: string | null) {
   if (!url) return "";

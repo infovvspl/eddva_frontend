@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useDiscoverBatches, useEnrollInBatch } from "@/hooks/use-student";
 import type { PublicBatch } from "@/lib/api/student";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ─── Resolve thumbnail URLs ───────────────────────────────────────────────────
-const BASE = (import.meta.env.VITE_API_BASE_URL as string ?? "").replace(/\/api\/v1\/?$/, "");
+const BASE = getApiOrigin();
 function resolveUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   return url.startsWith("http") ? url : `${BASE}${url}`;

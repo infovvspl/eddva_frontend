@@ -7,6 +7,7 @@ import {
   useAllDoubts,
   useRespondToDoubt,
   useMarkDoubtReviewed,
+  useMyBatches,
   teacherKeys,
 } from "@/hooks/use-teacher";
 import { type Doubt } from "@/lib/api/teacher";
@@ -544,9 +545,11 @@ export default function TeacherDoubtsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("");
+  const [filterBatchId, setFilterBatchId] = useState<string>("");
 
-  const { data: queue = [], isLoading: queueLoading, refetch: refetchQueue } = useDoubtQueue();
-  const { data: allDoubts = [], isLoading: allLoading, refetch: refetchAll } = useAllDoubts(filterStatus || undefined);
+  const { data: batches = [] } = useMyBatches();
+  const { data: queue = [], isLoading: queueLoading, refetch: refetchQueue } = useDoubtQueue(filterBatchId || undefined);
+  const { data: allDoubts = [], isLoading: allLoading, refetch: refetchAll } = useAllDoubts(filterStatus || undefined, filterBatchId || undefined);
 
   const doubts = tab === "queue" ? queue : allDoubts;
   const isLoading = tab === "queue" ? queueLoading : allLoading;
@@ -655,6 +658,24 @@ export default function TeacherDoubtsPage() {
                 className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
+
+            {/* Course filter */}
+            {batches.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <select
+                  value={filterBatchId}
+                  onChange={e => { setFilterBatchId(e.target.value); setSelectedId(null); }}
+                  className="flex-1 py-1.5 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  <option value="">All Courses</option>
+                  {batches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {tab === "all" && (
               <div className="flex gap-1 flex-wrap">
                 {([["", "All"], ["escalated", "Needs Answer"], ["ai_resolved", "AI Resolved"], ["teacher_resolved", "Resolved"]] as [FilterStatus, string][]).map(([val, label]) => (

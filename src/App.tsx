@@ -73,7 +73,6 @@ import JoinBatchPage from "./pages/JoinBatchPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // Landing Pages
-import AboutUsPage from "./pages/landing/AboutUsPage";
 import LandingCoursesPage from "./pages/landing/LandingCoursesPage";
 import ExamsRegistrationPage from "./pages/landing/ExamsRegistrationPage";
 import StudyMaterialPage from "./pages/landing/StudyMaterialPage";
@@ -136,11 +135,6 @@ const TeacherRoutes = () => (
       <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
     </Route>
-    {/* Live class room — full screen, no layout wrapper */}
-    <Route
-      path="/live/:lectureId"
-      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
-    />
   </>
 );
 
@@ -171,10 +165,10 @@ const StudentRoutes = () => (
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
       <Route path="/student/notifications" element={<StudentNotificationsPage />} />
     </Route>
-    {/* Live class room — full screen, no layout wrapper */}
+    {/* Live class room — full screen, accessible by all roles */}
     <Route
       path="/live/:lectureId"
-      element={<ProtectedRoute allowedRoles={["student"]}><LiveClassRoom /></ProtectedRoute>}
+      element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
     />
   </>
 );
@@ -201,7 +195,7 @@ const PlatformRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/about-us" element={<AboutUs />} />
-    <Route path="/about" element={<AboutUsPage />} />
+    <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />

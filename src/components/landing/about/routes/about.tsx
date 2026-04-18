@@ -1,0 +1,1 @@
+export { AboutMarketing } from "../AboutMarketing";

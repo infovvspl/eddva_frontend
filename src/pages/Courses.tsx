@@ -1,383 +1,371 @@
-﻿import React, { useState } from "react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { LandingLayout } from "@/components/landing/LandingLayout";
-import { FadeUp, Label } from "@/components/landing/LandingPrimitives";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Search, Filter, Star, Clock, Users, Play, ArrowRight,
-  TrendingUp, BookOpen, GraduationCap, Brain, Zap,
-  CheckCircle2, PlayCircle, BarChart3
+import { motion } from "framer-motion";
+import {
+  Search,
+  Users,
+  Clock,
+  ArrowRight,
+  MapPin,
+  Loader2,
+  BookOpen,
 } from "lucide-react";
-import { B, P, T } from "@/components/landing/DesignTokens";
+import { B, P } from "@/components/landing/DesignTokens";
+import exploreCoursesBg from "@/assets/bg2.jpg";
+import { useInstituteCoursesCatalog } from "@/hooks/use-tenant-catalog";
+import type { InstituteCatalogCourse } from "@/lib/api/public-tenant";
 
-const courses = [
-  { 
-    id: 1, 
-    title: "IIT-JEE Ultimate Prep 2025", 
-    instructor: "Dr. Arvind Kumar", 
-    rating: 4.9, 
-    students: "12,400", 
-    duration: "12 Months",
-    type: "Competitive",
-    level: "Advanced",
-    image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=800",
-    isFeatured: true,
-    isAIRecommended: true,
-    tags: ["JEE Mains", "Advanced", "Physics"]
-  },
-  { 
-    id: 2, 
-    title: "NEET Biology Masterclass", 
-    instructor: "Sarah D'souza", 
-    rating: 4.8, 
-    students: "8,200", 
-    duration: "8 Months",
-    type: "Competitive",
-    level: "Intermediate",
-    image: "https://images.unsplash.com/photo-1532187875605-186c73196ed8?auto=format&fit=crop&q=80&w=600",
-    size: "large",
-    tags: ["Biology", "NEET UG"]
-  },
-  { 
-    id: 3, 
-    title: "CBSE Class 12 Boards", 
-    instructor: "Team EDDVA", 
-    rating: 4.7, 
-    students: "15,000", 
-    duration: "6 Months",
-    type: "School",
-    level: "Beginner",
-    image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600",
-    size: "small",
-    tags: ["CBSE", "Class 12"]
-  },
-  { 
-    id: 4, 
-    title: "Quantum Physics AI Guide", 
-    instructor: "AI Tutor", 
-    rating: 5.0, 
-    students: "2,100", 
-    duration: "2 Months",
-    type: "Skill-based",
-    level: "Advanced",
-    isAIRecommended: true,
-    image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=600",
-    size: "small",
-    tags: ["Physics", "AI"]
-  },
-  { 
-    id: 5, 
-    title: "SSC CGL Strategy Course", 
-    instructor: "Vikram Singh", 
-    rating: 4.6, 
-    students: "5,400", 
-    duration: "4 Months",
-    type: "Govt",
-    level: "Intermediate",
-    image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=600",
-    size: "medium",
-    tags: ["SSC", "Aptitude"]
-  }
-];
+/** After auth, student lands here to enroll or pay for paid batches. */
+const POST_AUTH_ENROLL_PATH = "/student/courses?discover=1";
+const loginWithReturn = `/login?returnTo=${encodeURIComponent(POST_AUTH_ENROLL_PATH)}`;
+const registerWithReturn = `/register?returnTo=${encodeURIComponent(POST_AUTH_ENROLL_PATH)}`;
 
-const continueLearning = [
-  { title: "Physical Chemistry", progress: 65, lastWatched: "Equilibrium Part 1", color: B },
-  { title: "Calculus Mastery", progress: 42, lastWatched: "Derivatives Basics", color: P },
-  { title: "Modern Physics", progress: 88, lastWatched: "Photoelectric Effect", color: T }
-];
-
-const videoConcepts = [
-  { title: "Newton's 3rd Law Simplified", duration: "1:45", views: "12K", instructor: "AI Assistant" },
-  { title: "The Krebs Cycle in 3 Minutes", duration: "3:12", views: "8.5K", instructor: "Dr. Sarah" },
-  { title: "Integrals: Visual Intro", duration: "2:30", views: "15K", instructor: "Prof. Vikram" }
-];
-
-const CourseCard = ({ course, size = "medium" }: { course: typeof courses[0], size?: string }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <motion.div
-      layout
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      whileHover={{ y: -8 }}
-      className={`group relative overflow-hidden rounded-[24px] border border-white bg-white/40 shadow-sm backdrop-blur-xl transition-all duration-300
-        ${size === "large" ? "md:col-span-2 md:row-span-2" : ""}
-        ${size === "medium" ? "md:col-span-2 md:row-span-1" : ""}
-        ${size === "small" ? "md:col-span-1 md:row-span-1" : ""}
-      `}
-    >
-      <div className="absolute inset-0 z-0">
-        <img src={course.image} alt={course.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/20 to-transparent" />
-      </div>
-
-      <div className="relative z-10 flex h-full flex-col justify-end p-6 text-white text-left">
-        <div className="mb-3 flex flex-wrap gap-2">
-          {course.isAIRecommended && (
-            <span className="flex items-center gap-1.5 rounded-full bg-blue-500/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-md">
-              <Brain className="h-3 w-3" /> AI Recommended
-            </span>
-          )}
-          {course.tags.map(tag => (
-            <span key={tag} className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold backdrop-blur-md uppercase tracking-wider">{tag}</span>
-          ))}
-        </div>
-
-        <h3 className="mb-2 text-[20px] font-black leading-tight sm:text-[24px]">{course.title}</h3>
-        
-        <div className="mb-4 flex items-center gap-4 text-[12px] font-medium opacity-80">
-          <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {course.students}</span>
-          <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400 border-none" /> {course.rating}</span>
-          <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {course.duration}</span>
-        </div>
-
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="mb-4 border-t border-gray-200 pt-4">
-                <p className="mb-3 text-[13px] font-medium leading-relaxed opacity-90">
-                  Detailed syllabus covering {course.duration} of immersive learning with {course.instructor}.
-                </p>
-                <div className="flex gap-2">
-                  <button className="flex-1 rounded-xl bg-white py-2.5 text-[13px] font-black text-gray-900 transition-transform active:scale-95">
-                    Enroll Now
-                  </button>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-gray-900 backdrop-blur-md transition-colors hover:bg-white/30">
-                    <Play className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
-  );
+const FALLBACK_IMAGES: Record<string, string> = {
+  jee: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1200",
+  neet: "https://images.unsplash.com/photo-1532187875605-186c73196ed8?auto=format&fit=crop&q=80&w=1200",
+  default:
+    "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=1200",
 };
 
+const normalize = (s?: string) => (s ?? "").toLowerCase().replace(/[\s_-]+/g, "");
+
+function imageFor(course: InstituteCatalogCourse): string {
+  if (course.thumbnailUrl) return course.thumbnailUrl;
+  const e = normalize(course.examTarget);
+  if (e.includes("neet")) return FALLBACK_IMAGES.neet;
+  if (e.includes("jee")) return FALLBACK_IMAGES.jee;
+  return FALLBACK_IMAGES.default;
+}
+
+function formatDuration(c: InstituteCatalogCourse): string {
+  if (!c.startDate || !c.endDate) return "Flexible schedule";
+  const ms = new Date(c.endDate).getTime() - new Date(c.startDate).getTime();
+  const months = Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24 * 30)));
+  return `${months} mo${months > 1 ? "s" : ""}`;
+}
+
+function labelExam(examTarget: string) {
+  return examTarget.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+function labelClass(cls: string) {
+  return cls.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+function CourseCard({
+  course,
+  index,
+  showInstitute,
+}: {
+  course: InstituteCatalogCourse;
+  index: number;
+  showInstitute: boolean;
+}) {
+  const priceLabel = course.isPaid
+    ? course.feeAmount != null
+      ? `₹${Number(course.feeAmount).toLocaleString("en-IN")}`
+      : "Paid"
+    : "Free";
+  const spotsLeft = Math.max(0, course.maxStudents - course.enrolledCount);
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.35, delay: index * 0.04 }}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-lg"
+    >
+      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+        <img
+          src={imageFor(course)}
+          alt=""
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGES.default;
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-slate-900/10 to-transparent" />
+        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+          <span className="rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-800 shadow-sm">
+            {labelExam(course.examTarget)}
+          </span>
+          <span
+            className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm"
+            style={{
+              background: `linear-gradient(135deg, ${B}, ${P})`,
+            }}
+          >
+            {priceLabel}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <h3 className="text-lg font-bold leading-snug text-slate-900 line-clamp-2">{course.name}</h3>
+        {showInstitute && course.instituteName ? (
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {course.instituteName}
+          </p>
+        ) : null}
+        {course.description ? (
+          <p className="line-clamp-2 text-sm text-slate-600">{course.description}</p>
+        ) : null}
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <Users className="h-3.5 w-3.5" />
+            {course.enrolledCount} enrolled
+            {course.maxStudents ? ` · ${spotsLeft} seats left` : ""}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            {formatDuration(course)}
+          </span>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Faculty</p>
+            <p className="truncate text-sm font-semibold text-slate-700">
+              {course.teacherName ?? "Institute faculty"}
+            </p>
+            <p className="text-xs text-slate-500">{labelClass(course.class)}</p>
+          </div>
+          <Link
+            to={loginWithReturn}
+            title="Sign in to enroll or purchase"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
+          >
+            Enroll <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
 export default function Courses() {
-  const [activeType, setActiveType] = useState("Competitive");
-  const [aiOnly, setAiOnly] = useState(false);
+  const { data, isLoading, isError, error } = useInstituteCoursesCatalog();
+  const [query, setQuery] = useState("");
+
+  const courses = data?.courses ?? [];
+  const institute = data?.institute;
+  const isPlatform = data?.catalogScope === "platform";
+
+  const accent = institute?.brandColor && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(institute.brandColor)
+    ? institute.brandColor
+    : B;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return courses;
+    return courses.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.description && c.description.toLowerCase().includes(q)) ||
+        c.examTarget.toLowerCase().includes(q) ||
+        (c.teacherName && c.teacherName.toLowerCase().includes(q)) ||
+        (c.instituteName && c.instituteName.toLowerCase().includes(q))
+    );
+  }, [courses, query]);
+
+  const showCatalog =
+    !isLoading && !isError && institute && !institute.suspended;
 
   return (
     <LandingLayout>
-      {/* ─── HERO SECTION ─── */}
-      <section className="relative overflow-hidden pb-20 pt-16 sm:pb-24 sm:pt-20 xl:pb-28 xl:pt-24">
-        <div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(135deg, #ffffff 0%, #F0F7FF 45%, #F5F3FF 100%)" }} />
-        <div className="absolute inset-0 -z-10 opacity-[0.05]" style={{ backgroundImage: `radial-gradient(circle, ${B} 1.5px, transparent 1.5px)`, backgroundSize: "36px 36px" }} />
-        
-        <div className="landing-shell text-center">
-          <FadeUp>
-            <Label color="purple">Master Your Future</Label>
-            <h1 className="landing-title-hero mx-auto mt-6 max-w-4xl text-gray-900">
-              Master Your Future with <span style={{ background: `linear-gradient(135deg, ${B}, ${P})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AI-Powered Learning</span>
-            </h1>
-            <p className="landing-copy-lead mx-auto mt-6 max-w-2xl text-gray-500">
-              Interactive, personalized courses tailored precisely for your exam success and skill growth.
-            </p>
-
-            <div className="mx-auto mt-10 w-full max-w-2xl">
-              <div className="relative group">
-                <Search className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Search courses (e.g. JEE Physics, Python for Kids...)"
-                  className="h-14 w-full rounded-[24px] border border-white bg-white/40 pl-14 pr-5 text-[15px] font-bold text-gray-800 shadow-2xl backdrop-blur-xl outline-none transition-all focus:border-blue-200 focus:bg-white/80 sm:h-16 sm:pl-16 sm:pr-6 sm:text-[16px]"
-                />
-              </div>
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {["JEE Mains", "NEET UG", "Class 12 Boards", "UPSC", "Coding"].map(tag => (
-                  <button key={tag} className="rounded-full border border-blue-50 bg-white/50 px-4 py-1.5 text-[12px] font-bold text-blue-600 shadow-sm transition-all hover:bg-blue-600 hover:text-white">
-                    {tag}
-                  </button>
-                ))}
-              </div>
+      {/* ── Section 1: Institute hero (Explore courses) ── */}
+      <section className="relative overflow-hidden border-b border-slate-200/80 pt-20 pb-14 sm:pt-28 sm:pb-20">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${exploreCoursesBg})` }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-gradient-to-br from-white/90 via-sky-50/85 to-white/92"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 opacity-40"
+          style={{
+            background: `linear-gradient(120deg, ${accent}18 0%, transparent 55%, ${P}14 100%)`,
+          }}
+        />
+        <div className="landing-shell relative">
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+              <Loader2 className="h-12 w-12 animate-spin" style={{ color: accent }} />
+              <p className="mt-4 text-sm font-medium">Loading programs…</p>
             </div>
-          </FadeUp>
-        </div>
-      </section>
+          )}
 
-      {/* ─── STICKY FILTERS ─── */}
-      <div className="sticky top-[73px] z-[40] border-y border-gray-100 bg-white/80 py-4 backdrop-blur-xl">
-        <div className="landing-shell flex items-center justify-between">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide sm:pb-0">
-            {["All", "Competitive", "School", "Govt", "Skill-based"].map(type => (
-              <button 
-                key={type}
-                onClick={() => setActiveType(type)}
-                className={`flex-shrink-0 rounded-full px-5 py-2 text-[13px] font-black uppercase tracking-widest transition-all
-                  ${activeType === type ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-100"}`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-
-          <div className="hidden items-center gap-6 md:flex">
-            <div className="flex items-center gap-3">
-              <span className="text-[13px] font-bold text-gray-500">AI Recommended</span>
-              <button 
-                onClick={() => setAiOnly(!aiOnly)}
-                className={`relative h-6 w-11 rounded-full bg-gray-200 transition-colors ${aiOnly ? "bg-blue-500" : ""}`}
-              >
-                <motion.div 
-                  animate={{ x: aiOnly ? 22 : 2 }}
-                  className="absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm" 
-                />
-              </button>
+          {isError && (
+            <div className="mx-auto max-w-lg rounded-2xl border border-red-200 bg-red-50/90 p-8 text-center">
+              <p className="font-semibold text-red-900">Could not load courses</p>
+              <p className="mt-2 text-sm text-red-800">
+                {(error as Error)?.message || "Check your network and try again."}
+              </p>
             </div>
-            <button className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-600 hover:bg-gray-50">
-              <Filter className="h-4 w-4" /> More Filters
-            </button>
-          </div>
-        </div>
-      </div>
+          )}
 
-      {/* ─── CONTINUE LEARNING ─── */}
-      <section className="landing-section-tight bg-white">
-        <div className="landing-shell">
-          <div className="mb-10 flex items-center justify-between">
-            <h2 className="text-[28px] font-black tracking-tight text-gray-900">Continue Learning</h2>
-            <button className="text-[14px] font-bold text-blue-600 hover:underline">View Progress</button>
-          </div>
-          <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide">
-            {continueLearning.map((item, i) => (
-              <motion.div 
-                key={i}
-                whileHover={{ y: -4 }}
-                className="min-w-[300px] flex-shrink-0 rounded-[28px] border border-gray-100 bg-white p-6 shadow-sm"
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <h4 className="text-[16px] font-black text-gray-900">{item.title}</h4>
-                  <span className="text-[12px] font-black text-blue-600">{item.progress}%</span>
+          {showCatalog && institute && (
+            <>
+              <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:text-left">
+                {institute.logoUrl ? (
+                  <img
+                    src={institute.logoUrl}
+                    alt=""
+                    className="h-20 w-20 rounded-2xl border border-white bg-white object-contain p-1 shadow-md sm:h-24 sm:w-24"
+                  />
+                ) : (
+                  <div
+                    className="flex h-20 w-20 items-center justify-center rounded-2xl text-2xl font-black text-white shadow-md sm:h-24 sm:w-24"
+                    style={{ background: `linear-gradient(135deg, ${accent}, ${P})` }}
+                  >
+                    {(institute.name?.charAt(0) || "E").toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                    {isPlatform ? "Public catalog" : "Institute"}
+                  </p>
+                  <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
+                    {isPlatform ? "Explore courses" : institute.name}
+                  </h1>
+                  <p className="mx-auto mt-3 max-w-2xl text-base text-slate-600 sm:mx-0">
+                    {institute.welcomeMessage ||
+                      (isPlatform
+                        ? "Programs from partner institutes. Anyone can browse; sign in or create an account to enroll and pay for paid courses."
+                        : "Browse live batches from this institute. Sign in to enroll and access your classroom.")}
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-600 sm:justify-start">
+                    {!isPlatform && (institute.city || institute.state) ? (
+                      <span className="inline-flex items-center gap-1.5 font-medium">
+                        <MapPin className="h-4 w-4 shrink-0 opacity-70" />
+                        {[institute.city, institute.state].filter(Boolean).join(", ")}
+                      </span>
+                    ) : null}
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
+                      <BookOpen className="h-4 w-4 shrink-0" style={{ color: accent }} />
+                      {courses.length} program{courses.length === 1 ? "" : "s"}
+                      {isPlatform ? " listed" : " open"}
+                    </span>
+                  </div>
                 </div>
-                <div className="mb-6 h-2 w-full rounded-full bg-gray-100">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${item.progress}%` }}
-                    className="h-full rounded-full" 
-                    style={{ background: item.color }}
+              </div>
+
+              <div className="mx-auto mt-10 max-w-xl sm:mx-0 sm:max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={
+                      isPlatform
+                        ? "Search by course, institute, exam, or teacher…"
+                        : "Search by course, exam, or teacher…"
+                    }
+                    className="h-14 w-full rounded-2xl border border-slate-200/90 bg-white/95 pl-12 pr-4 text-sm font-medium text-slate-900 shadow-sm outline-none ring-slate-200 transition focus:ring-2"
                   />
                 </div>
-                <p className="mb-4 text-[12px] text-gray-400">Next: <span className="font-bold text-gray-600">{item.lastWatched}</span></p>
-                <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-50 py-3 text-[14px] font-black text-gray-900 transition-colors hover:bg-gray-900 hover:text-white">
-                  Resume Lecture <Play className="h-3.5 w-3.5 fill-current" />
-                </button>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
-      {/* ─── MAIN CATALOG BENTO ─── */}
-      <section className="landing-section bg-gray-50/50">
-        <div className="landing-shell">
-          <FadeUp className="mb-14 text-center">
-            <h2 className="landing-title-section text-gray-900">Explore Catalog</h2>
-            <p className="mt-4 text-gray-500 font-medium">Bespoke curriculum designed by India's top educators and AI specialized tools.</p>
-          </FadeUp>
-
-          {/* Bento Grid */}
-          <div className="grid gap-6 md:grid-cols-4 md:grid-rows-2">
-            {/* Featured Horizontal */}
-            <div className="md:col-span-4 lg:col-span-3">
-               <CourseCard course={courses[0]} size="medium" />
+      {/* ── Section 2: Course catalog ── */}
+      {showCatalog && (
+        <section id="courses" className="landing-section bg-slate-50/80">
+          <div className="landing-shell">
+            <div className="mb-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">All programs</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  {filtered.length === courses.length
+                    ? isPlatform
+                      ? `${courses.length} open course${courses.length === 1 ? "" : "s"} across institutes.`
+                      : `${courses.length} course${courses.length === 1 ? "" : "s"} from ${institute!.name}.`
+                    : `${filtered.length} of ${courses.length} courses match your search.`}
+                </p>
+              </div>
             </div>
-            {/* Small card to fit */}
-            <div className="md:col-span-1 lg:col-span-1">
-               <CourseCard course={courses[2]} size="small" />
-            </div>
-            {/* Bento items */}
-            <CourseCard course={courses[1]} size="large" />
-            <CourseCard course={courses[3]} size="small" />
-            <CourseCard course={courses[4]} size="medium" />
-          </div>
-        </div>
-      </section>
 
-      {/* ─── QUICK CONCEPTS VIDEOS ─── */}
-      <section className="landing-section bg-white">
-        <div className="landing-shell">
-          <FadeUp className="mb-12">
-            <h2 className="text-[32px] font-black tracking-tight text-gray-900">Quick Concepts</h2>
-            <p className="text-gray-500 font-medium">Short 2-5 minute bites for those hard-to-grasp topics.</p>
-          </FadeUp>
-          
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-             {videoConcepts.map((vid, i) => (
-               <FadeUp key={i} delay={i * 0.1}>
-                 <motion.div whileHover={{ scale: 1.02 }} className="group relative overflow-hidden rounded-[24px]">
-                    <div className="aspect-video w-full bg-gray-200">
-                       <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity group-hover:opacity-0">
-                          <PlayCircle className="h-12 w-12 text-white" />
-                       </div>
-                       {/* placeholder thumbnail with color gradient */}
-                       <div className="h-full w-full bg-gradient-to-br from-blue-100 to-purple-100" />
-                    </div>
-                    <div className="p-4">
-                       <h4 className="mb-1 text-[16px] font-black text-gray-900">{vid.title}</h4>
-                       <div className="flex items-center gap-3 text-[12px] font-bold text-gray-400">
-                          <span>{vid.duration} mins</span>
-                          <span>•</span>
-                          <span>{vid.views} views</span>
-                       </div>
-                    </div>
-                 </motion.div>
-               </FadeUp>
-             ))}
+            {courses.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center">
+                <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
+                <p className="mt-4 text-lg font-semibold text-slate-800">No programs available yet</p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                  {isPlatform
+                    ? "There are no published courses on the platform right now. Check back later."
+                    : "This institute has not published any active batches. Check back soon or contact the institute."}
+                </p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center text-slate-600">
+                No courses match &ldquo;{query}&rdquo;. Try another search.
+              </div>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((c, i) => (
+                  <CourseCard key={c.id} course={c} index={i} showInstitute={isPlatform} />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* ─── AI PICKED FOR YOU ─── */}
-      <section className="landing-section" style={{ background: "linear-gradient(135deg, #EEF4FF 0%, #F5F3FF 100%)" }}>
-        <div className="landing-shell">
-          <div className="flex flex-col items-center gap-12 lg:grid lg:grid-cols-2">
-            <FadeUp>
-               <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2">
-                  <Brain className="h-4 w-4 text-blue-600" />
-                  <span className="text-[12px] font-black uppercase tracking-widest text-blue-600">AI Synergy</span>
-               </div>
-               <h2 className="landing-title-section mt-6 text-gray-900">Picked for You,<br /><span className="text-blue-600">Based on behavior</span></h2>
-               <p className="mt-6 text-[18px] font-medium leading-relaxed text-gray-500">
-                  Our neural engine analyzes your strengths and previous mock test performance to suggest modules that give you the highest mark-jump potential.
-               </p>
-               <div className="mt-8 space-y-4">
-                  {[
-                    { icon: <Zap className="h-5 w-5" />, label: "Mark Jump", text: "Targeting +25 marks in Physics NEET" },
-                    { icon: <BarChart3 className="h-5 w-5" />, label: "Weak Area", text: "Focusing on Differential Equations" }
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm">
-                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">{item.icon}</div>
-                       <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{item.label}</p>
-                          <p className="text-[14px] font-bold text-gray-900">{item.text}</p>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </FadeUp>
-
-            <div className="relative w-full">
-               <CourseCard course={courses[1]} />
-               <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -right-4 top-1/4 rounded-2xl bg-white p-4 shadow-2xl border border-blue-50">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span className="text-[13px] font-bold text-gray-900">98.2% Match Rank</span>
-                  </div>
-               </motion.div>
-            </div>
+      {!isLoading && !isError && institute?.suspended && (
+        <section className="landing-section bg-slate-50">
+          <div className="landing-shell max-w-xl rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <p className="text-lg font-bold text-slate-900">This institute is unavailable</p>
+            <p className="mt-2 text-sm text-slate-600">Please contact support or try again later.</p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ── Section 3: CTA ── */}
+      {showCatalog && (
+        <section className="landing-section pb-20">
+          <div className="landing-shell">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="relative overflow-hidden rounded-3xl px-8 py-12 text-center text-white sm:px-14 sm:py-14"
+              style={{ background: `linear-gradient(135deg, ${accent} 0%, ${P} 100%)` }}
+            >
+              <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+              <h2 className="relative text-2xl font-black leading-tight sm:text-3xl">Enroll or purchase</h2>
+              <p className="relative mx-auto mt-3 max-w-lg text-sm text-white/90">
+                Create a free student account (or sign in). Then open{" "}
+                <strong className="font-bold">Discover courses</strong> to join a batch and complete payment for paid
+                programs.
+              </p>
+              <div className="relative mt-8 flex flex-wrap justify-center gap-3">
+                <Link
+                  to={registerWithReturn}
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-slate-900 shadow-lg transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Create account <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to={loginWithReturn}
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/80 bg-transparent px-7 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  Sign in to continue
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
     </LandingLayout>
   );
 }

@@ -250,6 +250,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
     if (!canSubmit) return;
     createDoubt.mutate(
       {
+        batchId: selectedBatchId,
         topicId: selectedTopicId,
         questionText: question.trim(),
         source: "manual",

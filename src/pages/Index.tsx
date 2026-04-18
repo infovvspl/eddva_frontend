@@ -9,7 +9,7 @@ import {
   Mail, Phone, MapPin,
   GraduationCap, BarChart,
 } from "lucide-react";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import edvaLogo from "@/assets/eddva web logo.png";
 import heroIllustration from "@/assets/online-learning-concept-vector-illustration_235222-1269.png";
 import aboutImg   from "@/assets/eddva web img 2.png";
 import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";
@@ -159,7 +159,8 @@ const stats = [
 
               <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.2 }}
                 className="mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-500">
-                AI-powered personalized education for JEE, NEET, UPSC & 20+ more exams. Identify gaps, practice smart, and achieve your target score.
+               Because learning should be smarter, not harder.
+Eddva combines AI-powered intelligence, personalized guidance, and practical tools to help you learn faster, understand deeper, and grow with confidence. It’s not just a platform, it’s your adaptive learning partner designed to keep you ahead.
               </motion.p>
 
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.3 }}
@@ -285,10 +286,10 @@ const stats = [
 
               <div className="mt-8 space-y-4">
                 {[
-                  { icon:<Brain className="h-5 w-5" />,     color:B,  bg:"#EFF6FF", title:"Adaptive Learning",       desc:"Study plans that evolve with your performance every day." },
-                  { icon:<Zap className="h-5 w-5" />,       color:P,  bg:"#F5F3FF", title:"Smart Recommendations",   desc:"AI suggests what to study next based on gaps and exam date." },
-                  { icon:<BarChart className="h-5 w-5" />,  color:T,  bg:"#ECFDF5", title:"Performance Tracking",    desc:"Visual dashboards with subject-wise accuracy and trend charts." },
-                  { icon:<MessageCircle className="h-5 w-5" />, color:IN, bg:"#EEF2FF", title:"24/7 Doubt Solver",   desc:"Bilingual AI chatbot — Hindi + English, always available." },
+                  { icon:<Brain className="h-5 w-5" />,     color:B,  bg:"#EFF6FF", title:"Adaptive Learning",       desc:"Personalized learning tailored to every student’s needs." },
+                  { icon:<Zap className="h-5 w-5" />,       color:P,  bg:"#F5F3FF", title:"Smart Recommendations",   desc:" AI-powered videos, notes, quizzes, and mock tests based on your goals and exam timeline." },
+                  { icon:<BarChart className="h-5 w-5" />,  color:T,  bg:"#ECFDF5", title:"Performance Tracking",    desc:"Track progress with leaderboards, ranks, streaks, and quiz battles with friends or AI." },
+                  { icon:<MessageCircle className="h-5 w-5" />, color:IN, bg:"#EEF2FF", title:"24/7 Doubt Solver",   desc:"Instant support with AI chatbot and in-video doubt solving anytime." },
                 ].map(item => (
                   <motion.div key={item.title} whileHover={{ x:4 }}
                     className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all">
