@@ -910,14 +910,15 @@ export default function LiveClassRoom() {
 
     try {
       await client.setClientRole(role === "host" ? "host" : "audience");
-      console.log("[Agora] joining with token:", token ? token.substring(0, 30) + "..." : "NULL");
+      console.log("[Agora] appId:", AGORA_APP_ID);
+      console.log("[Agora] channelName:", channelName, "uid:", uid);
+      console.log("[Agora] token:", token ? token.substring(0, 30) + "..." : "NULL (App ID only mode)");
       await client.join(AGORA_APP_ID, channelName, token, uid);
     } catch (err: any) {
       const code = err?.code ?? err?.message ?? String(err);
-      console.error("[Agora join failed]", code, err);
-      toast.error(`Failed to connect: ${code}`);
+      console.error("[Agora join failed] full error:", err);
       clientRef.current = null;
-      return;
+      throw new Error(`Failed to connect: ${code}`);
     }
 
     if (role === "host") {
@@ -1083,8 +1084,10 @@ export default function LiveClassRoom() {
       setSession((prev) => (prev ? { ...prev, status: "live", startedAt: new Date().toISOString() } : prev));
       await joinAgora(r.token, r.channelName, r.uid, "host");
       connectSocket(r.sessionId, r.uid);
-    } catch {
-      toast.error("Failed to start class");
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      toast.error(msg.startsWith("Failed to connect") ? msg : "Failed to start class — check console");
+      console.error("[handleStart]", err);
     } finally {
       setIsStarting(false);
     }
@@ -1097,8 +1100,10 @@ export default function LiveClassRoom() {
       const r = await getLiveClassToken(lectureId!, "host");
       await joinAgora(r.token, r.channelName, r.uid, "host");
       connectSocket(r.sessionId, r.uid);
-    } catch {
-      toast.error("Failed to rejoin class");
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      toast.error(msg.startsWith("Failed to connect") ? msg : "Failed to rejoin class — check console");
+      console.error("[handleRejoin]", err);
     } finally {
       setIsJoining(false);
     }
@@ -1415,6 +1420,31 @@ export default function LiveClassRoom() {
                   {isStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Go Live</>}
                 </button>
               )
+            ) : session?.status === "live" ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
+                  <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <p className="text-xs font-bold text-emerald-800">Class is live!</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setIsJoining(true);
+                    try {
+                      const r = await getLiveClassToken(lectureId!, "audience");
+                      await joinAgora(r.token, r.channelName, r.uid, "audience");
+                      connectSocket(r.sessionId, r.uid);
+                    } catch {
+                      toast.error("Could not join — please try again");
+                    } finally {
+                      setIsJoining(false);
+                    }
+                  }}
+                  disabled={isJoining}
+                  className="w-full h-12 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
+                >
+                  {isJoining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Join Now</>}
+                </button>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-amber-50 border border-amber-200">
