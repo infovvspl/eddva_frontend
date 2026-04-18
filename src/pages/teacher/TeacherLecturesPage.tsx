@@ -1474,7 +1474,6 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-<<<<<<< HEAD
       let finalVideoUrl = videoUrl;
       let finalThumbnailUrl: string | undefined;
 
@@ -1486,20 +1485,14 @@ function UploadModal({ onClose, onSuccess, batches }: {
         finalThumbnailUrl = await uploadToS3("/content/lectures/upload-thumbnail", thumbnailFile);
       }
 
-=======
->>>>>>> a0afdc60f70e8908cc816e0f3f36862b4817e25a
       const lecture = await createLecture.mutateAsync({
         batchId,
         title,
         description: description || undefined,
         type: "recorded",
         topicId: topicId || undefined,
-<<<<<<< HEAD
         videoUrl: finalVideoUrl || undefined,
         thumbnailUrl: finalThumbnailUrl,
-=======
-        videoUrl: videoUrl || undefined,
->>>>>>> a0afdc60f70e8908cc816e0f3f36862b4817e25a
       });
       toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
       onClose();
