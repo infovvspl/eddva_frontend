@@ -19,6 +19,7 @@ import {
 } from "@/hooks/use-admin";
 import type { BatchStudentRow, BulkStudentResult } from "@/lib/api/admin";
 import { toast } from "sonner";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -954,8 +955,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
     const url = batch.thumbnailUrl ?? "";
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    try { return `${new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin}${url}`; }
-    catch { return url; }
+    return `${getApiOrigin() || "http://127.0.0.1:3000"}${url}`;
   })();
 
   const [form, setForm] = useState({

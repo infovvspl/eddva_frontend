@@ -8,10 +8,9 @@ import {
 
 import { useStudentMe, useMyCourses, useContinueLearning } from "@/hooks/use-student";
 import { cn } from "@/lib/utils";
+import { getApiOrigin } from "@/lib/api-config";
 
-const _API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; } catch { return ""; }
-})();
+const _API_ORIGIN = getApiOrigin();
 function resolveUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   return url.startsWith("http") ? url : `${_API_ORIGIN}${url}`;

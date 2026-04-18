@@ -38,6 +38,7 @@ import {
   type QuizCheckpoint, type WatchAnalytics,
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
+import { getApiOrigin } from "@/lib/api-config";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
@@ -1468,7 +1469,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
       onUploadProgress: e => { if (e.total && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); },
     });
     const url: string = res.data?.data?.url ?? res.data?.url;
-    return url.startsWith('http') ? url : `${import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"}${url}`;
+    return url.startsWith("http") ? url : `${import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000"}${url}`;
   };
 
   const handleSubmit = async () => {

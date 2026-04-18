@@ -72,7 +72,6 @@ import NotFound from "./pages/NotFound";
 import JoinBatchPage from "./pages/JoinBatchPage";
 
 // Landing Pages
-import AboutUsPage from "./pages/landing/AboutUsPage";
 import LandingCoursesPage from "./pages/landing/LandingCoursesPage";
 import ExamsRegistrationPage from "./pages/landing/ExamsRegistrationPage";
 import StudyMaterialPage from "./pages/landing/StudyMaterialPage";
@@ -194,7 +193,7 @@ const PlatformRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/about-us" element={<AboutUs />} />
-    <Route path="/about" element={<AboutUsPage />} />
+    <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />

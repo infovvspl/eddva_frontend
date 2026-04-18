@@ -11,12 +11,11 @@ import {
 import { useAllBatchLectures } from "@/hooks/use-student";
 import type { StudentLecture } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const _API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; } catch { return ""; }
-})();
+const _API_ORIGIN = getApiOrigin();
 function resolveUrl(url?: string | null) {
   if (!url) return undefined;
   return url.startsWith("http") ? url : `${_API_ORIGIN}${url}`;

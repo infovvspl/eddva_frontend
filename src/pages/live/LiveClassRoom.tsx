@@ -24,11 +24,15 @@ import {
   type LiveSessionInfo, type LiveChatMessage, type LivePoll,
 } from "@/lib/api/live-class";
 import { cn } from "@/lib/utils";
+import { getApiOrigin } from "@/lib/api-config";
 
 AgoraRTC.setLogLevel(4);
 
 const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID as string;
-const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/v\d+\/?$/, '') || 'http://localhost:3000') as string;
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL ||
+  import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/v\d+\/?$/, "") ||
+  getApiOrigin() ||
+  "http://127.0.0.1:3000") as string;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

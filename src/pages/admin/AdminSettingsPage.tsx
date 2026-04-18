@@ -18,6 +18,7 @@ import {
   useInstituteNotificationPrefs, useUpdateInstituteNotificationPrefs,
   useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent,
 } from "@/hooks/use-admin";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -90,8 +91,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL as string || "http://localhost:3000/api/v1")
-  .replace(/\/api\/v\d+$/, "");
+const API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
 
 /** Converts relative /uploads/... paths from the backend into absolute URLs. */
 function resolveMediaUrl(url: string | null | undefined): string | null {

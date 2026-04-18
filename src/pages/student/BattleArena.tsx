@@ -30,6 +30,7 @@ import {
 } from "@/hooks/use-student";
 import { BattleMode, BattleRoom, getBotPracticeQuestions } from "@/lib/api/student";
 import { tokenStorage } from "@/lib/api/client";
+import { getApiOrigin } from "@/lib/api-config";
 import { toast } from "sonner";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
@@ -276,7 +277,7 @@ function BattleInProgress({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processRoundResultRef = useRef<(data: any) => void>(null!);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
 
   // ─── Timer ────────────────────────────────────────────────────────────────
 

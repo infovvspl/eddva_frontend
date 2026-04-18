@@ -16,13 +16,11 @@ import {
 } from "@/hooks/use-admin";
 import { createQuestion, aiGenerateQuestions } from "@/lib/api/admin";
 import type { CreateMockTestQuestionPayload, AiGeneratedQuestion, Batch } from "@/lib/api/admin";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ─── URL resolver (relative paths → absolute backend URL) ────────────────────
 
-const API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
-  catch { return "http://localhost:3000"; }
-})();
+const API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
 
 function resolveMediaUrl(url?: string | null): string | undefined {
   if (!url) return undefined;

@@ -12,6 +12,7 @@ import PerformanceChart from "@/components/student/dashboard/PerformanceChart";
 import LeaderboardPreview from "@/components/student/dashboard/LeaderboardPreview";
 import Recommendations from "@/components/student/dashboard/Recommendations";
 import QuickActions from "@/components/student/dashboard/QuickActions";
+import { getApiOrigin } from "@/lib/api-config";
 
 // ── Dummy data (replace with API when available) ──────────────────────────────
 const DUMMY_STATS = {
@@ -21,9 +22,7 @@ const DUMMY_STATS = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const _API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; } catch { return ""; }
-})();
+const _API_ORIGIN = getApiOrigin();
 
 function resolveUrl(url?: string | null) {
   if (!url) return undefined;
