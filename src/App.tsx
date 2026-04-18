@@ -135,11 +135,6 @@ const TeacherRoutes = () => (
       <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
     </Route>
-    {/* Live class room — full screen, no layout wrapper */}
-    <Route
-      path="/live/:lectureId"
-      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
-    />
   </>
 );
 
@@ -170,10 +165,10 @@ const StudentRoutes = () => (
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
       <Route path="/student/notifications" element={<StudentNotificationsPage />} />
     </Route>
-    {/* Live class room — full screen, no layout wrapper */}
+    {/* Live class room — full screen, accessible by all roles */}
     <Route
       path="/live/:lectureId"
-      element={<ProtectedRoute allowedRoles={["student"]}><LiveClassRoom /></ProtectedRoute>}
+      element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
     />
   </>
 );

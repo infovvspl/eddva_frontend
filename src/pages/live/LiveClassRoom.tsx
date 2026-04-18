@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 AgoraRTC.setLogLevel(4);
 
 const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID as string;
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string;
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/v\d+\/?$/, '') || 'http://localhost:3000') as string;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -777,7 +777,7 @@ export default function LiveClassRoom() {
   const [session, setSession] = useState<LiveSessionInfo | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [ended, setEnded] = useState(false);
-  const [endStats, setEndStats] = useState<{ duration: number; attendanceCount: number } | null>(null);
+  const [endStats, setEndStats] = useState<{ duration: number; attendanceCount: number; recordingUrl: string | null } | null>(null);
 
   // ── Agora
   const clientRef = useRef<IAgoraRTCClient | null>(null);
@@ -909,11 +909,14 @@ export default function LiveClassRoom() {
     });
 
     try {
-      await client.setClientRole(role);
+      await client.setClientRole(role === "host" ? "host" : "audience");
+      console.log("[Agora] joining with token:", token ? token.substring(0, 30) + "..." : "NULL");
       await client.join(AGORA_APP_ID, channelName, token, uid);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to connect to the live class.");
+    } catch (err: any) {
+      const code = err?.code ?? err?.message ?? String(err);
+      console.error("[Agora join failed]", code, err);
+      toast.error(`Failed to connect: ${code}`);
+      clientRef.current = null;
       return;
     }
 
@@ -947,9 +950,9 @@ export default function LiveClassRoom() {
   const connectSocket = useCallback((sessionId: string, uid: number) => {
     if (socketRef.current?.connected) return;
     setSocketSessionId(sessionId);
-    const socket = io(`${BACKEND_URL}/live`, {
+    const socket = io(`${SOCKET_URL}/live`, {
       path: "/socket.io",
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       auth: { token: localStorage.getItem("eddva_access_token") },
     });
     socketRef.current = socket;
@@ -1107,7 +1110,7 @@ export default function LiveClassRoom() {
     setIsEnding(true);
     try {
       const r = await endLiveClass(lectureId!);
-      setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount });
+      setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount, recordingUrl: r.recordingUrl });
       setEnded(true);
       leaveAgora();
       socketRef.current?.disconnect();
@@ -1292,15 +1295,43 @@ export default function LiveClassRoom() {
               {isTeacher ? "Great job! Here's a quick summary:" : "Thanks for attending!"}
             </p>
             {endStats && (
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-slate-50 rounded-2xl p-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</p>
-                  <p className="text-2xl font-black text-slate-900">{formatDuration(endStats.duration * 1000)}</p>
+              <div className="space-y-3 mb-6">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</p>
+                    <p className="text-2xl font-black text-slate-900">{formatDuration(endStats.duration * 60 * 1000)}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Attended</p>
+                    <p className="text-2xl font-black text-slate-900">{endStats.attendanceCount}</p>
+                  </div>
                 </div>
-                <div className="bg-slate-50 rounded-2xl p-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Attended</p>
-                  <p className="text-2xl font-black text-slate-900">{endStats.attendanceCount}</p>
-                </div>
+                {endStats.recordingUrl ? (
+                  <a
+                    href={endStats.recordingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 w-full bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-left hover:bg-emerald-100 transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+                      <Video className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-emerald-800">Recording ready</p>
+                      <p className="text-[10px] text-emerald-600">Click to watch or share with students</p>
+                    </div>
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-3 w-full bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                    <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center shrink-0">
+                      <Video className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-amber-800">Recording processing</p>
+                      <p className="text-[10px] text-amber-600">Will be available in the lecture shortly</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <button

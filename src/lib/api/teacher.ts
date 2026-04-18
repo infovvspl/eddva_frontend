@@ -235,14 +235,18 @@ export async function getLectureStats(id: string): Promise<LectureStats> {
 
 // ─── Doubts ───────────────────────────────────────────────────────────────────
 
-export async function getDoubtQueue(): Promise<Doubt[]> {
-  const res = await apiClient.get("/doubts/queue");
+export async function getDoubtQueue(batchId?: string): Promise<Doubt[]> {
+  const q = new URLSearchParams();
+  if (batchId) q.set("batchId", batchId);
+  const qs = q.toString();
+  const res = await apiClient.get(`/doubts/queue${qs ? `?${qs}` : ""}`);
   return extractData<Doubt[]>(res) ?? [];
 }
 
-export async function getAllDoubts(params?: { status?: string; page?: number; limit?: number }): Promise<Doubt[]> {
+export async function getAllDoubts(params?: { status?: string; batchId?: string; page?: number; limit?: number }): Promise<Doubt[]> {
   const q = new URLSearchParams();
   if (params?.status) q.set("status", params.status);
+  if (params?.batchId) q.set("batchId", params.batchId);
   if (params?.page) q.set("page", String(params.page));
   if (params?.limit) q.set("limit", String(params.limit));
   const res = await apiClient.get(`/doubts?${q}`);
