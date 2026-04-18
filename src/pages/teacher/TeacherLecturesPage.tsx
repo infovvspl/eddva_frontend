@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -2071,8 +2071,56 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
 
 const TeacherLecturesPage = () => {
   const queryClient = useQueryClient();
-  const { data: lectures, isLoading } = useMyLectures();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filterBatch = searchParams.get("batchId") ?? "";
+  const filterSubjectId = searchParams.get("subjectId") ?? "";
+  const filterChapterId = searchParams.get("chapterId") ?? "";
+  const filterTopicId = searchParams.get("topicId") ?? "";
+
+  const setBatchFilter = (id: string) => {
+    const p = new URLSearchParams(searchParams);
+    if (id) p.set("batchId", id); else p.delete("batchId");
+    p.delete("subjectId");
+    p.delete("chapterId");
+    p.delete("topicId");
+    setSearchParams(p, { replace: true });
+  };
+  const setSubjectFilter = (id: string) => {
+    const p = new URLSearchParams(searchParams);
+    if (id) p.set("subjectId", id); else p.delete("subjectId");
+    p.delete("chapterId");
+    p.delete("topicId");
+    setSearchParams(p, { replace: true });
+  };
+  const setChapterFilter = (id: string) => {
+    const p = new URLSearchParams(searchParams);
+    if (id) p.set("chapterId", id); else p.delete("chapterId");
+    p.delete("topicId");
+    setSearchParams(p, { replace: true });
+  };
+  const setTopicFilter = (id: string) => {
+    const p = new URLSearchParams(searchParams);
+    if (id) p.set("topicId", id); else p.delete("topicId");
+    setSearchParams(p, { replace: true });
+  };
+
   const { data: batches } = useMyBatches();
+  const batchList = batches ?? [];
+
+  /** Batch for lecture list + curriculum: explicit URL filter, else the only course when teacher has one. */
+  const resolvedBatchId = useMemo(() => {
+    if (filterBatch) return filterBatch;
+    if (batchList.length === 1) return batchList[0].id;
+    return undefined;
+  }, [filterBatch, batchList]);
+
+  const { data: lectures, isLoading } = useMyLectures({
+    batchId: resolvedBatchId,
+    limit: 500,
+  });
+
+  const { data: curriculumSubjectsRaw = [], isLoading: curriculumLoading } = useSubjects(resolvedBatchId);
+
   const deleteLecture = useDeleteLecture();
   const { toast } = useToast();
 
@@ -2082,16 +2130,79 @@ const TeacherLecturesPage = () => {
   const [viewLecture, setViewLecture] = useState<Lecture | null>(null);
   const [reviewLecture, setReviewLecture] = useState<Lecture | null>(null);
   const [statsLecture, setStatsLecture] = useState<Lecture | null>(null);
-  const [filterBatch, setFilterBatch] = useState("");
 
   // Track per-lecture AI processing step for animated UI (0–3)
   const [processingSteps, setProcessingSteps] = useState<Record<string, number>>({});
 
-  const batchList = batches ?? [];
   const all = lectures ?? [];
+  const curriculumSubjects = Array.isArray(curriculumSubjectsRaw) ? curriculumSubjectsRaw : [];
 
-  const recorded = all.filter(l => l.type === "recorded" && (!filterBatch || l.batchId === filterBatch));
-  const live = all.filter(l => l.type === "live" && (!filterBatch || l.batchId === filterBatch));
+  const subjectOptions = useMemo(() => curriculumSubjects
+    .filter(s => s.isActive !== false)
+    .map(s => ({ id: s.id, name: s.name, sortOrder: s.sortOrder ?? 0 }))
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
+  [curriculumSubjects]);
+
+  const subjectNode = useMemo(
+    () => curriculumSubjects.find(s => s.id === filterSubjectId),
+    [curriculumSubjects, filterSubjectId],
+  );
+
+  const chapterOptions = useMemo(() => {
+    const ch = subjectNode?.chapters ?? [];
+    return ch
+      .filter(c => c.isActive !== false)
+      .map(c => ({ id: c.id, name: c.name, sortOrder: c.sortOrder ?? 0 }))
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  }, [subjectNode]);
+
+  const chapterNode = useMemo(
+    () => subjectNode?.chapters?.find(c => c.id === filterChapterId),
+    [subjectNode, filterChapterId],
+  );
+
+  const topicOptions = useMemo(() => {
+    const topics = chapterNode?.topics ?? [];
+    return topics
+      .filter(t => t.isActive !== false)
+      .map(t => ({ id: t.id, name: t.name, sortOrder: t.sortOrder ?? 0 }))
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  }, [chapterNode]);
+
+  const topicIdsInSubject = useMemo(() => {
+    if (!subjectNode) return null;
+    const ids = new Set<string>();
+    for (const ch of subjectNode.chapters ?? []) {
+      for (const top of ch.topics ?? []) ids.add(top.id);
+    }
+    return ids;
+  }, [subjectNode]);
+
+  const topicIdsInChapter = useMemo(() => {
+    if (!chapterNode?.topics?.length) return null;
+    return new Set(chapterNode.topics.map(t => t.id));
+  }, [chapterNode]);
+
+  const filtered = useMemo(() => {
+    let list = all;
+    if (filterTopicId) {
+      list = list.filter(l => (l.topicId ?? l.topic?.id) === filterTopicId);
+    } else if (filterChapterId && topicIdsInChapter) {
+      list = list.filter(l => {
+        const tid = l.topicId ?? l.topic?.id;
+        return tid != null && topicIdsInChapter.has(tid);
+      });
+    } else if (filterSubjectId && topicIdsInSubject) {
+      list = list.filter(l => {
+        const tid = l.topicId ?? l.topic?.id;
+        return tid != null && topicIdsInSubject.has(tid);
+      });
+    }
+    return list;
+  }, [all, filterTopicId, filterChapterId, filterSubjectId, topicIdsInChapter, topicIdsInSubject]);
+
+  const recorded = filtered.filter(l => l.type === "recorded");
+  const live = filtered.filter(l => l.type === "live");
 
   // Auto-poll every 8s when any recorded lecture is still processing
   // (handles the case where the user refreshes mid-processing)
@@ -2266,7 +2377,7 @@ const TeacherLecturesPage = () => {
 
         {batchList.length > 1 && (
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setFilterBatch("")}
+            <button type="button" onClick={() => setBatchFilter("")}
               className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
                 !filterBatch
                   ? "bg-white text-gray-900"
@@ -2274,7 +2385,7 @@ const TeacherLecturesPage = () => {
               All
             </button>
             {batchList.map(b => (
-              <button key={b.id} onClick={() => setFilterBatch(b.id)}
+              <button type="button" key={b.id} onClick={() => setBatchFilter(b.id)}
                 className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
                   filterBatch === b.id
                     ? "bg-white text-gray-900"
@@ -2285,6 +2396,62 @@ const TeacherLecturesPage = () => {
           </div>
         )}
       </div>
+
+      {(filterBatch || batchList.length > 0) && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 inline-flex items-center gap-1.5">
+            Curriculum
+            {curriculumLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+          </span>
+          <select
+            value={filterSubjectId}
+            onChange={e => setSubjectFilter(e.target.value)}
+            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400"
+          >
+            <option value="">All subjects</option>
+            {subjectOptions.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+          <select
+            value={filterChapterId}
+            disabled={!filterSubjectId}
+            onChange={e => setChapterFilter(e.target.value)}
+            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400 disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <option value="">All chapters</option>
+            {chapterOptions.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <select
+            value={filterTopicId}
+            disabled={!filterChapterId}
+            onChange={e => setTopicFilter(e.target.value)}
+            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400 disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <option value="">All topics</option>
+            {topicOptions.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          {(filterSubjectId || filterChapterId || filterTopicId) && (
+            <button
+              type="button"
+              onClick={() => {
+                const p = new URLSearchParams(searchParams);
+                p.delete("subjectId");
+                p.delete("chapterId");
+                p.delete("topicId");
+                setSearchParams(p, { replace: true });
+              }}
+              className="h-9 px-3 rounded-xl text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors"
+            >
+              Clear topic filters
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Content ── */}
       {isLoading ? (

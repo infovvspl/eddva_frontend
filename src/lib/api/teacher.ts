@@ -60,7 +60,11 @@ export interface Lecture {
   transcript?: string;
   createdAt: string;
   batch?: { id: string; name: string };
-  topic?: { id: string; name: string };
+  topic?: {
+    id: string;
+    name: string;
+    chapter?: { id: string; name: string; subject?: { id: string; name: string } };
+  };
 }
 
 export interface CreateLecturePayload {
@@ -193,9 +197,24 @@ export async function getBatchPerformance(batchId: string): Promise<BatchPerform
 
 // ─── Lectures ─────────────────────────────────────────────────────────────────
 
-export async function getMyLectures(batchId?: string): Promise<Lecture[]> {
-  const params = batchId ? `?batchId=${batchId}` : "";
-  const res = await apiClient.get(`/content/lectures${params}`);
+export type GetMyLecturesParams = {
+  batchId?: string;
+  topicId?: string;
+  chapterId?: string;
+  subjectId?: string;
+  /** List endpoint max is 500. */
+  limit?: number;
+};
+
+export async function getMyLectures(filters?: GetMyLecturesParams): Promise<Lecture[]> {
+  const q = new URLSearchParams();
+  if (filters?.batchId) q.set("batchId", filters.batchId);
+  if (filters?.topicId) q.set("topicId", filters.topicId);
+  if (filters?.chapterId) q.set("chapterId", filters.chapterId);
+  if (filters?.subjectId) q.set("subjectId", filters.subjectId);
+  q.set("limit", String(filters?.limit ?? 500));
+  const qs = q.toString();
+  const res = await apiClient.get(`/content/lectures?${qs}`);
   return extractData<Lecture[]>(res) ?? [];
 }
 

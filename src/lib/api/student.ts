@@ -103,6 +103,8 @@ export interface MyCourse {
   enrolledAt?: string;
   teacher?: { id: string; fullName: string };
   progress: MyCourseProgress;
+  /** Subject names assigned to this batch (from batch_subject_teachers) — for filters, etc. */
+  assignedSubjectNames?: string[];
 }
 
 export interface CourseResource {
@@ -266,6 +268,11 @@ function normalizeEnrollment(raw: RawEnrollment): MyCourse {
   const overallPct = p.overallPct
     ?? (totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100)
     : total > 0 ? Math.round((watched / total) * 100) : 0);
+  const subjRaw = raw.subjects;
+  const assignedSubjectNames = Array.isArray(subjRaw)
+    ? subjRaw.map((x: unknown) => String(x ?? "").trim()).filter(Boolean)
+    : [];
+
   return {
     id: batch.id ?? raw.enrollmentId ?? "",
     name: batch.name ?? "",
@@ -285,6 +292,7 @@ function normalizeEnrollment(raw: RawEnrollment): MyCourse {
       totalLectures: total,
       overallPct,
     },
+    assignedSubjectNames: assignedSubjectNames.length ? assignedSubjectNames : undefined,
   };
 }
 
@@ -360,7 +368,50 @@ export async function getCourseCurriculum(batchId: string): Promise<CourseCurric
 
 export async function getCourseTopicDetail(batchId: string, topicId: string): Promise<TopicDetailWithContent> {
   const res = await apiClient.get(`/students/my-courses/${batchId}/topics/${topicId}`);
-  return extractData<TopicDetailWithContent>(res);
+  const raw = extractData<any>(res);
+  if (!raw || typeof raw !== "object") {
+    throw new Error("Invalid topic detail response");
+  }
+
+  const t = raw.topic ?? {};
+  const chapter = raw.chapter ?? t.chapter ?? {};
+  const subject = raw.subject ?? t.subject ?? {};
+  const lecturesRaw = Array.isArray(raw.lectures) ? raw.lectures : [];
+  const resources = Array.isArray(raw.resources) ? raw.resources : [];
+
+  const lectures: TopicLecture[] = lecturesRaw.map((l: any) => {
+    const prog = l.progress ?? l.studentProgress ?? {};
+    return {
+      id: l.id,
+      title: l.title ?? "",
+      description: l.description,
+      duration: l.durationSeconds ?? l.videoDurationSeconds ?? l.duration,
+      videoUrl: l.videoUrl,
+      thumbnailUrl: l.thumbnailUrl,
+      watchProgress: prog.watchPercentage ?? l.watchProgress ?? 0,
+      isCompleted: prog.isCompleted ?? l.isCompleted ?? false,
+      sortOrder: l.sortOrder,
+      createdAt: l.createdAt,
+    };
+  });
+
+  const prog = raw.progress ?? {};
+
+  return {
+    topic: {
+      id: t.id,
+      name: t.name ?? "",
+      estimatedStudyMinutes: t.estimatedStudyMinutes,
+      gatePassPercentage: t.gatePassPercentage,
+      status: prog.status ?? t.status ?? "unlocked",
+      progressPct: prog.progressPct ?? t.progressPct,
+      completedAt: prog.completedAt ?? t.completedAt ?? null,
+    },
+    chapter: { id: chapter.id ?? "", name: chapter.name ?? "" },
+    subject: { id: subject.id ?? "", name: subject.name ?? "" },
+    lectures,
+    resources,
+  };
 }
 
 // ─── Topic Progress ────────────────────────────────────────────────────────────
@@ -399,6 +450,7 @@ export interface StudentLecture {
   batchId: string;
   topicId?: string;
   videoUrl?: string;
+  liveMeetingUrl?: string;
   videoDurationSeconds?: number;
   thumbnailUrl?: string;
   scheduledAt?: string;
@@ -442,7 +494,7 @@ export async function getLecturesByBatchAndTopic(batchId: string, topicId?: stri
 }
 
 export async function getAllBatchLectures(batchId?: string): Promise<StudentLecture[]> {
-  const q = new URLSearchParams({ limit: "100" });
+  const q = new URLSearchParams({ limit: "500" });
   if (batchId) q.set("batchId", batchId);
   const res = await apiClient.get(`/content/lectures?${q}`);
   return unwrapLectures(res);

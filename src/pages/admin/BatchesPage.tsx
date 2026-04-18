@@ -1546,7 +1546,7 @@ const BatchesPage = () => {
         <div className="space-y-4">
           {batchList.map((b: any, _bIdx: number) => {
             const sc = statusColor[b.status] ?? statusColor.inactive;
-            const enrolled = b.studentCount ?? 0;
+            const enrolled = b.enrolledCount ?? b.studentCount ?? 0;
             const examStyle = EXAM_STYLES[b.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
             return (
             <motion.div

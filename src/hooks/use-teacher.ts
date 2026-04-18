@@ -8,7 +8,8 @@ export const teacherKeys = {
   batches: ["teacher", "batches"] as const,
   roster: (batchId: string) => ["teacher", "roster", batchId] as const,
   performance: (batchId: string) => ["teacher", "performance", batchId] as const,
-  lectures: (batchId?: string) => ["teacher", "lectures", batchId] as const,
+  lectures: (filters?: teacherApi.GetMyLecturesParams) =>
+    ["teacher", "lectures", filters?.batchId ?? "", filters?.topicId ?? "", filters?.chapterId ?? "", filters?.subjectId ?? "", filters?.limit ?? 500] as const,
   lectureStats: (id: string) => ["teacher", "lecture-stats", id] as const,
   doubtQueue: ["teacher", "doubt-queue"] as const,
   allDoubts: (status?: string) => ["teacher", "all-doubts", status] as const,
@@ -52,10 +53,10 @@ export function useBatchPerformance(batchId: string) {
 
 // ─── Lectures ─────────────────────────────────────────────────────────────────
 
-export function useMyLectures(batchId?: string) {
+export function useMyLectures(filters?: teacherApi.GetMyLecturesParams) {
   return useQuery({
-    queryKey: teacherKeys.lectures(batchId),
-    queryFn: () => teacherApi.getMyLectures(batchId),
+    queryKey: teacherKeys.lectures(filters),
+    queryFn: () => teacherApi.getMyLectures(filters),
   });
 }
 

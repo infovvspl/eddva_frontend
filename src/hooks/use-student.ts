@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import * as studentApi from "@/lib/api/student";
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
@@ -67,9 +67,34 @@ export function useCourseCurriculum(batchId: string) {
     queryKey: studentKeys.courseCurriculum(batchId),
     queryFn: () => studentApi.getCourseCurriculum(batchId),
     enabled: !!batchId,
-    staleTime: 60_000,
+    staleTime: 0,
     retry: false,
   });
+}
+
+export function useAllEnrolledSubjectNames(): string[] {
+  const { data: myCourses = [] } = useMyCourses();
+  const batchIds = myCourses.map(c => c.id).filter(Boolean);
+
+  const results = useQueries({
+    queries: batchIds.map(batchId => ({
+      queryKey: studentKeys.courseCurriculum(batchId),
+      queryFn: () => studentApi.getCourseCurriculum(batchId),
+      enabled: !!batchId,
+      staleTime: 0,
+    })),
+    combine: (results) => {
+      const names = new Set<string>();
+      for (const r of results) {
+        for (const s of r.data?.subjects ?? []) {
+          if (s.name?.trim()) names.add(s.name.trim());
+        }
+      }
+      return [...names].sort((a, b) => a.localeCompare(b));
+    },
+  });
+
+  return results;
 }
 
 export function useCourseTopicDetail(batchId: string, topicId: string) {

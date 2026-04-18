@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -238,15 +238,35 @@ function ResourceCard({ res }: { res: TopicResource }) {
 export default function StudentCourseTopicPage() {
   const { batchId = "", topicId = "" } = useParams<{ batchId: string; topicId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data, isLoading, isError } = useCourseTopicDetail(batchId, topicId);
 
   const [activeLectureId, setActiveLectureId] = useState<string | null>(null);
   const [resourceTab, setResourceTab] = useState<ResourceTab>("dpp");
 
-  // Auto-select first in-progress or first lecture
+  // Reset lecture selection when navigating — stale IDs caused an empty player and hid materials.
   useEffect(() => {
-    if (!data?.lectures?.length) return;
-    if (activeLectureId) return;
+    setActiveLectureId(null);
+  }, [batchId, topicId]);
+
+  // Deep-link from course curriculum resource pills: ?open=dpp|pyq|material (before paint when possible)
+  const openParam = searchParams.get("open");
+  useLayoutEffect(() => {
+    if (openParam === "dpp" || openParam === "pyq" || openParam === "material") {
+      setResourceTab(openParam);
+    } else {
+      setResourceTab("dpp");
+    }
+  }, [openParam, batchId, topicId]);
+
+  // Pick a valid lecture for this topic, or clear when none
+  useEffect(() => {
+    if (!data?.lectures?.length) {
+      setActiveLectureId(null);
+      return;
+    }
+    const valid = activeLectureId && data.lectures.some(l => l.id === activeLectureId);
+    if (valid) return;
     const inProgress = data.lectures.find(l => (l.watchProgress ?? 0) > 0 && !l.isCompleted);
     setActiveLectureId(inProgress?.id ?? data.lectures[0].id);
   }, [data, activeLectureId]);
@@ -276,13 +296,16 @@ export default function StudentCourseTopicPage() {
     </div>
   );
 
-  const { topic, subject, chapter, lectures, resources } = data;
+  const { topic, subject, chapter } = data;
+  const lectures = data.lectures ?? [];
+  const resources = data.resources ?? [];
 
   const activeLecture = lectures.find(l => l.id === activeLectureId) ?? lectures[0] ?? null;
 
-  const dppList      = resources.filter(r => r.type === "dpp");
-  const pyqList      = resources.filter(r => r.type === "pyq");
-  const materialList = resources.filter(r => ["pdf", "notes", "video", "link"].includes(r.type));
+  const resType = (r: TopicResource) => String(r.type ?? "").toLowerCase();
+  const dppList      = resources.filter(r => resType(r) === "dpp");
+  const pyqList      = resources.filter(r => resType(r) === "pyq");
+  const materialList = resources.filter(r => ["pdf", "notes", "video", "link"].includes(resType(r)));
 
   const tabConfig: { id: ResourceTab; label: string; count: number; icon: React.ReactNode }[] = [
     { id: "dpp",      label: "DPP",           count: dppList.length,      icon: <ClipboardList className="w-4 h-4" /> },
@@ -301,11 +324,11 @@ export default function StudentCourseTopicPage() {
 
       {/* ── Breadcrumb ── */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5 font-medium flex-wrap">
-        <button onClick={() => navigate("/student/courses")} className="hover:text-slate-700 transition-colors">
+        <button type="button" onClick={() => navigate("/student/courses")} className="hover:text-slate-700 transition-colors">
           My Courses
         </button>
         <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        <button onClick={() => navigate(`/student/courses/${batchId}`)} className="hover:text-slate-700 transition-colors">
+        <button type="button" onClick={() => navigate(`/student/courses/${batchId}`)} className="hover:text-slate-700 transition-colors">
           {subject?.name || "Course"}
         </button>
         <ChevronRight className="w-3.5 h-3.5 shrink-0" />
@@ -314,59 +337,55 @@ export default function StudentCourseTopicPage() {
         <span className="text-slate-900 font-semibold">{topic.name}</span>
       </div>
 
-      {/* ── Main Layout: Player + Playlist ── */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-6">
+      {/* ── Lectures (only when this topic has lectures) — otherwise keep focus on materials below ── */}
+      {lectures.length > 0 ? (
+        <div className="flex flex-col lg:flex-row gap-6 mb-6">
 
-        {/* Left: Video Player */}
-        <div className="flex-1 min-w-0">
-          <VideoPlayer lecture={activeLecture} />
+          <div className="flex-1 min-w-0">
+            <VideoPlayer lecture={activeLecture} />
 
-          {/* Active lecture info */}
-          {activeLecture && (
-            <div className="mt-4 space-y-2">
-              <h1 className="text-xl font-bold text-slate-900 leading-snug">{activeLecture.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-slate-500 font-medium flex-wrap">
-                {subject?.name && (
-                  <span className="flex items-center gap-1.5 text-indigo-600 font-semibold">
-                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                    {subject.name}
-                  </span>
-                )}
-                <span>{chapter?.name}</span>
-                {activeLecture.duration && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {formatDuration(activeLecture.duration)}
-                  </span>
-                )}
-                {activeLecture.isCompleted && (
-                  <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Completed
-                  </span>
-                )}
+            {activeLecture && (
+              <div className="mt-4 space-y-2">
+                <h1 className="text-xl font-bold text-slate-900 leading-snug">{activeLecture.title}</h1>
+                <div className="flex items-center gap-4 text-sm text-slate-500 font-medium flex-wrap">
+                  {subject?.name && (
+                    <span className="flex items-center gap-1.5 text-indigo-600 font-semibold">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                      {subject.name}
+                    </span>
+                  )}
+                  <span>{chapter?.name}</span>
+                  {activeLecture.duration && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {formatDuration(activeLecture.duration)}
+                    </span>
+                  )}
+                  {activeLecture.isCompleted && (
+                    <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Completed
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Next lecture button */}
-          {activeLecture && lectures.indexOf(activeLecture) < lectures.length - 1 && (
-            <button
-              onClick={() => {
-                const idx = lectures.indexOf(activeLecture);
-                setActiveLectureId(lectures[idx + 1].id);
-              }}
-              className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-colors"
-            >
-              <SkipForward className="w-4 h-4" /> Next Lecture
-            </button>
-          )}
-        </div>
+            {activeLecture && lectures.indexOf(activeLecture) < lectures.length - 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const idx = lectures.indexOf(activeLecture);
+                  setActiveLectureId(lectures[idx + 1].id);
+                }}
+                className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-colors"
+              >
+                <SkipForward className="w-4 h-4" /> Next Lecture
+              </button>
+            )}
+          </div>
 
-        {/* Right: Playlist */}
-        {lectures.length > 0 && (
           <div className="lg:w-80 shrink-0">
             <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-              {/* Playlist header */}
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-slate-700">
@@ -375,7 +394,6 @@ export default function StudentCourseTopicPage() {
                       {lectures.filter(l => l.isCompleted).length}/{lectures.length} done
                     </span>
                   </h3>
-                  {/* Overall progress */}
                   <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-500 rounded-full transition-all"
@@ -389,7 +407,6 @@ export default function StudentCourseTopicPage() {
                 </div>
               </div>
 
-              {/* Playlist items */}
               <div className="divide-y divide-slate-50 max-h-[calc(100vh-300px)] overflow-y-auto">
                 {lectures.map((lec, idx) => (
                   <PlaylistItem
@@ -403,8 +420,15 @@ export default function StudentCourseTopicPage() {
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+          <p className="font-semibold text-slate-700">No lectures uploaded for this topic yet.</p>
+          <p className="mt-1 text-slate-500">
+            Open <span className="font-bold text-indigo-700">Study Material</span> below for PDFs, notes, and videos your institute added.
+          </p>
+        </div>
+      )}
 
       {/* ── Resource Tabs ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -413,6 +437,7 @@ export default function StudentCourseTopicPage() {
           {tabConfig.map(tab => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setResourceTab(tab.id)}
               className={cn(
                 "flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-all",

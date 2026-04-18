@@ -713,9 +713,19 @@ export async function createLecture(dto: CreateLecturePayload) {
   return extractData<any>(res);
 }
 
-export async function listLectures() {
-  const res = await apiClient.get("/content/lectures");
-  return extractData<any[]>(res);
+/** List lectures; supports optional batch/topic filters (admin sees tenant-scoped rows). */
+export async function listLectures(params?: { batchId?: string; topicId?: string; limit?: number; page?: number }) {
+  const q = new URLSearchParams();
+  if (params?.batchId) q.set("batchId", params.batchId);
+  if (params?.topicId) q.set("topicId", params.topicId);
+  if (params?.limit != null) q.set("limit", String(params.limit));
+  if (params?.page != null) q.set("page", String(params.page));
+  const suffix = q.toString() ? `?${q}` : "";
+  const res = await apiClient.get(`/content/lectures${suffix}`);
+  const raw = extractData<any>(res);
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === "object" && Array.isArray(raw.data)) return raw.data;
+  return [];
 }
 
 export async function unpublishLecture(id: string) {

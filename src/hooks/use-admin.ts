@@ -344,7 +344,16 @@ export function useGenerateInviteLink() {
 }
 
 export function useLectures() {
-  return useQuery({ queryKey: adminKeys.lectures, queryFn: adminApi.listLectures });
+  return useQuery({ queryKey: adminKeys.lectures, queryFn: () => adminApi.listLectures({ limit: 100 }) });
+}
+
+/** All lectures for a batch (admin content — includes every status, any topic or unassigned). */
+export function useBatchContentLectures(batchId: string | undefined) {
+  return useQuery({
+    queryKey: [...adminKeys.lectures, "batch", batchId ?? ""] as const,
+    queryFn: () => adminApi.listLectures({ batchId, limit: 500 }),
+    enabled: !!batchId,
+  });
 }
 
 export function useCreateLecture() {
@@ -465,12 +474,12 @@ export function useRemoveQuestionFromMockTest(mockTestId: string) {
 // ---------------------------------------------------------------------------
 
 export const settingsKeys = {
-  onboarding:    ["institute", "settings", "onboarding"]    as const,
-  profile:       ["institute", "settings", "profile"]       as const,
-  branding:      ["institute", "settings", "branding"]      as const,
-  subscription:  ["institute", "settings", "subscription"]  as const,
+  onboarding: ["institute", "settings", "onboarding"] as const,
+  profile: ["institute", "settings", "profile"] as const,
+  branding: ["institute", "settings", "branding"] as const,
+  subscription: ["institute", "settings", "subscription"] as const,
   notifications: ["institute", "settings", "notifications"] as const,
-  calendar:      (y?: number, m?: number) => ["institute", "settings", "calendar", y, m] as const,
+  calendar: (y?: number, m?: number) => ["institute", "settings", "calendar", y, m] as const,
 };
 
 export function useInstituteOnboarding() {
@@ -492,18 +501,14 @@ export function useSaveInstituteOnboarding() {
   });
 }
 
-<<<<<<< HEAD
 export function useInstituteProfile(enabled = true) {
-  return useQuery({ queryKey: settingsKeys.profile, queryFn: adminApi.getInstituteProfile, enabled });
-=======
-export function useInstituteProfile() {
   return useQuery({
     queryKey: settingsKeys.profile,
     queryFn: adminApi.getInstituteProfile,
+    enabled,
     retry: 0,
     staleTime: Infinity,
   });
->>>>>>> 909dfe411997289a263134507174ae22682a8f76
 }
 
 export function useUpdateInstituteProfile() {

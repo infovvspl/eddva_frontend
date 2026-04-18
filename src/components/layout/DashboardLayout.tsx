@@ -195,11 +195,11 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     if (!isStudent || !discoverData || !batchModalSeenKey) return;
-    const alreadySeen = sessionStorage.getItem(batchModalSeenKey) === "true";
+    const alreadySeen = localStorage.getItem(batchModalSeenKey) === "true";
     if (alreadySeen) return;
     if (discoverData.availableBatches.length > 0) {
       setShowBatchModal(true);
-      sessionStorage.setItem(batchModalSeenKey, "true");
+      localStorage.setItem(batchModalSeenKey, "true");
     }
   }, [discoverData, isStudent, batchModalSeenKey]);
 
@@ -267,65 +267,70 @@ const DashboardLayout = () => {
           </p>
         )}
         {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === roleRedirectPath[user.role]}
-            onClick={() => setMobileSidebarOpen(false)}
-            className={({ isActive }) =>
-              cn(
-                "group flex items-center gap-4 px-5 py-3 rounded-2xl text-[16px] font-bold transition-all duration-500 relative tracking-wide",
-                isActive
-                  ? "text-indigo-600 bg-indigo-50/50 shadow-sm border border-indigo-100/50 scale-[1.02] z-10"
-                  : "text-slate-900 hover:text-black hover:bg-slate-50/50"
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <div className={cn(
-                  "flex items-center justify-center rounded-xl shrink-0 transition-all duration-500",
-                  sidebarOpen ? "w-7 h-7" : "w-10 h-10",
-                  isActive ? "bg-indigo-600 text-white shadow-lg" : "bg-transparent text-slate-600 group-hover:text-slate-800"
-                )}>
-                  <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
-                </div>
-                {sidebarOpen && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
-                    {item.label}
-                  </motion.span>
-                )}
-                {item.badge && sidebarOpen && (
-                  <span className="ml-auto bg-indigo-100 text-[8px] font-bold text-indigo-600 px-2 py-0.5 rounded-lg">
-                    {item.badge}
-                  </span>
-                )}
-                {!sidebarOpen && (
-                  <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
-                    {item.label}
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === roleRedirectPath[user.role]}
+              onClick={() => setMobileSidebarOpen(false)}
+              className={({ isActive }) =>
+                cn(
+                  "group flex items-center rounded-2xl text-[16px] font-bold transition-[background-color,border-color,color,transform] duration-500 relative tracking-wide",
+                  sidebarOpen ? "gap-4 px-5 py-3" : "justify-center px-0 py-3",
+                  isActive
+                    ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.02] z-10", sidebarOpen ? "shadow-sm" : "shadow-none")
+                    : "text-slate-900 hover:text-black hover:bg-slate-50/50"
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <div className={cn(
+                    "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
+                    sidebarOpen ? "w-7 h-7" : "w-10 h-10",
+                    isActive
+                      ? cn("bg-indigo-600 text-white", sidebarOpen && "shadow-lg")
+                      : "bg-transparent text-slate-600 group-hover:text-slate-800"
+                  )}>
+                    <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
                   </div>
-                )}
-              </>
-            )}
-          </NavLink>
+                  {sidebarOpen && (
+                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
+                      {item.label}
+                    </motion.span>
+                  )}
+                  {item.badge && sidebarOpen && (
+                    <span className="ml-auto bg-indigo-100 text-[8px] font-bold text-indigo-600 px-2 py-0.5 rounded-lg">
+                      {item.badge}
+                    </span>
+                  )}
+                  {!sidebarOpen && (
+                    <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
+                      {item.label}
+                    </div>
+                  )}
+                </>
+              )}
+            </NavLink>
         ))}
       </nav>
 
       {/* ── Footer ── */}
-      <div className="p-6 border-t border-slate-100 bg-slate-50/30">
-        <div className="flex items-center gap-4 px-2">
-           <div className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 shadow-sm group transition-all duration-500 hover:scale-110">
-              <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
-           </div>
-           {sidebarOpen && (
-             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
+      <div className="p-4 border-t border-slate-100 bg-slate-50/30 shrink-0">
+        <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
+          <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
+            <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
+          </div>
+          {sidebarOpen && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
                 <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-             </motion.div>
-           )}
-           <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
-              <LogOut className="w-4 h-4" />
-           </button>
+              </motion.div>
+              <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -344,8 +349,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className={cn("flex h-screen overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "institute_admin" || user.role === "student") ? "font-poppins" : "font-sans bg-white")}
-      style={user.role === "institute_admin" ? { background: "#F5F8FC" } : undefined}
+      className={cn("flex h-screen overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "super_admin" || user.role === "teacher") ? "font-sans bg-white" : "font-poppins")}
     >
       <AeroBackground />
       
@@ -371,7 +375,7 @@ const DashboardLayout = () => {
 
       {/* ── Main Area ── */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <header className="h-20 shrink-0 flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 z-[60] backdrop-blur-3xl" style={{ background: user.role === "institute_admin" ? "rgba(245,248,252,0.85)" : "rgba(255,255,255,0.4)" }}>
+        <header className="h-20 shrink-0 flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 z-[60] backdrop-blur-3xl" style={{ background: "rgba(255,255,255,0.4)" }}>
            <div className="flex items-center gap-6">
               <button
                 onClick={() => window.innerWidth < 1024 ? setMobileSidebarOpen(!mobileSidebarOpen) : setSidebarOpen(!sidebarOpen)}

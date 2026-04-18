@@ -70,6 +70,7 @@ import LiveClassRoom from "./pages/live/LiveClassRoom";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 import JoinBatchPage from "./pages/JoinBatchPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // Landing Pages
 import AboutUsPage from "./pages/landing/AboutUsPage";
@@ -184,6 +185,7 @@ const TenantRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/join" element={<JoinBatchPage />} />
     {AdminRoutes()}
     {PYQRoute()}
@@ -206,6 +208,7 @@ const PlatformRoutes = () => (
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/join" element={<JoinBatchPage />} />
     <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
 

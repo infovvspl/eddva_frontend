@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown, ChevronRight, BookOpen, Video, CheckCircle2, Lock,
@@ -23,6 +23,20 @@ function resolveUrl(url?: string | null) {
   if (!url) return undefined;
   if (url.startsWith("http")) return url;
   return `${_API_ORIGIN}${url}`;
+}
+
+function isYoutubeLectureUrl(url?: string | null) {
+  if (!url) return false;
+  const u = url.startsWith("http") ? url : `${_API_ORIGIN}${url}`;
+  return u.includes("youtube.com") || u.includes("youtu.be");
+}
+
+/** Prefer live / scheduled / published for default play target */
+function primaryLectureForTopic(lectures: StudentLecture[]): StudentLecture | null {
+  if (!lectures.length) return null;
+  const rank = (s: string) =>
+    s === "live" ? 0 : s === "scheduled" ? 1 : s === "published" ? 2 : s === "ended" ? 3 : 9;
+  return [...lectures].sort((a, b) => rank(a.status) - rank(b.status))[0];
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -212,8 +226,8 @@ function ResourceTab({
 // ─── Topic Row ────────────────────────────────────────────────────────────────
 
 function TopicRow({
-  topic, batchId, isLocked,
-}: { topic: CourseTopic; batchId: string; isLocked: boolean }) {
+  topic, batchId, isLocked, topicLectures = [],
+}: { topic: CourseTopic; batchId: string; isLocked: boolean; topicLectures?: StudentLecture[] }) {
   const navigate = useNavigate();
   const isComplete = topic.status === "completed";
   const isInProgress = topic.status === "in_progress";
@@ -231,77 +245,106 @@ function TopicRow({
     return counts;
   }, [topic.resourceCounts, topic.resources]);
 
+  const goTopicResourceTab = (e: React.MouseEvent, open: "dpp" | "pyq" | "material") => {
+    e.stopPropagation();
+    if (locked) { toast.error("Unlock this course to access materials"); return; }
+    navigate(`/student/courses/${batchId}/topics/${topic.id}?open=${open}`);
+  };
+
   const handleClick = () => {
     if (locked) { toast.error("Complete previous topics to unlock this one"); return; }
-    navigate(`/student/courses/${batchId}/topics/${topic.id}`);
+    const primary = primaryLectureForTopic(topicLectures);
+    if (primary) navigate(`/student/lectures/${primary.id}`);
+    else navigate(`/student/courses/${batchId}/topics/${topic.id}`);
   };
 
   return (
     <div
-      onClick={handleClick}
       className={cn(
-        "flex items-center gap-4 px-5 py-4 rounded-xl cursor-pointer transition-all group border",
+        "rounded-xl border transition-all overflow-hidden",
         isComplete
-          ? "bg-emerald-50/60 border-emerald-100 hover:bg-emerald-50"
+          ? "bg-emerald-50/60 border-emerald-100"
           : isInProgress
-            ? "bg-blue-50/60 border-blue-100 hover:bg-blue-50"
+            ? "bg-blue-50/60 border-blue-100"
             : locked
-              ? "bg-slate-50 border-slate-100 opacity-70 cursor-not-allowed"
-              : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-sm"
+              ? "bg-slate-50 border-slate-100 opacity-70"
+              : "bg-white border-slate-100 hover:border-indigo-200 hover:shadow-sm"
       )}
     >
-      {/* Status icon */}
-      <div className={cn(
-        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-        isComplete  ? "bg-emerald-100" :
-        isInProgress ? "bg-blue-100" :
-        locked       ? "bg-slate-100" : "bg-slate-100 group-hover:bg-indigo-100"
-      )}>
-        {isComplete  ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> :
-         isInProgress ? <Play className="w-5 h-5 text-blue-600" /> :
-         locked       ? <Lock className="w-4 h-4 text-slate-400" /> :
-                        <Circle className="w-5 h-5 text-slate-300 group-hover:text-indigo-400" />}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className={cn(
-          "font-semibold text-sm truncate",
-          isComplete ? "text-slate-500 line-through" : "text-slate-800"
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
+        className={cn(
+          "flex items-center gap-4 px-5 py-4 cursor-pointer transition-all group",
+          locked ? "cursor-not-allowed" : ""
+        )}
+      >
+        {/* Status icon */}
+        <div className={cn(
+          "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+          isComplete  ? "bg-emerald-100" :
+          isInProgress ? "bg-blue-100" :
+          locked       ? "bg-slate-100" : "bg-slate-100 group-hover:bg-indigo-100"
         )}>
-          {topic.name}
-        </p>
-        <div className="flex items-center gap-3 mt-1 flex-wrap">
-          {topic.estimatedStudyMinutes && (
-            <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-              <Clock className="w-3 h-3" /> {topic.estimatedStudyMinutes}m
-            </span>
-          )}
-          {(topic.lectureCount ?? topic.lectures.total) > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-              <Video className="w-3 h-3" />
-              {topic.lectures.completed}/{topic.lectureCount ?? topic.lectures.total} lectures
-            </span>
-          )}
-          {/* Resource badges */}
-          {Object.entries(resourceCounts).map(([type, count]) => {
-            const meta = RESOURCE_META[type];
-            if (!meta) return null;
-            return (
-              <span key={type} className={cn("flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border", meta.bg, meta.color)}>
-                {meta.icon} {count} {meta.label}
-              </span>
-            );
-          })}
-          {isInProgress && topic.bestAccuracy != null && topic.bestAccuracy > 0 && (
-            <span className="text-[11px] font-bold text-blue-600">{topic.bestAccuracy}% accuracy</span>
-          )}
+          {isComplete  ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> :
+           isInProgress ? <Play className="w-5 h-5 text-blue-600" /> :
+           locked       ? <Lock className="w-4 h-4 text-slate-400" /> :
+                          <Circle className="w-5 h-5 text-slate-300 group-hover:text-indigo-400" />}
         </div>
-      </div>
 
-      <ChevronRight className={cn(
-        "w-4 h-4 shrink-0 transition-colors",
-        locked ? "text-slate-200" : "text-slate-300 group-hover:text-indigo-500"
-      )} />
+        <div className="flex-1 min-w-0">
+          <p className={cn(
+            "font-semibold text-sm truncate",
+            isComplete ? "text-slate-500 line-through" : "text-slate-800"
+          )}>
+            {topic.name}
+          </p>
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
+            {topic.estimatedStudyMinutes && (
+              <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                <Clock className="w-3 h-3" /> {topic.estimatedStudyMinutes}m
+              </span>
+            )}
+            {(topic.lectureCount ?? topic.lectures.total) > 0 && (
+              <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                <Video className="w-3 h-3" />
+                {topic.lectures.completed}/{topic.lectureCount ?? topic.lectures.total} lectures
+              </span>
+            )}
+            {/* Resource badges — open topic page on the right tab */}
+            {Object.entries(resourceCounts).map(([type, count]) => {
+              const meta = RESOURCE_META[type];
+              if (!meta || !count) return null;
+              const open: "dpp" | "pyq" | "material" =
+                type === "dpp" ? "dpp" : type === "pyq" ? "pyq" : "material";
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={e => goTopicResourceTab(e, open)}
+                  className={cn(
+                    "flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer transition-transform hover:scale-[1.02]",
+                    meta.bg, meta.color,
+                    locked && "opacity-50 pointer-events-none"
+                  )}
+                >
+                  {meta.icon} {count} {meta.label}
+                </button>
+              );
+            })}
+            {isInProgress && topic.bestAccuracy != null && topic.bestAccuracy > 0 && (
+              <span className="text-[11px] font-bold text-blue-600">{topic.bestAccuracy}% accuracy</span>
+            )}
+          </div>
+        </div>
+
+        <ChevronRight className={cn(
+          "w-4 h-4 shrink-0 transition-colors",
+          locked ? "text-slate-200" : "text-slate-300 group-hover:text-indigo-500"
+        )} />
+      </div>
     </div>
   );
 }
@@ -309,8 +352,17 @@ function TopicRow({
 // ─── Chapter Accordion ────────────────────────────────────────────────────────
 
 function ChapterAccordion({
-  chapter, batchId, isLocked, defaultOpen,
-}: { chapter: CourseChapter; batchId: string; isLocked: boolean; defaultOpen?: boolean }) {
+  chapter, batchId, subjectId, isLocked, defaultOpen, lecturesByTopicId,
+  onSelectChapter,
+}: {
+  chapter: CourseChapter;
+  batchId: string;
+  subjectId: string;
+  isLocked: boolean;
+  defaultOpen?: boolean;
+  lecturesByTopicId: Map<string, StudentLecture[]>;
+  onSelectChapter?: (subjectId: string, chapterId: string) => void;
+}) {
   const [open, setOpen] = useState(defaultOpen ?? false);
 
   const completedCount = chapter.topics.filter(t => t.status === "completed").length;
@@ -323,51 +375,67 @@ function ChapterAccordion({
   }, 0);
 
   return (
-    <div className={cn(
-      "rounded-2xl overflow-hidden border transition-all",
-      open ? "border-slate-200 shadow-sm" : "border-slate-100"
-    )}>
-      <button
-        className="w-full flex items-center gap-4 px-5 py-4 text-left bg-white hover:bg-slate-50 transition-colors"
-        onClick={() => setOpen(o => !o)}
-      >
-        <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-          allDone ? "bg-emerald-100" : open ? "bg-slate-900" : "bg-slate-100"
-        )}>
-          {allDone
-            ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            : <BookOpen className={cn("w-5 h-5", open ? "text-white" : "text-slate-400")} />}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-800 text-sm line-clamp-1">{chapter.name}</p>
-          <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-[11px] text-slate-400 font-medium">{completedCount}/{chapter.topics.length} topics</span>
-            {totalLectures > 0 && <span className="text-[11px] text-slate-400 font-medium">· {totalLectures} lectures</span>}
-            {totalResources > 0 && <span className="text-[11px] text-slate-400 font-medium">· {totalResources} resources</span>}
-            {(chapter.jeeWeightage ?? 0) > 0 && (
-              <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
-                JEE {chapter.jeeWeightage}%
-              </span>
-            )}
+    <div
+      id={`chapter-block-${chapter.id}`}
+      className={cn(
+        "rounded-2xl overflow-hidden border transition-all scroll-mt-28",
+        open ? "border-slate-200 shadow-sm" : "border-slate-100"
+      )}
+    >
+      <div className="flex items-stretch bg-white">
+        <button
+          type="button"
+          className="flex-1 min-w-0 flex items-center gap-4 px-5 py-4 text-left hover:bg-slate-50 transition-colors"
+          onClick={() => {
+            onSelectChapter?.(subjectId, chapter.id);
+            setOpen(true);
+          }}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+            allDone ? "bg-emerald-100" : open ? "bg-slate-900" : "bg-slate-100"
+          )}>
+            {allDone
+              ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              : <BookOpen className={cn("w-5 h-5", open ? "text-white" : "text-slate-400")} />}
           </div>
-        </div>
 
-        {/* Progress mini bar */}
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
-          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 rounded-full"
-              style={{ width: `${chapter.topics.length > 0 ? Math.round((completedCount / chapter.topics.length) * 100) : 0}%` }}
-            />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-800 text-sm line-clamp-1">{chapter.name}</p>
+            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+              <span className="text-[11px] text-slate-400 font-medium">{completedCount}/{chapter.topics.length} topics</span>
+              {totalLectures > 0 && <span className="text-[11px] text-slate-400 font-medium">· {totalLectures} lectures</span>}
+              {totalResources > 0 && <span className="text-[11px] text-slate-400 font-medium">· {totalResources} resources</span>}
+              {(chapter.jeeWeightage ?? 0) > 0 && (
+                <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                  JEE {chapter.jeeWeightage}%
+                </span>
+              )}
+            </div>
           </div>
-        </div>
 
-        <motion.div animate={{ rotate: open ? 180 : 0 }} className="shrink-0">
-          <ChevronDown className="w-5 h-5 text-slate-400" />
-        </motion.div>
-      </button>
+          <div className="hidden sm:flex items-center gap-2 shrink-0 pr-2">
+            <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full"
+                style={{ width: `${chapter.topics.length > 0 ? Math.round((completedCount / chapter.topics.length) * 100) : 0}%` }}
+              />
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={open ? "Collapse chapter" : "Expand chapter"}
+          className="shrink-0 px-3 flex items-center border-l border-slate-100 hover:bg-slate-50 transition-colors"
+          onClick={() => setOpen(o => !o)}
+        >
+          <motion.div animate={{ rotate: open ? 180 : 0 }}>
+            <ChevronDown className="w-5 h-5 text-slate-400" />
+          </motion.div>
+        </button>
+      </div>
 
       <AnimatePresence initial={false}>
         {open && (
@@ -380,7 +448,13 @@ function ChapterAccordion({
           >
             <div className="bg-slate-50/50 border-t border-slate-100 p-3 space-y-2">
               {chapter.topics.map(t => (
-                <TopicRow key={t.id} topic={t} batchId={batchId} isLocked={isLocked} />
+                <TopicRow
+                  key={t.id}
+                  topic={t}
+                  batchId={batchId}
+                  isLocked={isLocked}
+                  topicLectures={lecturesByTopicId.get(t.id) ?? []}
+                />
               ))}
             </div>
           </motion.div>
@@ -393,8 +467,15 @@ function ChapterAccordion({
 // ─── Subject Section ──────────────────────────────────────────────────────────
 
 function SubjectSection({
-  subject, batchId, isLocked, defaultOpen,
-}: { subject: CourseSubject; batchId: string; isLocked: boolean; defaultOpen?: boolean }) {
+  subject, batchId, isLocked, defaultOpen, lecturesByTopicId, onSelectChapter,
+}: {
+  subject: CourseSubject;
+  batchId: string;
+  isLocked: boolean;
+  defaultOpen?: boolean;
+  lecturesByTopicId: Map<string, StudentLecture[]>;
+  onSelectChapter?: (subjectId: string, chapterId: string) => void;
+}) {
   const [open, setOpen] = useState(defaultOpen ?? true);
   const color = subjectColor(subject.name);
   const totalTopics = subject.chapters.reduce((a, c) => a + c.topics.length, 0);
@@ -461,8 +542,11 @@ function SubjectSection({
                   key={ch.id}
                   chapter={ch}
                   batchId={batchId}
+                  subjectId={subject.id}
                   isLocked={isLocked}
                   defaultOpen={ci === 0}
+                  lecturesByTopicId={lecturesByTopicId}
+                  onSelectChapter={onSelectChapter}
                 />
               ))}
             </div>
@@ -1036,6 +1120,7 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
   const isLive = lecture.type === "live";
   const thumb = resolveUrl(lecture.thumbnailUrl);
   const mins = lecture.videoDurationSeconds ? Math.ceil(lecture.videoDurationSeconds / 60) : null;
+  const yt = isYoutubeLectureUrl(lecture.videoUrl);
 
   return (
     <div
@@ -1059,9 +1144,12 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
             <CheckCircle2 className="w-3 h-3" /> Watched
           </span>
         )}
-        {isLive && (
-          <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-lg animate-pulse">
-            ● Live
+        {(isLive || yt) && (
+          <span className={cn(
+            "absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 text-white text-[10px] font-bold rounded-lg",
+            isLive ? "bg-red-500 animate-pulse" : "bg-red-600"
+          )}>
+            {isLive ? "● Live" : <span className="flex items-center gap-1"><Youtube className="w-3 h-3" /> YouTube</span>}
           </span>
         )}
         {mins && (
@@ -1091,7 +1179,13 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
           {lecture.title}
         </h4>
         {lecture.topic && (
-          <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mb-2">{lecture.topic.name}</p>
+          <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mb-1">{lecture.topic.name}</p>
+        )}
+        {lecture.description && (
+          <p className="text-[11px] text-slate-500 line-clamp-3 mb-2 leading-relaxed">{lecture.description}</p>
+        )}
+        {isLive && lecture.liveMeetingUrl && (
+          <p className="text-[10px] text-violet-600 font-semibold mb-1">Tap card to open — live link on watch page</p>
         )}
         {progress > 0 && (
           <div className="mt-auto pt-2">
@@ -1117,12 +1211,54 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
 type LectureFilter = "all" | "completed" | "in_progress" | "not_started";
 
 function LecturesTabContent({
-  lectures, batchId, isLoading,
-}: { lectures: StudentLecture[]; batchId: string; isLoading: boolean }) {
+  lectures, batchId, isLoading, courseSubjects,
+}: {
+  lectures: StudentLecture[];
+  batchId: string;
+  isLoading: boolean;
+  /** Full course subject list — drives the subject dropdown (not only subjects that already have lectures). */
+  courseSubjects: { id: string; name: string }[];
+}) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<LectureFilter>("all");
+  const [subjectKey, setSubjectKey] = useState<string>("all");
 
-  const filtered = lectures.filter(l => {
+  const subjectOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const opts: { key: string; label: string }[] = [];
+    const fromCourse = courseSubjects.filter(s => (s.name ?? "").trim());
+    if (fromCourse.length) {
+      for (const s of fromCourse) {
+        const name = (s.name ?? "").trim();
+        const k = name.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        opts.push({ key: name, label: name });
+      }
+    } else {
+      for (const l of lectures) {
+        const name = l.topic?.chapter?.subject?.name?.trim();
+        if (!name) continue;
+        const k = name.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        opts.push({ key: name, label: name });
+      }
+    }
+    opts.sort((a, b) => a.label.localeCompare(b.label));
+    return opts;
+  }, [courseSubjects, lectures]);
+
+  const bySubject = useMemo(() => {
+    if (subjectKey === "all") return lectures;
+    const sk = subjectKey.toLowerCase();
+    return lectures.filter(l => {
+      const n = (l.topic?.chapter?.subject?.name ?? "").toLowerCase();
+      return n === sk;
+    });
+  }, [lectures, subjectKey]);
+
+  const filtered = bySubject.filter(l => {
     const wp = l.studentProgress?.watchPercentage ?? 0;
     const done = l.studentProgress?.isCompleted ?? false;
     if (filter === "completed")   return done;
@@ -1148,19 +1284,49 @@ function LecturesTabContent({
   );
 
   const filterOpts: { id: LectureFilter; label: string; count: number }[] = [
-    { id: "all",         label: "All",         count: lectures.length },
-    { id: "in_progress", label: "In Progress", count: lectures.filter(l => !l.studentProgress?.isCompleted && (l.studentProgress?.watchPercentage ?? 0) > 0).length },
-    { id: "completed",   label: "Completed",   count: lectures.filter(l => l.studentProgress?.isCompleted).length },
-    { id: "not_started", label: "Not Started", count: lectures.filter(l => (l.studentProgress?.watchPercentage ?? 0) === 0).length },
+    { id: "all",         label: "All",         count: bySubject.length },
+    { id: "in_progress", label: "In Progress", count: bySubject.filter(l => !l.studentProgress?.isCompleted && (l.studentProgress?.watchPercentage ?? 0) > 0).length },
+    { id: "completed",   label: "Completed",   count: bySubject.filter(l => l.studentProgress?.isCompleted).length },
+    { id: "not_started", label: "Not Started", count: bySubject.filter(l => (l.studentProgress?.watchPercentage ?? 0) === 0).length },
   ];
+
+  const subjectSelectId = `lectures-subject-${batchId}`;
 
   return (
     <div className="space-y-5">
-      {/* Filter pills */}
+      {/* Filter pills — first control is subject scope (all subjects in course), then status */}
       <div className="flex items-center gap-2 flex-wrap">
+        {subjectOptions.length > 0 && (
+          <div className="relative shrink-0">
+            <label htmlFor={subjectSelectId} className="sr-only">Subject</label>
+            <select
+              id={subjectSelectId}
+              value={subjectKey}
+              onChange={e => { setSubjectKey(e.target.value); setFilter("all"); }}
+              className={cn(
+                "appearance-none cursor-pointer pl-4 pr-9 py-2 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
+                subjectKey === "all"
+                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
+                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
+              )}
+              style={{ backgroundImage: subjectKey === "all"
+                ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
+                : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat", backgroundPosition: "right 0.65rem center" }}
+            >
+              <option value="all">All subjects ({lectures.length})</option>
+              {subjectOptions.map(({ key, label }) => (
+                <option key={key} value={key}>
+                  {label} ({lectures.filter(l => (l.topic?.chapter?.subject?.name ?? "").toLowerCase() === key.toLowerCase()).length})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         {filterOpts.map(f => (
           <button
             key={f.id}
+            type="button"
             onClick={() => setFilter(f.id)}
             className={cn(
               "px-4 py-2 rounded-xl text-xs font-bold border transition-all",
@@ -1191,9 +1357,7 @@ function LecturesTabContent({
             <LectureCard
               key={lecture.id}
               lecture={lecture}
-              onClick={() => {
-                if (lecture.topicId) navigate(`/student/courses/${batchId}/topics/${lecture.topicId}`);
-              }}
+              onClick={() => navigate(`/student/lectures/${lecture.id}`)}
             />
           ))}
         </div>
@@ -1236,6 +1400,7 @@ export default function StudentCourseDetailPage() {
     tabParam && VALID_TABS.includes(tabParam) ? tabParam : "curriculum"
   );
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const { data: lectures = [], isLoading: lecturesLoading } = useAllBatchLectures(batchId);
   const { data: mockTestsRaw, isLoading: mockTestsLoading } = useMockTests({ batchId });
@@ -1243,6 +1408,10 @@ export default function StudentCourseDetailPage() {
 
   // Derive subjects safely — empty array when data not yet loaded
   const subjects = data?.subjects ?? [];
+
+  useEffect(() => {
+    setActiveChapterId(null);
+  }, [batchId]);
 
   // All useMemo hooks before any early return
   const dppList = useMemo(() => collectResources(subjects, ["dpp"]), [subjects]);
@@ -1257,7 +1426,19 @@ export default function StudentCourseDetailPage() {
     )),
     [subjects],
   );
-  const displaySubjects = activeSubjectId ? subjects.filter(s => s.id === activeSubjectId) : subjects;
+  const displaySubjects = useMemo(() => {
+    let subj = activeSubjectId ? subjects.filter(s => s.id === activeSubjectId) : subjects;
+    if (activeChapterId) {
+      subj = subj
+        .map(s => ({
+          ...s,
+          chapters: s.chapters.filter(c => c.id === activeChapterId),
+        }))
+        .filter(s => s.chapters.length > 0);
+    }
+    return subj;
+  }, [subjects, activeSubjectId, activeChapterId]);
+
   const filteredSubjects = useMemo(() => {
     if (!search.trim()) return displaySubjects;
     const q = search.toLowerCase();
@@ -1268,6 +1449,28 @@ export default function StudentCourseDetailPage() {
       })).filter(c => c.topics.length > 0),
     })).filter(s => s.chapters.length > 0);
   }, [displaySubjects, search]);
+
+  const lecturesByTopicId = useMemo(() => {
+    const m = new Map<string, StudentLecture[]>();
+    for (const l of lectures) {
+      if (!l.topicId) continue;
+      const arr = m.get(l.topicId) ?? [];
+      arr.push(l);
+      m.set(l.topicId, arr);
+    }
+    return m;
+  }, [lectures]);
+
+  const lecturesWithoutTopic = useMemo(() => lectures.filter(l => !l.topicId), [lectures]);
+
+  const handleSelectChapter = useCallback((subjectId: string, chapterId: string) => {
+    setActiveSubjectId(subjectId);
+    setActiveChapterId(prev => (prev === chapterId ? null : chapterId));
+    setActiveTab("curriculum");
+    requestAnimationFrame(() => {
+      document.getElementById(`chapter-block-${chapterId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
 
   // ── Guards & derivations (all hooks already called above) ────────────────
 
@@ -1420,10 +1623,11 @@ export default function StudentCourseDetailPage() {
             <div className="p-2 space-y-1">
               {/* All subjects */}
               <button
-                onClick={() => { setActiveSubjectId(null); setActiveTab("curriculum"); }}
+                type="button"
+                onClick={() => { setActiveSubjectId(null); setActiveChapterId(null); setActiveTab("curriculum"); }}
                 className={cn(
                   "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all",
-                  !activeSubjectId && activeTab === "curriculum"
+                  !activeSubjectId && !activeChapterId && activeTab === "curriculum"
                     ? "bg-indigo-600 text-white"
                     : "text-slate-600 hover:bg-slate-50"
                 )}
@@ -1432,7 +1636,7 @@ export default function StudentCourseDetailPage() {
                 <span className="truncate">All Subjects</span>
               </button>
 
-              {/* Per-subject */}
+              {/* Per-subject + chapters */}
               {subjects.map(s => {
                 const done  = s.chapters.reduce((a, c) => a + c.topics.filter(t => t.status === "completed").length, 0);
                 const total = s.chapters.reduce((a, c) => a + c.topics.length, 0);
@@ -1440,25 +1644,49 @@ export default function StudentCourseDetailPage() {
                 const color = subjectColor(s.name);
                 const isActive = activeSubjectId === s.id && activeTab === "curriculum";
                 return (
-                  <button
-                    key={s.id}
-                    onClick={() => { setActiveSubjectId(s.id === activeSubjectId ? null : s.id); setActiveTab("curriculum"); }}
-                    className={cn(
-                      "w-full text-left px-3 py-2.5 rounded-xl transition-all border",
-                      isActive ? "bg-indigo-50 border-indigo-200" : "border-transparent hover:bg-slate-50"
-                    )}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.colorCode ?? color.bg }} />
-                      <span className={cn("text-xs font-semibold line-clamp-1", isActive ? "text-indigo-700" : "text-slate-700")}>{s.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: s.colorCode ?? color.bg }} />
+                  <div key={s.id} className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = s.id === activeSubjectId ? null : s.id;
+                        setActiveSubjectId(next);
+                        setActiveChapterId(null);
+                        setActiveTab("curriculum");
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2.5 rounded-xl transition-all border",
+                        isActive && !activeChapterId ? "bg-indigo-50 border-indigo-200" : "border-transparent hover:bg-slate-50"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.colorCode ?? color.bg }} />
+                        <span className={cn("text-xs font-semibold line-clamp-1", isActive ? "text-indigo-700" : "text-slate-700")}>{s.name}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400 shrink-0">{pct}%</span>
-                    </div>
-                  </button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: s.colorCode ?? color.bg }} />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 shrink-0">{pct}%</span>
+                      </div>
+                    </button>
+                    {activeSubjectId === s.id && (
+                      <div className="ml-2 pl-2 border-l border-slate-100 space-y-0.5 pb-1">
+                        {s.chapters.map(ch => (
+                          <button
+                            key={ch.id}
+                            type="button"
+                            onClick={() => handleSelectChapter(s.id, ch.id)}
+                            className={cn(
+                              "w-full text-left px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors",
+                              activeChapterId === ch.id ? "bg-indigo-100 text-indigo-800" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                            )}
+                          >
+                            {ch.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
 
@@ -1473,7 +1701,8 @@ export default function StudentCourseDetailPage() {
                 ].filter(r => r.count > 0 || r.id === "lectures" || r.id === "mock_test").map(r => (
                   <button
                     key={r.id}
-                    onClick={() => { setActiveSubjectId(null); setActiveTab(r.id); }}
+                    type="button"
+                    onClick={() => { setActiveSubjectId(null); setActiveChapterId(null); setActiveTab(r.id); }}
                     className={cn(
                       "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all",
                       activeTab === r.id ? "bg-slate-100 text-slate-800" : "text-slate-500 hover:bg-slate-50"
@@ -1516,7 +1745,14 @@ export default function StudentCourseDetailPage() {
             {TABS.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); if (tab.id === "curriculum") {} else setActiveSubjectId(null); }}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id !== "curriculum") {
+                    setActiveSubjectId(null);
+                    setActiveChapterId(null);
+                  }
+                }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all",
                   activeTab === tab.id ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
@@ -1539,30 +1775,68 @@ export default function StudentCourseDetailPage() {
           {activeTab === "curriculum" && (
             <div className="space-y-4">
               {/* Mobile: subject pills */}
-              <div className="flex lg:hidden items-center gap-2 overflow-x-auto pb-1">
-                <button
-                  onClick={() => setActiveSubjectId(null)}
-                  className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0",
-                    !activeSubjectId ? "bg-indigo-600 text-white border-transparent" : "bg-white text-slate-600 border-slate-200"
-                  )}
-                >
-                  All
-                </button>
-                {subjects.map(s => {
-                  const c = subjectColor(s.name);
+              <div className="flex lg:hidden flex-col gap-1.5">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => { setActiveSubjectId(null); setActiveChapterId(null); }}
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0",
+                      !activeSubjectId ? "bg-indigo-600 text-white border-transparent" : "bg-white text-slate-600 border-slate-200"
+                    )}
+                  >
+                    All
+                  </button>
+                  {subjects.map(s => {
+                    const c = subjectColor(s.name);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveSubjectId(s.id === activeSubjectId ? null : s.id);
+                          setActiveChapterId(null);
+                        }}
+                        className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0",
+                          activeSubjectId === s.id ? "text-white border-transparent" : "bg-white text-slate-600 border-slate-200"
+                        )}
+                        style={activeSubjectId === s.id ? { background: s.colorCode ?? c.bg, borderColor: "transparent" } : {}}
+                      >
+                        {s.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Chapter pills — shown when a subject is active */}
+                {activeSubjectId && (() => {
+                  const activeSub = subjects.find(s => s.id === activeSubjectId);
+                  if (!activeSub || activeSub.chapters.length === 0) return null;
                   return (
-                    <button
-                      key={s.id}
-                      onClick={() => setActiveSubjectId(s.id === activeSubjectId ? null : s.id)}
-                      className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0",
-                        activeSubjectId === s.id ? "text-white border-transparent" : "bg-white text-slate-600 border-slate-200"
-                      )}
-                      style={activeSubjectId === s.id ? { background: s.colorCode ?? c.bg, borderColor: "transparent" } : {}}
-                    >
-                      {s.name}
-                    </button>
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none pl-1">
+                      <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
+                      <button
+                        type="button"
+                        onClick={() => setActiveChapterId(null)}
+                        className={cn("px-2.5 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap transition-all shrink-0",
+                          !activeChapterId ? "bg-slate-800 text-white border-transparent" : "bg-white text-slate-500 border-slate-200"
+                        )}
+                      >
+                        All chapters
+                      </button>
+                      {activeSub.chapters.map(ch => (
+                        <button
+                          key={ch.id}
+                          type="button"
+                          onClick={() => handleSelectChapter(activeSubjectId, ch.id)}
+                          className={cn("px-2.5 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap transition-all shrink-0",
+                            activeChapterId === ch.id ? "bg-slate-800 text-white border-transparent" : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                          )}
+                        >
+                          {ch.name}
+                        </button>
+                      ))}
+                    </div>
                   );
-                })}
+                })()}
               </div>
 
               {/* Search */}
@@ -1577,6 +1851,31 @@ export default function StudentCourseDetailPage() {
                 />
               </div>
 
+              {lecturesWithoutTopic.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-2">
+                  <p className="text-sm font-bold text-amber-900 flex items-center gap-2">
+                    <Video className="w-4 h-4 shrink-0" />
+                    Course lectures (not tied to a topic)
+                  </p>
+                  <p className="text-xs text-amber-800/90 leading-relaxed">
+                    These sessions belong to this course but are not linked to a curriculum topic. You can still watch them here.
+                  </p>
+                  <ul className="flex flex-col gap-1.5">
+                    {lecturesWithoutTopic.map(lec => (
+                      <li key={lec.id}>
+                        <Link
+                          to={`/student/lectures/${lec.id}`}
+                          className="inline-flex items-center gap-2 text-sm font-semibold text-amber-950 hover:underline"
+                        >
+                          <Play className="w-3.5 h-3.5 shrink-0 text-amber-700" />
+                          <span className="line-clamp-2">{lec.title}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {filteredSubjects.length === 0 ? (
                 <div className="py-16 text-center bg-white rounded-2xl border border-slate-100">
                   <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
@@ -1584,7 +1883,15 @@ export default function StudentCourseDetailPage() {
                 </div>
               ) : (
                 filteredSubjects.map((s, si) => (
-                  <SubjectSection key={s.id} subject={s} batchId={batchId} isLocked={resourcesLocked} defaultOpen={si === 0} />
+                  <SubjectSection
+                    key={s.id}
+                    subject={s}
+                    batchId={batchId}
+                    isLocked={resourcesLocked}
+                    defaultOpen={si === 0}
+                    lecturesByTopicId={lecturesByTopicId}
+                    onSelectChapter={handleSelectChapter}
+                  />
                 ))
               )}
             </div>
@@ -1592,7 +1899,12 @@ export default function StudentCourseDetailPage() {
 
           {/* ── LECTURES TAB ── */}
           {activeTab === "lectures" && (
-            <LecturesTabContent lectures={lectures} batchId={batchId} isLoading={lecturesLoading} />
+            <LecturesTabContent
+              lectures={lectures}
+              batchId={batchId}
+              isLoading={lecturesLoading}
+              courseSubjects={subjects.map(s => ({ id: s.id, name: s.name }))}
+            />
           )}
 
           {/* ── DPP TAB ── */}

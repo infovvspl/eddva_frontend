@@ -1,4 +1,5 @@
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, BookOpen, FileText, X,
@@ -9,7 +10,7 @@ import {
   FolderOpen, Folder, Play, Eye, LayoutGrid, Users,
   Sparkles, Brain, FlaskConical, StickyNote, ListChecks,
   Lightbulb, BookText, Wand2, ChevronUp, Zap, Lock,
-  FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList,
+  FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList, Clock,
 } from "lucide-react";
 import {
   useBatches,
@@ -18,6 +19,7 @@ import {
   useTopics, useCreateTopic,
   useTopicResources, useUploadTopicResource, useDeleteTopicResource, useAddTopicResourceLink,
   useBulkImportCurriculum,
+  useBatchContentLectures,
 } from "@/hooks/use-admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
@@ -41,7 +43,7 @@ function isYouTube(url: string) {
 }
 
 function getYouTubeId(url: string) {
-  const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  const m = url.match(/(?:[?&]v=|youtu\.be\/|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{11})/);
   return m?.[1] ?? null;
 }
 
@@ -103,13 +105,21 @@ function InlineAdd({
   );
 }
 
+function isYoutubeLikeUrl(url?: string | null) {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  return u.includes("youtube.com") || u.includes("youtu.be");
+}
+
 // ─── Resource Card ─────────────────────────────────────────────────────────────
 
 function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
-  const cfg = rCfg(r.type);
+  const cfg = rCfg(String(r.type ?? "").toLowerCase() as TopicResourceType);
   const Icon = cfg.icon;
   const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
-  const ytId = r.externalUrl ? getYouTubeId(r.externalUrl) : null;
+  const rawYtUrl = r.externalUrl || (isYoutubeLikeUrl(r.fileUrl ?? undefined) ? r.fileUrl! : null);
+  const ytId = rawYtUrl ? getYouTubeId(rawYtUrl) : null;
+  const isYt = !!ytId || isYoutubeLikeUrl(rawYtUrl ?? undefined);
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -121,13 +131,15 @@ function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void 
       className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden hover:border-slate-200 hover:shadow-md transition-all"
     >
       {/* YouTube thumbnail strip */}
-      {ytId && (
+      {isYt && (
         <div className="relative h-28 bg-slate-900 overflow-hidden">
-          <img
-            src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
-            alt={r.title}
-            className="w-full h-full object-cover opacity-80"
-          />
+          {ytId && (
+            <img
+              src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+              alt={r.title}
+              className="w-full h-full object-cover opacity-80"
+            />
+          )}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
               <Play className="w-5 h-5 text-white fill-white ml-0.5" />
@@ -140,7 +152,7 @@ function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void 
       )}
 
       {/* Non-YouTube file type banner */}
-      {!ytId && (
+      {!isYt && (
         <div className={cn("flex items-center gap-2 px-3 py-2 border-b", cfg.bg, cfg.border)}>
           <Icon className={cn("w-3.5 h-3.5", cfg.color)} />
           <span className={cn("text-[10px] font-black uppercase tracking-widest", cfg.color)}>{cfg.shortLabel}</span>
@@ -151,7 +163,7 @@ function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void 
       <div className="p-3">
         <p className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">{r.title}</p>
         {r.description && <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{r.description}</p>}
-        {r.externalUrl && !ytId && (
+        {r.externalUrl && !isYt && (
           <p className="text-[10px] text-blue-500 mt-1 truncate">{r.externalUrl}</p>
         )}
       </div>
@@ -162,7 +174,7 @@ function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void 
           <a href={href} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 hover:text-blue-700">
             <ExternalLink className="w-3 h-3" />
-            {ytId ? "Watch" : r.type === "pdf" || r.type === "dpp" || r.type === "pyq" ? "View PDF" : "Open"}
+            {isYt ? "Watch" : r.type === "pdf" || r.type === "dpp" || r.type === "pyq" ? "View PDF" : "Open"}
           </a>
         ) : <span />}
         <button
@@ -178,8 +190,25 @@ function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void 
 
 // ─── Upload Panel ──────────────────────────────────────────────────────────────
 
-function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicName: string; batchId: string }) {
+function UploadPanel({
+  topicId, topicName, batchId,
+  filterType, setFilterType,
+}: {
+  topicId: string;
+  topicName: string;
+  batchId: string;
+  filterType: TopicResourceType | "all";
+  setFilterType: (t: TopicResourceType | "all") => void;
+}) {
   const { data: resources = [], isLoading } = useTopicResources(topicId);
+  const { data: batchLecturesRaw = [], isLoading: lecturesLoading } = useBatchContentLectures(batchId);
+  const topicLectures = React.useMemo(() => {
+    const arr = Array.isArray(batchLecturesRaw) ? batchLecturesRaw : [];
+    return (arr as AdminTopicLectureRow[]).filter(l => {
+      const lid = l.topic?.id ?? l.topicId;
+      return lid != null && String(lid) === String(topicId);
+    });
+  }, [batchLecturesRaw, topicId]);
   const upload = useUploadTopicResource(topicId, batchId);
   const deleteRes = useDeleteTopicResource(topicId);
   const addLink = useAddTopicResourceLink(topicId);
@@ -190,7 +219,6 @@ function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicNa
   const [title, setTitle] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [filterType, setFilterType] = useState<TopicResourceType | "all">("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const activeCfg = rCfg(activeType);
@@ -230,8 +258,32 @@ function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicNa
     catch { toast.error("Delete failed"); }
   };
 
-  const filtered = filterType === "all" ? resources : resources.filter(r => r.type === filterType);
-  const typeCounts = RES_TYPES.map(rt => ({ ...rt, count: resources.filter(r => r.type === rt.value).length }));
+  const normResType = (r: TopicResource) => String(r.type ?? "").toLowerCase() as TopicResourceType;
+
+  const matchesVideoFilter = (r: TopicResource) => {
+    const t = normResType(r);
+    if (t === "video") return true;
+    if (t === "link" && (isYoutubeLikeUrl(r.externalUrl ?? undefined) || isYoutubeLikeUrl(r.fileUrl ?? undefined))) return true;
+    return false;
+  };
+
+  /** File rows only — lectures are shown separately when filter is "all" or "video". */
+  const filteredFiles = React.useMemo(() => {
+    if (filterType === "all") return resources;
+    if (filterType === "video") return resources.filter(matchesVideoFilter);
+    return resources.filter(r => normResType(r) === filterType);
+  }, [resources, filterType]);
+
+  const showLecturesBlock = filterType === "all" || filterType === "video";
+  const typeCounts = RES_TYPES.map(rt => ({
+    ...rt,
+    count: rt.value === "video"
+      ? resources.filter(matchesVideoFilter).length
+      : resources.filter(r => normResType(r) === rt.value).length,
+  }));
+  const hasTopicLectures = topicLectures.length > 0;
+  const hasAnything = resources.length > 0 || hasTopicLectures;
+  const listLoading = isLoading || lecturesLoading;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -248,32 +300,6 @@ function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicNa
           </div>
         </div>
 
-        {/* Type count pills */}
-        {resources.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            <button
-              onClick={() => setFilterType("all")}
-              className={cn("px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all",
-                filterType === "all" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-              )}
-            >
-              All ({resources.length})
-            </button>
-            {typeCounts.filter(t => t.count > 0).map(t => {
-              const Icon = t.icon;
-              return (
-                <button key={t.value}
-                  onClick={() => setFilterType(t.value)}
-                  className={cn("flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all",
-                    filterType === t.value ? cn(t.bg, t.color, t.border) : "bg-slate-100 text-slate-500 hover:bg-slate-200 border-transparent"
-                  )}
-                >
-                  <Icon className="w-3 h-3" /> {t.shortLabel} ({t.count})
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* ── Add Resource Section ── */}
@@ -288,10 +314,15 @@ function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicNa
             return (
               <button
                 key={rt.value}
-                onClick={() => { setActiveType(rt.value); setMode(rt.isUrl ? "link" : "upload"); }}
+                type="button"
+                onClick={() => {
+                  setActiveType(rt.value);
+                  setMode(rt.isUrl ? "link" : "upload");
+                  setFilterType(filterType === rt.value ? "all" : rt.value);
+                }}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2 rounded-xl border text-center transition-all",
-                  sel ? cn(rt.bg, rt.color, rt.border, "shadow-sm") : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600"
+                  filterType === rt.value ? cn(rt.bg, rt.color, rt.border, "shadow-sm") : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600"
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -385,11 +416,11 @@ function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicNa
         )}
       </div>
 
-      {/* ── Resource Grid ── */}
+      {/* ── Resource Grid (+ lectures linked to this topic) ── */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        {isLoading ? (
+        {listLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>
-        ) : resources.length === 0 ? (
+        ) : !hasAnything ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mb-4">
               <Layers className="w-8 h-8 text-slate-300" />
@@ -399,18 +430,45 @@ function UploadPanel({ topicId, topicName, batchId }: { topicId: string; topicNa
               Upload a PDF, add a DPP or PYQ file, or paste a YouTube link above.
             </p>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-sm text-slate-400">No {filterType} resources yet.</p>
-            <button onClick={() => setFilterType("all")} className="text-xs text-blue-500 font-bold mt-1 hover:underline">Show all</button>
-          </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <AnimatePresence>
-              {filtered.map(r => (
-                <ResourceCard key={r.id} r={r} onDelete={() => handleDelete(r)} />
-              ))}
-            </AnimatePresence>
+          <div className="space-y-6" key={`${topicId}-${filterType}`}>
+            {showLecturesBlock && hasTopicLectures && (
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                  <Play className="w-3.5 h-3.5 text-rose-500" /> Lectures (uploaded in Lectures — linked to this topic)
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {topicLectures.map((lec: AdminTopicLectureRow) => (
+                    <LectureAdminCard key={lec.id} lec={lec} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {resources.length === 0 ? (
+              !hasTopicLectures ? null : (
+                <p className="text-sm text-slate-400 text-center py-4">No file / link resources for this topic yet — add them above.</p>
+              )
+            ) : filteredFiles.length === 0 ? (
+              !(filterType === "video" && hasTopicLectures) && (
+                <div className="text-center py-10">
+                  <p className="text-sm text-slate-400">No {filterType} resources yet.</p>
+                  <button type="button" onClick={() => setFilterType("all")} className="text-xs text-blue-500 font-bold mt-1 hover:underline">Show all</button>
+                </div>
+              )
+            ) : (
+              <div>
+                {showLecturesBlock && hasTopicLectures && (
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Topic files & links</p>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <AnimatePresence mode="popLayout">
+                    {filteredFiles.map(r => (
+                      <ResourceCard key={`${filterType}-${r.id}`} r={r} onDelete={() => handleDelete(r)} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1602,6 +1660,108 @@ function AiContentPanel({ topicName, subjectName, chapterName }: {
   );
 }
 
+// ─── Lectures linked to topic (admin content workspace) ─────────────────────
+
+type AdminTopicLectureRow = {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: string;
+  type: string;
+  videoUrl?: string | null;
+  scheduledAt?: string | null;
+  liveMeetingUrl?: string | null;
+  topicId?: string | null;         // flat field (may be absent)
+  topic?: { id?: string; name?: string } | null;  // nested object (primary from API)
+  batch?: { id?: string; name?: string } | null;
+  thumbnailUrl?: string | null;
+};
+
+function lectureStatusStyles(status: string) {
+  const s = (status || "").toLowerCase();
+  if (s === "published") return "bg-emerald-100 text-emerald-800";
+  if (s === "live") return "bg-red-100 text-red-800";
+  if (s === "scheduled") return "bg-amber-100 text-amber-900";
+  if (s === "ended") return "bg-slate-100 text-slate-700";
+  if (s === "draft" || s === "processing") return "bg-slate-100 text-slate-500";
+  return "bg-slate-100 text-slate-600";
+}
+
+function LectureAdminCard({ lec }: { lec: AdminTopicLectureRow }) {
+  const videoHref = lec.videoUrl ? resolveUrl(lec.videoUrl) : "";
+  const ytId = videoHref && isYouTube(videoHref) ? getYouTubeId(videoHref) : null;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-black text-slate-900 leading-snug">{lec.title}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full", lectureStatusStyles(lec.status))}>
+              {lec.status}
+            </span>
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full uppercase">
+              {lec.type}
+            </span>
+            {lec.topic?.name && (
+              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                Topic: {lec.topic.name}
+              </span>
+            )}
+            {lec.scheduledAt && (
+              <span className="text-[10px] text-slate-500 flex items-center gap-1 font-medium">
+                <Clock className="w-3 h-3 shrink-0" />
+                {new Date(lec.scheduledAt).toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5 shrink-0 items-end">
+          {videoHref ? (
+            <a
+              href={videoHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-black text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              {ytId ? <Youtube className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              {ytId ? "YouTube" : "Open video"}
+            </a>
+          ) : null}
+          {lec.liveMeetingUrl ? (
+            <a
+              href={lec.liveMeetingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-black text-violet-600 hover:text-violet-800 flex items-center gap-1"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> Live / meet link
+            </a>
+          ) : null}
+        </div>
+      </div>
+      {ytId ? (
+        <div className="aspect-video rounded-xl overflow-hidden border border-slate-200 bg-black max-w-xl">
+          <iframe
+            title={lec.title}
+            src={`https://www.youtube.com/embed/${ytId}`}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : null}
+      {lec.description ? (
+        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap border-t border-slate-100 pt-2.5">
+          {lec.description}
+        </p>
+      ) : (
+        <p className="text-[11px] text-slate-400 italic border-t border-slate-100 pt-2.5">No description provided.</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Course Card (used in grid) ───────────────────────────────────────────────
 
 function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
@@ -1668,7 +1828,7 @@ function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
             <Users className="w-3 h-3" />
-            {batch.enrolledCount ?? 0} enrolled
+            {batch.enrolledCount ?? batch.studentCount ?? 0} enrolled
           </div>
           {batch.isPaid && batch.feeAmount && (
             <div className="text-[11px] font-black text-emerald-600 ml-auto">
@@ -1685,6 +1845,7 @@ function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const ContentPage = () => {
+  const navigate = useNavigate();
   const { data: batches = [], isLoading: batchesLoading } = useBatches();
   const batchList = Array.isArray(batches) ? batches : [];
 
@@ -1696,6 +1857,22 @@ const ContentPage = () => {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
   const [rightTab, setRightTab] = useState<"resources" | "ai">("resources");
+  /** Lifted from UploadPanel so list filter state cannot get stuck inside a stale child. */
+  const [topicResourceFilter, setTopicResourceFilter] = useState<TopicResourceType | "all">("all");
+
+  useEffect(() => {
+    setTopicResourceFilter("all");
+  }, [selectedEntry?.topic.id]);
+
+  /** Only auto-open the first course once on load — never after "Courses" back (null selection). */
+  const didInitialBatchAutopick = useRef(false);
+  useEffect(() => {
+    if (didInitialBatchAutopick.current) return;
+    if (!selectedBatchId && batchList.length > 0) {
+      setSelectedBatchId(batchList[0].id);
+      didInitialBatchAutopick.current = true;
+    }
+  }, [batchList, selectedBatchId]);
 
   const selectedBatch = batchList.find(b => b.id === selectedBatchId);
 
@@ -1811,7 +1988,7 @@ const ContentPage = () => {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium leading-none mt-0.5">
-                {[selectedBatch.examTarget, selectedBatch.class ? `Class ${selectedBatch.class}` : null, selectedBatch.enrolledCount != null ? `${selectedBatch.enrolledCount} students` : null].filter(Boolean).join(" · ")}
+                {[selectedBatch.examTarget, selectedBatch.class ? `Class ${selectedBatch.class}` : null, `${selectedBatch.enrolledCount ?? selectedBatch.studentCount ?? 0} students`].filter(Boolean).join(" · ")}
               </p>
             </div>
           </div>
@@ -1857,7 +2034,10 @@ const ContentPage = () => {
             batchId={selectedBatch.id}
             examTarget={selectedBatch.examTarget}
             selectedTopic={selectedEntry}
-            onSelectTopic={(topic, chapter, subject) => { setSelectedEntry({ topic, chapter, subject }); setRightTab("resources"); }}
+            onSelectTopic={(topic, chapter, subject) => {
+              setSelectedEntry({ topic, chapter, subject });
+              setRightTab("resources");
+            }}
             onAddSubject={() => setShowAddSubject(true)}
           />
         </div>
@@ -1905,6 +2085,22 @@ const ContentPage = () => {
                   Resources
                 </button>
                 <button
+                  type="button"
+                  onClick={() => {
+                    const q = new URLSearchParams({
+                      batchId: selectedBatch.id,
+                      subjectId: selectedEntry.subject.id,
+                      chapterId: selectedEntry.chapter.id,
+                      topicId: selectedEntry.topic.id,
+                    });
+                    navigate(`/teacher/lectures?${q.toString()}`);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-black rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-rose-700 hover:bg-rose-50/40 transition-all"
+                >
+                  <Play className="w-4 h-4" />
+                  Lectures
+                </button>
+                <button
                   onClick={() => setRightTab("ai")}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2.5 text-sm font-black rounded-t-xl border-b-2 transition-all",
@@ -1925,12 +2121,14 @@ const ContentPage = () => {
               <div className="flex-1 overflow-hidden">
                 {rightTab === "resources" ? (
                   <UploadPanel
+                    key={selectedEntry.topic.id}
                     topicId={selectedEntry.topic.id}
                     topicName={selectedEntry.topic.name}
                     batchId={selectedBatch.id}
+                    filterType={topicResourceFilter}
+                    setFilterType={setTopicResourceFilter}
                   />
                 ) : (
-
                   <AiContentPanel
                     topicName={selectedEntry.topic.name}
                     subjectName={selectedEntry.subject.name}
