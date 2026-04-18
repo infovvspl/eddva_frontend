@@ -686,6 +686,7 @@ export interface StudentDoubt {
 }
 
 export interface CreateDoubtPayload {
+  batchId?: string;
   topicId: string;
   questionText?: string;
   source?: DoubtSource;
