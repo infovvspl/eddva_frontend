@@ -1,7 +1,7 @@
+import { useMemo } from "react";
 import { Lightbulb, PlayCircle, ClipboardList, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 type RecType = "lecture" | "test";
 
@@ -14,16 +14,24 @@ interface Recommendation {
   difficulty: "Easy" | "Medium" | "Hard";
 }
 
-interface RecommendationsProps {
-  weakTopics?: string[];
+export interface WeakTopicRec {
+  topicId: string;
+  topicName: string;
+  subjectName?: string;
+  accuracy: number;
+  severity: string;
 }
 
-const DUMMY_RECS: Recommendation[] = [
-  { id: "1", type: "lecture", title: "Cell Division – Mitosis & Meiosis", subject: "Biology", reason: "Weak area detected", difficulty: "Medium" },
-  { id: "2", type: "test", title: "Organic Chemistry Mock – Set 4", subject: "Chemistry", reason: "Improve accuracy", difficulty: "Hard" },
-  { id: "3", type: "lecture", title: "Newton's Laws – Conceptual Revision", subject: "Physics", reason: "Low quiz score", difficulty: "Easy" },
-  { id: "4", type: "test", title: "Biology NEET PYQ – 2023", subject: "Biology", reason: "Exam readiness", difficulty: "Hard" },
-];
+interface RecommendationsProps {
+  weakTopics?: WeakTopicRec[];
+}
+
+function severityToDifficulty(s: string): "Easy" | "Medium" | "Hard" {
+  const x = (s || "").toLowerCase();
+  if (x === "critical" || x === "high") return "Hard";
+  if (x === "low") return "Easy";
+  return "Medium";
+}
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy:   "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -39,7 +47,40 @@ const SUBJECT_COLOR: Record<string, string> = {
 
 export default function Recommendations({ weakTopics }: RecommendationsProps) {
   const navigate = useNavigate();
-  const items = DUMMY_RECS.slice(0, 4);
+
+  const items: Recommendation[] = useMemo(() => {
+    if (!weakTopics?.length) return [];
+    return weakTopics.slice(0, 4).map((w) => {
+      const difficulty = severityToDifficulty(w.severity);
+      const subject = w.subjectName?.trim() || "Your course";
+      return {
+        id: w.topicId || w.topicName,
+        type: "test" as const,
+        title: w.topicName,
+        subject,
+        reason: `Accuracy ${Math.round(w.accuracy)}% — needs practice`,
+        difficulty,
+      };
+    });
+  }, [weakTopics]);
+
+  if (items.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 px-5 py-8 text-center">
+        <p className="text-sm font-semibold text-foreground">No weak topics yet</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Keep practicing — we will highlight topics to revise here from your quiz and test performance.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate("/student/learn")}
+          className="mt-4 text-xs font-bold text-primary hover:underline"
+        >
+          Go to Learn
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -47,9 +88,8 @@ export default function Recommendations({ weakTopics }: RecommendationsProps) {
         <div
           key={rec.id}
           className="group flex gap-3 p-4 rounded-2xl border border-border/60 bg-card hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
-          onClick={() => navigate(rec.type === "lecture" ? "/student/lectures" : "/student/tests")}
+          onClick={() => navigate(rec.type === "lecture" ? "/student/lectures" : "/student/learn")}
         >
-          {/* Type icon */}
           <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rec.type === "lecture" ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30" : "bg-orange-100 text-orange-600 dark:bg-orange-900/30")}>
             {rec.type === "lecture" ? <PlayCircle className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
           </div>

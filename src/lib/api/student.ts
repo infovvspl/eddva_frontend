@@ -751,7 +751,7 @@ export async function getMyDoubts(params?: { status?: string; page?: number; lim
   const q = new URLSearchParams();
   if (params?.status) q.set("status", params.status);
   if (params?.page) q.set("page", String(params.page));
-  if (params?.limit) q.set("limit", String(params.limit));
+  q.set("limit", String(params?.limit ?? 100));
   const res = await apiClient.get(`/doubts?${q}`);
   const list = extractData<StudentDoubt[]>(res) ?? [];
   // deduplicate by id (guards against accidental duplicate submissions)
@@ -852,13 +852,33 @@ export interface StudentDashboardData {
   xpPoints: number;
   currentEloTier: string;
   rank?: number;
-  weakTopics: { topicId: string; topicName: string; accuracy: number; severity: string }[];
+  weakTopics: { topicId: string; topicName: string; subjectName?: string; accuracy: number; severity: string }[];
   overallAccuracy: number;
+  pendingLectures: number;
+  testsAttempted: number;
 }
 
 export async function getStudentDashboard(): Promise<StudentDashboardData> {
   const res = await apiClient.get("/students/dashboard");
-  return extractData<StudentDashboardData>(res);
+  const raw = extractData<Record<string, unknown>>(res);
+  const st = raw.student as Record<string, unknown> | undefined;
+  const wt = (raw.weakTopics as unknown[]) ?? [];
+  return {
+    streakDays: Number(st?.currentStreak ?? raw.currentStreak ?? 0),
+    xpPoints: Number(st?.xpTotal ?? raw.xpTotal ?? 0),
+    currentEloTier: String(st?.currentEloTier ?? raw.currentEloTier ?? "Iron"),
+    rank: (raw.globalRank as number | undefined) ?? undefined,
+    weakTopics: wt.map((w: any) => ({
+      topicId: String(w.topicId ?? w.topic?.id ?? ""),
+      topicName: String(w.topic?.name ?? w.topicName ?? "Topic"),
+      subjectName: String(w.topic?.chapter?.subject?.name ?? w.subjectName ?? ""),
+      accuracy: Number(w.accuracy ?? 0),
+      severity: String(w.severity ?? "medium"),
+    })),
+    overallAccuracy: Number(raw.overallAccuracy ?? 0),
+    pendingLectures: Number(raw.pendingLectures ?? 0),
+    testsAttempted: Number(raw.testsAttempted ?? 0),
+  };
 }
 
 // ─── Battles ──────────────────────────────────────────────────────────────────

@@ -184,6 +184,17 @@ export interface DashboardData {
     openDoubts: number;
     totalTestSessions: number;
   };
+  /** Latest open / escalated doubts for this institute (same tenant as dashboard). */
+  recentDoubts?: {
+    id: string;
+    status: string;
+    questionText: string | null;
+    createdAt: string;
+    batchId: string | null;
+    batchName: string | null;
+    topicName: string | null;
+    studentName: string | null;
+  }[];
   recentBatches: {
     id: string;
     name: string;

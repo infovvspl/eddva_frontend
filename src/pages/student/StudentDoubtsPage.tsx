@@ -228,7 +228,11 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
   const chapters = subjects.find(s => s.id === selectedSubjectId)?.chapters ?? [];
   const topics   = chapters.find(c => c.id === selectedChapterId)?.topics   ?? [];
 
-  const canSubmit = selectedTopicId.length > 0 && question.trim().length >= 10 && !createDoubt.isPending;
+  const canSubmit =
+    Boolean(selectedBatchId) &&
+    selectedTopicId.length > 0 &&
+    question.trim().length >= 10 &&
+    !createDoubt.isPending;
 
   function handleBatchChange(id: string) {
     setSelectedBatchId(id);

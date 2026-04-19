@@ -267,7 +267,7 @@ export async function getAllDoubts(params?: { status?: string; batchId?: string;
   if (params?.status) q.set("status", params.status);
   if (params?.batchId) q.set("batchId", params.batchId);
   if (params?.page) q.set("page", String(params.page));
-  if (params?.limit) q.set("limit", String(params.limit));
+  q.set("limit", String(params?.limit ?? 100));
   const res = await apiClient.get(`/doubts?${q}`);
   return extractData<Doubt[]>(res) ?? [];
 }

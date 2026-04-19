@@ -99,14 +99,17 @@ export function useDoubtQueue(batchId?: string) {
   return useQuery({
     queryKey: teacherKeys.doubtQueue(batchId),
     queryFn: () => teacherApi.getDoubtQueue(batchId),
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
 }
 
 export function useAllDoubts(status?: string, batchId?: string) {
   return useQuery({
     queryKey: teacherKeys.allDoubts(status, batchId),
-    queryFn: () => teacherApi.getAllDoubts({ status: status || undefined, batchId: batchId || undefined }),
+    queryFn: () => teacherApi.getAllDoubts({ status: status || undefined, batchId: batchId || undefined, limit: 100 }),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 

@@ -139,7 +139,7 @@ const AdminDashboard = () => {
     );
   }
 
-  const { stats } = data;
+  const { stats, recentDoubts = [] } = data;
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long", day: "numeric", month: "long",
   });
@@ -186,6 +186,52 @@ const AdminDashboard = () => {
           icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-600"}
           onClick={() => navigate("/teacher/doubts")} />
       </div>
+
+      {/* ── Recent doubts (same tenant as /batches/dashboard) ── */}
+      {(stats.openDoubts > 0 || recentDoubts.length > 0) && (
+        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">Doubts needing attention</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Pulled from your institute tenant — same data teachers see in the queue.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/teacher/doubts")}
+              className="text-xs font-bold text-blue-600 hover:text-blue-800 shrink-0"
+            >
+              Open doubt queue →
+            </button>
+          </div>
+          {recentDoubts.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              Count shows {stats.openDoubts} pending — refresh in a moment or open the queue for full details.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {recentDoubts.map((d) => (
+                <li key={d.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 line-clamp-2">
+                      {d.questionText || "—"}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      {[d.studentName, d.topicName, d.batchName].filter(Boolean).join(" · ")}
+                      <span className="mx-1.5">·</span>
+                      <span className="uppercase font-bold text-orange-600">{d.status}</span>
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 shrink-0">
+                    {d.createdAt ? new Date(d.createdAt).toLocaleString() : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* ── Main grid ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

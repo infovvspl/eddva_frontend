@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { uploadToS3, deleteS3File, validateFile } from "@/lib/api/upload";
+import { uploadToS3, uploadLectureVideoThroughBackend, deleteS3File, validateFile } from "@/lib/api/upload";
 import type { UploadType, UploadProgressEvent } from "@/lib/api/upload";
 import { useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
@@ -52,11 +52,19 @@ export function useUpload({ type, courseId, lectureId, onSuccess, onError }: Use
     };
 
     try {
-      const fileUrl = await uploadToS3(
-        { type, courseId, lectureId, fileName: file.name, contentType: file.type, fileSize: file.size },
-        file,
-        handleProgress,
-      );
+      let fileUrl: string;
+      if (type === "lecture-video") {
+        if (!courseId || !lectureId) {
+          throw new Error("courseId and lectureId are required for lecture video upload.");
+        }
+        fileUrl = await uploadLectureVideoThroughBackend(courseId, lectureId, file, handleProgress);
+      } else {
+        fileUrl = await uploadToS3(
+          { type, courseId, lectureId, fileName: file.name, contentType: file.type, fileSize: file.size },
+          file,
+          handleProgress,
+        );
+      }
       setState({ uploading: false, progress: 100, fileUrl, error: null });
       onSuccess?.(fileUrl);
       return fileUrl;

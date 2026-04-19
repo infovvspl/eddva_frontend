@@ -17,8 +17,7 @@ import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
-import { useDiscoverBatches, useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
-import { BatchDiscoveryModal } from "@/components/student/BatchDiscoveryModal";
+import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 
@@ -95,7 +94,6 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [showBatchModal, setShowBatchModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -163,8 +161,6 @@ const DashboardLayout = () => {
   const examTarget = me?.student?.examTarget ?? "";
   const prefKey    = user ? `pref_modal_done_${user.id}` : null;
 
-  const { data: discoverData } = useDiscoverBatches(isStudent);
-
   // Show preference modal exactly once per student (localStorage flag only — no repeat on skip)
   useEffect(() => {
     if (!isStudent || !prefKey || me === undefined) return;
@@ -189,19 +185,6 @@ const DashboardLayout = () => {
     setPrefDropdownOpen(false);
     updateProfile.mutate({ examTarget: et });
   }
-
-  // ── Batch Discovery Modal (students only) ──────────────────────────────────
-  const batchModalSeenKey = user ? `batch_discovery_seen_${user.id}` : null;
-
-  useEffect(() => {
-    if (!isStudent || !discoverData || !batchModalSeenKey) return;
-    const alreadySeen = localStorage.getItem(batchModalSeenKey) === "true";
-    if (alreadySeen) return;
-    if (discoverData.availableBatches.length > 0) {
-      setShowBatchModal(true);
-      localStorage.setItem(batchModalSeenKey, "true");
-    }
-  }, [discoverData, isStudent, batchModalSeenKey]);
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
@@ -629,10 +612,6 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      {/* ── Batch Discovery Modal (students only) ── */}
-      {showBatchModal && (
-        <BatchDiscoveryModal onClose={() => setShowBatchModal(false)} />
-      )}
     </div>
   );
 };

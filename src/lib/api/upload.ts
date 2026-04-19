@@ -104,6 +104,48 @@ export const getUploadUrl = requestUploadUrl;
 // Step 2 — PUT file directly to S3 (no auth header, pre-signed URL)
 // ---------------------------------------------------------------------------
 
+/**
+ * Upload lecture video via Nest (multipart) so the browser never calls S3 directly.
+ * Fixes CORS when the S3 bucket is not configured for your dev origin (e.g. cds.localhost).
+ */
+export async function uploadLectureVideoThroughBackend(
+  courseId: string,
+  lectureId: string,
+  file: File,
+  onProgress?: (e: UploadProgressEvent) => void,
+): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("courseId", courseId);
+  form.append("lectureId", lectureId);
+
+  const res = await apiClient.post("/content/lectures/upload-video", form, {
+    timeout: 0,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+    transformRequest: [(data, headers) => {
+      delete headers["Content-Type"];
+      return data;
+    }],
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        onProgress({
+          loaded: e.loaded,
+          total: e.total,
+          percent: Math.round((e.loaded / e.total) * 100),
+        });
+      }
+    },
+  });
+
+  const payload = extractData<{ url: string }>(res);
+  const url = payload?.url;
+  if (!url || typeof url !== "string") {
+    throw new Error("Upload succeeded but no file URL was returned.");
+  }
+  return url;
+}
+
 export async function putFileToS3(
   uploadUrl: string,
   file: File,
