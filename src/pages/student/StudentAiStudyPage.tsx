@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -50,17 +50,17 @@ function formatTime(s: number) {
 }
 
 // ─── Markdown styles (Modernized for Aero) ──────────────────────────────────────
-const mdClass = [
+const mdClassBase = [
   "prose max-w-none",
-  "prose-h2:text-2xl prose-h2:font-black prose-h2:text-slate-900 prose-h2:mt-12 prose-h2:mb-6 prose-h2:italic prose-h2:uppercase prose-h2:tracking-tight",
-  "prose-h3:text-lg prose-h3:font-black prose-h3:text-slate-800 prose-h3:mt-8 prose-h3:mb-4 prose-h3:uppercase",
-  "prose-p:text-slate-600 prose-p:leading-relaxed prose-p:mb-6 prose-p:text-lg prose-p:font-medium",
+  "prose-h2:font-black prose-h2:text-slate-900 prose-h2:mt-10 prose-h2:mb-5 prose-h2:tracking-tight",
+  "prose-h3:font-bold prose-h3:text-slate-800 prose-h3:mt-7 prose-h3:mb-3",
+  "prose-p:text-slate-700 prose-p:leading-relaxed prose-p:mb-5 prose-p:font-medium",
   "prose-strong:text-slate-900 prose-strong:font-black prose-strong:bg-blue-50 prose-strong:px-1.5 prose-strong:py-0.5 prose-strong:rounded-lg",
-  "prose-code:bg-slate-100 prose-code:text-blue-600 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:text-[14px] prose-code:font-mono prose-code:font-black prose-code:before:content-none prose-code:after:content-none",
-  "prose-pre:bg-slate-900 prose-pre:text-white prose-pre:rounded-3xl prose-pre:p-8 prose-pre:shadow-2xl",
-  "prose-ul:text-slate-600 prose-ul:space-y-4 prose-ul:my-6 prose-ul:text-lg",
+  "prose-code:bg-slate-100 prose-code:text-blue-600 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:font-mono prose-code:font-black prose-code:before:content-none prose-code:after:content-none",
+  "prose-pre:bg-slate-900 prose-pre:text-white prose-pre:rounded-2xl prose-pre:p-6 prose-pre:shadow-xl",
+  "prose-ul:text-slate-700 prose-ul:space-y-3 prose-ul:my-5",
   "prose-li:marker:text-blue-500 prose-li:marker:font-black",
-  "prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/50 prose-blockquote:rounded-3xl prose-blockquote:px-8 prose-blockquote:py-6 prose-blockquote:text-slate-700 prose-blockquote:font-bold prose-blockquote:italic prose-blockquote:my-8",
+  "prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/50 prose-blockquote:rounded-2xl prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:text-slate-700 prose-blockquote:my-6",
 ].join(" ");
 
 function normalizeAiMessage(message: unknown): string {
@@ -189,17 +189,17 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
   const [open, setOpen] = useState(false);
 
   return (
-    <CardGlass className={cn("p-0 overflow-hidden transition-all duration-300", open ? "shadow-2xl border-white" : "hover:bg-white/40")}>
+    <CardGlass className={cn("p-0 overflow-hidden transition-all duration-300 border-slate-200 bg-white shadow-sm", open ? "shadow-md" : "hover:shadow-md")}>
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-6 p-8 text-left transition-colors"
+        className="w-full flex items-center gap-4 p-5 text-left transition-colors"
       >
-        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 shadow-inner">
-           <span className="text-xs font-black text-slate-400">Q{index + 1}</span>
+        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+           <span className="text-[11px] font-semibold text-slate-500">Q{index + 1}</span>
         </div>
-        <p className="text-lg font-black text-slate-900 uppercase italic tracking-tight flex-1 truncate">{q.question}</p>
+        <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 truncate">{q.question}</p>
         <motion.div animate={{ rotate: open ? 180 : 0 }}>
-           <ChevronDown className="w-6 h-6 text-slate-400" />
+           <ChevronDown className="w-5 h-5 text-slate-400" />
         </motion.div>
       </button>
 
@@ -209,27 +209,27 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
             initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-8 pb-10 pt-4 border-t border-slate-100 space-y-8">
+            <div className="px-5 pb-6 pt-3 border-t border-slate-100 space-y-5">
               <div>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
                    <CheckCircle className="w-4 h-4" /> Solution Core
                 </p>
-                <div className="text-base font-bold text-slate-800 leading-relaxed bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-inner">{q.answer}</div>
+                <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">{q.answer}</div>
               </div>
               {q.explanation && (
                 <div>
-                  <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <p className="text-[11px] font-semibold text-amber-600 mb-2 flex items-center gap-2">
                      <Lightbulb className="w-4 h-4" /> Logic Synthesis
                   </p>
-                  <div className="text-base font-bold text-slate-700 leading-relaxed bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-inner">{q.explanation}</div>
+                  <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">{q.explanation}</div>
                 </div>
               )}
               <motion.button
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 onClick={(e) => { e.stopPropagation(); onAskAI(q.question); }}
-                className="w-full flex items-center justify-center gap-4 py-5 rounded-[1.5rem] bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 text-white text-xs font-semibold shadow-sm"
               >
-                <MessageSquare className="w-5 h-5" /> Request AI Logic Expansion
+                <MessageSquare className="w-4 h-4" /> Ask AI for explanation
               </motion.button>
             </div>
           </motion.div>
@@ -250,6 +250,7 @@ export default function StudentAiStudyPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [notesZoom, setNotesZoom] = useState<"sm" | "md" | "lg">("md");
 
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
   const startMut = useStartAiStudy();
@@ -260,6 +261,11 @@ export default function StudentAiStudyPage() {
   const sessionId = sessionData?.id;
   const timerRunning = !!sessionId && !completed;
   const elapsed = useElapsedTimer(timerRunning, sessionData?.timeSpentSeconds ?? 0);
+  const mdZoomClass = useMemo(() => {
+    if (notesZoom === "sm") return "prose-h2:text-2xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm prose-code:text-[12px]";
+    if (notesZoom === "lg") return "prose-h2:text-4xl prose-h3:text-xl prose-p:text-lg prose-ul:text-lg prose-code:text-[15px]";
+    return "prose-h2:text-3xl prose-h3:text-lg prose-p:text-base prose-ul:text-base prose-code:text-[13px]";
+  }, [notesZoom]);
 
   useEffect(() => {
     if (!sessionLoading && !session && !startMut.isPending && !startMut.data) {
@@ -336,50 +342,50 @@ export default function StudentAiStudyPage() {
   return (
     <div className="flex flex-col space-y-12 pb-32">
         {/* Status Terminal */}
-        <CardGlass className="px-10 py-6 border-white bg-white/60 flex items-center justify-between sticky top-0 z-50">
+        <CardGlass className="px-4 sm:px-6 py-3 border-slate-200 bg-white shadow-sm flex items-center justify-between sticky top-0 z-50">
            <div className="flex items-center gap-6">
               <button
                 onClick={() => navigate(-1)}
-                className="w-11 h-11 rounded-xl bg-white border border-slate-100 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-xl group"
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all shadow-sm group"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               </button>
               <div>
                  <div className="flex items-center gap-3 mb-1">
-                    <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg"><Sparkles className="w-3 h-3" /></div>
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Neural Nexus</span>
+                   <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center"><Sparkles className="w-3 h-3" /></div>
+                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">AI Study</span>
                  </div>
-                 <h1 className="text-xl font-black text-slate-900 italic tracking-tighter leading-none uppercase">{sessionData.topicName}</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-slate-900 leading-none">{sessionData.topicName}</h1>
               </div>
            </div>
 
            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-3 bg-white border border-slate-100 px-5 py-2.5 rounded-xl shadow-xl">
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
                  <Clock className="w-4 h-4 text-slate-400" />
-                 <span className="text-sm font-black text-slate-900 tabular-nums uppercase italic leading-none">{formatTime(elapsed)} Sync</span>
+                 <span className="text-xs font-semibold text-slate-900 tabular-nums leading-none">{formatTime(elapsed)}</span>
               </div>
               {completed && (
-                 <div className="flex items-center gap-3 bg-emerald-500 text-white border border-emerald-600 px-5 py-2.5 rounded-xl shadow-xl">
+                 <div className="hidden sm:flex items-center gap-2 bg-emerald-500 text-white border border-emerald-600 px-4 py-2 rounded-xl">
                     <CheckCircle className="w-4 h-4" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none">Analyzed</span>
+                    <span className="text-[10px] font-semibold leading-none">Completed</span>
                  </div>
               )}
            </div>
         </CardGlass>
 
         {/* Tab Console */}
-        <div className="flex gap-4 overflow-x-auto scrollbar-none pb-2">
+        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2">
            {tabs.map(tab => (
              <button
                key={tab.id} onClick={() => setActiveTab(tab.id)}
                className={cn(
-                 "flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all border-2",
-                 activeTab === tab.id ? "bg-slate-900 text-white border-slate-900 shadow-2xl scale-[1.05]" : "bg-white/60 text-slate-400 border-transparent hover:border-white hover:bg-white"
+                 "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all border",
+                 activeTab === tab.id ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-indigo-200"
                )}
              >
                {tab.icon} {tab.label}
                {tab.id === "ask" && sessionData.conversation.length > 0 && (
-                 <span className="ml-2 w-5 h-5 rounded-lg bg-blue-500 text-white flex items-center justify-center text-[9px] shadow-lg">
+                 <span className="ml-1 w-5 h-5 rounded-md bg-blue-500 text-white flex items-center justify-center text-[9px] shadow-sm">
                    {Math.ceil(sessionData.conversation.length / 2)}
                  </span>
                )}
@@ -393,42 +399,66 @@ export default function StudentAiStudyPage() {
              {activeTab === "lesson" && (
                <motion.div key="lesson" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}>
                   {sessionData.lessonMarkdown ? (
-                    <CardGlass className="p-10 sm:p-20 border-white relative">
-                       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full -mr-32 -mt-32 pointer-events-none" />
+                    <CardGlass className="p-6 sm:p-10 border-slate-200 bg-white shadow-sm relative">
                        
-                       <div className="mb-16 pb-16 border-b border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-10">
+                       <div className="mb-10 pb-8 border-b border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-8">
                           <div className="flex-1">
-                             <div className="flex items-center gap-3 mb-6">
-                                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-50/50 shadow-inner"><Monitor className="w-4 h-4" /> System Generated Matrix</span>
+                             <div className="flex items-center gap-3 mb-4">
+                                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-semibold text-indigo-600 uppercase tracking-wider bg-indigo-50 border border-indigo-100"><Monitor className="w-3.5 h-3.5" /> Study Notes</span>
                              </div>
-                             <h1 className="text-4xl sm:text-6xl font-black text-slate-900 leading-tight uppercase italic tracking-tighter">{sessionData.topicName}</h1>
+                             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">{sessionData.topicName}</h1>
                           </div>
-                          <div className="flex items-center gap-6 bg-slate-50 px-8 py-5 rounded-[2rem] border border-slate-100 shadow-inner">
-                             <div className="text-right">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Archive Density</p>
-                                <p className="text-sm font-black text-slate-900 uppercase">~20 min Cycle</p>
+                          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
+                             <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
+                               <button
+                                 onClick={() => setNotesZoom(z => (z === "lg" ? "md" : z === "md" ? "sm" : "sm"))}
+                                 className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                               >
+                                 A-
+                               </button>
+                               <button
+                                 onClick={() => setNotesZoom("md")}
+                                 className="px-2.5 py-1.5 text-[10px] font-semibold text-slate-500 border-x border-slate-200 hover:bg-slate-50"
+                               >
+                                 100%
+                               </button>
+                               <button
+                                 onClick={() => setNotesZoom(z => (z === "sm" ? "md" : z === "md" ? "lg" : "lg"))}
+                                 className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                               >
+                                 A+
+                               </button>
                              </div>
-                             <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm"><Info className="w-6 h-6 text-slate-400" /></div>
+                             <div className="text-right">
+                                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Estimated Time</p>
+                                <p className="text-sm font-semibold text-slate-900">~20 mins</p>
+                             </div>
+                             <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center"><Info className="w-5 h-5 text-slate-400" /></div>
                           </div>
                        </div>
 
+<<<<<<< HEAD
                        <div className={mdClass}>
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                           {normalizeLessonMarkdown(sessionData.lessonMarkdown)}
                         </ReactMarkdown>
+=======
+                       <div className={cn(mdClassBase, mdZoomClass)}>
+                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{sessionData.lessonMarkdown}</ReactMarkdown>
+>>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                        </div>
 
                        {!completed && (
-                          <div className="mt-24 pt-16 border-t border-slate-100 flex flex-col items-center">
-                             <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center shadow-inner mb-8"><CheckCircle className="w-10 h-10" /></div>
-                             <h3 className="text-2xl font-black text-slate-900 uppercase italic mb-2">Protocol Finalized?</h3>
-                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-10">Mark this sector as resolved to propagate XP total.</p>
+                         <div className="mt-14 pt-10 border-t border-slate-100 flex flex-col items-center">
+                            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center mb-6"><CheckCircle className="w-7 h-7" /></div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">Finish this topic?</h3>
+                            <p className="text-sm text-slate-500 mb-8">Mark complete to save progress and XP.</p>
                              <motion.button
-                               whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(16,185,129,0.3)" }} whileTap={{ scale: 0.98 }}
+                              whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}
                                onClick={() => setShowComplete(true)}
-                               className="px-16 py-6 rounded-[2.5rem] bg-emerald-500 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-emerald-600"
+                              className="px-10 py-3.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-sm hover:bg-emerald-600"
                              >
-                               Commit Data Entry
+                              Mark Complete
                              </motion.button>
                           </div>
                        )}
@@ -443,9 +473,10 @@ export default function StudentAiStudyPage() {
              )}
 
              {activeTab === "concepts" && (
-               <motion.div key="concepts" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <motion.div key="concepts" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      {/* Key Concepts */}
+<<<<<<< HEAD
                      {(sessionData.keyConcepts.length > 0 || sessionData.lessonMarkdown) && (
                         <CardGlass className="p-10 border-white h-full relative overflow-hidden bg-white/60">
                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[50px] rounded-full pointer-events-none" />
@@ -469,17 +500,34 @@ export default function StudentAiStudyPage() {
                                ))}
                              </div>
                            )}
+=======
+                     {sessionData.keyConcepts.length > 0 && (
+                        <CardGlass className="p-6 border-slate-200 h-full bg-white shadow-sm">
+                           <div className="flex items-center gap-3 mb-6">
+                              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center"><Layers className="w-5 h-5" /></div>
+                              <h3 className="text-lg font-semibold text-slate-900">Key Concepts</h3>
+                           </div>
+                           <div className="space-y-3">
+                             {sessionData.keyConcepts.map((concept, i) => (
+                               <div key={i} className="flex gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                  <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[11px] font-semibold text-slate-500 shrink-0">{i+1}</div>
+                                  <p className="flex-1 text-sm font-medium text-slate-700 leading-relaxed">{concept}</p>
+                               </div>
+                             ))}
+                           </div>
+>>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                         </CardGlass>
                      )}
 
                      {/* Formulas & Mistakes */}
-                     <div className="space-y-8">
+                     <div className="space-y-6">
                         {sessionData.formulas.length > 0 && (
-                          <CardGlass className="p-10 border-white bg-indigo-50/50">
-                             <div className="flex items-center gap-4 mb-8">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xl shadow-indigo-500/20"><Sigma className="w-6 h-6" /></div>
-                                <h3 className="text-xl font-black text-slate-900 uppercase italic">Matrix Algorithms</h3>
+                          <CardGlass className="p-6 border-slate-200 bg-white shadow-sm">
+                             <div className="flex items-center gap-3 mb-5">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><Sigma className="w-5 h-5" /></div>
+                                <h3 className="text-lg font-semibold text-slate-900">Formulas</h3>
                              </div>
+<<<<<<< HEAD
                              <div className="space-y-4">
                               {sessionData.formulas.map((formula, i) => (
                                 <div key={i} className="p-6 rounded-[1.5rem] bg-white text-base font-black text-indigo-700 shadow-inner border border-indigo-100 flex items-start gap-4">
@@ -494,20 +542,34 @@ export default function StudentAiStudyPage() {
                                    </div>
                                 </div>
                               ))}
+=======
+                             <div className="space-y-3">
+                               {sessionData.formulas.map((formula, i) => (
+                                 <div key={i} className="p-4 rounded-xl bg-indigo-50/60 font-mono text-sm font-semibold text-indigo-700 border border-indigo-100 flex items-center gap-3">
+                                    <Zap className="w-4 h-4 opacity-60 shrink-0" /> {formula}
+                                 </div>
+                               ))}
+>>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                              </div>
                           </CardGlass>
                         )}
                         {sessionData.commonMistakes.length > 0 && (
-                          <CardGlass className="p-10 border-white bg-red-50/50">
-                             <div className="flex items-center gap-4 mb-8">
-                                <div className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-xl shadow-red-500/20"><AlertTriangle className="w-6 h-6" /></div>
-                                <h3 className="text-xl font-black text-slate-900 uppercase italic">System Hazards</h3>
+                          <CardGlass className="p-6 border-slate-200 bg-white shadow-sm">
+                             <div className="flex items-center gap-3 mb-5">
+                                <div className="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center"><AlertTriangle className="w-5 h-5" /></div>
+                                <h3 className="text-lg font-semibold text-slate-900">Common Mistakes</h3>
                              </div>
-                             <div className="space-y-4">
+                             <div className="space-y-3">
                                {sessionData.commonMistakes.map((mistake, i) => (
+<<<<<<< HEAD
                                  <div key={i} className="flex gap-5 p-6 rounded-[1.5rem] bg-white border border-red-100/50">
                                     <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-red-500 shadow-sm shrink-0"><AlertTriangle className="w-4 h-4" /></div>
                                    <p className="text-base font-bold text-slate-800 leading-relaxed">{normalizeReadableText(mistake)}</p>
+=======
+                                 <div key={i} className="flex gap-3 p-4 rounded-xl bg-red-50/60 border border-red-100">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-red-100 flex items-center justify-center text-red-500 shrink-0"><AlertTriangle className="w-3.5 h-3.5" /></div>
+                                    <p className="text-sm font-medium text-slate-700 leading-relaxed">{mistake}</p>
+>>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                                  </div>
                                ))}
                              </div>
@@ -520,14 +582,13 @@ export default function StudentAiStudyPage() {
 
              {activeTab === "practice" && (
                <motion.div key="practice" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-6">
-                  <div className="flex items-center gap-5 mb-12 px-6">
-                     <div className="w-14 h-14 rounded-[1.5rem] bg-slate-900 text-white flex items-center justify-center shadow-2xl relative">
-                        <Target className="w-7 h-7" />
-                        <div className="absolute inset-0 bg-blue-500 rounded-[1.5rem] blur-xl opacity-20" />
+                  <div className="flex items-center gap-4 mb-4 px-1">
+                     <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                        <Target className="w-5 h-5" />
                      </div>
                      <div>
-                        <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Engagement Simulator</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">{sessionData.practiceQuestions.length} Operational Scenarios Loaded</p>
+                        <h2 className="text-xl font-semibold text-slate-900">Practice Questions</h2>
+                        <p className="text-xs font-medium text-slate-500 mt-0.5">{sessionData.practiceQuestions.length} questions loaded</p>
                      </div>
                   </div>
                   <div className="space-y-6">
@@ -540,7 +601,7 @@ export default function StudentAiStudyPage() {
 
              {activeTab === "ask" && (
                <motion.div key="ask" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="flex flex-col h-full min-h-[600px]">
-                  <CardGlass className={cn("flex-1 p-8 sm:p-12 mb-20 flex flex-col relative bg-white/60", sessionData.conversation.length === 0 ? "justify-center items-center text-center" : "")}>
+                 <CardGlass className={cn("flex-1 p-6 sm:p-8 mb-20 flex flex-col relative bg-white border-slate-200 shadow-sm", sessionData.conversation.length === 0 ? "justify-center items-center text-center" : "")}>
                      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none" />
                      
                      <AnimatePresence mode="popLayout">
@@ -551,7 +612,7 @@ export default function StudentAiStudyPage() {
                                  <div className="absolute inset-0 bg-indigo-200 rounded-[3.5rem] blur-3xl opacity-30" />
                               </div>
                               <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-4">Neural Query Protocol</h2>
-                              <p className="text-base font-bold text-slate-400 uppercase tracking-widest max-w-sm leading-relaxed">System active. Awaiting prompt for curriculum deep-scan.</p>
+                              <p className="text-sm font-medium text-slate-500 max-w-sm leading-relaxed">Ask any doubt about this topic and get AI help.</p>
                            </motion.div>
                         ) : (
                            <div className="space-y-10 pb-20">
@@ -566,23 +627,28 @@ export default function StudentAiStudyPage() {
                                        {msg.role === "ai" ? <Sparkles className="w-6 h-6" /> : "ME"}
                                     </div>
                                     <div className={cn(
-                                       "p-8 rounded-[2.5rem] text-lg font-bold shadow-2xl relative",
+                                       "p-5 rounded-2xl text-sm font-medium shadow-sm relative",
                                        msg.role === "student" ? "bg-slate-900 text-white rounded-tr-none" : "bg-white border border-slate-100 text-slate-800 rounded-tl-none"
                                     )}>
                                        {msg.role === "ai" ? (
+<<<<<<< HEAD
                                           <div className={cn(mdClass, "!prose-sm !prose-p:text-slate-800 !prose-p:text-base")}>
                                              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                                                {normalizeAiMessage(msg.message)}
                                              </ReactMarkdown>
+=======
+                                          <div className={cn(mdClassBase, "prose-h2:text-xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm !prose-p:text-slate-800")}>
+                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeAiMessage(msg.message)}</ReactMarkdown>
+>>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                                           </div>
                                        ) : msg.message}
                                     </div>
                                  </motion.div>
                               ))}
                               {askMut.isPending && (
-                                 <div className="flex gap-6">
+                                 <div className="flex gap-4">
                                     <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center animate-pulse"><Sparkles className="w-6 h-6" /></div>
-                                    <div className="bg-white border border-slate-100 rounded-[2.5rem] rounded-tl-none p-8 flex items-center gap-3 shadow-xl">
+                                    <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-none p-5 flex items-center gap-2 shadow-sm">
                                        {[0, 1, 2].map(i => <motion.div key={i} className="w-3 h-3 rounded-full bg-indigo-500" animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }} />)}
                                     </div>
                                  </div>
