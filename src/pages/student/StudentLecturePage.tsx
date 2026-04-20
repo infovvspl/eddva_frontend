@@ -9,14 +9,14 @@ import {
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
   Maximize, RotateCcw, Trophy, Tag, FlaskConical,
   MessageCircle, Loader2, Lock, Calendar, FileText,
-  X, Layers, PanelRightOpen, ExternalLink, Download,
+  X, Layers, ExternalLink, Download,
   ClipboardList, Link2, Youtube, BookMarked,
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { apiClient, extractData } from "@/lib/api/client";
 import {
-  getQuizCheckpoints, submitQuizResponse, translateTranscriptToHindi,
+  getQuizCheckpoints, submitQuizResponse, translateTranscriptToHindi, translateNotesToEnglish,
   type QuizCheckpoint, type QuizSubmitResult, type Lecture,
   type LectureCompletionReward,
 } from "@/lib/api/teacher";
@@ -362,10 +362,11 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
 
 // ─── Video Player ──────────────────────────────────────────────────────────────
 
-function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, currentTime, resumeAt }: {
+function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, currentTime, resumeAt, onEnded }: {
   src: string; checkpoints: QuizCheckpoint[]; lectureId: string;
   videoRef: React.RefObject<HTMLVideoElement>;
   onDoubtClick: () => void; currentTime: number; resumeAt?: number;
+  onEnded?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -378,6 +379,7 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
   const [quizIndex, setQuizIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [resumeToast, setResumeToast] = useState<string | null>(null);
+  const [videoEnded, setVideoEnded] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const showControls = () => {
@@ -450,9 +452,9 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
               setTimeout(() => setResumeToast(null), 3000);
             }
           }}
-          onPlay={() => { setPlaying(true); hideTimer.current = setTimeout(() => setControlsVisible(false), 3000); }}
+          onPlay={() => { setPlaying(true); setVideoEnded(false); hideTimer.current = setTimeout(() => setControlsVisible(false), 3000); }}
           onPause={() => { setPlaying(false); setControlsVisible(true); clearTimeout(hideTimer.current); }}
-          onEnded={() => setPlaying(false)}
+          onEnded={() => { setPlaying(false); setVideoEnded(true); setControlsVisible(true); }}
         />
       )}
 
@@ -468,6 +470,45 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/80 text-white text-xs font-semibold px-4 py-2 rounded-full backdrop-blur-sm">
             <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" /> {resumeToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Video End Screen ── */}
+      <AnimatePresence>
+        {videoEnded && !activeQuiz && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[150] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 16 }} animate={{ scale: 1, y: 0 }}
+              className="flex flex-col items-center gap-5 px-6 text-center max-w-sm"
+            >
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400/60 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-white font-black text-xl">Lecture Complete!</p>
+                <p className="text-white/50 text-sm mt-1">Great job. Now test what you've learned.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <button
+                  onClick={() => { setVideoEnded(false); const v = videoRef.current; if (v) { v.currentTime = 0; v.play(); } }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-white/20 text-white/80 text-sm font-semibold hover:bg-white/10 transition-all"
+                >
+                  <RotateCcw className="w-4 h-4" /> Replay
+                </button>
+                {onEnded && (
+                  <button
+                    onClick={() => onEnded()}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-all shadow-lg shadow-indigo-900/50"
+                  >
+                    <Sparkles className="w-4 h-4" /> Take Quiz
+                  </button>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -542,6 +583,29 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
 // ─── Notes Panel ──────────────────────────────────────────────────────────────
 
 function NotesPanel({ lecture }: { lecture: Lecture }) {
+  const [enMode, setEnMode] = useState(false);
+  const [notesEn, setNotesEn] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+
+  const handleToggleEnglish = async () => {
+    if (enMode) { setEnMode(false); return; }
+    if (notesEn) { setEnMode(true); return; }
+    setIsTranslating(true);
+    setTranslateError(null);
+    try {
+      const result = await translateNotesToEnglish(lecture.id);
+      setNotesEn(result.notesEn);
+      setEnMode(true);
+    } catch {
+      setTranslateError("Translation failed. Please try again.");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const displayNotes = enMode && notesEn ? notesEn : lecture.aiNotesMarkdown;
+
   return (
     <div className="space-y-4">
       {(lecture.aiKeyConcepts?.length ?? 0) > 0 && (
@@ -558,14 +622,42 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </div>
         </div>
       )}
+
       <div className="bg-white rounded-2xl border border-slate-100">
         {lecture.aiNotesMarkdown ? (
           <div className="p-5">
-            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-              <BookOpen className="w-3 h-3" /> AI Notes
-            </p>
+            {/* Header row with title + language toggle */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5">
+                <BookOpen className="w-3 h-3" /> AI Notes
+              </p>
+              <button
+                onClick={handleToggleEnglish}
+                disabled={isTranslating}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
+                  enMode
+                    ? "bg-indigo-50 border-indigo-200 text-indigo-600"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                )}
+              >
+                {isTranslating
+                  ? <><Loader2 className="w-3 h-3 animate-spin" /> Translating…</>
+                  : enMode
+                    ? "View in Hindi"
+                    : "View in English"
+                }
+              </button>
+            </div>
+
+            {translateError && (
+              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2 mb-3">
+                {translateError}
+              </p>
+            )}
+
             <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-headings:font-bold prose-p:text-slate-600 prose-p:text-xs prose-p:leading-relaxed prose-strong:text-indigo-600 prose-code:bg-slate-50 prose-code:text-emerald-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{lecture.aiNotesMarkdown}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayNotes ?? ""}</ReactMarkdown>
             </div>
           </div>
         ) : (
@@ -837,9 +929,11 @@ function LectureInfoCard({ lecture }: { lecture: Lecture }) {
   );
 }
 
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type TabKey = "notes" | "formulas" | "transcript" | "quiz" | "doubt" | "videos" | "dpp" | "pyq" | "materials";
+type AiTabKey  = "notes" | "formulas" | "transcript" | "quiz" | "doubt";
+type MatTabKey = "all"   | "videos"   | "dpp"        | "pyq"  | "pdf"   | "links";
 
 export default function StudentLecturePage() {
   const { id } = useParams<{ id: string }>();
@@ -850,12 +944,14 @@ export default function StudentLecturePage() {
   const fromPath = searchParams.get("from");
   const handleBack = () => fromPath ? navigate(fromPath) : navigate(-1);
 
-  const [activeTab, setActiveTab] = useState<TabKey>("notes");
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [activeAiTab,  setActiveAiTab]  = useState<AiTabKey>("notes");
+  const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
+  const [aiOpen,       setAiOpen]       = useState(true);
+  const [mobileAiOpen, setMobileAiOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [doubtTimestamp, setDoubtTimestamp] = useState(0);
-  const [topicProgress, setTopicProgress] = useState<TopicProgress | null>(null);
-  const [mockTestId, setMockTestId] = useState<string | null>(null);
+  const [doubtTimestamp,   setDoubtTimestamp]   = useState(0);
+  const [topicProgress,    setTopicProgress]    = useState<TopicProgress | null>(null);
+  const [mockTestId,       setMockTestId]       = useState<string | null>(null);
   const [completionReward, setCompletionReward] = useState<LectureCompletionReward | null>(null);
 
   const { watchPct: liveWatchPct, currentTime: liveCurrentTime } = useWatchPercentage(videoRef);
@@ -900,11 +996,6 @@ export default function StudentLecturePage() {
 
   useLectureProgress(id ?? "", videoRef, handleCompletion);
 
-  const openPanel = (tab: TabKey) => {
-    setActiveTab(tab);
-    setPanelOpen(true);
-  };
-
   // ── Loading ──
   if (lectureLoading) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -931,299 +1022,437 @@ export default function StudentLecturePage() {
 
   if (!lecture) return null;
 
-  const videoSrc = lecture.videoUrl ?? "";
+  const videoSrc        = lecture.videoUrl ?? "";
   const displayWatchPct = liveWatchPct > 0 ? liveWatchPct : (savedProgress?.watchPercentage ?? 0);
-  const isLive = lecture.type === "live" || lecture.status === "live";
-  const duration = fmtDuration(lecture.videoDurationSeconds);
-  const isRevisionMode = topicProgress?.status === "completed";
-  const quizUnlocked = isRevisionMode || displayWatchPct >= 90 || !!completionReward;
+  const isLive          = lecture.type === "live" || lecture.status === "live";
 
-  // ── Dynamic tabs based on available content ───────────────────────────────
-  const videoResources   = topicResources.filter(r => (r.type === "video" || r.type === "link") && r.externalUrl && isYouTubeUrl(r.externalUrl));
-  const dppResources     = topicResources.filter(r => r.type === "dpp");
-  const pyqResources     = topicResources.filter(r => r.type === "pyq");
-  const otherResources   = topicResources.filter(r => !["video","link","dpp","pyq"].includes(r.type) || (r.type === "link" && !isYouTubeUrl(r.externalUrl ?? "")));
+  // ── Resource groups ──────────────────────────────────────────────────────────
+  const videoRes = topicResources.filter(r =>
+    (r.type === "video" || r.type === "link") && r.externalUrl && isYouTubeUrl(r.externalUrl),
+  );
+  const dppRes   = topicResources.filter(r => r.type === "dpp");
+  const pyqRes   = topicResources.filter(r => r.type === "pyq");
+  const pdfRes   = topicResources.filter(r => r.type === "pdf" || r.type === "notes");
+  const linkRes  = topicResources.filter(r => r.type === "link" && !isYouTubeUrl(r.externalUrl ?? ""));
 
-  const tabs: { key: TabKey; label: string; icon: React.ElementType; badge?: number }[] = [
-    { key: "notes",     label: "AI Notes",  icon: BookOpen },
-    { key: "formulas",  label: "Formulas",  icon: FlaskConical },
+  // ── AI tabs ──────────────────────────────────────────────────────────────────
+  const aiTabs: { key: AiTabKey; label: string; icon: React.ElementType; badge?: number }[] = [
+    { key: "notes",    label: "AI Notes",  icon: BookOpen },
+    { key: "formulas", label: "Formulas",  icon: FlaskConical },
     ...(lecture.transcript ? [{ key: "transcript" as const, label: "Transcript", icon: FileText }] : []),
-    ...(checkpoints.length    > 0 ? [{ key: "quiz"      as const, label: "Quiz",      icon: Sparkles, badge: checkpoints.length }] : []),
-    ...(videoResources.length > 0 ? [{ key: "videos"    as const, label: "Videos",    icon: Youtube }] : []),
-    ...(dppResources.length   > 0 ? [{ key: "dpp"       as const, label: "DPP",       icon: ClipboardList }] : []),
-    ...(pyqResources.length   > 0 ? [{ key: "pyq"       as const, label: "PYQ",       icon: Trophy }] : []),
-    ...(otherResources.length > 0 ? [{ key: "materials" as const, label: "Materials", icon: FileText, badge: otherResources.length }] : []),
-    { key: "doubt",     label: "Ask Doubt", icon: MessageCircle },
+    ...(checkpoints.length > 0 ? [{ key: "quiz" as const, label: "Quiz", icon: Sparkles, badge: checkpoints.length }] : []),
+    { key: "doubt",    label: "Ask Doubt", icon: MessageCircle },
   ];
 
-  // ── Shared panel content renderer ────────────────────────────────────────────
-  const panelContent = (
+  // ── Material tabs (only show tabs that have content) ─────────────────────────
+  const matTabs: { key: MatTabKey; label: string; icon: React.ElementType; count: number }[] = [
+    { key: "all",    label: "All",         icon: Layers,        count: topicResources.length },
+    ...(videoRes.length > 0 ? [{ key: "videos" as const, label: "Videos",      icon: Youtube,       count: videoRes.length }] : []),
+    ...(dppRes.length   > 0 ? [{ key: "dpp"    as const, label: "DPP",         icon: ClipboardList, count: dppRes.length   }] : []),
+    ...(pyqRes.length   > 0 ? [{ key: "pyq"    as const, label: "PYQ",         icon: Trophy,        count: pyqRes.length   }] : []),
+    ...(pdfRes.length   > 0 ? [{ key: "pdf"    as const, label: "Notes & PDF", icon: FileText,      count: pdfRes.length   }] : []),
+    ...(linkRes.length  > 0 ? [{ key: "links"  as const, label: "Links",       icon: Link2,         count: linkRes.length  }] : []),
+  ];
+
+  // ── AI panel content ─────────────────────────────────────────────────────────
+  const aiContent = (
     <AnimatePresence mode="wait">
-      {activeTab === "notes" && (
+      {activeAiTab === "notes" && (
         <motion.div key="notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <NotesPanel lecture={lecture} />
         </motion.div>
       )}
-      {activeTab === "formulas" && (
+      {activeAiTab === "formulas" && (
         <motion.div key="formulas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <FormulasTab formulas={lecture.aiFormulas?.map(f => ({ name: "N/A", latex: f, description: "" })) ?? []} />
         </motion.div>
       )}
-      {activeTab === "quiz" && (
+      {activeAiTab === "quiz" && (
         <motion.div key="quiz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <QuizSummaryPanel checkpoints={checkpoints} savedResponses={savedProgress?.quizResponses} />
         </motion.div>
       )}
-      {activeTab === "transcript" && (
+      {activeAiTab === "transcript" && (
         <motion.div key="transcript" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <TranscriptPanel lecture={lecture} />
         </motion.div>
       )}
-      {activeTab === "videos" && (
-        <motion.div key="videos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <VideosPanel resources={videoResources} />
-        </motion.div>
-      )}
-      {activeTab === "dpp" && (
-        <motion.div key="dpp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <ResourceListPanel resources={dppResources} type="dpp" />
-        </motion.div>
-      )}
-      {activeTab === "pyq" && (
-        <motion.div key="pyq" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <ResourceListPanel resources={pyqResources} type="pyq" />
-        </motion.div>
-      )}
-      {activeTab === "materials" && (
-        <motion.div key="materials" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <div className="space-y-4">
-            {["pdf","notes","link","quiz"].map(t => {
-              const items = otherResources.filter(r => r.type === t as TopicResourceType);
-              if (!items.length) return null;
-              const cfg = RESOURCE_CONFIG[t as TopicResourceType];
-              return (
-                <div key={t}>
-                  <div className={cn("inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg mb-2.5", cfg.bg, cfg.text)}>
-                    <cfg.icon className="w-3.5 h-3.5" /> {cfg.label}
-                  </div>
-                  <ResourceListPanel resources={items} type={t as TopicResourceType} />
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
-      )}
-      {activeTab === "doubt" && (
+      {activeAiTab === "doubt" && (
         <motion.div key="doubt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <AskDoubtPanel
             lectureId={id!} topicId={lecture.topicId}
             topicName={lecture.topic?.name ?? "General"} lectureTitle={lecture.title}
-            timestampSeconds={doubtTimestamp} onClose={() => setPanelOpen(false)}
+            timestampSeconds={doubtTimestamp} onClose={() => setMobileAiOpen(false)}
           />
         </motion.div>
       )}
     </AnimatePresence>
   );
 
+  // ── Materials content renderer ───────────────────────────────────────────────
+  const renderMaterials = () => {
+    if (activeMatTab === "videos") return <VideosPanel resources={videoRes} />;
+    if (activeMatTab === "dpp")    return <ResourceListPanel resources={dppRes}  type="dpp"   />;
+    if (activeMatTab === "pyq")    return <ResourceListPanel resources={pyqRes}  type="pyq"   />;
+    if (activeMatTab === "pdf")    return <ResourceListPanel resources={pdfRes}  type="pdf"   />;
+    if (activeMatTab === "links")  return <ResourceListPanel resources={linkRes} type="link"  />;
+
+    // "all" tab — grouped sections
+    const sections: { key: MatTabKey; label: string; cfg: typeof RESOURCE_CONFIG[keyof typeof RESOURCE_CONFIG]; items: TopicResource[]; isVideo?: boolean }[] = [
+      { key: "videos", label: "Videos",      cfg: RESOURCE_CONFIG["video"], items: videoRes,  isVideo: true },
+      { key: "dpp",    label: "DPP",          cfg: RESOURCE_CONFIG["dpp"],  items: dppRes  },
+      { key: "pyq",    label: "PYQ",          cfg: RESOURCE_CONFIG["pyq"],  items: pyqRes  },
+      { key: "pdf",    label: "Notes & PDF",  cfg: RESOURCE_CONFIG["pdf"],  items: pdfRes  },
+      { key: "links",  label: "Links",        cfg: RESOURCE_CONFIG["link"], items: linkRes },
+    ].filter(s => s.items.length > 0);
+
+    if (sections.length === 0) return (
+      <div className="flex flex-col items-center justify-center py-14 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3">
+          <BookOpen className="w-6 h-6 text-slate-300" />
+        </div>
+        <p className="text-sm font-semibold text-slate-400">No materials uploaded yet</p>
+        <p className="text-xs text-slate-300 mt-1">Your teacher hasn't added study materials for this topic</p>
+      </div>
+    );
+
+    return (
+      <div className="space-y-6">
+        {sections.map(sec => (
+          <div key={sec.key}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0", sec.cfg.bg)}>
+                <sec.cfg.icon className={cn("w-3.5 h-3.5", sec.cfg.text)} />
+              </div>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{sec.label}</p>
+              <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-full", sec.cfg.bg, sec.cfg.text)}>
+                {sec.items.length}
+              </span>
+            </div>
+            {sec.isVideo
+              ? <VideosPanel resources={sec.items} />
+              : <ResourceListPanel resources={sec.items} type={sec.items[0]?.type as TopicResourceType} />
+            }
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // ── AI tab strip helper ───────────────────────────────────────────────────────
+  const AiTabStrip = ({ compact }: { compact?: boolean }) => (
+    <div className="flex overflow-x-auto scrollbar-hide border-b border-slate-100">
+      {aiTabs.map(t => (
+        <button key={t.key} onClick={() => setActiveAiTab(t.key)}
+          className={cn(
+            "flex items-center gap-1 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0",
+            activeAiTab === t.key
+              ? "border-indigo-600 text-indigo-700 bg-indigo-50/30"
+              : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50",
+          )}>
+          <t.icon className="w-3.5 h-3.5 shrink-0" />
+          {!compact && <span className="ml-1">{t.label}</span>}
+          {t.badge && (
+            <span className={cn(
+              "text-[9px] font-black px-1.5 py-0.5 rounded-full ml-1",
+              activeAiTab === t.key ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500",
+            )}>
+              {t.badge}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50">
+
       {/* ── Top Bar ── */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-3">
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-sm">
+        <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center gap-3">
+
           <button onClick={handleBack}
             className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-indigo-600 hover:text-white transition-all shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-              {lecture.topic?.name && (
-                <span className="text-indigo-600 font-semibold truncate max-w-[140px]">{lecture.topic.name}</span>
-              )}
+            {lecture.topic?.name && (
+              <p className="text-[10px] sm:text-xs text-indigo-600 font-semibold truncate max-w-[160px] sm:max-w-xs leading-none mb-0.5">
+                {lecture.topic.name}
+              </p>
+            )}
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-slate-800 truncate leading-tight">{lecture.title}</h1>
               {isLive && (
-                <span className="flex items-center gap-1 text-red-500 font-bold">
+                <span className="shrink-0 flex items-center gap-1 text-red-500 text-xs font-bold">
                   <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
                 </span>
               )}
             </div>
-            <h1 className="text-sm font-bold text-slate-800 truncate leading-tight">{lecture.title}</h1>
           </div>
 
-          {/* Watch progress */}
+          {/* Progress — sm+ */}
           {!isLive && (
-            <div className="hidden sm:flex items-center gap-3 shrink-0">
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Progress</p>
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <div className="text-right hidden md:block">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-0.5">Progress</p>
                 <p className="text-xs font-black text-slate-700">{Math.round(displayWatchPct)}%</p>
               </div>
-              <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-20 lg:w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div animate={{ width: `${displayWatchPct}%` }} className="h-full bg-indigo-500 rounded-full" />
               </div>
+              <span className="text-xs font-black text-slate-700 md:hidden">{Math.round(displayWatchPct)}%</span>
             </div>
           )}
 
-          {/* Panel toggle — works on all screen sizes */}
+          {/* AI Tools toggle — desktop only */}
           <button
-            onClick={() => setPanelOpen(v => !v)}
+            onClick={() => setAiOpen(v => !v)}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border shrink-0",
-              panelOpen
+              "hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border shrink-0",
+              aiOpen
                 ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
             )}
           >
-            <PanelRightOpen className="w-3.5 h-3.5" />
-            <span className="hidden sm:block">Resources</span>
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI Tools</span>
           </button>
         </div>
       </div>
 
       {/* ── Body ── */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 py-4 lg:py-6">
         <div className={cn(
-          "flex flex-col gap-4 lg:gap-5 lg:items-start transition-all duration-300",
-          panelOpen ? "lg:grid lg:grid-cols-[1fr_360px]" : ""
+          "transition-all duration-300 lg:items-start",
+          aiOpen
+            ? "lg:grid lg:gap-6 xl:gap-8 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_440px]"
+            : "max-w-5xl mx-auto",
         )}>
 
-          {/* ── Left: Video + tabs + info ── */}
-          <div className="min-w-0 space-y-3">
-            {/* Video */}
+          {/* ── LEFT: video + info + mobile AI + materials + quiz ── */}
+          <div className="min-w-0 space-y-3 lg:space-y-4">
+
+            {/* Video player */}
             <VideoPlayer
               src={videoSrc} checkpoints={checkpoints} lectureId={id!}
               videoRef={videoRef}
-              onDoubtClick={() => { setDoubtTimestamp(liveCurrentTime); openPanel("doubt"); }}
+              onDoubtClick={() => {
+                setDoubtTimestamp(liveCurrentTime);
+                setActiveAiTab("doubt");
+                setAiOpen(true);
+                setMobileAiOpen(true);
+              }}
               currentTime={liveCurrentTime}
               resumeAt={savedProgress?.lastPositionSeconds}
+              onEnded={!isLive && mockTestId ? () => navigate(`/student/quiz?mockTestId=${mockTestId}`) : undefined}
             />
 
-            {/* Tab buttons — clicking on desktop switches panel tab; on mobile also opens panel */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-              {tabs.map(t => (
-                <button
-                  key={t.key}
-                  onClick={() => openPanel(t.key)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border shrink-0",
-                    activeTab === t.key
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600 hover:shadow-sm"
-                  )}
-                >
-                  <t.icon className="w-4 h-4" />
-                  {t.label}
-                  {t.badge && (
-                    <span className={cn(
-                      "text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] text-center",
-                      activeTab === t.key ? "bg-white/30 text-white" : "bg-indigo-100 text-indigo-600"
-                    )}>
-                      {t.badge}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
+            {/* Mobile progress bar */}
+            {!isLive && (
+              <div className="flex items-center gap-3 sm:hidden px-1">
+                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div animate={{ width: `${displayWatchPct}%` }} className="h-full bg-indigo-500 rounded-full" />
+                </div>
+                <span className="text-xs font-black text-slate-600 shrink-0">{Math.round(displayWatchPct)}%</span>
+              </div>
+            )}
 
-            {/* Mobile panel — shown below tabs on small screens when panelOpen */}
-            <AnimatePresence>
-              {panelOpen && (
-                <motion.div
-                  key="mobile-panel"
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.18 }}
-                  className="lg:hidden bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden"
-                >
-                  <div className="flex items-center border-b border-slate-100 overflow-x-auto">
-                    {tabs.map(t => (
-                      <button key={t.key} onClick={() => setActiveTab(t.key)}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-3 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0",
-                          activeTab === t.key
-                            ? "border-indigo-600 text-indigo-700 bg-indigo-50/50"
-                            : "border-transparent text-slate-400 hover:text-slate-700"
-                        )}
-                      >
-                        <t.icon className="w-3.5 h-3.5" />
-                        {t.label}
-                        {t.badge && (
-                          <span className={cn("text-[9px] font-black px-1 py-0.5 rounded-full",
-                            activeTab === t.key ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500")}>
-                            {t.badge}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                    <div className="flex-1" />
-                    <button onClick={() => setPanelOpen(false)}
-                      className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded-lg transition-all shrink-0 mr-2">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="p-4 max-h-[60vh] overflow-y-auto">{panelContent}</div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Lecture info */}
+            {/* Lecture info card */}
             <LectureInfoCard lecture={lecture} />
 
-            {/* Take Quiz CTA */}
-            {quizUnlocked && !isLive && (
+            {/* ── Mobile AI Study Tools (collapsible) ── */}
+            <div className="lg:hidden">
+              <button
+                onClick={() => setMobileAiOpen(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm text-sm font-semibold text-slate-700 hover:border-indigo-300 hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-slate-800">AI Study Tools</p>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      {lecture.aiNotesMarkdown ? "Notes ready" : "Notes generating…"}
+                      {checkpoints.length > 0 ? ` · ${checkpoints.length} quiz checkpoints` : ""}
+                    </p>
+                  </div>
+                </div>
+                <motion.div animate={{ rotate: mobileAiOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {mobileAiOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-2 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+                      <AiTabStrip />
+                      <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-100">
+                        <p className="text-xs font-bold text-indigo-700">
+                          {aiTabs.find(t => t.key === activeAiTab)?.label ?? ""}
+                        </p>
+                      </div>
+                      <div className="p-4 max-h-[70vh] overflow-y-auto">{aiContent}</div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ── Topic Materials Section ── */}
+            <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+
+              {/* Header */}
+              <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                    <BookOpen className="w-4 h-4 text-slate-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-0.5">
+                      Topic Materials
+                    </p>
+                    <p className="text-sm font-bold text-slate-800 truncate leading-tight">
+                      {lecture.topic?.name ?? "Study Resources"}
+                    </p>
+                  </div>
+                </div>
+                {topicResources.length > 0 && (
+                  <span className="shrink-0 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-black">
+                    {topicResources.length} items
+                  </span>
+                )}
+              </div>
+
+              {/* Tab strip — only when there are multiple types */}
+              {matTabs.length > 1 && (
+                <div className="flex overflow-x-auto scrollbar-hide border-b border-slate-100 px-1">
+                  {matTabs.map(tab => (
+                    <button key={tab.key}
+                      onClick={() => setActiveMatTab(tab.key)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 sm:px-4 py-3 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0",
+                        activeMatTab === tab.key
+                          ? "border-indigo-600 text-indigo-700 bg-indigo-50/30"
+                          : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50",
+                      )}
+                    >
+                      <tab.icon className="w-3.5 h-3.5 shrink-0" />
+                      <span>{tab.label}</span>
+                      {tab.key !== "all" && tab.count > 0 && (
+                        <span className={cn(
+                          "text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                          activeMatTab === tab.key ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500",
+                        )}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Materials content */}
+              <div className="p-4 sm:p-5">
+                <AnimatePresence mode="wait">
+                  <motion.div key={activeMatTab}
+                    initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}>
+                    {renderMaterials()}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* ── Topic Quiz CTA — only when teacher has uploaded a quiz ── */}
+            {!isLive && mockTestId && (
               <motion.button
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}
-                onClick={() => navigate(mockTestId ? `/student/quiz?mockTestId=${mockTestId}` : `/student/quiz?topicId=${lecture.topicId}`)}
-                className="w-full flex items-center justify-between px-6 py-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-900 text-white shadow-xl group"
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(`/student/quiz?mockTestId=${mockTestId}`)}
+                className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-900 text-white shadow-lg group"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/80 flex items-center justify-center shadow group-hover:rotate-6 transition-transform shrink-0">
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-sm">Take Topic Quiz</p>
-                    <p className="text-xs text-slate-400">Test your knowledge and earn XP</p>
+                    <p className="text-xs text-white/50">AI-generated · Test your knowledge · Earn XP</p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
               </motion.button>
             )}
           </div>
 
-          {/* ── Right: Desktop panel — visible when panelOpen ── */}
-          <aside className={cn("hidden", panelOpen && "lg:block")}>
+          {/* ── RIGHT: AI Panel (desktop sticky) ── */}
+          <aside className={cn("hidden", aiOpen && "lg:block")}>
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden sticky top-20">
+
+              {/* Panel header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">AI Study Tools</p>
+                </div>
+                <button onClick={() => setAiOpen(false)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
               {/* Tab bar */}
-              <div className="flex items-center border-b border-slate-100 overflow-x-auto">
-                {tabs.map(t => (
-                  <button key={t.key} onClick={() => setActiveTab(t.key)}
+              <div className="flex overflow-x-auto scrollbar-hide border-b border-slate-100">
+                {aiTabs.map(t => (
+                  <button key={t.key} onClick={() => setActiveAiTab(t.key)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-3 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0",
-                      activeTab === t.key
-                        ? "border-indigo-600 text-indigo-700 bg-indigo-50/50"
-                        : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50"
-                    )}
-                  >
-                    <t.icon className="w-3.5 h-3.5" />
-                    {t.label}
+                      "flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-2.5 text-[11px] xl:text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0",
+                      activeAiTab === t.key
+                        ? "border-indigo-600 text-indigo-700 bg-indigo-50/30"
+                        : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50",
+                    )}>
+                    <t.icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xl:inline ml-1">{t.label}</span>
                     {t.badge && (
-                      <span className={cn("text-[9px] font-black px-1 py-0.5 rounded-full",
-                        activeTab === t.key ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500")}>
+                      <span className={cn("text-[9px] font-black px-1 py-0.5 rounded-full ml-1",
+                        activeAiTab === t.key ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500")}>
                         {t.badge}
                       </span>
                     )}
                   </button>
                 ))}
               </div>
+
+              {/* Active tab label (lg only, before xl icons get labels) */}
+              <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-50 xl:hidden">
+                <p className="text-xs font-bold text-indigo-700">
+                  {aiTabs.find(t => t.key === activeAiTab)?.label ?? ""}
+                </p>
+              </div>
+
               {/* Content */}
-              <div className="p-4 max-h-[calc(100vh-140px)] overflow-y-auto">
-                {panelContent}
+              <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
+                {aiContent}
               </div>
             </div>
           </aside>
 
         </div>
       </div>
+
     </div>
   );
 }

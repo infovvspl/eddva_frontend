@@ -286,6 +286,10 @@ export default function StudentAiStudyPage() {
   const sessionId = sessionData?.id;
   const timerRunning = !!sessionId && !completed;
   const elapsed = useElapsedTimer(timerRunning, sessionData?.timeSpentSeconds ?? 0);
+  const normalizedLessonMarkdown = useMemo(
+    () => normalizeLessonMarkdown(sessionData?.lessonMarkdown ?? ""),
+    [sessionData?.lessonMarkdown],
+  );
   const mdZoomClass = useMemo(() => {
     if (notesZoom === "sm") return "prose-h2:text-2xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm prose-code:text-[12px]";
     if (notesZoom === "lg") return "prose-h2:text-4xl prose-h3:text-xl prose-p:text-lg prose-ul:text-lg prose-code:text-[15px]";
@@ -578,7 +582,7 @@ export default function StudentAiStudyPage() {
            <AnimatePresence mode="wait">
              {activeTab === "lesson" && (
                <motion.div key="lesson" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}>
-                  {sessionData.lessonMarkdown ? (
+                  {normalizedLessonMarkdown ? (
                     <CardGlass className="p-6 sm:p-10 border-slate-200 bg-white shadow-sm relative">
                        
                        <div className="mb-10 pb-8 border-b border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-8">
@@ -617,25 +621,10 @@ export default function StudentAiStudyPage() {
                           </div>
                        </div>
 
-                      <div ref={notesContentRef} className={cn("relative", mdClassBase, mdZoomClass)}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {normalizeLessonMarkdown(sessionData.lessonMarkdown)}
-                        </ReactMarkdown>
-                        {inlineComments.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => {
-                              setToolPanel("notes");
-                              setActiveInlineCommentId(c.id);
-                            }}
-                            className="absolute right-0 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center shadow-sm"
-                            style={{ top: `${c.top}px` }}
-                            title="View comment"
-                          >
-                            C
-                          </button>
-                        ))}
+                       <div ref={notesContentRef} className={cn(mdClassBase, mdZoomClass)}>
+                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                           {normalizedLessonMarkdown}
+                         </ReactMarkdown>
                        </div>
 
                        {!completed && (

@@ -1,4 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -217,20 +219,41 @@ function UploadPanel({
   const [title, setTitle] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const activeCfg = rCfg(activeType);
   const isUrlType = activeCfg.isUrl;
 
-  const handleFile = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) { toast.error("File must be ≤ 5 MB"); return; }
-    const t = title.trim() || file.name.replace(/\.[^.]+$/, "");
+  /** Clean a raw filename into a readable title */
+  const cleanFilename = (name: string) =>
+    name
+      .replace(/\.[^.]+$/, "")              // strip extension
+      .replace(/[_-]/g, " ")               // underscores/hyphens → spaces
+      .replace(/\s{2,}/g, " ")             // collapse whitespace
+      .trim();
+
+  const stageFile = (file: File) => {
+    if (file.size > 50 * 1024 * 1024) { toast.error("File must be ≤ 50 MB"); return; }
+    setPendingFile(file);
+    if (!title.trim()) setTitle(cleanFilename(file.name));
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!pendingFile) return;
+    const t = title.trim() || cleanFilename(pendingFile.name);
     try {
-      await upload.mutateAsync({ file, type: activeType, title: t });
+      await upload.mutateAsync({ file: pendingFile, type: activeType, title: t });
       toast.success(`${activeCfg.label} uploaded`);
       setTitle("");
+      setPendingFile(null);
       if (fileRef.current) fileRef.current.value = "";
     } catch { toast.error("Upload failed — please try again"); }
+  };
+
+  const cancelPending = () => {
+    setPendingFile(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleAddLink = async () => {
@@ -247,7 +270,7 @@ function UploadPanel({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (file) stageFile(file);
   };
 
   const handleDelete = async (r: TopicResource) => {
@@ -379,6 +402,39 @@ function UploadPanel({
               Save
             </button>
           </div>
+        ) : pendingFile ? (
+          /* ── Staged: file selected, confirm before upload ── */
+          <div className="rounded-xl border-2 border-blue-300 bg-blue-50/60 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", activeCfg.bg)}>
+                <activeCfg.icon className={cn("w-4 h-4", activeCfg.color)} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black text-slate-700 truncate">{pendingFile.name}</p>
+                <p className="text-[10px] text-slate-400">{fmtSize(Math.round(pendingFile.size / 1024))}</p>
+              </div>
+              <button onClick={cancelPending} className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <input
+              autoFocus
+              placeholder="Give this file a meaningful title…"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleConfirmUpload(); if (e.key === "Escape") cancelPending(); }}
+              className="w-full h-8 px-3 text-sm bg-white border border-blue-300 rounded-lg outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={handleConfirmUpload}
+              disabled={upload.isPending || !title.trim()}
+              className="w-full h-8 rounded-lg font-black text-white text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 transition-opacity"
+              style={{ background: "linear-gradient(135deg, #013889,#0257c8)" }}
+            >
+              {upload.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              {upload.isPending ? "Uploading…" : "Upload"}
+            </button>
+          </div>
         ) : (
           <div
             onDragOver={e => { e.preventDefault(); setDragging(true); }}
@@ -392,24 +448,15 @@ function UploadPanel({
                 : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30"
             )}
           >
-            {upload.isPending ? (
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                <p className="text-sm font-bold text-blue-600">Uploading…</p>
-              </div>
-            ) : (
-              <>
-                <div className={cn("w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center", activeCfg.bg)}>
-                  <Upload className={cn("w-5 h-5", activeCfg.color)} />
-                </div>
-                <p className="text-sm font-bold text-slate-600">
-                  Drop {activeCfg.label} here or <span className="text-blue-600">browse</span>
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Max 5 MB · {activeCfg.accept?.split(",").join(", ")}</p>
-              </>
-            )}
+            <div className={cn("w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center", activeCfg.bg)}>
+              <Upload className={cn("w-5 h-5", activeCfg.color)} />
+            </div>
+            <p className="text-sm font-bold text-slate-600">
+              Drop {activeCfg.label} here or <span className="text-blue-600">browse</span>
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Max 50 MB · {activeCfg.accept?.split(",").join(", ")}</p>
             <input ref={fileRef} type="file" accept={activeCfg.accept} className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+              onChange={e => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
           </div>
         )}
       </div>
@@ -1342,39 +1389,43 @@ const AI_CONTENT_TYPES = [
     border: "border-blue-200",
     accent: "#2563EB",
     badge: "Most Popular",
+    saveAs: "notes",
   },
   {
-    id: "study_guide",
-    label: "Study Guide",
-    desc: "Structured revision guide with summaries, mind-maps & quick recall",
-    icon: Brain,
+    id: "dpp",
+    label: "DPP Sheet",
+    desc: "AI-generated Daily Practice Problems with MCQs, numericals & answer key",
+    icon: PenLine,
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+    accent: "#EA580C",
+    badge: "NEW",
+    saveAs: "dpp",
+  },
+  {
+    id: "pyq",
+    label: "PYQ Practice",
+    desc: "Previous Year Question style paper (JEE/NEET patterns) with solutions",
+    icon: FileQuestion,
     color: "text-violet-600",
     bg: "bg-violet-50",
     border: "border-violet-200",
     accent: "#7C3AED",
-    badge: null,
+    badge: "NEW",
+    saveAs: "pyq",
   },
   {
-    id: "practice_questions",
-    label: "Practice Questions",
-    desc: "MCQs, short answers & numericals with detailed solutions",
-    icon: FlaskConical,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    accent: "#059669",
+    id: "study_guide",
+    label: "Study Guide",
+    desc: "Crisp exam-ready summary with all must-know points for quick revision",
+    icon: Brain,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    border: "border-indigo-200",
+    accent: "#4F46E5",
     badge: null,
-  },
-  {
-    id: "flashcards",
-    label: "Flashcards",
-    desc: "Bite-sized Q&A cards for quick concept recall and spaced repetition",
-    icon: StickyNote,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    accent: "#D97706",
-    badge: null,
+    saveAs: "notes",
   },
   {
     id: "key_concepts",
@@ -1386,6 +1437,31 @@ const AI_CONTENT_TYPES = [
     border: "border-rose-200",
     accent: "#E11D48",
     badge: null,
+    saveAs: "notes",
+  },
+  {
+    id: "flashcard",
+    label: "Flashcards",
+    desc: "Bite-sized Q&A cards for quick concept recall and spaced repetition",
+    icon: StickyNote,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    accent: "#D97706",
+    badge: null,
+    saveAs: "notes",
+  },
+  {
+    id: "practice_questions",
+    label: "Practice Questions",
+    desc: "MCQs, short answers & numericals with detailed solutions",
+    icon: FlaskConical,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+    accent: "#059669",
+    badge: null,
+    saveAs: "notes",
   },
   {
     id: "checklist",
@@ -1397,8 +1473,17 @@ const AI_CONTENT_TYPES = [
     border: "border-teal-200",
     accent: "#0D9488",
     badge: null,
+    saveAs: "notes",
   },
 ];
+
+function ReactMarkdownContent({ content }: { content: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+      {content}
+    </ReactMarkdown>
+  );
+}
 
 const DIFFICULTY_LEVELS = [
   { id: "basic",        label: "Basic",        desc: "Introductory, easy language" },
@@ -1412,7 +1497,8 @@ const LENGTH_OPTIONS = [
   { id: "detailed", label: "Detailed", desc: "~1500 words" },
 ];
 
-function AiContentPanel({ topicName, subjectName, chapterName }: {
+function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
+  topicId: string;
   topicName: string;
   subjectName: string;
   chapterName: string;
@@ -1420,15 +1506,68 @@ function AiContentPanel({ topicName, subjectName, chapterName }: {
   const [selectedType, setSelectedType] = useState("lesson");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [length, setLength] = useState("standard");
+  const [examTarget, setExamTarget] = useState("JEE");
   const [extraContext, setExtraContext] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [savedOk, setSavedOk] = useState(false);
+
+  const isDppOrPyq = selectedType === "dpp" || selectedType === "pyq";
 
   const selectedTypeCfg = AI_CONTENT_TYPES.find(t => t.id === selectedType)!;
 
-  const handleGenerate = () => {
-    // Placeholder — AI not wired yet
+  // Re-clear preview when topic changes
+  React.useEffect(() => {
+    setGeneratedContent(null);
+    setSavedOk(false);
+  }, [topicId]);
+
+  const handleGenerate = async () => {
     setGenerating(true);
-    setTimeout(() => setGenerating(false), 2000);
+    setGeneratedContent(null);
+    setSavedOk(false);
+    try {
+      const extraCtx = [
+        isDppOrPyq ? `Exam target: ${examTarget}` : "",
+        extraContext.trim(),
+      ].filter(Boolean).join(". ") || undefined;
+
+      const result = await import("@/lib/api/admin").then(m =>
+        m.generateTopicAiContent(topicId, {
+          contentType: selectedType as any,
+          difficulty: isDppOrPyq ? "intermediate" : difficulty as any,
+          length: isDppOrPyq ? "detailed" : length as any,
+          extraContext: extraCtx,
+        })
+      );
+      setGeneratedContent(result.content ?? "");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? err?.message ?? "AI generation failed";
+      toast.error(msg);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!generatedContent) return;
+    setSaving(true);
+    try {
+      await import("@/lib/api/admin").then(m =>
+        m.saveAiGeneratedResource(topicId, {
+          title: `${selectedTypeCfg.label} — ${topicName}`,
+          content: generatedContent,
+          resourceType: selectedTypeCfg.saveAs,
+        })
+      );
+      setSavedOk(true);
+      toast.success(`Saved as ${selectedTypeCfg.label} — students can now access it!`);
+    } catch {
+      toast.error("Save failed — please try again");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -1449,9 +1588,9 @@ function AiContentPanel({ topicName, subjectName, chapterName }: {
               {subjectName} · {chapterName}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl">
-            <Zap className="w-3 h-3 text-amber-500" />
-            <span className="text-[10px] font-black text-amber-600 uppercase tracking-wide">Coming Soon</span>
+          <div className="flex items-center gap-1.5 bg-violet-50 border border-violet-200 px-2.5 py-1 rounded-xl">
+            <Zap className="w-3 h-3 text-violet-500" />
+            <span className="text-[10px] font-black text-violet-600 uppercase tracking-wide">AI Powered</span>
           </div>
         </div>
       </div>
@@ -1473,7 +1612,7 @@ function AiContentPanel({ topicName, subjectName, chapterName }: {
                   key={ct.id}
                   whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setSelectedType(ct.id)}
+                  onClick={() => { setSelectedType(ct.id); setGeneratedContent(null); setSavedOk(false); }}
                   className={cn(
                     "relative text-left p-3.5 rounded-2xl border-2 transition-all group",
                     sel
@@ -1512,56 +1651,84 @@ function AiContentPanel({ topicName, subjectName, chapterName }: {
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 mb-3">
             2 · Settings
           </p>
-          <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
 
-            {/* Difficulty */}
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Difficulty Level</p>
+          {isDppOrPyq ? (
+            /* DPP / PYQ: only exam target matters — structure is fixed */
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Exam Target</p>
               <div className="flex gap-2">
-                {DIFFICULTY_LEVELS.map(d => (
+                {["JEE", "NEET", "Both"].map(t => (
                   <button
-                    key={d.id}
-                    onClick={() => setDifficulty(d.id)}
+                    key={t}
+                    onClick={() => setExamTarget(t)}
                     className={cn(
-                      "flex-1 py-2 px-2 rounded-xl text-center text-[11px] font-black border-2 transition-all",
-                      difficulty === d.id
-                        ? "bg-slate-900 border-slate-900 text-white shadow-sm"
+                      "flex-1 py-2.5 px-3 rounded-xl text-center text-[12px] font-black border-2 transition-all",
+                      examTarget === t
+                        ? selectedType === "dpp"
+                          ? "bg-orange-600 border-orange-600 text-white shadow-sm"
+                          : "bg-violet-600 border-violet-600 text-white shadow-sm"
                         : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
                     )}
                   >
-                    <p>{d.label}</p>
-                    <p className={cn("text-[9px] font-medium mt-0.5 leading-tight", difficulty === d.id ? "text-white/60" : "text-slate-400")}>
-                      {d.desc}
-                    </p>
+                    {t}
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] text-slate-400 mt-3 text-center">
+                Structure is fixed: {selectedType === "dpp" ? "MCQ + Assertion-Reason + Numericals + Answer Key" : "JEE Main + NEET + Integer Type + Full Solutions"}
+              </p>
             </div>
+          ) : (
+            <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              {/* Difficulty */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Difficulty Level</p>
+                <div className="flex gap-2">
+                  {DIFFICULTY_LEVELS.map(d => (
+                    <button
+                      key={d.id}
+                      onClick={() => setDifficulty(d.id)}
+                      className={cn(
+                        "flex-1 py-2 px-2 rounded-xl text-center text-[11px] font-black border-2 transition-all",
+                        difficulty === d.id
+                          ? "bg-slate-900 border-slate-900 text-white shadow-sm"
+                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                      )}
+                    >
+                      <p>{d.label}</p>
+                      <p className={cn("text-[9px] font-medium mt-0.5 leading-tight", difficulty === d.id ? "text-white/60" : "text-slate-400")}>
+                        {d.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Length */}
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Content Length</p>
-              <div className="flex gap-2">
-                {LENGTH_OPTIONS.map(l => (
-                  <button
-                    key={l.id}
-                    onClick={() => setLength(l.id)}
-                    className={cn(
-                      "flex-1 py-2 px-2 rounded-xl text-center text-[11px] font-black border-2 transition-all",
-                      length === l.id
-                        ? "border-violet-600 bg-violet-50 text-violet-700"
-                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                    )}
-                  >
-                    <p>{l.label}</p>
-                    <p className={cn("text-[9px] font-medium mt-0.5", length === l.id ? "text-violet-400" : "text-slate-400")}>
-                      {l.desc}
-                    </p>
-                  </button>
-                ))}
+              {/* Length */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Content Length</p>
+                <div className="flex gap-2">
+                  {LENGTH_OPTIONS.map(l => (
+                    <button
+                      key={l.id}
+                      onClick={() => setLength(l.id)}
+                      className={cn(
+                        "flex-1 py-2 px-2 rounded-xl text-center text-[11px] font-black border-2 transition-all",
+                        length === l.id
+                          ? "border-violet-600 bg-violet-50 text-violet-700"
+                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                      )}
+                    >
+                      <p>{l.label}</p>
+                      <p className={cn("text-[9px] font-medium mt-0.5", length === l.id ? "text-violet-400" : "text-slate-400")}>
+                        {l.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ── Step 3: Extra context ── */}
@@ -1587,65 +1754,97 @@ function AiContentPanel({ topicName, subjectName, chapterName }: {
           className="w-full py-4 rounded-2xl text-white font-black text-sm flex items-center justify-center gap-3 relative overflow-hidden shadow-lg shadow-violet-500/20 transition-all disabled:opacity-70"
           style={{ background: "linear-gradient(135deg, #6D28D9 0%, #2563EB 100%)" }}
         >
-          {/* Shimmer overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
           {generating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Generating…
+              Generating with AI…
             </>
           ) : (
             <>
               <Wand2 className="w-5 h-5" />
               Generate {selectedTypeCfg.label} with AI
-              <span className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded-full ml-1">
-                SOON
-              </span>
             </>
           )}
         </motion.button>
 
-        {/* ── Preview / placeholder ── */}
-        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200/60 bg-white/80">
+        {/* ── Generated content preview ── */}
+        <div className="rounded-2xl border-2 border-slate-200 bg-white overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-slate-50/80">
             <Eye className="w-3.5 h-3.5 text-slate-400" />
             <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Preview</p>
-            <div className="ml-auto flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full">
-              <Lock className="w-2.5 h-2.5 text-slate-400" />
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide">AI Not Connected</span>
-            </div>
-          </div>
-          <div className="p-5 space-y-3">
-            {/* Simulated skeleton lines */}
-            {[85, 100, 70, 95, 55, 100, 75, 90, 60].map((w, i) => (
-              <div
-                key={i}
-                className={cn("h-2.5 rounded-full bg-slate-200 animate-pulse", i === 0 && "h-4 mb-4")}
-                style={{ width: `${w}%`, animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
-            <div className="flex items-center justify-center gap-3 pt-6 pb-2">
-              <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-violet-400" />
+            {generatedContent && (
+              <div className="ml-auto flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-wide">Ready</span>
               </div>
-              <div>
-                <p className="text-sm font-black text-slate-500">AI content will appear here</p>
-                <p className="text-[11px] text-slate-400">after you connect the AI backend</p>
+            )}
+          </div>
+
+          {generating ? (
+            <div className="p-5 space-y-3">
+              {[85, 100, 70, 95, 55, 100, 75, 90, 60].map((w, i) => (
+                <div
+                  key={i}
+                  className={cn("h-2.5 rounded-full bg-violet-100 animate-pulse", i === 0 && "h-4 mb-4")}
+                  style={{ width: `${w}%`, animationDelay: `${i * 0.08}s` }}
+                />
+              ))}
+              <p className="text-center text-xs text-violet-400 font-bold pt-2">AI is crafting your content…</p>
+            </div>
+          ) : generatedContent ? (
+            <div className="p-5">
+              <div className="prose prose-sm max-w-none prose-headings:font-black prose-headings:text-slate-800 prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600 prose-strong:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded max-h-96 overflow-y-auto text-sm leading-relaxed">
+                <ReactMarkdownContent content={generatedContent} />
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-8 flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-violet-300" />
+              </div>
+              <p className="text-sm font-black text-slate-400">Generated content will appear here</p>
+              <p className="text-[11px] text-slate-300">Choose a type, configure settings, and click Generate</p>
+            </div>
+          )}
         </div>
+
+        {/* ── Save as Notes button (shown only when content is ready) ── */}
+        {generatedContent && (
+          <motion.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleSave}
+            disabled={saving || savedOk}
+            className={cn(
+              "w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 border-2 transition-all",
+              savedOk
+                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                : "bg-white border-violet-300 text-violet-700 hover:bg-violet-50 hover:border-violet-400"
+            )}
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            ) : savedOk ? (
+              <><CheckCircle2 className="w-4 h-4" /> Saved — Students Can Now Access This!</>
+            ) : (
+              <><BookMarked className="w-4 h-4" /> Save as {selectedTypeCfg.label} for Students</>
+            )}
+          </motion.button>
+        )}
 
         {/* ── Feature info chips ── */}
         <div className="grid grid-cols-3 gap-2 pb-2">
           {[
             { icon: Brain, label: "Context-Aware", sub: "Uses topic + chapter context" },
             { icon: BookMarked, label: "Curriculum-Fit", sub: "Aligned to exam syllabus" },
-            { icon: Zap, label: "One-Click Save", sub: "Auto-saves as resource" },
+            { icon: Zap, label: "One-Click Save", sub: "Students see it instantly" },
           ].map(({ icon: Icon, label, sub }) => (
             <div key={label} className="bg-slate-50 border border-slate-100 rounded-2xl p-3 text-center">
               <div className="w-7 h-7 rounded-xl bg-white border border-slate-200 flex items-center justify-center mx-auto mb-2">
-                <Icon className="w-3.5 h-3.5 text-slate-400" />
+                <Icon className="w-3.5 h-3.5 text-violet-400" />
               </div>
               <p className="text-[10px] font-black text-slate-600 leading-tight">{label}</p>
               <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">{sub}</p>
@@ -2128,6 +2327,7 @@ const ContentPage = () => {
                   />
                 ) : (
                   <AiContentPanel
+                    topicId={selectedEntry.topic.id}
                     topicName={selectedEntry.topic.name}
                     subjectName={selectedEntry.subject.name}
                     chapterName={selectedEntry.chapter.name}
