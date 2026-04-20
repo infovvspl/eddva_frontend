@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CardGlass } from "@/components/shared/CardGlass";
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useCompletePlanItem,
   useSkipPlanItem, useRegeneratePlan, useStudentMe
@@ -71,17 +72,14 @@ function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (ur
   };
 
   return (
-    <div className={cn(
-      "flex items-center gap-4 p-4 mb-3 rounded-2xl border transition-all duration-300",
-      isDone 
-        ? "bg-slate-50 border-emerald-100 opacity-60" 
-        : isSkip 
-          ? "bg-gray-50 border-gray-100 opacity-50" 
-          : "bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100"
+    <CardGlass className={cn(
+      "p-5 mb-3 border-white bg-white/50 transition-all duration-300",
+      isDone ? "opacity-70" : isSkip ? "opacity-60" : "hover:bg-white/70"
     )}>
+      <div className="flex items-center gap-4">
       {/* Icon block */}
       <div className={cn(
-        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+        "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-white/80 shadow-sm",
         isDone ? "bg-emerald-100 text-emerald-500" : isSkip ? "bg-gray-100 text-gray-400" : ""
       )} style={(!isDone && !isSkip) ? { backgroundColor: cfg.bg, color: cfg.color } : {}}>
          <cfg.icon className="w-5 h-5" />
@@ -89,23 +87,28 @@ function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (ur
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <h4 className={cn("text-base font-bold truncate", isDone || isSkip ? "text-slate-500 line-through" : "text-slate-900")}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{cfg.label}</span>
+          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-100">
+            +{cfg.xp} XP
+          </span>
+        </div>
+        <h4 className={cn("text-base font-black truncate tracking-tight", isDone || isSkip ? "text-slate-500 line-through" : "text-slate-900")}>
            {item.title}
         </h4>
         <div className="flex items-center gap-4 mt-1 text-xs font-semibold text-slate-500">
            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {(item as any).estimatedMinutes || "15"} mins</span>
-           <span className="flex items-center gap-1 text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full"><Zap className="w-3 h-3 fill-current" /> +{cfg.xp} XP</span>
         </div>
       </div>
 
       {/* Action */}
       <div className="shrink-0 flex items-center gap-2">
          {isDone ? (
-           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-sm font-bold">
+           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-sm font-bold border border-emerald-100">
               <CheckCircle2 className="w-4 h-4" /> Completed
            </div>
          ) : isSkip ? (
-            <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-sm font-bold">
+            <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-xl text-sm font-bold border border-gray-200">
                Skipped
             </div>
          ) : (
@@ -118,13 +121,14 @@ function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (ur
                    <CheckCircle className="w-4 h-4" />
                  </button>
                </>
-               <button onClick={handleStart} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-100 transition shadow-sm ml-1">
+               <button onClick={handleStart} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-600 transition shadow-sm ml-1 uppercase tracking-wide">
                   <Play className="w-4 h-4 fill-current" /> Start
                </button>
             </div>
          )}
       </div>
-    </div>
+      </div>
+    </CardGlass>
   );
 }
 
@@ -202,7 +206,7 @@ export default function StudentStudyPlanPage() {
     <div className="max-w-7xl mx-auto p-6 space-y-10 pb-32 font-sans text-slate-900">
       
       {/* 1. TOP SECTION (DAILY FOCUS) */}
-      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sticky top-0 z-40">
+      <CardGlass className="rounded-3xl p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sticky top-0 z-40 bg-gradient-to-br from-indigo-600 to-indigo-800 border-white/20">
          <div className="absolute -top-24 -right-10 w-64 h-64 bg-white/10 blur-3xl rounded-full" />
          
          <div className="relative z-10">
@@ -218,14 +222,14 @@ export default function StudentStudyPlanPage() {
          </div>
          
     
-      </div>
+      </CardGlass>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
          <div className="lg:col-span-8 flex flex-col space-y-8">
 
             {/* 3. PROGRESS TRACKER */}
             {stats.total > 0 && (
-               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center gap-6">
+               <CardGlass className="p-6 border-white bg-white/55 flex items-center gap-6">
                   <div className="relative w-16 h-16 rounded-full flex items-center justify-center bg-indigo-50 shrink-0">
                      <svg className="w-full h-full -rotate-90">
                         <circle className="text-slate-100 stroke-current" strokeWidth="6" cx="32" cy="32" r="28" fill="transparent"></circle>
@@ -237,11 +241,11 @@ export default function StudentStudyPlanPage() {
                      <h3 className="text-lg font-bold text-slate-800">Daily Progress</h3>
                      <p className="text-sm font-medium text-slate-500 mt-1">{stats.completed} of {stats.total} tasks completed today. Keep going!</p>
                   </div>
-               </div>
+               </CardGlass>
             )}
 
             {/* 4. WEEKLY VIEW */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 overflow-hidden">
+            <CardGlass className="p-6 border-white bg-white/55 overflow-hidden">
                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Calendar className="w-4 h-4" /> Weekly Consistency
                </h3>
@@ -277,7 +281,7 @@ export default function StudentStudyPlanPage() {
                      );
                   })}
                </div>
-            </div>
+            </CardGlass>
 
             {/* 5. SUBJECT / CHAPTER BREAKDOWN & 2. DAILY TASK LIST */}
             {todayItems.length === 0 && (
@@ -292,7 +296,7 @@ export default function StudentStudyPlanPage() {
             <div className="space-y-8">
                {Object.entries(currentSubjects).map(([sub, items]) => (
                   <div key={sub}>
-                     <h3 className="text-sm font-bold text-slate-400 tracking-wider uppercase mb-3 px-1">{sub} Tasks</h3>
+                     <h3 className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-3 px-1">{sub} TASKS</h3>
                      <div>
                         {items.map(item => <TaskCard key={item.id} item={item} onOpenVideo={(url, title) => setVideoPlayer({ url, title })} />)}
                      </div>
@@ -307,7 +311,7 @@ export default function StudentStudyPlanPage() {
 
             {/* 7. AI PLAN SUPER FEATURE */}
             <div className="p-[2px] rounded-2xl bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 shadow-md">
-               <div className="bg-white rounded-[14px] p-6 text-center">
+               <CardGlass className="bg-white rounded-[14px] p-6 text-center border-white">
                   <Sparkles className="w-10 h-10 text-purple-500 mx-auto mb-3" />
                   <h3 className="text-lg font-bold text-slate-800 mb-1">AI Smart Plan</h3>
                   <p className="text-xs font-semibold text-slate-500 mb-5 leading-relaxed">Adjust difficulty, focus on weak areas, and balance subjects magically.</p>
@@ -323,11 +327,11 @@ export default function StudentStudyPlanPage() {
                   >
                      {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Generate Smart Plan
                   </button>
-               </div>
+               </CardGlass>
             </div>
 
             {/* 8. STREAK & CONSISTENCY */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 overflow-hidden relative">
+            <CardGlass className="p-6 overflow-hidden relative border-white bg-white/55">
                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-orange-50 rounded-full blur-2xl" />
                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" /> Consistency</h3>
                <div className="flex items-center gap-4 relative z-10">
@@ -345,10 +349,10 @@ export default function StudentStudyPlanPage() {
                   </div>
                </div>
                <p className="text-xs font-semibold text-slate-500 mt-4 relative z-10">Keep going! Finish today's tasks to maintain your streak.</p>
-            </div>
+            </CardGlass>
 
             {/* 9. REWARDS / XP SYSTEM */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <CardGlass className="p-6 border-white bg-white/55">
                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Trophy className="w-4 h-4 text-yellow-500" /> Today's Rewards</h3>
                
                <div className="space-y-3">
@@ -371,10 +375,10 @@ export default function StudentStudyPlanPage() {
                      <span className="font-bold text-orange-600">+1</span>
                   </div>
                </div>
-            </div>
+            </CardGlass>
 
             {/* 6. UPCOMING TASKS */}
-            <div className="bg-slate-50 rounded-2xl border border-slate-100 shadow-sm p-6">
+            <CardGlass className="p-6 border-white bg-white/55">
                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Tomorrow</h3>
                
                {upcomingTomorrow.length > 0 ? (
@@ -395,7 +399,7 @@ export default function StudentStudyPlanPage() {
                ) : (
                   <p className="text-sm font-semibold text-slate-400 text-center py-4 border-2 border-dashed border-slate-200 rounded-xl">No tasks prepared yet.</p>
                )}
-            </div>
+            </CardGlass>
 
          </div>
       </div>
