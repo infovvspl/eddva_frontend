@@ -306,10 +306,13 @@ export function useRegeneratePlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: studentApi.regeneratePlan,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["student", "plan"] });
-      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
-      qc.invalidateQueries({ queryKey: [...studentKeys.plan, "next-action"] });
+    onSuccess: async () => {
+      // Clear stale cached plan slices first, then force active refetch.
+      qc.removeQueries({ queryKey: ["student", "plan"] });
+      await qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      await qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
+      await qc.invalidateQueries({ queryKey: [...studentKeys.plan, "next-action"] });
+      await qc.refetchQueries({ queryKey: ["student", "plan"], type: "active" });
     },
   });
 }

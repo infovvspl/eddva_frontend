@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
@@ -86,6 +89,101 @@ function normalizeAiMessage(message: unknown): string {
   return String(message ?? "");
 }
 
+function prettifyFormula(formula: string): string {
+  const toSup = (v: string) =>
+    v
+      .split("")
+      .map((ch) => SUPERSCRIPT_MAP[ch] ?? ch)
+      .join("");
+  const toSub = (v: string) =>
+    v
+      .split("")
+      .map((ch) => SUBSCRIPT_MAP[ch] ?? ch)
+      .join("");
+
+  return String(formula || "")
+    .replace(/\$\$/g, "")
+    .replace(/\\Rightarrow/g, " ⇒ ")
+    .replace(/\\rightarrow/g, " → ")
+    .replace(/\\times/g, " × ")
+    .replace(/\\cdot/g, " · ")
+    .replace(/\\Delta/g, "Δ")
+    .replace(/\\delta/g, "δ")
+    .replace(/\\alpha/g, "α")
+    .replace(/\\beta/g, "β")
+    .replace(/\\gamma/g, "γ")
+    .replace(/\\theta/g, "θ")
+    .replace(/\\lambda/g, "λ")
+    .replace(/\\mu/g, "μ")
+    .replace(/\\pi/g, "π")
+    .replace(/\\sigma/g, "σ")
+    .replace(/\\omega/g, "ω")
+    .replace(/\^\{([^}]+)\}/g, (_m, g1) => toSup(String(g1)))
+    .replace(/\^([A-Za-z0-9+\-()])/g, (_m, g1) => toSup(String(g1)))
+    .replace(/_\{([^}]+)\}/g, (_m, g1) => toSub(String(g1)))
+    .replace(/_([A-Za-z0-9+\-()])/g, (_m, g1) => toSub(String(g1)))
+    .replace(/\\,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const SUPERSCRIPT_MAP: Record<string, string> = {
+  "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+  "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+  "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
+  n: "ⁿ", i: "ⁱ",
+};
+
+const SUBSCRIPT_MAP: Record<string, string> = {
+  "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+  "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+  "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎",
+  a: "ₐ", e: "ₑ", h: "ₕ", i: "ᵢ", j: "ⱼ", k: "ₖ",
+  l: "ₗ", m: "ₘ", n: "ₙ", o: "ₒ", p: "ₚ", r: "ᵣ",
+  s: "ₛ", t: "ₜ", u: "ᵤ", v: "ᵥ", x: "ₓ",
+};
+
+function normalizeLessonMarkdown(md: string): string {
+  return String(md || "");
+}
+
+function normalizeFormulaForKatex(formula: string): string {
+  const raw = String(formula || "").trim();
+  if (!raw) return "";
+  if (raw.includes("$$") || raw.includes("$")) return raw;
+  return `$$${raw}$$`;
+}
+
+function normalizeReadableText(text: string): string {
+  return String(text || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    // "Cleardefinition" -> "Clear definition"
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // "cell senergy" / "ATP.Circle" -> proper spacing
+    .replace(/([A-Za-z])([.:,;!?()])/g, "$1 $2")
+    .replace(/([.:,;!?()])([A-Za-z])/g, "$1 $2")
+    // keep math minus but add spacing around it for readability
+    .replace(/\s*[-−]\s*/g, " − ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractSectionMarkdown(markdown: string, headerRegex: RegExp): string {
+  const src = String(markdown || "");
+  const start = src.search(headerRegex);
+  if (start < 0) return "";
+  const rest = src.slice(start);
+  const nextHeaderMatch = rest.slice(2).match(/\n##\s+/);
+  if (!nextHeaderMatch) return rest.trim();
+  const endIdx = 2 + (nextHeaderMatch.index ?? rest.length);
+  return rest.slice(0, endIdx).trim();
+}
+
+function hasCorruptedSpacing(lines: string[]): boolean {
+  return lines.some((l) => /[A-Za-z]{18,}/.test(String(l || "")));
+}
+
 // ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -158,7 +256,7 @@ export default function StudentAiStudyPage() {
   const askMut = useAskAiQuestion();
   const completeMut = useCompleteAiStudy();
 
-  const sessionData: AiStudySessionData | undefined = startMut.data ?? session;
+  const sessionData: AiStudySessionData | undefined = session ?? startMut.data;
   const sessionId = sessionData?.id;
   const timerRunning = !!sessionId && !completed;
   const elapsed = useElapsedTimer(timerRunning, sessionData?.timeSpentSeconds ?? 0);
@@ -315,7 +413,9 @@ export default function StudentAiStudyPage() {
                        </div>
 
                        <div className={mdClass}>
-                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{sessionData.lessonMarkdown}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {normalizeLessonMarkdown(sessionData.lessonMarkdown)}
+                        </ReactMarkdown>
                        </div>
 
                        {!completed && (
@@ -346,21 +446,29 @@ export default function StudentAiStudyPage() {
                <motion.div key="concepts" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-10">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      {/* Key Concepts */}
-                     {sessionData.keyConcepts.length > 0 && (
+                     {(sessionData.keyConcepts.length > 0 || sessionData.lessonMarkdown) && (
                         <CardGlass className="p-10 border-white h-full relative overflow-hidden bg-white/60">
                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[50px] rounded-full pointer-events-none" />
                            <div className="flex items-center gap-4 mb-10">
                               <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-xl"><Layers className="w-6 h-6" /></div>
                               <h3 className="text-xl font-black text-slate-900 uppercase italic">Command Cores</h3>
                            </div>
-                           <div className="space-y-4">
-                             {sessionData.keyConcepts.map((concept, i) => (
-                               <div key={i} className="flex gap-5 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm hover:shadow-md transition-all group">
-                                  <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-xs text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">{i+1}</div>
-                                  <p className="flex-1 text-base font-bold text-slate-700 leading-relaxed">{concept}</p>
-                               </div>
-                             ))}
-                           </div>
+                           {hasCorruptedSpacing(sessionData.keyConcepts) ? (
+                             <div className="prose prose-slate max-w-none">
+                               <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                 {extractSectionMarkdown(sessionData.lessonMarkdown || "", /##\s+.*Core Concepts/i)}
+                               </ReactMarkdown>
+                             </div>
+                           ) : (
+                             <div className="space-y-4">
+                               {sessionData.keyConcepts.map((concept, i) => (
+                                 <div key={i} className="flex gap-5 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm hover:shadow-md transition-all group">
+                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-xs text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">{i+1}</div>
+                                    <p className="flex-1 text-base font-bold text-slate-700 leading-relaxed">{normalizeReadableText(concept)}</p>
+                                 </div>
+                               ))}
+                             </div>
+                           )}
                         </CardGlass>
                      )}
 
@@ -373,11 +481,19 @@ export default function StudentAiStudyPage() {
                                 <h3 className="text-xl font-black text-slate-900 uppercase italic">Matrix Algorithms</h3>
                              </div>
                              <div className="space-y-4">
-                               {sessionData.formulas.map((formula, i) => (
-                                 <div key={i} className="p-6 rounded-[1.5rem] bg-white font-mono text-base font-black text-indigo-700 shadow-inner border border-indigo-100 flex items-center gap-4">
-                                    <Zap className="w-5 h-5 opacity-40 shrink-0" /> {formula}
-                                 </div>
-                               ))}
+                              {sessionData.formulas.map((formula, i) => (
+                                <div key={i} className="p-6 rounded-[1.5rem] bg-white text-base font-black text-indigo-700 shadow-inner border border-indigo-100 flex items-start gap-4">
+                                   <Zap className="w-5 h-5 opacity-40 shrink-0 mt-1" />
+                                   <div className="min-w-0 overflow-x-auto">
+                                      <ReactMarkdown
+                                        remarkPlugins={[remarkGfm, remarkMath]}
+                                        rehypePlugins={[rehypeKatex]}
+                                      >
+                                        {normalizeFormulaForKatex(formula)}
+                                      </ReactMarkdown>
+                                   </div>
+                                </div>
+                              ))}
                              </div>
                           </CardGlass>
                         )}
@@ -391,7 +507,7 @@ export default function StudentAiStudyPage() {
                                {sessionData.commonMistakes.map((mistake, i) => (
                                  <div key={i} className="flex gap-5 p-6 rounded-[1.5rem] bg-white border border-red-100/50">
                                     <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-red-500 shadow-sm shrink-0"><AlertTriangle className="w-4 h-4" /></div>
-                                    <p className="text-base font-bold text-slate-800 leading-relaxed">{mistake}</p>
+                                   <p className="text-base font-bold text-slate-800 leading-relaxed">{normalizeReadableText(mistake)}</p>
                                  </div>
                                ))}
                              </div>
@@ -455,7 +571,9 @@ export default function StudentAiStudyPage() {
                                     )}>
                                        {msg.role === "ai" ? (
                                           <div className={cn(mdClass, "!prose-sm !prose-p:text-slate-800 !prose-p:text-base")}>
-                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeAiMessage(msg.message)}</ReactMarkdown>
+                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                               {normalizeAiMessage(msg.message)}
+                                             </ReactMarkdown>
                                           </div>
                                        ) : msg.message}
                                     </div>
