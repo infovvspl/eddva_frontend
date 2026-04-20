@@ -66,15 +66,21 @@ export function useLectureProgress(
       isPlayingRef.current = false;
       save(getCurrentState());
     };
+    const onEnded = () => {
+      isPlayingRef.current = false;
+      save({ watchPercentage: 100, lastPositionSeconds: Math.floor(v.duration || v.currentTime) });
+    };
     v.addEventListener("seeked", onSeeked);
     v.addEventListener("timeupdate", onTimeUpdate);
     v.addEventListener("play", onPlay);
     v.addEventListener("pause", onPause);
+    v.addEventListener("ended", onEnded);
     return () => {
       v.removeEventListener("seeked", onSeeked);
       v.removeEventListener("timeupdate", onTimeUpdate);
       v.removeEventListener("play", onPlay);
       v.removeEventListener("pause", onPause);
+      v.removeEventListener("ended", onEnded);
     };
   }, [videoRef, save, getCurrentState]);
 

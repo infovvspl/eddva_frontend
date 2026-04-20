@@ -722,6 +722,11 @@ export async function regeneratePlan(): Promise<{ message: string }> {
   return extractData(res);
 }
 
+export async function clearPlan(): Promise<{ message: string }> {
+  const res = await apiClient.post("/study-plans/clear", {});
+  return extractData(res);
+}
+
 export async function completePlanItem(itemId: string): Promise<StudyPlanItem> {
   const res = await apiClient.patch(`/study-plans/items/${itemId}/complete`, {});
   return extractData<StudyPlanItem>(res);

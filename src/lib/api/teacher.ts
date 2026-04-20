@@ -248,6 +248,11 @@ export async function translateTranscriptToHindi(id: string): Promise<{ transcri
   return extractData<{ transcriptHi: string }>(res);
 }
 
+export async function translateNotesToEnglish(id: string): Promise<{ notesEn: string }> {
+  const res = await apiClient.post(`/content/lectures/${id}/translate-notes`, {});
+  return extractData<{ notesEn: string }>(res);
+}
+
 export async function getLectureStats(id: string): Promise<LectureStats> {
   const res = await apiClient.get(`/content/lectures/${id}/stats`);
   const raw = extractData<any>(res);
