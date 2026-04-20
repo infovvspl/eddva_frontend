@@ -497,8 +497,7 @@ Generate exactly ${count} questions spanning all subjects evenly.`.trim();
 
     try {
       setProgress("AI is generating questions (this may take ~30 seconds)…");
-      const result = await aiGenerateQuestions({ transcript, lectureTitle: testTitle });
-      const raw = result?.questions ?? [];
+      const raw = await aiGenerateQuestions({ transcript, lectureTitle: testTitle });
 
       if (!raw.length) {
         setError("AI returned no questions. Try again or reduce the count.");
@@ -506,17 +505,9 @@ Generate exactly ${count} questions spanning all subjects evenly.`.trim();
       }
 
       setProgress(`Converting ${raw.length} questions…`);
-      const drafts = raw.map((aiToDict: any) => {
-        const q: AiGeneratedQuestion = {
-          questionText: aiToDict.questionText || aiToDict.question || "",
-          options: aiToDict.options ?? [],
-          correctOption: aiToDict.correctOption || aiToDict.correct_option || "A",
-          difficulty: aiToDict.difficulty ?? "medium",
-          subject: aiToDict.subject ?? (aiSubjectName || ""),
-          explanation: aiToDict.explanation ?? "",
-        };
-        return aiToDict3(q);
-      });
+      const drafts = raw.map((q) =>
+        aiToDict3({ ...q, subject: q.subject || aiSubjectName || "" })
+      );
 
       onQuestionsGenerated(drafts, aiTopicId || undefined);
     } catch (err: any) {
@@ -1731,7 +1722,7 @@ const MockTestsPage = () => {
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {test._count?.questions ?? 0} questions · {test.durationMinutes} min · {test.totalMarks} marks
+                      {(test.questionIds?.length ?? 0)} questions · {test.durationMinutes} min · {test.totalMarks} marks
                     </p>
                   </div>
                 </div>

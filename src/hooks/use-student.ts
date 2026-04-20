@@ -212,6 +212,15 @@ export function useMockTests(params?: {
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
 
+/** Fetch all completed sessions for the current student (builds per-test progress map) */
+export function useStudentSessions() {
+  return useQuery({
+    queryKey: studentKeys.sessions(undefined),
+    queryFn: () => studentApi.getActiveSessions(), // no filter = all sessions
+    staleTime: 30_000,
+  });
+}
+
 export function useStartSession() {
   const qc = useQueryClient();
   return useMutation({

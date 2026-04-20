@@ -20,6 +20,7 @@ import edvaLogo from "@/assets/EDVA LOGO 04.png";
 import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
+import { useUnreadCount } from "@/hooks/use-notifications";
 
 const EXAM_OPTIONS = [
   { key: "jee",     label: "JEE",           desc: "Joint Entrance Examination", color: "from-orange-400 to-red-500",    bg: "bg-orange-50",  border: "border-orange-300", text: "text-orange-600"  },
@@ -98,6 +99,7 @@ const DashboardLayout = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { data: unreadNotifCount = 0 } = useUnreadCount();
 
   // Close profile dropdown on any outside click (production-grade)
   const handleOutsideClick = useCallback((e: MouseEvent) => {
@@ -283,10 +285,13 @@ const DashboardLayout = () => {
                       {item.label}
                     </motion.span>
                   )}
-                  {item.badge && sidebarOpen && (
-                    <span className="ml-auto bg-indigo-100 text-[8px] font-bold text-indigo-600 px-2 py-0.5 rounded-lg">
-                      {item.badge}
+                  {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && sidebarOpen && (
+                    <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
+                      {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
                     </span>
+                  )}
+                  {item.path === "/student/notifications" && !sidebarOpen && unreadNotifCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
                   )}
                   {!sidebarOpen && (
                     <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
@@ -416,9 +421,20 @@ const DashboardLayout = () => {
               <button
                 onClick={() => notificationPath && navigate(notificationPath)}
                 className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm" />
+                {unreadNotifCount > 0 && (
+                  unreadNotifCount > 9 ? (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                      9+
+                    </span>
+                  ) : (
+                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                      {unreadNotifCount}
+                    </span>
+                  )
+                )}
               </button>
 
               {/* ── Institute avatar + dropdown ── */}
