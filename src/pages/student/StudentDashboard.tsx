@@ -305,7 +305,7 @@ export default function StudentDashboard() {
               action={() => navigate("/student/learn")}
               actionLabel="Explore"
             >
-              <Recommendations weakTopics={weakTopics} />
+              <Recommendations weakTopics={weakTopics} suggestions={dash?.recommendations} />
             </Section>
           </motion.div>
         </div>

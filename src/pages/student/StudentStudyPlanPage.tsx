@@ -15,56 +15,17 @@ import {
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
 
-// ─── Static plan data (shown when AI backend hasn't generated a plan yet) ─────
-
-const TODAY = new Date().toISOString().split("T")[0];
-
-const STATIC_PLANS: Record<string, StudyPlanItem[]> = {
-  jee: [
-    { id: "static-1", type: "lecture",     title: "Newton's Laws of Motion",             estimatedMinutes: 45, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-2", type: "practice",    title: "Forces & Free Body Diagrams",          estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-3", type: "lecture",     title: "Atomic Structure & Periodic Table",    estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-4", type: "revision",    title: "Quadratic Equations — Key Formulas",   estimatedMinutes: 20, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
-    { id: "static-5", type: "practice",    title: "Functions & Graphs Practice Set",      estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-6", type: "mock_test",   title: "JEE Mini Mock Test #1",                estimatedMinutes: 90, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
-  ],
-  neet: [
-    { id: "static-1", type: "lecture",     title: "Cell Structure & Organelles",          estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-2", type: "practice",    title: "Cell Division — Mitosis & Meiosis",    estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-3", type: "lecture",     title: "Laws of Motion & Work-Energy",         estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-4", type: "lecture",     title: "Biomolecules — Carbohydrates & Proteins", estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-5", type: "revision",    title: "Human Physiology Quick Revision",      estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
-    { id: "static-6", type: "mock_test",   title: "NEET Mini Mock Test #1",               estimatedMinutes: 90, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
-  ],
-  cbse_10: [
-    { id: "static-1", type: "lecture",     title: "Real Numbers — Euclid's Algorithm",    estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-2", type: "lecture",     title: "Chemical Reactions & Equations",       estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-3", type: "practice",    title: "Polynomials — Factorisation Set",      estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-4", type: "lecture",     title: "Life Processes — Nutrition & Respiration", estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-5", type: "revision",    title: "Electricity — Ohm's Law Revision",     estimatedMinutes: 20, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
-    { id: "static-6", type: "mock_test",   title: "Chapter Test: Acids, Bases & Salts",   estimatedMinutes: 45, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
-  ],
-  cbse_12: [
-    { id: "static-1", type: "lecture",     title: "Relations & Functions",                estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-2", type: "lecture",     title: "Electrochemistry — EMF & Galvanic Cells", estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-3", type: "practice",    title: "Integrals — Practice Set 1",           estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-4", type: "lecture",     title: "Genetics — Mendelian Inheritance",     estimatedMinutes: 35, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-5", type: "revision",    title: "Current Electricity Revision",         estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
-    { id: "static-6", type: "mock_test",   title: "Board Pattern Mock Test #1",           estimatedMinutes: 90, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
-  ],
-  default: [
-    { id: "static-1", type: "lecture",     title: "Introduction to Your Syllabus",        estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-2", type: "practice",    title: "Concept Check — Practice Round",       estimatedMinutes: 25, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-3", type: "revision",    title: "Core Formulas & Key Concepts",         estimatedMinutes: 20, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 5  },
-    { id: "static-4", type: "lecture",     title: "Deep Dive: Chapter 2 Fundamentals",    estimatedMinutes: 40, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-5", type: "practice",    title: "Mixed Problem Set",                    estimatedMinutes: 30, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 15 },
-    { id: "static-6", type: "mock_test",   title: "Weekly Assessment Test",               estimatedMinutes: 60, status: "pending", refId: "", scheduledDate: TODAY, xpReward: 50 },
-  ],
-};
-
-function getStaticPlan(examTarget?: string): StudyPlanItem[] {
-  const key = (examTarget ?? "").toLowerCase();
-  return STATIC_PLANS[key] ?? STATIC_PLANS.default;
+function toYoutubeEmbed(url?: string | null): string | null {
+  if (!url) return null;
+  const raw = String(url).trim();
+  const idFromWatch = raw.match(/[?&]v=([^&]+)/)?.[1];
+  const idFromShort = raw.match(/youtu\.be\/([^?&/]+)/)?.[1];
+  const idFromEmbed = raw.match(/youtube\.com\/embed\/([^?&/]+)/)?.[1];
+  const idFromShorts = raw.match(/youtube\.com\/shorts\/([^?&/]+)/)?.[1];
+  const idFromLive = raw.match(/youtube\.com\/live\/([^?&/]+)/)?.[1];
+  const id = idFromWatch || idFromShort || idFromEmbed || idFromShorts || idFromLive;
+  if (!id) return null;
+  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`;
 }
 
 // ─── Type Config ───────────────────────────────────────────────────────────────
@@ -73,14 +34,14 @@ const typeConfig: Record<StudyPlanItem["type"], {
 }> = {
   lecture: { icon: Play, color: "#4f46e5", bg: "#e0e7ff", label: "Lecture", xp: 15 }, // indigo
   practice: { icon: Target, color: "#10b981", bg: "#d1fae5", label: "Practice", xp: 15 }, // emerald
-  revision: { icon: RefreshCw, color: "#f59e0b", bg: "#fef3c7", label: "Revision", xp: 5 }, // amber
+  revision: { icon: BookOpen, color: "#f59e0b", bg: "#fef3c7", label: "Notes / Video", xp: 5 }, // amber
   mock_test: { icon: Trophy, color: "#ec4899", bg: "#fce7f3", label: "Mock Test", xp: 50 }, // pink
   battle: { icon: Swords, color: "#ef4444", bg: "#fee2e2", label: "Battle", xp: 30 }, // red
   doubt_session: { icon: MessageSquare, color: "#8b5cf6", bg: "#ede9fe", label: "Doubt Session", xp: 10 }, // violet
 };
 
 // ─── Task Card ─────────────────────────────────────────────────────────────────
-function TaskCard({ item }: { item: StudyPlanItem }) {
+function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (url: string, title: string) => void }) {
   const navigate = useNavigate();
   const complete = useCompletePlanItem();
   const skip = useSkipPlanItem();
@@ -88,11 +49,24 @@ function TaskCard({ item }: { item: StudyPlanItem }) {
   const isDone = item.status === "completed";
   const isSkip = item.status === "skipped";
 
-  const isStatic = item.id.startsWith("static-");
-
   const handleStart = () => {
-    if (isDone || isSkip || isStatic) return;
+    if (isDone || isSkip) return;
+    const taskKind = item.content?.taskKind;
+    if (taskKind === "youtube_video") {
+      const embed = toYoutubeEmbed(item.content?.videoUrl);
+      if (embed) {
+        onOpenVideo(embed, item.content?.videoTitle || item.title);
+      } else {
+        toast.error("No YouTube video found for this topic yet.");
+      }
+      return;
+    }
+    if (taskKind === "ai_notes" && item.refId) {
+      navigate(`/student/ai-study/${item.refId}`);
+      return;
+    }
     if (item.type === "lecture" && item.refId) navigate(`/student/lectures/${item.refId}`);
+    else if (item.type === "revision" && item.refId) navigate(`/student/ai-study/${item.refId}`);
     else if (item.refId) navigate(`/student/quiz?topicId=${item.refId}`);
   };
 
@@ -136,18 +110,16 @@ function TaskCard({ item }: { item: StudyPlanItem }) {
             </div>
          ) : (
             <div className="flex items-center gap-1">
-               {!isStatic && (
-                 <>
-                   <button onClick={() => skip.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition" title="Skip Task">
-                     <SkipForward className="w-4 h-4" />
-                   </button>
-                   <button onClick={() => complete.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-emerald-50 hover:text-emerald-500 transition" title="Mark Complete">
-                     <CheckCircle className="w-4 h-4" />
-                   </button>
-                 </>
-               )}
-               <button onClick={handleStart} disabled={isStatic} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-100 transition shadow-sm ml-1 disabled:opacity-50 disabled:cursor-default">
-                  <Play className="w-4 h-4 fill-current" /> {isStatic ? "Preview" : "Start"}
+               <>
+                 <button onClick={() => skip.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition" title="Skip Task">
+                   <SkipForward className="w-4 h-4" />
+                 </button>
+                 <button onClick={() => complete.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-emerald-50 hover:text-emerald-500 transition" title="Mark Complete">
+                   <CheckCircle className="w-4 h-4" />
+                 </button>
+               </>
+               <button onClick={handleStart} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-100 transition shadow-sm ml-1">
+                  <Play className="w-4 h-4 fill-current" /> Start
                </button>
             </div>
          )}
@@ -162,11 +134,10 @@ export default function StudentStudyPlanPage() {
   const regenerate = useRegeneratePlan();
   const navigate = useNavigate();
   const { data: me } = useStudentMe();
+  const [videoPlayer, setVideoPlayer] = useState<{ url: string; title: string } | null>(null);
   const streakDetails = me?.student?.streakDays || 0;
 
-  // Use static plan when backend hasn't generated one yet
-  const isStatic = todayItemsRaw.length === 0 && !isLoading;
-  const todayItems = isStatic ? getStaticPlan(me?.student?.examTarget) : todayItemsRaw;
+  const todayItems = todayItemsRaw;
 
   // Week map
   const weekDates = useMemo(() => {
@@ -206,7 +177,7 @@ export default function StudentStudyPlanPage() {
   const currentSubjects = useMemo(() => {
      const subMap: Record<string, StudyPlanItem[]> = {};
      todayItems.forEach(i => {
-        const sub = (i as any).topic?.subject?.name || "General";
+        const sub = i.content?.subjectName || "General";
         if (!subMap[sub]) subMap[sub] = [];
         subMap[sub].push(i);
      });
@@ -246,14 +217,7 @@ export default function StudentStudyPlanPage() {
             </div>
          </div>
          
-         <div className="relative z-10 flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
-            <button className="flex-1 md:flex-none px-6 py-3.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl shadow-sm transition whitespace-nowrap">
-               Customize Plan
-            </button>
-            <button className="flex-1 md:flex-none px-8 py-3.5 bg-white text-indigo-600 hover:bg-indigo-50 font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 whitespace-nowrap">
-               <Play className="w-5 h-5 fill-current" /> Start All
-            </button>
-         </div>
+    
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -283,11 +247,17 @@ export default function StudentStudyPlanPage() {
                </h3>
                <div className="flex gap-2 justify-between">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => {
-                     // Determine mock status based on the day index relative to today
-                     const todayIndex = (new Date().getDay() + 6) % 7; // Mon=0, Sun=6
+                     const d = new Date(weekDates.start);
+                     d.setDate(d.getDate() + i);
+                     const dayKey = d.toISOString().split("T")[0];
+                     const tasks = weekMap?.[dayKey] || [];
+                     const hasTask = tasks.length > 0;
+                     const completed = tasks.filter((t) => t.status === "completed").length;
+                     const isToday = dayKey === new Date().toISOString().split("T")[0];
                      let status: 'done' | 'missed' | 'upcoming' | 'today' = 'upcoming';
-                     if (i < todayIndex) status = Math.random() > 0.3 ? 'done' : 'missed';
-                     if (i === todayIndex) status = 'today';
+                     if (isToday) status = 'today';
+                     else if (hasTask && completed === tasks.length) status = 'done';
+                     else if (hasTask && completed < tasks.length && dayKey < new Date().toISOString().split("T")[0]) status = 'missed';
 
                      return (
                         <div key={day} className="flex flex-col items-center gap-2">
@@ -310,11 +280,12 @@ export default function StudentStudyPlanPage() {
             </div>
 
             {/* 5. SUBJECT / CHAPTER BREAKDOWN & 2. DAILY TASK LIST */}
-            {isStatic && (
+            {todayItems.length === 0 && (
               <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-2xl mb-2">
                 <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
                 <p className="text-xs font-semibold text-indigo-700">
-                  This is a curated starter plan for <span className="font-extrabold">{(me?.student?.examTarget ?? "your exam").toUpperCase().replace("_", " ")}</span>. Your AI-personalised plan will appear here once your teacher assigns content.
+                  Your monthly AI plan has not been generated yet for <span className="font-extrabold">{(me?.student?.examTarget ?? "your exam").toUpperCase().replace("_", " ")}</span>.
+                  Click <span className="font-extrabold">Generate Smart Plan</span> to build a 30-day schedule from your last month tests and weak topics.
                 </p>
               </div>
             )}
@@ -323,7 +294,7 @@ export default function StudentStudyPlanPage() {
                   <div key={sub}>
                      <h3 className="text-sm font-bold text-slate-400 tracking-wider uppercase mb-3 px-1">{sub} Tasks</h3>
                      <div>
-                        {items.map(item => <TaskCard key={item.id} item={item} />)}
+                        {items.map(item => <TaskCard key={item.id} item={item} onOpenVideo={(url, title) => setVideoPlayer({ url, title })} />)}
                      </div>
                   </div>
                ))}
@@ -340,7 +311,16 @@ export default function StudentStudyPlanPage() {
                   <Sparkles className="w-10 h-10 text-purple-500 mx-auto mb-3" />
                   <h3 className="text-lg font-bold text-slate-800 mb-1">AI Smart Plan</h3>
                   <p className="text-xs font-semibold text-slate-500 mb-5 leading-relaxed">Adjust difficulty, focus on weak areas, and balance subjects magically.</p>
-                  <button onClick={() => regenerate.mutate()} disabled={regenerate.isPending} className="w-full py-3 bg-gradient-to-r from-indigo-50 text-indigo-600 hover:from-indigo-100 hover:to-purple-100 border border-indigo-100 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">
+                  <button
+                    onClick={() =>
+                      regenerate.mutate(undefined, {
+                        onSuccess: () => toast.success("Smart plan generated."),
+                        onError: () => toast.error("Could not generate plan right now. Please try again."),
+                      })
+                    }
+                    disabled={regenerate.isPending}
+                    className="w-full py-3 bg-gradient-to-r from-indigo-50 text-indigo-600 hover:from-indigo-100 hover:to-purple-100 border border-indigo-100 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
                      {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Generate Smart Plan
                   </button>
                </div>
@@ -419,6 +399,42 @@ export default function StudentStudyPlanPage() {
 
          </div>
       </div>
+
+      <AnimatePresence>
+        {videoPlayer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center"
+            onClick={() => setVideoPlayer(null)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.98 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 10, scale: 0.98 }}
+              className="w-full max-w-5xl bg-black rounded-2xl overflow-hidden border border-white/20 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white">
+                <h3 className="text-sm font-bold truncate pr-4">{videoPlayer.title}</h3>
+                <button onClick={() => setVideoPlayer(null)} className="text-xs font-semibold px-2 py-1 rounded bg-white/10 hover:bg-white/20">
+                  Close
+                </button>
+              </div>
+              <div className="aspect-video w-full">
+                <iframe
+                  src={videoPlayer.url}
+                  title={videoPlayer.title}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

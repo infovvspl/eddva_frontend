@@ -656,6 +656,17 @@ export interface StudyPlanItem {
   refId: string;
   scheduledDate: string;
   xpReward?: number;
+  content?: {
+    topicId?: string;
+    topicName?: string;
+    chapterName?: string | null;
+    subjectName?: string | null;
+    taskKind?: "youtube_video" | "ai_notes" | "practice";
+    videoTitle?: string | null;
+    videoUrl?: string | null;
+    notesTitle?: string | null;
+    notesUrl?: string | null;
+  };
 }
 
 export async function getTodaysPlan(): Promise<StudyPlanItem[]> {
@@ -854,6 +865,7 @@ export interface StudentDashboardData {
   currentEloTier: string;
   rank?: number;
   weakTopics: { topicId: string; topicName: string; subjectName?: string; accuracy: number; severity: string }[];
+  recommendations?: string[];
   overallAccuracy: number;
   pendingLectures: number;
   testsAttempted: number;
@@ -876,6 +888,9 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
       accuracy: Number(w.accuracy ?? 0),
       severity: String(w.severity ?? "medium"),
     })),
+    recommendations: Array.isArray(raw.recommendations)
+      ? (raw.recommendations as unknown[]).map((x) => String(x))
+      : [],
     overallAccuracy: Number(raw.overallAccuracy ?? 0),
     pendingLectures: Number(raw.pendingLectures ?? 0),
     testsAttempted: Number(raw.testsAttempted ?? 0),

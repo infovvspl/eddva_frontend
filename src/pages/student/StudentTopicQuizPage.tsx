@@ -122,7 +122,7 @@ function ScoreRing({ accuracy, score, outOf, correct, wrong, skipped }: {
   return (
     <CardGlass className="p-10 border-white bg-slate-900 text-white relative overflow-hidden mb-10">
        <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
-       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Sync Results Manifest</h3>
+       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Show Results</h3>
        <div className="flex items-center gap-10 flex-col sm:flex-row">
           <div className="relative w-32 h-32 shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -292,6 +292,7 @@ export default function StudentTopicQuizPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const topicId = params.get("topicId") ?? "";
+  const [showReview, setShowReview] = useState(false);
 
   const [stage, setStage]         = useState<Stage>("loading");
   const [mockTest, setMockTest]   = useState<MockTestListItem | null>(null);
@@ -387,6 +388,12 @@ export default function StudentTopicQuizPage() {
       setAiResult(res); setStage("ai_results");
     } catch { setStage("ai_quiz"); }
   };
+
+  useEffect(() => {
+    if (stage !== "ai_results") {
+      setShowReview(false);
+    }
+  }, [stage]);
 
   if (["loading", "ai_generating", "submitting", "ai_submitting"].includes(stage)) {
     return (
@@ -512,7 +519,6 @@ export default function StudentTopicQuizPage() {
   }
 
   if (stage === "ai_results" && aiResult && aiQuizData) {
-    const [showReview, setShowReview] = useState(false);
     return (
       <div className="py-20 px-6">
          <div className="w-full max-w-4xl mx-auto">

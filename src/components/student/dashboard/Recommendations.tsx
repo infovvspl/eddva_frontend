@@ -24,6 +24,7 @@ export interface WeakTopicRec {
 
 interface RecommendationsProps {
   weakTopics?: WeakTopicRec[];
+  suggestions?: string[];
 }
 
 function severityToDifficulty(s: string): "Easy" | "Medium" | "Hard" {
@@ -45,7 +46,7 @@ const SUBJECT_COLOR: Record<string, string> = {
   Physics:   "text-sky-600",
 };
 
-export default function Recommendations({ weakTopics }: RecommendationsProps) {
+export default function Recommendations({ weakTopics, suggestions }: RecommendationsProps) {
   const navigate = useNavigate();
 
   const items: Recommendation[] = useMemo(() => {
@@ -83,33 +84,49 @@ export default function Recommendations({ weakTopics }: RecommendationsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {items.map((rec) => (
-        <div
-          key={rec.id}
-          className="group flex gap-3 p-4 rounded-2xl border border-border/60 bg-card hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
-          onClick={() => navigate(rec.type === "lecture" ? "/student/lectures" : "/student/learn")}
-        >
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rec.type === "lecture" ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30" : "bg-orange-100 text-orange-600 dark:bg-orange-900/30")}>
-            {rec.type === "lecture" ? <PlayCircle className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">{rec.title}</p>
-            <p className={cn("text-xs font-semibold mt-0.5", SUBJECT_COLOR[rec.subject] || "text-muted-foreground")}>{rec.subject}</p>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                <Lightbulb className="w-3 h-3" /> {rec.reason}
-              </span>
-              <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", DIFFICULTY_COLOR[rec.difficulty])}>
-                {rec.difficulty}
-              </span>
-            </div>
-          </div>
-
-          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className="space-y-4">
+      {Array.isArray(suggestions) && suggestions.length > 0 && (
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
+          <p className="text-xs font-bold text-indigo-700 mb-2">AI Suggestions (Last 30 Days)</p>
+          <ul className="space-y-1.5">
+            {suggestions.slice(0, 3).map((s, i) => (
+              <li key={`${s}-${i}`} className="text-xs text-indigo-800 flex items-start gap-2">
+                <Lightbulb className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      ))}
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {items.map((rec) => (
+          <div
+            key={rec.id}
+            className="group flex gap-3 p-4 rounded-2xl border border-border/60 bg-card hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
+            onClick={() => navigate(rec.type === "lecture" ? "/student/lectures" : "/student/learn")}
+          >
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rec.type === "lecture" ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30" : "bg-orange-100 text-orange-600 dark:bg-orange-900/30")}>
+              {rec.type === "lecture" ? <PlayCircle className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">{rec.title}</p>
+              <p className={cn("text-xs font-semibold mt-0.5", SUBJECT_COLOR[rec.subject] || "text-muted-foreground")}>{rec.subject}</p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <Lightbulb className="w-3 h-3" /> {rec.reason}
+                </span>
+                <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", DIFFICULTY_COLOR[rec.difficulty])}>
+                  {rec.difficulty}
+                </span>
+              </div>
+            </div>
+
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

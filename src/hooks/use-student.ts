@@ -299,6 +299,8 @@ export function useRegeneratePlan() {
     mutationFn: studentApi.regeneratePlan,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
+      qc.invalidateQueries({ queryKey: [...studentKeys.plan, "next-action"] });
     },
   });
 }

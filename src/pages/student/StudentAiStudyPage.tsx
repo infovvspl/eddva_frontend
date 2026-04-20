@@ -60,6 +60,32 @@ const mdClass = [
   "prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/50 prose-blockquote:rounded-3xl prose-blockquote:px-8 prose-blockquote:py-6 prose-blockquote:text-slate-700 prose-blockquote:font-bold prose-blockquote:italic prose-blockquote:my-8",
 ].join(" ");
 
+function normalizeAiMessage(message: unknown): string {
+  if (typeof message === "string") {
+    const trimmed = message.trim();
+    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+      try {
+        return normalizeAiMessage(JSON.parse(trimmed));
+      } catch {
+        return message;
+      }
+    }
+    return message;
+  }
+  if (message && typeof message === "object") {
+    const m = message as any;
+    if (typeof m.response === "string") return m.response;
+    if (typeof m.answer === "string") return m.answer;
+    if (typeof m.message === "string") return m.message;
+    if (Array.isArray(m.hints) && m.hints.length) {
+      const hints = m.hints.map((h: unknown) => `- ${String(h)}`).join("\n");
+      return `Hints:\n${hints}`;
+    }
+    return JSON.stringify(message);
+  }
+  return String(message ?? "");
+}
+
 // ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -179,7 +205,7 @@ export default function StudentAiStudyPage() {
          </div>
          <div className="space-y-4">
             <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter text-center">Neural Nexus Initializing</h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Synthesizing personalized curriculum manifest...</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Synthesizing personalized curriculum...</p>
          </div>
       </div>
     );
@@ -205,7 +231,7 @@ export default function StudentAiStudyPage() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "lesson",   label: "Archive",    icon: <BookOpen className="w-4 h-4" /> },
     { id: "concepts", label: "Cores",      icon: <Layers className="w-4 h-4" /> },
-    { id: "practice", label: "Simulator",  icon: <Target className="w-4 h-4" /> },
+    { id: "practice", label: "Practice Questions",  icon: <Target className="w-4 h-4" /> },
     { id: "ask",      label: "Ask AI",     icon: <BrainCircuit className="w-4 h-4" /> },
   ];
 
@@ -429,7 +455,7 @@ export default function StudentAiStudyPage() {
                                     )}>
                                        {msg.role === "ai" ? (
                                           <div className={cn(mdClass, "!prose-sm !prose-p:text-slate-800 !prose-p:text-base")}>
-                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.message}</ReactMarkdown>
+                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeAiMessage(msg.message)}</ReactMarkdown>
                                           </div>
                                        ) : msg.message}
                                     </div>
@@ -461,7 +487,7 @@ export default function StudentAiStudyPage() {
                     <textarea
                       value={chatInput} onChange={e => setChatInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                      placeholder="Dispatch neural query..." rows={1} disabled={askMut.isPending}
+                      placeholder="Ask a doubt..." rows={1} disabled={askMut.isPending}
                       className="flex-1 resize-none bg-white border border-slate-100 rounded-2xl px-8 py-5 text-base font-bold text-slate-900 placeholder:text-slate-300 placeholder:font-black placeholder:uppercase focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all shadow-inner"
                       style={{ maxHeight: 200 }} />
                     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!chatInput.trim() || askMut.isPending}
@@ -499,7 +525,7 @@ export default function StudentAiStudyPage() {
                          onClick={() => setShowComplete(true)}
                          className="w-full py-5 rounded-[1.5rem] bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-3"
                        >
-                         <Trophy className="w-5 h-5" /> Mark Manifest as Complete
+                         <Trophy className="w-5 h-5" /> Mark as Complete
                        </motion.button>
                     )}
                  </div>

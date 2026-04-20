@@ -24,19 +24,10 @@ const TYPE_LABEL: Record<string, string> = {
   battle: "Battle", revision: "Revision", doubt_session: "Doubt",
 };
 
-const DUMMY_TASKS: StudyPlanItem[] = [
-  { id: "1", type: "lecture",   title: "Human Respiratory System",   estimatedMinutes: 45, status: "completed", refId: "", scheduledDate: "" },
-  { id: "2", type: "practice",  title: "Organic Chemistry – Aldehydes", estimatedMinutes: 60, status: "completed", refId: "", scheduledDate: "" },
-  { id: "3", type: "mock_test", title: "Laws of Motion – Practice Set",  estimatedMinutes: 30, status: "pending",   refId: "", scheduledDate: "" },
-  { id: "4", type: "lecture",   title: "Cell Division Quiz",            estimatedMinutes: 20, status: "pending",   refId: "", scheduledDate: "" },
-  { id: "5", type: "revision",  title: "Electrochemistry – Lecture 3",  estimatedMinutes: 50, status: "skipped",   refId: "", scheduledDate: "" },
-];
-
 export default function TodayStudyPlan() {
   const navigate = useNavigate();
   const { data: apiTasks } = useTodaysPlan();
-
-  const items = ((apiTasks && apiTasks.length > 0 ? apiTasks : DUMMY_TASKS) as StudyPlanItem[]).slice(0, 5);
+  const items = ((apiTasks ?? []) as StudyPlanItem[]).slice(0, 5);
   const completed = items.filter(t => t.status === "completed").length;
 
   return (
@@ -49,7 +40,13 @@ export default function TodayStudyPlan() {
         </button>
       </div>
 
-      {items.map((task) => {
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border/60 p-4 text-center">
+          <p className="text-xs font-semibold text-muted-foreground">
+            Your monthly plan is being prepared. Open full plan to generate today&apos;s tasks.
+          </p>
+        </div>
+      ) : items.map((task) => {
         const cfg = STATUS_CONFIG[task.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
         return (
           <div key={task.id}
