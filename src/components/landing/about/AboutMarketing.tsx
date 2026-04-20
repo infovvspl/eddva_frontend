@@ -6,51 +6,56 @@ import { B, P } from "@/components/landing/DesignTokens";
 const gradHero = `linear-gradient(135deg, ${B}, ${P})`;
 
 const aboutParagraphs = [
-  "We're not here to follow the old way of learning—we're here to completely redefine it.",
-  "EDDVA is built on AI that feels sharp and intuitive: less rote memorization, more real understanding. We help you move ahead with clarity and confidence—not just keep up.",
-  "Learning should adapt to you, not the other way around. Our platform listens, responds, and aligns with your pace, curiosity, and thinking—in real time.",
-  "Knowledge here is something you discover and own. Doubts go deeper; every step moves you toward clarity.",
-  "We don't believe in learning more for its own sake. We believe in learning better, smarter, and with purpose—because this isn't only education. It's the future of learning.",
+  "Eddva exists at the intersection of intelligence and intention.",
+  "We are redefining learning as an experience that is not only effective—but elevated. Moving beyond outdated systems, we offer an environment where understanding is deep, progress is deliberate, and growth is inevitable.",
+  "Our philosophy is simple: Learning should be as refined as the ambitions it serves. This is why Eddva is designed to adapt, evolve, and respond to you—creating a seamless flow of knowledge that aligns with your pace and sharpens your thinking.",
+  "Here, learning is not passive. It is precise. Purposeful. Transformative. This is not traditional education. This is intelligent mastery.",
 ] as const;
 
 const team = [
   {
     name: "Ayush Kumar Dubey",
-    role: "Senior Educator",
-    detail: "9–10 Years of Experience",
+    role: "Senior JEE educator",
+    detail: "A decade of experience in academic excellence and student success",
     img: "https://i.pravatar.cc/300?img=12",
     accent: "from-blue-500/40 to-purple-500/40",
   },
   {
     name: "Priyanka SV",
     role: "Marketing Head",
+    detail: "Strategic storytelling and brand vision",
     img: "https://i.pravatar.cc/300?img=45",
     accent: "from-purple-500/50 to-pink-400/30",
   },
   {
     name: "Subham Mishra",
     role: "Full-Stack AI/ML Developer",
+    detail: "Architect of intelligent learning systems",
     img: "https://i.pravatar.cc/300?img=33",
     accent: "from-cyan-400/40 to-blue-500/50",
   },
   {
     name: "Akankshya Kar",
     role: "AI/ML Developer",
+    detail: "Enhancing adaptive intelligence and personalization",
     img: "https://i.pravatar.cc/300?img=47",
     accent: "from-fuchsia-400/40 to-purple-500/40",
   },
   {
     name: "Bhagyashree Sendh",
     role: "Full-Stack Developer",
+    detail: "Crafting seamless and refined digital experiences",
     img: "https://i.pravatar.cc/300?img=32",
     accent: "from-emerald-400/35 to-teal-500/40",
   },
 ];
 
 const founderParagraphs = [
-  "Lt. Col. Anil Tripathi, Sena Medal awardee (Retd.), served the nation with discipline and purpose. He went on to build Port Translogistics Pvt. Ltd. into a respected logistics brand—proof of his resilience and leadership.",
-  "Beyond business, he saw a gap: how people learn and grow wasn't keeping pace with a changing world.",
-  "That insight became a vision—a platform that understands, adapts, and empowers. Today it is the foundation of EDDVA: learning with intelligence, personalization, and purpose.",
+  "Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee, embodies a legacy of discipline, leadership, and purpose. From serving the nation with distinction to building Port Translogistics Pvt. Ltd. into a respected enterprise, his journey reflects a relentless pursuit of excellence.",
+  "Yet, beyond achievement, he recognized a deeper gap—a learning system that lacked adaptability, depth, and true understanding.",
+  "He envisioned something better: a platform that doesn’t just deliver information, but interprets, adapts, and empowers.",
+  "Eddva was born from that vision—a refined learning ecosystem designed for those who refuse to settle for conventional paths.",
+  "Because true growth is not about access to knowledge—it is about mastering it with clarity and intent.",
 ] as const;
 
 /** About page marketing sections (from `landing/about` design system), for use inside `LandingLayout`. */
@@ -63,10 +68,11 @@ export function AboutMarketing() {
         <div className="relative mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-2 md:items-start md:gap-12 md:py-24">
           <div className="space-y-6">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" /> About us
+              <Sparkles className="h-3.5 w-3.5" /> About Eddva
             </span>
             <h1 className="text-4xl font-extrabold leading-[1.05] sm:text-5xl md:text-6xl">
-              About <span className="text-gradient-brand">us</span>
+              A new standard in{" "}
+              <span className="text-gradient-brand">learning</span>
             </h1>
             <div className="space-y-4 text-base leading-relaxed text-foreground/85 sm:text-lg">
               {aboutParagraphs.map((p, i) => (
@@ -76,9 +82,9 @@ export function AboutMarketing() {
               ))}
             </div>
             <div className="flex flex-wrap gap-8 border-t border-slate-200/80 pt-8">
-              <Stat value="1.2M+" label="Global Learners" />
-              <Stat value="50K+" label="Total Selections" />
-              <Stat value="98%" label="Success Rate" />
+              <Stat value="Learn" label="with clarity" />
+              <Stat value="Perform" label="with confidence" />
+              <Stat value="Stay ahead" label="with Eddva" />
             </div>
           </div>
           <div className="relative md:sticky md:top-28">
@@ -105,8 +111,10 @@ export function AboutMarketing() {
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
               <Award className="h-3.5 w-3.5" /> Founder&apos;s Story
             </span>
-            <h2 className="mt-6 text-3xl font-bold sm:text-4xl">Lt. Col. Anil Tripathi</h2>
-            <p className="mt-2 text-sm font-medium text-muted-foreground">Sena Medal awardee (Retd.)</p>
+            <h2 className="mt-6 text-3xl font-bold sm:text-4xl">Built on discipline. Driven by vision.</h2>
+            <p className="mt-2 text-sm font-medium text-muted-foreground">
+              Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee
+            </p>
             <div className="mt-8 space-y-4 text-base leading-relaxed text-foreground/85 sm:text-lg">
               {founderParagraphs.map((p, i) => (
                 <p key={i}>{p}</p>
@@ -123,7 +131,7 @@ export function AboutMarketing() {
               />
             </div>
             <figcaption className="mt-3 text-center text-xs text-muted-foreground md:text-left">
-              A vision shaped by service, enterprise, and a commitment to how the world learns next.
+              From national service to enterprise—and a vision for how the world should learn next.
             </figcaption>
           </figure>
         </div>
@@ -136,10 +144,10 @@ export function AboutMarketing() {
           <div className="mb-10 mt-12 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
             <div>
               <h2 className="text-3xl font-bold sm:text-4xl">
-                The Minds Behind <span className="text-gradient-brand">the Platform</span>
+                Where expertise meets <span className="text-gradient-brand">innovation</span>
               </h2>
               <p className="mt-3 max-w-xl text-muted-foreground">
-                Educators, builders, and strategists working together to ship a smarter learning experience.
+                Eddva is shaped by a collective of educators, technologists, and visionaries—each committed to delivering excellence at every layer of the experience.
               </p>
             </div>
           </div>

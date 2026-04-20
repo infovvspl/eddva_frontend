@@ -146,22 +146,36 @@ const stats = [
               <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5 }} className="mb-5">
                 <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-4 py-1.5">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
-                  <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">India's #1 AI EdTech Platform</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">Eddva</span>
                 </div>
               </motion.div>
 
               <motion.h1 initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.6, delay:0.1 }}
                 className="landing-title-hero mb-5">
-                Smarter Learning.
-                <br />
-                <span style={gText()}>Brighter Futures.</span>
+                <span className="block text-gray-900">Smarter Learning.</span>
+                <span className="block" style={gText()}>Brighter Futures.</span>
               </motion.h1>
 
-              <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.2 }}
-                className="mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-500">
-               Because learning should be smarter, not harder.
-Eddva combines AI-powered intelligence, personalized guidance, and practical tools to help you learn faster, understand deeper, and grow with confidence. It’s not just a platform, it’s your adaptive learning partner designed to keep you ahead.
-              </motion.p>
+              {/* <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.15 }}
+                className="mb-5 max-w-xl text-lg font-semibold leading-snug text-gray-800 sm:text-xl">
+                Because excellence demands a smarter way to learn.
+              </motion.p> */}
+
+              <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.2 }}
+                className="mb-6 max-w-xl space-y-4 text-[15px] font-medium leading-relaxed text-gray-600 sm:text-[16px]">
+                <p>
+                  Eddva is not built for average learning. It is designed for those who seek precision, clarity, and an edge.
+                </p>
+                <p>
+                  Powered by advanced AI, Eddva creates an experience that is deeply personalized, intelligently curated, and relentlessly focused on results. Every interaction is intentional. Every recommendation is refined.
+                </p>
+                <p className="text-gray-700">
+                  You don&apos;t just study here—you evolve with purpose.
+                </p>
+                <p className="border-l-4 border-primary/40 pl-4 text-[15px] font-semibold text-gray-800">
+                  Learn with clarity. Perform with confidence. Stay ahead with Eddva.
+                </p>
+              </motion.div>
 
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.3 }}
                 className="mb-10 flex flex-wrap gap-3">
@@ -275,21 +289,45 @@ Eddva combines AI-powered intelligence, personalized guidance, and practical too
 
             {/* Text */}
             <FadeUp delay={0.15}>
-              <SLabel>About EDDVA</SLabel>
+              <SLabel>Core experience</SLabel>
               <h2 className="landing-title-section mt-5">
-                The AI-powered learning platform built for{" "}
-                <span style={gText()}>real results</span>
+                Built for precision,{" "}
+                <span style={gText()}>clarity, and results</span>
               </h2>
               <p className="mt-4 text-[16px] font-medium leading-relaxed text-gray-500">
-                EDDVA combines adaptive AI, expert-curated content and real-time analytics to give every student a personalized path to their target score — no matter the exam.
+                A learning journey that understands you before it guides you—curated, measurable, and always within reach when doubt appears.
               </p>
 
               <div className="mt-8 space-y-4">
                 {[
-                  { icon:<Brain className="h-5 w-5" />,     color:B,  bg:"#EFF6FF", title:"Adaptive Learning",       desc:"Personalized learning tailored to every student’s needs." },
-                  { icon:<Zap className="h-5 w-5" />,       color:P,  bg:"#F5F3FF", title:"Smart Recommendations",   desc:" AI-powered videos, notes, quizzes, and mock tests based on your goals and exam timeline." },
-                  { icon:<BarChart className="h-5 w-5" />,  color:T,  bg:"#ECFDF5", title:"Performance Tracking",    desc:"Track progress with leaderboards, ranks, streaks, and quiz battles with friends or AI." },
-                  { icon:<MessageCircle className="h-5 w-5" />, color:IN, bg:"#EEF2FF", title:"24/7 Doubt Solver",   desc:"Instant support with AI chatbot and in-video doubt solving anytime." },
+                  {
+                    icon: <Brain className="h-5 w-5" />,
+                    color: B,
+                    bg: "#EFF6FF",
+                    title: "Adaptive Learning",
+                    desc: "A system that understands before it guides. Eddva continuously adapts to your learning behavior, crafting a journey that is uniquely yours—precise, fluid, and efficient.",
+                  },
+                  {
+                    icon: <Zap className="h-5 w-5" />,
+                    color: P,
+                    bg: "#F5F3FF",
+                    title: "Intelligent Recommendations",
+                    desc: "Curated, not crowded. Access a refined selection of videos, notes, assessments, and mock tests—strategically aligned with your goals and timeline.",
+                  },
+                  {
+                    icon: <BarChart className="h-5 w-5" />,
+                    color: T,
+                    bg: "#ECFDF5",
+                    title: "Performance Intelligence",
+                    desc: "Measure what truly matters. Track your progress through insightful analytics, competitive rankings, and performance indicators designed to keep you focused and driven.",
+                  },
+                  {
+                    icon: <MessageCircle className="h-5 w-5" />,
+                    color: IN,
+                    bg: "#EEF2FF",
+                    title: "Always-On Clarity",
+                    desc: "Uninterrupted understanding. With instant AI-powered doubt resolution and contextual in-video support, clarity is never delayed.",
+                  },
                 ].map(item => (
                   <motion.div key={item.title} whileHover={{ x:4 }}
                     className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all">
