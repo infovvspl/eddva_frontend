@@ -1654,7 +1654,7 @@ export default function StudentCourseDetailPage() {
   const dppList = useMemo(() => collectResources(subjects, ["dpp"]), [subjects]);
   const pyqList = useMemo(() => collectResources(subjects, ["pyq"]), [subjects]);
   const materialList = useMemo(
-    () => collectResources(subjects, ["pdf", "notes", "video", "link"]),
+    () => collectResources(subjects, ["pdf", "notes"]),
     [subjects],
   );
   const allTopicsFlat = useMemo(
