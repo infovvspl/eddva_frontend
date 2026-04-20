@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Plus, ThumbsUp, ThumbsDown, ChevronDown,
   Loader2, CheckCircle, Clock, X, Sparkles, User,
-  Brain, BookOpen, Send,
+  Brain, BookOpen, Send, Upload, Image as ImageIcon,
 } from "lucide-react";
 import {
   useMyDoubts, useCreateDoubt, useMarkDoubtHelpful,
   useRequestAiForDoubt, useMyCourses, useCourseCurriculum,
 } from "@/hooks/use-student";
 import { StudentDoubt, DoubtStatus } from "@/lib/api/student";
+import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -68,7 +69,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
             )}
           </div>
           <p className="font-semibold text-slate-800 text-sm line-clamp-2">
-            {doubt.questionText || "No question text"}
+            {doubt.questionText || (doubt.questionImageUrl ? "Image question" : "No question text")}
           </p>
         </div>
 
@@ -92,7 +93,12 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
               {/* Question */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Your Question</p>
-                <p className="text-sm text-slate-800 font-medium leading-relaxed">{doubt.questionText}</p>
+                <p className="text-sm text-slate-800 font-medium leading-relaxed">{doubt.questionText || "Question shared as image."}</p>
+                {doubt.questionImageUrl && (
+                  <div className="mt-3 border border-slate-200 rounded-lg overflow-hidden bg-white">
+                    <img src={doubt.questionImageUrl} alt="Question" className="max-h-72 object-contain w-full" />
+                  </div>
+                )}
               </div>
 
               {/* Teacher Response */}
@@ -218,6 +224,9 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
   const [selectedChapterId, setSelectedChapterId] = useState("");
   const [selectedTopicId,   setSelectedTopicId]   = useState("");
   const [question, setQuestion] = useState("");
+  const [questionImageUrl, setQuestionImageUrl] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: courses = [] } = useMyCourses();
   const { data: curriculum, isLoading: curriculumLoading } = useCourseCurriculum(selectedBatchId);
@@ -231,8 +240,35 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
   const canSubmit =
     Boolean(selectedBatchId) &&
     selectedTopicId.length > 0 &&
-    question.trim().length >= 10 &&
-    !createDoubt.isPending;
+    (question.trim().length >= 10 || !!questionImageUrl.trim()) &&
+    !createDoubt.isPending &&
+    !imageUploading;
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImageUploading(true);
+    try {
+      const contentType = (file.type && file.type.trim()) || guessImageMimeFromName(file.name);
+      const fileUrl = await uploadToS3(
+        {
+          type: "doubt-response-image",
+          fileName: file.name,
+          contentType,
+          fileSize: file.size,
+        },
+        file
+      );
+      setQuestionImageUrl(fileUrl);
+      toast.success("Question image uploaded.");
+    } catch (err: any) {
+      const msg = err?.message || "Failed to upload image.";
+      toast.error(msg);
+    } finally {
+      setImageUploading(false);
+    }
+  }
 
   function handleBatchChange(id: string) {
     setSelectedBatchId(id);
@@ -257,6 +293,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
         batchId: selectedBatchId,
         topicId: selectedTopicId,
         questionText: question.trim(),
+        questionImageUrl: questionImageUrl.trim() || undefined,
         source: "manual",
         explanationMode: "short",
         skipAI: true,
@@ -358,7 +395,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
           {/* Question textarea */}
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              Your Question <span className="text-red-400">*</span>
+              Your Question
             </label>
             <textarea
               value={question}
@@ -372,11 +409,45 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
             </p>
           </div>
 
+          {/* Optional image URL/upload */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Question Image (optional)</label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+              <input
+                value={questionImageUrl}
+                onChange={(e) => setQuestionImageUrl(e.target.value)}
+                placeholder="Paste image URL or upload a file"
+                className="w-full min-w-0 flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={imageUploading}
+                className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {imageUploading ? "Uploading..." : "Upload image"}
+              </button>
+            </div>
+            {questionImageUrl && (
+              <div className="flex items-center gap-2 text-[11px] text-emerald-600 font-medium">
+                <ImageIcon className="w-3.5 h-3.5" /> Image attached
+              </div>
+            )}
+          </div>
+
           {/* Info */}
           <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
             <User className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700 font-medium">
-              Sent directly to your teacher. No AI response until you request it from the doubt card.
+              Sent directly to your teacher. Add text (min 10 chars) and/or an image. No AI response until you request it from the doubt card.
             </p>
           </div>
         </div>

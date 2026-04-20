@@ -58,6 +58,10 @@ export interface Lecture {
   aiKeyConcepts?: string[];
   aiFormulas?: string[];
   transcript?: string;
+  transcriptHi?: string;
+  transcriptStatus?: "pending" | "processing" | "done" | "failed";
+  transcriptLanguage?: string;
+  lectureLanguage?: "en" | "hi";
   createdAt: string;
   batch?: { id: string; name: string };
   topic?: {
@@ -78,6 +82,7 @@ export interface CreateLecturePayload {
   thumbnailUrl?: string;
   scheduledAt?: string;
   liveMeetingUrl?: string;
+  lectureLanguage?: "en" | "hi";
   status?: string;
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
@@ -233,6 +238,16 @@ export async function deleteLecture(id: string): Promise<{ message: string }> {
   return extractData<{ message: string }>(res);
 }
 
+export async function retranscribeLecture(id: string): Promise<{ message: string }> {
+  const res = await apiClient.post(`/content/lectures/${id}/retranscribe`, {});
+  return extractData<{ message: string }>(res);
+}
+
+export async function translateTranscriptToHindi(id: string): Promise<{ transcriptHi: string }> {
+  const res = await apiClient.post(`/content/lectures/${id}/translate-transcript`, {});
+  return extractData<{ transcriptHi: string }>(res);
+}
+
 export async function getLectureStats(id: string): Promise<LectureStats> {
   const res = await apiClient.get(`/content/lectures/${id}/stats`);
   const raw = extractData<any>(res);
@@ -284,6 +299,12 @@ export async function respondToDoubt(id: string, payload: TeacherResponsePayload
 
 export async function markDoubtReviewed(id: string, aiQualityRating = "correct"): Promise<Doubt> {
   const res = await apiClient.patch(`/doubts/${id}/mark-reviewed`, { aiQualityRating });
+  return extractData<Doubt>(res);
+}
+
+/** Teacher runs full AI resolution for an escalated (or open) doubt — same outcome as student-side AI answer. */
+export async function resolveDoubtWithAiAsTeacher(doubtId: string): Promise<Doubt> {
+  const res = await apiClient.patch(`/doubts/${doubtId}/resolve-with-ai`, {});
   return extractData<Doubt>(res);
 }
 

@@ -32,6 +32,8 @@ import MockTestsPage from "./pages/admin/MockTestsPage";
 import LecturesPage from "./pages/admin/LecturesPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AdminCalendarPage from "./pages/admin/AdminCalendarPage";
+import TeacherCalendarPage from "./pages/teacher/TeacherCalendarPage";
+import StudentCalendarPage from "./pages/student/StudentCalendarPage";
 import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherOnboardingPage from "./pages/teacher/TeacherOnboardingPage";
@@ -63,6 +65,7 @@ import StudentCourseDetailPage from "./pages/student/StudentCourseDetailPage";
 import StudentOnboardingPage from "./pages/student/StudentOnboardingPage";
 import StudentCourseTopicPage from "./pages/student/StudentCourseTopicPage";
 import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
+import StudentMockTestPage from "./pages/student/StudentMockTestPage";
 import PYQManagementPage from "./pages/admin/PYQManagementPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
@@ -133,6 +136,7 @@ const TeacherRoutes = () => (
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
       <Route path="/teacher/batches" element={<TeacherBatchesPage />} />
+      <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
@@ -151,6 +155,7 @@ const StudentRoutes = () => (
       <Route path="/student" element={<StudentDashboard />} />
       <Route path="/student/learn" element={<StudentLearnPage />} />
       <Route path="/student/learn/topic/:topicId" element={<TopicDetailPage />} />
+      <Route path="/student/calendar" element={<StudentCalendarPage />} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
       <Route path="/student/battle" element={<BattleArena />} />
@@ -165,6 +170,7 @@ const StudentRoutes = () => (
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
       <Route path="/student/ai-study/:topicId" element={<StudentAiStudyPage />} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
+      <Route path="/student/mock-tests/:id" element={<StudentMockTestPage />} />
       <Route path="/student/notifications" element={<StudentNotificationsPage />} />
     </Route>
     {/* Live class room — full screen, accessible by all roles */}

@@ -2,11 +2,14 @@ import { motion } from "framer-motion";
 import { Bell, BookOpen, Loader2, CheckCheck, Trophy, Video, HelpCircle, Zap, BarChart2, Calendar, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
-import type { Notification, NotificationType } from "@/lib/api/notifications";
+import type { Notification } from "@/lib/api/notifications";
 import { cn } from "@/lib/utils";
 
-const TYPE_CONFIG: Record<NotificationType | "default", { bg: string; text: string; Icon: React.ComponentType<{ className?: string }> }> = {
+const TYPE_CONFIG: Record<string, { bg: string; text: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  lecture_published:   { bg: "bg-indigo-50",  text: "text-indigo-600",  Icon: Video        },
   lecture_scheduled:   { bg: "bg-blue-50",    text: "text-blue-600",    Icon: Video        },
+  live_class_scheduled: { bg: "bg-red-50",     text: "text-red-600",     Icon: Video        },
+  calendar_event:      { bg: "bg-sky-50",     text: "text-sky-600",     Icon: Calendar     },
   battle_invite:       { bg: "bg-rose-50",     text: "text-rose-600",    Icon: Trophy       },
   doubt_resolved:      { bg: "bg-emerald-50",  text: "text-emerald-600", Icon: HelpCircle   },
   xp_earned:           { bg: "bg-amber-50",    text: "text-amber-600",   Icon: Zap          },
@@ -14,19 +17,21 @@ const TYPE_CONFIG: Record<NotificationType | "default", { bg: string; text: stri
   batch_announcement:  { bg: "bg-indigo-50",   text: "text-indigo-600",  Icon: BookOpen     },
   plan_generated:      { bg: "bg-teal-50",     text: "text-teal-600",    Icon: Calendar     },
   mock_test_scheduled: { bg: "bg-violet-50",   text: "text-violet-600",  Icon: BarChart2    },
+  mock_test_available: { bg: "bg-violet-50",   text: "text-violet-600",  Icon: BarChart2    },
   rank_change:         { bg: "bg-purple-50",   text: "text-purple-600",  Icon: Trophy       },
   course_view:         { bg: "bg-indigo-50",   text: "text-indigo-600",  Icon: BookOpen     },
   general:             { bg: "bg-slate-50",    text: "text-slate-500",   Icon: Bell         },
   default:             { bg: "bg-slate-50",    text: "text-slate-500",   Icon: Bell         },
 };
 
-function getConfig(type?: string) {
-  return TYPE_CONFIG[type as NotificationType] ?? TYPE_CONFIG.default;
+function getConfig(type?: string, refType?: string) {
+  // refType takes precedence — lets backend use GENERAL type while preserving UI semantics
+  return TYPE_CONFIG[refType ?? ""] ?? TYPE_CONFIG[type ?? ""] ?? TYPE_CONFIG.default;
 }
 
 function NotificationRow({ n, index }: { n: Notification; index: number }) {
   const markRead = useMarkNotificationRead();
-  const cfg = getConfig(n.type);
+  const cfg = getConfig(n.type, n.refType ?? n.data?.refType);
   const { Icon } = cfg;
 
   return (

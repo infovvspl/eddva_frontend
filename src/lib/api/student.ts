@@ -515,13 +515,18 @@ export interface MockTestListItem {
   id: string;
   title: string;
   type: string;
+  scope?: string;
   durationMinutes: number;
   totalMarks: number;
   passingMarks?: number;
+  subjectId?: string;
+  chapterId?: string;
   topicId?: string;
   batchId?: string;
+  questionIds?: string[];
   isPublished: boolean;
   scheduledAt?: string;
+  createdAt?: string;
 }
 
 export interface QuizOption {
@@ -544,11 +549,19 @@ export interface QuizQuestion {
 export interface TestSession {
   id: string;
   mockTestId: string;
-  status: "in_progress" | "completed" | "abandoned";
+  status: "in_progress" | "submitted" | "auto_submitted" | "completed" | "abandoned";
   startedAt: string;
   submittedAt?: string;
-  mockTest?: { title: string; durationMinutes: number };
+  totalScore?: number;
+  correctCount?: number;
+  wrongCount?: number;
+  skippedCount?: number;
+  mockTest?: { title: string; durationMinutes: number; totalMarks?: number };
   questions?: QuizQuestion[];
+}
+
+export function isSessionCompleted(s: TestSession) {
+  return s.status === "submitted" || s.status === "auto_submitted" || s.status === "completed";
 }
 
 export interface ErrorBreakdown {
@@ -639,7 +652,14 @@ export async function getSessionResult(sessionId: string): Promise<SessionResult
 export async function getActiveSessions(mockTestId?: string): Promise<TestSession[]> {
   const q = mockTestId ? `?mockTestId=${mockTestId}` : "";
   const res = await apiClient.get(`/assessments/sessions${q}`);
-  return extractData<TestSession[]>(res) ?? [];
+  const raw = extractData<TestSession[] | { data: TestSession[] }>(res);
+  return (Array.isArray(raw) ? raw : (raw as any)?.data) ?? [];
+}
+
+export async function getMockTestSessions(mockTestId: string): Promise<TestSession[]> {
+  const res = await apiClient.get(`/assessments/sessions?mockTestId=${mockTestId}&limit=50`);
+  const raw = extractData<TestSession[] | { data: TestSession[] }>(res);
+  return (Array.isArray(raw) ? raw : (raw as any)?.data) ?? [];
 }
 
 // ─── Study Plans ───────────────────────────────────────────────────────────────
@@ -741,6 +761,7 @@ export interface CreateDoubtPayload {
   batchId?: string;
   topicId: string;
   questionText?: string;
+  questionImageUrl?: string;
   source?: DoubtSource;
   sourceRefId?: string;
   explanationMode?: ExplanationMode;

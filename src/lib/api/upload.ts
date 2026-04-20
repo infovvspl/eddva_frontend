@@ -5,7 +5,15 @@ import axios from "axios";
 // Types
 // ---------------------------------------------------------------------------
 
-export type UploadType = "profile" | "thumbnail" | "material" | "source" | "lecture-video" | "lecture-thumbnail" | "lecture-attachment";
+export type UploadType =
+  | "profile"
+  | "thumbnail"
+  | "material"
+  | "source"
+  | "lecture-video"
+  | "lecture-thumbnail"
+  | "lecture-attachment"
+  | "doubt-response-image";
 
 export interface UploadUrlRequest {
   type: UploadType;
@@ -52,20 +60,32 @@ export const FILE_LIMITS = {
   "lecture-video":     { maxMb: 10240, accept: ["video/mp4", "video/webm", "video/quicktime"] },
   "lecture-thumbnail": { maxMb: 10,   accept: ["image/jpeg", "image/png", "image/webp"] },
   "lecture-attachment":{ maxMb: 10,   accept: ["application/pdf", "image/jpeg", "image/png", "image/webp"] },
+  "doubt-response-image": { maxMb: 10, accept: ["image/jpeg", "image/png", "image/webp", "image/gif"] },
 } satisfies Record<UploadType, { maxMb: number; accept: string[] }>;
 
 function humanLimitLabel(type: UploadType): string {
   return type === "lecture-video" ? "10GB" : "10MB";
 }
 
-export function validateFile(file: File, type: UploadType): string | null {
+/** When the browser leaves `file.type` empty, infer a common image MIME from the extension. */
+export function guessImageMimeFromName(fileName: string): string {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "gif") return "image/gif";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  return "image/jpeg";
+}
+
+export function validateFile(file: File, type: UploadType, effectiveContentType?: string): string | null {
   const limit = FILE_LIMITS[type];
   const maxBytes = limit.maxMb * 1024 * 1024;
+  const ct = (effectiveContentType ?? file.type).trim();
 
   if (file.size > maxBytes) {
     return `File must be less than ${humanLimitLabel(type)}`;
   }
-  if (limit.accept.length > 0 && !limit.accept.includes(file.type)) {
+  if (limit.accept.length > 0 && !limit.accept.includes(ct)) {
     const exts = limit.accept.map(t => t.split("/")[1]).join(", ");
     return `Invalid file type. Allowed: ${exts}.`;
   }
@@ -73,7 +93,7 @@ export function validateFile(file: File, type: UploadType): string | null {
 }
 
 function validateUploadPayload(payload: UploadUrlRequest): string | null {
-  if (payload.type === "profile") return null;
+  if (payload.type === "profile" || payload.type === "doubt-response-image") return null;
 
   const lectureTypes: UploadType[] = ["lecture-video", "lecture-thumbnail", "lecture-attachment"];
   const courseTypes: UploadType[] = ["thumbnail", "material", "source", ...lectureTypes];
@@ -178,16 +198,22 @@ export async function uploadToS3(
   file: File,
   onProgress?: (e: UploadProgressEvent) => void,
 ): Promise<string> {
-  const error = validateFile(file, payload.type);
-  if (error) throw new Error(error);
-  const payloadError = validateUploadPayload(payload);
-  if (payloadError) throw new Error(payloadError);
-  if (payload.contentType !== file.type) {
-    throw new Error(`Upload content type mismatch. Expected ${payload.contentType}, received ${file.type}.`);
+  let contentType = (file.type && file.type.trim()) ? file.type : payload.contentType;
+  if (!contentType && payload.type === "doubt-response-image") {
+    contentType = guessImageMimeFromName(file.name);
   }
+  if (!contentType) {
+    throw new Error("Could not determine file content type. Rename the file with a standard extension or pick another image.");
+  }
+  const merged: UploadUrlRequest = { ...payload, contentType };
 
-  const { uploadUrl, fileUrl } = await requestUploadUrl(payload);
-  await putFileToS3(uploadUrl, file, payload.contentType, onProgress);
+  const error = validateFile(file, merged.type, contentType);
+  if (error) throw new Error(error);
+  const payloadError = validateUploadPayload(merged);
+  if (payloadError) throw new Error(payloadError);
+
+  const { uploadUrl, fileUrl } = await requestUploadUrl(merged);
+  await putFileToS3(uploadUrl, file, merged.contentType, onProgress);
   return fileUrl;
 }
 

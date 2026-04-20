@@ -193,9 +193,6 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-black text-slate-900">Doubts needing attention</h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Pulled from your institute tenant — same data teachers see in the queue.
-              </p>
             </div>
             <button
               type="button"

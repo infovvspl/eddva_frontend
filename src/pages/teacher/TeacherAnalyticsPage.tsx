@@ -1,12 +1,9 @@
 ﻿import { useState } from "react";
+import { isAxiosError } from "axios";
 import {
-  Users, BookOpen, MessageCircle, TrendingUp, Download,
-  AlertTriangle, CheckCircle, Clock, BarChart3, Zap, Flame,
+  Users, BookOpen, MessageCircle, Download,
+  AlertTriangle, CheckCircle, Clock, BarChart3, Zap,
 } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
-} from "recharts";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,24 +12,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import {
   useTeacherOverview,
-  useClassPerformance,
   useTopicCoverage,
   useTeacherDoubtAnalytics,
-  useBatchComparison,
   useExportTeacherAnalytics,
-  useEngagementHeatmap,
   useSmartInsights,
-  useMyLectures,
 } from "@/hooks/use-teacher";
-import { ClassPerformanceQuery } from "@/lib/api/teacher";
+
+function apiErrorMessage(err: unknown): string {
+  if (isAxiosError(err)) {
+    const body = err.response?.data as { message?: string } | undefined;
+    return body?.message || err.message || "Request failed";
+  }
+  return err instanceof Error ? err.message : "Something went wrong";
+}
+
+function AnalyticsFetchAlert({
+  error,
+  onRetry,
+}: {
+  error: unknown;
+  onRetry: () => void;
+}) {
+  return (
+    <Alert variant="destructive" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="min-w-0">
+        <AlertTitle>Could not load this section</AlertTitle>
+        <AlertDescription className="break-words">{apiErrorMessage(error)}</AlertDescription>
+      </div>
+      <Button type="button" variant="outline" size="sm" onClick={onRetry} className="shrink-0 border-destructive/40">
+        Retry
+      </Button>
+    </Alert>
+  );
+}
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
@@ -81,8 +98,9 @@ function StatCard({
 // ─── Smart Insights Panel ─────────────────────────────────────────────────────
 
 function SmartInsightsPanel({ batchId }: { batchId?: string }) {
-  const { data: insights, isLoading } = useSmartInsights(batchId ? { batchId } : undefined);
+  const { data: insights, isLoading, isError, error, refetch } = useSmartInsights(batchId ? { batchId } : undefined);
   if (isLoading) return <Skeleton className="h-20 w-full" />;
+  if (isError) return <AnalyticsFetchAlert error={error} onRetry={() => refetch()} />;
   if (!insights?.length) return null;
 
   return (
@@ -123,10 +141,11 @@ function SmartInsightsPanel({ batchId }: { batchId?: string }) {
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
 function OverviewTab({ batchId }: { batchId?: string }) {
-  const { data, isLoading } = useTeacherOverview(batchId ? { batchId } : undefined);
+  const { data, isLoading, isError, error, refetch } = useTeacherOverview(batchId ? { batchId } : undefined);
 
   return (
     <div className="space-y-6">
+      {isError && <AnalyticsFetchAlert error={error} onRetry={() => refetch()} />}
       <SmartInsightsPanel batchId={batchId} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -218,205 +237,10 @@ function OverviewTab({ batchId }: { batchId?: string }) {
   );
 }
 
-// ─── Class Performance Tab ────────────────────────────────────────────────────
-
-function ClassPerformanceTab({ batchId }: { batchId?: string }) {
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("avgScore");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(1);
-  const exportM = useExportTeacherAnalytics();
-
-  const query: ClassPerformanceQuery = { batchId, sortBy, order, page, limit: 20 };
-  const { data, isLoading } = useClassPerformance(query);
-  const students = data?.data ?? [];
-  const meta = data?.meta;
-
-  const filtered = search
-    ? students.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
-    : students;
-
-  // Bar chart data — abbreviated names
-  const chartData = students.map((s) => ({
-    name: s.name.split(" ")[0].slice(0, 8),
-    score: s.avgScore,
-    fill:
-      s.avgScore >= 70 ? "#22c55e" : s.avgScore >= 50 ? "#f97316" : "#ef4444",
-  }));
-
-  return (
-    <div className="space-y-4">
-      {/* Score bar chart */}
-      {!isLoading && students.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Student Scores</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11 }}
-                  angle={-40}
-                  textAnchor="end"
-                  interval={0}
-                />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
-                <Tooltip formatter={(v: number) => [`${v}%`, "Avg Score"]} />
-                <Bar dataKey="score" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, idx) => (
-                    <Cell key={idx} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 justify-center">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block" /> ≥70%</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-500 inline-block" /> 50–69%</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> &lt;50%</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Search student..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
-        />
-        <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={(v) => { setSortBy(v); setPage(1); }}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="avgScore">Avg Score</SelectItem>
-              <SelectItem value="accuracy">Accuracy</SelectItem>
-              <SelectItem value="avgWatchPercentage">Watch %</SelectItem>
-              <SelectItem value="doubtCount">Doubts</SelectItem>
-              <SelectItem value="quizzesTaken">Quizzes</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" onClick={() => setOrder(order === "desc" ? "asc" : "desc")}>
-            {order === "desc" ? "↓" : "↑"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportM.mutate({ type: "class-performance", batchId })}
-            disabled={exportM.isPending}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            CSV
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">Rank</TableHead>
-              <TableHead>Student</TableHead>
-              <TableHead className="text-right">Quizzes</TableHead>
-              <TableHead className="text-right">Avg Score</TableHead>
-              <TableHead className="text-right">Accuracy</TableHead>
-              <TableHead className="text-right">Watch %</TableHead>
-              <TableHead className="text-right">Doubts</TableHead>
-              <TableHead className="text-right hidden md:table-cell">Errors</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading
-              ? Array.from({ length: 8 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              : filtered.map((student) => (
-                  <TableRow key={student.studentId}>
-                    <TableCell>
-                      <span className={`text-sm font-bold ${student.rank === 1 ? "text-yellow-500" : student.rank === 2 ? "text-gray-400" : student.rank === 3 ? "text-amber-600" : "text-muted-foreground"}`}>
-                        #{student.rank}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          {student.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium text-sm">{student.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right text-sm">{student.quizzesTaken}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 bg-muted rounded-full hidden sm:block">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(student.avgScore, 100)}%` }} />
-                        </div>
-                        <span className="text-sm font-medium">{student.avgScore}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={`text-sm font-medium ${student.accuracy >= 70 ? "text-green-600" : student.accuracy >= 50 ? "text-orange-500" : "text-red-500"}`}>
-                        {student.accuracy}%
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right text-sm">{student.avgWatchPercentage}%</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <span className="text-sm">{student.doubtCount}</span>
-                        {student.openDoubts > 0 && (
-                          <Badge variant="destructive" className="text-xs px-1">{student.openDoubts}</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right hidden md:table-cell">
-                      {student.errorBreakdown && (
-                        <div className="flex items-center justify-end gap-1">
-                          {student.errorBreakdown.conceptual > 0 && (
-                            <span title={`Conceptual: ${student.errorBreakdown.conceptual}`} className="w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] flex items-center justify-center font-bold">C</span>
-                          )}
-                          {student.errorBreakdown.silly > 0 && (
-                            <span title={`Silly: ${student.errorBreakdown.silly}`} className="w-4 h-4 rounded-full bg-orange-500 text-white text-[9px] flex items-center justify-center font-bold">S</span>
-                          )}
-                          {student.errorBreakdown.guess > 0 && (
-                            <span title={`Guessed: ${student.errorBreakdown.guess}`} className="w-4 h-4 rounded-full bg-gray-400 text-white text-[9px] flex items-center justify-center font-bold">G</span>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {((meta.page - 1) * meta.limit) + 1}–{Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
-            <Button variant="outline" size="sm" disabled={page >= meta.totalPages} onClick={() => setPage(page + 1)}>Next</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Topic Coverage Tab ───────────────────────────────────────────────────────
 
 function TopicCoverageTab({ batchId }: { batchId?: string }) {
-  const { data: topics, isLoading } = useTopicCoverage(batchId ? { batchId } : undefined);
+  const { data: topics, isLoading, isError, error, refetch } = useTopicCoverage(batchId ? { batchId } : undefined);
   const exportM = useExportTeacherAnalytics();
 
   const severityColor: Record<string, string> = {
@@ -434,6 +258,7 @@ function TopicCoverageTab({ batchId }: { batchId?: string }) {
 
   return (
     <div className="space-y-6">
+      {isError && <AnalyticsFetchAlert error={error} onRetry={() => refetch()} />}
       <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={() => exportM.mutate({ type: "topic-coverage", batchId })} disabled={exportM.isPending}>
           <Download className="h-4 w-4 mr-1" />
@@ -530,148 +355,10 @@ function TopicCoverageTab({ batchId }: { batchId?: string }) {
   );
 }
 
-// ─── Engagement Heatmap Tab ───────────────────────────────────────────────────
-
-function formatSeconds(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function interpolateColor(ratio: number): string {
-  // 0 = green (#22c55e), 1 = red (#ef4444)
-  const r = Math.round(0x22 + ratio * (0xef - 0x22));
-  const g = Math.round(0xc5 + ratio * (0x44 - 0xc5));
-  const b = Math.round(0x5e + ratio * (0x44 - 0x5e));
-  return `rgb(${r},${g},${b})`;
-}
-
-function EngagementHeatmapTab() {
-  const [selectedLectureId, setSelectedLectureId] = useState<string>("");
-  const { data: lecturesData } = useMyLectures();
-  const lectures = lecturesData ?? [];
-
-  const { data: heatmap, isLoading: heatmapLoading } = useEngagementHeatmap(selectedLectureId);
-
-  const maxConfusion = heatmap?.segments
-    ? Math.max(...heatmap.segments.map((s) => s.confusionCount), 1)
-    : 1;
-
-  return (
-    <div className="space-y-6">
-      {/* Lecture selector */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <label className="text-sm font-medium whitespace-nowrap">Select Lecture:</label>
-        <Select value={selectedLectureId} onValueChange={setSelectedLectureId}>
-          <SelectTrigger className="w-full sm:w-80">
-            <SelectValue placeholder="Choose a lecture to view heatmap" />
-          </SelectTrigger>
-          <SelectContent>
-            {lectures.map((l) => (
-              <SelectItem key={l.id} value={l.id}>
-                {l.title}
-                {l.batchId && <span className="text-xs text-muted-foreground ml-1">({l.batchId})</span>}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {!selectedLectureId ? (
-        <Card className="p-12 text-center">
-          <Flame className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground text-sm">Select a lecture to view engagement data</p>
-        </Card>
-      ) : heatmapLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      ) : !heatmap?.lecture ? (
-        <Card className="p-8 text-center text-muted-foreground">No data available for this lecture.</Card>
-      ) : (
-        <>
-          {/* Lecture meta */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={BookOpen} label="Duration" value={formatSeconds(heatmap.lecture.durationSeconds)} color="blue" />
-            <StatCard icon={Users} label="Total Viewers" value={heatmap.lecture.totalViewers} color="green" />
-            <StatCard icon={TrendingUp} label="Avg Watch" value={`${Math.round(heatmap.lecture.avgWatchPercentage)}%`} color="purple" />
-            <StatCard icon={Flame} label="Confusion Peaks" value={heatmap.confusionPeaks.length} color={heatmap.confusionPeaks.length > 0 ? "red" : "green"} />
-          </div>
-
-          {/* Heatmap grid */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Confusion Heatmap</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Green = low confusion, Red = high confusion. Hover over a cell to see the time range.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex rounded-lg overflow-hidden h-14 w-full">
-                {heatmap.segments.map((seg) => {
-                  const ratio = seg.confusionCount / maxConfusion;
-                  return (
-                    <div
-                      key={seg.segmentIndex}
-                      title={`${formatSeconds(seg.startSeconds)}–${formatSeconds(seg.endSeconds)}\nConfusion: ${seg.confusionCount}\nRewatched: ${seg.rewindCount}`}
-                      style={{
-                        flex: 1,
-                        backgroundColor: interpolateColor(ratio),
-                        opacity: seg.confusionCount === 0 ? 0.35 : 1,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>0:00</span>
-                <span>{formatSeconds(heatmap.lecture.durationSeconds)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Confusion Peaks */}
-          {heatmap.confusionPeaks.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-orange-500" />
-                  Confusion Peaks
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200">
-                  Plan to re-explain these sections in next class
-                </div>
-                {heatmap.confusionPeaks.map((peak, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
-                    <div>
-                      <span className="text-sm font-medium">
-                        {formatSeconds(peak.startSeconds)} – {formatSeconds(peak.endSeconds)}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">Segment {peak.segmentIndex + 1}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="text-red-600 font-medium">{peak.confusionCount} confusion events</span>
-                      <span>{peak.rewindCount} rewinds</span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
 // ─── Doubt Analytics Tab ──────────────────────────────────────────────────────
 
 function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
-  const { data, isLoading } = useTeacherDoubtAnalytics(batchId ? { batchId } : undefined);
+  const { data, isLoading, isError, error, refetch } = useTeacherDoubtAnalytics(batchId ? { batchId } : undefined);
   const exportM = useExportTeacherAnalytics();
 
   const statusColors: Record<string, string> = {
@@ -689,6 +376,7 @@ function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
 
   return (
     <div className="space-y-6">
+      {isError && <AnalyticsFetchAlert error={error} onRetry={() => refetch()} />}
       <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={() => exportM.mutate({ type: "doubt-analytics", batchId })} disabled={exportM.isPending}>
           <Download className="h-4 w-4 mr-1" />
@@ -697,21 +385,26 @@ function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
       </div>
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
-      ) : (
+      ) : isError ? null : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <StatCard icon={MessageCircle} label="Total Doubts" value={data?.summary.total ?? 0} color="blue" />
             <StatCard icon={AlertTriangle} label="Open / Escalated" value={data?.summary.openEscalated ?? 0} color="red" />
             <StatCard icon={Zap} label="AI Resolved" value={data?.summary.aiResolved ?? 0} sub={`${data?.summary.aiResolutionRate ?? 0}% rate`} color="purple" />
             <StatCard icon={CheckCircle} label="Teacher Resolved" value={data?.summary.teacherResolved ?? 0} color="green" />
-            <StatCard icon={Clock} label="Avg Resolution" value={data ? `${data.summary.avgResolutionMinutes}m` : "—"} color="orange" />
+            <StatCard
+              icon={Clock}
+              label="Avg Resolution"
+              value={data ? `${data.summary.avgResolutionMinutes ?? 0}m` : "—"}
+              color="orange"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3"><CardTitle className="text-base">By Status</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                {data?.byStatus.map((s) => (
+                {(data?.byStatus ?? []).map((s) => (
                   <div key={s.status}>
                     <div className="flex justify-between text-sm mb-1">
                       <span>{statusLabels[s.status] || s.status}</span>
@@ -720,7 +413,9 @@ function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
                     <div className="h-2 bg-muted rounded-full">
                       <div
                         className={`h-full rounded-full transition-all ${statusColors[s.status] || "bg-gray-400"}`}
-                        style={{ width: `${data.summary.total ? (s.count / data.summary.total) * 100 : 0}%` }}
+                        style={{
+                          width: `${(data?.summary.total ?? 0) ? (s.count / (data?.summary.total ?? 1)) * 100 : 0}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -777,92 +472,24 @@ function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
   );
 }
 
-// ─── Batch Comparison Tab ─────────────────────────────────────────────────────
-
-function BatchComparisonTab() {
-  const { data: batches, isLoading } = useBatchComparison();
-
-  if (isLoading) return <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>;
-  if (!batches?.length) return <Card className="p-8 text-center text-muted-foreground">No batch data available.</Card>;
-
-  const maxScore = Math.max(...batches.map((b) => b.avgScore), 1);
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base">Avg Score by Batch</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          {batches.map((batch) => (
-            <div key={batch.batchId}>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium">{batch.batchName}</span>
-                <span>{batch.avgScore}%</span>
-              </div>
-              <div className="h-3 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(batch.avgScore / maxScore) * 100}%` }} />
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Batch</TableHead>
-              <TableHead className="text-right">Students</TableHead>
-              <TableHead className="text-right">Avg Score</TableHead>
-              <TableHead className="text-right">Watch %</TableHead>
-              <TableHead className="text-right">Quizzes</TableHead>
-              <TableHead className="text-right">Doubts</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {batches.map((batch) => (
-              <TableRow key={batch.batchId}>
-                <TableCell>
-                  <div>
-                    <p className="font-medium text-sm">{batch.batchName}</p>
-                    <p className="text-xs text-muted-foreground">{batch.examTarget}</p>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-sm">{batch.studentCount}</TableCell>
-                <TableCell className="text-right text-sm font-medium">{batch.avgScore}%</TableCell>
-                <TableCell className="text-right text-sm">{batch.avgWatchPercentage}%</TableCell>
-                <TableCell className="text-right text-sm">{batch.quizAttempts}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <span className="text-sm">{batch.doubtCount}</span>
-                    {batch.openDoubts > 0 && (
-                      <Badge variant="destructive" className="text-xs px-1">{batch.openDoubts}</Badge>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-    </div>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function TeacherAnalyticsPage() {
   const [batchFilter, setBatchFilter] = useState<string>("all");
-  const { data: overview } = useTeacherOverview();
+  const { data: overview, isError: overviewErr, error: overviewError, refetch: refetchOverview } = useTeacherOverview();
 
   const activeBatchId = batchFilter === "all" ? undefined : batchFilter;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      {overviewErr && (
+        <AnalyticsFetchAlert error={overviewError} onRetry={() => refetchOverview()} />
+      )}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Analytics</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            Track student progress, quiz performance, and engagement across your classes.
+            Track student progress, quiz performance, and doubts across your classes.
           </p>
         </div>
         <Select value={batchFilter} onValueChange={setBatchFilter}>
@@ -881,20 +508,14 @@ export default function TeacherAnalyticsPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="performance">Class Performance</TabsTrigger>
           <TabsTrigger value="topics">Topic Coverage</TabsTrigger>
-          <TabsTrigger value="heatmap">Engagement Heatmap</TabsTrigger>
           <TabsTrigger value="doubts">Doubt Analytics</TabsTrigger>
-          <TabsTrigger value="batches">Batch Comparison</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
           <TabsContent value="overview"><OverviewTab batchId={activeBatchId} /></TabsContent>
-          <TabsContent value="performance"><ClassPerformanceTab batchId={activeBatchId} /></TabsContent>
           <TabsContent value="topics"><TopicCoverageTab batchId={activeBatchId} /></TabsContent>
-          <TabsContent value="heatmap"><EngagementHeatmapTab /></TabsContent>
           <TabsContent value="doubts"><DoubtAnalyticsTab batchId={activeBatchId} /></TabsContent>
-          <TabsContent value="batches"><BatchComparisonTab /></TabsContent>
         </div>
       </Tabs>
     </div>

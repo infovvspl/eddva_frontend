@@ -3,9 +3,23 @@
  *
  * In production:  iit.edva.in  → subdomain = "iit"
  * In development: iit.localhost → subdomain = "iit"
+ * Fallback:       localhost     → reads stored subdomain from localStorage
  */
 
 const MAIN_DOMAINS = ["localhost", "edva.in", "www"];
+const SUBDOMAIN_STORAGE_KEY = "eddva_tenant_subdomain";
+
+/** Persist the tenant subdomain after login so bare-localhost dev works correctly */
+export function storeSubdomain(subdomain: string | null | undefined): void {
+  if (subdomain) {
+    localStorage.setItem(SUBDOMAIN_STORAGE_KEY, subdomain);
+  }
+}
+
+/** Clear stored subdomain on logout */
+export function clearStoredSubdomain(): void {
+  localStorage.removeItem(SUBDOMAIN_STORAGE_KEY);
+}
 
 /** Extract subdomain from current hostname, or null if on the main domain */
 export function getSubdomain(): string | null {
@@ -15,9 +29,6 @@ export function getSubdomain(): string | null {
   if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return null;
 
   const parts = hostname.split(".");
-
-  // localhost → no subdomain
-  if (parts.length === 1) return null;
 
   // iit.localhost → subdomain = "iit"
   if (parts.length === 2 && parts[1] === "localhost") {
@@ -29,6 +40,11 @@ export function getSubdomain(): string | null {
     const sub = parts[0];
     if (MAIN_DOMAINS.includes(sub)) return null;
     return sub;
+  }
+
+  // bare localhost — fall back to stored subdomain (set after login)
+  if (parts.length === 1 && parts[0] === "localhost") {
+    return localStorage.getItem(SUBDOMAIN_STORAGE_KEY) ?? null;
   }
 
   return null;

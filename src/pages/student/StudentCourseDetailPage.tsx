@@ -8,8 +8,9 @@ import {
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
   Youtube, File, ClipboardList, FlaskConical,
 } from "lucide-react";
-import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, studentKeys } from "@/hooks/use-student";
-import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture, MockTestListItem } from "@/lib/api/student";
+import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
+import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture, MockTestListItem, TestSession } from "@/lib/api/student";
+import { isSessionCompleted } from "@/lib/api/student";
 import { apiClient, extractData } from "@/lib/api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -1365,6 +1366,233 @@ function LecturesTabContent({
   );
 }
 
+// ─── Mock Test Tab ────────────────────────────────────────────────────────────
+
+function MockTestTabContent({
+  mockTests,
+  mockTestsLoading,
+  getScopePath,
+  SCOPE_BADGE,
+  TYPE_BADGE,
+  grouped,
+  hasFilters,
+  navigate,
+  sessionsByTestId,
+}: {
+  mockTests: MockTestListItem[];
+  mockTestsLoading: boolean;
+  getScopePath: (mt: MockTestListItem) => string;
+  SCOPE_BADGE: Record<string, { label: string; cls: string }>;
+  TYPE_BADGE: Record<string, string>;
+  grouped: Record<string, MockTestListItem[]>;
+  hasFilters: boolean;
+  navigate: (path: string) => void;
+  sessionsByTestId: Map<string, TestSession[]>;
+}) {
+  const [activeScope, setActiveScope] = useState<"all" | "subject" | "chapter" | "topic">("all");
+
+  if (mockTestsLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  if (mockTests.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <FlaskConical className="w-10 h-10 mb-3 opacity-30" />
+        <p className="font-semibold text-slate-500">No mock tests available yet</p>
+        <p className="text-xs mt-1">Tests will appear here once your teacher publishes them.</p>
+      </div>
+    );
+  }
+
+  const FILTER_TABS = [
+    { key: "all",     label: "All Tests" },
+    { key: "subject", label: "Subject" },
+    { key: "chapter", label: "Chapter" },
+    { key: "topic",   label: "Topic" },
+  ] as const;
+
+  const visibleTests = grouped[activeScope] ?? mockTests;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-100">
+        <FlaskConical className="w-4 h-4 text-indigo-500 shrink-0" />
+        <span className="text-xs font-semibold text-indigo-700">
+          {mockTests.length} test{mockTests.length !== 1 ? "s" : ""} available
+        </span>
+        <span className="text-xs text-indigo-400 ml-auto">
+          {mockTests.filter(mt => mt.questionIds?.length).reduce((s, mt) => s + (mt.questionIds?.length ?? 0), 0)} total questions
+        </span>
+      </div>
+
+      {/* Scope filter tabs (only shown when there are scoped tests) */}
+      {hasFilters && (
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+          {FILTER_TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveScope(tab.key)}
+              className={cn(
+                "shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                activeScope === tab.key
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              )}
+            >
+              {tab.label}
+              {tab.key !== "all" && grouped[tab.key]?.length > 0 && (
+                <span className={cn(
+                  "ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+                  activeScope === tab.key ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
+                )}>
+                  {grouped[tab.key].length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Test list */}
+      {visibleTests.length === 0 ? (
+        <p className="text-center text-sm text-slate-400 py-8">No {activeScope} tests yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {visibleTests.map((mt, i) => {
+            const scopePath = getScopePath(mt);
+            const scopeKey = mt.scope ?? (mt.type?.includes("subject") ? "subject" : mt.type?.includes("chapter") ? "chapter" : mt.type?.includes("topic") ? "topic" : "batch");
+            const badge = SCOPE_BADGE[scopeKey] ?? SCOPE_BADGE.batch;
+            const typeCls = TYPE_BADGE[mt.type] ?? "bg-slate-50 text-slate-500";
+            const questionCount = mt.questionIds?.length ?? 0;
+
+            const testSessions = sessionsByTestId.get(mt.id) ?? [];
+            const completed = testSessions.filter(isSessionCompleted);
+            const bestSession = completed.length > 0
+              ? completed.reduce((best, s) => (s.totalScore ?? 0) > (best.totalScore ?? 0) ? s : best)
+              : null;
+            const bestPct = bestSession && mt.totalMarks
+              ? Math.round(((bestSession.totalScore ?? 0) / mt.totalMarks) * 100)
+              : null;
+
+            return (
+              <div
+                key={mt.id}
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all group overflow-hidden"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <div className="flex items-start gap-4 p-5">
+                  {/* Icon */}
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors mt-0.5",
+                    bestSession ? "bg-emerald-50 group-hover:bg-emerald-100" : "bg-indigo-50 group-hover:bg-indigo-100",
+                  )}>
+                    <FlaskConical className={cn("w-5 h-5", bestSession ? "text-emerald-600" : "text-indigo-600")} />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-bold text-slate-900 text-sm leading-snug">{mt.title}</p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {bestPct !== null && (
+                          <span className={cn(
+                            "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                            bestPct >= 70 ? "bg-emerald-100 text-emerald-700" : bestPct >= 40 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600",
+                          )}>
+                            Best: {bestPct}%
+                          </span>
+                        )}
+                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", badge.cls)}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Scope breadcrumb */}
+                    {scopePath && (
+                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">{scopePath}</p>
+                    )}
+
+                    {/* Meta row */}
+                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2">
+                      <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                        <Clock className="w-3 h-3" /> {mt.durationMinutes} min
+                      </span>
+                      <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                        <Star className="w-3 h-3" /> {mt.totalMarks} marks
+                      </span>
+                      {questionCount > 0 && (
+                        <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                          <ClipboardList className="w-3 h-3" /> {questionCount} Qs
+                        </span>
+                      )}
+                      {mt.passingMarks && (
+                        <span className="text-[11px] text-emerald-600 font-medium">Pass: {mt.passingMarks}</span>
+                      )}
+                      {mt.type && (
+                        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wide", typeCls)}>
+                          {mt.type.replace(/_/g, " ")}
+                        </span>
+                      )}
+                      {completed.length > 0 && (
+                        <span className="text-[11px] text-slate-400">{completed.length} attempt{completed.length > 1 ? "s" : ""}</span>
+                      )}
+                    </div>
+
+                    {/* Score bar for attempted tests */}
+                    {bestPct !== null && (
+                      <div className="mt-2.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all", bestPct >= 70 ? "bg-emerald-500" : bestPct >= 40 ? "bg-amber-400" : "bg-red-400")}
+                          style={{ width: `${Math.min(bestPct, 100)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action footer */}
+                <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-t border-slate-100">
+                  {mt.scheduledAt ? (
+                    <p className="text-[11px] text-slate-400">
+                      Scheduled: {new Date(mt.scheduledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  ) : bestSession ? (
+                    <p className="text-[11px] text-slate-500">
+                      Score: <span className="font-semibold text-slate-700">{(bestSession.totalScore ?? 0).toFixed(0)}/{mt.totalMarks}</span>
+                      {" · "}✓{bestSession.correctCount ?? 0} ✗{bestSession.wrongCount ?? 0}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-emerald-600 font-semibold">● Available now</p>
+                  )}
+                  <button
+                    onClick={() => navigate(`/student/mock-tests/${mt.id}`)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-1.5 text-xs font-bold rounded-xl active:scale-95 transition-all shadow-sm",
+                      bestSession
+                        ? "bg-slate-700 text-white hover:bg-slate-900"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700",
+                    )}
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    {bestSession ? "Retake / Review" : "Start Test"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material" | "mock_test";
@@ -1404,6 +1632,16 @@ export default function StudentCourseDetailPage() {
   const { data: lectures = [], isLoading: lecturesLoading } = useAllBatchLectures(batchId);
   const { data: mockTestsRaw, isLoading: mockTestsLoading } = useMockTests({ batchId });
   const mockTests: MockTestListItem[] = Array.isArray(mockTestsRaw) ? mockTestsRaw : (mockTestsRaw as any)?.items ?? [];
+  const { data: allSessions = [] } = useStudentSessions();
+  const sessionsByTestId = useMemo(() => {
+    const map = new Map<string, TestSession[]>();
+    for (const s of allSessions) {
+      const arr = map.get(s.mockTestId) ?? [];
+      arr.push(s);
+      map.set(s.mockTestId, arr);
+    }
+    return map;
+  }, [allSessions]);
 
   // Derive subjects safely — empty array when data not yet loaded
   const subjects = data?.subjects ?? [];
@@ -1916,42 +2154,71 @@ export default function StudentCourseDetailPage() {
           {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" />}
 
           {/* ── MOCK TESTS TAB ── */}
-          {activeTab === "mock_test" && (
-            <div className="space-y-3">
-              {mockTestsLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                </div>
-              ) : mockTests.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                  <FlaskConical className="w-10 h-10 mb-3 opacity-30" />
-                  <p className="font-semibold">No mock tests available yet</p>
-                </div>
-              ) : mockTests.map(mt => (
-                <div key={mt.id} className="flex items-center justify-between p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all group">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 group-hover:bg-rose-100 transition-colors">
-                      <FlaskConical className="w-5 h-5 text-rose-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-900 text-sm truncate">{mt.title}</p>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-[11px] text-slate-400 font-medium">{mt.durationMinutes} min</span>
-                        <span className="text-[11px] text-slate-400 font-medium">{mt.totalMarks} marks</span>
-                        {mt.type && <span className="text-[11px] font-semibold text-indigo-500 uppercase tracking-wide">{mt.type}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => navigate(`/student/mock-tests/${mt.id}`)}
-                    className="shrink-0 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" /> Start
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {activeTab === "mock_test" && (() => {
+            // Build lookup maps from curriculum data already loaded
+            const subjectMap = new Map(subjects.map(s => [s.id, s.name]));
+            const chapterMap = new Map(subjects.flatMap(s => s.chapters.map(c => [c.id, { name: c.name, subjectName: s.name }])));
+            const topicMap = new Map(subjects.flatMap(s => s.chapters.flatMap(c => c.topics.map(t => ({ id: t.id, name: t.name, chapterName: c.name, subjectName: s.name })))).map(t => [t.id, t]));
+
+            const SCOPE_BADGE: Record<string, { label: string; cls: string }> = {
+              subject:  { label: "Subject Test",  cls: "bg-sky-50 text-sky-600 border-sky-200" },
+              chapter:  { label: "Chapter Test",  cls: "bg-emerald-50 text-emerald-600 border-emerald-200" },
+              topic:    { label: "Topic Test",    cls: "bg-violet-50 text-violet-600 border-violet-200" },
+              batch:    { label: "Full Mock",     cls: "bg-rose-50 text-rose-600 border-rose-200" },
+            };
+            const TYPE_BADGE: Record<string, string> = {
+              subject_test: "bg-sky-50 text-sky-600",
+              chapter_test: "bg-emerald-50 text-emerald-600",
+              topic_test: "bg-violet-50 text-violet-600",
+              full_mock: "bg-rose-50 text-rose-600",
+              diagnostic: "bg-orange-50 text-orange-600",
+              speed_test: "bg-amber-50 text-amber-600",
+              revision: "bg-teal-50 text-teal-600",
+              pyq: "bg-yellow-50 text-yellow-700",
+            };
+
+            const getScopePath = (mt: MockTestListItem): string => {
+              if (mt.topicId) {
+                const t = topicMap.get(mt.topicId);
+                if (t) return `${t.subjectName} › ${t.chapterName} › ${t.name}`;
+              }
+              if (mt.chapterId) {
+                const c = chapterMap.get(mt.chapterId);
+                if (c) return `${c.subjectName} › ${c.name}`;
+              }
+              if (mt.subjectId) {
+                const name = subjectMap.get(mt.subjectId);
+                if (name) return name;
+              }
+              return "";
+            };
+
+            const scopeFilter = ["all", "subject", "chapter", "topic"] as const;
+            type ScopeFilter = typeof scopeFilter[number];
+
+            // Group tests by scope for filter tabs
+            const grouped = {
+              all: mockTests,
+              subject: mockTests.filter(mt => mt.scope === "subject" || mt.type?.includes("subject")),
+              chapter: mockTests.filter(mt => mt.scope === "chapter" || mt.type?.includes("chapter")),
+              topic:   mockTests.filter(mt => mt.scope === "topic"   || mt.type?.includes("topic")),
+            };
+            const hasFilters = mockTests.some(mt => mt.scope && mt.scope !== "batch");
+
+            return (
+              <MockTestTabContent
+                mockTests={mockTests}
+                mockTestsLoading={mockTestsLoading}
+                getScopePath={getScopePath}
+                SCOPE_BADGE={SCOPE_BADGE}
+                TYPE_BADGE={TYPE_BADGE}
+                grouped={grouped}
+                hasFilters={hasFilters}
+                navigate={navigate}
+                sessionsByTestId={sessionsByTestId}
+              />
+            );
+          })()}
         </div>
       </div>
     </div>
