@@ -19,12 +19,12 @@ export const LandingNavbar = () => {
     { name: "Career", href: "/career" }
   ];
 
-  const studyMaterialLinks = [
-    { name: "PYQs",        href: "/study-material/pyqs",   icon: <BookOpen className="h-4 w-4" /> },
-    { name: "Books",       href: "/study-material/books",  icon: <Library className="h-4 w-4" /> },
-    { name: "Quiz",        href: "/study-material/quiz",   icon: <GraduationCap className="h-4 w-4" /> },
-    { name: "Free Videos", href: "/study-material/videos", icon: <Play className="h-4 w-4" /> },
-  ];
+  // const studyMaterialLinks = [
+  //   { name: "PYQs",        href: "/study-material/pyqs",   icon: <BookOpen className="h-4 w-4" /> },
+  //   { name: "Books",       href: "/study-material/books",  icon: <Library className="h-4 w-4" /> },
+  //   { name: "Quiz",        href: "/study-material/quiz",   icon: <GraduationCap className="h-4 w-4" /> },
+  //   { name: "Free Videos", href: "/study-material/videos", icon: <Play className="h-4 w-4" /> },
+  // ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100/80 bg-white/80 backdrop-blur-xl">
@@ -48,7 +48,7 @@ export const LandingNavbar = () => {
               Study Material
               <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${studyMenuOpen ? "rotate-180" : ""}`} />
             </button>
-
+{/* 
             <AnimatePresence>
               {studyMenuOpen && (
                 <motion.div
@@ -72,7 +72,7 @@ export const LandingNavbar = () => {
                   ))}
                 </motion.div>
               )}
-            </AnimatePresence>
+            </AnimatePresence> */}
           </div>
         </nav>
 
@@ -107,7 +107,7 @@ export const LandingNavbar = () => {
               </Link>
             ))}
             
-            <div className="py-4">
+            {/* <div className="py-4">
               <p className="mb-3 text-[12px] font-black uppercase tracking-widest text-gray-400">Study Material</p>
               <div className="grid grid-cols-2 gap-2">
                 {studyMaterialLinks.map(link => (
@@ -117,7 +117,7 @@ export const LandingNavbar = () => {
                   </Link>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             <div className="mt-4 flex flex-col gap-3">
               <Link to="/login" onClick={() => setMenuOpen(false)}
