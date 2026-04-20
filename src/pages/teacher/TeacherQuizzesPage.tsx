@@ -633,6 +633,313 @@ function QuestionBankBrowser({
   );
 }
 
+// ─── Shared helpers ────────────────────────────────────────────────────────
+
+/** Accepts any AI response shape and returns a flat array of raw question objects. */
+function extractQuestionList(raw: any): any[] {
+  if (!raw) return [];
+  // Already a plain array
+  if (Array.isArray(raw)) return raw;
+  // { questions: [...] } envelope (Django / Ollama)
+  if (Array.isArray(raw?.questions)) return raw.questions;
+  // { data: [...] } envelope (NestJS global wrapper)
+  if (Array.isArray(raw?.data)) return raw.data;
+  // { data: { questions: [...] } }
+  if (Array.isArray(raw?.data?.questions)) return raw.data.questions;
+  return [];
+}
+
+function mapAiResponseToLocal(
+  data: any[],
+  topicId: string,
+  topicName: string | undefined,
+  type: QuestionType,
+  difficulty: DifficultyLevel,
+): LocalQuestion[] {
+  const FB = ["A", "B", "C", "D", "E"];
+
+  return data.map((q: any) => {
+    // Question text — all known field names
+    const content = (
+      q.content || q.question || q.questionText || q.question_text || q.text || ""
+    ).trim();
+
+    // Correct answer letter — all known field names
+    const correctLetter = (
+      q.correctOption || q.correct_option ||
+      q.correctAnswer || q.correct_answer ||
+      q.answer || ""
+    ).trim().toUpperCase();
+
+    // Options — handle {label,text}, {label,content}, or plain strings
+    const options: LocalOption[] = (q.options || []).map((o: any, i: number) => {
+      const optText = (typeof o === "string" ? o : (o.text || o.content || o.value || "")).trim();
+      const label = (typeof o === "object" && o.label)
+        ? String(o.label).toUpperCase()
+        : (FB[i] ?? String.fromCharCode(65 + i));
+      const isCorrect = ("isCorrect" in (typeof o === "object" ? o : {}))
+        ? !!o.isCorrect
+        : (correctLetter !== "" && label === correctLetter);
+      return { label, content: optText, isCorrect };
+    });
+
+    // If no options, add 4 empty placeholders so the editor renders properly
+    if (options.length === 0) {
+      FB.slice(0, 4).forEach(label => options.push({ label, content: "", isCorrect: false }));
+    }
+
+    return {
+      _localId: makeLocalId(),
+      topicId,
+      topicName: topicName || undefined,
+      content,
+      type,
+      difficulty,
+      marksCorrect: 4,
+      marksWrong: type === "integer" ? 0 : -1,
+      integerAnswer: (q.integerAnswer ?? null) as string | undefined,
+      options,
+    };
+  });
+}
+
+// ─── AI Review Panel — editable question cards shown after AI generation ─────
+
+function AiReviewPanel({
+  initialQuestions,
+  onConfirm,
+  onDiscard,
+}: {
+  initialQuestions: LocalQuestion[];
+  onConfirm: (selected: LocalQuestion[]) => void;
+  onDiscard: () => void;
+}) {
+  const [questions, setQuestions] = useState<LocalQuestion[]>(initialQuestions);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    new Set(initialQuestions.map(q => q._localId)),
+  );
+  const [expandedId, setExpandedId] = useState<string | null>(
+    initialQuestions[0]?._localId ?? null,
+  );
+
+  const updateQ = (localId: string, patch: Partial<LocalQuestion>) =>
+    setQuestions(prev => prev.map(q => q._localId === localId ? { ...q, ...patch } : q));
+
+  const updateOption = (localId: string, idx: number, content: string) =>
+    setQuestions(prev => prev.map(q => {
+      if (q._localId !== localId) return q;
+      const opts = [...q.options];
+      opts[idx] = { ...opts[idx], content };
+      return { ...q, options: opts };
+    }));
+
+  const setCorrect = (localId: string, idx: number) =>
+    setQuestions(prev => prev.map(q => {
+      if (q._localId !== localId) return q;
+      return {
+        ...q,
+        options: q.options.map((o, i) =>
+          q.type === "mcq_single"
+            ? { ...o, isCorrect: i === idx }
+            : { ...o, isCorrect: i === idx ? !o.isCorrect : o.isCorrect }
+        ),
+      };
+    }));
+
+  const toggle = (id: string) =>
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const allSelected = selectedIds.size === questions.length;
+
+  return (
+    <div className="border border-border rounded-xl bg-card overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border bg-muted/40 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold">Review AI Questions</span>
+          <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+            {selectedIds.size} / {questions.length} selected
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSelectedIds(allSelected ? new Set() : new Set(questions.map(q => q._localId)))}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            {allSelected ? "Deselect all" : "Select all"}
+          </button>
+          <button
+            onClick={onDiscard}
+            className="px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-secondary transition-colors"
+          >
+            Discard
+          </button>
+          <button
+            onClick={() => onConfirm(questions.filter(q => selectedIds.has(q._localId)))}
+            disabled={selectedIds.size === 0}
+            className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+          >
+            <Check className="w-3.5 h-3.5" />
+            Add {selectedIds.size} to Test
+          </button>
+        </div>
+      </div>
+
+      {/* Editable question cards */}
+      <div className="max-h-[600px] overflow-y-auto p-3 space-y-3">
+        {questions.map((q, idx) => {
+          const selected = selectedIds.has(q._localId);
+          const expanded = expandedId === q._localId;
+          return (
+            <div
+              key={q._localId}
+              className={cn(
+                "border rounded-xl overflow-hidden transition-all",
+                selected ? "border-border" : "border-dashed border-muted-foreground/30 opacity-50",
+              )}
+            >
+              {/* Card header row */}
+              <div
+                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 select-none"
+                onClick={() => setExpandedId(expanded ? null : q._localId)}
+              >
+                {/* Select checkbox */}
+                <div
+                  onClick={(e) => { e.stopPropagation(); toggle(q._localId); }}
+                  className={cn(
+                    "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                    selected ? "border-primary bg-primary" : "border-muted-foreground/40",
+                  )}
+                >
+                  {selected && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <span className="text-xs font-mono text-muted-foreground shrink-0">
+                  {String(idx + 1).padStart(2, "0")}
+                </span>
+                <p className={cn("flex-1 text-sm truncate", !q.content && "italic text-muted-foreground")}>
+                  {q.content || "Empty question..."}
+                </p>
+                <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium shrink-0", DIFFICULTY_COLOR[q.difficulty])}>
+                  {q.difficulty}
+                </span>
+                <ChevronRight className={cn("w-4 h-4 text-muted-foreground transition-transform shrink-0", expanded && "rotate-90")} />
+              </div>
+
+              {/* Expanded editor — matches ManualQuestionForm layout */}
+              {expanded && (
+                <div className="px-4 pb-5 pt-2 space-y-4 border-t border-border bg-background/60">
+                  {/* Question textarea */}
+                  <textarea
+                    value={q.content}
+                    onChange={(e) => updateQ(q._localId, { content: e.target.value })}
+                    rows={3}
+                    placeholder="Question text..."
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                  />
+
+                  {/* Type / Difficulty / Marks */}
+                  <div className="flex flex-wrap gap-4 items-end">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Type</label>
+                      <select
+                        value={q.type}
+                        onChange={(e) => updateQ(q._localId, { type: e.target.value as QuestionType })}
+                        className="mt-1 block border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      >
+                        <option value="mcq_single">MCQ Single</option>
+                        <option value="mcq_multi">MCQ Multi</option>
+                        <option value="integer">Integer</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
+                      <select
+                        value={q.difficulty}
+                        onChange={(e) => updateQ(q._localId, { difficulty: e.target.value as DifficultyLevel })}
+                        className="mt-1 block border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Marks +/-</label>
+                      <div className="flex gap-2 mt-1">
+                        <input
+                          type="number"
+                          value={q.marksCorrect}
+                          onChange={(e) => updateQ(q._localId, { marksCorrect: Number(e.target.value) })}
+                          className="w-16 border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-center"
+                        />
+                        <input
+                          type="number"
+                          value={q.marksWrong}
+                          onChange={(e) => updateQ(q._localId, { marksWrong: Number(e.target.value) })}
+                          className="w-16 border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-center"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Options */}
+                  {q.type !== "integer" ? (
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Options (tick correct)</label>
+                      {q.options.map((opt, i) => (
+                        <div
+                          key={opt.label}
+                          className={cn(
+                            "flex items-center gap-3 border rounded-xl px-4 py-2.5 transition-colors",
+                            opt.isCorrect
+                              ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
+                              : "border-border bg-background",
+                          )}
+                        >
+                          <span className="font-bold text-sm text-muted-foreground w-4 shrink-0">{opt.label}</span>
+                          <input
+                            value={opt.content}
+                            onChange={(e) => updateOption(q._localId, i, e.target.value)}
+                            placeholder={`Option ${opt.label}`}
+                            className="flex-1 bg-transparent text-sm outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCorrect(q._localId, i)}
+                            className={cn(
+                              "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                              opt.isCorrect
+                                ? "border-emerald-500 bg-emerald-500"
+                                : "border-muted-foreground hover:border-emerald-400",
+                            )}
+                          >
+                            {opt.isCorrect && <Check className="w-3 h-3 text-white" />}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Correct Answer (integer)</label>
+                      <input
+                        value={q.integerAnswer || ""}
+                        onChange={(e) => updateQ(q._localId, { integerAnswer: e.target.value })}
+                        placeholder="e.g. 42"
+                        className="mt-1 w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── AI Generate Panel ─────────────────────────────────────────────────────
 
 function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topicName: string; onAdd: (qs: LocalQuestion[]) => void }) {
@@ -640,6 +947,7 @@ function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topic
   const [difficulty, setDifficulty] = useState<DifficultyLevel>("medium");
   const [type, setType] = useState<QuestionType>("mcq_single");
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<LocalQuestion[] | null>(null);
 
   const generate = async () => {
     if (!topicId) { toast.error("Please select a topic first"); return; }
@@ -652,28 +960,13 @@ function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topic
         difficulty,
         type,
       }, { timeout: 120_000 });
-      const data = extractData<any[]>(res);
-      if (Array.isArray(data) && data.length) {
-        const local: LocalQuestion[] = data.map((q: any) => ({
-          _localId: makeLocalId(),
-          topicId,
-          topicName: topicName || undefined,
-          content: q.content || q.question || "",
-          type,
-          difficulty,
-          marksCorrect: 4,
-          marksWrong: type === "integer" ? 0 : -1,
-          integerAnswer: q.integerAnswer ?? null,
-          options: (q.options || []).map((o: any, i: number) => ({
-            label: ["A", "B", "C", "D"][i] || String.fromCharCode(65 + i),
-            content: typeof o === "string" ? o : (o.content || ""),
-            isCorrect: typeof o === "object" ? !!o.isCorrect : false,
-          })),
-        }));
-        onAdd(local);
-        toast.success(`${local.length} questions generated!`);
+      const raw = extractData<any>(res);
+      const list = extractQuestionList(raw);
+      if (list.length) {
+        setPreview(mapAiResponseToLocal(list, topicId, topicName, type, difficulty));
+        toast.success(`${list.length} questions ready — review before adding.`);
       } else {
-        toast.error("No questions returned. Try again.");
+        toast.error("No questions returned. The AI service may be unavailable.");
       }
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "";
@@ -682,6 +975,22 @@ function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topic
       setLoading(false);
     }
   };
+
+  if (preview) {
+    return (
+      <AiReviewPanel
+        initialQuestions={preview}
+        onConfirm={(selected) => {
+          if (selected.length) {
+            onAdd(selected);
+            toast.success(`${selected.length} question${selected.length > 1 ? "s" : ""} added to test.`);
+          }
+          setPreview(null);
+        }}
+        onDiscard={() => setPreview(null)}
+      />
+    );
+  }
 
   return (
     <div className="border border-border rounded-xl p-5 space-y-4 bg-card">
@@ -730,11 +1039,11 @@ function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topic
         className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-        {loading ? "Generating..." : "Generate with AI"}
+        {loading ? "Generating questions…" : "Generate with AI"}
       </button>
 
       <p className="text-xs text-muted-foreground">
-        AI will generate questions based on the selected topic. Review them in the list before publishing.
+        Questions are shown for review before being added — you can deselect any you don't want.
       </p>
     </div>
   );
@@ -756,6 +1065,7 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
   const [topics, setTopics] = useState<{ id: string; name: string }[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [preview, setPreview] = useState<LocalQuestion[] | null>(null);
 
   // Load all topics for the scope
   useEffect(() => {
@@ -799,38 +1109,40 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
           difficulty,
           type,
         }, { timeout: 120_000 });
-        const data = extractData<any[]>(res);
-        if (Array.isArray(data) && data.length) {
-          all.push(...data.map((q: any) => ({
-            _localId: makeLocalId(),
-            topicId: topic.id,
-            topicName: topic.name,
-            content: q.content || q.question || "",
-            type,
-            difficulty,
-            marksCorrect: 4,
-            marksWrong: type === "integer" ? 0 : -1,
-            integerAnswer: q.integerAnswer ?? null,
-            options: (q.options || []).map((o: any, i: number) => ({
-              label: ["A", "B", "C", "D"][i] || String.fromCharCode(65 + i),
-              content: typeof o === "string" ? o : (o.content || ""),
-              isCorrect: typeof o === "object" ? !!o.isCorrect : false,
-            })),
-          })));
+        const raw = extractData<any>(res);
+        const list = extractQuestionList(raw);
+        if (list.length) {
+          all.push(...mapAiResponseToLocal(list, topic.id, topic.name, type, difficulty));
         }
       } catch { /* skip failed topic */ }
       setProgress(p => ({ ...p, done: p.done + 1 }));
     }
     const trimmed = all.slice(0, count);
     if (trimmed.length) {
-      onAdd(trimmed);
-      toast.success(`${trimmed.length} questions generated across ${topics.length} topics!`);
+      setPreview(trimmed);
+      toast.success(`${trimmed.length} questions ready — review before adding.`);
     } else {
       toast.error("No questions generated. Check the AI service.");
     }
     setLoading(false);
     setProgress({ done: 0, total: 0 });
   };
+
+  if (preview) {
+    return (
+      <AiReviewPanel
+        initialQuestions={preview}
+        onConfirm={(selected) => {
+          if (selected.length) {
+            onAdd(selected);
+            toast.success(`${selected.length} question${selected.length > 1 ? "s" : ""} added to test.`);
+          }
+          setPreview(null);
+        }}
+        onDiscard={() => setPreview(null)}
+      />
+    );
+  }
 
   return (
     <div className="border border-border rounded-xl p-5 space-y-4 bg-card">
@@ -916,6 +1228,10 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
         {loading ? `Generating… (${progress.done}/${progress.total})` : `Generate ${count} Questions with AI`}
       </button>
+
+      <p className="text-xs text-muted-foreground">
+        Questions are shown for review before being added — you can deselect any you don't want.
+      </p>
     </div>
   );
 }

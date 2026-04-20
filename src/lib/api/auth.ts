@@ -1,4 +1,5 @@
 import { apiClient, extractData, tokenStorage } from "./client";
+import { storeSubdomain, clearStoredSubdomain } from "@/lib/tenant";
 import { uploadToS3 } from "./upload";
 
 
@@ -80,6 +81,10 @@ export async function verifyOtp(payload: OtpVerifyPayload): Promise<OtpVerifyRes
   if (accessToken) tokenStorage.setAccess(accessToken);
   if (refreshToken) tokenStorage.setRefresh(refreshToken);
 
+  // Store subdomain so bare-localhost dev requests carry the correct tenant header
+  const subdomain = data.user?.tenant?.subdomain;
+  storeSubdomain(subdomain);
+
   return data;
 }
 
@@ -95,9 +100,14 @@ export async function getMe(): Promise<GetMeResponse> {
   const data = extractData<GetMeResponse | AuthUser>(res);
   // Handle both wrapped { user: ... } and flat AuthUser shapes
   if (data && typeof data === "object" && "user" in data) {
-    return data as GetMeResponse;
+    const result = data as GetMeResponse;
+    // Keep stored subdomain fresh for bare-localhost dev sessions
+    storeSubdomain(result.user?.tenant?.subdomain);
+    return result;
   }
-  return { user: data as AuthUser };
+  const user = data as AuthUser;
+  storeSubdomain(user?.tenant?.subdomain);
+  return { user };
 }
 
 /** Update profile */
@@ -137,9 +147,10 @@ export async function resetPassword(token: string, newPassword: string) {
   return extractData<{ message: string }>(res);
 }
 
-/** Logout — clear tokens */
+/** Logout — clear tokens and stored tenant */
 export function logout() {
   tokenStorage.clear();
+  clearStoredSubdomain();
 }
 
 /** Complete teacher onboarding */

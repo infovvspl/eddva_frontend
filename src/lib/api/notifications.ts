@@ -4,6 +4,7 @@ import { apiClient, extractData } from "./client";
 
 export type NotificationType =
   | "lecture_scheduled"
+  | "lecture_published"
   | "battle_invite"
   | "doubt_resolved"
   | "xp_earned"

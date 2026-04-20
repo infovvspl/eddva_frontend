@@ -772,7 +772,7 @@ export interface MockTest {
   isPublished: boolean;
   scheduledAt?: string;
   createdAt: string;
-  _count?: { questions: number };
+  questionIds?: string[];
 }
 
 export interface CreateMockTestPayload {
@@ -823,9 +823,30 @@ export interface AiGeneratedQuestion {
 export async function aiGenerateQuestions(payload: {
   transcript: string;
   lectureTitle?: string;
-}): Promise<{ questions: AiGeneratedQuestion[] }> {
+}): Promise<AiGeneratedQuestion[]> {
   const res = await apiClient.post("/ai/quiz/generate", payload, { timeout: 120_000 });
-  return extractData(res);
+  const data = extractData<any>(res);
+  // Unwrap any envelope: { questions: [...] } | { data: [...] } | plain array
+  const list: any[] = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.questions)
+    ? data.questions
+    : Array.isArray(data?.data)
+    ? data.data
+    : [];
+
+  return list.map((q: any) => ({
+    questionText: q.questionText || q.question_text || q.question || q.content || q.text || "",
+    options: (q.options ?? []).map((o: any) =>
+      typeof o === "string"
+        ? { label: "?", text: o }
+        : { label: String(o.label || o.optionLabel || "?"), text: o.text || o.content || o.value || "" }
+    ),
+    correctOption: q.correctOption || q.correct_option || q.correctAnswer || q.answer || "A",
+    difficulty: q.difficulty ?? "medium",
+    subject: q.subject ?? "",
+    explanation: q.explanation ?? "",
+  }));
 }
 
 // ---------------------------------------------------------------------------

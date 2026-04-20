@@ -34,7 +34,7 @@ import { getBatchSubjectTeachers } from "@/lib/api/teacher";
 import {
   generateLectureNotes, updateLecture as updateLectureApi,
   generateQuizForLecture, saveQuizCheckpoints, getQuizCheckpoints,
-  getWatchAnalytics,
+  getWatchAnalytics, retranscribeLecture,
   type QuizCheckpoint, type WatchAnalytics,
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
@@ -504,23 +504,48 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
           {/* TRANSCRIPT */}
           {tab === "transcript" && (
             <div className="h-full overflow-y-auto px-8 py-6">
-              {lecture.transcript ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Mic className="w-3.5 h-3.5 text-primary" />
-                    <span>Auto-transcribed by Groq Whisper from the lecture audio</span>
-                  </div>
-                  <div className="bg-secondary/40 rounded-xl p-5 text-sm text-foreground leading-7 whitespace-pre-wrap font-mono">
-                    {lecture.transcript}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                  <Mic className="w-12 h-12 opacity-20" />
-                  <p className="text-sm">Transcript not available.</p>
-                  <p className="text-xs">Upload a video to generate a transcript automatically.</p>
+              {lecture.transcriptStatus === "processing" && (
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-blue-500">
+                  <Loader2 className="w-10 h-10 animate-spin opacity-60" />
+                  <p className="text-sm font-medium">Transcription in progress…</p>
+                  <p className="text-xs text-muted-foreground">This usually takes 2-5 minutes. Refresh the page to check.</p>
                 </div>
               )}
+              {lecture.transcriptStatus === "failed" && (
+                <div className="flex flex-col items-center justify-center h-full gap-4 text-red-500">
+                  <XCircle className="w-10 h-10 opacity-60" />
+                  <p className="text-sm font-medium">Transcription failed</p>
+                  <p className="text-xs text-muted-foreground text-center max-w-xs">The AI could not transcribe this video. Check that the video URL is accessible, then retry.</p>
+                  <Button size="sm" variant="outline" className="gap-1.5 text-red-600 border-red-500/30 hover:bg-red-500/10"
+                    onClick={async () => {
+                      try {
+                        await retranscribeLecture(lecture.id);
+                        toast({ title: "Transcription started", description: "Re-transcribing the lecture…" });
+                      } catch { toast({ title: "Failed", variant: "destructive" }); }
+                    }}>
+                    <RefreshCw className="w-3.5 h-3.5" /> Retry Transcription
+                  </Button>
+                </div>
+              )}
+              {!lecture.transcriptStatus || (lecture.transcriptStatus !== "processing" && lecture.transcriptStatus !== "failed") ? (
+                lecture.transcript ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Mic className="w-3.5 h-3.5 text-primary" />
+                      <span>Auto-transcribed · {lecture.transcriptLanguage === "hi" ? "Hindi" : "English"}</span>
+                    </div>
+                    <div className="bg-secondary/40 rounded-xl p-5 text-sm text-foreground leading-7 whitespace-pre-wrap font-mono">
+                      {lecture.transcript}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                    <Mic className="w-12 h-12 opacity-20" />
+                    <p className="text-sm">Transcript not available.</p>
+                    <p className="text-xs">Upload a video to generate a transcript automatically.</p>
+                  </div>
+                )
+              ) : null}
             </div>
           )}
 
@@ -1396,6 +1421,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const [topicId, setTopicId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [lectureLanguage, setLectureLanguage] = useState<"en" | "hi">("en");
   const [videoSource, setVideoSource] = useState<VideoSource>("upload");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null); // actual File for upload
@@ -1417,7 +1443,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
     setTopicId("");
   };
 
-  const { data: allSubjects, isLoading: subjectsLoading } = useSubjects();
+  const { data: allSubjects, isLoading: subjectsLoading } = useSubjects(batchId || undefined);
   const { data: chapters } = useChapters(selectedSubjectId);
   const { data: topics } = useTopics(selectedChapterId);
 
@@ -1492,6 +1518,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
         description: description || undefined,
         type: "recorded",
         topicId: topicId || undefined,
+        lectureLanguage,
         videoUrl: finalVideoUrl || undefined,
         thumbnailUrl: finalThumbnailUrl,
       });
@@ -1591,6 +1618,29 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <Label>Description</Label>
                 <Textarea value={description} onChange={e => setDescription(e.target.value)}
                   placeholder="Brief description for students…" rows={2} className="resize-none" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Lecture Language <span className="text-muted-foreground font-normal">(for AI transcription)</span></Label>
+                <div className="flex gap-2">
+                  {([
+                    { value: "en" as const, label: "English", sub: "Default" },
+                    { value: "hi" as const, label: "हिंदी", sub: "Hindi" },
+                  ] as const).map(opt => (
+                    <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
+                      className={cn(
+                        "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
+                        lectureLanguage === opt.value
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40",
+                      )}>
+                      <span className="text-base font-bold">{opt.label}</span>
+                      <span className="text-[10px] mt-0.5">{opt.sub}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  AI will transcribe using Whisper in the selected language. Students can request a Hindi translation of English transcripts.
+                </p>
               </div>
             </div>
           )}
@@ -1905,14 +1955,24 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
 
 // ─── Recorded Lecture Card ────────────────────────────────────────────────────
 
-function RecordedCard({ lecture, onView, onReview, onStats, onDelete, processingStep }: {
+const transcriptStatusBadge: Record<string, { cls: string; label: string }> = {
+  pending:    { cls: "bg-slate-500/10 text-slate-500 border-slate-500/20",    label: "Transcript Pending" },
+  processing: { cls: "bg-blue-500/10 text-blue-500 border-blue-500/20",      label: "Transcribing…" },
+  done:       { cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", label: "Transcript Ready" },
+  failed:     { cls: "bg-red-500/10 text-red-600 border-red-500/20",         label: "Transcript Failed" },
+};
+
+function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, processingStep }: {
   lecture: Lecture;
   onView: () => void;
   onReview: () => void;
   onStats: () => void;
   onDelete: () => void;
+  onRetranscribe: () => void;
   processingStep?: number;
 }) {
+  const tsBadge = lecture.transcriptStatus ? transcriptStatusBadge[lecture.transcriptStatus] : null;
+
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-sm hover:border-primary/20 transition-all">
       {/* Clickable top section */}
@@ -1937,10 +1997,19 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, processing
                 <span className="text-xs text-muted-foreground">· {fmtDate(lecture.createdAt)}</span>
               </div>
             </div>
-            <span className={cn("inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border shrink-0", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
-              {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-              {statusLabel[lecture.status] ?? lecture.status}
-            </span>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <span className={cn("inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
+                {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
+                {statusLabel[lecture.status] ?? lecture.status}
+              </span>
+              {tsBadge && lecture.status !== "processing" && (
+                <span className={cn("inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border", tsBadge.cls)}>
+                  {lecture.transcriptStatus === "processing" && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                  {lecture.transcriptStatus === "done" && <Mic className="w-2.5 h-2.5" />}
+                  {tsBadge.label}
+                </span>
+              )}
+            </div>
           </div>
           {(processingStep !== undefined || lecture.status === "processing") && (
             <div className="mt-3">
@@ -1962,6 +2031,11 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, processing
         {lecture.status === "published" && (
           <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onStats(); }} className="gap-1.5 h-8 text-xs">
             <BarChart2 className="w-3.5 h-3.5" /> Live Stats
+          </Button>
+        )}
+        {lecture.transcriptStatus === "failed" && (
+          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRetranscribe(); }} className="gap-1.5 h-8 text-xs text-red-600 border-red-500/30 hover:bg-red-500/10">
+            <RefreshCw className="w-3 h-3" /> Retry Transcription
           </Button>
         )}
         <button onClick={e => { e.stopPropagation(); onDelete(); }} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1">
@@ -2242,83 +2316,47 @@ const TeacherLecturesPage = () => {
     return () => clearInterval(id);
   }, [hasProcessing, queryClient]);
 
-  // Background AI processing — called after lecture creation
-  const triggerAiProcessing = useCallback(async (lectureId: string, videoUrl: string, topicId: string) => {
-    // Animate through steps
+  // Track which lecture IDs were just uploaded (so we can auto-open review when AI finishes)
+  const [pendingReviewIds, setPendingReviewIds] = useState<Set<string>>(new Set());
+
+  // After a lecture is uploaded, animate the processing steps UI while the
+  // backend handles AI (speech-to-text + notes via Django).
+  // We do NOT call the AI from the frontend — the backend already does it.
+  const triggerAiProcessing = useCallback(async (lectureId: string, _videoUrl: string, _topicId: string) => {
     const advance = (step: number) =>
       setProcessingSteps(prev => ({ ...prev, [lectureId]: step }));
 
-    advance(0); // Transcribing
-    await new Promise(r => setTimeout(r, 1200));
-    advance(1); // Analysing
+    // Mark this lecture as pending review so we can auto-open the panel
+    setPendingReviewIds(prev => new Set(prev).add(lectureId));
 
-    try {
-      // Call AI service — NestJS → Django → Groq LLM
-      const result = await generateLectureNotes({
-        audioUrl: videoUrl || "lecture-audio",
-        language: "en",
-      });
+    // Animate through steps (purely cosmetic — matches backend pipeline timing)
+    advance(0); await new Promise(r => setTimeout(r, 3000));
+    advance(1); await new Promise(r => setTimeout(r, 5000));
+    advance(2); await new Promise(r => setTimeout(r, 4000));
+    advance(3);
 
-      advance(2); // Generating notes
-      await new Promise(r => setTimeout(r, 600));
-      advance(3); // Extracting concepts
-      await new Promise(r => setTimeout(r, 400));
+    // Clear animation tracker
+    setProcessingSteps(prev => { const n = { ...prev }; delete n[lectureId]; return n; });
+    queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+  }, [queryClient]);
 
-      // Normalise field names (API may return camelCase or snake_case)
-      const notesMarkdown: string =
-        (result as any).notesMarkdown || (result as any).notes_markdown || (result as any).raw || "";
-      const keyConcepts: string[] =
-        (result as any).keyConcepts || (result as any).key_concepts || [];
-      // rawTranscript = actual Whisper output; transcript = LLM-cleaned version
-      const transcript: string =
-        (result as any).rawTranscript || (result as any).transcript || "";
+  // Auto-open the review panel when the backend finishes AI processing
+  useEffect(() => {
+    if (pendingReviewIds.size === 0) return;
+    const readyLecture = (lectures ?? []).find(
+      l => pendingReviewIds.has(l.id) && (l.status === "draft" || l.status === "published"),
+    );
+    if (!readyLecture) return;
 
-      // Save AI results to lecture and mark as draft (ready for review)
-      await updateLectureApi(lectureId, {
-        status: "draft",
-        aiNotesMarkdown: notesMarkdown,
-        aiKeyConcepts: Array.isArray(keyConcepts) ? keyConcepts : [],
-        transcript: transcript || undefined,
-      } as any);
-
-      toast({
-        title: "AI notes ready! ✨",
-        description: "Review and publish when you're satisfied.",
-      });
-    } catch (err: any) {
-      // AI failed — still move to draft so teacher can add notes manually
-      try {
-        await updateLectureApi(lectureId, { status: "draft" } as any);
-      } catch { /* ignore */ }
-
-      const status = err?.response?.status;
-      const errCode = err?.response?.data?.error;
-      const errDetail = err?.response?.data?.detail || "";
-      const isAuthErr = status === 401;
-      const isTranscriptionErr = errCode === "transcription_failed";
-      toast({
-        title: isAuthErr
-          ? "AI service auth error"
-          : isTranscriptionErr
-          ? "Video transcription failed"
-          : "AI processing had an issue",
-        description: isAuthErr
-          ? "Check AI_API_KEY in .env and ensure an Institute record exists in Django."
-          : isTranscriptionErr
-          ? `Could not download or transcribe the video. ${errDetail ? `Reason: ${errDetail.slice(0, 120)}` : "Check Django logs for details."}`
-          : "Lecture is ready — please add notes manually in the Review panel.",
-        variant: "destructive",
-      });
-    } finally {
-      // Remove step tracker and refresh list
-      setProcessingSteps(prev => {
-        const next = { ...prev };
-        delete next[lectureId];
-        return next;
-      });
-      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
-    }
-  }, [queryClient, toast]);
+    setPendingReviewIds(prev => { const n = new Set(prev); n.delete(readyLecture.id); return n; });
+    setReviewLecture(readyLecture);
+    toast({
+      title: readyLecture.aiNotesMarkdown ? "AI notes ready! ✨" : "AI processing complete",
+      description: readyLecture.aiNotesMarkdown
+        ? "Review and publish when you're satisfied."
+        : "AI could not generate notes — add them manually then publish.",
+    });
+  }, [lectures, pendingReviewIds, toast]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this lecture? This cannot be undone.")) return;
@@ -2326,6 +2364,16 @@ const TeacherLecturesPage = () => {
       await deleteLecture.mutateAsync(id);
       toast({ title: "Deleted" });
     } catch { toast({ title: "Delete failed", variant: "destructive" }); }
+  };
+
+  const handleRetranscribe = async (id: string) => {
+    try {
+      await retranscribeLecture(id);
+      toast({ title: "Transcription started", description: "AI is re-transcribing the lecture. This may take a few minutes." });
+      queryClient.invalidateQueries({ queryKey: ["myLectures"] });
+    } catch {
+      toast({ title: "Failed to start transcription", variant: "destructive" });
+    }
   };
 
   return (
@@ -2503,6 +2551,7 @@ const TeacherLecturesPage = () => {
                 onReview={() => setReviewLecture(l)}
                 onStats={() => setStatsLecture(l)}
                 onDelete={() => handleDelete(l.id)}
+                onRetranscribe={() => handleRetranscribe(l.id)}
               />
             ))}
           </div>
