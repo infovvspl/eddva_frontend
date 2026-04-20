@@ -982,6 +982,7 @@ export async function getMyBattleHistory(): Promise<BattleRoom[]> {
 
 export interface BattleElo {
   eloRating: number;
+  xpPoints: number;
   tier: string;
   battleXp: number;
   battlesPlayed: number;
