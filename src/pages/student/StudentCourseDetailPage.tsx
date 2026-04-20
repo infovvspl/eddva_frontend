@@ -1654,7 +1654,7 @@ export default function StudentCourseDetailPage() {
   const dppList = useMemo(() => collectResources(subjects, ["dpp"]), [subjects]);
   const pyqList = useMemo(() => collectResources(subjects, ["pyq"]), [subjects]);
   const materialList = useMemo(
-    () => collectResources(subjects, ["pdf", "notes", "video", "link"]),
+    () => collectResources(subjects, ["pdf", "notes"]),
     [subjects],
   );
   const allTopicsFlat = useMemo(
@@ -1752,101 +1752,33 @@ export default function StudentCourseDetailPage() {
   return (
     <div className="max-w-7xl mx-auto pb-24 space-y-6">
 
-      {/* ── Back ── */}
-      <div className="flex justify-end">
-        <button onClick={() => navigate("/student/courses")}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors group">
-          My Courses
-          <ArrowLeft className="w-4 h-4 group-hover:translate-x-1 transition-transform rotate-180" />
-        </button>
-      </div>
-
-      {/* ── HERO ── */}
-      <div className={cn("relative rounded-3xl overflow-hidden shadow-xl", !thumbnail && "bg-gradient-to-br from-indigo-700 to-purple-800")}>
-        {thumbnail && (
-          <img src={thumbnail} alt={batch.name} className="absolute inset-0 w-full h-full object-cover"
-            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/92 via-slate-900/75 to-slate-900/40" />
-
-        <div className="relative z-10 p-8 md:p-10">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-[11px] font-bold text-white uppercase tracking-wide">{batch.examTarget}</span>
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-[11px] font-bold text-white uppercase tracking-wide">Class {batch.class}</span>
-                {batch.isPaid
-                  ? <span className="px-3 py-1 bg-amber-500/80 rounded-xl text-[11px] font-bold text-white">{enrollment?.feePaid ? "✓ Paid" : `₹${batch.feeAmount?.toLocaleString() ?? "—"}`}</span>
-                  : <span className="px-3 py-1 bg-emerald-500/80 rounded-xl text-[11px] font-bold text-white">FREE</span>
-                }
-              </div>
-
-              <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-3">{batch.name}</h1>
-
-              {batch.teacher && (
-                <p className="text-indigo-200 text-sm font-medium mb-5 flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" /> {batch.teacher.fullName}
-                </p>
-              )}
-
-              {/* Stats pills */}
-              <div className="flex flex-wrap gap-4 text-sm text-white/80 font-medium mb-5">
-                <span className="flex items-center gap-1.5"><Layers className="w-4 h-4 text-indigo-300" />{summary?.totalSubjects ?? subjects.length} Subjects</span>
-                <span className="flex items-center gap-1.5"><BookOpen className="w-4 h-4 text-indigo-300" />{summary?.totalTopics ?? progress.totalTopics} Topics</span>
-                <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-indigo-300" />{summary?.totalLectures ?? progress.totalLectures} Lectures</span>
-                {dppList.length > 0 && <span className="flex items-center gap-1.5"><ClipboardList className="w-4 h-4 text-orange-300" />{dppList.length} DPPs</span>}
-                {pyqList.length > 0 && <span className="flex items-center gap-1.5"><Trophy className="w-4 h-4 text-violet-300" />{pyqList.length} PYQs</span>}
-              </div>
-
-              {/* Progress bar */}
-              <div className="max-w-md">
-                <div className="flex justify-between text-xs font-semibold text-white/60 mb-1.5">
-                  <span>Overall Progress</span>
-                  <span className="text-white font-bold">{progress.overallPct}%</span>
-                </div>
-                <div className="h-2.5 bg-white/20 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }} animate={{ width: `${progress.overallPct}%` }} transition={{ duration: 1 }}
-                    className="h-full bg-gradient-to-r from-indigo-400 to-purple-300 rounded-full"
-                  />
-                </div>
-                <p className="text-xs text-white/50 mt-1.5">{progress.completedTopics} of {progress.totalTopics} topics completed</p>
-              </div>
-            </div>
-
-            {/* Right action card */}
-            <div className="lg:w-56 shrink-0 flex flex-col gap-3">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-5 space-y-3">
-                {[
-                  { label: "Topics Done", val: `${progress.completedTopics}/${progress.totalTopics}`,     icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" /> },
-                  { label: "Lectures",    val: `${progress.completedLectures}/${progress.totalLectures}`, icon: <Video className="w-4 h-4 text-blue-400" /> },
-                  { label: "Accuracy",    val: `${progress.overallPct}%`,                                 icon: <BarChart3 className="w-4 h-4 text-purple-400" /> },
-                ].map(s => (
-                  <div key={s.label} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-white/60 text-sm">{s.icon}{s.label}</div>
-                    <span className="text-white font-bold text-sm">{s.val}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => {
-                  if (nextTopic) navigate(`/student/courses/${batchId}/topics/${nextTopic.id}`);
-                  else navigate("/student/lectures");
-                }}
-                className="w-full py-3 bg-white text-indigo-700 font-bold rounded-2xl hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2 shadow-lg"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                {progress.overallPct > 0 ? "Continue Learning" : "Start Learning"}
-              </button>
-            </div>
+      {/* ── Header row ── */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={() => navigate("/student/courses")}
+            className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shrink-0">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-xl font-black text-slate-900 truncate leading-tight">{batch.name}</h1>
+            {batch.teacher && (
+              <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+                <GraduationCap className="w-3.5 h-3.5" /> {batch.teacher.fullName}
+              </p>
+            )}
           </div>
         </div>
+        <button
+          onClick={() => {
+            if (nextTopic) navigate(`/student/courses/${batchId}/topics/${nextTopic.id}`);
+            else navigate("/student/lectures");
+          }}
+          className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors text-sm shadow-md"
+        >
+          <Play className="w-3.5 h-3.5 fill-current" />
+          {progress.overallPct > 0 ? "Continue" : "Start"}
+        </button>
       </div>
-
-      {/* ── Unpaid notice ── */}
-      {/* LockedBanner removed — all content is freely accessible */}
 
       {/* ── MAIN LAYOUT ── */}
       <div className="flex gap-6 items-start">

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useCalendarFeed, useCreateCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-calendar";
+import { useCalendarBatches, useCalendarFeed, useCreateCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-calendar";
 import type { InstituteCalendarEvent, LiveClassCalendarItem } from "@/lib/api/calendar";
 
 const EVENT_TYPES = [
@@ -114,10 +114,12 @@ export default function AcademicCalendarPage({
     date: "",
     endDate: "",
     description: "",
+    batchIds: [] as string[],
   });
   const [formError, setFormError] = useState("");
 
   const { data, isLoading } = useCalendarFeed(year, month);
+  const { data: eventBatches = [] } = useCalendarBatches(canManageEvents);
   const createEvent = useCreateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
 
@@ -162,9 +164,10 @@ export default function AcademicCalendarPage({
         date: form.date,
         endDate: form.endDate || undefined,
         description: form.description || undefined,
+        batchIds: form.batchIds,
       });
       toast.success("Event added — students have been notified.");
-      setForm({ title: "", type: "exam", date: "", endDate: "", description: "" });
+      setForm({ title: "", type: "exam", date: "", endDate: "", description: "", batchIds: [] });
       setShowForm(false);
     } catch (err: unknown) {
       const msg = err && typeof err === "object" && "response" in err
@@ -277,6 +280,46 @@ export default function AcademicCalendarPage({
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary"
                 />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-3">
+                <label className="text-xs font-semibold text-muted-foreground mb-2 block">
+                  Courses (optional)
+                </label>
+                <div className="rounded-xl border border-border bg-secondary p-3">
+                  <label className="mb-2 flex items-center gap-2 text-xs text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={form.batchIds.length === 0}
+                      onChange={(e) => {
+                        if (e.target.checked) setForm({ ...form, batchIds: [] });
+                      }}
+                    />
+                    Show to all courses
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-auto pr-1">
+                    {eventBatches.map((batch) => {
+                      const checked = form.batchIds.includes(batch.id);
+                      return (
+                        <label key={batch.id} className="flex items-center gap-2 text-xs text-foreground">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              const next = e.target.checked
+                                ? [...form.batchIds, batch.id]
+                                : form.batchIds.filter((id) => id !== batch.id);
+                              setForm({ ...form, batchIds: next });
+                            }}
+                          />
+                          <span>{batch.name}</span>
+                        </label>
+                      );
+                    })}
+                    {eventBatches.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No courses available.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex gap-3">

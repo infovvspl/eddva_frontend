@@ -3,6 +3,7 @@ import * as calendarApi from "@/lib/api/calendar";
 
 export const calendarKeys = {
   feed: (year: number, month: number) => ["calendar", "feed", year, month] as const,
+  batches: ["calendar", "batches"] as const,
 };
 
 export function useCalendarFeed(year: number, month: number) {
@@ -21,6 +22,15 @@ export function useCreateCalendarEvent() {
       qc.invalidateQueries({ queryKey: ["calendar"] });
       qc.invalidateQueries({ queryKey: ["institute", "settings", "calendar"] });
     },
+  });
+}
+
+export function useCalendarBatches(enabled = true) {
+  return useQuery({
+    queryKey: calendarKeys.batches,
+    queryFn: calendarApi.getCalendarBatches,
+    enabled,
+    staleTime: 60_000,
   });
 }
 

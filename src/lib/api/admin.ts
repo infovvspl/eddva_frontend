@@ -682,6 +682,27 @@ export async function addTopicResourceLink(payload: {
 }
 
 // ---------------------------------------------------------------------------
+// Content - AI Generation
+// ---------------------------------------------------------------------------
+
+export interface AiGeneratePayload {
+  contentType: 'lesson' | 'dpp' | 'pyq' | 'study_guide' | 'key_concepts' | 'flashcard' | 'practice_questions' | 'checklist';
+  difficulty: 'basic' | 'intermediate' | 'advanced';
+  length: 'brief' | 'standard' | 'detailed';
+  extraContext?: string;
+}
+
+export async function generateTopicAiContent(topicId: string, payload: AiGeneratePayload) {
+  const res = await apiClient.post(`/content/topics/${topicId}/generate-ai-content`, payload);
+  return extractData<{ content: string; contentType: string; topicName: string }>(res);
+}
+
+export async function saveAiGeneratedResource(topicId: string, payload: { title: string; content: string; resourceType?: string }) {
+  const res = await apiClient.post(`/content/topics/${topicId}/save-ai-resource`, payload);
+  return extractData<TopicResource>(res);
+}
+
+// ---------------------------------------------------------------------------
 // Content - Questions
 // ---------------------------------------------------------------------------
 

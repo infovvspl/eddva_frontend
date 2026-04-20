@@ -10,7 +10,8 @@ import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
   FlaskConical, Loader2, CheckCircle, Send, Clock,
   ChevronDown, ChevronUp, Trophy, Lightbulb, AlertTriangle,
-  Sigma, Target, Layers, Monitor, Zap, Info, ArrowRight, BrainCircuit
+  Sigma, Monitor, Zap, Info, ArrowRight, BrainCircuit, Highlighter, StickyNote,
+  X
 } from "lucide-react";
 import {
   useAiStudySession, useStartAiStudy, useAskAiQuestion,
@@ -89,66 +90,39 @@ function normalizeAiMessage(message: unknown): string {
   return String(message ?? "");
 }
 
-function prettifyFormula(formula: string): string {
-  const toSup = (v: string) =>
-    v
-      .split("")
-      .map((ch) => SUPERSCRIPT_MAP[ch] ?? ch)
-      .join("");
-  const toSub = (v: string) =>
-    v
-      .split("")
-      .map((ch) => SUBSCRIPT_MAP[ch] ?? ch)
-      .join("");
-
-  return String(formula || "")
-    .replace(/\$\$/g, "")
-    .replace(/\\Rightarrow/g, " ⇒ ")
-    .replace(/\\rightarrow/g, " → ")
-    .replace(/\\times/g, " × ")
-    .replace(/\\cdot/g, " · ")
-    .replace(/\\Delta/g, "Δ")
-    .replace(/\\delta/g, "δ")
-    .replace(/\\alpha/g, "α")
-    .replace(/\\beta/g, "β")
-    .replace(/\\gamma/g, "γ")
-    .replace(/\\theta/g, "θ")
-    .replace(/\\lambda/g, "λ")
-    .replace(/\\mu/g, "μ")
-    .replace(/\\pi/g, "π")
-    .replace(/\\sigma/g, "σ")
-    .replace(/\\omega/g, "ω")
-    .replace(/\^\{([^}]+)\}/g, (_m, g1) => toSup(String(g1)))
-    .replace(/\^([A-Za-z0-9+\-()])/g, (_m, g1) => toSup(String(g1)))
-    .replace(/_\{([^}]+)\}/g, (_m, g1) => toSub(String(g1)))
-    .replace(/_([A-Za-z0-9+\-()])/g, (_m, g1) => toSub(String(g1)))
-    .replace(/\\,/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-const SUPERSCRIPT_MAP: Record<string, string> = {
-  "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
-  "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
-  "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
-  n: "ⁿ", i: "ⁱ",
-};
-
-const SUBSCRIPT_MAP: Record<string, string> = {
-  "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
-  "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
-  "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎",
-  a: "ₐ", e: "ₑ", h: "ₕ", i: "ᵢ", j: "ⱼ", k: "ₖ",
-  l: "ₗ", m: "ₘ", n: "ₙ", o: "ₒ", p: "ₚ", r: "ᵣ",
-  s: "ₛ", t: "ₜ", u: "ᵤ", v: "ᵥ", x: "ₓ",
-};
 
 function normalizeLessonMarkdown(md: string): string {
-  return String(md || "");
+  return String(md || "")
+    // Unescape double-escaped backslashes from JSON payloads
+    .replace(/\\\\/g, "\\")
+    // Convert LaTeX bracket math to markdown math delimiters
+    .replace(/\\\[((?:.|\n)*?)\\\]/g, (_m, inner) => `\n\n$$${inner}$$\n\n`)
+    .replace(/\\\(((?:.|\n)*?)\\\)/g, (_m, inner) => `$${inner}$`)
+    // If AI emits "Formula: <latex-like expression>" without delimiters, wrap it
+    .replace(
+      /(^|\n)\s*(Formula|Equation)\s*:\s*([^\n]+)/gi,
+      (_m, prefix, label, expr) => {
+        const e = String(expr || "").trim();
+        const looksMath = /[=+\-*/^]|\\[a-zA-Z]+|[Δδαβγθλμπσω]/.test(e);
+        if (!looksMath) return `${prefix}${label}: ${e}`;
+        return `${prefix}${label}: $$${e}$$`;
+      },
+    )
+    // User requested removing "Core Concepts/Cores" section from rendered notes.
+    .replace(/\n##\s*.*Core Concepts[\s\S]*?(?=\n##\s+|$)/gi, "\n");
 }
 
 function normalizeFormulaForKatex(formula: string): string {
-  const raw = String(formula || "").trim();
+  const raw = String(formula || "")
+    .replace(/\u200B/g, "")
+    .replace(/\r/g, "")
+    .replace(/\n+/g, " ")
+    // Common AI output form: F_action -> F_{action}
+    .replace(/([A-Za-z])_([A-Za-z]{2,})\b/g, "$1_{$2}")
+    // Keep KaTeX happy when escaped text is emitted without braces.
+    .replace(/\\text\s+([A-Za-z]+)/g, "\\text{$1}")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!raw) return "";
   if (raw.includes("$$") || raw.includes("$")) return raw;
   return `$$${raw}$$`;
@@ -169,20 +143,59 @@ function normalizeReadableText(text: string): string {
     .trim();
 }
 
-function extractSectionMarkdown(markdown: string, headerRegex: RegExp): string {
-  const src = String(markdown || "");
-  const start = src.search(headerRegex);
-  if (start < 0) return "";
-  const rest = src.slice(start);
-  const nextHeaderMatch = rest.slice(2).match(/\n##\s+/);
-  if (!nextHeaderMatch) return rest.trim();
-  const endIdx = 2 + (nextHeaderMatch.index ?? rest.length);
-  return rest.slice(0, endIdx).trim();
+type SavedHighlight = { text: string; color: string };
+type InlineComment = { id: string; text: string; quote: string; top: number };
+
+function storageKey(kind: "highlights" | "notes" | "inline-comments", topicId: string): string {
+  return `ai-study-${kind}-${topicId}`;
 }
 
-function hasCorruptedSpacing(lines: string[]): boolean {
-  return lines.some((l) => /[A-Za-z]{18,}/.test(String(l || "")));
+function NotesFlashcard({
+  question,
+  answer,
+  explanation,
+  flipped,
+  onToggle,
+}: {
+  question: string;
+  answer: string;
+  explanation?: string;
+  flipped: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full text-left"
+      style={{ perspective: "1200px" }}
+    >
+      <div
+        className="relative min-h-[180px] transition-transform duration-500"
+        style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+      >
+        <div
+          className="absolute inset-0 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-3">Question</p>
+          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{question}</p>
+          <p className="text-[11px] text-slate-500 mt-4">Click to reveal answer</p>
+        </div>
+        <div
+          className="absolute inset-0 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm overflow-auto"
+          style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-3">Answer</p>
+          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{answer}</p>
+          {explanation && <p className="text-xs text-slate-600 mt-3 leading-relaxed">{explanation}</p>}
+          <p className="text-[11px] text-slate-500 mt-3">Click to flip back</p>
+        </div>
+      </div>
+    </button>
+  );
 }
+
 
 // ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
@@ -239,7 +252,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
   );
 }
 
-type Tab = "lesson" | "concepts" | "practice" | "ask";
+type Tab = "lesson" | "ask";
 
 export default function StudentAiStudyPage() {
   const { topicId = "" } = useParams<{ topicId: string }>();
@@ -251,6 +264,18 @@ export default function StudentAiStudyPage() {
   const [showComplete, setShowComplete] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [notesZoom, setNotesZoom] = useState<"sm" | "md" | "lg">("md");
+  const [highlights, setHighlights] = useState<SavedHighlight[]>([]);
+  const [highlightColor, setHighlightColor] = useState("#fef08a");
+  const [noteDraft, setNoteDraft] = useState("");
+  const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
+  const [activeInlineCommentId, setActiveInlineCommentId] = useState<string | null>(null);
+  const [toolPanel, setToolPanel] = useState<"highlights" | "notes" | null>(null);
+  const [showFlashcards, setShowFlashcards] = useState(false);
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [flashcardFlipped, setFlashcardFlipped] = useState(false);
+  const notesContentRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+  const savedTextRef = useRef<string>("");
 
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
   const startMut = useStartAiStudy();
@@ -261,6 +286,10 @@ export default function StudentAiStudyPage() {
   const sessionId = sessionData?.id;
   const timerRunning = !!sessionId && !completed;
   const elapsed = useElapsedTimer(timerRunning, sessionData?.timeSpentSeconds ?? 0);
+  const normalizedLessonMarkdown = useMemo(
+    () => normalizeLessonMarkdown(sessionData?.lessonMarkdown ?? ""),
+    [sessionData?.lessonMarkdown],
+  );
   const mdZoomClass = useMemo(() => {
     if (notesZoom === "sm") return "prose-h2:text-2xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm prose-code:text-[12px]";
     if (notesZoom === "lg") return "prose-h2:text-4xl prose-h3:text-xl prose-p:text-lg prose-ul:text-lg prose-code:text-[15px]";
@@ -276,6 +305,96 @@ export default function StudentAiStudyPage() {
 
   useEffect(() => { if (sessionData?.isCompleted) setCompleted(true); }, [sessionData?.isCompleted]);
   useEffect(() => { if (activeTab === "ask") chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [sessionData?.conversation, activeTab]);
+  useEffect(() => {
+    if (!topicId) return;
+    try {
+      const h = localStorage.getItem(storageKey("highlights", topicId));
+      const c = localStorage.getItem(storageKey("inline-comments", topicId));
+      setHighlights(h ? JSON.parse(h) : []);
+      setInlineComments(c ? JSON.parse(c) : []);
+    } catch {
+      setHighlights([]);
+      setInlineComments([]);
+    }
+  }, [topicId]);
+
+  useEffect(() => {
+    if (!topicId) return;
+    localStorage.setItem(storageKey("highlights", topicId), JSON.stringify(highlights));
+  }, [topicId, highlights]);
+
+  useEffect(() => {
+    if (!topicId) return;
+    localStorage.setItem(storageKey("inline-comments", topicId), JSON.stringify(inlineComments));
+  }, [topicId, inlineComments]);
+
+  // Track the user's current selection inside the notes so clicking panel buttons
+  // doesn't drop it. We save a cloned Range + its text on every valid selectionchange.
+  useEffect(() => {
+    const handler = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const root = notesContentRef.current;
+      if (!root) return;
+      const anchor = sel.anchorNode;
+      if (!anchor || !root.contains(anchor)) return;
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+      savedTextRef.current = sel.toString().trim().replace(/\s+/g, " ");
+    };
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, []);
+
+  // After markdown + KaTeX finish rendering, re-apply saved highlights once. We skip
+  // any text nodes inside KaTeX output so we don't corrupt math rendering.
+  useEffect(() => {
+    if (activeTab !== "lesson") return;
+    const root = notesContentRef.current;
+    if (!root || !sessionData?.lessonMarkdown) return;
+    const timer = setTimeout(() => {
+      highlights.forEach((h) => {
+        if (!h.text) return;
+        const already = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
+        if (already.some((el) => (el.textContent || "").includes(h.text))) return;
+
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: (node) => {
+            let parent: HTMLElement | null = (node.parentElement as HTMLElement) || null;
+            while (parent && parent !== root) {
+              if (parent.classList && (parent.classList.contains("katex") || parent.classList.contains("katex-html") || parent.classList.contains("katex-mathml"))) {
+                return NodeFilter.FILTER_REJECT;
+              }
+              if (parent.tagName === "MARK") return NodeFilter.FILTER_REJECT;
+              parent = parent.parentElement;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          },
+        } as NodeFilter);
+        let node = walker.nextNode();
+        while (node) {
+          const nv = node.nodeValue || "";
+          const idx = nv.indexOf(h.text);
+          if (idx >= 0) {
+            try {
+              const range = document.createRange();
+              range.setStart(node, idx);
+              range.setEnd(node, idx + h.text.length);
+              const mark = document.createElement("mark");
+              mark.setAttribute("data-user-highlight", "1");
+              mark.style.backgroundColor = h.color;
+              mark.style.padding = "0 1px";
+              range.surroundContents(mark);
+            } catch {
+              /* boundary-crossing match — skip */
+            }
+            break;
+          }
+          node = walker.nextNode();
+        }
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [activeTab, sessionData?.lessonMarkdown, highlights]);
 
   const handleSend = useCallback(() => {
     const q = chatInput.trim();
@@ -297,6 +416,73 @@ export default function StudentAiStudyPage() {
       onSuccess: () => { setCompleted(true); setShowComplete(false); },
     });
   }, [sessionId, topicId, elapsed, completeMut]);
+
+  // Get the range/text the user most recently selected inside the notes, falling
+  // back to the saved ref when focus has moved to the tool panel (buttons/textarea).
+  const getActiveNotesRange = useCallback((): { range: Range; text: string } | null => {
+    const notesRoot = notesContentRef.current;
+    if (!notesRoot) return null;
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+      const anchor = selection.anchorNode;
+      if (anchor && notesRoot.contains(anchor)) {
+        const text = selection.toString().trim().replace(/\s+/g, " ");
+        if (text) return { range: selection.getRangeAt(0).cloneRange(), text };
+      }
+    }
+    if (savedRangeRef.current && savedTextRef.current) {
+      return { range: savedRangeRef.current.cloneRange(), text: savedTextRef.current };
+    }
+    return null;
+  }, []);
+
+  const handleCaptureHighlight = useCallback(() => {
+    const active = getActiveNotesRange();
+    if (!active) return;
+    const { range, text: selectedText } = active;
+
+    const mark = document.createElement("mark");
+    mark.setAttribute("data-user-highlight", "1");
+    mark.style.backgroundColor = highlightColor;
+    mark.style.padding = "0 1px";
+    try {
+      range.surroundContents(mark);
+    } catch {
+      try {
+        const extracted = range.extractContents();
+        mark.appendChild(extracted);
+        range.insertNode(mark);
+      } catch {
+        /* boundary-crossing selection — skip DOM wrap, still save in sidebar */
+      }
+    }
+
+    setHighlights((prev) => [{ text: selectedText, color: highlightColor }, ...prev].slice(0, 30));
+    window.getSelection()?.removeAllRanges();
+    savedRangeRef.current = null;
+    savedTextRef.current = "";
+  }, [highlightColor, getActiveNotesRange]);
+
+  const handleAddInlineComment = useCallback(() => {
+    const text = noteDraft.trim();
+    if (!text) return;
+    const active = getActiveNotesRange();
+    if (!active) return;
+    const { range, text: selectedText } = active;
+    const notesRoot = notesContentRef.current;
+    if (!notesRoot) return;
+
+    const rect = range.getBoundingClientRect();
+    const rootRect = notesRoot.getBoundingClientRect();
+    const top = Math.max(0, rect.top - rootRect.top + notesRoot.scrollTop);
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setInlineComments((prev) => [{ id, text, quote: selectedText, top }, ...prev].slice(0, 50));
+    setActiveInlineCommentId(id);
+    setNoteDraft("");
+    window.getSelection()?.removeAllRanges();
+    savedRangeRef.current = null;
+    savedTextRef.current = "";
+  }, [noteDraft, getActiveNotesRange]);
 
   if (startMut.isPending || (sessionLoading && !session)) {
     return (
@@ -333,9 +519,7 @@ export default function StudentAiStudyPage() {
   if (!sessionData) return null;
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "lesson",   label: "Archive",    icon: <BookOpen className="w-4 h-4" /> },
-    { id: "concepts", label: "Cores",      icon: <Layers className="w-4 h-4" /> },
-    { id: "practice", label: "Practice Questions",  icon: <Target className="w-4 h-4" /> },
+    { id: "lesson",   label: "Notes",    icon: <BookOpen className="w-4 h-4" /> },
     { id: "ask",      label: "Ask AI",     icon: <BrainCircuit className="w-4 h-4" /> },
   ];
 
@@ -398,7 +582,7 @@ export default function StudentAiStudyPage() {
            <AnimatePresence mode="wait">
              {activeTab === "lesson" && (
                <motion.div key="lesson" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}>
-                  {sessionData.lessonMarkdown ? (
+                  {normalizedLessonMarkdown ? (
                     <CardGlass className="p-6 sm:p-10 border-slate-200 bg-white shadow-sm relative">
                        
                        <div className="mb-10 pb-8 border-b border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-8">
@@ -437,8 +621,10 @@ export default function StudentAiStudyPage() {
                           </div>
                        </div>
 
-                       <div className={cn(mdClassBase, mdZoomClass)}>
-                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{sessionData.lessonMarkdown}</ReactMarkdown>
+                       <div ref={notesContentRef} className={cn(mdClassBase, mdZoomClass)}>
+                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                           {normalizedLessonMarkdown}
+                         </ReactMarkdown>
                        </div>
 
                        {!completed && (
@@ -462,84 +648,6 @@ export default function StudentAiStudyPage() {
                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Reconstructing Data...</p>
                     </div>
                   )}
-               </motion.div>
-             )}
-
-             {activeTab === "concepts" && (
-              <motion.div key="concepts" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     {/* Key Concepts */}
-                     {sessionData.keyConcepts.length > 0 && (
-                        <CardGlass className="p-6 border-slate-200 h-full bg-white shadow-sm">
-                           <div className="flex items-center gap-3 mb-6">
-                              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center"><Layers className="w-5 h-5" /></div>
-                              <h3 className="text-lg font-semibold text-slate-900">Key Concepts</h3>
-                           </div>
-                           <div className="space-y-3">
-                             {sessionData.keyConcepts.map((concept, i) => (
-                               <div key={i} className="flex gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-                                  <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[11px] font-semibold text-slate-500 shrink-0">{i+1}</div>
-                                  <p className="flex-1 text-sm font-medium text-slate-700 leading-relaxed">{concept}</p>
-                               </div>
-                             ))}
-                           </div>
-                        </CardGlass>
-                     )}
-
-                     {/* Formulas & Mistakes */}
-                     <div className="space-y-6">
-                        {sessionData.formulas.length > 0 && (
-                          <CardGlass className="p-6 border-slate-200 bg-white shadow-sm">
-                             <div className="flex items-center gap-3 mb-5">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><Sigma className="w-5 h-5" /></div>
-                                <h3 className="text-lg font-semibold text-slate-900">Formulas</h3>
-                             </div>
-                             <div className="space-y-3">
-                               {sessionData.formulas.map((formula, i) => (
-                                 <div key={i} className="p-4 rounded-xl bg-indigo-50/60 font-mono text-sm font-semibold text-indigo-700 border border-indigo-100 flex items-center gap-3">
-                                    <Zap className="w-4 h-4 opacity-60 shrink-0" /> {formula}
-                                 </div>
-                               ))}
-                             </div>
-                          </CardGlass>
-                        )}
-                        {sessionData.commonMistakes.length > 0 && (
-                          <CardGlass className="p-6 border-slate-200 bg-white shadow-sm">
-                             <div className="flex items-center gap-3 mb-5">
-                                <div className="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center"><AlertTriangle className="w-5 h-5" /></div>
-                                <h3 className="text-lg font-semibold text-slate-900">Common Mistakes</h3>
-                             </div>
-                             <div className="space-y-3">
-                               {sessionData.commonMistakes.map((mistake, i) => (
-                                 <div key={i} className="flex gap-3 p-4 rounded-xl bg-red-50/60 border border-red-100">
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-red-100 flex items-center justify-center text-red-500 shrink-0"><AlertTriangle className="w-3.5 h-3.5" /></div>
-                                    <p className="text-sm font-medium text-slate-700 leading-relaxed">{mistake}</p>
-                                 </div>
-                               ))}
-                             </div>
-                          </CardGlass>
-                        )}
-                     </div>
-                  </div>
-               </motion.div>
-             )}
-
-             {activeTab === "practice" && (
-               <motion.div key="practice" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-6">
-                  <div className="flex items-center gap-4 mb-4 px-1">
-                     <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
-                        <Target className="w-5 h-5" />
-                     </div>
-                     <div>
-                        <h2 className="text-xl font-semibold text-slate-900">Practice Questions</h2>
-                        <p className="text-xs font-medium text-slate-500 mt-0.5">{sessionData.practiceQuestions.length} questions loaded</p>
-                     </div>
-                  </div>
-                  <div className="space-y-6">
-                    {sessionData.practiceQuestions.map((q, i) => (
-                      <PracticeCard key={i} q={q} index={i} onAskAI={handleAskAboutQuestion} />
-                    ))}
-                  </div>
                </motion.div>
              )}
 
@@ -576,7 +684,9 @@ export default function StudentAiStudyPage() {
                                     )}>
                                        {msg.role === "ai" ? (
                                           <div className={cn(mdClassBase, "prose-h2:text-xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm !prose-p:text-slate-800")}>
-                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeAiMessage(msg.message)}</ReactMarkdown>
+                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                               {normalizeAiMessage(msg.message)}
+                                             </ReactMarkdown>
                                           </div>
                                        ) : msg.message}
                                     </div>
@@ -599,6 +709,301 @@ export default function StudentAiStudyPage() {
              )}
            </AnimatePresence>
         </div>
+
+        {activeTab === "lesson" && (
+          <div className="fixed right-5 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setToolPanel((v) => (v === "highlights" ? null : "highlights"))}
+              className={cn(
+                "w-11 h-11 rounded-xl border flex items-center justify-center shadow-sm transition-colors",
+                toolPanel === "highlights" ? "bg-amber-100 border-amber-300 text-amber-700" : "bg-white border-slate-200 text-slate-600",
+              )}
+              title="Highlighter"
+            >
+              <Highlighter className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setToolPanel((v) => (v === "notes" ? null : "notes"))}
+              className={cn(
+                "w-11 h-11 rounded-xl border flex items-center justify-center shadow-sm transition-colors",
+                toolPanel === "notes" ? "bg-indigo-100 border-indigo-300 text-indigo-700" : "bg-white border-slate-200 text-slate-600",
+              )}
+              title="Comments"
+            >
+              <StickyNote className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFlashcardIndex(0);
+                setFlashcardFlipped(false);
+                setShowFlashcards(true);
+              }}
+              className="w-11 h-11 rounded-xl border bg-white border-slate-200 text-slate-600 flex items-center justify-center shadow-sm transition-colors hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700"
+              title="Flashcards"
+            >
+              <Brain className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {activeTab === "lesson" && toolPanel && (
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 30 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 z-40 w-[360px] max-w-[calc(100vw-6rem)]"
+            >
+              <CardGlass className="p-5 border-slate-200 bg-white shadow-lg">
+                {toolPanel === "highlights" && (
+                  <div onMouseDown={(e) => {
+                    // Prevent selection loss when clicking anywhere in panel except the highlights list.
+                    const target = e.target as HTMLElement;
+                    if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") e.preventDefault();
+                  }}>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h3 className="text-sm font-semibold text-slate-900">Highlighter</h3>
+                      {savedTextRef.current && (
+                        <span className="text-[10px] font-medium text-emerald-600">Selection ready</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-3">
+                      Select text in the notes, then pick a color and click <span className="font-semibold">Highlight</span>.
+                    </p>
+                    <div className="flex items-center gap-2 mb-3">
+                      {["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"].map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => setHighlightColor(c)}
+                          className={cn("w-7 h-7 rounded-full border-2 transition-transform", highlightColor === c ? "border-slate-900 scale-110" : "border-slate-200")}
+                          style={{ backgroundColor: c }}
+                          title="Pick highlight color"
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleCaptureHighlight}
+                      className="w-full mb-4 py-2.5 rounded-xl text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-colors"
+                    >
+                      Highlight selection
+                    </button>
+                    {highlights.length === 0 ? (
+                      <p className="text-xs text-slate-400">No highlights yet.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-80 overflow-auto pr-1">
+                        {highlights.map((h, i) => (
+                          <div key={`${h.text}-${i}`} className="text-xs font-medium text-slate-700 border rounded-lg px-3 py-2" style={{ backgroundColor: h.color, borderColor: h.color }}>
+                            {h.text}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {toolPanel === "notes" && (
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h3 className="text-sm font-semibold text-slate-900">Comments</h3>
+                      {savedTextRef.current && (
+                        <span className="text-[10px] font-medium text-emerald-600">Selection ready</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-3">
+                      Select text in the notes, type your comment below, then click <span className="font-semibold">Add</span>. An icon will appear next to that line.
+                    </p>
+                    <div className="space-y-3">
+                      {savedTextRef.current && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 italic">
+                          "{savedTextRef.current.slice(0, 120)}{savedTextRef.current.length > 120 ? "…" : ""}"
+                        </div>
+                      )}
+                      <textarea
+                        value={noteDraft}
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        placeholder="Write your comment..."
+                        rows={3}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleAddInlineComment}
+                        disabled={!noteDraft.trim()}
+                        className="w-full py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 shadow-sm transition-colors"
+                      >
+                        Add comment on selected line
+                      </button>
+                      <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                        {inlineComments.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setActiveInlineCommentId(c.id)}
+                            className={cn("w-full text-left text-xs font-medium border rounded-lg px-3 py-2", activeInlineCommentId === c.id ? "bg-indigo-50 border-indigo-200 text-indigo-800" : "bg-slate-50 border-slate-200 text-slate-700")}
+                          >
+                            <p className="font-semibold mb-1 truncate">{c.quote}</p>
+                            <p>{c.text}</p>
+                          </button>
+                        ))}
+                        {inlineComments.length === 0 && <p className="text-xs text-slate-400">No comments yet.</p>}
+                      </div>
+                      {activeInlineCommentId && (
+                        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900">
+                          {inlineComments.find((c) => c.id === activeInlineCommentId)?.text}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </CardGlass>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Flashcards centered modal */}
+        <AnimatePresence>
+          {showFlashcards && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+              onClick={() => setShowFlashcards(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                className="w-full max-w-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <CardGlass className="p-6 sm:p-8 border-slate-200 bg-white shadow-2xl relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowFlashcards(false)}
+                    className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+                    title="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                      <Brain className="w-4.5 h-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 leading-none">Flashcards</h3>
+                      <p className="text-[11px] text-slate-500 mt-1">Tap the card to flip and reveal the answer.</p>
+                    </div>
+                  </div>
+
+                  {sessionData.practiceQuestions.length === 0 ? (
+                    <div className="py-16 text-center text-sm text-slate-500">No flashcards available for this topic yet.</div>
+                  ) : (() => {
+                    const total = sessionData.practiceQuestions.length;
+                    const safeIndex = Math.min(flashcardIndex, total - 1);
+                    const card = sessionData.practiceQuestions[safeIndex];
+                    return (
+                      <div className="mt-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                            Card {safeIndex + 1} of {total}
+                          </span>
+                          <div className="flex-1 mx-4 h-1 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-500 transition-all duration-300"
+                              style={{ width: `${((safeIndex + 1) / total) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ perspective: "1200px" }}>
+                          <button
+                            type="button"
+                            onClick={() => setFlashcardFlipped((f) => !f)}
+                            className="w-full text-left"
+                          >
+                            <div
+                              className="relative min-h-[260px] transition-transform duration-500"
+                              style={{
+                                transformStyle: "preserve-3d",
+                                transform: flashcardFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                              }}
+                            >
+                              <div
+                                className="absolute inset-0 rounded-2xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm flex flex-col"
+                                style={{ backfaceVisibility: "hidden" }}
+                              >
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-3">Question</p>
+                                <p className="text-base font-semibold text-slate-800 leading-relaxed flex-1">
+                                  {card.question}
+                                </p>
+                                <p className="text-[11px] text-slate-500 mt-4">Click card to reveal answer</p>
+                              </div>
+                              <div
+                                className="absolute inset-0 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm overflow-auto flex flex-col"
+                                style={{
+                                  backfaceVisibility: "hidden",
+                                  transform: "rotateY(180deg)",
+                                }}
+                              >
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-3">Answer</p>
+                                <p className="text-base font-semibold text-slate-800 leading-relaxed">
+                                  {card.answer}
+                                </p>
+                                {card.explanation && (
+                                  <p className="text-xs text-slate-600 mt-3 leading-relaxed">{card.explanation}</p>
+                                )}
+                                <p className="text-[11px] text-slate-500 mt-auto pt-3">Click card to flip back</p>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+
+                        <div className="mt-6 flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFlashcardFlipped(false);
+                              setFlashcardIndex((i) => (i - 1 + total) % total);
+                            }}
+                            disabled={total <= 1}
+                            className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-semibold disabled:opacity-40 hover:bg-slate-50"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFlashcardFlipped(false);
+                              setFlashcardIndex((i) => (i + 1) % total);
+                            }}
+                            disabled={total <= 1}
+                            className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white text-xs font-semibold shadow-sm hover:bg-emerald-600 disabled:opacity-40 flex items-center justify-center gap-2"
+                          >
+                            Next <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardGlass>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Global Action Terminal */}
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-3xl px-10">

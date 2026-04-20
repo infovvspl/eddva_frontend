@@ -53,6 +53,7 @@ function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (ur
   const handleStart = () => {
     if (isDone || isSkip) return;
     const taskKind = item.content?.taskKind;
+    const topicId = item.content?.topicId || item.refId;
     if (taskKind === "youtube_video") {
       const embed = toYoutubeEmbed(item.content?.videoUrl);
       if (embed) {
@@ -62,13 +63,13 @@ function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (ur
       }
       return;
     }
-    if (taskKind === "ai_notes" && item.refId) {
-      navigate(`/student/ai-study/${item.refId}`);
+    if (taskKind === "ai_notes" && topicId) {
+      navigate(`/student/ai-study/${topicId}`);
       return;
     }
     if (item.type === "lecture" && item.refId) navigate(`/student/lectures/${item.refId}`);
-    else if (item.type === "revision" && item.refId) navigate(`/student/ai-study/${item.refId}`);
-    else if (item.refId) navigate(`/student/quiz?topicId=${item.refId}`);
+    else if (item.type === "revision" && topicId) navigate(`/student/ai-study/${topicId}`);
+    else if (topicId) navigate(`/student/quiz?topicId=${topicId}`);
   };
 
   return (

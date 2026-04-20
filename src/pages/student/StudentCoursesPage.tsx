@@ -354,7 +354,11 @@ function EnrolledCourseCard({ course, onResume }: { course: MyCourse; onResume: 
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-xs font-semibold">
             <span className="text-slate-600">Progress: {pct}%</span>
-            <span className="text-slate-500">{course.progress?.completedTopics || 0} / {course.progress?.totalTopics || 0} topics done</span>
+            <span className="text-slate-500">
+              {(course.progress?.totalTopics ?? 0) > 0
+                ? `${course.progress?.completedTopics ?? 0} / ${course.progress?.totalTopics} topics done`
+                : `${course.progress?.completedLectures ?? 0} / ${course.progress?.totalLectures ?? 0} lectures watched`}
+            </span>
           </div>
           <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
             <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${pct}%` }} />
