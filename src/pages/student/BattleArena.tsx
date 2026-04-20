@@ -852,8 +852,9 @@ function ResultScreen({
 
   return (
     <div className="max-w-4xl mx-auto py-12">
-      <CardGlass className="p-12 text-center border-slate-100 bg-white/60 overflow-hidden relative">
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
+      <CardGlass className="relative overflow-hidden border-indigo-400/20 bg-gradient-to-br from-[#0B1026] via-[#101735] to-[#151A35] p-12 text-center text-white">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
+        <div className="absolute -top-24 -right-24 h-56 w-56 rounded-full bg-indigo-500/20 blur-3xl" />
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -862,49 +863,53 @@ function ResultScreen({
            <div className="flex justify-center mb-10">
               <div className={cn(
                 "w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg relative",
-                isWinner ? "bg-amber-50 text-amber-500 border border-amber-100" : "bg-slate-50 text-slate-400 border border-slate-100"
+                isWinner ? "bg-amber-500/10 text-amber-300 border border-amber-400/30" : "bg-red-500/10 text-red-300 border border-red-400/30"
               )}>
                  {isWinner ? <Trophy className="w-12 h-12" /> : <Swords className="w-12 h-12" />}
                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border border-dashed border-current opacity-10 rounded-[2.5rem]" />
               </div>
            </div>
 
-           <h2 className={cn("text-3xl font-bold tracking-tight mb-2", isWinner ? "text-amber-600" : "text-slate-800")}>
-              {isWinner ? "Protocol Excellence" : "Node Compromised"}
+           <h2 className={cn("text-3xl font-extrabold tracking-tight mb-2", isWinner ? "text-amber-300" : "text-red-300")}>
+              {isWinner ? "Victory" : "Defeat"}
            </h2>
-           <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-12">
-              {isWinner ? "LUCID DOMINANCE ESTABLISHED" : "RE-CALIBRATION REQUIRED"}
+           <p className="text-[10px] font-bold text-white/55 uppercase tracking-widest mb-12">
+              {isWinner ? "Dominance Established" : "Regroup and Come Back Stronger"}
            </p>
 
            {/* Scoreboard */}
            <div className="grid grid-cols-3 gap-12 items-center mb-16 max-w-lg mx-auto">
               <div className="text-right">
-                 <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-2">YOU</p>
-                 <p className="text-3xl font-bold text-slate-800">{myRoundsWon}</p>
+                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">YOU</p>
+                 <p className="text-3xl font-extrabold text-white">{myRoundsWon}</p>
               </div>
               <div className="flex flex-col items-center">
-                 <div className="w-px h-10 bg-slate-100" />
-                 <span className="text-[9px] font-bold text-slate-400 my-2">VS</span>
-                 <div className="w-px h-10 bg-slate-100" />
+                 <div className="w-px h-10 bg-white/10" />
+                 <span className="text-[9px] font-bold text-white/50 my-2">VS</span>
+                 <div className="w-px h-10 bg-white/10" />
               </div>
               <div className="text-left">
-                 <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-2">OPPONENT</p>
-                 <p className="text-3xl font-bold text-slate-800">{opponentRoundsWon}</p>
+                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">OPPONENT</p>
+                 <p className="text-3xl font-extrabold text-white">{opponentRoundsWon}</p>
               </div>
            </div>
 
            {/* Rewards Grid */}
            <div className="grid grid-cols-2 gap-4 mb-16 max-w-md mx-auto">
-              <div className="p-6 rounded-3xl bg-indigo-50/50 border border-indigo-100/50 flex flex-col items-center shadow-sm">
-                 <Zap className="w-5 h-5 text-indigo-500 mb-2" />
-                 <p className="text-xl font-bold text-slate-800">+{xpEarned}</p>
-                 <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest">YIELD XP</p>
+              <div className="p-6 rounded-3xl bg-indigo-500/10 border border-indigo-400/20 flex flex-col items-center shadow-sm">
+                 <Zap className="w-5 h-5 text-indigo-300 mb-2" />
+                 <p className="text-xl font-extrabold text-white">+{xpEarned}</p>
+                 <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">XP GAINED</p>
               </div>
-              <div className="p-6 rounded-3xl bg-slate-50/50 border border-slate-100/50 flex flex-col items-center shadow-sm">
-                 <TrendingUp className="w-5 h-5 text-slate-400 mb-2" />
-                 <p className="text-xl font-bold text-slate-800">{newElo}</p>
-                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">ELO POS</p>
+              <div className="p-6 rounded-3xl bg-cyan-500/10 border border-cyan-400/20 flex flex-col items-center shadow-sm">
+                 {eloChange >= 0 ? <TrendingUp className="w-5 h-5 text-cyan-300 mb-2" /> : <TrendingDown className="w-5 h-5 text-red-300 mb-2" />}
+                 <p className="text-xl font-extrabold text-white">{eloChange >= 0 ? "+" : ""}{eloChange} ELO</p>
+                 <p className="text-[8px] font-bold text-cyan-300 uppercase tracking-widest">NEW: {newElo}</p>
               </div>
+           </div>
+           <div className="mb-12 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-500/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
+             <Flame className="w-3.5 h-3.5" />
+             Win Streak {isWinner ? "+1" : "Reset"}
            </div>
 
            {/* Actions */}
@@ -912,16 +917,16 @@ function ResultScreen({
               <motion.button
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                 onClick={onPlayAgain}
-                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 text-white text-[9px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-100 transition-all"
+                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 text-white text-[9px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-900/40 transition-all hover:bg-indigo-500"
               >
-                 RE-INITIATE LINK
+                 Rematch
               </motion.button>
               <motion.button
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                 onClick={onHome}
-                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-white border border-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all"
+                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-white/5 border border-white/20 text-white text-[9px] font-bold uppercase tracking-widest shadow-sm hover:bg-white/10 transition-all"
               >
-                 LEAVE ARENA
+                 Back to Lobby
               </motion.button>
            </div>
         </motion.div>
@@ -1465,113 +1470,96 @@ function ModeCard({
 // ─── Home Screen ──────────────────────────────────────────────────────────────
 
 function HomeScreen({
-  tier,
-  xp,
-  eloRating,
   dailyBattle,
   onModeSelect,
   onJoinFriend,
 }: {
-  tier: string;
-  xp: number;
-  eloRating?: number;
   dailyBattle: ReturnType<typeof useDailyBattle>["data"];
   onModeSelect: (mode: ModeConfig) => void;
   onJoinFriend: () => void;
 }) {
+  const quick = MODES.find(m => m.mode === "quick_duel");
+  const topic = MODES.find(m => m.mode === "topic_battle");
+  const daily = MODES.find(m => m.mode === "daily");
+  const aiMode: ModeConfig = {
+    mode: "bot",
+    title: "Practice with AI",
+    desc: "Train anytime",
+    detail: "Adaptive practice",
+    icon: Sparkles,
+    iconBg: "bg-indigo-50",
+    iconText: "text-indigo-600",
+    accent: "hover:border-indigo-100",
+    questions: 10,
+    seconds: 45,
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-      {/* 🛡️ Mission Directive Header */}
-      <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
-        <div className="space-y-4">
-           <div className="flex items-center gap-3 px-4 py-1 rounded-full bg-slate-50 border border-slate-100 text-indigo-500 w-fit">
-             <Swords className="w-3 h-3" />
-             <span className="text-[8px] font-bold uppercase tracking-widest">COMBAT FREQUENCY ACTIVE</span>
-           </div>
-           <h1 className="text-3xl font-bold text-slate-800 tracking-tight leading-none uppercase">
-              Combat <span className="text-indigo-600">Terminal</span>
-           </h1>
-           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-              {eloRating ? `SYNC RATING: ${eloRating} • ` : ""}Engage units to optimize resonance.
-           </p>
-        </div>
-
-        <motion.button
-          whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-          onClick={onJoinFriend}
-          className="px-8 py-4 rounded-2xl bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest flex items-center gap-3 shadow-xl group border border-slate-800"
-        >
-           <UserPlus className="w-4 h-4" /> NEURAL JOIN LINK
-        </motion.button>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Quick Actions</h3>
       </div>
 
-      {/* Stats Board */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-         <div className="lg:col-span-3">
-            <TierProgress tier={tier} xp={xp} />
-         </div>
-         <CardGlass className="p-8 bg-white/40 border-slate-100 text-slate-800 flex flex-col justify-center">
-            <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-4">UNIT STATUS</p>
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-indigo-500" />
-               </div>
-               <div>
-                  <p className="text-xl font-bold uppercase leading-none">{tier}</p>
-                  <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mt-1.5">Operational</p>
-               </div>
-            </div>
-         </CardGlass>
-      </div>
-
-      {/* Daily Directive Highlight */}
-      {dailyBattle && (
-        <CardGlass 
-          onClick={() => onModeSelect(MODES.find(m => m.mode === "daily")!)}
-          className="p-1 border-indigo-100/50 bg-white/40 shadow-sm"
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <button
+          onClick={() => quick && onModeSelect(quick)}
+          className="group rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         >
-          <div className="bg-indigo-50/30 p-8 rounded-[2.3rem] flex items-center justify-between group">
-            <div className="flex items-center gap-8">
-              <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                <Sparkles className="w-7 h-7" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-slate-800 tracking-tight uppercase">Prime Objective</h3>
-                  <span className="text-[8px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-widest">
-                    {(dailyBattle as any).status === "active" ? "Combat Live" : "Syncing"}
-                  </span>
-                </div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                  {(dailyBattle as any).topicName
-                    ? `Neural Sector: ${(dailyBattle as any).topicName}`
-                    : "Zero Domain • Neural Convergence"}
-                </p>
-              </div>
-            </div>
-            <div className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:translate-x-1 transition-all">
-               <ArrowRight className="w-5 h-5 text-indigo-600" />
-            </div>
+          <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+            <Zap className="h-4 w-4" />
           </div>
-        </CardGlass>
-      )}
+          <p className="text-sm font-semibold text-slate-800">Quick Duel</p>
+          <p className="text-xs text-slate-500">Instant match</p>
+          <span className="mt-3 inline-block rounded-lg bg-indigo-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white">Play</span>
+        </button>
 
-      {/* Mission Board Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-        <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-8">
-          {MODES.filter(m => m.mode !== "daily").map(mode => (
-            <ModeCard
-              key={mode.mode}
-              mode={mode}
-              dailyInfo={null}
-              onSelect={() => onModeSelect(mode)}
-            />
-          ))}
-        </div>
-        <div className="lg:col-span-1">
-          <BattleLeaderboard />
-        </div>
+        <button
+          onClick={() => topic && onModeSelect(topic)}
+          className="group rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+        >
+          <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <Target className="h-4 w-4" />
+          </div>
+          <p className="text-sm font-semibold text-slate-800">Topic Battle</p>
+          <p className="text-xs text-slate-500">Choose subject</p>
+          <span className="mt-3 inline-block rounded-lg border border-slate-200 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-700">Select</span>
+        </button>
+
+        <button
+          onClick={onJoinFriend}
+          className="group rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+        >
+          <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <Users className="h-4 w-4" />
+          </div>
+          <p className="text-sm font-semibold text-slate-800">Challenge Friend</p>
+          <p className="text-xs text-slate-500">Invite via code</p>
+          <span className="mt-3 inline-block rounded-lg border border-slate-200 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-700">Invite</span>
+        </button>
+
+        <button
+          onClick={() => onModeSelect(aiMode)}
+          className="group rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+        >
+          <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <p className="text-sm font-semibold text-slate-800">Practice with AI</p>
+          <p className="text-xs text-slate-500">Train anytime</p>
+          <span className="mt-3 inline-block rounded-lg border border-slate-200 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-700">Start</span>
+        </button>
       </div>
+
+      {dailyBattle && daily && (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-2.5 text-xs text-slate-600 flex items-center justify-between">
+          <span>
+            Daily: {(dailyBattle as any).topicName ?? "Challenge available"}
+          </span>
+          <button onClick={() => onModeSelect(daily)} className="text-indigo-600 font-semibold hover:text-indigo-500">
+            Open
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -1784,9 +1772,221 @@ function BotPickerScreen({
   );
 }
 
+interface LobbyUser {
+  studentId: string;
+  socketId: string;
+  name: string;
+  avatarUrl?: string | null;
+  eloRating?: number;
+  tier?: string;
+  status?: "online" | "in_battle" | "waiting";
+}
+
+interface IncomingChallenge {
+  challengeId: string;
+  fromStudentId: string;
+  expiresInSeconds: number;
+}
+
+function ChallengeLobbyScreen({
+  users,
+  myStudentId,
+  onChallenge,
+  onOpenJoinByCode,
+  onModeSelect,
+  myName,
+  eloRating,
+}: {
+  users: LobbyUser[];
+  myStudentId: string;
+  onChallenge: (targetStudentId: string) => void;
+  onOpenJoinByCode: () => void;
+  onModeSelect: (mode: ModeConfig) => void;
+  myName: string;
+  eloRating?: number;
+}) {
+  const others = users.filter(u => u.studentId !== myStudentId);
+  const quickModes = MODES.filter(m => m.mode === "quick_duel" || m.mode === "topic_battle" || m.mode === "daily");
+  const tierColor = (tier?: string) => {
+    const t = (tier ?? "iron").toLowerCase();
+    if (t === "champion") return { cls: "bg-amber-500/10 text-amber-700 border-amber-200", label: "Champion" };
+    if (t === "diamond") return { cls: "bg-cyan-500/10 text-cyan-700 border-cyan-200", label: "Diamond" };
+    if (t === "platinum") return { cls: "bg-indigo-500/10 text-indigo-700 border-indigo-200", label: "Platinum" };
+    if (t === "gold") return { cls: "bg-yellow-500/10 text-yellow-700 border-yellow-200", label: "Gold" };
+    if (t === "silver") return { cls: "bg-slate-400/10 text-slate-700 border-slate-200", label: "Silver" };
+    if (t === "bronze") return { cls: "bg-orange-500/10 text-orange-700 border-orange-200", label: "Bronze" };
+    return { cls: "bg-slate-500/10 text-slate-700 border-slate-200", label: "Iron" };
+  };
+  const statusFor = (status?: LobbyUser["status"]) => {
+    if (status === "in_battle") return { label: "In Battle", cls: "text-red-500", dot: "bg-red-500" };
+    if (status === "waiting") return { label: "Waiting", cls: "text-amber-500", dot: "bg-amber-500" };
+    return { label: "Online", cls: "text-emerald-600", dot: "bg-emerald-500" };
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+      <CardGlass className="border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+        <div className="space-y-2">
+          <button className="flex w-full items-center gap-3 rounded-xl bg-indigo-50 px-3 py-2 text-left text-indigo-700">
+            <Swords className="h-4 w-4" />
+            <span className="text-sm font-semibold">Battle Arena</span>
+          </button>
+          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-600 transition-colors hover:bg-slate-50">
+            <Trophy className="h-4 w-4" />
+            <span className="text-sm font-semibold">Leaderboard</span>
+          </button>
+          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-600 transition-colors hover:bg-slate-50">
+            <Clock className="h-4 w-4" />
+            <span className="text-sm font-semibold">History</span>
+          </button>
+        </div>
+      </CardGlass>
+
+      <div className="space-y-6">
+        <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
+              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+                {others.length + 1} Students Online
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500">ELO</p>
+                <p className="text-lg font-black text-indigo-600 tabular-nums">{eloRating ?? 1000}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 text-sm font-black text-white">
+                {myName.charAt(0).toUpperCase()}
+              </div>
+            </div>
+          </div>
+        </CardGlass>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          {quickModes.map(mode => (
+            <button
+              key={mode.mode}
+              onClick={() => onModeSelect(mode)}
+              className={cn(
+                "group rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5",
+                mode.mode === "quick_duel"
+                  ? "border-indigo-300 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_12px_24px_rgba(79,70,229,0.28)]"
+                  : "border-slate-200 bg-white text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.05)] hover:border-indigo-200"
+              )}
+            >
+              <div className="mb-2 flex items-center gap-2">
+                <mode.icon className="h-4 w-4" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">{mode.title}</span>
+              </div>
+              <p className={cn("text-[11px]", mode.mode === "quick_duel" ? "text-indigo-100" : "text-slate-500")}>{mode.detail}</p>
+            </button>
+          ))}
+          <button
+            onClick={onOpenJoinByCode}
+            className="group rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-0.5 hover:border-indigo-200"
+          >
+            <div className="mb-2 flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-indigo-600" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Join by Code</span>
+            </div>
+            <p className="text-[11px] text-slate-500">Enter friend room code</p>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] xl:col-span-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Live Players</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{others.length} online</span>
+            </div>
+            <div className="max-h-[380px] space-y-3 overflow-y-auto pr-1">
+              {others.length === 0 && (
+                <div className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60">
+                  <Users className="h-7 w-7 text-slate-300" />
+                  <p className="text-sm text-slate-500">No players online right now</p>
+                </div>
+              )}
+              {others.map((u) => {
+                const tier = tierColor(u.tier);
+                const status = statusFor(u.status);
+                const elo = Number(u.eloRating ?? 1000);
+                return (
+                  <div key={u.studentId} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 transition-all hover:border-indigo-200 hover:shadow-[0_8px_20px_rgba(79,70,229,0.08)]">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {u.avatarUrl ? (
+                        <img src={u.avatarUrl} alt={u.name} className="h-10 w-10 rounded-xl border border-slate-200 object-cover" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 text-sm font-black text-white">
+                          {u.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-slate-800">{u.name}</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${tier.cls}`}>{tier.label}</span>
+                          <span className="text-[10px] font-bold text-indigo-600 tabular-nums">ELO {elo}</span>
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${status.cls}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                            {status.label}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="sm" className="rounded-xl bg-indigo-600 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500" onClick={() => onChallenge(u.studentId)}>
+                      Challenge
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </CardGlass>
+
+          <CardGlass className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-5 shadow-[0_10px_24px_rgba(59,130,246,0.12)]">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">
+              <Sparkles className="h-3.5 w-3.5" />
+              Practice with AI
+            </div>
+            <p className="mb-5 text-sm text-slate-600">
+              Boost your speed and confidence in low-pressure AI battles.
+            </p>
+            <Button
+              className="h-11 w-full rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-[10px] font-bold uppercase tracking-widest hover:from-indigo-500 hover:to-blue-500"
+              onClick={() => onModeSelect({
+                mode: "bot",
+                title: "Bot Practice",
+                desc: "AI Sparring",
+                detail: "Realtime bot match",
+                icon: Sparkles,
+                iconBg: "bg-cyan-50",
+                iconText: "text-cyan-600",
+                accent: "hover:border-cyan-100",
+                questions: 10,
+                seconds: 45,
+              })}
+            >
+              Start AI Battle
+            </Button>
+          </CardGlass>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Root Component ──────────────────────────────────────────────────────────
 
-type Stage = "home" | "topic_pick" | "join_room" | "matchmaking" | "in_battle" | "result" | "error";
+type Stage =
+  | "lobby"
+  | "challenge_sent"
+  | "incoming_request"
+  | "topic_pick"
+  | "join_room"
+  | "matchmaking"
+  | "in_battle"
+  | "result"
+  | "error";
 
 const BattleArena = () => {
   const { data: me, isLoading: meLoading } = useStudentMe();
@@ -1794,19 +1994,120 @@ const BattleArena = () => {
   const { data: eloData } = useMyBattleElo();
   const createBattle = useCreateBattle();
 
-  const [stage, setStage]             = useState<Stage>("home");
+  const [stage, setStage]             = useState<Stage>("lobby");
   const [activeMode, setActiveMode]   = useState<ModeConfig | null>(null);
   const [battleRoom, setBattleRoom]   = useState<BattleRoom | null>(null);
   const [topicName, setTopicName]     = useState("");
   const [errorMsg, setErrorMsg]       = useState("");
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<LobbyUser[]>([]);
+  const [incomingChallenge, setIncomingChallenge] = useState<IncomingChallenge | null>(null);
+  const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(null);
+  const [botQuestions, setBotQuestions] = useState<QuizQuestion[] | undefined>(undefined);
+  const [challengeCountdown, setChallengeCountdown] = useState(10);
+  const lobbySocketRef = useRef<Socket | null>(null);
 
   const student    = me?.student;
-  const tier       = (eloData?.tier ?? student?.currentEloTier ?? "iron").toLowerCase();
-  const xp         = eloData?.battleXp ?? student?.xpPoints ?? 0;
   const eloRating  = eloData?.eloRating;
   const myStudentId = student?.id ?? "";
   const myName      = me?.fullName ?? "You";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
+  const incomingChallengerName = incomingChallenge
+    ? (onlineUsers.find(u => u.studentId === incomingChallenge.fromStudentId)?.name ?? "A student")
+    : "A student";
+
+  useEffect(() => {
+    if (!myStudentId) return;
+    const token = tokenStorage.getAccess();
+    const socket = io(`${backendUrl}/battle`, {
+      auth: { token },
+      transports: ["websocket"],
+    });
+    lobbySocketRef.current = socket;
+
+    socket.on("connect", () => {
+      socket.emit("lobby:join", {
+        studentId: myStudentId,
+        tenantId: me?.tenantId,
+      });
+    });
+
+    socket.on("lobby:online_users", (payload: { users: LobbyUser[] }) => {
+      setOnlineUsers(Array.isArray(payload?.users) ? payload.users : []);
+    });
+
+    socket.on("battle:incoming_request", (payload: IncomingChallenge) => {
+      setIncomingChallenge(payload);
+      setStage("incoming_request");
+    });
+
+    socket.on("battle:challenge_sent", (payload: { challengeId: string }) => {
+      setPendingChallengeId(payload.challengeId);
+      setStage("challenge_sent");
+      toast("Challenge sent.");
+    });
+
+    socket.on("battle:challenge_rejected", () => {
+      setPendingChallengeId(null);
+      setStage("lobby");
+      toast.error("Challenge rejected.");
+    });
+
+    socket.on("battle:challenge_accepted", (payload: { room: BattleRoom }) => {
+      setPendingChallengeId(null);
+      setIncomingChallenge(null);
+      setActiveMode(MODES.find(m => m.mode === "challenge_friend") ?? MODES[0]);
+      setBattleRoom(payload.room);
+      setStage("in_battle");
+      toast.success("Challenge accepted. Battle starting!");
+    });
+
+    socket.on("battle:challenge_timeout", () => {
+      setPendingChallengeId(null);
+      setActiveMode({
+        mode: "bot",
+        title: "Bot Practice",
+        desc: "Auto fallback",
+        detail: "Fallback duel",
+        icon: Sparkles,
+        iconBg: "bg-indigo-50",
+        iconText: "text-indigo-600",
+        accent: "hover:border-indigo-100",
+        questions: 10,
+        seconds: 45,
+      });
+      setBattleRoom({
+        battleId: `bot-${Date.now()}`,
+        roomCode: "BOT",
+        status: "in_progress",
+        mode: "bot",
+      });
+      setBotQuestions(undefined);
+      setStage("in_battle");
+      toast("No response in 10s. Starting bot battle.");
+    });
+
+    socket.on("battle:challenge_error", (payload: { message?: string }) => {
+      const msg = payload?.message ?? "Challenge failed";
+      setPendingChallengeId(null);
+      setStage("lobby");
+      toast.error(msg);
+    });
+
+    return () => {
+      socket.disconnect();
+      lobbySocketRef.current = null;
+    };
+  }, [backendUrl, me?.tenantId, myStudentId]);
+
+  useEffect(() => {
+    if (stage !== "challenge_sent" && stage !== "incoming_request") return;
+    setChallengeCountdown(10);
+    const iv = setInterval(() => {
+      setChallengeCountdown(prev => (prev <= 0 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [stage, pendingChallengeId, incomingChallenge?.challengeId]);
 
   const handleModeSelect = (mode: ModeConfig) => {
     setActiveMode(mode);
@@ -1824,6 +2125,28 @@ const BattleArena = () => {
       }
     } else {
       startBattle(mode);
+    }
+  };
+
+  const sendChallenge = (targetStudentId: string) => {
+    if (!lobbySocketRef.current || !myStudentId) return;
+    lobbySocketRef.current.emit("battle:challenge", {
+      targetStudentId,
+      fromStudentId: myStudentId,
+      tenantId: me?.tenantId,
+    });
+  };
+
+  const respondToChallenge = (accepted: boolean) => {
+    if (!incomingChallenge || !lobbySocketRef.current) return;
+    lobbySocketRef.current.emit("battle:challenge_response", {
+      challengeId: incomingChallenge.challengeId,
+      accepted,
+      studentId: myStudentId,
+    });
+    if (!accepted) {
+      setIncomingChallenge(null);
+      setStage("lobby");
     }
   };
 
@@ -1870,12 +2193,15 @@ const BattleArena = () => {
   };
 
   const reset = () => {
-    setStage("home");
+    setStage("lobby");
     setActiveMode(null);
     setBattleRoom(null);
     setTopicName("");
     setErrorMsg("");
     setBattleResult(null);
+    setIncomingChallenge(null);
+    setPendingChallengeId(null);
+    setBotQuestions(undefined);
   };
 
   const playAgain = () => {
@@ -1901,18 +2227,82 @@ const BattleArena = () => {
   }
 
   return (
-    <div className="flex flex-col space-y-12 pb-32 selection:bg-red-600/10">
+    <div className="relative flex flex-col space-y-12 pb-32 ">
+      <div className="pointer-events-none absolute inset-0 -z-10" />
         <AnimatePresence mode="wait">
-          {stage === "home" && (
-            <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <HomeScreen
-                tier={tier}
-                xp={xp}
-                eloRating={eloRating}
-                dailyBattle={dailyBattle}
+          {stage === "lobby" && (
+            <motion.div key="lobby" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
+              <ChallengeLobbyScreen
+                users={onlineUsers}
+                myStudentId={myStudentId}
+                onChallenge={sendChallenge}
+                onOpenJoinByCode={() => setStage("join_room")}
                 onModeSelect={handleModeSelect}
-                onJoinFriend={() => setStage("join_room")}
+                myName={myName}
+                eloRating={eloRating}
               />
+              <div className="opacity-95">
+                <HomeScreen
+                  dailyBattle={dailyBattle}
+                  onModeSelect={handleModeSelect}
+                  onJoinFriend={() => setStage("join_room")}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {stage === "challenge_sent" && (
+            <motion.div key="challenge-sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
+              <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
+                <div className="relative mx-auto h-24 w-24">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, ease: "linear", repeat: Infinity }}
+                    className="absolute inset-0 rounded-full border-2 border-dashed border-indigo-300"
+                  />
+                  <div className="absolute inset-2 flex items-center justify-center rounded-full bg-indigo-50 shadow-[0_0_30px_rgba(79,70,229,0.2)]">
+                    <span className="text-2xl font-black text-indigo-600 tabular-nums">{challengeCountdown}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold">Waiting for opponent...</h3>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Challenge sent</p>
+                </div>
+                <div className="flex justify-center">
+                  <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={() => setStage("lobby")}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardGlass>
+            </motion.div>
+          )}
+
+          {stage === "incoming_request" && incomingChallenge && (
+            <motion.div key="incoming-request" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
+              <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
+                <div className="flex justify-center">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-rose-600">
+                    🔥 Incoming Request
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                    Mode: Quick Duel
+                  </p>
+                </div>
+                <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.18)]">
+                  {challengeCountdown}
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <Button className="rounded-xl bg-emerald-600 px-6 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500" onClick={() => respondToChallenge(true)}>
+                    Accept
+                  </Button>
+                  <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={() => respondToChallenge(false)}>
+                    Reject
+                  </Button>
+                </div>
+              </CardGlass>
             </motion.div>
           )}
 
@@ -1928,7 +2318,7 @@ const BattleArena = () => {
 
           {stage === "join_room" && (
             <motion.div key="join" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <JoinRoomScreen onBack={() => setStage("home")} onJoined={handleJoined} />
+              <JoinRoomScreen onBack={() => setStage("lobby")} onJoined={handleJoined} />
             </motion.div>
           )}
 
@@ -1953,6 +2343,7 @@ const BattleArena = () => {
                 myName={myName}
                 onEnd={reset}
                 onResult={handleBattleResult}
+                prefetchedQuestions={botQuestions}
                 topicLabel={topicName || undefined}
               />
             </motion.div>
