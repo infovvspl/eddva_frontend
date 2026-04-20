@@ -741,6 +741,7 @@ export interface CreateDoubtPayload {
   batchId?: string;
   topicId: string;
   questionText?: string;
+  questionImageUrl?: string;
   source?: DoubtSource;
   sourceRefId?: string;
   explanationMode?: ExplanationMode;

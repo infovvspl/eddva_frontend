@@ -150,6 +150,17 @@ export function useMarkDoubtReviewed() {
   });
 }
 
+export function useResolveDoubtWithAiAsTeacher() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (doubtId: string) => teacherApi.resolveDoubtWithAiAsTeacher(doubtId),
+    onSuccess: (_data, doubtId) => {
+      invalidateDoubts(qc);
+      qc.invalidateQueries({ queryKey: teacherKeys.doubt(doubtId) });
+    },
+  });
+}
+
 export function useRateTeacherResponse() {
   const qc = useQueryClient();
   return useMutation({

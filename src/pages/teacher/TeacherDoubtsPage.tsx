@@ -1,5 +1,6 @@
-﻿import { useState, useMemo } from "react";
+﻿import { useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -7,6 +8,7 @@ import {
   useAllDoubts,
   useRespondToDoubt,
   useMarkDoubtReviewed,
+  useResolveDoubtWithAiAsTeacher,
   useMyBatches,
   teacherKeys,
 } from "@/hooks/use-teacher";
@@ -15,9 +17,10 @@ import {
   MessageSquare, Clock, AlertCircle, CheckCircle2, Send,
   Loader2, Search, RefreshCw, ChevronRight, Image as ImageIcon,
   BookOpen, Sparkles, ThumbsUp, ThumbsDown, Link2, Eye, EyeOff,
-  CheckCheck, XCircle, Users, Inbox, Filter, Bot,
+  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload,
 } from "lucide-react";
 import { apiClient, extractData } from "@/lib/api/client";
+import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -118,18 +121,42 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
   const [response, setResponse] = useState("");
   const [lectureRef, setLectureRef] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [diagramUploading, setDiagramUploading] = useState(false);
+  const diagramFileRef = useRef<HTMLInputElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const respondM = useRespondToDoubt();
 
+  const onDiagramFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setDiagramUploading(true);
+    try {
+      const contentType = (file.type && file.type.trim()) || guessImageMimeFromName(file.name);
+      const url = await uploadToS3(
+        {
+          type: "doubt-response-image",
+          fileName: file.name,
+          contentType,
+          fileSize: file.size,
+        },
+        file,
+      );
+      setImageUrl(url);
+      toast.success("Image uploaded — it will be included with your response.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed.";
+      toast.error(msg);
+    } finally {
+      setDiagramUploading(false);
+    }
+  };
+
   const handleAiAssist = async () => {
-    if (!questionText?.trim()) return;
     setAiLoading(true);
     try {
-      const res = await apiClient.post("/ai/doubt/resolve", {
-        questionText: questionText.trim(),
-        mode: "detailed",
-      });
+      const res = await apiClient.post(`/doubts/${doubtId}/ai-draft`);
       const data = extractData<{ explanation: string }>(res);
       const explanation = data?.explanation ?? "";
       if (explanation) {
@@ -147,6 +174,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
 
   const handleSend = async () => {
     if (!response.trim()) { toast.error("Please write a response before sending."); return; }
+    if (diagramUploading) { toast.error("Wait for the image upload to finish."); return; }
     try {
       await respondM.mutateAsync({
         id: doubtId,
@@ -179,7 +207,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
       </div>
 
       {/* AI Assist button */}
-      {!showPreview && questionText && (
+      {!showPreview && (
         <button
           onClick={handleAiAssist}
           disabled={aiLoading}
@@ -229,17 +257,42 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
             />
           </div>
 
-          {/* Diagram URL */}
+          {/* Diagram: URL or upload */}
           <div className="space-y-1.5">
             <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <ImageIcon className="w-3.5 h-3.5" /> Diagram / Image URL (optional)
+              <ImageIcon className="w-3.5 h-3.5" /> Diagram / image (optional)
             </label>
-            <input
-              value={imageUrl}
-              onChange={e => setImageUrl(e.target.value)}
-              placeholder="Paste image URL for a diagram or whiteboard photo"
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+              <input
+                value={imageUrl}
+                onChange={e => setImageUrl(e.target.value)}
+                placeholder="Paste image URL, or use Upload"
+                className="w-full min-w-0 flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              <input
+                ref={diagramFileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                className="hidden"
+                onChange={onDiagramFileSelected}
+              />
+              <button
+                type="button"
+                onClick={() => diagramFileRef.current?.click()}
+                disabled={diagramUploading}
+                className="inline-flex shrink-0 items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium bg-muted/50 hover:bg-muted transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {diagramUploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {diagramUploading ? "Uploading…" : "Upload image"}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              JPG, PNG, WebP, or GIF up to 10&nbsp;MB. Uploaded files are stored for your institute and the URL is filled in automatically.
+            </p>
           </div>
         </>
       )}
@@ -247,7 +300,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
       {/* Send button */}
       <button
         onClick={handleSend}
-        disabled={respondM.isPending || !response.trim()}
+        disabled={respondM.isPending || !response.trim() || diagramUploading}
         className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {respondM.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -263,6 +316,7 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
   const [aiQuality, setAiQuality] = useState<"correct" | "partial" | "wrong" | null>(null);
   const [showResponseEditor, setShowResponseEditor] = useState(false);
   const markReviewedM = useMarkDoubtReviewed();
+  const resolveWithAiM = useResolveDoubtWithAiAsTeacher();
 
   const mins = doubt.timeSinceAskedMinutes ?? doubt.minutesSinceAsked;
   const name = doubt.student?.fullName ?? doubt.studentName ?? "Student";
@@ -279,6 +333,19 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
       onRefresh();
     } catch {
       toast.error("Failed to mark as reviewed.");
+    }
+  };
+
+  const handleResolveWithAi = async () => {
+    try {
+      await resolveWithAiM.mutateAsync(doubt.id);
+      toast.success("AI explanation generated and sent to the student.");
+      onRefresh();
+    } catch (e: unknown) {
+      const msg = isAxiosError(e)
+        ? (e.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      toast.error(msg || "Could not run AI resolution. Try again or write a manual response.");
     }
   };
 
@@ -444,6 +511,35 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
                       : "Student asked you directly — no AI was used."}
                   </div>
                 )}
+
+                {isEscalated && !showResponseEditor && (
+                  <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-950/30 p-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground">Resolve with AI</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Run the full AI pipeline on this doubt. The student gets the same experience as an automatic AI answer, and you can still verify or follow up afterward.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleResolveWithAi}
+                      disabled={resolveWithAiM.isPending}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 border-blue-400 dark:border-blue-600 bg-white dark:bg-background text-blue-700 dark:text-blue-300 hover:bg-blue-100/60 dark:hover:bg-blue-950/50 disabled:opacity-50 transition-colors"
+                    >
+                      {resolveWithAiM.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Bot className="w-4 h-4" />
+                      )}
+                      {resolveWithAiM.isPending ? "Generating AI answer…" : "Resolve with AI for student"}
+                    </button>
+                    <p className="text-xs text-center text-muted-foreground">— or write your own answer below —</p>
+                  </div>
+                )}
+
                 <ResponseEditor
                   doubtId={doubt.id}
                   aiQualityRating={aiQuality ?? undefined}

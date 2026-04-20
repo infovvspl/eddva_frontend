@@ -287,6 +287,12 @@ export async function markDoubtReviewed(id: string, aiQualityRating = "correct")
   return extractData<Doubt>(res);
 }
 
+/** Teacher runs full AI resolution for an escalated (or open) doubt — same outcome as student-side AI answer. */
+export async function resolveDoubtWithAiAsTeacher(doubtId: string): Promise<Doubt> {
+  const res = await apiClient.patch(`/doubts/${doubtId}/resolve-with-ai`, {});
+  return extractData<Doubt>(res);
+}
+
 export async function rateTeacherResponse(id: string, isHelpful: boolean): Promise<Doubt> {
   const res = await apiClient.patch(`/doubts/${id}/rate-teacher`, { isHelpful });
   return extractData<Doubt>(res);

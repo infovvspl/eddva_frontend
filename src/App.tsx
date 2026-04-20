@@ -32,6 +32,8 @@ import MockTestsPage from "./pages/admin/MockTestsPage";
 import LecturesPage from "./pages/admin/LecturesPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AdminCalendarPage from "./pages/admin/AdminCalendarPage";
+import TeacherCalendarPage from "./pages/teacher/TeacherCalendarPage";
+import StudentCalendarPage from "./pages/student/StudentCalendarPage";
 import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherOnboardingPage from "./pages/teacher/TeacherOnboardingPage";
@@ -131,6 +133,7 @@ const TeacherRoutes = () => (
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
       <Route path="/teacher/batches" element={<TeacherBatchesPage />} />
+      <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
@@ -149,6 +152,7 @@ const StudentRoutes = () => (
       <Route path="/student" element={<StudentDashboard />} />
       <Route path="/student/learn" element={<StudentLearnPage />} />
       <Route path="/student/learn/topic/:topicId" element={<TopicDetailPage />} />
+      <Route path="/student/calendar" element={<StudentCalendarPage />} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
       <Route path="/student/battle" element={<BattleArena />} />
