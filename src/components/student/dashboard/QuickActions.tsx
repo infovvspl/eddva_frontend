@@ -1,4 +1,4 @@
-import { ClipboardList, MessageCircleQuestion, CalendarDays, Swords } from "lucide-react";
+import { ClipboardList, MessageCircleQuestion, CalendarDays, Swords, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,14 @@ const ACTIONS: Action[] = [
     shadow: "shadow-blue-200 dark:shadow-blue-900/30",
   },
   {
+    icon: <Calendar className="w-6 h-6" />,
+    label: "Calendar",
+    description: "Classes & institute events",
+    route: "/student/calendar",
+    gradient: "from-cyan-500 to-blue-600",
+    shadow: "shadow-cyan-200 dark:shadow-cyan-900/30",
+  },
+  {
     icon: <CalendarDays className="w-6 h-6" />,
     label: "Study Plan",
     description: "View today's plan",
@@ -50,7 +58,7 @@ export default function QuickActions() {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {ACTIONS.map((action) => (
         <button
           key={action.label}

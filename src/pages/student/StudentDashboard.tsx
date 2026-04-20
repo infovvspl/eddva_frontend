@@ -1,7 +1,7 @@
 import { Loader2, BookOpen, ChevronRight, Flame, Zap, Trophy, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useStudentMe, useMyCourses, useDiscoverBatches, useStudentDashboard } from "@/hooks/use-student";
+import { useStudentMe, useMyCourses, useStudentDashboard, useMyPerformance } from "@/hooks/use-student";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import student from "@/assets/undraw_studying-science_kk9e.svg"
@@ -13,13 +13,6 @@ import LeaderboardPreview from "@/components/student/dashboard/LeaderboardPrevie
 import Recommendations from "@/components/student/dashboard/Recommendations";
 import QuickActions from "@/components/student/dashboard/QuickActions";
 import { getApiOrigin } from "@/lib/api-config";
-
-// ── Dummy data (replace with API when available) ──────────────────────────────
-const DUMMY_STATS = {
-  pendingLectures: 12,
-  testsAttempted: 34,
-  accuracy: 74,
-};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const _API_ORIGIN = getApiOrigin();
@@ -100,10 +93,10 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { data: me, isLoading: meLoading } = useStudentMe();
   const { data: rawCourses = [], isLoading: coursesLoading } = useMyCourses();
-  const { data: discoverData } = useDiscoverBatches(true);
-  const { data: dash } = useStudentDashboard();
+  const { data: dash, isLoading: dashLoading } = useStudentDashboard();
+  const { data: perf, isLoading: perfLoading } = useMyPerformance();
 
-  const isLoading = meLoading || coursesLoading;
+  const isLoading = meLoading || coursesLoading || dashLoading || perfLoading;
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -112,8 +105,16 @@ export default function StudentDashboard() {
   const streak            = me?.student?.streakDays ?? 0;
   const xp                = me?.student?.xpPoints ?? 0;
   const tier              = me?.student?.currentEloTier ?? "Iron";
-  const weakTopics        = (dash as any)?.weakTopics ?? [];
-  const activeExamTarget  = me?.student?.examTarget || discoverData?.studentPreferences?.examTarget || "";
+  const weakTopics = dash?.weakTopics ?? [];
+  const activeExamTarget = me?.student?.examTarget || "";
+  const pendingFromCourses = rawCourses.reduce((acc: number, c: any) => {
+    const t = c.progress?.totalLectures ?? 0;
+    const w = c.progress?.watchedLectures ?? 0;
+    return acc + Math.max(0, t - w);
+  }, 0);
+  const pendingLectures = (dash?.pendingLectures ?? 0) > 0 ? dash!.pendingLectures : pendingFromCourses;
+  const testsAttempted = Math.max(dash?.testsAttempted ?? 0, perf?.totalTestsTaken ?? 0);
+  const accuracy = Math.round(dash?.overallAccuracy ?? perf?.overallAccuracy ?? 0);
   const grad              = examGradient(activeExamTarget);
 
   const courses = rawCourses.map((c: any) => ({
@@ -167,7 +168,7 @@ export default function StudentDashboard() {
         <p className="text-white/80 text-sm">
           {courses.length > 0
             ? `You've completed ${avgProgress}% of your journey. Stay consistent 🚀`
-            : "Start your NEET journey today and unlock your potential."}
+            : "Enroll in a course to start tracking progress here."}
         </p>
 
         {courses.length > 0 && (
@@ -251,9 +252,9 @@ export default function StudentDashboard() {
       <motion.div variants={fade}>
         <StatsGrid
           coursesEnrolled={courses.length}
-          pendingLectures={DUMMY_STATS.pendingLectures}
-          testsAttempted={DUMMY_STATS.testsAttempted}
-          accuracy={DUMMY_STATS.accuracy}
+          pendingLectures={pendingLectures}
+          testsAttempted={testsAttempted}
+          accuracy={accuracy}
           streak={streak}
         />
       </motion.div>
@@ -288,7 +289,11 @@ export default function StudentDashboard() {
           <motion.div variants={fade}>
             <Card>
               <Section title="Performance Overview">
-                <PerformanceChart />
+                <PerformanceChart
+                  subjectAccuracy={perf?.subjectAccuracy}
+                  totalTestsTaken={perf?.totalTestsTaken}
+                  overallAccuracy={accuracy}
+                />
               </Section>
             </Card>
           </motion.div>

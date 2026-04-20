@@ -32,6 +32,8 @@ import MockTestsPage from "./pages/admin/MockTestsPage";
 import LecturesPage from "./pages/admin/LecturesPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AdminCalendarPage from "./pages/admin/AdminCalendarPage";
+import TeacherCalendarPage from "./pages/teacher/TeacherCalendarPage";
+import StudentCalendarPage from "./pages/student/StudentCalendarPage";
 import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherOnboardingPage from "./pages/teacher/TeacherOnboardingPage";
@@ -78,6 +80,8 @@ import LandingCoursesPage from "./pages/landing/LandingCoursesPage";
 import ExamsRegistrationPage from "./pages/landing/ExamsRegistrationPage";
 import StudyMaterialPage from "./pages/landing/StudyMaterialPage";
 import CareerPage from "./pages/landing/CareerPage";
+import PrivacyPolicyPage from "./pages/landing/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/landing/TermsOfServicePage";
 
 const queryClient = new QueryClient();
 
@@ -132,6 +136,7 @@ const TeacherRoutes = () => (
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
       <Route path="/teacher/batches" element={<TeacherBatchesPage />} />
+      <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
@@ -150,6 +155,7 @@ const StudentRoutes = () => (
       <Route path="/student" element={<StudentDashboard />} />
       <Route path="/student/learn" element={<StudentLearnPage />} />
       <Route path="/student/learn/topic/:topicId" element={<TopicDetailPage />} />
+      <Route path="/student/calendar" element={<StudentCalendarPage />} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
       <Route path="/student/battle" element={<BattleArena />} />
@@ -179,6 +185,15 @@ const StudentRoutes = () => (
 const TenantRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
+    <Route path="/courses" element={<Courses />} />
+    <Route path="/about-us" element={<AboutUs />} />
+    <Route path="/about" element={<AboutUs />} />
+    <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
+    <Route path="/career" element={<CareerPage />} />
+    <Route path="/study-material/:type" element={<StudyMaterialPage />} />
+    <Route path="/study-material" element={<StudyMaterialPage />} />
+    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+    <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -202,6 +217,8 @@ const PlatformRoutes = () => (
     <Route path="/career" element={<CareerPage />} />
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />
     <Route path="/study-material" element={<StudyMaterialPage />} />
+    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+    <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />

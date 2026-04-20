@@ -17,8 +17,7 @@ import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import edvaLogo from "@/assets/EDVA LOGO 04.png";
-import { useDiscoverBatches, useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
-import { BatchDiscoveryModal } from "@/components/student/BatchDiscoveryModal";
+import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useUnreadCount } from "@/hooks/use-notifications";
@@ -65,21 +64,22 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Quizzes & Tests", path: "/teacher/quizzes",   icon: BookOpen        },
     { label: "Doubt Queue",     path: "/teacher/doubts",    icon: MessageSquare, badge: 5 },
     { label: "My Batches",      path: "/teacher/batches",   icon: Users           },
+    { label: "Calendar",        path: "/teacher/calendar",  icon: Calendar        },
     { label: "Analytics",       path: "/teacher/analytics", icon: BarChart        },
     { label: "AI Tools",        path: "/teacher/ai-tools",  icon: Sparkles        },
     { label: "My Profile",      path: "/teacher/profile",   icon: User            },
   ],
   student: [
-    { label: "Dashboard",      path: "/student",                  icon: LayoutDashboard },
-    { label: "My Courses",     path: "/student/courses",          icon: Library         },
-    { label: "Learn",          path: "/student/learn",            icon: Brain           },
-    { label: "Lectures",       path: "/student/lectures",         icon: Video           },
-    { label: "Study Plan",     path: "/student/study-plan",       icon: ClipboardList   },
-    { label: "Doubts",         path: "/student/doubts",           icon: Headphones      },
-    { label: "Leaderboard",    path: "/student/leaderboard",      icon: Trophy          },
-    { label: "Battle Arena",   path: "/student/battle",           icon: Swords          },
-    { label: "Notifications",  path: "/student/notifications",    icon: Bell            },
-    { label: "Profile",        path: "/student/profile",          icon: User            },
+    { label: "Dashboard",    path: "/student",               icon: LayoutDashboard },
+    { label: "Calendar",     path: "/student/calendar",      icon: Calendar        },
+    { label: "My Courses",   path: "/student/courses",       icon: Library         },
+    { label: "Learn",        path: "/student/learn",         icon: Brain           },
+    { label: "Lectures",     path: "/student/lectures",      icon: Video           },
+    { label: "Study Plan",   path: "/student/study-plan",    icon: ClipboardList   },
+    { label: "Doubts",       path: "/student/doubts",        icon: Headphones      },
+    { label: "Leaderboard",  path: "/student/leaderboard",   icon: Trophy          },
+    { label: "Battle Arena", path: "/student/battle",        icon: Swords          },
+    { label: "Profile",      path: "/student/profile",       icon: User            },
   ],
 };
 
@@ -97,7 +97,6 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [showBatchModal, setShowBatchModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: unreadNotifCount = 0 } = useUnreadCount();
@@ -166,8 +165,6 @@ const DashboardLayout = () => {
   const examTarget = me?.student?.examTarget ?? "";
   const prefKey    = user ? `pref_modal_done_${user.id}` : null;
 
-  const { data: discoverData } = useDiscoverBatches(isStudent);
-
   // Show preference modal exactly once per student (localStorage flag only — no repeat on skip)
   useEffect(() => {
     if (!isStudent || !prefKey || me === undefined) return;
@@ -192,19 +189,6 @@ const DashboardLayout = () => {
     setPrefDropdownOpen(false);
     updateProfile.mutate({ examTarget: et });
   }
-
-  // ── Batch Discovery Modal (students only) ──────────────────────────────────
-  const batchModalSeenKey = user ? `batch_discovery_seen_${user.id}` : null;
-
-  useEffect(() => {
-    if (!isStudent || !discoverData || !batchModalSeenKey) return;
-    const alreadySeen = localStorage.getItem(batchModalSeenKey) === "true";
-    if (alreadySeen) return;
-    if (discoverData.availableBatches.length > 0) {
-      setShowBatchModal(true);
-      localStorage.setItem(batchModalSeenKey, "true");
-    }
-  }, [discoverData, isStudent, batchModalSeenKey]);
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
@@ -646,10 +630,6 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      {/* ── Batch Discovery Modal (students only) ── */}
-      {showBatchModal && (
-        <BatchDiscoveryModal onClose={() => setShowBatchModal(false)} />
-      )}
     </div>
   );
 };

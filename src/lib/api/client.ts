@@ -55,8 +55,9 @@ export const apiClient = axios.create({
 });
 
 // Public endpoints that must not carry auth or tenant headers
-const PUBLIC_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/otp", "/auth/forgot", "/auth/reset"];
-const isPublicEndpoint = (url = "") => PUBLIC_ENDPOINTS.some((p) => url.includes(p));
+const PUBLIC_FRAGMENTS = ["auth/login", "auth/register", "auth/otp", "auth/forgot", "auth/reset"];
+const isPublicEndpoint = (url = "") =>
+  PUBLIC_FRAGMENTS.some((p) => (url || "").replace(/^\//, "").includes(p));
 
 // ---------------------------------------------------------------------------
 // Request interceptor — attach token
@@ -114,9 +115,9 @@ apiClient.interceptors.response.use(
     // If 401 and we haven't already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Never attempt a token refresh for auth endpoints themselves
-      const url = originalRequest.url || "";
-      const isAuthEndpoint = ["/auth/login", "/auth/otp", "/auth/refresh", "/auth/forgot", "/auth/reset"].some(
-        (p) => url.includes(p)
+      const url = (originalRequest.url || "").replace(/^\//, "");
+      const isAuthEndpoint = ["auth/login", "auth/otp", "auth/refresh", "auth/forgot", "auth/reset"].some((p) =>
+        url.includes(p),
       );
       if (isAuthEndpoint) {
         return Promise.reject(error);

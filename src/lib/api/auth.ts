@@ -118,6 +118,7 @@ export async function updateProfile(payload: ProfileUpdatePayload) {
 
 /** Login with email + password */
 export async function loginWithPassword(payload: { email?: string; phoneNumber?: string; password: string }): Promise<OtpVerifyResponse> {
+  tokenStorage.clear();
   const res = await apiClient.post("/auth/login", payload);
   const data = extractData<OtpVerifyResponse>(res);
 

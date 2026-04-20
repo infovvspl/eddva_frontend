@@ -282,7 +282,7 @@ export async function getAllDoubts(params?: { status?: string; batchId?: string;
   if (params?.status) q.set("status", params.status);
   if (params?.batchId) q.set("batchId", params.batchId);
   if (params?.page) q.set("page", String(params.page));
-  if (params?.limit) q.set("limit", String(params.limit));
+  q.set("limit", String(params?.limit ?? 100));
   const res = await apiClient.get(`/doubts?${q}`);
   return extractData<Doubt[]>(res) ?? [];
 }
@@ -299,6 +299,12 @@ export async function respondToDoubt(id: string, payload: TeacherResponsePayload
 
 export async function markDoubtReviewed(id: string, aiQualityRating = "correct"): Promise<Doubt> {
   const res = await apiClient.patch(`/doubts/${id}/mark-reviewed`, { aiQualityRating });
+  return extractData<Doubt>(res);
+}
+
+/** Teacher runs full AI resolution for an escalated (or open) doubt — same outcome as student-side AI answer. */
+export async function resolveDoubtWithAiAsTeacher(doubtId: string): Promise<Doubt> {
+  const res = await apiClient.patch(`/doubts/${doubtId}/resolve-with-ai`, {});
   return extractData<Doubt>(res);
 }
 

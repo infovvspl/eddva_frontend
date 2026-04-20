@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 const TYPE_CONFIG: Record<string, { bg: string; text: string; Icon: React.ComponentType<{ className?: string }> }> = {
   lecture_published:   { bg: "bg-indigo-50",  text: "text-indigo-600",  Icon: Video        },
   lecture_scheduled:   { bg: "bg-blue-50",    text: "text-blue-600",    Icon: Video        },
+  live_class_scheduled: { bg: "bg-red-50",     text: "text-red-600",     Icon: Video        },
+  calendar_event:      { bg: "bg-sky-50",     text: "text-sky-600",     Icon: Calendar     },
   battle_invite:       { bg: "bg-rose-50",     text: "text-rose-600",    Icon: Trophy       },
   doubt_resolved:      { bg: "bg-emerald-50",  text: "text-emerald-600", Icon: HelpCircle   },
   xp_earned:           { bg: "bg-amber-50",    text: "text-amber-600",   Icon: Zap          },

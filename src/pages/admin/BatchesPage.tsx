@@ -554,10 +554,7 @@ const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> =
   default: { from: "#0F172A", to: "#334155", badge: "—"    },
 };
 
-const _API_ORIGIN = (() => {
-  try { return new URL(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1").origin; }
-  catch { return "http://localhost:3000"; }
-})();
+const _API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
 function resolveMediaUrl(url?: string) {
   if (!url) return url;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
