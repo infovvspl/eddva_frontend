@@ -437,15 +437,8 @@ export default function StudentAiStudyPage() {
                           </div>
                        </div>
 
-<<<<<<< HEAD
-                       <div className={mdClass}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {normalizeLessonMarkdown(sessionData.lessonMarkdown)}
-                        </ReactMarkdown>
-=======
                        <div className={cn(mdClassBase, mdZoomClass)}>
                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{sessionData.lessonMarkdown}</ReactMarkdown>
->>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                        </div>
 
                        {!completed && (
@@ -476,31 +469,6 @@ export default function StudentAiStudyPage() {
               <motion.div key="concepts" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-6">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      {/* Key Concepts */}
-<<<<<<< HEAD
-                     {(sessionData.keyConcepts.length > 0 || sessionData.lessonMarkdown) && (
-                        <CardGlass className="p-10 border-white h-full relative overflow-hidden bg-white/60">
-                           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[50px] rounded-full pointer-events-none" />
-                           <div className="flex items-center gap-4 mb-10">
-                              <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-xl"><Layers className="w-6 h-6" /></div>
-                              <h3 className="text-xl font-black text-slate-900 uppercase italic">Command Cores</h3>
-                           </div>
-                           {hasCorruptedSpacing(sessionData.keyConcepts) ? (
-                             <div className="prose prose-slate max-w-none">
-                               <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                 {extractSectionMarkdown(sessionData.lessonMarkdown || "", /##\s+.*Core Concepts/i)}
-                               </ReactMarkdown>
-                             </div>
-                           ) : (
-                             <div className="space-y-4">
-                               {sessionData.keyConcepts.map((concept, i) => (
-                                 <div key={i} className="flex gap-5 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm hover:shadow-md transition-all group">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-xs text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">{i+1}</div>
-                                    <p className="flex-1 text-base font-bold text-slate-700 leading-relaxed">{normalizeReadableText(concept)}</p>
-                                 </div>
-                               ))}
-                             </div>
-                           )}
-=======
                      {sessionData.keyConcepts.length > 0 && (
                         <CardGlass className="p-6 border-slate-200 h-full bg-white shadow-sm">
                            <div className="flex items-center gap-3 mb-6">
@@ -515,7 +483,6 @@ export default function StudentAiStudyPage() {
                                </div>
                              ))}
                            </div>
->>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                         </CardGlass>
                      )}
 
@@ -527,29 +494,12 @@ export default function StudentAiStudyPage() {
                                 <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><Sigma className="w-5 h-5" /></div>
                                 <h3 className="text-lg font-semibold text-slate-900">Formulas</h3>
                              </div>
-<<<<<<< HEAD
-                             <div className="space-y-4">
-                              {sessionData.formulas.map((formula, i) => (
-                                <div key={i} className="p-6 rounded-[1.5rem] bg-white text-base font-black text-indigo-700 shadow-inner border border-indigo-100 flex items-start gap-4">
-                                   <Zap className="w-5 h-5 opacity-40 shrink-0 mt-1" />
-                                   <div className="min-w-0 overflow-x-auto">
-                                      <ReactMarkdown
-                                        remarkPlugins={[remarkGfm, remarkMath]}
-                                        rehypePlugins={[rehypeKatex]}
-                                      >
-                                        {normalizeFormulaForKatex(formula)}
-                                      </ReactMarkdown>
-                                   </div>
-                                </div>
-                              ))}
-=======
                              <div className="space-y-3">
                                {sessionData.formulas.map((formula, i) => (
                                  <div key={i} className="p-4 rounded-xl bg-indigo-50/60 font-mono text-sm font-semibold text-indigo-700 border border-indigo-100 flex items-center gap-3">
                                     <Zap className="w-4 h-4 opacity-60 shrink-0" /> {formula}
                                  </div>
                                ))}
->>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                              </div>
                           </CardGlass>
                         )}
@@ -561,15 +511,9 @@ export default function StudentAiStudyPage() {
                              </div>
                              <div className="space-y-3">
                                {sessionData.commonMistakes.map((mistake, i) => (
-<<<<<<< HEAD
-                                 <div key={i} className="flex gap-5 p-6 rounded-[1.5rem] bg-white border border-red-100/50">
-                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-red-500 shadow-sm shrink-0"><AlertTriangle className="w-4 h-4" /></div>
-                                   <p className="text-base font-bold text-slate-800 leading-relaxed">{normalizeReadableText(mistake)}</p>
-=======
                                  <div key={i} className="flex gap-3 p-4 rounded-xl bg-red-50/60 border border-red-100">
                                     <div className="w-7 h-7 rounded-lg bg-white border border-red-100 flex items-center justify-center text-red-500 shrink-0"><AlertTriangle className="w-3.5 h-3.5" /></div>
                                     <p className="text-sm font-medium text-slate-700 leading-relaxed">{mistake}</p>
->>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                                  </div>
                                ))}
                              </div>
@@ -631,15 +575,8 @@ export default function StudentAiStudyPage() {
                                        msg.role === "student" ? "bg-slate-900 text-white rounded-tr-none" : "bg-white border border-slate-100 text-slate-800 rounded-tl-none"
                                     )}>
                                        {msg.role === "ai" ? (
-<<<<<<< HEAD
-                                          <div className={cn(mdClass, "!prose-sm !prose-p:text-slate-800 !prose-p:text-base")}>
-                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                               {normalizeAiMessage(msg.message)}
-                                             </ReactMarkdown>
-=======
                                           <div className={cn(mdClassBase, "prose-h2:text-xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm !prose-p:text-slate-800")}>
                                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeAiMessage(msg.message)}</ReactMarkdown>
->>>>>>> e17d45ffdfed519f798cbf96f2b52f2becc1312d
                                           </div>
                                        ) : msg.message}
                                     </div>
