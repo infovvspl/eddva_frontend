@@ -6,7 +6,25 @@
  */
 export function getApiBaseUrl(): string {
   const raw = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (raw) return raw.replace(/\/$/, "");
+  if (raw) {
+    const normalized = raw.replace(/\/$/, "");
+    if (typeof window !== "undefined") {
+      try {
+        const parsed = new URL(normalized, window.location.origin);
+        const host = parsed.hostname.toLowerCase();
+        const isLoopback = host === "localhost" || host === "127.0.0.1" || host === "::1";
+        const currentHost = window.location.hostname;
+        // If app is opened over LAN IP but env points to localhost, remap to current host.
+        if (isLoopback && currentHost && currentHost !== "localhost" && currentHost !== "127.0.0.1") {
+          parsed.hostname = currentHost;
+          return `${parsed.origin}${parsed.pathname}`.replace(/\/$/, "");
+        }
+      } catch {
+        // Keep original normalized value.
+      }
+    }
+    return normalized;
+  }
   if (import.meta.env.DEV) return "/api/v1";
   if (typeof window !== "undefined" && window.location?.origin) {
     return `${window.location.origin}/api/v1`;

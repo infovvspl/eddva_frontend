@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
@@ -86,6 +89,101 @@ function normalizeAiMessage(message: unknown): string {
   return String(message ?? "");
 }
 
+function prettifyFormula(formula: string): string {
+  const toSup = (v: string) =>
+    v
+      .split("")
+      .map((ch) => SUPERSCRIPT_MAP[ch] ?? ch)
+      .join("");
+  const toSub = (v: string) =>
+    v
+      .split("")
+      .map((ch) => SUBSCRIPT_MAP[ch] ?? ch)
+      .join("");
+
+  return String(formula || "")
+    .replace(/\$\$/g, "")
+    .replace(/\\Rightarrow/g, " ⇒ ")
+    .replace(/\\rightarrow/g, " → ")
+    .replace(/\\times/g, " × ")
+    .replace(/\\cdot/g, " · ")
+    .replace(/\\Delta/g, "Δ")
+    .replace(/\\delta/g, "δ")
+    .replace(/\\alpha/g, "α")
+    .replace(/\\beta/g, "β")
+    .replace(/\\gamma/g, "γ")
+    .replace(/\\theta/g, "θ")
+    .replace(/\\lambda/g, "λ")
+    .replace(/\\mu/g, "μ")
+    .replace(/\\pi/g, "π")
+    .replace(/\\sigma/g, "σ")
+    .replace(/\\omega/g, "ω")
+    .replace(/\^\{([^}]+)\}/g, (_m, g1) => toSup(String(g1)))
+    .replace(/\^([A-Za-z0-9+\-()])/g, (_m, g1) => toSup(String(g1)))
+    .replace(/_\{([^}]+)\}/g, (_m, g1) => toSub(String(g1)))
+    .replace(/_([A-Za-z0-9+\-()])/g, (_m, g1) => toSub(String(g1)))
+    .replace(/\\,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const SUPERSCRIPT_MAP: Record<string, string> = {
+  "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+  "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+  "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
+  n: "ⁿ", i: "ⁱ",
+};
+
+const SUBSCRIPT_MAP: Record<string, string> = {
+  "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+  "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+  "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎",
+  a: "ₐ", e: "ₑ", h: "ₕ", i: "ᵢ", j: "ⱼ", k: "ₖ",
+  l: "ₗ", m: "ₘ", n: "ₙ", o: "ₒ", p: "ₚ", r: "ᵣ",
+  s: "ₛ", t: "ₜ", u: "ᵤ", v: "ᵥ", x: "ₓ",
+};
+
+function normalizeLessonMarkdown(md: string): string {
+  return String(md || "");
+}
+
+function normalizeFormulaForKatex(formula: string): string {
+  const raw = String(formula || "").trim();
+  if (!raw) return "";
+  if (raw.includes("$$") || raw.includes("$")) return raw;
+  return `$$${raw}$$`;
+}
+
+function normalizeReadableText(text: string): string {
+  return String(text || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    // "Cleardefinition" -> "Clear definition"
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // "cell senergy" / "ATP.Circle" -> proper spacing
+    .replace(/([A-Za-z])([.:,;!?()])/g, "$1 $2")
+    .replace(/([.:,;!?()])([A-Za-z])/g, "$1 $2")
+    // keep math minus but add spacing around it for readability
+    .replace(/\s*[-−]\s*/g, " − ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractSectionMarkdown(markdown: string, headerRegex: RegExp): string {
+  const src = String(markdown || "");
+  const start = src.search(headerRegex);
+  if (start < 0) return "";
+  const rest = src.slice(start);
+  const nextHeaderMatch = rest.slice(2).match(/\n##\s+/);
+  if (!nextHeaderMatch) return rest.trim();
+  const endIdx = 2 + (nextHeaderMatch.index ?? rest.length);
+  return rest.slice(0, endIdx).trim();
+}
+
+function hasCorruptedSpacing(lines: string[]): boolean {
+  return lines.some((l) => /[A-Za-z]{18,}/.test(String(l || "")));
+}
+
 // ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -159,7 +257,7 @@ export default function StudentAiStudyPage() {
   const askMut = useAskAiQuestion();
   const completeMut = useCompleteAiStudy();
 
-  const sessionData: AiStudySessionData | undefined = startMut.data ?? session;
+  const sessionData: AiStudySessionData | undefined = session ?? startMut.data;
   const sessionId = sessionData?.id;
   const timerRunning = !!sessionId && !completed;
   const elapsed = useElapsedTimer(timerRunning, sessionData?.timeSpentSeconds ?? 0);

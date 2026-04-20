@@ -533,13 +533,7 @@ const Index = () => {
         </div>
 
         {/* Right: visual + highlight cards */}
-        <motion.div
-          initial={{ opacity: 0, x: 28 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
-          className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-none"
-        >
+        <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-none">
           <div
             className="pointer-events-none absolute -inset-6 rounded-[2.5rem] opacity-40 blur-3xl"
             style={{ background: `linear-gradient(135deg, ${B}33, #fbbf2444, ${P}33)` }}
@@ -553,35 +547,23 @@ const Index = () => {
               loading="lazy"
             />
 
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.15, duration: 0.45 }}
-              className="absolute -left-2 top-6 max-w-[200px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm sm:-left-4 sm:top-10 sm:max-w-[220px] sm:p-4"
-            >
+            <div className="absolute -left-2 top-6 max-w-[200px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5 sm:-left-4 sm:top-10 sm:max-w-[220px] sm:p-4">
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
                 <Brain className="h-4 w-4" />
               </div>
               <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">AI study paths</p>
               <p className="mt-0.5 text-[13px] font-semibold leading-snug text-gray-900">Plans that adapt to your pace and goals</p>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.25, duration: 0.45 }}
-              className="absolute -right-1 bottom-8 max-w-[190px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm sm:-right-2 sm:bottom-10 sm:max-w-[210px] sm:p-4"
-            >
+            <div className="absolute -right-1 bottom-8 max-w-[190px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5 sm:-right-2 sm:bottom-10 sm:max-w-[210px] sm:p-4">
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md">
                 <Target className="h-4 w-4" />
               </div>
               <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">Exam-ready focus</p>
               <p className="mt-0.5 text-[13px] font-semibold leading-snug text-gray-900">Structured prep for JEE, NEET & boards</p>
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
         </div>
 
       </div>
