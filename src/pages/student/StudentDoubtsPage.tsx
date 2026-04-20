@@ -286,7 +286,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
     setSelectedTopicId("");
   }
 
-  function handleSubmit() {
+  function handleSubmit(skipAI: boolean) {
     if (!canSubmit) return;
     createDoubt.mutate(
       {
@@ -296,11 +296,11 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
         questionImageUrl: questionImageUrl.trim() || undefined,
         source: "manual",
         explanationMode: "short",
-        skipAI: true,
+        skipAI,
       },
       {
         onSuccess: () => {
-          toast.success("Doubt sent to your teacher!");
+          toast.success(skipAI ? "Doubt sent to your teacher!" : "AI is resolving your doubt.");
           onClose();
         },
         onError: (err: any) => {
@@ -447,7 +447,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
           <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
             <User className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700 font-medium">
-              Sent directly to your teacher. Add text (min 10 chars) and/or an image. No AI response until you request it from the doubt card.
+              Choose how to resolve: Ask AI now for instant help, or send directly to your teacher.
             </p>
           </div>
         </div>
@@ -459,17 +459,30 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
               Please select: {!selectedBatchId ? "Course" : !selectedSubjectId ? "Subject" : !selectedChapterId ? "Chapter" : "Topic"}
             </p>
           )}
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="w-full h-12 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20"
-          >
-            {createDoubt.isPending
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <Send className="w-4 h-4" />
-            }
-            Send to Teacher
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              onClick={() => handleSubmit(false)}
+              disabled={!canSubmit}
+              className="h-12 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+            >
+              {createDoubt.isPending
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Sparkles className="w-4 h-4" />
+              }
+              Ask AI
+            </button>
+            <button
+              onClick={() => handleSubmit(true)}
+              disabled={!canSubmit}
+              className="h-12 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20"
+            >
+              {createDoubt.isPending
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Send className="w-4 h-4" />
+              }
+              Ask Teacher
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>

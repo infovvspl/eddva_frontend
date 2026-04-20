@@ -305,7 +305,10 @@ export function useGeneratePlan() {
 export function useRegeneratePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: studentApi.regeneratePlan,
+    mutationFn: async () => {
+      await studentApi.clearPlan();
+      return studentApi.regeneratePlan();
+    },
     onSuccess: async () => {
       // Clear stale cached plan slices first, then force active refetch.
       qc.removeQueries({ queryKey: ["student", "plan"] });
