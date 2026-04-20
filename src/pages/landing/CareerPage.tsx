@@ -214,14 +214,7 @@ export default function CareerPage() {
                   >
                     View All Exams <ArrowRight className="h-4 w-4" />
                   </motion.a>
-                  <motion.a
-                    href="/study-material"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="landing-button flex items-center gap-2 border border-gray-200 bg-white/10 text-gray-900 backdrop-blur-sm transition-all hover:bg-white/15"
-                  >
-                    Start Preparing <ChevronRight className="h-4 w-4" />
-                  </motion.a>
+             
                 </div>
               </FadeUp>
 
