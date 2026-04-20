@@ -118,12 +118,6 @@ const Index = () => {
     color: "from-purple-400 to-pink-400"
   },
 ];
-const stats = [
-  { num:"50K+", label:"Students", color:"bg-blue-500" },
-  { num:"500+", label:"Courses", color:"bg-purple-500" },
-  { num:"99.9%", label:"Uptime", color:"bg-green-500" },
-  { num:"4.8★", label:"Rating", color:"bg-yellow-500" },
-];
   return (
     <LandingLayout>
 
@@ -190,22 +184,6 @@ const stats = [
                   className="landing-button flex items-center gap-2 border-2 border-gray-200 bg-white text-gray-700 transition-all hover:border-blue-300 hover:bg-blue-50">
                   Explore Exams <ChevronRight className="h-4 w-4" />
                 </motion.a>
-              </motion.div>
-
-              {/* Stat strip */}
-              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ duration:0.6, delay:0.45 }}
-                className="flex flex-wrap gap-8">
-                {[
-                  { val:"50K+", label:"Students" },
-                  { val:"20+",  label:"Exams Covered" },
-                  { val:"98%",  label:"Pass Rate" },
-                  { val:"24/7", label:"AI Support" },
-                ].map(({ val, label }) => (
-                  <div key={label} className="text-center">
-                    <p className="text-[22px] font-extrabold text-gray-900">{val}</p>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
-                  </div>
-                ))}
               </motion.div>
             </div>
 
@@ -473,10 +451,9 @@ const stats = [
       />
 
       {/* CONTENT */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 grid lg:grid-cols-2 gap-16 items-center">
-
-        {/* LEFT */}
-        <div>
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-24">
+        <div className="grid items-center gap-12 md:grid-cols-2 md:gap-14 lg:gap-16">
+        <div className="max-w-xl md:max-w-none">
           {/* Badge */}
           <div className="mb-4 inline-flex items-center gap-2 bg-white/70 border border-gray-200 px-4 py-1 rounded-full backdrop-blur-md">
             <span className="text-yellow-500 text-xs">🏆</span>
@@ -555,34 +532,56 @@ const stats = [
           </div>
         </div>
 
-        {/* RIGHT - STATS */}
-        <div className="space-y-5">
-          {stats.map((s, i) => (
+        {/* Right: visual + highlight cards */}
+        <motion.div
+          initial={{ opacity: 0, x: 28 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
+          className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-none"
+        >
+          <div
+            className="pointer-events-none absolute -inset-6 rounded-[2.5rem] opacity-40 blur-3xl"
+            style={{ background: `linear-gradient(135deg, ${B}33, #fbbf2444, ${P}33)` }}
+            aria-hidden
+          />
+          <div className="relative">
+            <img
+              src={careerImg}
+              alt="Students building skills with guided learning and AI support"
+              className="relative w-full rounded-3xl border border-white/90 object-cover shadow-[0_24px_60px_-12px_rgba(15,23,42,0.25)] aspect-[4/3] sm:aspect-[5/4]"
+              loading="lazy"
+            />
+
             <motion.div
-              key={s.label}
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ scale: 1.03 }}
-              className="flex items-center gap-5 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition"
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.15, duration: 0.45 }}
+              className="absolute -left-2 top-6 max-w-[200px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm sm:-left-4 sm:top-10 sm:max-w-[220px] sm:p-4"
             >
-
-              {/* Color Bar */}
-              <div className={`w-2 h-12 rounded-full ${s.color}`} />
-
-              {/* Text */}
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{s.num}</p>
-                <p className="text-gray-500 text-sm">{s.label}</p>
+              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
+                <Brain className="h-4 w-4" />
               </div>
-
-              {/* Arrow */}
-              <div className="ml-auto text-gray-300 group-hover:text-gray-500 transition">
-                →
-              </div>
-
+              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">AI study paths</p>
+              <p className="mt-0.5 text-[13px] font-semibold leading-snug text-gray-900">Plans that adapt to your pace and goals</p>
             </motion.div>
-          ))}
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.25, duration: 0.45 }}
+              className="absolute -right-1 bottom-8 max-w-[190px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm sm:-right-2 sm:bottom-10 sm:max-w-[210px] sm:p-4"
+            >
+              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md">
+                <Target className="h-4 w-4" />
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">Exam-ready focus</p>
+              <p className="mt-0.5 text-[13px] font-semibold leading-snug text-gray-900">Structured prep for JEE, NEET & boards</p>
+            </motion.div>
+          </div>
+        </motion.div>
         </div>
 
       </div>
@@ -1093,20 +1092,6 @@ const stats = [
                     <p className="text-[15px] font-bold leading-tight">App Store</p>
                   </div>
                 </motion.button>
-              </div>
-
-              {/* Stat pills */}
-              <div className="mt-8 flex flex-wrap gap-4">
-                {[
-                  { val:"500K+", label:"Learners" },
-                  { val:"2M+",   label:"Downloads" },
-                  { val:"4.8★",  label:"Avg Rating" },
-                ].map(({ val, label }) => (
-                  <div key={label} className="rounded-2xl border border-yellow-200 bg-white/80 px-5 py-3 text-center shadow-sm">
-                    <p className="text-[20px] font-extrabold text-gray-900">{val}</p>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
-                  </div>
-                ))}
               </div>
             </FadeUp>
 

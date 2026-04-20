@@ -1,6 +1,6 @@
 import { Sparkles, Award } from "lucide-react";
 import heroImg from "@/assets/hero_illustration.png";
-import founderImg from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
+import founderPhoto from "@/assets/sir 1.png";
 import { B, P } from "@/components/landing/DesignTokens";
 
 const gradHero = `linear-gradient(135deg, ${B}, ${P})`;
@@ -12,40 +12,44 @@ const aboutParagraphs = [
   "Here, learning is not passive. It is precise. Purposeful. Transformative. This is not traditional education. This is intelligent mastery.",
 ] as const;
 
+const TEAM_GRADIENT_FILLS = [
+  "linear-gradient(135deg,#2563eb,#7c3aed)",
+  "linear-gradient(135deg,#7c3aed,#db2777)",
+  "linear-gradient(135deg,#0891b2,#2563eb)",
+  "linear-gradient(135deg,#c026d3,#7c3aed)",
+  "linear-gradient(135deg,#059669,#0d9488)",
+  "linear-gradient(135deg,#ea580c,#ca8a04)",
+] as const;
+
 const team = [
   {
     name: "Ayush Kumar Dubey",
     role: "Senior JEE educator",
     detail: "A decade of experience in academic excellence and student success",
-    img: "https://i.pravatar.cc/300?img=12",
     accent: "from-blue-500/40 to-purple-500/40",
   },
   {
     name: "Priyanka SV",
     role: "Marketing Head",
     detail: "Strategic storytelling and brand vision",
-    img: "https://i.pravatar.cc/300?img=45",
     accent: "from-purple-500/50 to-pink-400/30",
   },
   {
     name: "Subham Mishra",
     role: "Full-Stack AI/ML Developer",
     detail: "Architect of intelligent learning systems",
-    img: "https://i.pravatar.cc/300?img=33",
     accent: "from-cyan-400/40 to-blue-500/50",
   },
   {
     name: "Akankshya Kar",
     role: "AI/ML Developer",
     detail: "Enhancing adaptive intelligence and personalization",
-    img: "https://i.pravatar.cc/300?img=47",
     accent: "from-fuchsia-400/40 to-purple-500/40",
   },
   {
     name: "Bhagyashree Sendh",
     role: "Full-Stack Developer",
     detail: "Crafting seamless and refined digital experiences",
-    img: "https://i.pravatar.cc/300?img=32",
     accent: "from-emerald-400/35 to-teal-500/40",
   },
 ];
@@ -122,16 +126,18 @@ export function AboutMarketing() {
             </div>
           </div>
           <figure className="mx-auto w-full max-w-sm shrink-0 md:mx-0">
-            <div className="relative overflow-hidden rounded-3xl border-2 border-purple-300/40 bg-purple-50/60 shadow-lg shadow-slate-200/50">
+            <div className="relative overflow-hidden rounded-3xl border-2 border-slate-200/80 bg-slate-100 shadow-lg shadow-slate-200/50">
               <img
-                src={founderImg}
-                alt="Vision and leadership in education"
+                src={founderPhoto}
+                alt="Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee"
                 loading="lazy"
-                className="aspect-[4/5] w-full object-cover"
+                width={640}
+                height={800}
+                className="aspect-[4/5] w-full object-cover object-top"
               />
             </div>
             <figcaption className="mt-3 text-center text-xs text-muted-foreground md:text-left">
-              From national service to enterprise—and a vision for how the world should learn next.
+              Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee
             </figcaption>
           </figure>
         </div>
@@ -174,32 +180,45 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase() || "?";
+}
+
+function avatarFillForName(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return TEAM_GRADIENT_FILLS[h % TEAM_GRADIENT_FILLS.length]!;
+}
+
 function TeamCard({
   name,
   role,
   detail,
-  img,
   accent,
 }: {
   name: string;
   role: string;
   detail?: string;
-  img?: string;
   accent?: string;
 }) {
+  const initials = initialsFromName(name);
+  const fill = avatarFillForName(name);
+
   return (
     <article className="group flex flex-col items-center text-center">
       <div className="relative">
         <div
           className={`absolute -inset-2 rounded-full bg-gradient-to-br ${accent ?? "from-blue-500/40 to-purple-500/40"} opacity-60 blur-md transition-opacity duration-500 group-hover:opacity-100`}
         />
-        <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-lg shadow-slate-200/60 transition-transform duration-500 group-hover:-translate-y-1 sm:h-36 sm:w-36">
-          <img
-            src={img}
-            alt={name}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+        <div
+          className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-4 border-white text-lg font-bold tracking-tight text-white shadow-lg shadow-slate-200/60 transition-transform duration-500 group-hover:-translate-y-1 sm:h-36 sm:w-36 sm:text-xl"
+          style={{ background: fill }}
+          aria-hidden
+        >
+          <span className="select-none drop-shadow-sm">{initials}</span>
         </div>
       </div>
       <h3 className="mt-5 text-base font-bold text-foreground">{name}</h3>

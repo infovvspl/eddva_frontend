@@ -79,6 +79,8 @@ import LandingCoursesPage from "./pages/landing/LandingCoursesPage";
 import ExamsRegistrationPage from "./pages/landing/ExamsRegistrationPage";
 import StudyMaterialPage from "./pages/landing/StudyMaterialPage";
 import CareerPage from "./pages/landing/CareerPage";
+import PrivacyPolicyPage from "./pages/landing/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/landing/TermsOfServicePage";
 
 const queryClient = new QueryClient();
 
@@ -181,6 +183,15 @@ const StudentRoutes = () => (
 const TenantRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
+    <Route path="/courses" element={<Courses />} />
+    <Route path="/about-us" element={<AboutUs />} />
+    <Route path="/about" element={<AboutUs />} />
+    <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
+    <Route path="/career" element={<CareerPage />} />
+    <Route path="/study-material/:type" element={<StudyMaterialPage />} />
+    <Route path="/study-material" element={<StudyMaterialPage />} />
+    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+    <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -204,6 +215,8 @@ const PlatformRoutes = () => (
     <Route path="/career" element={<CareerPage />} />
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />
     <Route path="/study-material" element={<StudyMaterialPage />} />
+    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+    <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
