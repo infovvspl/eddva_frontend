@@ -1,379 +1,481 @@
+"use client";
+
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  CheckCircle2, Clock, Sparkles, Trophy, Target, Zap,
-  RefreshCw, Loader2, Play, SkipForward, CheckCircle,
-  BookOpen, Brain, Swords, MessageSquare, Flame, Calendar,
-  ChevronRight, X, Atom, FlaskConical, Calculator, Dna,
-  BarChart3, ArrowRight, Lock, Star,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { format, addDays, startOfWeek, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import {
-  useTodaysPlan, useWeeklyPlanGrouped, useCompletePlanItem,
-  useSkipPlanItem, useRegeneratePlan, useStudentMe, useGeneratePlan,
+  Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
+  CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
+  RotateCcw, Map, ListTodo, Star, CheckCheck, Rocket,
+  ArrowRight, Sparkles, Activity,
+} from "lucide-react";
+import {
+  useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
+  useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
+  useUpdateStudentProfile,
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
-function toYoutubeEmbed(url?: string | null): string | null {
-  if (!url) return null;
-  const raw = String(url).trim();
-  const id =
-    raw.match(/[?&]v=([^&]+)/)?.[1] ||
-    raw.match(/youtu\.be\/([^?&/]+)/)?.[1] ||
-    raw.match(/youtube\.com\/embed\/([^?&/]+)/)?.[1] ||
-    raw.match(/youtube\.com\/shorts\/([^?&/]+)/)?.[1] ||
-    raw.match(/youtube\.com\/live\/([^?&/]+)/)?.[1];
-  return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&playsinline=1` : null;
-}
-
-function daysUntilExam(examYear?: number): number | null {
-  if (!examYear) return null;
-  const target = new Date(`${examYear}-04-01`);
-  const diff = Math.ceil((target.getTime() - Date.now()) / 86400000);
-  return diff > 0 ? diff : null;
-}
-
-function fmtExam(target?: string) {
-  const map: Record<string, string> = {
-    jee: "JEE Main & Advanced",
-    neet: "NEET UG",
-    cbse_10: "CBSE Class 10",
-    cbse_12: "CBSE Class 12",
-  };
-  return map[target ?? ""] ?? "Your Exam";
-}
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const TYPE_CFG: Record<StudyPlanItem["type"], { icon: any; color: string; bg: string; label: string; xp: number }> = {
-  lecture:       { icon: Play,         color: "#4f46e5", bg: "#e0e7ff", label: "Lecture",       xp: 15 },
-  practice:      { icon: Target,       color: "#10b981", bg: "#d1fae5", label: "Practice",      xp: 15 },
-  revision:      { icon: BookOpen,     color: "#f59e0b", bg: "#fef3c7", label: "Notes / Video", xp: 5  },
-  mock_test:     { icon: Trophy,       color: "#ec4899", bg: "#fce7f3", label: "Mock Test",     xp: 50 },
-  battle:        { icon: Swords,       color: "#ef4444", bg: "#fee2e2", label: "Battle",        xp: 30 },
-  doubt_session: { icon: MessageSquare,color: "#8b5cf6", bg: "#ede9fe", label: "Doubt Session", xp: 10 },
-};
-
-const SUBJECT_CFG: Record<string, { color: string; lightBg: string; dot: string; Icon: any }> = {
-  physics:     { color: "text-indigo-700", lightBg: "bg-indigo-50",  dot: "bg-indigo-500",  Icon: Atom       },
-  chemistry:   { color: "text-emerald-700",lightBg: "bg-emerald-50", dot: "bg-emerald-500", Icon: FlaskConical},
-  mathematics: { color: "text-violet-700", lightBg: "bg-violet-50",  dot: "bg-violet-500",  Icon: Calculator },
-  math:        { color: "text-violet-700", lightBg: "bg-violet-50",  dot: "bg-violet-500",  Icon: Calculator },
-  biology:     { color: "text-teal-700",   lightBg: "bg-teal-50",    dot: "bg-teal-500",    Icon: Dna        },
-  default:     { color: "text-slate-700",  lightBg: "bg-slate-50",   dot: "bg-slate-400",   Icon: Brain      },
-};
-
-function getSubjectCfg(name: string) {
-  const key = name.toLowerCase().trim();
-  return SUBJECT_CFG[key] ?? SUBJECT_CFG.default;
-}
-
-const EXAM_OPTS = [
-  { key: "jee",     label: "JEE",     sub: "Main & Advanced", from: "from-orange-500", to: "to-amber-400",   Icon: Atom       },
-  { key: "neet",    label: "NEET",    sub: "UG",              from: "from-emerald-500",to: "to-teal-400",    Icon: Dna        },
-  { key: "cbse_10", label: "CBSE 10", sub: "Class 10",        from: "from-blue-500",   to: "to-indigo-400",  Icon: BookOpen   },
-  { key: "cbse_12", label: "CBSE 12", sub: "Class 12",        from: "from-violet-500", to: "to-purple-400",  Icon: Calculator },
+const EXAM_OPTIONS = [
+  { key: "jee_mains",    label: "JEE Mains",   icon: "⚛️", desc: "B.Tech admissions (NIT/IIIT)" },
+  { key: "jee_advanced", label: "JEE Advanced", icon: "🔬", desc: "IIT admissions" },
+  { key: "neet",         label: "NEET",         icon: "🩺", desc: "MBBS/BDS admissions" },
+  { key: "foundation",   label: "Foundation",   icon: "📚", desc: "Class 8–10" },
+  { key: "other",        label: "Other",        icon: "🎯", desc: "Custom target" },
 ];
 
-// ─── Setup Wizard ─────────────────────────────────────────────────────────────
+const YEAR_OPTIONS = [2025, 2026, 2027, 2028];
+const HOURS_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
 
-function SetupWizard({ examTarget, examYear, dailyHours, onGenerate, isGenerating }: {
-  examTarget?: string; examYear?: number; dailyHours?: number;
-  onGenerate: () => void; isGenerating: boolean;
-}) {
+const SUBJECT_CFG: Record<string, { color: string; bg: string; border: string; dot: string; ring: string }> = {
+  Physics:     { color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200", dot: "bg-indigo-500",  ring: "#6366f1" },
+  Chemistry:   { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200",dot: "bg-emerald-500", ring: "#10b981" },
+  Mathematics: { color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200", dot: "bg-violet-500",  ring: "#8b5cf6" },
+  Math:        { color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200", dot: "bg-violet-500",  ring: "#8b5cf6" },
+  Biology:     { color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-200",   dot: "bg-teal-500",    ring: "#14b8a6" },
+  default:     { color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200",  dot: "bg-slate-500",   ring: "#64748b" },
+};
+
+function subjectCfg(name: string) {
+  for (const key of Object.keys(SUBJECT_CFG)) {
+    if (key !== "default" && name?.toLowerCase().includes(key.toLowerCase())) return SUBJECT_CFG[key];
+  }
+  return SUBJECT_CFG.default;
+}
+
+function fmtExam(key?: string) {
+  return EXAM_OPTIONS.find(e => e.key === key)?.label ?? key ?? "—";
+}
+
+function countdownDays(examYear?: number): number | null {
+  if (!examYear) return null;
+  return Math.max(0, differenceInDays(new Date(examYear, 3, 15), new Date()));
+}
+
+// ─── Preference Wizard ─────────────────────────────────────────────────────────
+
+interface WizardState { examTarget: string; examYear: number; dailyStudyHours: number; }
+
+function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardState>; onComplete: (p: WizardState) => void }) {
+  const [step, setStep] = useState(0);
+  const [prefs, setPrefs] = useState<WizardState>({
+    examTarget:      initial.examTarget      ?? "",
+    examYear:        initial.examYear        ?? new Date().getFullYear() + 1,
+    dailyStudyHours: initial.dailyStudyHours ?? 4,
+  });
+
+  const steps = ["Exam Target", "Target Year", "Daily Hours"];
+  const canNext = step === 0 ? !!prefs.examTarget : true;
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-16 flex flex-col items-center gap-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-          <Sparkles className="w-8 h-8 text-white" />
-        </div>
-        <h1 className="text-2xl font-black text-slate-900 mb-2">Your AI Study Plan</h1>
-        <p className="text-slate-500 text-sm font-medium">
-          A 30-day personalized schedule crafted around your exam target, weak areas, and daily availability.
-        </p>
-      </motion.div>
-
-      {/* Exam summary card */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="w-full bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5"
-      >
-        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Your profile</h2>
-
-        <div className="grid grid-cols-2 gap-3">
-          {EXAM_OPTS.map(opt => (
-            <div key={opt.key}
-              className={cn(
-                "flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all",
-                opt.key === examTarget
-                  ? "border-indigo-400 bg-indigo-50"
-                  : "border-slate-100 bg-slate-50 opacity-50"
-              )}
-            >
-              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br text-white shrink-0", opt.from, opt.to)}>
-                <opt.Icon className="w-4 h-4" />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        {/* Step indicator */}
+        <div className="mb-8">
+          <div className="flex items-center mb-3">
+            {steps.map((_, i) => (
+              <div key={i} className="flex items-center flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-all
+                  ${i < step ? "bg-indigo-600 text-white" : i === step ? "bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500" : "bg-gray-100 text-gray-400"}`}>
+                  {i < step ? <CheckCheck className="w-4 h-4" /> : i + 1}
+                </div>
+                {i < steps.length - 1 && <div className={`flex-1 h-1 mx-2 rounded-full ${i < step ? "bg-indigo-500" : "bg-gray-200"}`} />}
               </div>
-              <div>
-                <p className="text-xs font-black text-slate-800">{opt.label}</p>
-                <p className="text-[10px] text-slate-500">{opt.sub}</p>
+            ))}
+          </div>
+          <p className="text-center text-sm text-gray-500">{steps[step]} — Step {step + 1} of {steps.length}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {step === 0 && (
+            <div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎯</div>
+                <h2 className="text-2xl font-bold text-gray-900">What's your target exam?</h2>
+                <p className="text-gray-500 mt-1 text-sm">Your AI roadmap and study plan will be built around this</p>
               </div>
-              {opt.key === examTarget && <CheckCircle2 className="w-4 h-4 text-indigo-500 ml-auto shrink-0" />}
+              <div className="space-y-3">
+                {EXAM_OPTIONS.map(opt => (
+                  <button key={opt.key} onClick={() => setPrefs(p => ({ ...p, examTarget: opt.key }))}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left
+                      ${prefs.examTarget === opt.key ? "border-indigo-500 bg-indigo-50 shadow-sm" : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"}`}>
+                    <span className="text-2xl">{opt.icon}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">{opt.label}</div>
+                      <div className="text-sm text-gray-500">{opt.desc}</div>
+                    </div>
+                    {prefs.examTarget === opt.key && <CheckCircle2 className="w-5 h-5 text-indigo-600 shrink-0" />}
+                  </button>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          )}
 
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Target Year</p>
-            <p className="text-lg font-black text-slate-800">{examYear ?? "—"}</p>
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Daily Hours</p>
-            <p className="text-lg font-black text-slate-800">{dailyHours ?? 4} hrs</p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* What you'll get */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="w-full grid grid-cols-3 gap-3 text-center"
-      >
-        {[
-          { icon: Calendar, label: "30-Day Plan", sub: "Day-by-day tasks" },
-          { icon: Brain,    label: "AI Adaptive", sub: "Based on weak areas" },
-          { icon: Flame,    label: "Streak Goals", sub: "Daily consistency" },
-        ].map(({ icon: Icon, label, sub }) => (
-          <div key={label} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
-            <div className="w-9 h-9 mx-auto mb-2 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <Icon className="w-4 h-4 text-indigo-600" />
+          {step === 1 && (
+            <div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">📅</div>
+                <h2 className="text-2xl font-bold text-gray-900">Which year are you targeting?</h2>
+                <p className="text-gray-500 mt-1 text-sm">We'll calculate your prep timeline and daily targets</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {YEAR_OPTIONS.map(yr => {
+                  const days = Math.max(0, differenceInDays(new Date(yr, 3, 15), new Date()));
+                  return (
+                    <button key={yr} onClick={() => setPrefs(p => ({ ...p, examYear: yr }))}
+                      className={`p-5 rounded-xl border-2 text-center transition-all
+                        ${prefs.examYear === yr ? "border-violet-500 bg-violet-50 shadow-sm" : "border-gray-200 hover:border-violet-300 hover:bg-gray-50"}`}>
+                      <div className="text-2xl font-bold text-gray-900">{yr}</div>
+                      <div className="text-sm text-gray-500 mt-1">{days} days left</div>
+                      {prefs.examYear === yr && <div className="text-xs text-violet-600 font-medium mt-1">Selected ✓</div>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <p className="text-xs font-black text-slate-800">{label}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>
+          )}
+
+          {step === 2 && (
+            <div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">⏰</div>
+                <h2 className="text-2xl font-bold text-gray-900">How many hours per day?</h2>
+                <p className="text-gray-500 mt-1 text-sm">Be realistic — consistency beats cramming every time</p>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mb-6">
+                {HOURS_OPTIONS.map(h => (
+                  <button key={h} onClick={() => setPrefs(p => ({ ...p, dailyStudyHours: h }))}
+                    className={`p-3 rounded-xl border-2 text-center transition-all
+                      ${prefs.dailyStudyHours === h ? "border-emerald-500 bg-emerald-50 shadow-sm" : "border-gray-200 hover:border-emerald-300"}`}>
+                    <div className="text-xl font-bold text-gray-900">{h}h</div>
+                  </button>
+                ))}
+              </div>
+              <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Your AI Plan Will Be Based On</h3>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <div className="text-base font-bold text-indigo-700">{fmtExam(prefs.examTarget)}</div>
+                    <div className="text-xs text-gray-500">Target Exam</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-violet-700">{prefs.examYear}</div>
+                    <div className="text-xs text-gray-500">Target Year</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-emerald-700">{prefs.dailyStudyHours}h/day</div>
+                    <div className="text-xs text-gray-500">Daily Study</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-8">
+            {step > 0 && (
+              <button onClick={() => setStep(s => s - 1)}
+                className="flex-1 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                Back
+              </button>
+            )}
+            <button
+              onClick={() => step < steps.length - 1 ? setStep(s => s + 1) : onComplete(prefs)}
+              disabled={!canNext}
+              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+              {step === steps.length - 1
+                ? <><Sparkles className="w-4 h-4" /> Generate My Roadmap &amp; Plan</>
+                : <>Continue <ArrowRight className="w-4 h-4" /></>}
+            </button>
           </div>
-        ))}
-      </motion.div>
-
-      <motion.button
-        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
-        onClick={onGenerate}
-        disabled={isGenerating}
-        className="w-full max-w-sm h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {isGenerating
-          ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating…</>
-          : <><Sparkles className="w-5 h-5" /> Generate My 30-Day Plan</>}
-      </motion.button>
-
-      <p className="text-xs text-slate-400 text-center -mt-4">
-        Your plan updates automatically as you complete tasks and take tests.
-      </p>
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-4">You can change these preferences anytime in your profile</p>
+      </div>
     </div>
   );
 }
 
-// ─── Progress Ring ─────────────────────────────────────────────────────────────
+// ─── Generating Animation ──────────────────────────────────────────────────────
 
-function ProgressRing({ pct, size = 64, stroke = 6 }: { pct: number; size?: number; stroke?: number }) {
-  const r = (size - stroke * 2) / 2;
+function GeneratingView() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <div className="relative w-24 h-24 mx-auto mb-8">
+          <div className="absolute inset-0 border-4 border-indigo-100 rounded-full" />
+          <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Brain className="w-10 h-10 text-indigo-500 animate-pulse" />
+          </div>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Building your personalized roadmap</h2>
+        <p className="text-gray-500 mb-8 text-sm">
+          AI is analyzing your exam target, enrolled curriculum, and weak areas to create a custom plan…
+        </p>
+        <div className="space-y-3">
+          {[
+            { label: "Scanning your curriculum", icon: "📚" },
+            { label: "Identifying weak topics",  icon: "🔍" },
+            { label: "Building study schedule",  icon: "📅" },
+            { label: "Optimizing for your exam", icon: "🎯" },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+              <span className="text-lg">{s.icon}</span>
+              <span className="text-sm text-gray-700 font-medium">{s.label}</span>
+              <div className="ml-auto w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Circular Progress ─────────────────────────────────────────────────────────
+
+function CircleProgress({ pct, color, size = 56 }: { pct: number; color: string; size?: number }) {
+  const r    = (size - 8) / 2;
   const circ = 2 * Math.PI * r;
   return (
     <svg width={size} height={size} className="-rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="transparent" stroke="currentColor" strokeWidth={stroke} className="text-white/20" />
-      <motion.circle cx={size / 2} cy={size / 2} r={r} fill="transparent" stroke="currentColor" strokeWidth={stroke}
-        strokeLinecap="round" className="text-white"
-        strokeDasharray={circ} initial={{ strokeDashoffset: circ }}
-        animate={{ strokeDashoffset: circ - (circ * pct) / 100 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={6} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={6}
+        strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ} strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 0.8s ease" }} />
     </svg>
   );
 }
 
-// ─── Task Card ─────────────────────────────────────────────────────────────────
+// ─── Curriculum Roadmap ────────────────────────────────────────────────────────
 
-function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (url: string, title: string) => void }) {
-  const navigate = useNavigate();
-  const complete = useCompletePlanItem();
-  const skip     = useSkipPlanItem();
-  const cfg    = TYPE_CFG[item.type] ?? TYPE_CFG.lecture;
-  const isDone = item.status === "completed";
-  const isSkip = item.status === "skipped";
-  const mins   = (item as any).estimatedMinutes ?? 15;
-
-  const handleStart = () => {
-    if (isDone || isSkip) return;
-    const kind    = item.content?.taskKind;
-    const topicId = item.content?.topicId || item.refId;
-    if (kind === "youtube_video") {
-      const embed = toYoutubeEmbed(item.content?.videoUrl);
-      return embed
-        ? onOpenVideo(embed, item.content?.videoTitle || item.title)
-        : toast.error("No YouTube video found for this topic yet.");
-    }
-    if (kind === "ai_notes" && topicId) return void navigate(`/student/ai-study/${topicId}`);
-    if (item.type === "lecture" && item.refId) return void navigate(`/student/lectures/${item.refId}`);
-    if (item.type === "revision" && topicId) return void navigate(`/student/ai-study/${topicId}`);
-    if (topicId) return void navigate(`/student/quiz?topicId=${topicId}`);
-  };
-
+function TopicPill({ topic }: { topic: any }) {
+  const color =
+    topic.status === "completed"   ? "bg-emerald-50 border-emerald-300 text-emerald-700" :
+    topic.status === "in_progress" ? "bg-amber-50 border-amber-300 text-amber-700" :
+    topic.status === "locked"      ? "bg-gray-50 border-gray-200 text-gray-400" :
+                                     "bg-blue-50 border-blue-200 text-blue-700";
+  const dot =
+    topic.status === "completed"   ? "bg-emerald-500" :
+    topic.status === "in_progress" ? "bg-amber-400" :
+    topic.status === "locked"      ? "bg-gray-300" : "bg-blue-400";
   return (
-    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "flex items-center gap-4 p-4 rounded-2xl bg-white border transition-all duration-200 group",
-        isDone ? "border-emerald-100 opacity-70" : isSkip ? "border-slate-100 opacity-50" : "border-slate-100 hover:border-indigo-200 hover:shadow-sm hover:shadow-indigo-500/5"
-      )}
-    >
-      {/* Type icon */}
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-        style={(!isDone && !isSkip) ? { background: cfg.bg, color: cfg.color } : undefined}
-        {...(isDone ? { className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-100" } : {})}
-        {...(isSkip ? { className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-slate-100" } : {})}
-      >
-        {isDone
-          ? <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-          : isSkip
-            ? <SkipForward className="w-5 h-5 text-slate-400" />
-            : <cfg.icon className="w-5 h-5" />}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{cfg.label}</span>
-          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100">+{cfg.xp} XP</span>
-        </div>
-        <p className={cn("text-sm font-bold text-slate-800 truncate leading-snug", (isDone || isSkip) && "line-through text-slate-400")}>
-          {item.title}
-        </p>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="flex items-center gap-1 text-[11px] text-slate-400 font-semibold">
-            <Clock className="w-3 h-3" />{mins} min
-          </span>
-          {item.content?.chapterName && (
-            <span className="text-[11px] text-slate-400 font-semibold truncate max-w-[120px]">{item.content.chapterName}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="shrink-0 flex items-center gap-1.5">
-        {isDone ? (
-          <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Done
-          </span>
-        ) : isSkip ? (
-          <span className="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-xl text-xs font-bold">Skipped</span>
-        ) : (
-          <>
-            <button onClick={() => skip.mutate(item.id)} title="Skip"
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:bg-slate-100 hover:text-slate-500 transition-all"
-            ><SkipForward className="w-4 h-4" /></button>
-            <button onClick={() => complete.mutate(item.id)} title="Mark done"
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:bg-emerald-50 hover:text-emerald-500 transition-all"
-            ><CheckCircle className="w-4 h-4" /></button>
-            <button onClick={handleStart}
-              className="px-3.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-black flex items-center gap-1.5 hover:bg-indigo-600 transition-all shadow-sm"
-            ><Play className="w-3.5 h-3.5 fill-current" /> Start</button>
-          </>
-        )}
-      </div>
-    </motion.div>
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border ${color}`}>
+      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+      <span className="truncate max-w-[120px]">{topic.topicName}</span>
+    </div>
   );
 }
 
-// ─── Subject Section ───────────────────────────────────────────────────────────
-
-function SubjectSection({ subject, items, onOpenVideo }: {
-  subject: string; items: StudyPlanItem[];
-  onOpenVideo: (url: string, title: string) => void;
-}) {
-  const cfg      = getSubjectCfg(subject);
-  const done     = items.filter(i => i.status === "completed").length;
-  const pct      = items.length > 0 ? Math.round((done / items.length) * 100) : 0;
-  const totalMin = items.reduce((s, i) => s + ((i as any).estimatedMinutes ?? 15), 0);
-
+function ChapterRow({ chapter, cfg }: { chapter: any; cfg: typeof SUBJECT_CFG[string] }) {
+  const [open, setOpen] = useState(false);
+  const done  = chapter.topics?.filter((t: any) => t.status === "completed").length ?? 0;
+  const total = chapter.topicsTotal ?? chapter.topics?.length ?? 0;
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
   return (
-    <div className="mb-8">
-      {/* Subject header */}
-      <div className="flex items-center gap-3 mb-3 px-1">
-        <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", cfg.lightBg)}>
-          <cfg.Icon className={cn("w-4 h-4", cfg.color)} />
+    <div>
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
+        <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+        <span className="flex-1 text-sm font-medium text-gray-800 truncate">{chapter.chapterName}</span>
+        <span className="text-xs text-gray-400 shrink-0">{done}/{total}</span>
+        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden shrink-0">
+          <div className={`h-full rounded-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className={cn("text-sm font-black uppercase tracking-wide", cfg.color)}>{subject}</h3>
-            <span className="text-[10px] font-bold text-slate-400">{done}/{items.length} done</span>
-          </div>
-          <div className="w-32 h-1.5 rounded-full bg-slate-100 mt-1 overflow-hidden">
-            <motion.div className={cn("h-full rounded-full", cfg.dot)}
-              initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }}
-            />
-          </div>
+        {open ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+      </button>
+      {open && (
+        <div className="px-6 pb-3 flex flex-wrap gap-2">
+          {(chapter.topics ?? []).map((t: any) => <TopicPill key={t.topicId} topic={t} />)}
         </div>
-        <span className="text-[11px] text-slate-400 font-semibold shrink-0 flex items-center gap-1">
-          <Clock className="w-3 h-3" />{totalMin} min
-        </span>
-      </div>
+      )}
+    </div>
+  );
+}
 
-      <div className="space-y-2">
-        {items.map(item => <TaskCard key={item.id} item={item} onOpenVideo={onOpenVideo} />)}
+function SubjectCard({ subject }: { subject: any }) {
+  const [open, setOpen] = useState(false);
+  const cfg = subjectCfg(subject.subjectName);
+  const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
+  return (
+    <div className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
+      <button onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-4 p-4 text-left transition-all ${cfg.bg} hover:brightness-95`}>
+        <div className="relative shrink-0">
+          <CircleProgress pct={pct} color={cfg.ring} size={52} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-bold text-gray-700">{pct}%</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className={`font-bold text-lg ${cfg.color}`}>{subject.subjectName}</div>
+          <div className="text-sm text-gray-500">{subject.topicsCompleted}/{subject.topicsTotal} topics · {Math.round(subject.overallAccuracy ?? 0)}% accuracy</div>
+          <div className="mt-2 h-1.5 bg-white/60 rounded-full overflow-hidden">
+            <div className={`h-full ${cfg.dot} rounded-full`} style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+        {open ? <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" /> : <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />}
+      </button>
+      {open && (
+        <div className="border-t border-white/40 bg-white/70 divide-y divide-gray-100">
+          {(subject.chapters ?? []).map((ch: any) => <ChapterRow key={ch.chapterId} chapter={ch} cfg={cfg} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CurriculumRoadmap() {
+  const { data: report, isLoading } = useProgressReport();
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-48">
+      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!report?.subjects?.length) return (
+    <div className="text-center py-16 text-gray-400">
+      <Map className="w-12 h-12 mx-auto mb-3 opacity-30" />
+      <p className="text-sm">Enroll in a course to see your curriculum roadmap</p>
+    </div>
+  );
+  const { summary } = report;
+  const overallPct = summary.totalTopics > 0 ? Math.round((summary.completedTopics / summary.totalTopics) * 100) : 0;
+  return (
+    <div className="space-y-4">
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-700 rounded-2xl p-5 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-bold text-lg">Curriculum Progress</h3>
+            <p className="text-indigo-200 text-sm">{summary.completedTopics}/{summary.totalTopics} topics completed</p>
+          </div>
+          <div className="relative">
+            <CircleProgress pct={overallPct} color="rgba(255,255,255,0.9)" size={64} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">{overallPct}%</span>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-center text-sm">
+          <div className="bg-white/10 rounded-xl p-2.5">
+            <div className="font-bold text-lg">{summary.lecturesCompleted}</div>
+            <div className="text-indigo-200 text-xs">Lectures Done</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-2.5">
+            <div className="font-bold text-lg">{Math.round(summary.overallAccuracy ?? 0)}%</div>
+            <div className="text-indigo-200 text-xs">Accuracy</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-2.5">
+            <div className="font-bold text-lg">{summary.totalPYQAttempted}</div>
+            <div className="text-indigo-200 text-xs">PYQs Done</div>
+          </div>
+        </div>
       </div>
+      <div className="flex items-center gap-4 text-xs text-gray-500 px-1">
+        {[
+          { dot: "bg-emerald-500", label: "Completed" },
+          { dot: "bg-amber-400",  label: "In Progress" },
+          { dot: "bg-blue-400",   label: "Unlocked" },
+          { dot: "bg-gray-300",   label: "Locked" },
+        ].map(l => (
+          <div key={l.label} className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${l.dot}`} />
+            {l.label}
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3">
+        {report.subjects.map(s => <SubjectCard key={s.subjectId} subject={s} />)}
+      </div>
+    </div>
+  );
+}
+
+// ─── Plan Item Card ────────────────────────────────────────────────────────────
+
+const TYPE_CFG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  lecture:       { icon: <PlayCircle className="w-4 h-4" />, color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
+  practice:      { icon: <Activity   className="w-4 h-4" />, color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
+  revision:      { icon: <BookOpen   className="w-4 h-4" />, color: "text-amber-600",  bg: "bg-amber-50 border-amber-200" },
+  mock_test:     { icon: <Trophy     className="w-4 h-4" />, color: "text-red-600",    bg: "bg-red-50 border-red-200" },
+  battle:        { icon: <Zap        className="w-4 h-4" />, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
+  doubt_session: { icon: <Brain      className="w-4 h-4" />, color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
+};
+
+function PlanItemCard({ item, onComplete, onSkip }: {
+  item: StudyPlanItem;
+  onComplete: (id: string) => void;
+  onSkip: (id: string) => void;
+}) {
+  const t       = TYPE_CFG[item.type] ?? TYPE_CFG.lecture;
+  const isDone  = item.status === "completed";
+  const isSkip  = item.status === "skipped";
+  const cfg     = item.content?.subjectName ? subjectCfg(item.content.subjectName) : null;
+  return (
+    <div className={`flex gap-3 p-3.5 rounded-xl border transition-all
+      ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}>
+      <div className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center
+        ${isDone ? "bg-emerald-50 border-emerald-200 text-emerald-600" : `${t.bg} ${t.color}`}`}>
+        {isDone ? <CheckCircle2 className="w-4 h-4" /> : t.icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="font-medium text-sm text-gray-900 leading-tight line-clamp-2">{item.title}</div>
+          {item.xpReward && !isDone && (
+            <span className="shrink-0 text-xs font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {cfg && item.content?.subjectName && (
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
+          )}
+          <span className="text-xs text-gray-400 flex items-center gap-0.5">
+            <Clock className="w-3 h-3" />{item.estimatedMinutes}m
+          </span>
+          {item.content?.topicName && <span className="text-xs text-gray-400 truncate">{item.content.topicName}</span>}
+        </div>
+      </div>
+      {!isDone && !isSkip && (
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={() => onSkip(item.id)}
+            className="px-2 py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
+            Skip
+          </button>
+          <button onClick={() => onComplete(item.id)}
+            className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
+            Done
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Week Strip ────────────────────────────────────────────────────────────────
 
-function WeekStrip({
-  weekDates, weekMap, selectedDay, onSelect,
-}: {
-  weekDates: { start: string; end: string };
-  weekMap: Record<string, StudyPlanItem[]> | undefined;
-  selectedDay: string; onSelect: (d: string) => void;
+function WeekStrip({ weekStart, selectedDate, onSelect, weekData }: {
+  weekStart: Date; selectedDate: string; onSelect: (d: string) => void; weekData: Record<string, StudyPlanItem[]>;
 }) {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = new Date().toISOString().split("T")[0];
-
+  const today = format(new Date(), "yyyy-MM-dd");
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
-      {days.map((label, i) => {
-        const d = new Date(weekDates.start);
-        d.setDate(d.getDate() + i);
-        const key = d.toISOString().split("T")[0];
-        const tasks = weekMap?.[key] ?? [];
-        const done  = tasks.filter(t => t.status === "completed").length;
-        const isPast = key < today;
-        const isToday = key === today;
-        const isSel = key === selectedDay;
-        const allDone = tasks.length > 0 && done === tasks.length;
-        const missed  = isPast && tasks.length > 0 && done < tasks.length;
-
+    <div className="flex gap-1.5 overflow-x-auto pb-1">
+      {Array.from({ length: 7 }, (_, i) => {
+        const d     = addDays(weekStart, i);
+        const key   = format(d, "yyyy-MM-dd");
+        const items = weekData[key] ?? [];
+        const done  = items.filter(x => x.status === "completed").length;
+        const isSel = key === selectedDate;
+        const isTod = key === today;
         return (
           <button key={key} onClick={() => onSelect(key)}
-            className={cn(
-              "flex flex-col items-center gap-1.5 px-3 py-3 rounded-2xl border transition-all min-w-[68px]",
-              isSel
-                ? "bg-indigo-600 border-indigo-600 shadow-md shadow-indigo-500/20"
-                : isToday
-                  ? "bg-indigo-50 border-indigo-200"
-                  : "bg-white border-slate-100 hover:border-indigo-200"
-            )}
-          >
-            <span className={cn("text-[10px] font-black uppercase tracking-wider",
-              isSel ? "text-indigo-200" : isToday ? "text-indigo-600" : "text-slate-400")}>{label}</span>
-            <span className={cn("text-base font-black",
-              isSel ? "text-white" : isToday ? "text-indigo-700" : "text-slate-700")}>{d.getDate()}</span>
-            {tasks.length > 0 ? (
-              <div className={cn("w-6 h-1.5 rounded-full",
-                allDone ? "bg-emerald-400" : missed ? "bg-rose-300" : isSel ? "bg-white/40" : "bg-indigo-200")} />
-            ) : (
-              <div className="w-6 h-1.5 rounded-full bg-slate-100" />
-            )}
-            <span className={cn("text-[9px] font-bold",
-              isSel ? "text-indigo-200" : "text-slate-400")}>{tasks.length > 0 ? `${done}/${tasks.length}` : "—"}</span>
+            className={`flex flex-col items-center py-2 px-3 rounded-xl min-w-[52px] transition-all
+              ${isSel ? "bg-indigo-600 text-white shadow-md" : isTod ? "bg-indigo-50 border-2 border-indigo-300 text-indigo-700" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+            <div className="text-xs font-medium">{format(d, "EEE")}</div>
+            <div className={`text-lg font-bold mt-0.5 ${isSel ? "text-white" : isTod ? "text-indigo-700" : "text-gray-800"}`}>{format(d, "d")}</div>
+            <div className="flex gap-0.5 mt-1 h-2 items-center">
+              {items.slice(0, 3).map((_, j) => (
+                <div key={j} className={`w-1.5 h-1.5 rounded-full ${j < done ? (isSel ? "bg-white" : "bg-emerald-400") : (isSel ? "bg-indigo-300" : "bg-gray-200")}`} />
+              ))}
+            </div>
           </button>
         );
       })}
@@ -381,490 +483,362 @@ function WeekStrip({
   );
 }
 
-// ─── Time Distribution Bar ─────────────────────────────────────────────────────
-
-function TimeDistributionBar({ items }: { items: StudyPlanItem[] }) {
-  const map: Record<string, number> = {};
-  items.forEach(i => {
-    const sub = i.content?.subjectName ?? "General";
-    map[sub] = (map[sub] ?? 0) + ((i as any).estimatedMinutes ?? 15);
-  });
-  const total = Object.values(map).reduce((a, b) => a + b, 0);
-  if (!total) return null;
-
-  const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
-  const colors = ["bg-indigo-500", "bg-emerald-500", "bg-violet-500", "bg-amber-500", "bg-teal-500", "bg-rose-500"];
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-6">
-      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-        <BarChart3 className="w-3.5 h-3.5" /> Study Time Distribution
-      </h3>
-      <div className="flex rounded-xl overflow-hidden h-3 mb-3 gap-0.5">
-        {entries.map(([sub, mins], i) => (
-          <div key={sub} title={`${sub}: ${mins} min`}
-            className={cn("h-full transition-all", colors[i % colors.length])}
-            style={{ width: `${(mins / total) * 100}%` }}
-          />
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-        {entries.map(([sub, mins], i) => (
-          <div key={sub} className="flex items-center gap-1.5">
-            <div className={cn("w-2 h-2 rounded-full", colors[i % colors.length])} />
-            <span className="text-[11px] text-slate-600 font-semibold">{sub}</span>
-            <span className="text-[11px] text-slate-400">{mins}m</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
+type ActiveTab = "plan" | "roadmap";
+type PlanTab   = "today" | "week";
+
 export default function StudentStudyPlanPage() {
-  const navigate = useNavigate();
-  const { data: me } = useStudentMe();
-  const { data: todayItems = [], isLoading } = useTodaysPlan();
-  const generate    = useGeneratePlan();
-  const regenerate  = useRegeneratePlan();
+  const { data: me, isLoading: meLoading } = useStudentMe();
+  const student = me?.student;
 
-  const [tab, setTab]               = useState<"today" | "week">("today");
-  const [videoPlayer, setVideoPlayer] = useState<{ url: string; title: string } | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const today     = format(new Date(), "yyyy-MM-dd");
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd   = addDays(weekStart, 6);
+  const ws = format(weekStart, "yyyy-MM-dd");
+  const we = format(weekEnd,   "yyyy-MM-dd");
 
-  // Week date range (Mon–Sun of current week)
-  const weekDates = useMemo(() => {
-    const today = new Date();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const fmt = (d: Date) => d.toISOString().split("T")[0];
-    return { start: fmt(monday), end: fmt(sunday) };
-  }, []);
-  const { data: weekMap } = useWeeklyPlanGrouped(weekDates.start, weekDates.end);
+  const [activeTab,   setActiveTab]   = useState<ActiveTab>("plan");
+  const [planTab,     setPlanTab]     = useState<PlanTab>("today");
+  const [selectedDay, setSelectedDay] = useState(today);
+  const [wizardDone,  setWizardDone]  = useState(false);
 
-  // Stats
-  const stats = useMemo(() => {
-    const total     = todayItems.length;
-    const completed = todayItems.filter(i => i.status === "completed").length;
-    const skipped   = todayItems.filter(i => i.status === "skipped").length;
-    const pending   = total - completed - skipped;
-    const pct       = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const totalMins = todayItems.reduce((s, i) => s + ((i as any).estimatedMinutes ?? 15), 0);
-    const xpPending = todayItems
-      .filter(i => i.status === "pending")
-      .reduce((s, i) => s + (TYPE_CFG[i.type]?.xp ?? 5), 0);
-    return { total, completed, skipped, pending, pct, totalMins, xpPending };
-  }, [todayItems]);
+  const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan();
+  const { data: weekData   = {} }                         = useWeeklyPlanGrouped(ws, we);
 
-  // Subject groups for today
-  const subjectGroups = useMemo(() => {
+  const generate      = useGeneratePlan();
+  const regenerate    = useRegeneratePlan();
+  const complete      = useCompletePlanItem();
+  const skip          = useSkipPlanItem();
+  const updateProfile = useUpdateStudentProfile();
+
+  const hasPrefs = !!(student?.examTarget && student?.examYear);
+  const hasPlan  = todayItems.length > 0;
+
+  const bySubject = useMemo(() => {
     const map: Record<string, StudyPlanItem[]> = {};
-    todayItems.forEach(i => {
-      const sub = i.content?.subjectName ?? "General";
-      if (!map[sub]) map[sub] = [];
-      map[sub].push(i);
-    });
+    for (const item of todayItems) {
+      const key = item.content?.subjectName ?? "General";
+      (map[key] ??= []).push(item);
+    }
     return map;
   }, [todayItems]);
 
-  // Tomorrow's tasks
-  const tomorrowItems = useMemo(() => {
-    const tmrw = new Date(); tmrw.setDate(tmrw.getDate() + 1);
-    return weekMap?.[tmrw.toISOString().split("T")[0]] ?? [];
-  }, [weekMap]);
+  const totalMinutes = todayItems.reduce((s, i) => s + i.estimatedMinutes, 0);
+  const doneCount    = todayItems.filter(i => i.status === "completed").length;
+  const donePct      = todayItems.length > 0 ? Math.round((doneCount / todayItems.length) * 100) : 0;
+  const days         = countdownDays(student?.examYear);
 
-  // Day items for week tab
-  const dayItems = useMemo(() => weekMap?.[selectedDay] ?? [], [weekMap, selectedDay]);
+  const handleWizardComplete = async (prefs: WizardState) => {
+    setWizardDone(true);
+    try {
+      await updateProfile.mutateAsync({
+        examTarget:      prefs.examTarget,
+        examYear:        prefs.examYear,
+        dailyStudyHours: prefs.dailyStudyHours,
+      });
+      generate.mutate(undefined, {
+        onSuccess: () => { toast.success("Your roadmap and study plan are ready!"); setWizardDone(false); },
+        onError:   () => { toast.error("Could not generate plan. Please try again."); setWizardDone(false); },
+      });
+    } catch {
+      toast.error("Could not save preferences.");
+      setWizardDone(false);
+    }
+  };
 
-  const student      = me?.student;
-  const dayCountdown = daysUntilExam(student?.examYear);
-
-  // ── Handle generate ──────────────────────────────────────────────────────────
-  const handleGenerate = () => {
+  const handleGenerate = () =>
     generate.mutate(undefined, {
-      onSuccess: () => toast.success("Your 30-day plan is ready! 🎉"),
-      onError:   () => toast.error("Could not generate plan right now. Please try again."),
+      onSuccess: () => toast.success("Study plan generated!"),
+      onError:   () => toast.error("Could not generate plan. Please try again."),
     });
-  };
-  const handleRegenerate = () => {
+
+  const handleRegenerate = () =>
     regenerate.mutate(undefined, {
-      onSuccess: () => toast.success("Plan refreshed with latest AI insights."),
-      onError:   () => toast.error("Could not regenerate plan. Please try again."),
+      onSuccess: () => toast.success("Plan regenerated!"),
+      onError:   () => toast.error("Could not regenerate. Please try again."),
     });
-  };
 
-  // ── Loading ───────────────────────────────────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-40 gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-        <p className="text-sm font-semibold text-slate-400">Loading your plan…</p>
-      </div>
-    );
-  }
+  if (meLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
-  // ── No plan → Setup Wizard ────────────────────────────────────────────────────
-  if (todayItems.length === 0 && !generate.isPending) {
-    return (
-      <SetupWizard
-        examTarget={student?.examTarget}
-        examYear={student?.examYear}
-        dailyHours={student?.dailyStudyHours}
-        onGenerate={handleGenerate}
-        isGenerating={generate.isPending}
-      />
-    );
-  }
+  if (!hasPrefs && !wizardDone) return (
+    <PreferenceWizard
+      initial={{ examTarget: student?.examTarget, examYear: student?.examYear, dailyStudyHours: student?.dailyStudyHours ?? 4 }}
+      onComplete={handleWizardComplete}
+    />
+  );
 
-  // ── Generating state ──────────────────────────────────────────────────────────
-  if (generate.isPending || regenerate.isPending) {
-    return (
-      <div className="flex flex-col items-center justify-center py-40 gap-6">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 animate-pulse">
-          <Sparkles className="w-10 h-10 text-white" />
-        </div>
-        <div className="text-center">
-          <h2 className="text-xl font-black text-slate-800 mb-1">AI is crafting your plan…</h2>
-          <p className="text-sm text-slate-400 font-medium">Analysing your weak areas & exam schedule</p>
-        </div>
-        <div className="flex gap-1.5">
-          {[0, 1, 2].map(i => (
-            <motion.div key={i} className="w-2 h-2 rounded-full bg-indigo-500"
-              animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, delay: i * 0.15, duration: 0.6 }}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (wizardDone || generate.isPending || regenerate.isPending) return <GeneratingView />;
 
-  // ── Main plan view ────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-7xl mx-auto pb-24">
-
-      {/* ── Hero Header ── */}
-      <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 rounded-3xl mx-4 mt-4 p-6 md:p-8 mb-6 relative overflow-hidden">
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-12 -left-8 w-48 h-48 bg-violet-500/20 rounded-full blur-3xl" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
-          {/* Left: greeting + exam */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-indigo-200 text-xs font-bold uppercase tracking-widest">
-                {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
-              </span>
-              {dayCountdown && (
-                <span className="px-2 py-0.5 rounded-full bg-white/15 text-white text-[10px] font-black">
-                  {dayCountdown}d to exam
-                </span>
-              )}
-            </div>
-            <h1 className="text-2xl md:text-3xl font-black text-white mb-1">
-              {me?.fullName ? `Hey, ${me.fullName.split(" ")[0]} 👋` : "Today's Focus 🚀"}
-            </h1>
-            <p className="text-indigo-200 text-sm font-semibold">
-              {fmtExam(student?.examTarget)}
-              {student?.examYear ? ` • ${student.examYear}` : ""}
-            </p>
-          </div>
-
-          {/* Center: progress ring */}
-          <div className="flex items-center gap-5">
-            <div className="relative flex items-center justify-center">
-              <ProgressRing pct={stats.pct} size={80} stroke={7} />
-              <div className="absolute flex flex-col items-center">
-                <span className="text-xl font-black text-white">{stats.pct}%</span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span className="text-white text-sm font-bold">{stats.completed} done</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-white/40" />
-                <span className="text-indigo-200 text-sm font-semibold">{stats.pending} pending</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-400" />
-                <span className="text-amber-200 text-sm font-semibold">+{stats.xpPending} XP left</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: streak + time */}
-          <div className="flex gap-3">
-            <div className="px-4 py-3 rounded-2xl bg-white/10 backdrop-blur-sm text-center min-w-[72px]">
-              <p className="text-2xl font-black text-white leading-none">{student?.streakDays ?? 0}</p>
-              <p className="text-[10px] text-orange-300 font-black uppercase mt-0.5 flex items-center justify-center gap-0.5">
-                <Flame className="w-3 h-3" /> Streak
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero */}
+      <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white">
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-indigo-300 text-sm">
+                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"},
               </p>
-            </div>
-            <div className="px-4 py-3 rounded-2xl bg-white/10 backdrop-blur-sm text-center min-w-[72px]">
-              <p className="text-2xl font-black text-white leading-none">{stats.totalMins}</p>
-              <p className="text-[10px] text-indigo-200 font-black uppercase mt-0.5">min</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Tab bar ── */}
-      <div className="px-4 mb-6">
-        <div className="inline-flex bg-white border border-slate-100 rounded-2xl p-1 shadow-sm gap-1">
-          {(["today", "week"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={cn(
-                "px-5 py-2 rounded-xl text-sm font-black transition-all",
-                tab === t
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-              )}
-            >
-              {t === "today" ? "Today" : "This Week"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Main grid ── */}
-      <div className="px-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* Left column */}
-        <div className="lg:col-span-8">
-
-          {/* TODAY TAB */}
-          {tab === "today" && (
-            <>
-              <TimeDistributionBar items={todayItems} />
-
-              {Object.keys(subjectGroups).length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
-                  <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-                  <h3 className="text-lg font-black text-slate-700 mb-1">All done for today!</h3>
-                  <p className="text-sm text-slate-400">Your dedication is paying off. Come back tomorrow.</p>
-                </div>
-              ) : (
-                Object.entries(subjectGroups).map(([sub, items]) => (
-                  <SubjectSection key={sub} subject={sub} items={items} onOpenVideo={(u, t) => setVideoPlayer({ url: u, title: t })} />
-                ))
-              )}
-            </>
-          )}
-
-          {/* WEEK TAB */}
-          {tab === "week" && (
-            <>
-              <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-5">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5" /> Weekly Overview
-                </h3>
-                <WeekStrip
-                  weekDates={weekDates} weekMap={weekMap}
-                  selectedDay={selectedDay} onSelect={setSelectedDay}
-                />
-              </div>
-
-              {dayItems.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
-                  <Lock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                  <h3 className="text-base font-black text-slate-500 mb-1">No tasks for this day</h3>
-                  <p className="text-sm text-slate-400">Rest day or tasks haven't been scheduled yet.</p>
-                </div>
-              ) : (
-                (() => {
-                  const dayGroups: Record<string, StudyPlanItem[]> = {};
-                  dayItems.forEach(i => {
-                    const sub = i.content?.subjectName ?? "General";
-                    if (!dayGroups[sub]) dayGroups[sub] = [];
-                    dayGroups[sub].push(i);
-                  });
-                  return (
-                    <>
-                      <TimeDistributionBar items={dayItems} />
-                      {Object.entries(dayGroups).map(([sub, items]) => (
-                        <SubjectSection key={sub} subject={sub} items={items} onOpenVideo={(u, t) => setVideoPlayer({ url: u, title: t })} />
-                      ))}
-                    </>
-                  );
-                })()
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Right sidebar */}
-        <div className="lg:col-span-4 space-y-4">
-
-          {/* AI Regenerate */}
-          <div className="p-[2px] rounded-2xl bg-gradient-to-br from-indigo-400 via-violet-500 to-pink-500 shadow-md">
-            <div className="bg-white rounded-[14px] p-5 text-center">
-              <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-sm font-black text-slate-800 mb-1">AI Smart Plan</h3>
-              <p className="text-xs text-slate-400 font-medium mb-4 leading-relaxed">
-                Re-generates based on your latest test results and weak areas.
-              </p>
-              <button onClick={handleRegenerate} disabled={regenerate.isPending}
-                className="w-full py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-black flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all disabled:opacity-50"
-              >
-                {regenerate.isPending
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating…</>
-                  : <><RefreshCw className="w-4 h-4" /> Regenerate Plan</>}
-              </button>
-            </div>
-          </div>
-
-          {/* Streak card */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 overflow-hidden relative">
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-orange-50 rounded-full blur-2xl" />
-            <div className="flex items-center gap-3 mb-3 relative z-10">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-orange-400 to-red-500 flex items-center justify-center shadow-sm">
-                <Flame className="w-5 h-5 text-white fill-white" />
-              </div>
-              <div>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Day Streak</p>
-                <p className="text-2xl font-black text-slate-800 leading-none">{student?.streakDays ?? 0}</p>
-              </div>
-            </div>
-            <div className="flex gap-1 mb-3 relative z-10">
-              {Array.from({ length: 7 }, (_, i) => (
-                <div key={i} className={cn("flex-1 h-2 rounded-full",
-                  i < (student?.streakDays ?? 0) % 7 ? "bg-orange-400" : "bg-slate-100")}
-                />
-              ))}
-            </div>
-            <p className="text-xs text-slate-400 font-medium relative z-10">
-              {stats.pending > 0 ? "Complete today's tasks to keep your streak alive!" : "Great! Streak is safe for today ✓"}
-            </p>
-          </div>
-
-          {/* XP card */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-4 h-4 text-amber-500" />
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Today's Rewards</h3>
-            </div>
-            <div className="space-y-2.5">
-              {[
-                { icon: Zap, label: "Task XP available", value: `+${stats.xpPending}`, bg: "bg-amber-50", text: "text-amber-600", iconBg: "bg-amber-100" },
-                { icon: Flame, label: "Streak bonus", value: "+1 day", bg: "bg-orange-50", text: "text-orange-600", iconBg: "bg-orange-100" },
-                { icon: Star, label: "Total XP", value: (student?.xpPoints ?? 0).toLocaleString(), bg: "bg-violet-50", text: "text-violet-600", iconBg: "bg-violet-100" },
-              ].map(({ icon: Icon, label, value, bg, text, iconBg }) => (
-                <div key={label} className={cn("flex items-center justify-between p-3 rounded-xl border border-transparent", bg)}>
-                  <div className="flex items-center gap-2.5">
-                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", iconBg)}>
-                      <Icon className={cn("w-3.5 h-3.5", text)} />
-                    </div>
-                    <span className="text-xs font-bold text-slate-700">{label}</span>
-                  </div>
-                  <span className={cn("text-sm font-black", text)}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Tomorrow preview */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <ChevronRight className="w-4 h-4 text-slate-400" />
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Tomorrow</h3>
-              </div>
-              {tomorrowItems.length > 0 && (
-                <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">
-                  {tomorrowItems.length} tasks
+              <h1 className="text-2xl font-bold mt-0.5">{me?.fullName?.split(" ")[0]} 👋</h1>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full text-sm">
+                  <Target className="w-3.5 h-3.5" /> {fmtExam(student?.examTarget)} {student?.examYear}
                 </span>
-              )}
-            </div>
-            {tomorrowItems.length > 0 ? (
-              <div className="space-y-2.5">
-                {tomorrowItems.slice(0, 4).map((task, i) => {
-                  const cfg = TYPE_CFG[task.type] ?? TYPE_CFG.lecture;
-                  return (
-                    <div key={i} className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border border-slate-100"
-                        style={{ background: cfg.bg, color: cfg.color }}>
-                        <cfg.icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-700 truncate">{task.title}</p>
-                        <p className="text-[10px] text-slate-400">{(task as any).estimatedMinutes ?? 15} min</p>
-                      </div>
-                    </div>
-                  );
-                })}
-                {tomorrowItems.length > 4 && (
-                  <p className="text-center text-xs font-bold text-indigo-500 pt-1">
-                    +{tomorrowItems.length - 4} more tasks
-                  </p>
+                {days !== null && (
+                  <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full text-sm">
+                    <Calendar className="w-3.5 h-3.5" /> {days} days left
+                  </span>
                 )}
+                <span className="flex items-center gap-1.5 bg-amber-400/20 text-amber-200 px-3 py-1.5 rounded-full text-sm">
+                  <Flame className="w-3.5 h-3.5 text-amber-300" /> {student?.streakDays ?? 0} day streak
+                </span>
               </div>
-            ) : (
-              <div className="text-center py-6 border-2 border-dashed border-slate-100 rounded-xl">
-                <Lock className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-slate-400">No tasks yet</p>
+            </div>
+            {hasPlan && (
+              <div className="flex items-center gap-3 bg-white/10 rounded-2xl px-4 py-3 border border-white/10">
+                <div className="relative">
+                  <svg width={52} height={52} className="-rotate-90">
+                    <circle cx={26} cy={26} r={20} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={5} />
+                    <circle cx={26} cy={26} r={20} fill="none" stroke="white" strokeWidth={5}
+                      strokeDasharray={2 * Math.PI * 20}
+                      strokeDashoffset={2 * Math.PI * 20 * (1 - donePct / 100)}
+                      strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-bold">{donePct}%</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="font-semibold">{doneCount}/{todayItems.length} done</div>
+                  <div className="text-indigo-200 text-xs">{totalMinutes} min today</div>
+                </div>
               </div>
             )}
           </div>
-
-          {/* Quick navigate */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-5">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Quick Actions</h3>
-            <div className="space-y-2">
-              {[
-                { label: "Practice Tests", icon: Target,   path: "/student/quiz"       },
-                { label: "AI Study",        icon: Brain,    path: "/student/learn"      },
-                { label: "Battle Arena",    icon: Swords,   path: "/student/battle"     },
-                { label: "Doubts",          icon: MessageSquare, path: "/student/doubts" },
-              ].map(({ label, icon: Icon, path }) => (
-                <button key={label} onClick={() => navigate(path)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-50 transition-all group"
-                >
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-                    <Icon className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-600 transition-colors" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-700 flex-1">{label}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-indigo-400 transition-colors" />
-                </button>
-              ))}
-            </div>
+        </div>
+        {/* Tabs */}
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex gap-1 border-b border-white/20">
+            {[
+              { key: "plan"    as const, label: "Study Plan",  icon: <ListTodo className="w-4 h-4" /> },
+              { key: "roadmap" as const, label: "My Roadmap",  icon: <Map      className="w-4 h-4" /> },
+            ].map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 transition-all
+                  ${activeTab === tab.key ? "border-white text-white" : "border-transparent text-indigo-300 hover:text-white"}`}>
+                {tab.icon} {tab.label}
+              </button>
+            ))}
           </div>
-
         </div>
       </div>
 
-      {/* ── Video Modal ── */}
-      <AnimatePresence>
-        {videoPlayer && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setVideoPlayer(null)}
-          >
-            <motion.div initial={{ y: 24, scale: 0.97 }} animate={{ y: 0, scale: 1 }} exit={{ y: 12, scale: 0.97 }}
-              className="w-full max-w-4xl bg-black rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-900">
-                <p className="text-sm font-bold text-white truncate pr-4">{videoPlayer.title}</p>
-                <button onClick={() => setVideoPlayer(null)}
-                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                  <X className="w-4 h-4 text-white" />
+      <div className="max-w-5xl mx-auto px-4 py-6">
+
+        {/* ══ STUDY PLAN ══════════════════════════════════════════════════════ */}
+        {activeTab === "plan" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {/* Sub-tabs */}
+              <div className="flex gap-1 p-1 bg-white rounded-xl border border-gray-200 w-fit">
+                {(["today", "week"] as const).map(t => (
+                  <button key={t} onClick={() => setPlanTab(t)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all
+                      ${planTab === t ? "bg-indigo-600 text-white shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
+                    {t === "today" ? "Today" : "This Week"}
+                  </button>
+                ))}
+              </div>
+
+              {planTab === "today" ? (
+                planLoading ? (
+                  <div className="flex items-center justify-center h-40">
+                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : !hasPlan ? (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                    <Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">No plan for today yet</h3>
+                    <p className="text-gray-500 mt-2 mb-6 text-sm max-w-sm mx-auto">
+                      Let AI generate a personalized schedule based on your {fmtExam(student?.examTarget)} curriculum and weak areas
+                    </p>
+                    <button onClick={handleGenerate}
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors mx-auto flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" /> Generate My Study Plan
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(bySubject).map(([subj, items]) => {
+                      const cfg      = subjectCfg(subj);
+                      const subjDone = items.filter(i => i.status === "completed").length;
+                      const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
+                      return (
+                        <div key={subj} className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
+                          <div className={`flex items-center justify-between px-4 py-3 ${cfg.bg}`}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                              <span className={`font-bold ${cfg.color}`}>{subj}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>{subjDone}/{items.length} done</span>
+                              <span>·</span>
+                              <Clock className="w-3 h-3" /><span>{subjMins}m</span>
+                            </div>
+                          </div>
+                          <div className="bg-white p-2 space-y-2">
+                            {items.map(item => (
+                              <PlanItemCard key={item.id} item={item}
+                                onComplete={id => complete.mutate(id)}
+                                onSkip={id => skip.mutate(id)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                <div className="space-y-4">
+                  <WeekStrip weekStart={weekStart} selectedDate={selectedDay} onSelect={setSelectedDay} weekData={weekData} />
+                  {(() => {
+                    const dayItems = weekData[selectedDay] ?? [];
+                    if (!dayItems.length) return (
+                      <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400">
+                        <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">No tasks for {format(new Date(selectedDay + "T00:00:00"), "EEEE, MMM d")}</p>
+                      </div>
+                    );
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-gray-600">{format(new Date(selectedDay + "T00:00:00"), "EEEE, MMMM d")}</p>
+                        {dayItems.map(item => (
+                          <PlanItemCard key={item.id} item={item}
+                            onComplete={id => complete.mutate(id)}
+                            onSkip={id => skip.mutate(id)}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Your Stats</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                    <div className="text-2xl font-bold text-amber-600">{student?.streakDays ?? 0}</div>
+                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1 mt-0.5"><Flame className="w-3 h-3 text-amber-500" /> Streak</div>
+                  </div>
+                  <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 text-center">
+                    <div className="text-2xl font-bold text-violet-600">{(student?.xpPoints ?? 0).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1 mt-0.5"><Star className="w-3 h-3 text-violet-500" /> XP</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">AI Plan</h3>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">Regenerate based on your latest test scores and weak topics</p>
+                <button onClick={handleRegenerate} disabled={regenerate.isPending}
+                  className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
+                  <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                  {regenerate.isPending ? "Regenerating…" : "Regenerate Plan"}
                 </button>
               </div>
-              <div className="aspect-video">
-                <iframe src={videoPlayer.url} title={videoPlayer.title} className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
+                <div className="space-y-2">
+                  {[
+                    { label: "Practice Tests", icon: <Trophy   className="w-4 h-4" />, cls: "text-red-600    bg-red-50    border-red-100" },
+                    { label: "AI Self Study",  icon: <Brain    className="w-4 h-4" />, cls: "text-indigo-600 bg-indigo-50 border-indigo-100" },
+                    { label: "Battle Arena",   icon: <Zap      className="w-4 h-4" />, cls: "text-orange-600 bg-orange-50 border-orange-100" },
+                    { label: "Ask a Doubt",    icon: <BookOpen className="w-4 h-4" />, cls: "text-teal-600   bg-teal-50   border-teal-100" },
+                  ].map(a => (
+                    <button key={a.label} className={`w-full flex items-center gap-3 p-2.5 rounded-xl border text-sm font-medium hover:shadow-sm transition-all ${a.cls}`}>
+                      {a.icon} {a.label} <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-60" />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </motion.div>
-          </motion.div>
+
+              <button onClick={() => setActiveTab("roadmap")}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-semibold text-sm hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                <Map className="w-4 h-4" /> View My Curriculum Roadmap
+              </button>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+
+        {/* ══ ROADMAP TAB ═════════════════════════════════════════════════════ */}
+        {activeTab === "roadmap" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="mb-5">
+                <h2 className="text-xl font-bold text-gray-900">My Curriculum Roadmap</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Your complete {fmtExam(student?.examTarget)} syllabus — tap any subject to expand chapters and topics
+                </p>
+              </div>
+              <CurriculumRoadmap />
+            </div>
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-indigo-500" /> Exam Target
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {([
+                    ["Exam",        fmtExam(student?.examTarget)],
+                    ["Target Year", String(student?.examYear ?? "—")],
+                    ["Daily Hours", student?.dailyStudyHours ? `${student.dailyStudyHours}h` : "—"],
+                    ["Days Left",   days !== null ? `${days} days` : "—"],
+                  ] as [string, string][]).map(([label, val]) => (
+                    <div key={label} className="flex justify-between">
+                      <span className="text-gray-500">{label}</span>
+                      <span className={`font-semibold ${label === "Days Left" ? "text-indigo-600" : "text-gray-900"}`}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                <div className="font-semibold text-indigo-700 text-sm mb-1 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> How AI uses this
+                </div>
+                <p className="text-xs text-indigo-600 leading-relaxed">
+                  Your study plan is generated from your enrolled curriculum, topic accuracy scores, weak areas, and daily study hours — and improves each time you regenerate.
+                </p>
+              </div>
+
+              <button onClick={() => setActiveTab("plan")}
+                className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-semibold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+                <ListTodo className="w-4 h-4" /> Go to Today's Plan
+              </button>
+
+              <button onClick={handleRegenerate} disabled={regenerate.isPending}
+                className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-2xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                Regenerate Plan
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

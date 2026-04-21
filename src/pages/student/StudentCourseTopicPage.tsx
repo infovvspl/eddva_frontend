@@ -48,6 +48,12 @@ const RESOURCE_META: Record<string, {
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
 };
 
+function getYouTubeThumbnail(url?: string | null) {
+  if (!url) return null;
+  const m = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null;
+}
+
 // ─── Lecture Card ─────────────────────────────────────────────────────────────
 
 function LectureCard({
@@ -58,7 +64,7 @@ function LectureCard({
   const navigate = useNavigate();
   const pct = lecture.watchProgress ?? 0;
   const done = !!lecture.isCompleted;
-  const thumb = resolveUrl(lecture.thumbnailUrl);
+  const thumb = resolveUrl(lecture.thumbnailUrl) || getYouTubeThumbnail(lecture.videoUrl);
   const dur = fmtDuration(lecture.duration);
 
   const handleClick = () => {
