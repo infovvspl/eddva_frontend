@@ -11,6 +11,7 @@
  *   error         → recoverable error state
  */
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Zap, Users, Globe, UserPlus,
@@ -18,16 +19,21 @@ import {
   Loader2, Wifi, X, Crown, Target,
   ChevronRight, Sparkles, Shield, AlertCircle,
   CheckCircle2, XCircle, TrendingUp, TrendingDown,
-  Star, Flame, Info,
+  Star, Flame, Info, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
-  useStudentMe, useDailyBattle, useCreateBattle,
+  studentKeys,
+  useStudentMe, useCreateBattle,
   useCancelBattle, useBattleRoom, useJoinBattle,
-  useBattleLeaderboard, useSubjects, useChapters, useTopics,
-  useMyBattleElo,
+  useBattleLeaderboard, useMyBattleElo,
+  useMyCourses, useCourseCurriculum,
+  useSubjects, useChapters, useTopics,
 } from "@/hooks/use-student";
+import { authKeys } from "@/hooks/use-auth";
+import { patchStudentXpDelta } from "@/lib/auth-store";
 import { BattleMode, BattleRoom, getBotPracticeQuestions } from "@/lib/api/student";
 import { tokenStorage } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
@@ -89,43 +95,18 @@ interface ModeConfig {
 }
 
 const MODES: ModeConfig[] = [
-  {
-    mode: "quick_duel",
-    title: "Quick Duel",
-    desc: "Fast 1v1 quiz",
-    detail: "5 questions · 30s each",
-    icon: Zap,
-    iconBg: "bg-indigo-50",
-    iconText: "text-indigo-600",
-    accent: "hover:border-indigo-100",
-    questions: 5,
-    seconds: 30,
-  },
-  {
-    mode: "topic_battle",
-    title: "Topic Battle",
-    desc: "Choose a topic",
-    detail: "10 questions · 45s each",
-    icon: Target,
-    iconBg: "bg-blue-50",
-    iconText: "text-blue-500",
-    accent: "hover:border-blue-100",
-    questions: 10,
-    seconds: 45,
-  },
-  {
-    mode: "daily",
-    title: "Daily Challenge",
-    desc: "Today's challenge",
-    detail: "Daily quiz event",
-    icon: Globe,
-    iconBg: "bg-violet-50",
-    iconText: "text-violet-500",
-    accent: "hover:border-violet-100",
-    badge: "GLOBAL",
-    questions: 15,
-    seconds: 60,
-  },
+  // {
+  //   mode: "quick_duel",
+  //   title: "Quick Duel",
+  //   desc: "Fast 1v1 quiz",
+  //   detail: "5 questions · 30s each",
+  //   icon: Zap,
+  //   iconBg: "bg-indigo-50",
+  //   iconText: "text-indigo-600",
+  //   accent: "hover:border-indigo-100",
+  //   questions: 5,
+  //   seconds: 30,
+  // },
   {
     mode: "challenge_friend",
     title: "Challenge Friend",
@@ -206,10 +187,13 @@ const BOT_QUESTIONS: BotQuestion[] = [
 
 interface BattleResult {
   winnerId: string | null;
+  isDraw?: boolean;
   myStudentId: string;
   isWinner: boolean;
   myRoundsWon: number;
   opponentRoundsWon: number;
+  myCorrectAnswers?: number;
+  opponentCorrectAnswers?: number;
   myName: string;
   opponentName: string;
   eloChange: number;
@@ -235,6 +219,7 @@ function BattleInProgress({
   mode,
   myStudentId,
   myName,
+  myAvatarUrl,
   onEnd,
   onResult,
   prefetchedQuestions,
@@ -244,6 +229,7 @@ function BattleInProgress({
   mode: ModeConfig;
   myStudentId: string;
   myName: string;
+  myAvatarUrl?: string | null;
   onEnd: () => void;
   onResult: (result: BattleResult) => void;
   prefetchedQuestions?: QuizQuestion[];
@@ -264,6 +250,7 @@ function BattleInProgress({
   const [waiting, setWaiting]           = useState(false); // waiting for opponent to answer
   const [opponentName, setOpponentName] = useState("Opponent");
   const [opponentStudentId, setOpponentStudentId] = useState("");
+  const [opponentAvatarUrl, setOpponentAvatarUrl] = useState<string | null>(null);
   const [questions, setQuestions]       = useState<QuizQuestion[]>([]);
   const [connected, setConnected]       = useState(false);
 
@@ -277,7 +264,11 @@ function BattleInProgress({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processRoundResultRef = useRef<(data: any) => void>(null!);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
+  // Strip any path (e.g. /api/v1) — socket.io needs just the origin
+  const backendUrl = (() => {
+    const raw = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
+    try { return new URL(raw).origin; } catch { return raw; }
+  })();
 
   // ─── Timer ────────────────────────────────────────────────────────────────
 
@@ -379,10 +370,11 @@ function BattleInProgress({
 
     setRoundWinnerId(effectiveWinnerId);
 
-    // If last round, finish after delay
+    // If last round: bot mode ends locally; PvP waits for server `battle:end` (do not call
+    // finalizeBattle — it would overwrite real XP/ELO with placeholders).
     if (data.roundNumber >= totalRounds) {
       setTimeout(() => {
-        finalizeBattle(effectiveWinnerId, newScores);
+        if (isBot) finalizeBattle(effectiveWinnerId, newScores);
       }, 2500);
     } else {
       // Next question after 2.5s
@@ -544,15 +536,26 @@ function BattleInProgress({
       if (opp) {
         setOpponentName(opp.name ?? "Opponent");
         setOpponentStudentId(opp.studentId ?? "");
+        setOpponentAvatarUrl(opp.avatarUrl ?? null);
       }
     });
 
     socket.on("battle:start", (data: {
       battle: any;
+      participants?: any[];
       firstQuestion: QuizQuestion;
       totalRounds: number;
       timePerRound: number;
     }) => {
+      // Populate opponent info if participants are included (challenge / reconnect path)
+      if (data.participants?.length) {
+        const opp = data.participants.find((p: any) => p.studentId !== myStudentId);
+        if (opp) {
+          setOpponentName(opp.name ?? "Opponent");
+          setOpponentStudentId(opp.studentId ?? "");
+          setOpponentAvatarUrl(opp.avatarUrl ?? null);
+        }
+      }
       setCurrentQuestion(data.firstQuestion);
       answerSentRef.current = false;
       startTimer();
@@ -585,18 +588,31 @@ function BattleInProgress({
     });
 
     socket.on("battle:end", (data: {
-      winnerId: string;
-      finalScores: { studentId: string; name: string; roundsWon: number; eloChange: number; xpEarned: number; newElo: number }[];
+      winnerId: string | null;
+      isDraw?: boolean;
+      finalScores: {
+        studentId: string;
+        name: string;
+        roundsWon: number;
+        correctAnswers?: number;
+        eloChange: number;
+        xpEarned: number;
+        newElo: number;
+      }[];
     }) => {
       clearTimer();
       const me = data.finalScores.find(s => s.studentId === myStudentId);
       const opp = data.finalScores.find(s => s.studentId !== myStudentId);
+      const draw = data.isDraw === true || (data.winnerId == null && (me?.roundsWon === opp?.roundsWon));
       onResult({
         winnerId: data.winnerId,
+        isDraw: draw,
         myStudentId,
-        isWinner: data.winnerId === myStudentId,
+        isWinner: !draw && data.winnerId === myStudentId,
         myRoundsWon: me?.roundsWon ?? 0,
         opponentRoundsWon: opp?.roundsWon ?? 0,
+        myCorrectAnswers: me?.correctAnswers,
+        opponentCorrectAnswers: opp?.correctAnswers,
         myName,
         opponentName: opp?.name ?? opponentName,
         eloChange: me?.eloChange ?? 0,
@@ -648,8 +664,10 @@ function BattleInProgress({
         {/* Unit A: Player */}
         <CardGlass className="p-8 border-indigo-100 bg-white/40">
            <div className="flex flex-col items-center">
-              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm">
-                 {myName.charAt(0).toUpperCase()}
+              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm overflow-hidden">
+                 {myAvatarUrl
+                   ? <img src={myAvatarUrl} alt={myName} className="w-full h-full object-cover" />
+                   : myName.charAt(0).toUpperCase()}
               </div>
               <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest mb-1">UNIT PARAGON</p>
               <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{myName}</p>
@@ -696,8 +714,12 @@ function BattleInProgress({
         {/* Unit B: Opponent */}
         <CardGlass className="p-8 border-slate-100 bg-white/40">
            <div className="flex flex-col items-center">
-              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm">
-                 {isBot ? <Sparkles className="w-6 h-6 text-indigo-400" /> : opponentName.charAt(0).toUpperCase()}
+              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm overflow-hidden">
+                 {isBot
+                   ? <Sparkles className="w-6 h-6 text-indigo-400" />
+                   : opponentAvatarUrl
+                     ? <img src={opponentAvatarUrl} alt={opponentName} className="w-full h-full object-cover" />
+                     : opponentName.charAt(0).toUpperCase()}
               </div>
               <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-1">{isBot ? "NEURAL CONSTRUCT" : "ENEMY PARAGON"}</p>
               <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{isBot ? "Battle Bot" : opponentName}</p>
@@ -714,6 +736,40 @@ function BattleInProgress({
            </div>
         </CardGlass>
       </div>
+
+      {/* Waiting for friend to join (challenge_friend, before battle:start) */}
+      {!currentQuestion && mode.mode === "challenge_friend" && (
+        <CardGlass className="p-12 border-white/80 text-center bg-white/40 space-y-6">
+          <div className="relative w-20 h-20 mx-auto">
+            {[1, 2].map(i => (
+              <motion.div key={i}
+                className="absolute inset-0 rounded-full border-2 border-indigo-400/30"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1.6, opacity: 0 }}
+                transition={{ duration: 2.5, delay: i * 1.2, repeat: Infinity, ease: "linear" }}
+              />
+            ))}
+            <div className="absolute inset-0 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-100">
+              <Users className="w-8 h-8 text-indigo-500" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-lg font-bold text-slate-800 uppercase tracking-tight">Waiting for Friend</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Share the code below — battle starts the moment they join
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-4 px-8 py-4 rounded-2xl bg-white border border-slate-100 shadow-lg">
+            <span className="text-3xl font-black tracking-[0.3em] font-mono text-slate-800">{room.roomCode}</span>
+            <button
+              onClick={() => navigator.clipboard.writeText(room.roomCode).then(() => toast.success("Code copied!"))}
+              className="p-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-colors"
+            >
+              <Copy className="w-4 h-4 text-indigo-500" />
+            </button>
+          </div>
+        </CardGlass>
+      )}
 
       {/* 🧩 Data Node: Question */}
       {currentQuestion ? (
@@ -848,7 +904,11 @@ function ResultScreen({
   onHome: () => void;
 }) {
   const { isWinner, myRoundsWon, opponentRoundsWon, myName, opponentName,
-    eloChange, xpEarned, newElo } = result;
+    eloChange, xpEarned, newElo, isDraw, myCorrectAnswers, opponentCorrectAnswers, winnerId } = result;
+
+  const winnerDisplayName = !isDraw && winnerId
+    ? (winnerId === result.myStudentId ? myName : opponentName)
+    : null;
 
   return (
     <div className="max-w-4xl mx-auto py-12">
@@ -863,25 +923,39 @@ function ResultScreen({
            <div className="flex justify-center mb-10">
               <div className={cn(
                 "w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg relative",
-                isWinner ? "bg-amber-500/10 text-amber-300 border border-amber-400/30" : "bg-red-500/10 text-red-300 border border-red-400/30"
+                isDraw
+                  ? "bg-sky-500/10 text-sky-300 border border-sky-400/30"
+                  : isWinner
+                    ? "bg-amber-500/10 text-amber-300 border border-amber-400/30"
+                    : "bg-red-500/10 text-red-300 border border-red-400/30"
               )}>
-                 {isWinner ? <Trophy className="w-12 h-12" /> : <Swords className="w-12 h-12" />}
+                 {isDraw ? <Swords className="w-12 h-12" /> : isWinner ? <Trophy className="w-12 h-12" /> : <Swords className="w-12 h-12" />}
                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border border-dashed border-current opacity-10 rounded-[2.5rem]" />
               </div>
            </div>
 
-           <h2 className={cn("text-3xl font-extrabold tracking-tight mb-2", isWinner ? "text-amber-300" : "text-red-300")}>
-              {isWinner ? "Victory" : "Defeat"}
+           <h2 className={cn(
+             "text-3xl font-extrabold tracking-tight mb-2",
+             isDraw ? "text-sky-300" : isWinner ? "text-amber-300" : "text-red-300",
+           )}>
+              {isDraw ? "Draw" : isWinner ? "Victory" : "Defeat"}
            </h2>
-           <p className="text-[10px] font-bold text-white/55 uppercase tracking-widest mb-12">
-              {isWinner ? "Great job!" : "Good try. Try again!"}
+           <p className="text-[10px] font-bold text-white/55 uppercase tracking-widest mb-2">
+              {isDraw ? "Evenly matched!" : isWinner ? "Great job!" : "Good try. Try again!"}
            </p>
+           {winnerDisplayName && (
+             <p className="text-sm font-semibold text-white/80 mb-10">
+               Winner: <span className="text-amber-200">{winnerDisplayName}</span>
+             </p>
+           )}
+           {isDraw && <div className="mb-10" />}
 
-           {/* Scoreboard */}
-           <div className="grid grid-cols-3 gap-12 items-center mb-16 max-w-lg mx-auto">
+           {/* Scoreboard — round wins */}
+           <div className="grid grid-cols-3 gap-12 items-center mb-8 max-w-lg mx-auto">
               <div className="text-right">
-                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">YOU</p>
+                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">{myName}</p>
                  <p className="text-3xl font-extrabold text-white">{myRoundsWon}</p>
+                 <p className="text-[9px] font-bold text-white/40 mt-1">rounds won</p>
               </div>
               <div className="flex flex-col items-center">
                  <div className="w-px h-10 bg-white/10" />
@@ -889,27 +963,38 @@ function ResultScreen({
                  <div className="w-px h-10 bg-white/10" />
               </div>
               <div className="text-left">
-                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">OPPONENT</p>
+                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">{opponentName}</p>
                  <p className="text-3xl font-extrabold text-white">{opponentRoundsWon}</p>
+                 <p className="text-[9px] font-bold text-white/40 mt-1">rounds won</p>
               </div>
            </div>
+
+           {(myCorrectAnswers !== undefined || opponentCorrectAnswers !== undefined) && (
+             <div className="mb-12 max-w-lg mx-auto rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
+               <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-3">Correct answers</p>
+               <div className="flex justify-between text-sm font-semibold">
+                 <span className="text-white/90">{myName}: <span className="text-emerald-300">{myCorrectAnswers ?? "—"}</span></span>
+                 <span className="text-white/90">{opponentName}: <span className="text-emerald-300">{opponentCorrectAnswers ?? "—"}</span></span>
+               </div>
+             </div>
+           )}
 
            {/* Rewards Grid */}
            <div className="grid grid-cols-2 gap-4 mb-16 max-w-md mx-auto">
               <div className="p-6 rounded-3xl bg-indigo-500/10 border border-indigo-400/20 flex flex-col items-center shadow-sm">
                  <Zap className="w-5 h-5 text-indigo-300 mb-2" />
                  <p className="text-xl font-extrabold text-white">+{xpEarned}</p>
-                 <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">XP GAINED</p>
+                 <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">battle XP (added to profile)</p>
               </div>
               <div className="p-6 rounded-3xl bg-cyan-500/10 border border-cyan-400/20 flex flex-col items-center shadow-sm">
                  {eloChange >= 0 ? <TrendingUp className="w-5 h-5 text-cyan-300 mb-2" /> : <TrendingDown className="w-5 h-5 text-red-300 mb-2" />}
-                 <p className="text-xl font-extrabold text-white">{eloChange >= 0 ? "+" : ""}{eloChange} XP</p>
-                 <p className="text-[8px] font-bold text-cyan-300 uppercase tracking-widest">TOTAL: {newElo}</p>
+                 <p className="text-xl font-extrabold text-white">{eloChange >= 0 ? "+" : ""}{eloChange}</p>
+                 <p className="text-[8px] font-bold text-cyan-300 uppercase tracking-widest">elo · new rating {newElo}</p>
               </div>
            </div>
            <div className="mb-12 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-500/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
              <Flame className="w-3.5 h-3.5" />
-             Win streak {isWinner ? "+1" : "reset"}
+             Win streak {isDraw ? "—" : isWinner ? "+1" : "reset"}
            </div>
 
            {/* Actions */}
@@ -1155,6 +1240,324 @@ function JoinRoomScreen({
   );
 }
 
+// ─── Challenge Scope Picker (for Create Code flow) ───────────────────────────
+
+type ScopeType = "topic" | "chapter" | "subject";
+
+function ChallengeScopePicker({
+  onBack,
+  onStart,
+  loading,
+}: {
+  onBack: () => void;
+  onStart: (topicId: string | undefined, label: string) => void;
+  loading: boolean;
+}) {
+  const [scopeType, setScopeType] = useState<ScopeType>("topic");
+  const [subjectId, setSubjectId] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [topicId, setTopicId]     = useState("");
+  const [subjectName, setSubjectName] = useState("");
+  const [chapterName, setChapterName] = useState("");
+  const [topicName, setTopicName]     = useState("");
+
+  // Use enrolled course curriculum — this is what the student actually has access to
+  const { data: myCourses = [], isLoading: coursesLoading } = useMyCourses();
+  const primaryBatchId = myCourses[0]?.id ?? "";
+  const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(primaryBatchId);
+
+  const isLoading = coursesLoading || currLoading;
+
+  // Derive subject/chapter/topic lists from curriculum
+  const subList = curriculum?.subjects ?? [];
+  const chapList = subjectId
+    ? (subList.find(s => s.id === subjectId)?.chapters ?? [])
+    : [];
+  const topList = chapterId
+    ? (chapList.find(c => c.id === chapterId)?.topics ?? [])
+    : [];
+
+  const canStart =
+    scopeType === "topic"   ? !!topicId :
+    scopeType === "chapter" ? !!chapterId :
+                              !!subjectId;
+
+  const handleStart = () => {
+    if (!canStart) return;
+    if (scopeType === "topic") {
+      onStart(topicId, topicName);
+    } else if (scopeType === "chapter") {
+      // Pick first topic of that chapter as the AI question anchor
+      const firstTopic = topList[0];
+      onStart(firstTopic?.id, chapterName);
+    } else {
+      // Subject — let backend pick a topic from that subject
+      const firstChapter = chapList[0];
+      const firstTopic = firstChapter?.topics?.[0];
+      onStart(firstTopic?.id, subjectName);
+    }
+  };
+
+  const SCOPE_TABS: { key: ScopeType; label: string; desc: string }[] = [
+    { key: "subject", label: "Subject", desc: "Mixed questions from a subject" },
+    { key: "chapter", label: "Chapter", desc: "Questions from one chapter" },
+    { key: "topic",   label: "Topic",   desc: "Deep dive into one topic" },
+  ];
+
+  const resetSelections = () => {
+    setSubjectId(""); setSubjectName("");
+    setChapterId(""); setChapterName("");
+    setTopicId("");   setTopicName("");
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto py-10 space-y-10">
+      {/* Header */}
+      <div className="flex items-center gap-6">
+        <button
+          onClick={onBack}
+          className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all shadow-sm group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        </button>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none">
+            Choose <span className="text-emerald-500">Battle Scope</span>
+          </h2>
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">
+            Select what your quiz questions will be based on.
+          </p>
+        </div>
+      </div>
+
+      {/* Scope Type Tabs */}
+      <div className="grid grid-cols-3 gap-4">
+        {SCOPE_TABS.map(t => (
+          <button
+            key={t.key}
+            onClick={() => { setScopeType(t.key); resetSelections(); }}
+            className={cn(
+              "p-5 rounded-2xl border text-left transition-all",
+              scopeType === t.key
+                ? "border-emerald-400 bg-emerald-50/40"
+                : "border-slate-100 bg-white hover:border-emerald-200"
+            )}
+          >
+            <p className={cn("text-[11px] font-bold uppercase tracking-tight", scopeType === t.key ? "text-slate-800" : "text-slate-400")}>
+              {t.label}
+            </p>
+            <p className="text-[9px] font-bold text-slate-300 mt-1 leading-relaxed uppercase tracking-widest">{t.desc}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Selects */}
+      <CardGlass className="p-8 border-slate-100 space-y-6 bg-white/40">
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2].map(i => <div key={i} className="h-14 rounded-2xl bg-slate-50 animate-pulse" />)}
+          </div>
+        ) : subList.length === 0 ? (
+          <div className="py-10 text-center space-y-3">
+            <Info className="w-8 h-8 text-slate-200 mx-auto" />
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              No course enrolled yet. Please enroll in a course first.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Subject */}
+            <div className="space-y-2">
+              <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
+              <select
+                value={subjectId}
+                onChange={e => {
+                  const id = e.target.value;
+                  setSubjectId(id);
+                  setSubjectName(subList.find(s => s.id === id)?.name ?? "");
+                  setChapterId(""); setChapterName("");
+                  setTopicId("");   setTopicName("");
+                }}
+                className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
+              >
+                <option value="">Select subject…</option>
+                {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+
+            {/* Chapter (when scope = chapter or topic) */}
+            {(scopeType === "chapter" || scopeType === "topic") && (
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
+                <select
+                  value={chapterId}
+                  onChange={e => {
+                    const id = e.target.value;
+                    setChapterId(id);
+                    setChapterName(chapList.find(c => c.id === id)?.name ?? "");
+                    setTopicId(""); setTopicName("");
+                  }}
+                  disabled={!subjectId}
+                  className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none disabled:opacity-30 shadow-sm"
+                >
+                  <option value="">Select chapter…</option>
+                  {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* Topic (when scope = topic) */}
+            {scopeType === "topic" && (
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
+                <select
+                  value={topicId}
+                  onChange={e => {
+                    const id = e.target.value;
+                    setTopicId(id);
+                    setTopicName(topList.find(t => t.id === id)?.name ?? "");
+                  }}
+                  disabled={!chapterId}
+                  className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none disabled:opacity-30 shadow-sm"
+                >
+                  <option value="">Select topic…</option>
+                  {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+            )}
+          </>
+        )}
+      </CardGlass>
+
+      {/* Selected scope summary + CTA */}
+      {canStart && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="mb-4 flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-50 border border-emerald-100">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">
+              {scopeType === "topic"   && topicName   && `Topic: ${topicName}`}
+              {scopeType === "chapter" && chapterName && `Chapter: ${chapterName}`}
+              {scopeType === "subject" && subjectName && `Subject: ${subjectName}`}
+            </p>
+          </div>
+          <Button
+            className="w-full h-16 rounded-[2.5rem] bg-slate-900 text-white font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3"
+            disabled={loading}
+            onClick={handleStart}
+          >
+            {loading
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating room…</>
+              : <><Copy className="w-4 h-4" /> Generate Battle Code</>
+            }
+          </Button>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// ─── Challenge Friend Picker ──────────────────────────────────────────────────
+
+function ChallengeFriendPickerScreen({
+  onCreateCode,
+  onJoinCode,
+  onBack,
+}: {
+  onCreateCode: () => void;
+  onJoinCode: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="max-w-2xl mx-auto py-16 space-y-12">
+      {/* Header */}
+      <div className="flex items-center gap-6">
+        <button
+          onClick={onBack}
+          className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all shadow-sm group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        </button>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none">
+            Challenge a <span className="text-emerald-500">Friend</span>
+          </h2>
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">
+            Create a code or join with one your friend shared.
+          </p>
+        </div>
+      </div>
+
+      {/* Two option cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {/* Create Code */}
+        <motion.button
+          whileHover={{ y: -4, scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onCreateCode}
+          className="relative group p-10 rounded-[2.5rem] bg-white border border-slate-100 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] text-left overflow-hidden transition-all hover:border-emerald-200 hover:shadow-[0_12px_40px_0_rgba(16,185,129,0.1)]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem]" />
+          <div className="relative z-10 flex flex-col gap-8">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-sm group-hover:bg-emerald-500 group-hover:border-emerald-500 transition-all">
+              <Copy className="w-6 h-6 text-emerald-500 group-hover:text-white transition-colors" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-slate-800 tracking-tight">Create Code</h3>
+              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">
+                Generate a room code and share it with your friend
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-500 uppercase tracking-widest">
+              <Zap className="w-3 h-3" />
+              10 questions · 45s each
+            </div>
+          </div>
+          <div className="absolute bottom-6 right-6 w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-emerald-500 group-hover:border-emerald-500 transition-all shadow-xs">
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+          </div>
+        </motion.button>
+
+        {/* Join with Code */}
+        <motion.button
+          whileHover={{ y: -4, scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onJoinCode}
+          className="relative group p-10 rounded-[2.5rem] bg-white border border-slate-100 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] text-left overflow-hidden transition-all hover:border-indigo-200 hover:shadow-[0_12px_40px_0_rgba(79,70,229,0.1)]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem]" />
+          <div className="relative z-10 flex flex-col gap-8">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-all">
+              <UserPlus className="w-6 h-6 text-indigo-500 group-hover:text-white transition-colors" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-slate-800 tracking-tight">Join with Code</h3>
+              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">
+                Enter the code your friend created to jump into their battle
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[9px] font-bold text-indigo-400 uppercase tracking-widest">
+              <Users className="w-3 h-3" />
+              Enter friend's room code
+            </div>
+          </div>
+          <div className="absolute bottom-6 right-6 w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-all shadow-xs">
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+          </div>
+        </motion.button>
+      </div>
+
+      {/* Helpful hint */}
+      <div className="flex items-start gap-4 px-6 py-5 rounded-2xl bg-slate-50 border border-slate-100">
+        <Info className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" />
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+          Create a code, copy it and send it to your friend via WhatsApp, etc.
+          Your friend clicks <span className="text-indigo-500">"Join with Code"</span> and enters it to start the battle.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Matchmaking / Waiting Room ───────────────────────────────────────────────
 
 function MatchmakingScreen({
@@ -1163,18 +1566,25 @@ function MatchmakingScreen({
   topicName,
   onCancel,
   onBattleStart,
+  backendUrl,
+  myStudentId,
 }: {
   room: BattleRoom;
   mode: ModeConfig;
   topicName?: string;
   onCancel: () => void;
   onBattleStart: (room: BattleRoom) => void;
+  backendUrl?: string;
+  myStudentId?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [opponentName, setOpponentName] = useState<string | null>(null);
   const cancelBattle = useCancelBattle();
   const { data: updatedRoom } = useBattleRoom(room.battleId, room.status === "waiting");
 
   const currentRoom = updatedRoom ?? room;
+
+  const isFriend = mode.mode === "challenge_friend";
 
   const copyCode = () => {
     navigator.clipboard.writeText(currentRoom.roomCode).then(() => {
@@ -1190,13 +1600,39 @@ function MatchmakingScreen({
     });
   };
 
+  // For quick_duel: connect socket and emit battle:join so gateway can pair players
+  useEffect(() => {
+    if (isFriend || !backendUrl || !myStudentId) return;
+
+    const token = tokenStorage.getAccess();
+    const socket = io(`${backendUrl}/battle`, { auth: { token }, transports: ["websocket"] });
+
+    socket.on("connect", () => {
+      socket.emit("battle:join", { roomCode: room.roomCode, studentId: myStudentId });
+    });
+
+    socket.on("battle:player_joined", (data: { participants: any[] }) => {
+      const opp = data.participants.find((p: any) => p.studentId !== myStudentId);
+      if (opp) setOpponentName(opp.name ?? "Opponent");
+    });
+
+    socket.on("battle:start", (data: any) => {
+      socket.disconnect();
+      onBattleStart({ ...currentRoom, status: "in_progress" });
+    });
+
+    socket.on("battle:error", (data: { message: string }) => {
+      toast.error(data.message);
+    });
+
+    return () => { socket.disconnect(); };
+  }, []);
+
   useEffect(() => {
     if (currentRoom.status === "in_progress" || (currentRoom.status as string) === "active") {
       onBattleStart(currentRoom);
     }
   }, [currentRoom.status]);
-
-  const isFriend = mode.mode === "challenge_friend";
 
   return (
     <div className="max-w-xl mx-auto py-20 space-y-12">
@@ -1224,7 +1660,7 @@ function MatchmakingScreen({
              </h2>
              <div className="flex items-center justify-center gap-3 px-4 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600">
                 <Wifi className="w-3 h-3 animate-pulse" />
-                <span className="text-[8px] font-bold uppercase tracking-widest">{currentRoom.status === "waiting" ? "Finding opponent..." : "Opponent found"}</span>
+                <span className="text-[8px] font-bold uppercase tracking-widest">{opponentName ? `Opponent found: ${opponentName}` : (currentRoom.status === "waiting" ? "Finding opponent..." : "Opponent found")}</span>
              </div>
              <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em]">
                 {topicName ? `Topic: ${topicName}` : mode.detail}
@@ -1698,7 +2134,7 @@ function ChallengeLobbyScreen({
   users,
   myStudentId,
   onChallenge,
-  onOpenJoinByCode,
+  onChallengeFriend,
   onModeSelect,
   myName,
   xpPoints,
@@ -1706,13 +2142,18 @@ function ChallengeLobbyScreen({
   users: LobbyUser[];
   myStudentId: string;
   onChallenge: (targetStudentId: string) => void;
-  onOpenJoinByCode: () => void;
+  onChallengeFriend: () => void;
   onModeSelect: (mode: ModeConfig) => void;
   myName: string;
   xpPoints?: number;
 }) {
+  const [liveSearch, setLiveSearch] = useState("");
   const others = users.filter(u => u.studentId !== myStudentId);
-  const quickModes = MODES.filter(m => m.mode === "quick_duel" || m.mode === "topic_battle" || m.mode === "daily");
+  const searchLower = liveSearch.trim().toLowerCase();
+  const filteredOthers = searchLower
+    ? others.filter(u => (u.name ?? "").toLowerCase().includes(searchLower))
+    : others;
+  const quickModes = MODES.filter(m => m.mode !== "bot" && m.mode !== "challenge_friend");
   const tierColor = (tier?: string) => {
     const t = (tier ?? "iron").toLowerCase();
     if (t === "champion") return { cls: "bg-amber-500/10 text-amber-700 border-amber-200", label: "Champion" };
@@ -1790,26 +2231,53 @@ function ChallengeLobbyScreen({
             </button>
           ))}
           <button
-            onClick={onOpenJoinByCode}
-            className="group rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-0.5 hover:border-indigo-200"
+            onClick={onChallengeFriend}
+            className="group rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-0.5 hover:border-emerald-300"
           >
             <div className="mb-2 flex items-center gap-2">
-              <UserPlus className="h-4 w-4 text-indigo-600" />
+              <UserPlus className="h-4 w-4 text-emerald-500" />
               <span className="text-[10px] font-bold uppercase tracking-wider">Challenge Friend</span>
             </div>
-            <p className="text-[11px] text-slate-500">Enter friend room code</p>
+            <p className="text-[11px] text-slate-500">Create or join with code</p>
           </button>
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] xl:col-span-2">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Live Players</h3>
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+              <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700 sm:self-auto">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 <span className="tabular-nums">{others.length + 1}</span> Online
               </span>
             </div>
+            <div className="relative mb-4">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                type="search"
+                value={liveSearch}
+                onChange={e => setLiveSearch(e.target.value)}
+                placeholder="Search by name…"
+                aria-label="Search live players by name"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50/80 pl-9 pr-9 text-sm placeholder:text-slate-400 focus-visible:ring-indigo-500"
+              />
+              {liveSearch.trim() !== "" && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-200/60 hover:text-slate-600"
+                  onClick={() => setLiveSearch("")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            {searchLower !== "" && others.length > 0 && (
+              <p className="mb-3 text-[11px] font-medium text-slate-500">
+                Showing <span className="font-bold text-slate-700 tabular-nums">{filteredOthers.length}</span> of{" "}
+                <span className="tabular-nums">{others.length}</span> players
+              </p>
+            )}
             <div className="max-h-[380px] space-y-3 overflow-y-auto pr-1">
               {others.length === 0 && (
                 <div className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60">
@@ -1818,7 +2286,22 @@ function ChallengeLobbyScreen({
                   <p className="text-[11px] text-slate-400">Other players will appear here when they join the arena</p>
                 </div>
               )}
-              {others.map((u) => {
+              {others.length > 0 && filteredOthers.length === 0 && (
+                <div className="flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4">
+                  <Search className="h-7 w-7 text-slate-300" />
+                  <p className="text-center text-sm text-slate-600">
+                    No players match &quot;{liveSearch.trim()}&quot;
+                  </p>
+                  <button
+                    type="button"
+                    className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 hover:underline"
+                    onClick={() => setLiveSearch("")}
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )}
+              {filteredOthers.map((u) => {
                 const tier = tierColor(u.tier);
                 const status = statusFor(u.status);
                 const playerXp = Number(u.xpPoints ?? u.xpTotal ?? 0);
@@ -1863,9 +2346,10 @@ function ChallengeLobbyScreen({
 
 type Stage =
   | "lobby"
+  | "challenge_pick"
+  | "challenge_create"
   | "challenge_sent"
   | "incoming_request"
-  | "topic_pick"
   | "bot_pick"
   | "join_room"
   | "matchmaking"
@@ -1874,8 +2358,8 @@ type Stage =
   | "error";
 
 const BattleArena = () => {
+  const queryClient = useQueryClient();
   const { data: me, isLoading: meLoading } = useStudentMe();
-  const { data: dailyBattle } = useDailyBattle();
   const { data: eloData } = useMyBattleElo();
   const createBattle = useCreateBattle();
 
@@ -1894,9 +2378,13 @@ const BattleArena = () => {
 
   const student = me?.student;
   const xpPoints = Number(student?.xpPoints ?? eloData?.xpPoints ?? 0);
-  const myStudentId = student?.id ?? "";
-  const myName      = me?.fullName ?? "You";
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
+  const myStudentId  = student?.id ?? "";
+  const myName       = me?.fullName ?? "You";
+  const myAvatarUrl  = me?.profilePictureUrl ?? null;
+  const backendUrl = (() => {
+    const raw = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
+    try { return new URL(raw).origin; } catch { return raw; }
+  })();
   const incomingChallengerName = incomingChallenge
     ? (onlineUsers.find(u => u.studentId === incomingChallenge.fromStudentId)?.name ?? "A student")
     : "A student";
@@ -1969,7 +2457,7 @@ const BattleArena = () => {
       });
       setBotQuestions(undefined);
       setStage("in_battle");
-      toast("No response in 10s. Starting bot battle.");
+      toast("No response in 30s. Starting bot battle.");
     });
 
     socket.on("battle:challenge_error", (payload: { message?: string }) => {
@@ -1987,7 +2475,7 @@ const BattleArena = () => {
 
   useEffect(() => {
     if (stage !== "challenge_sent" && stage !== "incoming_request") return;
-    setChallengeCountdown(10);
+    setChallengeCountdown(30);
     const iv = setInterval(() => {
       setChallengeCountdown(prev => (prev <= 0 ? 0 : prev - 1));
     }, 1000);
@@ -1996,20 +2484,10 @@ const BattleArena = () => {
 
   const handleModeSelect = (mode: ModeConfig) => {
     setActiveMode(mode);
-    if (mode.mode === "topic_battle") {
-      setStage("topic_pick");
-    } else if (mode.mode === "bot") {
+    if (mode.mode === "bot") {
       setStage("bot_pick");
-    } else if (mode.mode === "daily" && dailyBattle && (dailyBattle as any).roomCode) {
-      // Daily battle: join the existing daily room by code rather than creating a new one
-      const db = dailyBattle as any;
-      if (db.battleId) {
-        // Already has a battleId — go straight to matchmaking with that room
-        setBattleRoom({ battleId: db.battleId, roomCode: db.roomCode, status: db.status === "active" ? "in_progress" : db.status, mode: "daily" });
-        setStage("matchmaking");
-      } else {
-        startBattle(mode);
-      }
+    } else if (mode.mode === "challenge_friend") {
+      setStage("challenge_pick");
     } else {
       startBattle(mode);
     }
@@ -2054,11 +2532,12 @@ const BattleArena = () => {
   const startBattle = (mode: ModeConfig, topId?: string, topName?: string) => {
     setTopicName(topName ?? "");
     createBattle.mutate(
-      { mode: mode.mode, topicId: topId },
+      { mode: mode.mode, topicId: topId, topicName: topName },
       {
         onSuccess: (room) => {
           setBattleRoom(room);
-          setStage("matchmaking");
+          // challenge_friend: creator waits inside the battle arena (no matchmaking)
+          setStage(mode.mode === "challenge_friend" ? "in_battle" : "matchmaking");
         },
         onError: (err: any) => {
           const msg = err?.response?.data?.message || err?.message || "Could not create battle. Try again.";
@@ -2079,7 +2558,12 @@ const BattleArena = () => {
   const handleJoined = (room: BattleRoom) => {
     setBattleRoom(room);
     setActiveMode(MODES.find(m => m.mode === "challenge_friend") ?? MODES[0]);
-    setStage("matchmaking");
+    // Joiner goes straight into the battle screen.
+    // BattleInProgress connects socket + emits battle:join, which triggers
+    // battle:start for both players (creator is already in the socket room
+    // via MatchmakingScreen's own socket connection).
+    setStage("in_battle");
+    toast.success("Joined! Battle starting…");
   };
 
   const handleBattleStart = (room: BattleRoom) => {
@@ -2091,6 +2575,27 @@ const BattleArena = () => {
   const handleBattleResult = (result: BattleResult) => {
     setBattleResult(result);
     setStage("result");
+
+    const isBotBattle = activeMode?.mode === "bot";
+    if (!isBotBattle) {
+      const gained = Number(result.xpEarned ?? 0);
+      if (gained > 0) {
+        patchStudentXpDelta(gained);
+        queryClient.setQueryData(studentKeys.me, (prev: unknown) => {
+          const old = prev as { student?: { xpPoints?: number } } | undefined;
+          if (!old?.student) return prev;
+          return {
+            ...old,
+            student: {
+              ...old.student,
+              xpPoints: (old.student.xpPoints ?? 0) + gained,
+            },
+          };
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: ["student"] });
+      void queryClient.invalidateQueries({ queryKey: authKeys.me });
+    }
   };
 
   const reset = () => {
@@ -2109,9 +2614,7 @@ const BattleArena = () => {
     if (!activeMode) { reset(); return; }
     setBattleRoom(null);
     setBattleResult(null);
-    if (activeMode.mode === "topic_battle") {
-      setStage("topic_pick");
-    } else if (activeMode.mode === "bot") {
+    if (activeMode.mode === "bot") {
       setBotQuestions(undefined);
       setStage("bot_pick");
     } else if (activeMode.mode === "daily") {
@@ -2140,10 +2643,37 @@ const BattleArena = () => {
                 users={onlineUsers}
                 myStudentId={myStudentId}
                 onChallenge={sendChallenge}
-                onOpenJoinByCode={() => setStage("join_room")}
+                onChallengeFriend={() => {
+                  setActiveMode(MODES.find(m => m.mode === "challenge_friend") ?? MODES[0]);
+                  setStage("challenge_pick");
+                }}
                 onModeSelect={handleModeSelect}
                 myName={myName}
                 xpPoints={xpPoints}
+              />
+            </motion.div>
+          )}
+
+          {stage === "challenge_pick" && (
+            <motion.div key="challenge-pick" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <ChallengeFriendPickerScreen
+                onCreateCode={() => setStage("challenge_create")}
+                onJoinCode={() => setStage("join_room")}
+                onBack={() => setStage("lobby")}
+              />
+            </motion.div>
+          )}
+
+          {stage === "challenge_create" && (
+            <motion.div key="challenge-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <ChallengeScopePicker
+                onBack={() => setStage("challenge_pick")}
+                onStart={(topicId, label) => {
+                  const cfMode = MODES.find(m => m.mode === "challenge_friend")!;
+                  setActiveMode(cfMode);
+                  startBattle(cfMode, topicId, label);
+                }}
+                loading={createBattle.isPending}
               />
             </motion.div>
           )}
@@ -2182,12 +2712,12 @@ const BattleArena = () => {
                     🔥 Incoming Request
                   </div>
                 </div>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                     Mode: Quick Duel
                   </p>
-                </div>
+                </div> */}
                 <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.18)]">
                   {challengeCountdown}
                 </div>
@@ -2203,16 +2733,6 @@ const BattleArena = () => {
             </motion.div>
           )}
 
-          {stage === "topic_pick" && activeMode && (
-            <motion.div key="topic" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <TopicPicker
-                onBack={() => setStage("topic_pick")}
-                onSelect={handleTopicSelect}
-                loading={createBattle.isPending}
-              />
-            </motion.div>
-          )}
-
           {stage === "bot_pick" && activeMode?.mode === "bot" && (
             <motion.div key="bot-pick" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <BotPickerScreen
@@ -2224,7 +2744,7 @@ const BattleArena = () => {
 
           {stage === "join_room" && (
             <motion.div key="join" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <JoinRoomScreen onBack={() => setStage("lobby")} onJoined={handleJoined} />
+              <JoinRoomScreen onBack={() => setStage("challenge_pick")} onJoined={handleJoined} />
             </motion.div>
           )}
 
@@ -2236,6 +2756,8 @@ const BattleArena = () => {
                 topicName={topicName}
                 onCancel={reset}
                 onBattleStart={handleBattleStart}
+                backendUrl={backendUrl}
+                myStudentId={myStudentId}
               />
             </motion.div>
           )}
@@ -2247,6 +2769,7 @@ const BattleArena = () => {
                 mode={activeMode}
                 myStudentId={myStudentId}
                 myName={myName}
+                myAvatarUrl={myAvatarUrl}
                 onEnd={reset}
                 onResult={handleBattleResult}
                 prefetchedQuestions={botQuestions}
