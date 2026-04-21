@@ -279,11 +279,11 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="absolute inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm"
     >
       <motion.div
         initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
       >
         <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -427,6 +427,12 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
   const progressPct = duration ? (localTime / duration) * 100 : 0;
+  
+  const getYouTubeEmbedUrl = (url: string) => {
+    const m = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}?enablejsapi=1&rel=0&modestbranding=1` : url;
+  };
+
   const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
 
   return (
@@ -434,7 +440,7 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
       onMouseMove={showControls} onClick={!isYouTube ? togglePlay : undefined}>
       {isYouTube ? (
         <iframe
-          src={`${src.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}?enablejsapi=1`}
+          src={getYouTubeEmbedUrl(src)}
           className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen
         />
       ) : (
@@ -791,7 +797,7 @@ function VideosPanel({ resources }: { resources: TopicResource[] }) {
   const [active, setActive] = useState<TopicResource>(resources[0]);
 
   const toEmbedUrl = (url: string) => {
-    const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    const m = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
     if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
     return url;
   };

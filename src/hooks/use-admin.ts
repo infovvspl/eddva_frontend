@@ -223,6 +223,15 @@ export function useDeleteSubject() {
   });
 }
 
+export function useUpdateSubject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string; name?: string; examTarget?: string }) =>
+      adminApi.updateSubject(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.subjects }),
+  });
+}
+
 export function useChapters(subjectId: string) {
   return useQuery({
     queryKey: adminKeys.chapters(subjectId),
@@ -239,6 +248,23 @@ export function useCreateChapter() {
   });
 }
 
+export function useUpdateChapter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string; name?: string }) =>
+      adminApi.updateChapter(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "chapters"] }),
+  });
+}
+
+export function useDeleteChapter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.deleteChapter,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "chapters"] }),
+  });
+}
+
 export function useTopics(chapterId: string) {
   return useQuery({
     queryKey: adminKeys.topics(chapterId),
@@ -251,6 +277,23 @@ export function useCreateTopic() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: adminApi.createTopic,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "topics"] }),
+  });
+}
+
+export function useUpdateTopic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string; name?: string; estimatedStudyMinutes?: number }) =>
+      adminApi.updateTopic(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "topics"] }),
+  });
+}
+
+export function useDeleteTopic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.deleteTopic,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "topics"] }),
   });
 }

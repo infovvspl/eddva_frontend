@@ -13,12 +13,13 @@ import {
   Sparkles, Brain, FlaskConical, StickyNote, ListChecks,
   Lightbulb, BookText, Wand2, ChevronUp, Zap, Lock,
   FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList, Clock,
+  Pencil, AlertTriangle,
 } from "lucide-react";
 import {
   useBatches,
-  useSubjects, useCreateSubject,
-  useChapters, useCreateChapter,
-  useTopics, useCreateTopic,
+  useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject,
+  useChapters, useCreateChapter, useUpdateChapter, useDeleteChapter,
+  useTopics, useCreateTopic, useUpdateTopic, useDeleteTopic,
   useTopicResources, useUploadTopicResource, useDeleteTopicResource, useAddTopicResourceLink,
   useBulkImportCurriculum,
   useBatchContentLectures,
@@ -101,6 +102,77 @@ function InlineAdd({
       >
         <X className="w-3.5 h-3.5" />
       </button>
+    </div>
+  );
+}
+
+// ─── Inline Edit Input ─────────────────────────────────────────────────────────
+
+function InlineEdit({
+  defaultValue, onSave, onCancel, loading,
+}: { defaultValue: string; onSave: (v: string) => void; onCancel: () => void; loading?: boolean }) {
+  const [val, setVal] = useState(defaultValue);
+  return (
+    <div className="flex items-center gap-1.5 flex-1 min-w-0" onClick={e => e.stopPropagation()}>
+      <input
+        autoFocus
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === "Enter" && val.trim()) onSave(val.trim());
+          if (e.key === "Escape") onCancel();
+        }}
+        className="flex-1 h-7 px-2 text-sm bg-white border-2 border-blue-400 rounded-lg outline-none"
+      />
+      <button
+        onClick={() => val.trim() && onSave(val.trim())}
+        disabled={loading || !val.trim()}
+        className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center disabled:opacity-40 shrink-0"
+      >
+        {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+      </button>
+      <button onClick={onCancel} className="w-6 h-6 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Confirm Delete Dialog ─────────────────────────────────────────────────────
+
+function ConfirmDeleteDialog({
+  label, name, onConfirm, onCancel, loading,
+}: { label: string; name: string; onConfirm: () => void; onCancel: () => void; loading?: boolean }) {
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={e => { if (e.target === e.currentTarget) onCancel(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <p className="font-black text-slate-900 text-sm">Delete {label}?</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              "<span className="font-semibold text-slate-700">{name}</span>" and all its content will be permanently removed.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+            Cancel
+          </button>
+          <button onClick={onConfirm} disabled={loading}
+            className="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Delete
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -625,6 +697,10 @@ function SubjectTree({
   createChapter, createTopic, selectedTopicId, onSelectTopic, matchSearch,
 }: any) {
   const { data: chapters = [], isLoading } = useChapters(open || search ? subject.id : "");
+  const updateSubject = useUpdateSubject();
+  const deleteSubject = useDeleteSubject();
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const visibleChapters = search
     ? chapters.filter((ch: Chapter) => matchSearch(ch.name) ||
@@ -640,26 +716,79 @@ function SubjectTree({
     } catch { toast.error("Failed to create chapter"); }
   };
 
+  const handleRename = async (name: string) => {
+    try {
+      await updateSubject.mutateAsync({ id: subject.id, name });
+      toast.success("Subject renamed");
+      setEditing(false);
+    } catch { toast.error("Failed to rename"); }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteSubject.mutateAsync(subject.id);
+      toast.success("Subject deleted");
+      setConfirmDelete(false);
+    } catch { toast.error("Failed to delete subject"); }
+  };
+
   const accentColor = subject.colorCode ?? "#3B82F6";
 
   return (
     <div className="rounded-2xl overflow-hidden border border-slate-100">
+      {confirmDelete && (
+        <ConfirmDeleteDialog
+          label="Subject"
+          name={subject.name}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+          loading={deleteSubject.isPending}
+        />
+      )}
+
       {/* Subject row */}
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-white hover:bg-slate-50 transition-colors text-left group"
-      >
-        <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-transform"
-          style={{ background: `${accentColor}18`, color: accentColor }}>
-          <GraduationCap className="w-3.5 h-3.5" />
-        </div>
-        <span className="text-sm font-black text-slate-800 flex-1 truncate">{subject.name}</span>
-        <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full shrink-0"
-          style={{ background: `${accentColor}15`, color: accentColor }}>
-          {subject.examTarget?.toUpperCase()}
-        </span>
-        <ChevronDown className={cn("w-4 h-4 text-slate-400 shrink-0 transition-transform", open && "rotate-180")} />
-      </button>
+      <div className="flex items-center gap-2.5 px-3 py-2.5 bg-white hover:bg-slate-50 transition-colors group">
+        <button onClick={onToggle} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
+          <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${accentColor}18`, color: accentColor }}>
+            <GraduationCap className="w-3.5 h-3.5" />
+          </div>
+          {editing ? (
+            <InlineEdit
+              defaultValue={subject.name}
+              onSave={handleRename}
+              onCancel={() => setEditing(false)}
+              loading={updateSubject.isPending}
+            />
+          ) : (
+            <>
+              <span className="text-sm font-black text-slate-800 flex-1 truncate">{subject.name}</span>
+              <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full shrink-0"
+                style={{ background: `${accentColor}15`, color: accentColor }}>
+                {subject.examTarget?.toUpperCase()}
+              </span>
+            </>
+          )}
+        </button>
+        {!editing && (
+          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => setEditing(true)}
+              className="w-6 h-6 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-colors"
+              title="Rename">
+              <Pencil className="w-3 h-3" />
+            </button>
+            <button onClick={() => setConfirmDelete(true)}
+              className="w-6 h-6 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors"
+              title="Delete subject">
+              <Trash2 className="w-3 h-3" />
+            </button>
+            <ChevronDown onClick={onToggle} className={cn("w-4 h-4 text-slate-400 cursor-pointer transition-transform", open && "rotate-180")} />
+          </div>
+        )}
+        {!editing && (
+          <ChevronDown onClick={onToggle} className={cn("w-4 h-4 text-slate-400 cursor-pointer transition-transform group-hover:hidden", open && "rotate-180")} />
+        )}
+      </div>
 
       {/* Chapters */}
       <AnimatePresence>
@@ -731,6 +860,10 @@ function ChapterTree({
   createTopic, selectedTopicId, onSelectTopic, matchSearch, accentColor,
 }: any) {
   const { data: topics = [], isLoading } = useTopics(open || search ? chapter.id : "");
+  const updateChapter = useUpdateChapter();
+  const deleteChapter = useDeleteChapter();
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const visibleTopics = search ? topics.filter((t: Topic) => matchSearch(t.name)) : topics;
 
@@ -743,28 +876,77 @@ function ChapterTree({
     } catch { toast.error("Failed to create topic"); }
   };
 
+  const handleRename = async (name: string) => {
+    try {
+      await updateChapter.mutateAsync({ id: chapter.id, name });
+      toast.success("Chapter renamed");
+      setEditing(false);
+    } catch { toast.error("Failed to rename"); }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteChapter.mutateAsync(chapter.id);
+      toast.success("Chapter deleted");
+      setConfirmDelete(false);
+    } catch { toast.error("Failed to delete chapter"); }
+  };
+
   return (
     <div className="ml-2">
+      {confirmDelete && (
+        <ConfirmDeleteDialog
+          label="Chapter"
+          name={chapter.name}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+          loading={deleteChapter.isPending}
+        />
+      )}
+
       {/* Chapter row */}
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-white transition-colors text-left group"
-      >
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+      <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-white transition-colors group">
+        <button onClick={onToggle} className="flex items-center gap-1.5 shrink-0">
           {open
-            ? <FolderOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            : <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-          <span className="text-xs font-bold text-slate-700 truncate">{chapter.name}</span>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {topics.length > 0 && (
-            <span className="text-[9px] font-black bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full">
-              {topics.length}
-            </span>
-          )}
-          <ChevronRight className={cn("w-3 h-3 text-slate-300 transition-transform", open && "rotate-90")} />
-        </div>
-      </button>
+            ? <FolderOpen className="w-3.5 h-3.5 text-amber-500" />
+            : <Folder className="w-3.5 h-3.5 text-amber-400" />}
+        </button>
+
+        {editing ? (
+          <InlineEdit
+            defaultValue={chapter.name}
+            onSave={handleRename}
+            onCancel={() => setEditing(false)}
+            loading={updateChapter.isPending}
+          />
+        ) : (
+          <>
+            <button onClick={onToggle} className="flex-1 min-w-0 text-left">
+              <span className="text-xs font-bold text-slate-700 truncate block">{chapter.name}</span>
+            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {topics.length > 0 && (
+                <span className="text-[9px] font-black bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full group-hover:hidden">
+                  {topics.length}
+                </span>
+              )}
+              <div className="hidden group-hover:flex items-center gap-0.5">
+                <button onClick={() => setEditing(true)}
+                  className="w-6 h-6 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-colors"
+                  title="Rename">
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button onClick={() => setConfirmDelete(true)}
+                  className="w-6 h-6 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors"
+                  title="Delete chapter">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+              <ChevronRight onClick={onToggle} className={cn("w-3 h-3 text-slate-300 cursor-pointer transition-transform", open && "rotate-90")} />
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Topics */}
       <AnimatePresence>
@@ -792,25 +974,16 @@ function ChapterTree({
                   + Add first topic
                 </button>
               ) : (
-                visibleTopics.map((t: Topic) => {
-                  const sel = selectedTopicId === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => onSelectTopic(t)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all text-xs font-semibold",
-                        sel
-                          ? "text-white shadow-sm"
-                          : "text-slate-600 hover:bg-white hover:text-slate-900"
-                      )}
-                      style={sel ? { background: accentColor } : {}}
-                    >
-                      <Hash className={cn("w-3 h-3 shrink-0", sel ? "text-white/60" : "text-slate-300")} />
-                      <span className="flex-1 truncate">{t.name}</span>
-                    </button>
-                  );
-                })
+                visibleTopics.map((t: Topic) => (
+                  <TopicRow
+                    key={t.id}
+                    topic={t}
+                    selected={selectedTopicId === t.id}
+                    onSelect={() => onSelectTopic(t)}
+                    accentColor={accentColor}
+                    chapterId={chapter.id}
+                  />
+                ))
               )}
 
               {/* Add topic button */}
@@ -827,6 +1000,85 @@ function ChapterTree({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function TopicRow({
+  topic, selected, onSelect, accentColor, chapterId,
+}: { topic: Topic; selected: boolean; onSelect: () => void; accentColor: string; chapterId: string }) {
+  const updateTopic = useUpdateTopic();
+  const deleteTopic = useDeleteTopic();
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleRename = async (name: string) => {
+    try {
+      await updateTopic.mutateAsync({ id: topic.id, name });
+      toast.success("Topic renamed");
+      setEditing(false);
+    } catch { toast.error("Failed to rename"); }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteTopic.mutateAsync(topic.id);
+      toast.success("Topic deleted");
+      setConfirmDelete(false);
+    } catch { toast.error("Failed to delete topic"); }
+  };
+
+  return (
+    <>
+      {confirmDelete && (
+        <ConfirmDeleteDialog
+          label="Topic"
+          name={topic.name}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+          loading={deleteTopic.isPending}
+        />
+      )}
+      <div
+        className={cn(
+          "flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold group transition-all",
+          selected ? "text-white shadow-sm" : "text-slate-600 hover:bg-white hover:text-slate-900"
+        )}
+        style={selected ? { background: accentColor } : {}}
+      >
+        {editing ? (
+          <InlineEdit
+            defaultValue={topic.name}
+            onSave={handleRename}
+            onCancel={() => setEditing(false)}
+            loading={updateTopic.isPending}
+          />
+        ) : (
+          <>
+            <button onClick={onSelect} className="flex items-center gap-2 flex-1 min-w-0 text-left">
+              <Hash className={cn("w-3 h-3 shrink-0", selected ? "text-white/60" : "text-slate-300")} />
+              <span className="flex-1 truncate">{topic.name}</span>
+            </button>
+            <div className={cn(
+              "flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+              selected && "opacity-100"
+            )}>
+              <button onClick={e => { e.stopPropagation(); setEditing(true); }}
+                className={cn("w-5 h-5 rounded-md flex items-center justify-center transition-colors",
+                  selected ? "hover:bg-white/20 text-white/70" : "hover:bg-blue-50 text-slate-400 hover:text-blue-600")}
+                title="Rename">
+                <Pencil className="w-2.5 h-2.5" />
+              </button>
+              <button onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
+                className={cn("w-5 h-5 rounded-md flex items-center justify-center transition-colors",
+                  selected ? "hover:bg-white/20 text-white/70" : "hover:bg-red-50 text-slate-400 hover:text-red-500")}
+                title="Delete topic">
+                <Trash2 className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -1380,18 +1632,6 @@ function AddSubjectModal({ batchId, examTarget, onClose }: { batchId: string; ex
 
 const AI_CONTENT_TYPES = [
   {
-    id: "lesson",
-    label: "Lesson Notes",
-    desc: "Comprehensive markdown notes with explanations, examples & key points",
-    icon: BookText,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    accent: "#2563EB",
-    badge: "Most Popular",
-    saveAs: "notes",
-  },
-  {
     id: "dpp",
     label: "DPP Sheet",
     desc: "AI-generated Daily Practice Problems with MCQs, numericals & answer key",
@@ -1503,10 +1743,11 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
   subjectName: string;
   chapterName: string;
 }) {
-  const [selectedType, setSelectedType] = useState("lesson");
+  const [selectedType, setSelectedType] = useState("dpp");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [length, setLength] = useState("standard");
   const [examTarget, setExamTarget] = useState("JEE");
+  const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1530,6 +1771,7 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
     try {
       const extraCtx = [
         isDppOrPyq ? `Exam target: ${examTarget}` : "",
+        isDppOrPyq ? `Generate exactly ${questionCount} questions` : "",
         extraContext.trim(),
       ].filter(Boolean).join(". ") || undefined;
 
@@ -1653,29 +1895,72 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
           </p>
 
           {isDppOrPyq ? (
-            /* DPP / PYQ: only exam target matters — structure is fixed */
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Exam Target</p>
-              <div className="flex gap-2">
-                {["JEE", "NEET", "Both"].map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setExamTarget(t)}
-                    className={cn(
-                      "flex-1 py-2.5 px-3 rounded-xl text-center text-[12px] font-black border-2 transition-all",
-                      examTarget === t
-                        ? selectedType === "dpp"
-                          ? "bg-orange-600 border-orange-600 text-white shadow-sm"
-                          : "bg-violet-600 border-violet-600 text-white shadow-sm"
-                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                    )}
-                  >
-                    {t}
-                  </button>
-                ))}
+            <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              {/* Exam Target */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Exam Target</p>
+                <div className="flex gap-2">
+                  {["JEE", "NEET", "Both"].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setExamTarget(t)}
+                      className={cn(
+                        "flex-1 py-2.5 px-3 rounded-xl text-center text-[12px] font-black border-2 transition-all",
+                        examTarget === t
+                          ? selectedType === "dpp"
+                            ? "bg-orange-600 border-orange-600 text-white shadow-sm"
+                            : "bg-violet-600 border-violet-600 text-white shadow-sm"
+                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                      )}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-3 text-center">
-                Structure is fixed: {selectedType === "dpp" ? "MCQ + Assertion-Reason + Numericals + Answer Key" : "JEE Main + NEET + Integer Type + Full Solutions"}
+
+              {/* Question Count */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                  Number of Questions
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[5, 10, 15, 20, 25, 30].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setQuestionCount(n)}
+                        className={cn(
+                          "w-10 h-9 rounded-xl text-xs font-black border-2 transition-all",
+                          questionCount === n
+                            ? selectedType === "dpp"
+                              ? "bg-orange-600 border-orange-600 text-white shadow-sm"
+                              : "bg-violet-600 border-violet-600 text-white shadow-sm"
+                            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                        )}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      onClick={() => setQuestionCount(q => Math.max(1, q - 1))}
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-600 font-black text-sm hover:border-slate-300 flex items-center justify-center"
+                    >−</button>
+                    <span className="text-sm font-black text-slate-800 w-6 text-center">{questionCount}</span>
+                    <button
+                      onClick={() => setQuestionCount(q => Math.min(50, q + 1))}
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-600 font-black text-sm hover:border-slate-300 flex items-center justify-center"
+                    >+</button>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400">
+                {selectedType === "dpp"
+                  ? `${questionCount} questions: MCQ + Assertion-Reason + Numericals + Answer Key`
+                  : `${questionCount} questions: JEE Main + NEET + Integer Type + Full Solutions`}
               </p>
             </div>
           ) : (

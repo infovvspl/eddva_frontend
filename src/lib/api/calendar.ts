@@ -8,6 +8,7 @@ export interface InstituteCalendarEvent {
   endDate?: string;
   description?: string;
   color?: string;
+  batchIds?: string[];
   createdAt?: string;
 }
 
@@ -47,6 +48,7 @@ export interface CreateCalendarEventPayload {
   endDate?: string;
   description?: string;
   color?: string;
+  batchIds?: string[];
 }
 
 export async function createCalendarEvent(payload: CreateCalendarEventPayload): Promise<InstituteCalendarEvent> {
@@ -57,4 +59,14 @@ export async function createCalendarEvent(payload: CreateCalendarEventPayload): 
 export async function deleteCalendarEvent(eventId: string): Promise<{ deleted: boolean }> {
   const res = await apiClient.delete(`/calendar/events/${eventId}`);
   return extractData(res);
+}
+
+export interface CalendarBatchOption {
+  id: string;
+  name: string;
+}
+
+export async function getCalendarBatches(): Promise<CalendarBatchOption[]> {
+  const res = await apiClient.get('/calendar/batches');
+  return extractData<CalendarBatchOption[]>(res) ?? [];
 }
