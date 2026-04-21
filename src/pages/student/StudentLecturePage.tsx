@@ -279,11 +279,11 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="absolute inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm"
     >
       <motion.div
         initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
       >
         <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4">
           <div className="flex items-center justify-between">
