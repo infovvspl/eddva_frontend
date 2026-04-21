@@ -1,5 +1,10 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit *)"
+    ],
     "additionalDirectories": [
       "C:\\Users\\subha\\Desktop\\VVSPL"
     ]

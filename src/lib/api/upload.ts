@@ -1,5 +1,6 @@
 import { apiClient, extractData } from "./client";
 import axios from "axios";
+import { MAX_LECTURE_VIDEO_SIZE_GB, MAX_MATERIAL_FILE_SIZE_MB } from "@/lib/upload-limits";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,16 +56,18 @@ delete s3UploadClient.defaults.headers.common.Authorization;
 export const FILE_LIMITS = {
   profile:             { maxMb: 10,   accept: ["image/jpeg", "image/png", "image/webp"] },
   thumbnail:           { maxMb: 10,   accept: ["image/jpeg", "image/png", "image/webp"] },
-  material:            { maxMb: 10,   accept: ["application/pdf", "image/jpeg", "image/png", "image/webp"] },
+  material:            { maxMb: MAX_MATERIAL_FILE_SIZE_MB,   accept: ["application/pdf", "image/jpeg", "image/png", "image/webp"] },
   source:              { maxMb: 10,   accept: ["application/zip", "application/x-zip-compressed"] },
-  "lecture-video":     { maxMb: 10240, accept: ["video/mp4", "video/webm", "video/quicktime"] },
+  "lecture-video":     { maxMb: MAX_LECTURE_VIDEO_SIZE_GB * 1024, accept: ["video/mp4", "video/webm", "video/quicktime"] },
   "lecture-thumbnail": { maxMb: 10,   accept: ["image/jpeg", "image/png", "image/webp"] },
   "lecture-attachment":{ maxMb: 10,   accept: ["application/pdf", "image/jpeg", "image/png", "image/webp"] },
   "doubt-response-image": { maxMb: 10, accept: ["image/jpeg", "image/png", "image/webp", "image/gif"] },
 } satisfies Record<UploadType, { maxMb: number; accept: string[] }>;
 
 function humanLimitLabel(type: UploadType): string {
-  return type === "lecture-video" ? "10GB" : "10MB";
+  if (type === "lecture-video") return `${MAX_LECTURE_VIDEO_SIZE_GB}GB`;
+  if (type === "material") return `${MAX_MATERIAL_FILE_SIZE_MB}MB`;
+  return "10MB";
 }
 
 /** When the browser leaves `file.type` empty, infer a common image MIME from the extension. */

@@ -1,445 +1,844 @@
+"use client";
+
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  CheckCircle2, Clock, Sparkles, Trophy, Target, Zap,
-  RefreshCw, Loader2, Play, SkipForward, CheckCircle,
-  CalendarDays, ListChecks, ChevronRight,
-  BookOpen, Brain, Swords, MessageSquare, Lock, Flame, Calendar
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { format, addDays, startOfWeek, differenceInDays } from "date-fns";
 import { toast } from "sonner";
-import { CardGlass } from "@/components/shared/CardGlass";
 import {
-  useTodaysPlan, useWeeklyPlanGrouped, useCompletePlanItem,
-  useSkipPlanItem, useRegeneratePlan, useStudentMe
+  Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
+  CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
+  RotateCcw, Map, ListTodo, Star, CheckCheck, Rocket,
+  ArrowRight, Sparkles, Activity,
+} from "lucide-react";
+import {
+  useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
+  useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
+  useUpdateStudentProfile,
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
 
-function toYoutubeEmbed(url?: string | null): string | null {
-  if (!url) return null;
-  const raw = String(url).trim();
-  const idFromWatch = raw.match(/[?&]v=([^&]+)/)?.[1];
-  const idFromShort = raw.match(/youtu\.be\/([^?&/]+)/)?.[1];
-  const idFromEmbed = raw.match(/youtube\.com\/embed\/([^?&/]+)/)?.[1];
-  const idFromShorts = raw.match(/youtube\.com\/shorts\/([^?&/]+)/)?.[1];
-  const idFromLive = raw.match(/youtube\.com\/live\/([^?&/]+)/)?.[1];
-  const id = idFromWatch || idFromShort || idFromEmbed || idFromShorts || idFromLive;
-  if (!id) return null;
-  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`;
-}
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
-// ─── Type Config ───────────────────────────────────────────────────────────────
-const typeConfig: Record<StudyPlanItem["type"], {
-  icon: any; color: string; bg: string; label: string; xp: number;
-}> = {
-  lecture: { icon: Play, color: "#4f46e5", bg: "#e0e7ff", label: "Lecture", xp: 15 }, // indigo
-  practice: { icon: Target, color: "#10b981", bg: "#d1fae5", label: "Practice", xp: 15 }, // emerald
-  revision: { icon: BookOpen, color: "#f59e0b", bg: "#fef3c7", label: "Notes / Video", xp: 5 }, // amber
-  mock_test: { icon: Trophy, color: "#ec4899", bg: "#fce7f3", label: "Mock Test", xp: 50 }, // pink
-  battle: { icon: Swords, color: "#ef4444", bg: "#fee2e2", label: "Battle", xp: 30 }, // red
-  doubt_session: { icon: MessageSquare, color: "#8b5cf6", bg: "#ede9fe", label: "Doubt Session", xp: 10 }, // violet
+const EXAM_OPTIONS = [
+  { key: "jee_mains",    label: "JEE Mains",   icon: "⚛️", desc: "B.Tech admissions (NIT/IIIT)" },
+  { key: "jee_advanced", label: "JEE Advanced", icon: "🔬", desc: "IIT admissions" },
+  { key: "neet",         label: "NEET",         icon: "🩺", desc: "MBBS/BDS admissions" },
+  { key: "foundation",   label: "Foundation",   icon: "📚", desc: "Class 8–10" },
+  { key: "other",        label: "Other",        icon: "🎯", desc: "Custom target" },
+];
+
+const YEAR_OPTIONS = [2025, 2026, 2027, 2028];
+const HOURS_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
+
+const SUBJECT_CFG: Record<string, { color: string; bg: string; border: string; dot: string; ring: string }> = {
+  Physics:     { color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200", dot: "bg-indigo-500",  ring: "#6366f1" },
+  Chemistry:   { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200",dot: "bg-emerald-500", ring: "#10b981" },
+  Mathematics: { color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200", dot: "bg-violet-500",  ring: "#8b5cf6" },
+  Math:        { color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200", dot: "bg-violet-500",  ring: "#8b5cf6" },
+  Biology:     { color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-200",   dot: "bg-teal-500",    ring: "#14b8a6" },
+  default:     { color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200",  dot: "bg-slate-500",   ring: "#64748b" },
 };
 
-// ─── Task Card ─────────────────────────────────────────────────────────────────
-function TaskCard({ item, onOpenVideo }: { item: StudyPlanItem; onOpenVideo: (url: string, title: string) => void }) {
-  const navigate = useNavigate();
-  const complete = useCompletePlanItem();
-  const skip = useSkipPlanItem();
-  const cfg = typeConfig[item.type] ?? typeConfig.lecture;
-  const isDone = item.status === "completed";
-  const isSkip = item.status === "skipped";
+function subjectCfg(name: string) {
+  for (const key of Object.keys(SUBJECT_CFG)) {
+    if (key !== "default" && name?.toLowerCase().includes(key.toLowerCase())) return SUBJECT_CFG[key];
+  }
+  return SUBJECT_CFG.default;
+}
 
-  const handleStart = () => {
-    if (isDone || isSkip) return;
-    const taskKind = item.content?.taskKind;
-    const topicId = item.content?.topicId || item.refId;
-    if (taskKind === "youtube_video") {
-      const embed = toYoutubeEmbed(item.content?.videoUrl);
-      if (embed) {
-        onOpenVideo(embed, item.content?.videoTitle || item.title);
-      } else {
-        toast.error("No YouTube video found for this topic yet.");
-      }
-      return;
-    }
-    if (taskKind === "ai_notes" && topicId) {
-      navigate(`/student/ai-study/${topicId}`);
-      return;
-    }
-    if (item.type === "lecture" && item.refId) navigate(`/student/lectures/${item.refId}`);
-    else if (item.type === "revision" && topicId) navigate(`/student/ai-study/${topicId}`);
-    else if (topicId) navigate(`/student/quiz?topicId=${topicId}`);
-  };
+function fmtExam(key?: string) {
+  return EXAM_OPTIONS.find(e => e.key === key)?.label ?? key ?? "—";
+}
+
+function countdownDays(examYear?: number): number | null {
+  if (!examYear) return null;
+  return Math.max(0, differenceInDays(new Date(examYear, 3, 15), new Date()));
+}
+
+// ─── Preference Wizard ─────────────────────────────────────────────────────────
+
+interface WizardState { examTarget: string; examYear: number; dailyStudyHours: number; }
+
+function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardState>; onComplete: (p: WizardState) => void }) {
+  const [step, setStep] = useState(0);
+  const [prefs, setPrefs] = useState<WizardState>({
+    examTarget:      initial.examTarget      ?? "",
+    examYear:        initial.examYear        ?? new Date().getFullYear() + 1,
+    dailyStudyHours: initial.dailyStudyHours ?? 4,
+  });
+
+  const steps = ["Exam Target", "Target Year", "Daily Hours"];
+  const canNext = step === 0 ? !!prefs.examTarget : true;
 
   return (
-    <CardGlass className={cn(
-      "p-5 mb-3 border-white bg-white/50 transition-all duration-300",
-      isDone ? "opacity-70" : isSkip ? "opacity-60" : "hover:bg-white/70"
-    )}>
-      <div className="flex items-center gap-4">
-      {/* Icon block */}
-      <div className={cn(
-        "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-white/80 shadow-sm",
-        isDone ? "bg-emerald-100 text-emerald-500" : isSkip ? "bg-gray-100 text-gray-400" : ""
-      )} style={(!isDone && !isSkip) ? { backgroundColor: cfg.bg, color: cfg.color } : {}}>
-         <cfg.icon className="w-5 h-5" />
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        {/* Step indicator */}
+        <div className="mb-8">
+          <div className="flex items-center mb-3">
+            {steps.map((_, i) => (
+              <div key={i} className="flex items-center flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-all
+                  ${i < step ? "bg-indigo-600 text-white" : i === step ? "bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500" : "bg-gray-100 text-gray-400"}`}>
+                  {i < step ? <CheckCheck className="w-4 h-4" /> : i + 1}
+                </div>
+                {i < steps.length - 1 && <div className={`flex-1 h-1 mx-2 rounded-full ${i < step ? "bg-indigo-500" : "bg-gray-200"}`} />}
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-sm text-gray-500">{steps[step]} — Step {step + 1} of {steps.length}</p>
+        </div>
 
-      {/* Content */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {step === 0 && (
+            <div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎯</div>
+                <h2 className="text-2xl font-bold text-gray-900">What's your target exam?</h2>
+                <p className="text-gray-500 mt-1 text-sm">Your AI roadmap and study plan will be built around this</p>
+              </div>
+              <div className="space-y-3">
+                {EXAM_OPTIONS.map(opt => (
+                  <button key={opt.key} onClick={() => setPrefs(p => ({ ...p, examTarget: opt.key }))}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left
+                      ${prefs.examTarget === opt.key ? "border-indigo-500 bg-indigo-50 shadow-sm" : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"}`}>
+                    <span className="text-2xl">{opt.icon}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">{opt.label}</div>
+                      <div className="text-sm text-gray-500">{opt.desc}</div>
+                    </div>
+                    {prefs.examTarget === opt.key && <CheckCircle2 className="w-5 h-5 text-indigo-600 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">📅</div>
+                <h2 className="text-2xl font-bold text-gray-900">Which year are you targeting?</h2>
+                <p className="text-gray-500 mt-1 text-sm">We'll calculate your prep timeline and daily targets</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {YEAR_OPTIONS.map(yr => {
+                  const days = Math.max(0, differenceInDays(new Date(yr, 3, 15), new Date()));
+                  return (
+                    <button key={yr} onClick={() => setPrefs(p => ({ ...p, examYear: yr }))}
+                      className={`p-5 rounded-xl border-2 text-center transition-all
+                        ${prefs.examYear === yr ? "border-violet-500 bg-violet-50 shadow-sm" : "border-gray-200 hover:border-violet-300 hover:bg-gray-50"}`}>
+                      <div className="text-2xl font-bold text-gray-900">{yr}</div>
+                      <div className="text-sm text-gray-500 mt-1">{days} days left</div>
+                      {prefs.examYear === yr && <div className="text-xs text-violet-600 font-medium mt-1">Selected ✓</div>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">⏰</div>
+                <h2 className="text-2xl font-bold text-gray-900">How many hours per day?</h2>
+                <p className="text-gray-500 mt-1 text-sm">Be realistic — consistency beats cramming every time</p>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mb-6">
+                {HOURS_OPTIONS.map(h => (
+                  <button key={h} onClick={() => setPrefs(p => ({ ...p, dailyStudyHours: h }))}
+                    className={`p-3 rounded-xl border-2 text-center transition-all
+                      ${prefs.dailyStudyHours === h ? "border-emerald-500 bg-emerald-50 shadow-sm" : "border-gray-200 hover:border-emerald-300"}`}>
+                    <div className="text-xl font-bold text-gray-900">{h}h</div>
+                  </button>
+                ))}
+              </div>
+              <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Your AI Plan Will Be Based On</h3>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <div className="text-base font-bold text-indigo-700">{fmtExam(prefs.examTarget)}</div>
+                    <div className="text-xs text-gray-500">Target Exam</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-violet-700">{prefs.examYear}</div>
+                    <div className="text-xs text-gray-500">Target Year</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-emerald-700">{prefs.dailyStudyHours}h/day</div>
+                    <div className="text-xs text-gray-500">Daily Study</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-8">
+            {step > 0 && (
+              <button onClick={() => setStep(s => s - 1)}
+                className="flex-1 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                Back
+              </button>
+            )}
+            <button
+              onClick={() => step < steps.length - 1 ? setStep(s => s + 1) : onComplete(prefs)}
+              disabled={!canNext}
+              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+              {step === steps.length - 1
+                ? <><Sparkles className="w-4 h-4" /> Generate My Roadmap &amp; Plan</>
+                : <>Continue <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </div>
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-4">You can change these preferences anytime in your profile</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Generating Animation ──────────────────────────────────────────────────────
+
+function GeneratingView() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <div className="relative w-24 h-24 mx-auto mb-8">
+          <div className="absolute inset-0 border-4 border-indigo-100 rounded-full" />
+          <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Brain className="w-10 h-10 text-indigo-500 animate-pulse" />
+          </div>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Building your personalized roadmap</h2>
+        <p className="text-gray-500 mb-8 text-sm">
+          AI is analyzing your exam target, enrolled curriculum, and weak areas to create a custom plan…
+        </p>
+        <div className="space-y-3">
+          {[
+            { label: "Scanning your curriculum", icon: "📚" },
+            { label: "Identifying weak topics",  icon: "🔍" },
+            { label: "Building study schedule",  icon: "📅" },
+            { label: "Optimizing for your exam", icon: "🎯" },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+              <span className="text-lg">{s.icon}</span>
+              <span className="text-sm text-gray-700 font-medium">{s.label}</span>
+              <div className="ml-auto w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Circular Progress ─────────────────────────────────────────────────────────
+
+function CircleProgress({ pct, color, size = 56 }: { pct: number; color: string; size?: number }) {
+  const r    = (size - 8) / 2;
+  const circ = 2 * Math.PI * r;
+  return (
+    <svg width={size} height={size} className="-rotate-90">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={6} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={6}
+        strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ} strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 0.8s ease" }} />
+    </svg>
+  );
+}
+
+// ─── Curriculum Roadmap ────────────────────────────────────────────────────────
+
+function TopicPill({ topic }: { topic: any }) {
+  const color =
+    topic.status === "completed"   ? "bg-emerald-50 border-emerald-300 text-emerald-700" :
+    topic.status === "in_progress" ? "bg-amber-50 border-amber-300 text-amber-700" :
+    topic.status === "locked"      ? "bg-gray-50 border-gray-200 text-gray-400" :
+                                     "bg-blue-50 border-blue-200 text-blue-700";
+  const dot =
+    topic.status === "completed"   ? "bg-emerald-500" :
+    topic.status === "in_progress" ? "bg-amber-400" :
+    topic.status === "locked"      ? "bg-gray-300" : "bg-blue-400";
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border ${color}`}>
+      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+      <span className="truncate max-w-[120px]">{topic.topicName}</span>
+    </div>
+  );
+}
+
+function ChapterRow({ chapter, cfg }: { chapter: any; cfg: typeof SUBJECT_CFG[string] }) {
+  const [open, setOpen] = useState(false);
+  const done  = chapter.topics?.filter((t: any) => t.status === "completed").length ?? 0;
+  const total = chapter.topicsTotal ?? chapter.topics?.length ?? 0;
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div>
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
+        <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+        <span className="flex-1 text-sm font-medium text-gray-800 truncate">{chapter.chapterName}</span>
+        <span className="text-xs text-gray-400 shrink-0">{done}/{total}</span>
+        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden shrink-0">
+          <div className={`h-full rounded-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
+        </div>
+        {open ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+      </button>
+      {open && (
+        <div className="px-6 pb-3 flex flex-wrap gap-2">
+          {(chapter.topics ?? []).map((t: any) => <TopicPill key={t.topicId} topic={t} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubjectCard({ subject }: { subject: any }) {
+  const [open, setOpen] = useState(false);
+  const cfg = subjectCfg(subject.subjectName);
+  const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
+  return (
+    <div className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
+      <button onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-4 p-4 text-left transition-all ${cfg.bg} hover:brightness-95`}>
+        <div className="relative shrink-0">
+          <CircleProgress pct={pct} color={cfg.ring} size={52} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-bold text-gray-700">{pct}%</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className={`font-bold text-lg ${cfg.color}`}>{subject.subjectName}</div>
+          <div className="text-sm text-gray-500">{subject.topicsCompleted}/{subject.topicsTotal} topics · {Math.round(subject.overallAccuracy ?? 0)}% accuracy</div>
+          <div className="mt-2 h-1.5 bg-white/60 rounded-full overflow-hidden">
+            <div className={`h-full ${cfg.dot} rounded-full`} style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+        {open ? <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" /> : <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />}
+      </button>
+      {open && (
+        <div className="border-t border-white/40 bg-white/70 divide-y divide-gray-100">
+          {(subject.chapters ?? []).map((ch: any) => <ChapterRow key={ch.chapterId} chapter={ch} cfg={cfg} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CurriculumRoadmap() {
+  const { data: report, isLoading } = useProgressReport();
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-48">
+      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!report?.subjects?.length) return (
+    <div className="text-center py-16 text-gray-400">
+      <Map className="w-12 h-12 mx-auto mb-3 opacity-30" />
+      <p className="text-sm">Enroll in a course to see your curriculum roadmap</p>
+    </div>
+  );
+  const { summary } = report;
+  const overallPct = summary.totalTopics > 0 ? Math.round((summary.completedTopics / summary.totalTopics) * 100) : 0;
+  return (
+    <div className="space-y-4">
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-700 rounded-2xl p-5 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-bold text-lg">Curriculum Progress</h3>
+            <p className="text-indigo-200 text-sm">{summary.completedTopics}/{summary.totalTopics} topics completed</p>
+          </div>
+          <div className="relative">
+            <CircleProgress pct={overallPct} color="rgba(255,255,255,0.9)" size={64} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">{overallPct}%</span>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-center text-sm">
+          <div className="bg-white/10 rounded-xl p-2.5">
+            <div className="font-bold text-lg">{summary.lecturesCompleted}</div>
+            <div className="text-indigo-200 text-xs">Lectures Done</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-2.5">
+            <div className="font-bold text-lg">{Math.round(summary.overallAccuracy ?? 0)}%</div>
+            <div className="text-indigo-200 text-xs">Accuracy</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-2.5">
+            <div className="font-bold text-lg">{summary.totalPYQAttempted}</div>
+            <div className="text-indigo-200 text-xs">PYQs Done</div>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-4 text-xs text-gray-500 px-1">
+        {[
+          { dot: "bg-emerald-500", label: "Completed" },
+          { dot: "bg-amber-400",  label: "In Progress" },
+          { dot: "bg-blue-400",   label: "Unlocked" },
+          { dot: "bg-gray-300",   label: "Locked" },
+        ].map(l => (
+          <div key={l.label} className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${l.dot}`} />
+            {l.label}
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3">
+        {report.subjects.map(s => <SubjectCard key={s.subjectId} subject={s} />)}
+      </div>
+    </div>
+  );
+}
+
+// ─── Plan Item Card ────────────────────────────────────────────────────────────
+
+const TYPE_CFG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  lecture:       { icon: <PlayCircle className="w-4 h-4" />, color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
+  practice:      { icon: <Activity   className="w-4 h-4" />, color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
+  revision:      { icon: <BookOpen   className="w-4 h-4" />, color: "text-amber-600",  bg: "bg-amber-50 border-amber-200" },
+  mock_test:     { icon: <Trophy     className="w-4 h-4" />, color: "text-red-600",    bg: "bg-red-50 border-red-200" },
+  battle:        { icon: <Zap        className="w-4 h-4" />, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
+  doubt_session: { icon: <Brain      className="w-4 h-4" />, color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
+};
+
+function PlanItemCard({ item, onComplete, onSkip }: {
+  item: StudyPlanItem;
+  onComplete: (id: string) => void;
+  onSkip: (id: string) => void;
+}) {
+  const t       = TYPE_CFG[item.type] ?? TYPE_CFG.lecture;
+  const isDone  = item.status === "completed";
+  const isSkip  = item.status === "skipped";
+  const cfg     = item.content?.subjectName ? subjectCfg(item.content.subjectName) : null;
+  return (
+    <div className={`flex gap-3 p-3.5 rounded-xl border transition-all
+      ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}>
+      <div className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center
+        ${isDone ? "bg-emerald-50 border-emerald-200 text-emerald-600" : `${t.bg} ${t.color}`}`}>
+        {isDone ? <CheckCircle2 className="w-4 h-4" /> : t.icon}
+      </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{cfg.label}</span>
-          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-100">
-            +{cfg.xp} XP
+        <div className="flex items-start justify-between gap-2">
+          <div className="font-medium text-sm text-gray-900 leading-tight line-clamp-2">{item.title}</div>
+          {item.xpReward && !isDone && (
+            <span className="shrink-0 text-xs font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {cfg && item.content?.subjectName && (
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
+          )}
+          <span className="text-xs text-gray-400 flex items-center gap-0.5">
+            <Clock className="w-3 h-3" />{item.estimatedMinutes}m
           </span>
-        </div>
-        <h4 className={cn("text-base font-black truncate tracking-tight", isDone || isSkip ? "text-slate-500 line-through" : "text-slate-900")}>
-           {item.title}
-        </h4>
-        <div className="flex items-center gap-4 mt-1 text-xs font-semibold text-slate-500">
-           <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {(item as any).estimatedMinutes || "15"} mins</span>
+          {item.content?.topicName && <span className="text-xs text-gray-400 truncate">{item.content.topicName}</span>}
         </div>
       </div>
+      {!isDone && !isSkip && (
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={() => onSkip(item.id)}
+            className="px-2 py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
+            Skip
+          </button>
+          <button onClick={() => onComplete(item.id)}
+            className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
+            Done
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* Action */}
-      <div className="shrink-0 flex items-center gap-2">
-         {isDone ? (
-           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-sm font-bold border border-emerald-100">
-              <CheckCircle2 className="w-4 h-4" /> Completed
-           </div>
-         ) : isSkip ? (
-            <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-xl text-sm font-bold border border-gray-200">
-               Skipped
+// ─── Week Strip ────────────────────────────────────────────────────────────────
+
+function WeekStrip({ weekStart, selectedDate, onSelect, weekData }: {
+  weekStart: Date; selectedDate: string; onSelect: (d: string) => void; weekData: Record<string, StudyPlanItem[]>;
+}) {
+  const today = format(new Date(), "yyyy-MM-dd");
+  return (
+    <div className="flex gap-1.5 overflow-x-auto pb-1">
+      {Array.from({ length: 7 }, (_, i) => {
+        const d     = addDays(weekStart, i);
+        const key   = format(d, "yyyy-MM-dd");
+        const items = weekData[key] ?? [];
+        const done  = items.filter(x => x.status === "completed").length;
+        const isSel = key === selectedDate;
+        const isTod = key === today;
+        return (
+          <button key={key} onClick={() => onSelect(key)}
+            className={`flex flex-col items-center py-2 px-3 rounded-xl min-w-[52px] transition-all
+              ${isSel ? "bg-indigo-600 text-white shadow-md" : isTod ? "bg-indigo-50 border-2 border-indigo-300 text-indigo-700" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+            <div className="text-xs font-medium">{format(d, "EEE")}</div>
+            <div className={`text-lg font-bold mt-0.5 ${isSel ? "text-white" : isTod ? "text-indigo-700" : "text-gray-800"}`}>{format(d, "d")}</div>
+            <div className="flex gap-0.5 mt-1 h-2 items-center">
+              {items.slice(0, 3).map((_, j) => (
+                <div key={j} className={`w-1.5 h-1.5 rounded-full ${j < done ? (isSel ? "bg-white" : "bg-emerald-400") : (isSel ? "bg-indigo-300" : "bg-gray-200")}`} />
+              ))}
             </div>
-         ) : (
-            <div className="flex items-center gap-1">
-               <>
-                 <button onClick={() => skip.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition" title="Skip Task">
-                   <SkipForward className="w-4 h-4" />
-                 </button>
-                 <button onClick={() => complete.mutate(item.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-emerald-50 hover:text-emerald-500 transition" title="Mark Complete">
-                   <CheckCircle className="w-4 h-4" />
-                 </button>
-               </>
-               <button onClick={handleStart} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-600 transition shadow-sm ml-1 uppercase tracking-wide">
-                  <Play className="w-4 h-4 fill-current" /> Start
-               </button>
-            </div>
-         )}
-      </div>
-      </div>
-    </CardGlass>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
+
+type ActiveTab = "plan" | "roadmap";
+type PlanTab   = "today" | "week";
+
 export default function StudentStudyPlanPage() {
-  const { data: todayItemsRaw = [], isLoading } = useTodaysPlan();
-  const regenerate = useRegeneratePlan();
-  const navigate = useNavigate();
-  const { data: me } = useStudentMe();
-  const [videoPlayer, setVideoPlayer] = useState<{ url: string; title: string } | null>(null);
-  const streakDetails = me?.student?.streakDays || 0;
+  const { data: me, isLoading: meLoading } = useStudentMe();
+  const student = me?.student;
 
-  const todayItems = todayItemsRaw;
+  const today     = format(new Date(), "yyyy-MM-dd");
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd   = addDays(weekStart, 6);
+  const ws = format(weekStart, "yyyy-MM-dd");
+  const we = format(weekEnd,   "yyyy-MM-dd");
 
-  // Week map
-  const weekDates = useMemo(() => {
-    const today = new Date();
-    const day = today.getDay(); // 0=Sun
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((day + 6) % 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const fmt = (d: Date) => d.toISOString().split("T")[0];
-    return { start: fmt(monday), end: fmt(sunday) };
-  }, []);
-  const { data: weekMap } = useWeeklyPlanGrouped(weekDates.start, weekDates.end);
+  const [activeTab,   setActiveTab]   = useState<ActiveTab>("plan");
+  const [planTab,     setPlanTab]     = useState<PlanTab>("today");
+  const [selectedDay, setSelectedDay] = useState(today);
+  const [wizardDone,  setWizardDone]  = useState(false);
 
-  const stats = useMemo(() => {
-    const total = todayItems.length;
-    const completed = todayItems.filter(i => i.status === "completed").length;
-    const skipped = todayItems.filter(i => i.status === "skipped").length;
-    const pending = total - completed - skipped;
-    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    let totalMins = 0;
-    let xpPending = 0;
-    todayItems.forEach(i => {
-       totalMins += ((i as any).estimatedMinutes || 15);
-       if (i.status === "pending") xpPending += (typeConfig[i.type]?.xp ?? 5);
+  const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan();
+  const { data: weekData   = {} }                         = useWeeklyPlanGrouped(ws, we);
+
+  const generate      = useGeneratePlan();
+  const regenerate    = useRegeneratePlan();
+  const complete      = useCompletePlanItem();
+  const skip          = useSkipPlanItem();
+  const updateProfile = useUpdateStudentProfile();
+
+  const hasPrefs = !!(student?.examTarget && student?.examYear);
+  const hasPlan  = todayItems.length > 0;
+
+  const bySubject = useMemo(() => {
+    const map: Record<string, StudyPlanItem[]> = {};
+    for (const item of todayItems) {
+      const key = item.content?.subjectName ?? "General";
+      (map[key] ??= []).push(item);
+    }
+    return map;
+  }, [todayItems]);
+
+  const totalMinutes = todayItems.reduce((s, i) => s + i.estimatedMinutes, 0);
+  const doneCount    = todayItems.filter(i => i.status === "completed").length;
+  const donePct      = todayItems.length > 0 ? Math.round((doneCount / todayItems.length) * 100) : 0;
+  const days         = countdownDays(student?.examYear);
+
+  const handleWizardComplete = async (prefs: WizardState) => {
+    setWizardDone(true);
+    try {
+      await updateProfile.mutateAsync({
+        examTarget:      prefs.examTarget,
+        examYear:        prefs.examYear,
+        dailyStudyHours: prefs.dailyStudyHours,
+      });
+      generate.mutate(undefined, {
+        onSuccess: () => { toast.success("Your roadmap and study plan are ready!"); setWizardDone(false); },
+        onError:   () => { toast.error("Could not generate plan. Please try again."); setWizardDone(false); },
+      });
+    } catch {
+      toast.error("Could not save preferences.");
+      setWizardDone(false);
+    }
+  };
+
+  const handleGenerate = () =>
+    generate.mutate(undefined, {
+      onSuccess: () => toast.success("Study plan generated!"),
+      onError:   () => toast.error("Could not generate plan. Please try again."),
     });
-    
-    return { total, completed, skipped, pending, pct, totalMins, xpPending };
-  }, [todayItems]);
 
-  const pendingItems = todayItems.filter(i => i.status === "pending");
-  const doneItems = todayItems.filter(i => i.status === "completed");
-  const skipItems = todayItems.filter(i => i.status === "skipped");
+  const handleRegenerate = () =>
+    regenerate.mutate(undefined, {
+      onSuccess: () => toast.success("Plan regenerated!"),
+      onError:   () => toast.error("Could not regenerate. Please try again."),
+    });
 
-  // Group by subjects
-  const currentSubjects = useMemo(() => {
-     const subMap: Record<string, StudyPlanItem[]> = {};
-     todayItems.forEach(i => {
-        const sub = i.content?.subjectName || "General";
-        if (!subMap[sub]) subMap[sub] = [];
-        subMap[sub].push(i);
-     });
-     return subMap;
-  }, [todayItems]);
-
-  const upcomingTomorrow = useMemo(() => {
-     if (!weekMap) return [];
-     const tmrw = new Date();
-     tmrw.setDate(tmrw.getDate() + 1);
-     const dateStr = tmrw.toISOString().split("T")[0];
-     return weekMap[dateStr] || [];
-  }, [weekMap]);
-
-  if (isLoading) return (
-     <div className="py-40 flex justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-     </div>
+  if (meLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
   );
 
+  if (!hasPrefs && !wizardDone) return (
+    <PreferenceWizard
+      initial={{ examTarget: student?.examTarget, examYear: student?.examYear, dailyStudyHours: student?.dailyStudyHours ?? 4 }}
+      onComplete={handleWizardComplete}
+    />
+  );
+
+  if (wizardDone || generate.isPending || regenerate.isPending) return <GeneratingView />;
+
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-10 pb-32 font-sans text-slate-900">
-      
-      {/* 1. TOP SECTION (DAILY FOCUS) */}
-      <CardGlass className="rounded-3xl p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sticky top-0 z-40 bg-gradient-to-br from-indigo-600 to-indigo-800 border-white/20">
-         <div className="absolute -top-24 -right-10 w-64 h-64 bg-white/10 blur-3xl rounded-full" />
-         
-         <div className="relative z-10">
-            <div className="flex items-center gap-2 text-indigo-200 text-xs font-bold uppercase tracking-wider mb-2">
-               <CalendarDays className="w-4 h-4" /> Today's Focus
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero */}
+      <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white">
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-indigo-300 text-sm">
+                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"},
+              </p>
+              <h1 className="text-2xl font-bold mt-0.5">{me?.fullName?.split(" ")[0]} 👋</h1>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full text-sm">
+                  <Target className="w-3.5 h-3.5" /> {fmtExam(student?.examTarget)} {student?.examYear}
+                </span>
+                {days !== null && (
+                  <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full text-sm">
+                    <Calendar className="w-3.5 h-3.5" /> {days} days left
+                  </span>
+                )}
+                <span className="flex items-center gap-1.5 bg-amber-400/20 text-amber-200 px-3 py-1.5 rounded-full text-sm">
+                  <Flame className="w-3.5 h-3.5 text-amber-300" /> {student?.streakDays ?? 0} day streak
+                </span>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold mb-3">Your Personalized Plan 🚀</h1>
-            <div className="flex items-center gap-4 text-sm font-semibold text-indigo-100">
-               <span className="bg-indigo-900/40 px-3 py-1 rounded-lg backdrop-blur-sm">{stats.total} Tasks</span>
-               <span className="bg-indigo-900/40 px-3 py-1 rounded-lg backdrop-blur-sm">~{stats.totalMins} mins</span>
-               <span className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-lg backdrop-blur-sm">+{stats.xpPending} XP Reward</span>
-            </div>
-         </div>
-         
-    
-      </CardGlass>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-         <div className="lg:col-span-8 flex flex-col space-y-8">
-
-            {/* 3. PROGRESS TRACKER */}
-            {stats.total > 0 && (
-               <CardGlass className="p-6 border-white bg-white/55 flex items-center gap-6">
-                  <div className="relative w-16 h-16 rounded-full flex items-center justify-center bg-indigo-50 shrink-0">
-                     <svg className="w-full h-full -rotate-90">
-                        <circle className="text-slate-100 stroke-current" strokeWidth="6" cx="32" cy="32" r="28" fill="transparent"></circle>
-                        <motion.circle className="text-indigo-500 stroke-current" strokeWidth="6" strokeLinecap="round" cx="32" cy="32" r="28" fill="transparent" strokeDasharray="175" strokeDashoffset={175 - (175 * stats.pct) / 100} initial={{ strokeDashoffset: 175 }} animate={{ strokeDashoffset: 175 - (175 * stats.pct) / 100 }} transition={{ duration: 1 }}></motion.circle>
-                     </svg>
-                     <span className="absolute text-sm font-bold text-indigo-700">{stats.pct}%</span>
+            {hasPlan && (
+              <div className="flex items-center gap-3 bg-white/10 rounded-2xl px-4 py-3 border border-white/10">
+                <div className="relative">
+                  <svg width={52} height={52} className="-rotate-90">
+                    <circle cx={26} cy={26} r={20} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={5} />
+                    <circle cx={26} cy={26} r={20} fill="none" stroke="white" strokeWidth={5}
+                      strokeDasharray={2 * Math.PI * 20}
+                      strokeDashoffset={2 * Math.PI * 20 * (1 - donePct / 100)}
+                      strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-bold">{donePct}%</span>
                   </div>
-                  <div className="flex-1">
-                     <h3 className="text-lg font-bold text-slate-800">Daily Progress</h3>
-                     <p className="text-sm font-medium text-slate-500 mt-1">{stats.completed} of {stats.total} tasks completed today. Keep going!</p>
-                  </div>
-               </CardGlass>
-            )}
-
-            {/* 4. WEEKLY VIEW */}
-            <CardGlass className="p-6 border-white bg-white/55 overflow-hidden">
-               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Weekly Consistency
-               </h3>
-               <div className="flex gap-2 justify-between">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => {
-                     const d = new Date(weekDates.start);
-                     d.setDate(d.getDate() + i);
-                     const dayKey = d.toISOString().split("T")[0];
-                     const tasks = weekMap?.[dayKey] || [];
-                     const hasTask = tasks.length > 0;
-                     const completed = tasks.filter((t) => t.status === "completed").length;
-                     const isToday = dayKey === new Date().toISOString().split("T")[0];
-                     let status: 'done' | 'missed' | 'upcoming' | 'today' = 'upcoming';
-                     if (isToday) status = 'today';
-                     else if (hasTask && completed === tasks.length) status = 'done';
-                     else if (hasTask && completed < tasks.length && dayKey < new Date().toISOString().split("T")[0]) status = 'missed';
-
-                     return (
-                        <div key={day} className="flex flex-col items-center gap-2">
-                           <span className={cn("text-xs font-bold", status === 'today' ? "text-indigo-600" : "text-slate-400")}>{day}</span>
-                           <div className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[10px]",
-                              status === 'done' ? "bg-emerald-100 text-emerald-600" :
-                              status === 'missed' ? "bg-red-50 text-red-500" :
-                              status === 'today' ? "bg-indigo-600 text-white shadow-md border-2 border-indigo-200" :
-                              "bg-slate-50 text-slate-300 border border-slate-100"
-                           )}>
-                              {status === 'done' ? <CheckCircle2 className="w-5 h-5" /> : 
-                               status === 'missed' ? "✖" : 
-                               status === 'today' ? "🚀" : "○"}
-                           </div>
-                        </div>
-                     );
-                  })}
-               </div>
-            </CardGlass>
-
-            {/* 5. SUBJECT / CHAPTER BREAKDOWN & 2. DAILY TASK LIST */}
-            {todayItems.length === 0 && (
-              <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-2xl mb-2">
-                <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
-                <p className="text-xs font-semibold text-indigo-700">
-                  Your monthly AI plan has not been generated yet for <span className="font-extrabold">{(me?.student?.examTarget ?? "your exam").toUpperCase().replace("_", " ")}</span>.
-                  Click <span className="font-extrabold">Generate Smart Plan</span> to build a 30-day schedule from your last month tests and weak topics.
-                </p>
+                </div>
+                <div>
+                  <div className="font-semibold">{doneCount}/{todayItems.length} done</div>
+                  <div className="text-indigo-200 text-xs">{totalMinutes} min today</div>
+                </div>
               </div>
             )}
-            <div className="space-y-8">
-               {Object.entries(currentSubjects).map(([sub, items]) => (
-                  <div key={sub}>
-                     <h3 className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-3 px-1">{sub} TASKS</h3>
-                     <div>
-                        {items.map(item => <TaskCard key={item.id} item={item} onOpenVideo={(url, title) => setVideoPlayer({ url, title })} />)}
-                     </div>
-                  </div>
-               ))}
-            </div>
-
-         </div>
-
-         {/* RIGHT SIDEBAR */}
-         <div className="lg:col-span-4 space-y-6">
-
-            {/* 7. AI PLAN SUPER FEATURE */}
-            <div className="p-[2px] rounded-2xl bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 shadow-md">
-               <CardGlass className="bg-white rounded-[14px] p-6 text-center border-white">
-                  <Sparkles className="w-10 h-10 text-purple-500 mx-auto mb-3" />
-                  <h3 className="text-lg font-bold text-slate-800 mb-1">AI Smart Plan</h3>
-                  <p className="text-xs font-semibold text-slate-500 mb-5 leading-relaxed">Adjust difficulty, focus on weak areas, and balance subjects magically.</p>
-                  <button
-                    onClick={() =>
-                      regenerate.mutate(undefined, {
-                        onSuccess: () => toast.success("Smart plan generated."),
-                        onError: () => toast.error("Could not generate plan right now. Please try again."),
-                      })
-                    }
-                    disabled={regenerate.isPending}
-                    className="w-full py-3 bg-gradient-to-r from-indigo-50 text-indigo-600 hover:from-indigo-100 hover:to-purple-100 border border-indigo-100 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                  >
-                     {regenerate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Generate Smart Plan
-                  </button>
-               </CardGlass>
-            </div>
-
-            {/* 8. STREAK & CONSISTENCY */}
-            <CardGlass className="p-6 overflow-hidden relative border-white bg-white/55">
-               <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-orange-50 rounded-full blur-2xl" />
-               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" /> Consistency</h3>
-               <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-b from-orange-400 to-red-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
-                     <Flame className="w-8 h-8 fill-current opacity-90" />
-                  </div>
-                  <div>
-                     <p className="text-3xl font-black text-slate-800 leading-none mb-1">{streakDetails}</p>
-                     <p className="text-sm font-bold text-orange-600">Day Streak</p>
-                  </div>
-                  <div className="ml-auto flex -space-x-2">
-                     {[1,2,3,4,5].map((_, i) => (
-                        <div key={i} className={cn("w-6 h-8 rounded-md bg-orange-100 border border-white", i < stats.total / 3 ? "bg-orange-500" : "")} />
-                     ))}
-                  </div>
-               </div>
-               <p className="text-xs font-semibold text-slate-500 mt-4 relative z-10">Keep going! Finish today's tasks to maintain your streak.</p>
-            </CardGlass>
-
-            {/* 9. REWARDS / XP SYSTEM */}
-            <CardGlass className="p-6 border-white bg-white/55">
-               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Trophy className="w-4 h-4 text-yellow-500" /> Today's Rewards</h3>
-               
-               <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-yellow-50 border border-yellow-100/50">
-                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-yellow-100 text-yellow-600 rounded-lg flex items-center justify-center">
-                           <Zap className="w-4 h-4 fill-current" />
-                        </div>
-                        <span className="font-bold text-slate-800 text-sm">Task XP</span>
-                     </div>
-                     <span className="font-bold text-yellow-600">+{stats.xpPending}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-orange-50 border border-orange-100/50">
-                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center">
-                           <Flame className="w-4 h-4 fill-current" />
-                        </div>
-                        <span className="font-bold text-slate-800 text-sm">Streak Bonus</span>
-                     </div>
-                     <span className="font-bold text-orange-600">+1</span>
-                  </div>
-               </div>
-            </CardGlass>
-
-            {/* 6. UPCOMING TASKS */}
-            <CardGlass className="p-6 border-white bg-white/55">
-               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Tomorrow</h3>
-               
-               {upcomingTomorrow.length > 0 ? (
-                  <div className="space-y-3">
-                     {upcomingTomorrow.slice(0, 3).map((task, i) => (
-                        <div key={i} className="flex gap-3 items-center">
-                           <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-400"><Lock className="w-3.5 h-3.5" /></div>
-                           <div className="flex-1 min-w-0">
-                              <p className="font-bold text-slate-700 text-sm truncate">{task.title}</p>
-                              <p className="text-xs font-semibold text-slate-400">{(task as any).estimatedMinutes || "15"} mins</p>
-                           </div>
-                        </div>
-                     ))}
-                     {upcomingTomorrow.length > 3 && (
-                        <p className="text-xs text-center font-bold text-indigo-500 mt-2 hover:underline cursor-pointer">+ {upcomingTomorrow.length - 3} more tasks</p>
-                     )}
-                  </div>
-               ) : (
-                  <p className="text-sm font-semibold text-slate-400 text-center py-4 border-2 border-dashed border-slate-200 rounded-xl">No tasks prepared yet.</p>
-               )}
-            </CardGlass>
-
-         </div>
+          </div>
+        </div>
+        {/* Tabs */}
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex gap-1 border-b border-white/20">
+            {[
+              { key: "plan"    as const, label: "Study Plan",  icon: <ListTodo className="w-4 h-4" /> },
+              { key: "roadmap" as const, label: "My Roadmap",  icon: <Map      className="w-4 h-4" /> },
+            ].map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 transition-all
+                  ${activeTab === tab.key ? "border-white text-white" : "border-transparent text-indigo-300 hover:text-white"}`}>
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <AnimatePresence>
-        {videoPlayer && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center"
-            onClick={() => setVideoPlayer(null)}
-          >
-            <motion.div
-              initial={{ y: 20, scale: 0.98 }}
-              animate={{ y: 0, scale: 1 }}
-              exit={{ y: 10, scale: 0.98 }}
-              className="w-full max-w-5xl bg-black rounded-2xl overflow-hidden border border-white/20 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white">
-                <h3 className="text-sm font-bold truncate pr-4">{videoPlayer.title}</h3>
-                <button onClick={() => setVideoPlayer(null)} className="text-xs font-semibold px-2 py-1 rounded bg-white/10 hover:bg-white/20">
-                  Close
+      <div className="max-w-5xl mx-auto px-4 py-6">
+
+        {/* ══ STUDY PLAN ══════════════════════════════════════════════════════ */}
+        {activeTab === "plan" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {/* Sub-tabs */}
+              <div className="flex gap-1 p-1 bg-white rounded-xl border border-gray-200 w-fit">
+                {(["today", "week"] as const).map(t => (
+                  <button key={t} onClick={() => setPlanTab(t)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all
+                      ${planTab === t ? "bg-indigo-600 text-white shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
+                    {t === "today" ? "Today" : "This Week"}
+                  </button>
+                ))}
+              </div>
+
+              {planTab === "today" ? (
+                planLoading ? (
+                  <div className="flex items-center justify-center h-40">
+                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : !hasPlan ? (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                    <Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">No plan for today yet</h3>
+                    <p className="text-gray-500 mt-2 mb-6 text-sm max-w-sm mx-auto">
+                      Let AI generate a personalized schedule based on your {fmtExam(student?.examTarget)} curriculum and weak areas
+                    </p>
+                    <button onClick={handleGenerate}
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors mx-auto flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" /> Generate My Study Plan
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(bySubject).map(([subj, items]) => {
+                      const cfg      = subjectCfg(subj);
+                      const subjDone = items.filter(i => i.status === "completed").length;
+                      const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
+                      return (
+                        <div key={subj} className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
+                          <div className={`flex items-center justify-between px-4 py-3 ${cfg.bg}`}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                              <span className={`font-bold ${cfg.color}`}>{subj}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>{subjDone}/{items.length} done</span>
+                              <span>·</span>
+                              <Clock className="w-3 h-3" /><span>{subjMins}m</span>
+                            </div>
+                          </div>
+                          <div className="bg-white p-2 space-y-2">
+                            {items.map(item => (
+                              <PlanItemCard key={item.id} item={item}
+                                onComplete={id => complete.mutate(id)}
+                                onSkip={id => skip.mutate(id)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                <div className="space-y-4">
+                  <WeekStrip weekStart={weekStart} selectedDate={selectedDay} onSelect={setSelectedDay} weekData={weekData} />
+                  {(() => {
+                    const dayItems = weekData[selectedDay] ?? [];
+                    if (!dayItems.length) return (
+                      <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400">
+                        <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">No tasks for {format(new Date(selectedDay + "T00:00:00"), "EEEE, MMM d")}</p>
+                      </div>
+                    );
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-gray-600">{format(new Date(selectedDay + "T00:00:00"), "EEEE, MMMM d")}</p>
+                        {dayItems.map(item => (
+                          <PlanItemCard key={item.id} item={item}
+                            onComplete={id => complete.mutate(id)}
+                            onSkip={id => skip.mutate(id)}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Your Stats</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                    <div className="text-2xl font-bold text-amber-600">{student?.streakDays ?? 0}</div>
+                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1 mt-0.5"><Flame className="w-3 h-3 text-amber-500" /> Streak</div>
+                  </div>
+                  <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 text-center">
+                    <div className="text-2xl font-bold text-violet-600">{(student?.xpPoints ?? 0).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1 mt-0.5"><Star className="w-3 h-3 text-violet-500" /> XP</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">AI Plan</h3>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">Regenerate based on your latest test scores and weak topics</p>
+                <button onClick={handleRegenerate} disabled={regenerate.isPending}
+                  className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
+                  <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                  {regenerate.isPending ? "Regenerating…" : "Regenerate Plan"}
                 </button>
               </div>
-              <div className="aspect-video w-full">
-                <iframe
-                  src={videoPlayer.url}
-                  title={videoPlayer.title}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
+
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
+                <div className="space-y-2">
+                  {[
+                    { label: "Practice Tests", icon: <Trophy   className="w-4 h-4" />, cls: "text-red-600    bg-red-50    border-red-100" },
+                    { label: "AI Self Study",  icon: <Brain    className="w-4 h-4" />, cls: "text-indigo-600 bg-indigo-50 border-indigo-100" },
+                    { label: "Battle Arena",   icon: <Zap      className="w-4 h-4" />, cls: "text-orange-600 bg-orange-50 border-orange-100" },
+                    { label: "Ask a Doubt",    icon: <BookOpen className="w-4 h-4" />, cls: "text-teal-600   bg-teal-50   border-teal-100" },
+                  ].map(a => (
+                    <button key={a.label} className={`w-full flex items-center gap-3 p-2.5 rounded-xl border text-sm font-medium hover:shadow-sm transition-all ${a.cls}`}>
+                      {a.icon} {a.label} <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-60" />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </motion.div>
-          </motion.div>
+
+              <button onClick={() => setActiveTab("roadmap")}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-semibold text-sm hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                <Map className="w-4 h-4" /> View My Curriculum Roadmap
+              </button>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+
+        {/* ══ ROADMAP TAB ═════════════════════════════════════════════════════ */}
+        {activeTab === "roadmap" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="mb-5">
+                <h2 className="text-xl font-bold text-gray-900">My Curriculum Roadmap</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Your complete {fmtExam(student?.examTarget)} syllabus — tap any subject to expand chapters and topics
+                </p>
+              </div>
+              <CurriculumRoadmap />
+            </div>
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-indigo-500" /> Exam Target
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {([
+                    ["Exam",        fmtExam(student?.examTarget)],
+                    ["Target Year", String(student?.examYear ?? "—")],
+                    ["Daily Hours", student?.dailyStudyHours ? `${student.dailyStudyHours}h` : "—"],
+                    ["Days Left",   days !== null ? `${days} days` : "—"],
+                  ] as [string, string][]).map(([label, val]) => (
+                    <div key={label} className="flex justify-between">
+                      <span className="text-gray-500">{label}</span>
+                      <span className={`font-semibold ${label === "Days Left" ? "text-indigo-600" : "text-gray-900"}`}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                <div className="font-semibold text-indigo-700 text-sm mb-1 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> How AI uses this
+                </div>
+                <p className="text-xs text-indigo-600 leading-relaxed">
+                  Your study plan is generated from your enrolled curriculum, topic accuracy scores, weak areas, and daily study hours — and improves each time you regenerate.
+                </p>
+              </div>
+
+              <button onClick={() => setActiveTab("plan")}
+                className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-semibold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+                <ListTodo className="w-4 h-4" /> Go to Today's Plan
+              </button>
+
+              <button onClick={handleRegenerate} disabled={regenerate.isPending}
+                className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-2xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                Regenerate Plan
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

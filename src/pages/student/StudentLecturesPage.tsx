@@ -318,7 +318,8 @@ function LectureCard({
   const pct = lecture.studentProgress?.watchPercentage ?? 0;
   const isDone = lecture.studentProgress?.isCompleted ?? false;
   const isLive = lecture.status === "live";
-  const isClickable = ["published", "live", "ended"].includes(lecture.status);
+  const isScheduledLive = lecture.type === "live" && lecture.status === "scheduled";
+  const isClickable = ["published", "live", "ended"].includes(lecture.status) || isScheduledLive;
 
   const aiSummary = useMemo(() => {
     if (lecture.aiKeyConcepts?.length) return lecture.aiKeyConcepts.slice(0, 2).join(" · ");
@@ -326,13 +327,21 @@ function LectureCard({
     return null;
   }, [lecture]);
 
-  const actionLabel = isDone ? "Revise" : pct > 0 ? "Resume" : "Start";
-  const actionIcon  = isDone ? <RotateCcw className="w-3.5 h-3.5" /> : pct > 0 ? <Play className="w-3.5 h-3.5 fill-current" /> : <PlayCircle className="w-3.5 h-3.5" />;
+  const actionLabel = isDone ? "Revise" : pct > 0 ? "Resume" : isScheduledLive ? "Not Started" : "Start";
+  const actionIcon = isDone
+    ? <RotateCcw className="w-3.5 h-3.5" />
+    : pct > 0
+      ? <Play className="w-3.5 h-3.5 fill-current" />
+      : isScheduledLive
+        ? <Clock className="w-3.5 h-3.5" />
+        : <PlayCircle className="w-3.5 h-3.5" />;
   const actionColor = isDone
     ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
     : pct > 0
       ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-500/30"
-      : "bg-slate-900 text-white border-slate-900 hover:bg-indigo-600 hover:border-indigo-600";
+      : isScheduledLive
+        ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 cursor-not-allowed"
+        : "bg-slate-900 text-white border-slate-900 hover:bg-indigo-600 hover:border-indigo-600";
 
   return (
     <motion.div
@@ -362,6 +371,11 @@ function LectureCard({
           {isLive && (
             <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm">
               <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
+            </span>
+          )}
+          {isScheduledLive && (
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-400 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm">
+              <Clock className="w-2.5 h-2.5" /> Scheduled
             </span>
           )}
           {isDone && (
@@ -417,8 +431,8 @@ function LectureCard({
         )}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
           <button
-            onClick={() => isClickable && onWatch(lecture.id)}
-            disabled={!isClickable}
+            onClick={() => !isScheduledLive && isClickable && onWatch(lecture.id)}
+            disabled={!isClickable || isScheduledLive}
             className={cn(
               "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all",
               actionColor
@@ -427,8 +441,12 @@ function LectureCard({
             {actionIcon} {actionLabel}
           </button>
           <button
-            onClick={() => isClickable && onWatch(lecture.id)}
-            className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
+            onClick={() => !isScheduledLive && isClickable && onWatch(lecture.id)}
+            disabled={isScheduledLive}
+            className={cn(
+              "w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 transition-all",
+              isScheduledLive ? "opacity-40 cursor-not-allowed" : "hover:bg-indigo-600 hover:text-white hover:border-indigo-600"
+            )}
           >
             <ArrowRight className="w-3.5 h-3.5" />
           </button>

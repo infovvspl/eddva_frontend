@@ -114,7 +114,7 @@ export function LectureVideoUpload({
               <p className="text-sm font-medium text-slate-700">
                 <span className="text-indigo-600 underline cursor-pointer hover:text-indigo-700">Click to upload</span> or drag and drop
               </p>
-              <p className="text-xs text-slate-500 mt-1">MP4, WebM up to 10GB</p>
+              <p className="text-xs text-slate-500 mt-1">MP4, WebM up to 2GB</p>
             </div>
           </>
         )}
