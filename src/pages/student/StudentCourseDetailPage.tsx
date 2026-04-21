@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   ChevronDown, ChevronRight, BookOpen, Video, CheckCircle2, Lock,
   Clock, ArrowLeft, Download, ExternalLink, Play, FileText,
   Users, BarChart3, Trophy, Loader2, Search, Filter,
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
-  Youtube, File, ClipboardList, FlaskConical,
+  Youtube, File, ClipboardList, FlaskConical, X, Printer,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
 import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture, MockTestListItem, TestSession } from "@/lib/api/student";
@@ -90,46 +92,112 @@ function collectResources(subjects: CourseSubject[], types?: string[]): CourseRe
   return out;
 }
 
+// ─── AI Content Viewer Modal ──────────────────────────────────────────────────
+
+function AiContentModal({ title, content, type, onClose }: {
+  title: string; content: string; type: string; onClose: () => void;
+}) {
+  const meta = RESOURCE_META[type] ?? RESOURCE_META.dpp;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97 }}
+        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl my-8 overflow-hidden"
+      >
+        <div className={cn("flex items-center gap-3 px-6 py-4 border-b", meta.bg)}>
+          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", meta.color)}>
+            {meta.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-800 text-sm line-clamp-1">{title}</p>
+            <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>{meta.label}</span>
+          </div>
+          <button onClick={() => window.print()} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all" title="Print">
+            <Printer className="w-4 h-4" />
+          </button>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 prose prose-sm max-w-none overflow-y-auto max-h-[75vh]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Resource Card ────────────────────────────────────────────────────────────
 
 function ResourceCard({ res, isLocked }: { res: CourseResource; isLocked: boolean }) {
   const meta = RESOURCE_META[res.type] ?? RESOURCE_META.link;
-  const url = res.externalUrl || resolveUrl(res.fileUrl);
+  const [aiModal, setAiModal] = useState<{ content: string } | null>(null);
 
   const handleOpen = () => {
     if (isLocked) { toast.error("Unlock this course to access materials"); return; }
-    if (!url) { toast.error("Resource not available"); return; }
-    window.open(url, "_blank", "noopener,noreferrer");
+
+    // AI-generated content stored in description (no file URL)
+    if (!res.fileUrl && !res.externalUrl) {
+      if (res.description) {
+        setAiModal({ content: res.description });
+      } else {
+        toast.error("Resource not available yet — teacher is still preparing it");
+      }
+      return;
+    }
+
+    // External link
+    if (res.externalUrl) {
+      window.open(res.externalUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // Uploaded file
+    const url = resolveUrl(res.fileUrl);
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+    else toast.error("Resource not available");
   };
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-4 p-4 rounded-2xl border bg-white hover:shadow-md transition-all group cursor-pointer",
-        isLocked && "opacity-60 cursor-not-allowed"
+    <>
+      {aiModal && (
+        <AiContentModal
+          title={res.title}
+          content={aiModal.content}
+          type={res.type}
+          onClose={() => setAiModal(null)}
+        />
       )}
-      onClick={handleOpen}
-    >
-      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shrink-0", meta.bg, meta.color)}>
-        {isLocked ? <Lock className="w-4 h-4 text-slate-400" /> : meta.icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-slate-800 text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">{res.title}</p>
-        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
-          <span className={cn("font-bold uppercase", meta.color)}>{meta.label}</span>
-          {res.chapterName && <><span>·</span><span className="line-clamp-1">{res.chapterName}</span></>}
-          {res.fileSizeKb && <><span>·</span><span>{(res.fileSizeKb / 1024).toFixed(1)} MB</span></>}
+      <div
+        className={cn(
+          "flex items-center gap-4 p-4 rounded-2xl border bg-white hover:shadow-md transition-all group cursor-pointer",
+          isLocked && "opacity-60 cursor-not-allowed"
+        )}
+        onClick={handleOpen}
+      >
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shrink-0", meta.bg, meta.color)}>
+          {isLocked ? <Lock className="w-4 h-4 text-slate-400" /> : meta.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-slate-800 text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">{res.title}</p>
+          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+            <span className={cn("font-bold uppercase", meta.color)}>{meta.label}</span>
+            {res.chapterName && <><span>·</span><span className="line-clamp-1">{res.chapterName}</span></>}
+            {res.fileSizeKb && <><span>·</span><span>{(res.fileSizeKb / 1024).toFixed(1)} MB</span></>}
+          </div>
+        </div>
+        <div className={cn(
+          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
+          isLocked
+            ? "bg-slate-100 text-slate-300"
+            : "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
+        )}>
+          {res.externalUrl ? <ExternalLink className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
         </div>
       </div>
-      <div className={cn(
-        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
-        isLocked
-          ? "bg-slate-100 text-slate-300"
-          : "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
-      )}>
-        {res.externalUrl ? <ExternalLink className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-      </div>
-    </div>
+    </>
   );
 }
 
