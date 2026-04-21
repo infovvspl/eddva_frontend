@@ -1,14 +1,17 @@
 import { useState, useLayoutEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   ArrowLeft, ChevronRight, Play, CheckCircle2, Clock,
   Download, ExternalLink, FileText, BookOpen, Trophy,
   ClipboardList, FlaskConical, Youtube, File, Link2,
   Loader2, AlertCircle, Video, Zap, Lock, Sparkles,
-  BarChart2, PlayCircle,
+  BarChart2, PlayCircle, X, Printer,
 } from "lucide-react";
 import { useCourseTopicDetail } from "@/hooks/use-student";
+import { getResourceDownloadUrl } from "@/lib/api/student";
 import type { TopicLecture, TopicResource } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -151,45 +154,124 @@ function LectureCard({
   );
 }
 
+// ─── AI Content Viewer Modal ──────────────────────────────────────────────────
+
+function AiContentModal({ title, content, type, onClose }: {
+  title: string; content: string; type: string; onClose: () => void;
+}) {
+  const meta = RESOURCE_META[type] ?? RESOURCE_META.dpp;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97 }}
+        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl my-8 overflow-hidden"
+      >
+        {/* Header */}
+        <div className={cn("flex items-center gap-3 px-6 py-4 border-b", meta.bg, meta.border)}>
+          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", meta.bg, meta.color)}>
+            {meta.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-800 text-sm line-clamp-1">{title}</p>
+            <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>{meta.label}</span>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all"
+            title="Print"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {/* Content */}
+        <div className="p-6 prose prose-sm max-w-none overflow-y-auto max-h-[75vh]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Resource Card ─────────────────────────────────────────────────────────────
 
-function ResourceCard({ res }: { res: TopicResource }) {
+function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string }) {
   const meta = RESOURCE_META[String(res.type ?? "").toLowerCase()] ?? RESOURCE_META.link;
-  const url = res.externalUrl || resolveUrl(res.fileUrl);
+  const [loading, setLoading] = useState(false);
+  const [aiModal, setAiModal] = useState<{ content: string } | null>(null);
 
-  const handleOpen = () => {
-    if (!url) { toast.error("Resource not available yet"); return; }
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleOpen = async () => {
+    setLoading(true);
+    try {
+      const result = await getResourceDownloadUrl(topicId, res.id);
+      if (result.type === 'ai-content') {
+        if (!result.content) { toast.error("Content not available yet"); return; }
+        setAiModal({ content: result.content });
+      } else if (result.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      } else {
+        toast.error("Resource not available yet");
+      }
+    } catch {
+      // fallback: try direct URL
+      const url = res.externalUrl || resolveUrl(res.fileUrl);
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+      else toast.error("Resource not available");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      onClick={handleOpen}
-      className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group"
-    >
-      <div className={cn(
-        "w-10 h-10 rounded-xl flex items-center justify-center border shrink-0",
-        meta.bg, meta.border, meta.color
-      )}>
-        {meta.icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-          {res.title}
-        </p>
-        <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>
-          {meta.label}
-        </span>
-      </div>
-      <div className={cn(
-        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
-        "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
-      )}>
-        {res.externalUrl ? <ExternalLink className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-      </div>
-    </motion.div>
+    <>
+      {aiModal && (
+        <AiContentModal
+          title={res.title}
+          content={aiModal.content}
+          type={String(res.type ?? "").toLowerCase()}
+          onClose={() => setAiModal(null)}
+        />
+      )}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={loading ? undefined : handleOpen}
+        className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group"
+      >
+        <div className={cn(
+          "w-10 h-10 rounded-xl flex items-center justify-center border shrink-0",
+          meta.bg, meta.border, meta.color
+        )}>
+          {meta.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+            {res.title}
+          </p>
+          <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>
+            {meta.label}
+          </span>
+        </div>
+        <div className={cn(
+          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
+          "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
+        )}>
+          {loading
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : res.externalUrl
+              ? <ExternalLink className="w-3.5 h-3.5" />
+              : <Download className="w-3.5 h-3.5" />
+          }
+        </div>
+      </motion.div>
+    </>
   );
 }
 
@@ -465,7 +547,7 @@ export default function StudentCourseTopicPage() {
             ) : (
               <motion.div key={resourceTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {activeResources.map(r => <ResourceCard key={r.id} res={r} />)}
+                {activeResources.map(r => <ResourceCard key={r.id} res={r} topicId={topicId} />)}
               </motion.div>
             )}
           </AnimatePresence>

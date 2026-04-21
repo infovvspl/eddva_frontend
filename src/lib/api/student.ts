@@ -207,6 +207,7 @@ export interface TopicResource {
   title: string;
   fileUrl: string | null;
   externalUrl?: string | null;
+  description?: string | null;
   fileSize?: number;
   sortOrder?: number;
 }
@@ -744,6 +745,14 @@ export async function getNextAction(): Promise<StudyPlanItem | null> {
   } catch {
     return null;
   }
+}
+
+export async function getResourceDownloadUrl(
+  topicId: string,
+  resourceId: string,
+): Promise<{ url: string | null; type: 'file' | 'external' | 'ai-content'; content?: string | null }> {
+  const res = await apiClient.get(`/content/topics/${topicId}/resources/${resourceId}/download-url`);
+  return extractData(res);
 }
 
 // ─── Doubts ────────────────────────────────────────────────────────────────────
