@@ -208,22 +208,34 @@ function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string })
   const [aiModal, setAiModal] = useState<{ content: string } | null>(null);
 
   const handleOpen = async () => {
+    // AI-generated content — description is already in the loaded data, no API call needed
+    if (!res.fileUrl && !res.externalUrl) {
+      if (res.description) {
+        setAiModal({ content: res.description });
+      } else {
+        toast.error("Resource not available yet — teacher is still preparing it");
+      }
+      return;
+    }
+
+    // External link (YouTube, etc.)
+    if (res.externalUrl) {
+      window.open(res.externalUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // Uploaded S3 file — get presigned URL, fall back to direct URL
     setLoading(true);
     try {
       const result = await getResourceDownloadUrl(topicId, res.id);
-      if (result.type === 'ai-content') {
-        if (!result.content) { toast.error("Content not available yet"); return; }
-        setAiModal({ content: result.content });
-      } else if (result.url) {
+      if (result.url) {
         window.open(result.url, "_blank", "noopener,noreferrer");
       } else {
-        toast.error("Resource not available yet");
+        window.open(resolveUrl(res.fileUrl)!, "_blank", "noopener,noreferrer");
       }
     } catch {
-      // fallback: try direct URL
-      const url = res.externalUrl || resolveUrl(res.fileUrl);
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else toast.error("Resource not available");
+      // backend endpoint not deployed yet — try direct S3 URL (works if bucket is public)
+      window.open(resolveUrl(res.fileUrl)!, "_blank", "noopener,noreferrer");
     } finally {
       setLoading(false);
     }
