@@ -8,7 +8,7 @@ import {
   CheckCircle2, BookMarked,
 } from "lucide-react";
 import { useMyCourses, useDiscoverBatches, useStudentMe } from "@/hooks/use-student";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/lib/auth-store";
 import type { MyCourse } from "@/lib/api/student";
 import type { PublicBatch } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
@@ -331,7 +331,7 @@ type Tab = "courses" | "ongoing" | "completed";
 export default function StudentCoursesPage() {
   const navigate = useNavigate();
   const { data: courses = [], isLoading } = useMyCourses();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const instituteName = user?.tenantName || "";
   const [activeTab, setActiveTab] = useState<Tab>("courses");
   const [search, setSearch] = useState("");
