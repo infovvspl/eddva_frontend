@@ -500,6 +500,11 @@ export async function createChapter(payload: { subjectId: string; name: string; 
   return extractData<Chapter>(res);
 }
 
+export async function updateChapter(id: string, payload: { name?: string }) {
+  const res = await apiClient.patch(`/content/chapters/${id}`, payload);
+  return extractData<Chapter>(res);
+}
+
 export async function deleteChapter(id: string) {
   const res = await apiClient.delete(`/content/chapters/${id}`);
   return extractData<{ message: string }>(res);
@@ -516,6 +521,11 @@ export async function listTopics(chapterId: string) {
 
 export async function createTopic(payload: { chapterId: string; name: string; sortOrder?: number; estimatedStudyMinutes?: number; gatePassPercentage?: number }) {
   const res = await apiClient.post("/content/topics", payload);
+  return extractData<Topic>(res);
+}
+
+export async function updateTopic(id: string, payload: { name?: string; estimatedStudyMinutes?: number }) {
+  const res = await apiClient.patch(`/content/topics/${id}`, payload);
   return extractData<Topic>(res);
 }
 
