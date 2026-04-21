@@ -11,7 +11,7 @@ import {
   getMockTestById, startSession, submitAnswer, submitSession,
   getMockTestSessions, getSessionResult, isSessionCompleted,
 } from "@/lib/api/student";
-import type { QuizQuestion, TestSession, SessionResult } from "@/lib/api/student";
+import type { QuizQuestion, TestSession, SessionResult, SessionResultAttempt } from "@/lib/api/student";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -206,6 +206,43 @@ function AttemptHistory({ sessions, totalMarks, onViewResult }: {
   );
 }
 
+/** Backend uses camelCase; some proxies/legacy rows may use snake_case */
+function solutionTextFromQuestion(q: unknown): string | undefined {
+  const o = q as Record<string, unknown> | null | undefined;
+  if (!o) return undefined;
+  const t = o.solutionText ?? o.solution_text;
+  return typeof t === "string" && t.trim() ? t.trim() : undefined;
+}
+
+function solutionVideoFromQuestion(q: unknown): string | undefined {
+  const o = q as Record<string, unknown> | null | undefined;
+  if (!o) return undefined;
+  const t = o.solutionVideoUrl ?? o.solution_video_url;
+  return typeof t === "string" && t.trim() ? t.trim() : undefined;
+}
+
+function ExplanationBlock({ text, videoUrl }: { text?: string | null; videoUrl?: string | null }) {
+  if (!text?.trim() && !videoUrl) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3 space-y-2">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Explanation</p>
+      {text?.trim() ? (
+        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{text}</p>
+      ) : null}
+      {videoUrl ? (
+        <a
+          href={videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-semibold text-indigo-600 hover:underline inline-flex items-center gap-1"
+        >
+          Watch solution video
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 // ─── Results screen ───────────────────────────────────────────────────────────
 function ResultsScreen({
   result, questions, totalMarks, onRetake, onBack,
@@ -283,15 +320,18 @@ function ResultsScreen({
 
       {showReview && (
         <div className="space-y-4">
-          {result.attempts.map((attempt, i) => {
-            const q = questions.find(q => q.id === attempt.questionId);
+          {result.attempts.map((attempt: SessionResultAttempt, i) => {
+            const q = attempt.question ?? questions.find(x => x.id === attempt.questionId);
             if (!q) return null;
+            const explanationOnly = q.reviewMode === "explanation_only";
+            const opts = q.options ?? [];
+            const skipped = attempt.errorType === "skip";
             return (
               <div key={attempt.questionId} className={cn(
                 "rounded-2xl border p-4 space-y-3",
                 attempt.isCorrect
                   ? "bg-emerald-50/60 border-emerald-200"
-                  : !attempt.selectedOptionIds?.length
+                  : skipped
                     ? "bg-slate-50 border-slate-200"
                     : "bg-red-50/60 border-red-200",
               )}>
@@ -302,31 +342,57 @@ function ResultsScreen({
                   <p className="text-sm font-medium text-slate-800 leading-snug flex-1">{q.content}</p>
                   {attempt.isCorrect
                     ? <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                    : !attempt.selectedOptionIds?.length
+                    : skipped
                       ? <Minus className="w-5 h-5 text-slate-400 shrink-0" />
                       : <XCircle className="w-5 h-5 text-red-400 shrink-0" />}
                 </div>
-                <div className="space-y-1.5">
-                  {(attempt.options ?? q.options ?? []).map((opt: any) => {
-                    const wasSel = attempt.selectedOptionIds?.includes(opt.id);
-                    const isCorrectOpt = opt.isCorrect ?? attempt.correctOptionIds?.includes(opt.id);
-                    return (
-                      <div key={opt.id} className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium border",
-                        isCorrectOpt && "bg-emerald-100 border-emerald-300 text-emerald-800",
-                        wasSel && !isCorrectOpt && "bg-red-100 border-red-300 text-red-700",
-                        !wasSel && !isCorrectOpt && "bg-white border-slate-100 text-slate-500",
-                      )}>
-                        {isCorrectOpt
-                          ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          : wasSel
-                            ? <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                            : <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" />}
-                        {opt.content}
+
+                {explanationOnly ? (
+                  <ExplanationBlock text={solutionTextFromQuestion(q)} videoUrl={solutionVideoFromQuestion(q)} />
+                ) : (
+                  <>
+                    {q.type === "integer" ? (
+                      <div className="space-y-2 text-sm rounded-xl border border-slate-200 bg-white/80 p-3">
+                        <p className="text-slate-600">
+                          Your answer:{" "}
+                          <span className="font-mono font-semibold text-slate-900">
+                            {attempt.integerAnswer ?? "—"}
+                          </span>
+                        </p>
+                        <p className="text-slate-600">
+                          Correct answer:{" "}
+                          <span className="font-mono font-semibold text-emerald-700">
+                            {q.integerAnswer ?? "—"}
+                          </span>
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
+                    ) : opts.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {opts.map((opt) => {
+                          const wasSel = attempt.selectedOptionIds?.includes(opt.id);
+                          const isCorrectOpt = opt.isCorrect === true;
+                          return (
+                            <div key={opt.id} className={cn(
+                              "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium border",
+                              isCorrectOpt && "bg-emerald-100 border-emerald-300 text-emerald-800",
+                              wasSel && !isCorrectOpt && "bg-red-100 border-red-300 text-red-700",
+                              !wasSel && !isCorrectOpt && "bg-white border-slate-100 text-slate-500",
+                            )}>
+                              {isCorrectOpt
+                                ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                : wasSel
+                                  ? <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                  : <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" />}
+                              {opt.content}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                    <ExplanationBlock text={solutionTextFromQuestion(q)} videoUrl={solutionVideoFromQuestion(q)} />
+                  </>
+                )}
+
                 <span className={cn(
                   "text-xs font-bold px-2 py-0.5 rounded-full",
                   (attempt.marksAwarded ?? 0) > 0 ? "bg-emerald-100 text-emerald-700"

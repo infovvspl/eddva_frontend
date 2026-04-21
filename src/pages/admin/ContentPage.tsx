@@ -28,6 +28,7 @@ import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImp
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
+import { MAX_MATERIAL_FILE_SIZE_MB } from "@/lib/upload-limits";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -306,7 +307,10 @@ function UploadPanel({
       .trim();
 
   const stageFile = (file: File) => {
-    if (file.size > 50 * 1024 * 1024) { toast.error("File must be ≤ 50 MB"); return; }
+    if (file.size > MAX_MATERIAL_FILE_SIZE_MB * 1024 * 1024) {
+      toast.error(`File must be ≤ ${MAX_MATERIAL_FILE_SIZE_MB} MB`);
+      return;
+    }
     setPendingFile(file);
     if (!title.trim()) setTitle(cleanFilename(file.name));
   };
@@ -526,7 +530,7 @@ function UploadPanel({
             <p className="text-sm font-bold text-slate-600">
               Drop {activeCfg.label} here or <span className="text-blue-600">browse</span>
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Max 50 MB · {activeCfg.accept?.split(",").join(", ")}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Max {MAX_MATERIAL_FILE_SIZE_MB} MB · {activeCfg.accept?.split(",").join(", ")}</p>
             <input ref={fileRef} type="file" accept={activeCfg.accept} className="hidden"
               onChange={e => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
           </div>

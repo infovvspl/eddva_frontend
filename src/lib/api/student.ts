@@ -534,6 +534,8 @@ export interface QuizOption {
   id: string;
   optionLabel: string;
   content: string;
+  /** Present on post-submit review for wrong answers */
+  isCorrect?: boolean | null;
 }
 
 export interface QuizQuestion {
@@ -545,6 +547,13 @@ export interface QuizQuestion {
   marksWrong: number;
   topic?: { id: string; name: string };
   options?: QuizOption[];
+  contentImageUrl?: string | null;
+  /** Correct value for integer-type questions (review after wrong answer) */
+  integerAnswer?: string | null;
+  solutionText?: string | null;
+  solutionVideoUrl?: string | null;
+  /** Set by API after submit: explanation-only vs full answer key */
+  reviewMode?: "explanation_only" | "full_solution";
 }
 
 export interface TestSession {
@@ -573,6 +582,20 @@ export interface ErrorBreakdown {
   skip: number;
 }
 
+export interface SessionResultAttempt {
+  questionId: string;
+  isCorrect: boolean;
+  marksAwarded: number;
+  errorType?: string;
+  selectedOptionIds?: string[];
+  correctOptionIds?: string[];
+  integerAnswer?: string | null;
+  questionContent?: string;
+  options?: (QuizOption & { isCorrect: boolean })[];
+  /** Per-question review payload from API (preferred over mock test questions) */
+  question?: QuizQuestion | null;
+}
+
 export interface SessionResult {
   id: string;
   totalScore: number;
@@ -582,16 +605,7 @@ export interface SessionResult {
   accuracy: number;
   status: string;
   errorBreakdown: ErrorBreakdown;
-  attempts: {
-    questionId: string;
-    isCorrect: boolean;
-    marksAwarded: number;
-    errorType?: string;
-    selectedOptionIds?: string[];
-    correctOptionIds?: string[];
-    questionContent?: string;
-    options?: (QuizOption & { isCorrect: boolean })[];
-  }[];
+  attempts: SessionResultAttempt[];
 }
 
 export async function getMockTests(params?: {
@@ -940,6 +954,10 @@ export interface BattleRoom {
   roomCode: string;
   status: "waiting" | "in_progress" | "completed";
   mode: BattleMode;
+  totalRounds?: number;
+  secondsPerRound?: number;
+  participantCount?: number;
+  maxParticipants?: number;
 }
 
 export interface DailyBattle {
@@ -950,9 +968,10 @@ export interface DailyBattle {
   status: string;
 }
 
-export async function createBattle(mode: BattleMode, topicId?: string): Promise<BattleRoom> {
+export async function createBattle(mode: BattleMode, topicId?: string, topicName?: string): Promise<BattleRoom> {
   const payload: Record<string, string> = { mode };
   if (topicId) payload.topicId = topicId;
+  if (topicName) payload.topicName = topicName;
   const res = await apiClient.post("/battles/create", payload);
   return extractData<BattleRoom>(res);
 }
