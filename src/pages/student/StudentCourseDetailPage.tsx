@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import DppContentRenderer from "@/components/DppContentRenderer";
 import {
   ChevronDown, ChevronRight, BookOpen, Video, CheckCircle2, Lock,
   Clock, ArrowLeft, Download, ExternalLink, Play, FileText,
@@ -121,8 +120,8 @@ function AiContentModal({ title, content, type, onClose }: {
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-6 prose prose-sm max-w-none overflow-y-auto max-h-[75vh]">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        <div className="p-6 overflow-y-auto max-h-[75vh]">
+          <DppContentRenderer content={content} />
         </div>
       </motion.div>
     </div>
