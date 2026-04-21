@@ -20,6 +20,16 @@ import {
 import type { BatchStudentRow, BulkStudentResult } from "@/lib/api/admin";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
+import {
+  BATCH_CLASS_OPTIONS,
+  BATCH_EXAM_TARGET_OPTIONS,
+  formatBatchExamTargetLabel,
+  formatBatchClassLabel,
+  normalizeBatchClassInput,
+  normalizeBatchExamTargetInput,
+  resolveBatchClassFormState,
+  resolveBatchExamTargetFormState,
+} from "@/lib/batch-form";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +43,22 @@ function CopyBtn({ text }: { text: string }) {
       {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
     </button>
   );
+}
+
+function resolveBatchFormValues(form: {
+  examTarget: string;
+  customExamTarget: string;
+  class: string;
+  customClass: string;
+}) {
+  const examTarget = form.examTarget === "custom"
+    ? normalizeBatchExamTargetInput(form.customExamTarget)
+    : normalizeBatchExamTargetInput(form.examTarget);
+  const classLevel = form.class === "custom"
+    ? normalizeBatchClassInput(form.customClass)
+    : normalizeBatchClassInput(form.class);
+
+  return { examTarget, class: classLevel };
 }
 
 // ─── Subject-Teacher Assignment Panel ─────────────────────────────────────────
@@ -583,7 +609,9 @@ function CourseThumbnail({ name, examTarget, imageUrl, className = "" }: {
       <div className="absolute inset-0 opacity-10"
         style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "12px 12px" }} />
       <span className="text-white font-black text-xl relative z-10 leading-none">{initials}</span>
-      <span className="text-white/60 text-[9px] font-black uppercase tracking-widest mt-1 relative z-10">{style.badge}</span>
+      <span className="text-white/60 text-[9px] font-black uppercase tracking-widest mt-1 relative z-10">
+        {style.badge !== "—" ? style.badge : formatBatchExamTargetLabel(examTarget)}
+      </span>
     </div>
   );
 }
@@ -955,11 +983,16 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
     return `${getApiOrigin() || "http://127.0.0.1:3000"}${url}`;
   })();
 
+  const initialExamState = resolveBatchExamTargetFormState(batch.examTarget);
+  const initialClassState = resolveBatchClassFormState(batch.class);
+
   const [form, setForm] = useState({
     name: batch.name ?? "",
     description: batch.description ?? "",
-    examTarget: batch.examTarget ?? "jee",
-    class: batch.class ?? "11",
+    examTarget: initialExamState.selected,
+    customExamTarget: initialExamState.custom,
+    class: initialClassState.selected,
+    customClass: initialClassState.custom,
     isPaid: batch.isPaid ?? (batch.feeAmount ? true : false),
     feeAmount: batch.feeAmount ? String(batch.feeAmount) : "",
     startDate: batch.startDate ? batch.startDate.split("T")[0] : "",
@@ -993,6 +1026,15 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const resolved = resolveBatchFormValues(form);
+    if (!resolved.examTarget) {
+      setError("Exam target is required.");
+      return;
+    }
+    if (!resolved.class) {
+      setError("Class level is required.");
+      return;
+    }
     if (form.isPaid && (!form.feeAmount || Number(form.feeAmount) <= 0)) {
       setError("Fee amount is required and must be greater than 0 for paid courses.");
       return;
@@ -1002,8 +1044,8 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
         id: batch.id,
         name: form.name,
         description: form.description || undefined,
-        examTarget: form.examTarget,
-        class: form.class,
+        examTarget: resolved.examTarget,
+        class: resolved.class,
         isPaid: form.isPaid,
         feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
@@ -1060,23 +1102,41 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                   <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                     className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
                 </div>
-                <div>
+                <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Exam Target</label>
                   <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
                     className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
-                    <option value="jee">JEE</option>
-                    <option value="neet">NEET</option>
-                    <option value="both">Both / General</option>
+                    {BATCH_EXAM_TARGET_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
+                  {form.examTarget === "custom" && (
+                    <input
+                      required
+                      placeholder="Enter custom target"
+                      value={form.customExamTarget}
+                      onChange={e => setForm({ ...form, customExamTarget: e.target.value })}
+                      className="w-full mt-2 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                    />
+                  )}
                 </div>
-                <div>
+                <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Class Level</label>
                   <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
                     className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
-                    {["8","9","10","11","12","DROPPER"].map(c => (
-                      <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
+                    {BATCH_CLASS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
+                  {form.class === "custom" && (
+                    <input
+                      required
+                      placeholder="Enter custom class"
+                      value={form.customClass}
+                      onChange={e => setForm({ ...form, customClass: e.target.value })}
+                      className="w-full mt-2 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Start Date</label>
@@ -1234,6 +1294,7 @@ const BatchesPage = () => {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     name: "", description: "", examTarget: "jee", class: "11",
+    customExamTarget: "", customClass: "",
     isPaid: false, feeAmount: "", startDate: "", endDate: "",
   });
   const [thumbPreview, setThumbPreview] = useState<string>("");
@@ -1246,7 +1307,7 @@ const BatchesPage = () => {
   const batchList = Array.isArray(batches) ? batches : [];
 
   const resetForm = () => {
-    setForm({ name: "", description: "", examTarget: "jee", class: "11", isPaid: false, feeAmount: "", startDate: "", endDate: "" });
+    setForm({ name: "", description: "", examTarget: "jee", class: "11", customExamTarget: "", customClass: "", isPaid: false, feeAmount: "", startDate: "", endDate: "" });
     setThumbPreview("");
     setThumbFile(null);
     setFormError("");
@@ -1255,6 +1316,15 @@ const BatchesPage = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
+    const resolved = resolveBatchFormValues(form);
+    if (!resolved.examTarget) {
+      setFormError("Exam target is required.");
+      return;
+    }
+    if (!resolved.class) {
+      setFormError("Class level is required.");
+      return;
+    }
     if (form.isPaid && (!form.feeAmount || Number(form.feeAmount) <= 0)) {
       setFormError("Fee amount is required and must be greater than 0 for paid courses.");
       return;
@@ -1263,8 +1333,8 @@ const BatchesPage = () => {
       const batch = await createBatch.mutateAsync({
         name: form.name,
         description: form.description || undefined,
-        examTarget: form.examTarget,
-        class: form.class,
+        examTarget: resolved.examTarget,
+        class: resolved.class,
         isPaid: form.isPaid,
         feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
@@ -1380,19 +1450,37 @@ const BatchesPage = () => {
                 <label className="text-xs font-semibold text-slate-500 px-1">Exam Target *</label>
                 <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
                   className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                  <option value="jee">JEE</option>
-                  <option value="neet">NEET</option>
-                  <option value="both">Both / General</option>
+                  {BATCH_EXAM_TARGET_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
+                {form.examTarget === "custom" && (
+                  <input
+                    required
+                    placeholder="Enter custom target"
+                    value={form.customExamTarget}
+                    onChange={e => setForm({ ...form, customExamTarget: e.target.value })}
+                    className="h-11 mt-2 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                  />
+                )}
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-500 px-1">Class Level *</label>
                 <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
                   className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                  {["8", "9", "10", "11", "12", "DROPPER"].map(c => (
-                    <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
+                  {BATCH_CLASS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
+                {form.class === "custom" && (
+                  <input
+                    required
+                    placeholder="Enter custom class"
+                    value={form.customClass}
+                    onChange={e => setForm({ ...form, customClass: e.target.value })}
+                    className="h-11 mt-2 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                  />
+                )}
               </div>
             </div>
 
@@ -1586,7 +1674,7 @@ const BatchesPage = () => {
                     )}
                   </div>
                   <p className="text-[11px] text-slate-400 font-semibold uppercase mb-2">
-                    {b.examTarget?.toUpperCase()} · Class {b.class}
+                    {formatBatchExamTargetLabel(b.examTarget)} · {formatBatchClassLabel(b.class)}
                     {b.teacher?.fullName && ` · ${b.teacher.fullName}`}
                   </p>
                   <div className="flex items-center gap-2">
