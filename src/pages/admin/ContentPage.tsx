@@ -1380,18 +1380,6 @@ function AddSubjectModal({ batchId, examTarget, onClose }: { batchId: string; ex
 
 const AI_CONTENT_TYPES = [
   {
-    id: "lesson",
-    label: "Lesson Notes",
-    desc: "Comprehensive markdown notes with explanations, examples & key points",
-    icon: BookText,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    accent: "#2563EB",
-    badge: "Most Popular",
-    saveAs: "notes",
-  },
-  {
     id: "dpp",
     label: "DPP Sheet",
     desc: "AI-generated Daily Practice Problems with MCQs, numericals & answer key",
@@ -1503,10 +1491,11 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
   subjectName: string;
   chapterName: string;
 }) {
-  const [selectedType, setSelectedType] = useState("lesson");
+  const [selectedType, setSelectedType] = useState("dpp");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [length, setLength] = useState("standard");
   const [examTarget, setExamTarget] = useState("JEE");
+  const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1530,6 +1519,7 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
     try {
       const extraCtx = [
         isDppOrPyq ? `Exam target: ${examTarget}` : "",
+        isDppOrPyq ? `Generate exactly ${questionCount} questions` : "",
         extraContext.trim(),
       ].filter(Boolean).join(". ") || undefined;
 
@@ -1653,29 +1643,72 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
           </p>
 
           {isDppOrPyq ? (
-            /* DPP / PYQ: only exam target matters — structure is fixed */
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Exam Target</p>
-              <div className="flex gap-2">
-                {["JEE", "NEET", "Both"].map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setExamTarget(t)}
-                    className={cn(
-                      "flex-1 py-2.5 px-3 rounded-xl text-center text-[12px] font-black border-2 transition-all",
-                      examTarget === t
-                        ? selectedType === "dpp"
-                          ? "bg-orange-600 border-orange-600 text-white shadow-sm"
-                          : "bg-violet-600 border-violet-600 text-white shadow-sm"
-                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                    )}
-                  >
-                    {t}
-                  </button>
-                ))}
+            <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              {/* Exam Target */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Exam Target</p>
+                <div className="flex gap-2">
+                  {["JEE", "NEET", "Both"].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setExamTarget(t)}
+                      className={cn(
+                        "flex-1 py-2.5 px-3 rounded-xl text-center text-[12px] font-black border-2 transition-all",
+                        examTarget === t
+                          ? selectedType === "dpp"
+                            ? "bg-orange-600 border-orange-600 text-white shadow-sm"
+                            : "bg-violet-600 border-violet-600 text-white shadow-sm"
+                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                      )}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-3 text-center">
-                Structure is fixed: {selectedType === "dpp" ? "MCQ + Assertion-Reason + Numericals + Answer Key" : "JEE Main + NEET + Integer Type + Full Solutions"}
+
+              {/* Question Count */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                  Number of Questions
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[5, 10, 15, 20, 25, 30].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setQuestionCount(n)}
+                        className={cn(
+                          "w-10 h-9 rounded-xl text-xs font-black border-2 transition-all",
+                          questionCount === n
+                            ? selectedType === "dpp"
+                              ? "bg-orange-600 border-orange-600 text-white shadow-sm"
+                              : "bg-violet-600 border-violet-600 text-white shadow-sm"
+                            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                        )}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      onClick={() => setQuestionCount(q => Math.max(1, q - 1))}
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-600 font-black text-sm hover:border-slate-300 flex items-center justify-center"
+                    >−</button>
+                    <span className="text-sm font-black text-slate-800 w-6 text-center">{questionCount}</span>
+                    <button
+                      onClick={() => setQuestionCount(q => Math.min(50, q + 1))}
+                      className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-600 font-black text-sm hover:border-slate-300 flex items-center justify-center"
+                    >+</button>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400">
+                {selectedType === "dpp"
+                  ? `${questionCount} questions: MCQ + Assertion-Reason + Numericals + Answer Key`
+                  : `${questionCount} questions: JEE Main + NEET + Integer Type + Full Solutions`}
               </p>
             </div>
           ) : (
