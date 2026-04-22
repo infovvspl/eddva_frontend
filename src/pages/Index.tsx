@@ -33,12 +33,12 @@ const cardVariants = {
 };
 /* ── Data ── */
 const examCategories = [
-  { id: "jee",   name: "IIT JEE",        icon: "⚛️", color: B,         tags: ["Class 11","Class 12","Dropper"], students: "32K+", desc: "Crack IIT with AI-powered Physics, Chemistry & Maths prep — adaptive tests and full syllabus coverage.", popular: true },
-  { id: "neet",  name: "NEET UG",        icon: "🩺", color: "#EF4444", tags: ["Class 11","Class 12","Dropper"], students: "24K+", desc: "Complete Biology, Physics & Chemistry preparation for MBBS & BDS entrance with mock tests.", popular: true },
-  { id: "state", name: "State Board 9–11",icon: "📚", color: "#F59E0B", tags: ["Class 9","Class 10","Class 11"],  students: "18K+", desc: "Foundation-level preparation for all major state boards — MP, UP, MH, Rajasthan & more.", popular: true },
-  { id: "cbse",  name: "CBSE 9–12",      icon: "🎓", color: T,         tags: ["Class 9","Class 10","Class 11","Class 12"], students: "28K+", desc: "NCERT-aligned complete CBSE prep for Science, Maths, English & Social Studies.", popular: true },
-  { id: "icse",  name: "ICSE / ISC",     icon: "🏫", color: P,         tags: ["Class 9","Class 10"],            students: "9K+",  desc: "CISCE board prep for Class 9 & 10 with detailed topic-wise notes and solved papers." },
-  { id: "isc",   name: "ISC Class 11–12",icon: "📐", color: IN,        tags: ["Class 11","Class 12"],           students: "7K+",  desc: "ISC Science and Commerce prep with chapter-wise tests, previous papers and AI guidance." },
+  { id: "jee",   name: "IIT JEE",         icon: "⚛️", color: B,         tags: ["Class 11","Class 12","Dropper"], students: "32K+", desc: "Crack IIT with AI-powered Physics, Chemistry & Maths prep — adaptive tests and full syllabus coverage.", popular: true, href: "/exam/iit-jee" },
+  { id: "neet",  name: "NEET UG",         icon: "🩺", color: "#EF4444", tags: ["Class 11","Class 12","Dropper"], students: "24K+", desc: "Complete Biology, Physics & Chemistry preparation for MBBS & BDS entrance with mock tests.", popular: true, href: "/exam/neet-ug" },
+  { id: "state", name: "State Board 9–11", icon: "📚", color: "#F59E0B", tags: ["Class 9","Class 10","Class 11"], students: "18K+", desc: "Foundation-level preparation for all major state boards — MP, UP, MH, Rajasthan & more.", popular: true, comingSoon: true },
+  { id: "cbse",  name: "CBSE 9–12",       icon: "🎓", color: T,         tags: ["Class 9","Class 10","Class 11","Class 12"], students: "28K+", desc: "NCERT-aligned complete CBSE prep for Science, Maths, English & Social Studies.", popular: true, comingSoon: true },
+  { id: "icse",  name: "ICSE / ISC",      icon: "🏫", color: P,         tags: ["Class 9","Class 10"], students: "9K+", desc: "CISCE board prep for Class 9 & 10 with detailed topic-wise notes and solved papers.", comingSoon: true },
+  { id: "isc",   name: "ISC Class 11–12", icon: "📐", color: IN,        tags: ["Class 11","Class 12"], students: "7K+", desc: "ISC Science and Commerce prep with chapter-wise tests, previous papers and AI guidance.", comingSoon: true },
 ];
 
 const howSteps = [
@@ -331,7 +331,11 @@ const Index = () => {
       </section>
 
       {/* ══════════════════════ EXAM CATEGORIES ══════════════════════ */}
-      <section className="landing-section bg-white" id="exams">
+      <section
+        className="landing-section overflow-hidden"
+        id="exams"
+        style={{ background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)" }}
+      >
         <div className="landing-shell">
           <FadeUp className="mb-4 text-center">
             <SLabel>Exam Categories</SLabel>
@@ -341,19 +345,30 @@ const Index = () => {
               Choose Your <span style={gText()}>Exam Path</span>
             </h2>
           </FadeUp>
-          <FadeUp delay={0.1} className="mb-10 text-center">
-            <p className="mx-auto max-w-xl text-[16px] font-medium leading-relaxed text-gray-500">
+          <FadeUp delay={0.1} className="mb-8 text-center">
+            <p className="mx-auto max-w-2xl text-[16px] font-medium leading-relaxed text-gray-500">
               Comprehensive preparation for 20+ exams. Pick your goal and we'll build your personalized path.
             </p>
           </FadeUp>
 
+          <FadeUp delay={0.11} className="mb-8">
+            <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-3">
+              <div className="rounded-full border border-blue-100 bg-white/90 px-4 py-2 text-[12px] font-bold text-gray-700 shadow-sm backdrop-blur">
+                2 Live tracks: <span className="text-blue-600">JEE</span> and <span className="text-red-500">NEET</span>
+              </div>
+              <div className="rounded-full border border-amber-100 bg-amber-50 px-4 py-2 text-[12px] font-bold text-amber-700 shadow-sm">
+                School boards are marked as Coming Soon
+              </div>
+            </div>
+          </FadeUp>
+
           {/* Search + tab filter */}
-          <FadeUp delay={0.12} className="mb-7 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <FadeUp delay={0.12} className="mb-8 flex flex-col gap-4 rounded-[28px] border border-white/70 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input type="text" placeholder="Search JEE, NEET, UPSC…"
+              <input type="text" placeholder="Search JEE, NEET, Boards..."
                 value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                className="h-11 w-full rounded-2xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-[13px] outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100" />
+                className="h-12 w-full rounded-2xl border border-gray-200 bg-gray-50/90 pl-10 pr-4 text-[13px] outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100" />
               {searchQuery && (
                 <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
                   <X className="h-4 w-4" />
@@ -374,49 +389,87 @@ const Index = () => {
           {/* Cards */}
           <AnimatePresence mode="wait">
             <motion.div key={activeTab + searchQuery} layout
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {filteredExams.length > 0 ? filteredExams.map((exam, i) => (
                 <motion.div key={exam.id} layout
                   initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
                   transition={{ duration:0.35, delay: i * 0.05 }}
                   whileHover={{ y:-6, boxShadow:`0 24px 56px ${exam.color}22` }}
-                  className="group relative cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  className={`group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ${exam.comingSoon ? "border-amber-200/80" : "border-gray-100"}`}>
 
                   {/* hover color wash */}
                   <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                     style={{ background: `radial-gradient(circle at top left, ${exam.color}08, transparent 65%)` }} />
 
-                  {exam.popular && (
-                    <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black text-white"
-                      style={{ background: exam.color }}>
-                      <Star className="h-2.5 w-2.5 fill-current" /> Popular
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-3xl text-3xl shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${exam.color}18, #ffffff)` }}>
+                      {exam.icon}
                     </div>
-                  )}
-
-                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-3xl"
-                    style={{ background: `${exam.color}15` }}>
-                    {exam.icon}
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {exam.comingSoon && (
+                        <div className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                          Coming Soon
+                        </div>
+                      )}
+                      {exam.popular && (
+                        <div className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black text-white"
+                          style={{ background: exam.color }}>
+                          <Star className="h-2.5 w-2.5 fill-current" /> Popular
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <h3 className="mb-1 text-[16px] font-extrabold text-gray-900">{exam.name}</h3>
-                  <p className="mb-3 text-[12px] leading-relaxed text-gray-500">{exam.desc}</p>
+                  <div className="mb-5">
+                    <h3 className="mb-2 text-[18px] font-extrabold tracking-tight text-gray-900">{exam.name}</h3>
+                    <p className="text-[13px] leading-relaxed text-gray-500">{exam.desc}</p>
+                  </div>
 
                   <div className="mb-4 flex flex-wrap gap-1.5">
                     {exam.tags.map(tag => (
-                      <span key={tag} className="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                      <span key={tag} className="rounded-full px-3 py-1 text-[10px] font-bold"
                         style={{ background:`${exam.color}12`, color: exam.color }}>
                         {tag}
                       </span>
                     ))}
                   </div>
 
+                  <div className="mb-4 rounded-2xl border border-gray-100 bg-gray-50/80 p-3">
+                    <div className="flex items-center justify-between text-[11px] font-semibold">
+                      <span className="text-gray-400">Learners</span>
+                      <span style={{ color: exam.color }}>{exam.students} students</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: exam.comingSoon ? "58%" : "88%",
+                          background: `linear-gradient(90deg, ${exam.color}, ${exam.color}99)`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-gray-400">{exam.students} students</span>
-                    <motion.span className="flex items-center gap-1 text-[12px] font-bold"
-                      style={{ color: exam.color }}
-                      whileHover={{ x: 3 }}>
-                      Explore <ArrowRight className="h-3 w-3" />
-                    </motion.span>
+                    <span className="text-[11px] font-semibold text-gray-400">
+                      {exam.comingSoon ? "Launching shortly" : "Available now"}
+                    </span>
+                    {exam.href ? (
+                      <Link
+                        to={exam.href}
+                        className="flex items-center gap-1 text-[12px] font-bold"
+                        style={{ color: exam.color }}
+                      >
+                        Explore <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    ) : (
+                      <motion.span className="flex items-center gap-1 text-[12px] font-bold"
+                        style={{ color: exam.color }}
+                        whileHover={{ x: 3 }}>
+                        {exam.comingSoon ? "Preview" : "Explore"} <ArrowRight className="h-3 w-3" />
+                      </motion.span>
+                    )}
                   </div>
                 </motion.div>
               )) : (
@@ -821,7 +874,7 @@ const Index = () => {
                 { emoji:"🎓", title:"CBSE Class 9 to 12 — All Subjects",    sub:"EDDVA School Channel", desc:"Chapter-wise lessons aligned to CBSE & NCERT syllabus", color: T },
                 { emoji:"🏫", title:"ICSE / ISC Boards — Science & Maths", sub:"EDDVA Boards Channel", desc:"Smart learning for ICSE Class 9–10 and ISC 11–12", color: P },
               ].map((ch, i) => (
-                <motion.a key={ch.sub} href="https://www.youtube.com/@eddva" target="_blank" rel="noopener noreferrer"
+                <motion.a key={ch.sub} href="https://www.youtube.com/@ChemistryDilSe" target="_blank" rel="noopener noreferrer"
                   initial={{ opacity:0, x:-20 }} whileInView={{ opacity:1, x:0 }}
                   viewport={{ once:true }} transition={{ duration:0.4, delay: i*0.08 }}
                   whileHover={{ x:5, boxShadow:`0 8px 32px ${ch.color}18` }}

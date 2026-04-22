@@ -450,8 +450,8 @@ export function useBattleRoom(battleId: string, enabled: boolean) {
 
 export function useCreateBattle() {
   return useMutation({
-    mutationFn: ({ mode, topicId }: { mode: studentApi.BattleMode; topicId?: string }) =>
-      studentApi.createBattle(mode, topicId),
+    mutationFn: ({ mode, topicId, topicName }: { mode: studentApi.BattleMode; topicId?: string; topicName?: string }) =>
+      studentApi.createBattle(mode, topicId, topicName),
   });
 }
 

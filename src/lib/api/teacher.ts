@@ -595,6 +595,8 @@ export interface CreateQuestionPayload {
   marksCorrect?: number;
   marksWrong?: number;
   integerAnswer?: string;
+  /** Shown after mock test submit (review); populate from AI explanation when generating */
+  solutionText?: string;
   tags?: string[];
   options?: { optionLabel: string; content: string; isCorrect: boolean; sortOrder?: number }[];
 }

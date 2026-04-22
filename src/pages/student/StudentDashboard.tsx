@@ -260,11 +260,11 @@ export default function StudentDashboard() {
       </motion.div>
 
       {/* ── QUICK ACTIONS ─────────────────────────────────────────────────── */}
-      <motion.div variants={fade}>
+      {/* <motion.div variants={fade}>
         <Section title="Quick Actions">
           <QuickActions />
         </Section>
-      </motion.div>
+      </motion.div> */}
 
       {/* ── MAIN CONTENT GRID ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

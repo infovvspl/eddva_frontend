@@ -51,6 +51,8 @@ interface LocalQuestion {
   marksCorrect: number;
   marksWrong: number;
   integerAnswer?: string;
+  /** Saved as question.solutionText — from AI explanation / teacher notes */
+  solutionText?: string;
   options: LocalOption[];
 }
 
@@ -688,6 +690,17 @@ function mapAiResponseToLocal(
       FB.slice(0, 4).forEach(label => options.push({ label, content: "", isCorrect: false }));
     }
 
+    const explanationRaw = (
+      q.explanation ||
+      q.solutionText ||
+      q.solution_text ||
+      q.solution ||
+      q.rationale ||
+      q.reasoning ||
+      ""
+    );
+    const solutionText = String(explanationRaw).trim() || undefined;
+
     return {
       _localId: makeLocalId(),
       topicId,
@@ -698,6 +711,7 @@ function mapAiResponseToLocal(
       marksCorrect: 4,
       marksWrong: type === "integer" ? 0 : -1,
       integerAnswer: (q.integerAnswer ?? null) as string | undefined,
+      solutionText,
       options,
     };
   });
@@ -1952,6 +1966,7 @@ function CreateWizardModal({ onClose, onSuccess }: { onClose: () => void; onSucc
           marksCorrect: q.marksCorrect,
           marksWrong: q.marksWrong,
           integerAnswer: q.integerAnswer,
+          solutionText: q.solutionText?.trim() || undefined,
           options: q.type !== "integer" ? q.options.map((o, i) => ({
             optionLabel: o.label || ["A", "B", "C", "D"][i],
             content: o.content,

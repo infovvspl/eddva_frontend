@@ -80,6 +80,7 @@ import LandingCoursesPage from "./pages/landing/LandingCoursesPage";
 import ExamsRegistrationPage from "./pages/landing/ExamsRegistrationPage";
 import StudyMaterialPage from "./pages/landing/StudyMaterialPage";
 import CareerPage from "./pages/landing/CareerPage";
+import ExamTrackDemoPage from "./pages/landing/ExamTrackDemoPage";
 import PrivacyPolicyPage from "./pages/landing/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/landing/TermsOfServicePage";
 
@@ -190,6 +191,7 @@ const TenantRoutes = () => (
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
+    <Route path="/exam/:track" element={<ExamTrackDemoPage />} />
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
@@ -215,6 +217,7 @@ const PlatformRoutes = () => (
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
+    <Route path="/exam/:track" element={<ExamTrackDemoPage />} />
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />

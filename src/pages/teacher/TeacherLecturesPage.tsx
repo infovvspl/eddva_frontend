@@ -1852,11 +1852,40 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
   const [topicId, setTopicId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: subjects } = useSubjects();
+  const { user } = useAuthStore();
+  const teacherId = user?.id ?? "";
+
+  const handleBatchChange = (id: string) => {
+    setBatchId(id);
+    setSubjectId("");
+    setChapterId("");
+    setTopicId("");
+  };
+
+  const { data: allSubjects, isLoading: subjectsLoading } = useSubjects(batchId || undefined);
   const { data: chapters } = useChapters(subjectId);
   const { data: topics } = useTopics(chapterId);
 
-  const subjectList: any[] = Array.isArray(subjects) ? subjects : [];
+  const { data: batchAssignments = [], isLoading: assignmentsLoading } = useQuery({
+    queryKey: ["batch-subject-teachers", batchId],
+    queryFn: () => getBatchSubjectTeachers(batchId),
+    enabled: !!batchId,
+  });
+
+  const isPrimaryTeacher = !!batchId && batches.find((b: any) => b.id === batchId)?.teacherId === teacherId;
+  const assignedSubjectNames = batchAssignments
+    .filter((a: any) => a.teacherId === teacherId)
+    .map((a: any) => a.subjectName.toLowerCase().trim());
+  const hasAnyAssignments = batchAssignments.length > 0;
+  const subjectsReady = !subjectsLoading && !(!!batchId && assignmentsLoading);
+  const subjectList: any[] = !subjectsReady
+    ? []
+    : !hasAnyAssignments || (isPrimaryTeacher && assignedSubjectNames.length === 0)
+      ? (allSubjects ?? [])
+      : (allSubjects ?? []).filter(
+          (s: any) => assignedSubjectNames.includes(s.name.toLowerCase().trim())
+        );
+
   const chapterList: any[] = Array.isArray(chapters) ? chapters : [];
   const topicList: any[] = Array.isArray(topics) ? topics : [];
 
@@ -1911,7 +1940,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5 col-span-2">
                   <Label>Batch *</Label>
-                  <select required value={batchId} onChange={e => setBatchId(e.target.value)}
+                  <select required value={batchId} onChange={e => handleBatchChange(e.target.value)}
                     className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
                     <option value="">Select batch…</option>
                     {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1920,26 +1949,33 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
                 {/* Subject → Chapter → Topic */}
                 <div className="space-y-1.5">
                   <Label>Subject *</Label>
-                  <select required value={subjectId} onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                    <option value="">Select subject…</option>
-                    {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <select required value={subjectId}
+                    onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                    disabled={!batchId}
+                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
+                    <option value="">
+                      {!batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…"}
+                    </option>
+                    {subjectList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                  {batchId && subjectsReady && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjectList.length === 0 && (
+                    <p className="text-xs text-amber-500 mt-1">No subjects assigned to you for this batch. Contact your admin.</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Chapter *</Label>
                   <select required value={chapterId} onChange={e => { setChapterId(e.target.value); setTopicId(""); }} disabled={!subjectId}
                     className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
-                    <option value="">Select chapter…</option>
-                    {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <option value="">{!subjectId ? "Select subject first…" : "Select chapter…"}</option>
+                    {chapterList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5 col-span-2">
                   <Label>Topic *</Label>
                   <select required value={topicId} onChange={e => setTopicId(e.target.value)} disabled={!chapterId}
                     className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
-                    <option value="">Select topic…</option>
-                    {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    <option value="">{!chapterId ? "Select chapter first…" : "Select topic…"}</option>
+                    {topicList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5 col-span-2">
