@@ -11,7 +11,7 @@ interface LandingLayoutProps {
 
 export const LandingLayout = ({ children }: LandingLayoutProps) => {
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#F8FAFC] font-sans text-gray-900 antialiased">
+    <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC] font-sans text-gray-900 antialiased">
       <LandingNavbar />
       <main>{children}</main>
       <LandingFooter />
