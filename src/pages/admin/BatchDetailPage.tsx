@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   useBatch,
   useUpdateBatch, useDeleteBatch,
@@ -449,6 +450,7 @@ export default function BatchDetailPage() {
   const deleteBatch = useDeleteBatch();
 
   const [showEdit, setShowEdit] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   const handleStatusChange = async (status: string) => {
     try { await updateBatch.mutateAsync({ id: id!, status }); toast.success(`Course marked as ${status}`); }
@@ -513,6 +515,10 @@ export default function BatchDetailPage() {
               <CheckCircle2 className="w-5 h-5" />
             </button>
           )}
+          <button onClick={() => navigate(`/admin/content?batchId=${batch.id}`)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+            <BookOpen className="w-4 h-4" /> Content
+          </button>
           <button onClick={() => setShowEdit(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
             <Edit2 className="w-4 h-4" /> Edit
@@ -553,7 +559,22 @@ export default function BatchDetailPage() {
 
             {/* Description */}
             {batch.description && (
-              <p className="text-sm text-slate-500 leading-relaxed max-w-2xl">{batch.description}</p>
+              <div className="max-w-2xl">
+                <p className={cn(
+                  "text-sm text-slate-500 leading-relaxed transition-all",
+                  !descExpanded && "line-clamp-3"
+                )}>
+                  {batch.description}
+                </p>
+                {batch.description.length > 150 && (
+                  <button
+                    onClick={() => setDescExpanded(!descExpanded)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
+                  >
+                    {descExpanded ? "See less" : "See more"}
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Info grid */}

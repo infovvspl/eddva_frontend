@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, BookOpen, FileText, X,
@@ -2332,10 +2332,12 @@ function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
 
 const ContentPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: batches = [], isLoading: batchesLoading } = useBatches();
   const batchList = Array.isArray(batches) ? batches : [];
 
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const initialBatchId = searchParams.get("batchId");
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(initialBatchId);
   const [selectedEntry, setSelectedEntry] = useState<{
     topic: Topic; chapter: Chapter; subject: Subject;
   } | null>(null);
@@ -2355,10 +2357,10 @@ const ContentPage = () => {
   useEffect(() => {
     if (didInitialBatchAutopick.current) return;
     if (!selectedBatchId && batchList.length > 0) {
-      setSelectedBatchId(batchList[0].id);
+      setSelectedBatchId(initialBatchId || batchList[0].id);
       didInitialBatchAutopick.current = true;
     }
-  }, [batchList, selectedBatchId]);
+  }, [batchList, selectedBatchId, initialBatchId]);
 
   const selectedBatch = batchList.find(b => b.id === selectedBatchId);
 

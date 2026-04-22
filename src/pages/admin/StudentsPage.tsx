@@ -51,19 +51,27 @@ function useAllStudents() {
   const isLoading = batchesLoading || rosters.slice(0, batchList.length).some(r => r.isLoading);
 
   const allStudents = useMemo(() => {
-    const seen = new Set<string>();
-    const result: any[] = [];
+    const studentMap = new Map<string, any>();
     batchList.forEach((batch, i) => {
       const students = rosters[i]?.list ?? [];
       students.forEach((s: any) => {
         const id = s.studentId || s.id || s.userId || s.email;
-        if (id && !seen.has(id)) {
-          seen.add(id);
-          result.push({ ...s, _batchName: batch.name, _batchId: batch.id, _examTarget: batch.examTarget });
+        if (!id) return;
+        if (studentMap.has(id)) {
+          const existing = studentMap.get(id);
+          if (!existing._batchNames.includes(batch.name)) {
+            existing._batchNames.push(batch.name);
+          }
+        } else {
+          studentMap.set(id, {
+            ...s,
+            _batchNames: [batch.name],
+            _examTarget: batch.examTarget
+          });
         }
       });
     });
-    return result;
+    return Array.from(studentMap.values());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchList, ...rosters.map(r => r.list)]);
 
@@ -95,7 +103,7 @@ const StudentsPage = () => {
   const filtered = useMemo(() => {
     let result = allStudents;
     if (batchFilter) {
-      result = result.filter(s => (s._batchName ?? "").toLowerCase() === batchFilter.toLowerCase());
+      result = result.filter(s => (s._batchNames || []).some((bn: string) => bn.toLowerCase() === batchFilter.toLowerCase()));
     }
     if (search) {
       const q = search.toLowerCase();
@@ -266,14 +274,17 @@ const StudentsPage = () => {
                         {email && <p className="text-xs text-slate-400">{email}</p>}
                       </td>
                       <td className="p-4 hidden md:table-cell">
-                        {s._batchName && (
-                          <span
-                            className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
-                            style={{ background: `${bStyle.from}15`, color: bStyle.from }}
-                          >
-                            {s._batchName}
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1.5 align-middle">
+                          {(s._batchNames || []).map((bName: string, bIdx: number) => (
+                            <span
+                              key={bIdx}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                              style={{ background: `${bStyle.from}15`, color: bStyle.from }}
+                            >
+                              {bName}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="p-4 text-xs text-slate-400 hidden lg:table-cell">
                         {s.enrolledAt

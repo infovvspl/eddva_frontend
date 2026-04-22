@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, FileText, FlaskConical, BookOpen, Search,
   ShieldCheck, Loader2, CalendarDays,
   Users, Sparkles, Trophy, Zap, ClipboardList,
-  CheckCircle2, BookMarked,
+  CheckCircle2, BookMarked, ArrowLeft,
 } from "lucide-react";
 import { useMyCourses, useDiscoverBatches, useStudentMe } from "@/hooks/use-student";
 import { useAuthStore } from "@/lib/auth-store";
@@ -56,6 +56,7 @@ function AllCoursesTab({ enrolledIds }: { enrolledIds: Set<string> }) {
   const [examFilter, setExamFilter] = useState("all");
   const [search, setSearch] = useState("");
   const prefApplied = useRef(false);
+  const [expandedDescIds, setExpandedDescIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (prefApplied.current || !me?.student?.examTarget) return;
@@ -203,7 +204,19 @@ function AllCoursesTab({ enrolledIds }: { enrolledIds: Set<string> }) {
                     </p>
                   )}
                   {batch.description && (
-                    <p className="text-xs text-slate-500 line-clamp-2 mb-2 leading-relaxed">{batch.description}</p>
+                    <div className="mb-2">
+                      <p className={cn("text-xs text-slate-500 leading-relaxed transition-all", !expandedDescIds[batch.id] && "line-clamp-2")}>
+                        {batch.description}
+                      </p>
+                      {batch.description.length > 100 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setExpandedDescIds(p => ({ ...p, [batch.id]: !p[batch.id] })); }}
+                          className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 mt-0.5"
+                        >
+                          {expandedDescIds[batch.id] ? "See less" : "See more"}
+                        </button>
+                      )}
+                    </div>
                   )}
                   {(batch.startDate || batch.endDate) && (
                     <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5 mb-2">
@@ -330,11 +343,29 @@ type Tab = "courses" | "ongoing" | "completed";
 
 export default function StudentCoursesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: courses = [], isLoading } = useMyCourses();
   const { user } = useAuthStore();
   const instituteName = user?.tenantName || "";
-  const [activeTab, setActiveTab] = useState<Tab>("courses");
+  const hasActiveTab = !!searchParams.get("tab");
+  const defaultTab = hasActiveTab ? (searchParams.get("tab") as Tab) : "courses";
+  const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab") as Tab;
+    if (tab && ["courses", "ongoing", "completed"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tabId: Tab) => {
+    setActiveTab(tabId);
+    setSearch("");
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tabId);
+    setSearchParams(newParams, { replace: true });
+  };
 
   const enrolledIds = new Set(courses.map(c => c.id));
 
@@ -357,7 +388,16 @@ export default function StudentCoursesPage() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 pb-32">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 pb-24 space-y-6">
+      {/* Back Button */}
+      <div className="mb-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+      </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -382,7 +422,7 @@ export default function StudentCoursesPage() {
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-slate-200">
         {TABS.map(tab => (
-          <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSearch(""); }}
+          <button key={tab.id} onClick={() => handleTabChange(tab.id)}
             className={cn(
               "px-5 py-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2",
               activeTab === tab.id

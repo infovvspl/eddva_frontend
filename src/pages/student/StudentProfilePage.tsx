@@ -5,7 +5,7 @@ import {
   ChevronRight, AlertTriangle, ArrowUpRight, ArrowDownRight,
   Brain, BarChart3, Activity, LogOut,
   Edit3, Camera, X, Check, Loader2, Layers,
-  Star, ShieldCheck, Clock, Crosshair, TrendingUp, User,
+  Star, ShieldCheck, Clock, Crosshair, TrendingUp, User, ArrowLeft,
 } from "lucide-react";
 import {
   useStudentMe, useProgressReport, useWeeklyActivity,
@@ -317,6 +317,15 @@ export default function StudentProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-20 space-y-5">
+      {/* Back */}
+      <div className="mb-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+      </div>
 
       {/* ── PROFILE HEADER ── */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
