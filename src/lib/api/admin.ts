@@ -862,33 +862,160 @@ export interface AiGeneratedQuestion {
   explanation?: string;
 }
 
+/** Placeholder topic id when generating exam-wide mocks (Django only uses topic name string). */
+const MOCK_AI_TOPIC_PLACEHOLDER_ID = "00000000-0000-4000-8000-000000000001";
+
+function extractAiQuestionList(raw: unknown): any[] {
+  if (Array.isArray(raw)) return raw as any[];
+  if (!raw || typeof raw !== "object") return [];
+  const r = raw as Record<string, unknown>;
+  if (Array.isArray(r.questions)) return r.questions as any[];
+  if (Array.isArray(r.data)) return r.data as any[];
+  const data = r.data as Record<string, unknown> | undefined;
+  if (data && Array.isArray(data.questions)) return data.questions as any[];
+  return [];
+}
+
+function mapRawToAiGeneratedQuestion(q: any): AiGeneratedQuestion {
+  const questionText = (
+    q.questionText ||
+    q.question_text ||
+    q.question ||
+    q.content ||
+    q.text ||
+    ""
+  ).trim();
+  const optionsRaw = q.options ?? [];
+  const correctFromField = (
+    q.correctOption ||
+    q.correct_option ||
+    q.correctAnswer ||
+    q.correct_answer ||
+    q.answer ||
+    ""
+  )
+    .trim()
+    .toUpperCase();
+  const options = optionsRaw.map((o: any, i: number) => {
+    if (typeof o === "string") {
+      return { label: String.fromCharCode(65 + i), text: o };
+    }
+    const label = String(o.label || o.optionLabel || String.fromCharCode(65 + i)).toUpperCase();
+    const text = (o.text || o.content || o.value || "").trim();
+    return { label, text };
+  });
+  let correctOption = correctFromField || "A";
+  if (!correctFromField && optionsRaw.some((o: any) => typeof o === "object" && o && "isCorrect" in o)) {
+    const hit = optionsRaw.find((o: any) => o?.isCorrect);
+    const lab = hit?.label ?? hit?.optionLabel;
+    if (lab) correctOption = String(lab).toUpperCase();
+  }
+  return {
+    questionText,
+    options,
+    correctOption,
+    difficulty: q.difficulty ?? "medium",
+    subject: q.subject ?? "",
+    explanation: q.explanation ?? "",
+  };
+}
+
+/**
+ * Admin mock tests: topic-based MCQs via Nest → Django `/test/generate/`.
+ * Batches by difficulty and caps at 10 questions per AI call (Django limit).
+ */
+export async function aiGenerateMockTestQuestions(params: {
+  topicId?: string;
+  topicName: string;
+  totalCount: number;
+  easyCount: number;
+  mediumCount: number;
+  hardCount: number;
+  questionType?: "mcq_single" | "mcq_multi" | "integer";
+}): Promise<AiGeneratedQuestion[]> {
+  const topicId = (params.topicId && params.topicId.trim()) || MOCK_AI_TOPIC_PLACEHOLDER_ID;
+  const type = params.questionType ?? "mcq_single";
+  const buckets: { difficulty: "easy" | "medium" | "hard"; n: number }[] = [
+    { difficulty: "easy", n: params.easyCount },
+    { difficulty: "medium", n: params.mediumCount },
+    { difficulty: "hard", n: params.hardCount },
+  ].filter((b) => b.n > 0);
+
+  const queue =
+    buckets.length > 0 ? buckets : [{ difficulty: "medium" as const, n: params.totalCount }];
+
+  const out: AiGeneratedQuestion[] = [];
+
+  const pushChunk = async (
+    difficulty: "easy" | "medium" | "hard",
+    requestCount: number,
+    topicLine = params.topicName,
+  ) => {
+    const chunk = Math.min(Math.max(1, requestCount), 10);
+    const res = await apiClient.post(
+      "/ai/questions/generate",
+      {
+        topicId,
+        topicName: topicLine,
+        count: chunk,
+        difficulty,
+        type,
+      },
+      { timeout: 120_000 },
+    );
+    const data = extractData<any>(res);
+    const list = extractAiQuestionList(data);
+    const mapped = list
+      .map(mapRawToAiGeneratedQuestion)
+      .filter((q) => q.questionText.trim().length > 0);
+    return mapped;
+  };
+
+  for (const { difficulty, n } of queue) {
+    let left = n;
+    while (left > 0) {
+      const mapped = await pushChunk(difficulty, Math.min(left, 10));
+      if (!mapped.length) break;
+      const take = Math.min(mapped.length, left);
+      out.push(...mapped.slice(0, take));
+      left -= take;
+    }
+  }
+
+  // LLM/parser often returns fewer than requested; top up until we hit totalCount or AI stops returning.
+  let guard = 0;
+  while (out.length < params.totalCount && guard < 8) {
+    guard += 1;
+    const need = params.totalCount - out.length;
+    const mapped = await pushChunk(
+      "medium",
+      Math.min(need, 10),
+      `${params.topicName} (Generate only additional distinct questions; avoid repeating earlier ideas.)`,
+    );
+    if (!mapped.length) break;
+    const take = Math.min(mapped.length, need);
+    out.push(...mapped.slice(0, take));
+  }
+
+  return out.slice(0, params.totalCount);
+}
+
+/** In-video quiz from lecture transcript (not used for admin mock tests). */
 export async function aiGenerateQuestions(payload: {
   transcript: string;
   lectureTitle?: string;
 }): Promise<AiGeneratedQuestion[]> {
   const res = await apiClient.post("/ai/quiz/generate", payload, { timeout: 120_000 });
   const data = extractData<any>(res);
-  // Unwrap any envelope: { questions: [...] } | { data: [...] } | plain array
   const list: any[] = Array.isArray(data)
     ? data
     : Array.isArray(data?.questions)
-    ? data.questions
-    : Array.isArray(data?.data)
-    ? data.data
-    : [];
+      ? data.questions
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
 
-  return list.map((q: any) => ({
-    questionText: q.questionText || q.question_text || q.question || q.content || q.text || "",
-    options: (q.options ?? []).map((o: any) =>
-      typeof o === "string"
-        ? { label: "?", text: o }
-        : { label: String(o.label || o.optionLabel || "?"), text: o.text || o.content || o.value || "" }
-    ),
-    correctOption: q.correctOption || q.correct_option || q.correctAnswer || q.answer || "A",
-    difficulty: q.difficulty ?? "medium",
-    subject: q.subject ?? "",
-    explanation: q.explanation ?? "",
-  }));
+  return list.map(mapRawToAiGeneratedQuestion);
 }
 
 // ---------------------------------------------------------------------------

@@ -14,7 +14,7 @@ import {
   useMockTestDetail, useUpdateMockTest, useRemoveQuestionFromMockTest, useBatches,
   useSubjects, useChapters, useTopics,
 } from "@/hooks/use-admin";
-import { createQuestion, aiGenerateQuestions } from "@/lib/api/admin";
+import { createQuestion, aiGenerateMockTestQuestions } from "@/lib/api/admin";
 import type { CreateMockTestQuestionPayload, AiGeneratedQuestion, Batch } from "@/lib/api/admin";
 import { getApiOrigin } from "@/lib/api-config";
 
@@ -206,10 +206,10 @@ function StepBar({ current, steps }: { current: number; steps: string[] }) {
 
 // ─── TopicPicker ──────────────────────────────────────────────────────────────
 
-function TopicPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+function TopicPicker({ value, onChange, batchId }: { value: string; onChange: (id: string) => void; batchId?: string }) {
   const [subjectId, setSubjectId] = useState("");
   const [chapterId, setChapterId] = useState("");
-  const { data: subjects } = useSubjects();
+  const { data: subjects } = useSubjects(batchId);
   const { data: chapters } = useChapters(subjectId);
   const { data: topics } = useTopics(chapterId);
 
@@ -370,11 +370,15 @@ function QuestionRow({
 
 function AIGeneratePanel({
   onQuestionsGenerated,
+  batchId,
+  testCategory,
   initSubjectId = "", initSubjectName = "",
   initChapterId = "", initChapterName = "",
   initTopicId = "",  initTopicName = "",
 }: {
   onQuestionsGenerated: (questions: DraftQuestion[], topicId?: string) => void;
+  batchId?: string;
+  testCategory?: TestCategory | null;
   initSubjectId?: string; initSubjectName?: string;
   initChapterId?: string; initChapterName?: string;
   initTopicId?: string;   initTopicName?: string;
@@ -393,7 +397,7 @@ function AIGeneratePanel({
   const [aiChapterName, setAiChapterName] = useState(initChapterName);
   const [aiSubjectName, setAiSubjectName] = useState(initSubjectName);
 
-  const { data: subjects } = useSubjects();
+  const { data: subjects } = useSubjects(batchId);
   const { data: chapters } = useChapters(subjectId);
   const { data: topics } = useTopics(chapterId);
 
@@ -407,97 +411,46 @@ function AIGeneratePanel({
   const handleGenerate = async () => {
     setError("");
     setGenerating(true);
-    setProgress("Crafting prompt…");
+    setProgress("Calling topic-based AI (questions/generate)…");
 
     const easyCount = Math.round(count * 0.3);
     const hardCount = Math.round(count * 0.25);
     const mediumCount = count - easyCount - hardCount;
 
-    let transcript: string;
+    const extra = customInstructions.trim() ? ` Extra focus: ${customInstructions.trim()}` : "";
+
     let testTitle: string;
+    let topicName: string;
 
     if (topicSelected) {
       const topicPath = [aiSubjectName, aiChapterName, aiTopicName].filter(Boolean).join(" > ");
       testTitle = `${aiTopicName} Test`;
-      transcript = `You are an expert question setter. Generate exactly ${count} high-quality multiple-choice questions specifically on the topic: "${aiTopicName}" (${topicPath}).
-
-DISTRIBUTION:
-- Easy questions: ${easyCount} (label difficulty: easy)
-- Medium questions: ${mediumCount} (label difficulty: medium)
-- Hard questions: ${hardCount} (label difficulty: hard)
-
-REQUIREMENTS FOR EACH QUESTION:
-1. ALL questions MUST be strictly about "${aiTopicName}" only
-2. Four distinct options labeled A, B, C, D
-3. Exactly one correct answer
-4. Questions should test both conceptual understanding AND numerical/problem-solving skills
-5. Cover different subtopics and aspects of "${aiTopicName}" — do NOT repeat the same concept twice in a row
-6. Set subject: "${aiSubjectName || aiTopicName}"
-7. Label each question with difficulty (easy/medium/hard)
-8. Provide a brief explanation of the correct answer
-
-${customInstructions ? `ADDITIONAL INSTRUCTIONS:\n${customInstructions}` : ""}
-
-Generate exactly ${count} questions ALL based on "${aiTopicName}". Suitable for Class 11-12 or competitive exam students.`.trim();
+      topicName =
+        `${topicPath}. Strict scope: subtopics of "${aiTopicName}" only. JEE/NEET-style MCQs; mix conceptual and numerical problems.${extra}`.trim();
     } else if (aiChapterName) {
       testTitle = `${aiChapterName} Chapter Test`;
-      transcript = `You are an expert question setter. Generate exactly ${count} high-quality multiple-choice questions for the chapter: "${aiChapterName}" (Subject: ${aiSubjectName || "N/A"}).
-
-DISTRIBUTION: Easy: ${easyCount}, Medium: ${mediumCount}, Hard: ${hardCount}
-
-REQUIREMENTS:
-1. All questions must be about "${aiChapterName}" chapter
-2. Four distinct options labeled A, B, C, D — exactly one correct answer
-3. Cover all important topics within this chapter
-4. Mix conceptual and numerical/problem-solving questions
-5. Label each question with difficulty (easy/medium/hard) and subject: "${aiSubjectName}"
-6. Provide a brief explanation of the correct answer
-
-${customInstructions ? `ADDITIONAL INSTRUCTIONS:\n${customInstructions}` : ""}
-
-Generate exactly ${count} questions.`.trim();
+      topicName =
+        `Chapter "${aiChapterName}"${aiSubjectName ? ` in subject ${aiSubjectName}` : ""}. Cover major ideas in the chapter; JEE/NEET difficulty; mix conceptual and numerical.${extra}`.trim();
     } else if (aiSubjectName) {
       testTitle = `${aiSubjectName} Subject Test`;
-      transcript = `You are an expert question setter. Generate exactly ${count} high-quality multiple-choice questions covering the subject: "${aiSubjectName}".
-
-DISTRIBUTION: Easy: ${easyCount}, Medium: ${mediumCount}, Hard: ${hardCount}
-
-REQUIREMENTS:
-1. All questions must be from "${aiSubjectName}"
-2. Cover diverse chapters and topics within the subject
-3. Four distinct options labeled A, B, C, D — exactly one correct answer
-4. Mix conceptual and numerical questions
-5. Label each question with difficulty and subject: "${aiSubjectName}"
-6. Provide a brief explanation of the correct answer
-
-${customInstructions ? `ADDITIONAL INSTRUCTIONS:\n${customInstructions}` : ""}
-
-Generate exactly ${count} questions.`.trim();
+      topicName =
+        `Subject "${aiSubjectName}" — full subject breadth, varied chapters; JEE/NEET-style MCQs; conceptual and numerical.${extra}`.trim();
     } else {
       testTitle = `${exam} Diagnostic Test`;
-      transcript = `You are an expert question setter for competitive exams in India. Generate exactly ${count} high-quality multiple-choice diagnostic test questions for ${exam} (${cfg.description}).
-
-DISTRIBUTION: Easy: ${easyCount}, Medium: ${mediumCount}, Hard: ${hardCount}
-
-SUBJECTS TO COVER:
-${cfg.topics.join("\n")}
-
-REQUIREMENTS:
-1. Four distinct options labeled A, B, C, D — exactly one correct answer
-2. Questions should test conceptual understanding AND problem-solving
-3. Include numerical problems where appropriate
-4. Cover diverse topics — do NOT repeat the same topic twice in a row
-5. Label each question with its subject and difficulty
-6. Provide a brief explanation of the correct answer
-
-${customInstructions ? `ADDITIONAL INSTRUCTIONS:\n${customInstructions}` : ""}
-
-Generate exactly ${count} questions spanning all subjects evenly.`.trim();
+      topicName =
+        `${exam} multi-subject diagnostic (${cfg.description}). Subjects: ${cfg.subjects.join(", ")}. Syllabus hints: ${cfg.topics.join(" | ")}. Balanced coverage across subjects.${extra}`.trim();
     }
 
     try {
-      setProgress("AI is generating questions (this may take ~30 seconds)…");
-      const raw = await aiGenerateQuestions({ transcript, lectureTitle: testTitle });
+      setProgress("AI is generating questions (batched by difficulty, ~30–90s)…");
+      const raw = await aiGenerateMockTestQuestions({
+        topicId: aiTopicId || undefined,
+        topicName,
+        totalCount: count,
+        easyCount,
+        mediumCount,
+        hardCount,
+      });
 
       if (!raw.length) {
         setError("AI returned no questions. Try again or reduce the count.");
@@ -525,12 +478,12 @@ Generate exactly ${count} questions spanning all subjects evenly.`.trim();
         <Sparkles className="w-4 h-4 text-violet-500 shrink-0" />
         <p className="text-xs text-violet-700 font-medium">
           {topicSelected
-            ? `AI will generate ${count} questions specifically about "${aiTopicName}"`
+            ? `AI will generate ${count} topic-based MCQs about "${aiTopicName}" (API: questions/generate)`
             : aiChapterName
-            ? `AI will generate ${count} questions for "${aiChapterName}" chapter`
+            ? `AI will generate ${count} chapter-scoped MCQs for "${aiChapterName}"`
             : aiSubjectName
-            ? `AI will generate ${count} questions for "${aiSubjectName}" subject`
-            : "Select a topic below for topic-specific questions, or use exam-based generation."}
+            ? `AI will generate ${count} subject-wide MCQs for "${aiSubjectName}"`
+            : `Exam-based mock: ${count} MCQs across ${cfg.subjects.join(", ")} (topic pipeline + syllabus hints)`}
         </p>
       </div>
 
@@ -539,53 +492,79 @@ Generate exactly ${count} questions spanning all subjects evenly.`.trim();
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           Topic <span className="normal-case font-normal text-slate-400">(narrows questions to specific topic)</span>
         </p>
-        <div className="grid grid-cols-3 gap-2">
-          <select value={subjectId}
-            onChange={e => {
-              const id = e.target.value;
-              const name = subjectList.find(s => s.id === id)?.name ?? "";
-              setSubjectId(id); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(name); setAiChapterName("");
-            }}
-            className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]">
-            <option value="">Subject…</option>
-            {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <select value={chapterId}
-            onChange={e => {
-              const id = e.target.value;
-              const name = chapterList.find(c => c.id === id)?.name ?? "";
-              setChapterId(id); setAiTopicId(""); setAiTopicName(""); setAiChapterName(name);
-            }}
-            disabled={!subjectId}
-            className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-            <option value="">Chapter…</option>
-            {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <select value={aiTopicId}
-            onChange={e => {
-              const id = e.target.value;
-              const name = topicList.find(t => t.id === id)?.name ?? "";
-              setAiTopicId(id); setAiTopicName(name);
-            }}
-            disabled={!chapterId}
-            className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-            <option value="">Topic…</option>
-            {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-        </div>
-        {topicSelected ? (
-          <div className="flex items-center gap-1.5 pt-0.5">
-            <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span className="text-xs text-emerald-600 font-medium flex-1 truncate">
-              {[aiSubjectName, aiChapterName, aiTopicName].filter(Boolean).join(" › ")}
-            </span>
-            <button type="button"
-              onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
-              className="text-xs text-slate-400 hover:text-slate-700 shrink-0">Clear</button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <select value={subjectId}
+              onChange={e => {
+                const id = e.target.value;
+                const name = subjectList.find(s => s.id === id)?.name ?? "";
+                setSubjectId(id); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(name); setAiChapterName("");
+              }}
+              className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]">
+              <option value="">Subject…</option>
+              {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+
+            {testCategory !== "subject" && (
+              <select value={chapterId}
+                onChange={e => {
+                  const id = e.target.value;
+                  const name = chapterList.find(c => c.id === id)?.name ?? "";
+                  setChapterId(id); setAiTopicId(""); setAiTopicName(""); setAiChapterName(name);
+                }}
+                disabled={!subjectId}
+                className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
+                <option value="">Chapter…</option>
+                {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+
+            {(!testCategory || testCategory === "topic") && (
+              <select value={aiTopicId}
+                onChange={e => {
+                  const id = e.target.value;
+                  const name = topicList.find(t => t.id === id)?.name ?? "";
+                  setAiTopicId(id); setAiTopicName(name);
+                }}
+                disabled={!chapterId}
+                className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
+                <option value="">Topic…</option>
+                {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            )}
           </div>
-        ) : (
-          <p className="text-xs text-amber-600 pt-0.5">No topic selected — will use exam-based generation below.</p>
-        )}
+          {topicSelected ? (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="text-xs text-emerald-600 font-medium flex-1 truncate">
+                {[aiSubjectName, aiChapterName, aiTopicName].filter(Boolean).join(" › ")}
+              </span>
+              <button type="button"
+                onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
+                className="text-xs text-slate-400 hover:text-slate-700 shrink-0">Clear</button>
+            </div>
+          ) : aiChapterName ? (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="text-xs text-emerald-600 font-medium flex-1 truncate">
+                {[aiSubjectName, aiChapterName].filter(Boolean).join(" › ")}
+              </span>
+              <button type="button"
+                onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
+                className="text-xs text-slate-400 hover:text-slate-700 shrink-0">Clear</button>
+            </div>
+          ) : aiSubjectName ? (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="text-xs text-emerald-600 font-medium flex-1 truncate">
+                {aiSubjectName}
+              </span>
+              <button type="button"
+                onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
+                className="text-xs text-slate-400 hover:text-slate-700 shrink-0">Clear</button>
+            </div>
+          ) : (
+            <p className="text-xs text-amber-600 pt-0.5">No selection — will use exam-based generation below.</p>
+          )}
       </div>
 
       <div className={`grid gap-3 ${!topicSelected ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -882,7 +861,7 @@ function CreateTestModal({
   const [error, setError] = useState("");
 
   // Scope selectors
-  const { data: subjects } = useSubjects();
+  const { data: subjects } = useSubjects(batchId);
   const { data: chapters } = useChapters(scope.subjectId);
   const { data: topics } = useTopics(scope.chapterId);
   const subjectList = Array.isArray(subjects) ? subjects : [];
@@ -1250,6 +1229,8 @@ function CreateTestModal({
               {activeTab === "ai" && (
                 <div className="max-h-[400px] overflow-y-auto pr-1">
                   <AIGeneratePanel
+                    batchId={batchId}
+                    testCategory={testCategory}
                     initSubjectId={scope.subjectId}
                     initSubjectName={scope.subjectName}
                     initChapterId={scope.chapterId}
@@ -1303,8 +1284,8 @@ function CreateTestModal({
 
 // ─── Add Question to existing test ───────────────────────────────────────────
 
-function AddQuestionModal({ mockTestId, existingIds, onClose }: {
-  mockTestId: string; existingIds: string[]; onClose: () => void;
+function AddQuestionModal({ mockTestId, existingIds, batchId, onClose }: {
+  mockTestId: string; existingIds: string[]; batchId?: string; onClose: () => void;
 }) {
   const updateMockTest = useUpdateMockTest();
   const [q, setQ] = useState<DraftQuestion>(blankQuestion());
@@ -1349,7 +1330,7 @@ function AddQuestionModal({ mockTestId, existingIds, onClose }: {
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <TopicPicker value={topicId} onChange={setTopicId} />
+          <TopicPicker value={topicId} onChange={setTopicId} batchId={batchId} />
           <QuestionRow q={q} index={0} onChange={setQ} onRemove={() => {}} canRemove={false} />
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
@@ -1494,7 +1475,12 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
       )}
 
       {showAddQuestion && (
-        <AddQuestionModal mockTestId={testId} existingIds={existingIds} onClose={() => setShowAddQuestion(false)} />
+        <AddQuestionModal 
+          mockTestId={testId} 
+          existingIds={existingIds} 
+          batchId={test.batchId} 
+          onClose={() => setShowAddQuestion(false)} 
+        />
       )}
     </motion.div>
   );

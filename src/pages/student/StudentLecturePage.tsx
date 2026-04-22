@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type MutableRefObject } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -24,11 +24,19 @@ import { getTopicProgress, type TopicProgress } from "@/lib/api/student";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWatchPercentage } from "@/hooks/useWatchPercentage";
-import { useLectureProgress } from "@/hooks/useLectureProgress";
+import { useLectureProgress, type ExternalLecturePlayback } from "@/hooks/useLectureProgress";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
 import { FormulasTab } from "@/components/lecture/FormulasTab";
-import { isYouTubeUrl, YOUTUBE_LECTURE_AI_LIMITATION } from "@/lib/lecture-source";
+import { isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
+import {
+  ensureYouTubeIframeApi,
+  extractYouTubeVideoIdFromUrl,
+  YT_ENDED,
+  YT_PAUSED,
+  YT_PLAYING,
+  type YTPlayer,
+} from "@/lib/youtube-iframe-api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -359,25 +367,65 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
 
 // ─── Video Player ──────────────────────────────────────────────────────────────
 
-function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, currentTime, resumeAt, onEnded }: {
-  src: string; checkpoints: QuizCheckpoint[]; lectureId: string;
+function VideoPlayer({
+  src,
+  checkpoints,
+  lectureId,
+  videoRef,
+  onDoubtClick,
+  resumeAt,
+  onEnded,
+  externalPlaybackRef,
+  onFlushLectureProgress,
+  onYouTubeTick,
+}: {
+  src: string;
+  checkpoints: QuizCheckpoint[];
+  lectureId: string;
   videoRef: React.RefObject<HTMLVideoElement>;
-  onDoubtClick: () => void; currentTime: number; resumeAt?: number;
+  onDoubtClick: () => void;
+  resumeAt?: number;
   onEnded?: () => void;
+  externalPlaybackRef?: MutableRefObject<ExternalLecturePlayback | null>;
+  onFlushLectureProgress?: () => void | Promise<void>;
+  /** Throttled (~3/s) so parent can update progress UI without reading refs during render */
+  onYouTubeTick?: (percent: number, seconds: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const ytContainerRef = useRef<HTMLDivElement>(null);
+  const ytPlayerRef = useRef<YTPlayer | null>(null);
+  const ytTickRef = useRef<ReturnType<typeof setInterval>>();
+  const checkpointsRef = useRef(checkpoints);
+  const activeQuizRef = useRef<QuizCheckpoint | null>(null);
+  const shownIdsRef = useRef<Set<string>>(new Set());
+
   const [playing, setPlaying] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [activeQuiz, setActiveQuiz] = useState<QuizCheckpoint | null>(null);
-  const [shownIds, setShownIds] = useState<Set<string>>(new Set());
   const [quizIndex, setQuizIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [resumeToast, setResumeToast] = useState<string | null>(null);
   const [videoEnded, setVideoEnded] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const lastUiReport = useRef(0);
+
+  useEffect(() => {
+    checkpointsRef.current = checkpoints;
+  }, [checkpoints]);
+
+  useEffect(() => {
+    activeQuizRef.current = activeQuiz;
+  }, [activeQuiz]);
+
+  useEffect(() => {
+    shownIdsRef.current = new Set();
+    lastUiReport.current = 0;
+  }, [src]);
+
+  const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
 
   const showControls = () => {
     setControlsVisible(true);
@@ -396,23 +444,29 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
     if (!v || !duration) return;
     const pct = (v.currentTime / duration) * 100;
     setLocalTime(v.currentTime);
-    for (const cp of checkpoints) {
-      if (shownIds.has(cp.id)) continue;
+    const cps = checkpointsRef.current;
+    for (const cp of cps) {
+      if (shownIdsRef.current.has(cp.id)) continue;
       if (pct >= cp.triggerAtPercent) {
         v.pause();
+        shownIdsRef.current.add(cp.id);
         setActiveQuiz(cp);
-        setShownIds(prev => new Set(prev).add(cp.id));
-        setQuizIndex(checkpoints.indexOf(cp));
+        setQuizIndex(cps.indexOf(cp));
         break;
       }
     }
-  }, [duration, checkpoints, shownIds, videoRef]);
+  }, [duration, videoRef]);
 
   const handleAnswer = async (option: string) => {
     if (!activeQuiz) throw new Error("no quiz");
     const v = videoRef.current;
-    const taken = v ? Math.max(0, 30 - Math.floor((v.currentTime ?? 0) % 30)) : undefined;
-    return await submitQuizResponse(lectureId, { questionId: activeQuiz.id, selectedOption: option, timeTakenSeconds: taken });
+    const t = isYouTube ? localTime : (v?.currentTime ?? 0);
+    const taken = Math.max(0, 30 - Math.floor(t % 30));
+    return await submitQuizResponse(lectureId, {
+      questionId: activeQuiz.id,
+      selectedOption: option,
+      timeTakenSeconds: taken,
+    });
   };
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -422,24 +476,143 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
     v.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
   };
 
+  useEffect(() => {
+    if (!isYouTube) return;
+    const videoId = extractYouTubeVideoIdFromUrl(src);
+    if (!videoId || !ytContainerRef.current) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        await ensureYouTubeIframeApi();
+      } catch {
+        return;
+      }
+      if (cancelled || !ytContainerRef.current || !window.YT?.Player) return;
+
+      new window.YT.Player(ytContainerRef.current, {
+        videoId,
+        width: "100%",
+        height: "100%",
+        playerVars: {
+          enablejsapi: 1,
+          playsinline: 1,
+          modestbranding: 1,
+          rel: 0,
+          origin: typeof window !== "undefined" ? window.location.origin : undefined,
+        },
+        events: {
+          onReady: (ev: { target: YTPlayer }) => {
+            if (cancelled) return;
+            const p = ev.target;
+            ytPlayerRef.current = p;
+            let dur = 0;
+            try {
+              dur = p.getDuration();
+            } catch { /* */ }
+            if (dur > 0) setDuration(dur);
+            if (resumeAt && resumeAt > 5) {
+              p.seekTo(resumeAt, true);
+              const mins = Math.floor(resumeAt / 60);
+              const secs = String(Math.floor(resumeAt % 60)).padStart(2, "0");
+              setResumeToast(`Resuming at ${mins}:${secs}`);
+              setTimeout(() => setResumeToast(null), 3000);
+            }
+
+            ytTickRef.current = setInterval(() => {
+              const player = ytPlayerRef.current;
+              if (!player || cancelled) return;
+              let cur = 0;
+              let dur2 = 0;
+              let st = YT_PAUSED;
+              try {
+                cur = player.getCurrentTime();
+                dur2 = player.getDuration();
+                st = player.getPlayerState();
+              } catch {
+                return;
+              }
+              if (dur2 > 0) setDuration(dur2);
+              setLocalTime(cur);
+              const pct = dur2 > 0 ? (cur / dur2) * 100 : 0;
+              const isPlayingNow = st === YT_PLAYING;
+              setPlaying(isPlayingNow);
+              if (externalPlaybackRef) {
+                externalPlaybackRef.current = {
+                  watchPercentage: pct,
+                  lastPositionSeconds: Math.floor(cur),
+                  isPlaying: isPlayingNow,
+                };
+              }
+              const now = Date.now();
+              if (onYouTubeTick && now - lastUiReport.current >= 320) {
+                lastUiReport.current = now;
+                onYouTubeTick(pct, Math.floor(cur));
+              }
+              if (activeQuizRef.current) return;
+              const cps = checkpointsRef.current;
+              for (const cp of cps) {
+                if (shownIdsRef.current.has(cp.id)) continue;
+                if (pct >= cp.triggerAtPercent) {
+                  try {
+                    player.pauseVideo();
+                  } catch { /* */ }
+                  shownIdsRef.current.add(cp.id);
+                  setActiveQuiz(cp);
+                  setQuizIndex(cps.indexOf(cp));
+                  break;
+                }
+              }
+            }, 250);
+          },
+          onStateChange: (ev: { data: number; target: YTPlayer }) => {
+            if (ev.data !== YT_ENDED) return;
+            setPlaying(false);
+            setVideoEnded(true);
+            const p = ev.target;
+            let dur2 = 0;
+            try {
+              dur2 = p.getDuration();
+            } catch { /* */ }
+            if (externalPlaybackRef) {
+              externalPlaybackRef.current = {
+                watchPercentage: 100,
+                lastPositionSeconds: Math.floor(dur2),
+                isPlaying: false,
+              };
+            }
+            void onFlushLectureProgress?.();
+          },
+        },
+      } as Record<string, unknown>);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (ytTickRef.current) clearInterval(ytTickRef.current);
+      try {
+        ytPlayerRef.current?.destroy?.();
+      } catch { /* */ }
+      ytPlayerRef.current = null;
+      if (externalPlaybackRef) externalPlaybackRef.current = null;
+    };
+  }, [isYouTube, src, resumeAt, externalPlaybackRef, onFlushLectureProgress, onYouTubeTick]);
+
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
   const progressPct = duration ? (localTime / duration) * 100 : 0;
-  
-  const getYouTubeEmbedUrl = (url: string) => {
-    const m = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
-    return m ? `https://www.youtube.com/embed/${m[1]}?enablejsapi=1&rel=0&modestbranding=1` : url;
-  };
 
-  const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
+  const resumePlaybackAfterQuiz = () => {
+    setActiveQuiz(null);
+    if (isYouTube) ytPlayerRef.current?.playVideo();
+    else void videoRef.current?.play();
+  };
 
   return (
     <div ref={containerRef} className="relative bg-black rounded-2xl overflow-hidden aspect-video"
       onMouseMove={showControls} onClick={!isYouTube ? togglePlay : undefined}>
       {isYouTube ? (
-        <iframe
-          src={getYouTubeEmbedUrl(src)}
-          className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen
-        />
+        <div ref={ytContainerRef} className="w-full h-full min-h-[200px]" />
       ) : (
         <video ref={videoRef} src={src} className="w-full h-full object-contain"
           onTimeUpdate={handleTimeUpdate}
@@ -464,7 +637,7 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
       <AnimatePresence>
         {activeQuiz && (
           <QuizPopup question={activeQuiz} questionIndex={quizIndex} total={checkpoints.length}
-            onAnswer={handleAnswer} onClose={() => { setActiveQuiz(null); videoRef.current?.play(); }} />
+            onAnswer={handleAnswer} onClose={resumePlaybackAfterQuiz} />
         )}
       </AnimatePresence>
 
@@ -497,7 +670,19 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full">
                 <button
-                  onClick={() => { setVideoEnded(false); const v = videoRef.current; if (v) { v.currentTime = 0; v.play(); } }}
+                  onClick={() => {
+                    setVideoEnded(false);
+                    if (isYouTube) {
+                      ytPlayerRef.current?.seekTo(0, true);
+                      ytPlayerRef.current?.playVideo();
+                    } else {
+                      const v = videoRef.current;
+                      if (v) {
+                        v.currentTime = 0;
+                        void v.play();
+                      }
+                    }
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-white/20 text-white/80 text-sm font-semibold hover:bg-white/10 transition-all"
                 >
                   <RotateCcw className="w-4 h-4" /> Replay
@@ -590,7 +775,8 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
   const [notesEn, setNotesEn] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
-  const isPlaybackOnlySource = isYouTubeUrl(lecture.videoUrl);
+  const youtubeSource = isYouTubeUrl(lecture.videoUrl);
+  const ts = lecture.transcriptStatus;
 
   const handleToggleEnglish = async () => {
     if (enMode) { setEnMode(false); return; }
@@ -666,16 +852,27 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-3", isPlaybackOnlySource ? "bg-amber-50" : "bg-indigo-50")}>
-              {isPlaybackOnlySource
-                ? <AlertTriangle className="w-5 h-5 text-amber-500" />
-                : <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />}
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center mb-3",
+              ts === "failed" ? "bg-amber-50" : "bg-indigo-50",
+            )}>
+              {ts === "failed" ? (
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              ) : (
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+              )}
             </div>
             <p className="text-sm font-semibold text-slate-500">
-              {isPlaybackOnlySource ? "AI notes unavailable for this YouTube lecture" : "AI is generating notes…"}
+              {ts === "failed" ? "AI notes could not be generated" : "AI is generating notes…"}
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm">
-              {isPlaybackOnlySource ? YOUTUBE_LECTURE_AI_LIMITATION : "Check back in a moment"}
+              {ts === "failed"
+                ? (youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "The lecture could not be processed. Try again later.")
+                : ts === "processing" || ts === "pending"
+                  ? (youtubeSource ? "Using YouTube captions when available." : "Check back in a moment.")
+                  : youtubeSource
+                    ? "Notes appear here once captions are processed."
+                    : "Check back in a moment."}
             </p>
           </div>
         )}
@@ -951,14 +1148,27 @@ export default function StudentLecturePage() {
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
 
-  const fromPath = searchParams.get("from");
-  const handleBack = () => fromPath ? navigate(fromPath) : navigate(-1);
+  const handleBack = () => {
+    const from = searchParams.get("from");
+    if (from) {
+      navigate(from);
+    } else {
+      // Fallback: Check if we have history, otherwise go to lectures list
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate("/student/lectures");
+      }
+    }
+  };
 
   const [activeAiTab,  setActiveAiTab]  = useState<AiTabKey>("notes");
   const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
   const [aiOpen,       setAiOpen]       = useState(true);
   const [mobileAiOpen, setMobileAiOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ytPlaybackRef = useRef<ExternalLecturePlayback | null>(null);
+  const [ytDisplay, setYtDisplay] = useState({ pct: 0, sec: 0 });
   const [doubtTimestamp,   setDoubtTimestamp]   = useState(0);
   const [topicProgress,    setTopicProgress]    = useState<TopicProgress | null>(null);
   const [mockTestId,       setMockTestId]       = useState<string | null>(null);
@@ -997,6 +1207,11 @@ export default function StudentLecturePage() {
     fetchMockTestForTopic(lecture.topicId).then(setMockTestId);
   }, [lecture?.topicId]);
 
+  useEffect(() => {
+    ytPlaybackRef.current = null;
+    setYtDisplay({ pct: 0, sec: 0 });
+  }, [id]);
+
   const handleCompletion = useCallback((reward: LectureCompletionReward) => {
     setCompletionReward(reward);
     toast.success(reward.message);
@@ -1004,7 +1219,13 @@ export default function StudentLecturePage() {
     qc.invalidateQueries({ queryKey: ["student", "me"] });
   }, [qc]);
 
-  useLectureProgress(id ?? "", videoRef, handleCompletion);
+  const { flushSave } = useLectureProgress(id ?? "", videoRef, handleCompletion, ytPlaybackRef);
+
+  const flushLectureProgress = useCallback(() => flushSave(), [flushSave]);
+
+  const onYouTubeTick = useCallback((pct: number, sec: number) => {
+    setYtDisplay({ pct, sec });
+  }, []);
 
   // ── Loading ──
   if (lectureLoading) return (
@@ -1014,26 +1235,17 @@ export default function StudentLecturePage() {
     </div>
   );
 
-  // ── Access locked ──
-  if ((lectureError as any)?.response?.status === 403) return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 gap-6">
-      <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center">
-        <Lock className="w-7 h-7 text-slate-300" />
-      </div>
-      <div>
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Access Restricted</h2>
-        <p className="text-sm text-slate-500 max-w-xs">Complete 90% of the previous topic to unlock this lecture.</p>
-      </div>
-      <button onClick={handleBack} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-semibold rounded-2xl hover:bg-indigo-600 transition-colors text-sm">
-        <ArrowLeft className="w-4 h-4" /> Go Back
-      </button>
-    </div>
-  );
+
 
   if (!lecture) return null;
 
   const videoSrc        = lecture.videoUrl ?? "";
-  const displayWatchPct = liveWatchPct > 0 ? liveWatchPct : (savedProgress?.watchPercentage ?? 0);
+  const isYtLecture     = isYouTubeUrl(videoSrc);
+  const displayWatchPct = isYtLecture
+    ? Math.max(savedProgress?.watchPercentage ?? 0, ytDisplay.pct)
+    : liveWatchPct > 0
+      ? liveWatchPct
+      : (savedProgress?.watchPercentage ?? 0);
   const isLive          = lecture.type === "live" || lecture.status === "live";
   const isPlaybackOnlySource = isYouTubeUrl(videoSrc);
 
@@ -1251,14 +1463,16 @@ export default function StudentLecturePage() {
               src={videoSrc} checkpoints={checkpoints} lectureId={id!}
               videoRef={videoRef}
               onDoubtClick={() => {
-                setDoubtTimestamp(liveCurrentTime);
+                setDoubtTimestamp(isYtLecture ? ytDisplay.sec : liveCurrentTime);
                 setActiveAiTab("doubt");
                 setAiOpen(true);
                 setMobileAiOpen(true);
               }}
-              currentTime={liveCurrentTime}
               resumeAt={savedProgress?.lastPositionSeconds}
               onEnded={!isLive && mockTestId ? () => navigate(`/student/quiz?mockTestId=${mockTestId}`) : undefined}
+              externalPlaybackRef={ytPlaybackRef}
+              onFlushLectureProgress={flushLectureProgress}
+              onYouTubeTick={isYtLecture ? onYouTubeTick : undefined}
             />
 
             {/* Mobile progress bar */}

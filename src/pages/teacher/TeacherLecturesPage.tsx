@@ -42,7 +42,11 @@ import { getApiOrigin } from "@/lib/api-config";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
-import { isYouTubeUrl, YOUTUBE_LECTURE_AI_LIMITATION } from "@/lib/lecture-source";
+import {
+  isYouTubeUrl,
+  isValidYouTubeLectureUrl,
+  YOUTUBE_LECTURE_CAPTIONS_HINT,
+} from "@/lib/lecture-source";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,7 +80,14 @@ const AI_STEPS = [
   { icon: ListChecks, label: "Extracting key concepts" },
 ];
 
-function AiProcessingCard({ lecture, activeStep = 1 }: { lecture: Lecture; activeStep?: number }) {
+function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeStep?: number }) {
+  // If activeStep is not explicitly provided (e.g. from artificial delay), derive from real status
+  const currentStep = activeStep !== undefined ? activeStep : (
+    lecture.status === "draft" || lecture.status === "published" ? 4 :
+    lecture.status === "processing" && lecture.transcriptStatus === "done" ? 2 :
+    lecture.transcriptStatus === "processing" ? 0 : 1
+  );
+
   return (
     <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3">
       <div className="flex items-center gap-2.5">
@@ -90,8 +101,8 @@ function AiProcessingCard({ lecture, activeStep = 1 }: { lecture: Lecture; activ
       </div>
       <div className="space-y-2">
         {AI_STEPS.map((s, i) => {
-          const done = i < activeStep;
-          const current = i === activeStep;
+          const done = i < currentStep;
+          const current = i === currentStep;
           return (
             <div key={i} className="flex items-center gap-2.5">
               {done
@@ -261,7 +272,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
   const [newConcept, setNewConcept] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const isPlaybackOnlySource = isYouTubeUrl(lecture.videoUrl);
+  const youtubeSource = isYouTubeUrl(lecture.videoUrl);
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<QuizCheckpoint[]>([]);
@@ -303,8 +314,8 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
     if (!lecture.transcript) {
       toast({
         title: "No transcript",
-        description: isPlaybackOnlySource
-          ? YOUTUBE_LECTURE_AI_LIMITATION
+        description: youtubeSource
+          ? YOUTUBE_LECTURE_CAPTIONS_HINT
           : "Transcript is required to generate quiz questions.",
         variant: "destructive",
       });
@@ -494,16 +505,29 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                 <MarkdownContent content={lecture.aiNotesMarkdown} />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                  {isPlaybackOnlySource ? (
+                  {(lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") ? (
+                    <>
+                      <Loader2 className="w-12 h-12 opacity-60 text-primary animate-spin" />
+                      <p className="text-sm text-foreground">Generating AI notes…</p>
+                      <p className="text-xs text-center max-w-sm">
+                        {youtubeSource ? "Pulling YouTube captions and summarising." : "Transcribing audio and generating notes."}
+                      </p>
+                    </>
+                  ) : lecture.transcriptStatus === "failed" ? (
                     <>
                       <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
-                      <p className="text-sm text-foreground">AI notes unavailable for YouTube lectures.</p>
-                      <p className="text-xs text-center max-w-sm">{YOUTUBE_LECTURE_AI_LIMITATION}</p>
+                      <p className="text-sm text-foreground">AI notes could not be generated</p>
+                      <p className="text-xs text-center max-w-sm">
+                        {youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "Check the video URL and try re-transcribe from the lecture list."}
+                      </p>
                     </>
                   ) : (
                     <>
                       <FileText className="w-12 h-12 opacity-20" />
                       <p className="text-sm">No notes available yet.</p>
+                      {youtubeSource && lecture.transcript && (
+                        <p className="text-xs text-center max-w-sm text-muted-foreground">Transcript is ready — try refreshing, or edit notes manually.</p>
+                      )}
                     </>
                   )}
                 </div>
@@ -558,17 +582,29 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                    {isPlaybackOnlySource ? (
+                    {(lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") ? (
+                      <>
+                        <Loader2 className="w-12 h-12 opacity-60 text-primary animate-spin" />
+                        <p className="text-sm text-foreground">Preparing transcript…</p>
+                        <p className="text-xs text-center max-w-sm">
+                          {youtubeSource ? "Fetching captions from YouTube." : "Transcribing uploaded video."}
+                        </p>
+                      </>
+                    ) : lecture.transcriptStatus === "failed" ? (
                       <>
                         <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
-                        <p className="text-sm text-foreground">Automatic transcript unavailable for YouTube lectures.</p>
-                        <p className="text-xs text-center max-w-sm">{YOUTUBE_LECTURE_AI_LIMITATION}</p>
+                        <p className="text-sm text-foreground">Transcript unavailable</p>
+                        <p className="text-xs text-center max-w-sm">
+                          {youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "Check the video URL and try again from the lecture list."}
+                        </p>
                       </>
                     ) : (
                       <>
                         <Mic className="w-12 h-12 opacity-20" />
                         <p className="text-sm">Transcript not available.</p>
-                        <p className="text-xs">Upload a video to generate a transcript automatically.</p>
+                        <p className="text-xs text-center max-w-sm">
+                          {youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "Upload a video to generate a transcript automatically."}
+                        </p>
                       </>
                     )}
                   </div>
@@ -602,7 +638,11 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
               {!lecture.transcript && (
                 <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
                   <Mic className="w-4 h-4 shrink-0" />
-                  <span>{isPlaybackOnlySource ? YOUTUBE_LECTURE_AI_LIMITATION : "A transcript is needed to generate quiz questions. Upload a video first."}</span>
+                  <span>
+                    {!lecture.transcript && youtubeSource
+                      ? YOUTUBE_LECTURE_CAPTIONS_HINT
+                      : "A transcript is needed to generate quiz questions. Wait for processing or upload a captioned video."}
+                  </span>
                 </div>
               )}
 
@@ -1065,12 +1105,21 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
           {/* ── Overview ── */}
           {tab === "overview" && (
             <div className="p-6 space-y-5">
-              {isYouTube && !lecture.transcript && !lecture.aiNotesMarkdown && (
+              {isYouTube && (lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") && (
+                <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  <Loader2 className="w-4 h-4 shrink-0 mt-0.5 animate-spin text-blue-600" />
+                  <div>
+                    <p className="font-semibold">Processing YouTube lecture</p>
+                    <p className="text-xs mt-1 leading-relaxed">Fetching captions and generating AI notes. Refresh in a minute if this stays empty.</p>
+                  </div>
+                </div>
+              )}
+              {isYouTube && lecture.transcriptStatus === "failed" && (
                 <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold">YouTube lecture detected</p>
-                    <p className="text-xs mt-1 leading-relaxed">{YOUTUBE_LECTURE_AI_LIMITATION}</p>
+                    <p className="font-semibold">Captions or AI processing failed</p>
+                    <p className="text-xs mt-1 leading-relaxed">{YOUTUBE_LECTURE_CAPTIONS_HINT}</p>
                   </div>
                 </div>
               )}
@@ -1539,19 +1588,27 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      if (isYouTubeUrl(videoUrl)) {
-        toast({
-          title: "YouTube lectures are not supported here",
-          description: `${YOUTUBE_LECTURE_AI_LIMITATION} Add YouTube videos as topic resources if you only need playback.`,
-          variant: "destructive",
-        });
-        return;
+      const trimmedUrl = videoUrl.trim();
+
+      if (videoSource === "youtube") {
+        if (!isYouTubeUrl(trimmedUrl)) {
+          toast({ title: "Not a YouTube URL", description: "Paste a youtube.com or youtu.be link.", variant: "destructive" });
+          return;
+        }
+        if (!isValidYouTubeLectureUrl(trimmedUrl)) {
+          toast({
+            title: "Invalid YouTube link",
+            description: "Use a watch, Shorts, embed, or youtu.be URL with a valid video id.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
-      let finalVideoUrl = videoUrl;
+      let finalVideoUrl = trimmedUrl;
       let finalThumbnailUrl: string | undefined;
 
-      if (videoFile) {
+      if (videoSource === "upload" && videoFile) {
         finalVideoUrl = await uploadToS3("/content/lectures/upload-video", videoFile, setUploadProgress);
       }
 
@@ -1572,7 +1629,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
       toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
       onClose();
       // Kick off background AI processing — non-blocking
-      onSuccess(lecture.id, videoUrl, topicId);
+      onSuccess(lecture.id, lecture.videoUrl ?? finalVideoUrl, topicId);
     } catch (err: any) {
       toast({ title: err?.response?.data?.message || err?.message || "Upload failed", variant: "destructive" });
     } finally { setIsSubmitting(false); }
@@ -1667,7 +1724,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   placeholder="Brief description for students…" rows={2} className="resize-none" />
               </div>
               <div className="space-y-1.5">
-                <Label>Lecture Language <span className="text-muted-foreground font-normal">(for AI transcription)</span></Label>
+                <Label>Lecture Language <span className="text-muted-foreground font-normal">(upload: speech-to-text · YouTube: notes language)</span></Label>
                 <div className="flex gap-2">
                   {([
                     { value: "en" as const, label: "English", sub: "Default" },
@@ -1703,17 +1760,22 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => opt.value === "upload" && setVideoSource(opt.value)}
-                    disabled={opt.value === "youtube"}
+                    onClick={() => {
+                      setVideoSource(opt.value);
+                      if (opt.value === "youtube") {
+                        setVideoFile(null);
+                        if (!isYouTubeUrl(videoUrl)) setVideoUrl("");
+                      } else if (isYouTubeUrl(videoUrl)) {
+                        setVideoUrl("");
+                      }
+                    }}
                     className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors",
-                      opt.value === "youtube"
-                        ? "border-border bg-secondary/40 opacity-60 cursor-not-allowed"
-                        : videoSource === opt.value
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-muted-foreground/50")}>
+                      videoSource === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/50")}>
                     <opt.icon className={cn("w-6 h-6", videoSource === opt.value ? "text-primary" : "text-muted-foreground")} />
                     <span className={cn("text-sm font-medium", videoSource === opt.value ? "text-primary" : "text-muted-foreground")}>
-                      {opt.value === "youtube" ? "YouTube Unsupported" : opt.label}
+                      {opt.label}
                     </span>
                   </button>
                 ))}
@@ -1722,7 +1784,9 @@ function UploadModal({ onClose, onSuccess, batches }: {
               <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs leading-relaxed text-amber-800">
-                  {YOUTUBE_LECTURE_AI_LIMITATION} If you only want to share a YouTube lesson, add it under topic resources instead of as a recorded lecture.
+                  {videoSource === "youtube"
+                    ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
+                    : "Uploaded videos are transcribed with speech-to-text. Choose Hindi or English before continuing."}
                 </p>
               </div>
 
@@ -1751,7 +1815,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="pl-9" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Students will stream directly from YouTube.</p>
+                  <p className="text-[10px] text-muted-foreground">Students watch on YouTube; AI uses captions for notes and quizzes.</p>
                 </div>
               )}
 
@@ -1786,8 +1850,15 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <div className="space-y-1 text-muted-foreground">
                   <p><span className="text-foreground font-medium">Title:</span> {title}</p>
                   <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
-                  <p><span className="text-foreground font-medium">Source:</span> {videoFile?.name ?? "Uploaded file"}</p>
-                  {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+                  <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
+                  {videoSource === "youtube" ? (
+                    <p className="break-all"><span className="text-foreground font-medium">URL:</span> {videoUrl.trim()}</p>
+                  ) : (
+                    <>
+                      <p><span className="text-foreground font-medium">File:</span> {videoFile?.name ?? "Uploaded file"}</p>
+                      {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+                    </>
+                  )}
                 </div>
               </div>
               <div className="rounded-xl border border-border p-5 space-y-3">
@@ -1820,16 +1891,16 @@ function UploadModal({ onClose, onSuccess, batches }: {
           </Button>
           {step < 3 ? (
             <Button onClick={() => setStep(s => (s + 1) as UploadStep)}
-              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl)}
+              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim())}
               className="gap-2">
               Continue <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 min-w-[160px]">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {isSubmitting && videoFile && uploadProgress < 100
+              {isSubmitting && videoSource === "upload" && videoFile && uploadProgress < 100
                 ? `Uploading ${uploadProgress}%`
-                : isSubmitting ? "Processing…" : "Upload & Process"}
+                : isSubmitting ? "Processing…" : videoSource === "youtube" ? "Save & process" : "Upload & Process"}
             </Button>
           )}
         </div>
@@ -2109,9 +2180,9 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
               )}
             </div>
           </div>
-          {(processingStep !== undefined || lecture.status === "processing") && (
+          {(processingStep !== undefined || lecture.status === "processing") && lecture.status !== "draft" && lecture.status !== "published" && (
             <div className="mt-3">
-              <AiProcessingCard lecture={lecture} activeStep={processingStep ?? 0} />
+              <AiProcessingCard lecture={lecture} activeStep={processingStep} />
             </div>
           )}
           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
@@ -2420,22 +2491,13 @@ const TeacherLecturesPage = () => {
   // After a lecture is uploaded, animate the processing steps UI while the
   // backend handles AI (speech-to-text + notes via Django).
   // We do NOT call the AI from the frontend — the backend already does it.
-  const triggerAiProcessing = useCallback(async (lectureId: string, _videoUrl: string, _topicId: string) => {
-    const advance = (step: number) =>
-      setProcessingSteps(prev => ({ ...prev, [lectureId]: step }));
-
+  const triggerAiProcessing = useCallback((lectureId: string) => {
     // Mark this lecture as pending review so we can auto-open the panel
     setPendingReviewIds(prev => new Set(prev).add(lectureId));
 
-    // Animate through steps (purely cosmetic — matches backend pipeline timing)
-    advance(0); await new Promise(r => setTimeout(r, 3000));
-    advance(1); await new Promise(r => setTimeout(r, 5000));
-    advance(2); await new Promise(r => setTimeout(r, 4000));
-    advance(3);
-
-    // Clear animation tracker
-    setProcessingSteps(prev => { const n = { ...prev }; delete n[lectureId]; return n; });
+    // Instantly refresh list to show the new lecture in 'processing' state
     queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+    queryClient.invalidateQueries({ queryKey: ["my-lectures"] });
   }, [queryClient]);
 
   // Auto-open the review panel when the backend finishes AI processing
@@ -2453,7 +2515,7 @@ const TeacherLecturesPage = () => {
       description: readyLecture.aiNotesMarkdown
         ? "Review and publish when you're satisfied."
         : isYouTubeUrl(readyLecture.videoUrl)
-          ? "This lecture uses a YouTube link, so AI notes were skipped. Add notes manually or upload the video file."
+          ? `YouTube lecture: ${readyLecture.transcriptStatus === "failed" ? YOUTUBE_LECTURE_CAPTIONS_HINT : "If notes are missing, check captions on the video or try re-transcribe."}`
           : "AI could not generate notes — add them manually then publish.",
     });
   }, [lectures, pendingReviewIds, toast]);
