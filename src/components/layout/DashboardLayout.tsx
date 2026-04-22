@@ -345,7 +345,7 @@ const DashboardLayout = () => {
       
       {/* ── Desktop Sidebar ── */}
       <aside className={cn(
-          "hidden lg:flex flex-col shrink-0 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] relative z-50",
+          "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
           sidebarOpen ? "w-[280px]" : "w-[90px]"
         )}>
         <SidebarContent />
@@ -355,7 +355,7 @@ const DashboardLayout = () => {
       <AnimatePresence>
         {mobileSidebarOpen && (
           <div className="lg:hidden fixed inset-0 z-[100] flex">
-            <motion.div initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: "spring", damping: 25 }} className="w-[280px]">
+            <motion.div initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: "spring", damping: 26, stiffness: 250 }} className="w-[280px]">
               <SidebarContent />
             </motion.div>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileSidebarOpen(false)} className="flex-1 bg-slate-900/10 backdrop-blur-sm" />
@@ -492,8 +492,8 @@ const DashboardLayout = () => {
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
            <div className={cn(
-             "mx-auto w-full transition-all duration-1000",
-             location.pathname.includes("/live") || location.pathname.includes("/quiz") ? "max-w-none p-0" : "max-w-[1700px] p-4 lg:p-6 pb-24"
+             "mx-auto w-full transition-all duration-200",
+             location.pathname.includes("/live") || location.pathname.includes("/quiz") ? "max-w-none p-0" : "max-w-[1700px] px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-24"
            )}>
               <PageErrorBoundary>
                 <Outlet />

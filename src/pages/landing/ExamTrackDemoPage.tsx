@@ -11,12 +11,13 @@ import { FadeUp, Label as SLabel } from "@/components/landing/LandingPrimitives"
 import { B, IN, P, T, gText } from "@/components/landing/DesignTokens";
 import { useAuthStore } from "@/lib/auth-store";
 import { studyMaterialApi, type StudyMaterial } from "@/lib/api/study-material";
+import { LANDING_TRACK_TO_EXAM } from "@/lib/landing-study-materials";
 
 // ── Static per-exam content ──────────────────────────────────────────────────
 
 const examTrackContent = {
   "iit-jee": {
-    name: "IIT JEE", shortName: "JEE", examKey: "jee" as const,
+    name: "IIT JEE", shortName: "JEE", examKey: LANDING_TRACK_TO_EXAM["iit-jee"],
     color: B, accent: IN, badge: "Engineering Track",
     title: "Everything for JEE in one page.",
     subtitle: "PYQs, chapter notes, mock tests, revision sheets and topic-wise practice arranged like a real exam prep hub.",
@@ -45,7 +46,7 @@ const examTrackContent = {
     ],
   },
   "neet-ug": {
-    name: "NEET UG", shortName: "NEET", examKey: "neet" as const,
+    name: "NEET UG", shortName: "NEET", examKey: LANDING_TRACK_TO_EXAM["neet-ug"],
     color: "#EF4444", accent: T, badge: "Medical Track",
     title: "NEET prep — notes, PYQs and tests.",
     subtitle: "A clean preview of Biology-heavy preparation with NCERT-first notes, chapter tests, PYQ blocks and revision support.",
@@ -92,7 +93,7 @@ function PdfPreviewModal({
   const { isAuthenticated } = useAuthStore();
   const [downloading, setDownloading] = useState(false);
   const [dlError, setDlError] = useState("");
-  const previewUrl = studyMaterialApi.previewUrl(material.id);
+  const previewUrl = studyMaterialApi.previewPublicUrl(material.id);
 
   const handleDownload = async () => {
     if (!isAuthenticated) { navigate("/register"); return; }
@@ -289,6 +290,7 @@ export default function ExamTrackDemoPage() {
   const { isAuthenticated } = useAuthStore();
 
   const [materials, setMaterials]       = useState<StudyMaterial[]>([]);
+  const [loadError, setLoadError]       = useState<string | null>(null);
   const [loading, setLoading]           = useState(true);
   const [enrolled, setEnrolled]         = useState(false);
   const [activeFilter, setActiveFilter] = useState<"all" | "notes" | "pyq" | "formula_sheet" | "dpp">("all");
@@ -297,7 +299,18 @@ export default function ExamTrackDemoPage() {
 
   useEffect(() => {
     setLoading(true);
-    studyMaterialApi.list({ exam: demo.examKey }).then(setMaterials).finally(() => setLoading(false));
+    setLoadError(null);
+    studyMaterialApi
+      .listPublic({ exam: demo.examKey, limit: 200 })
+      .then((rows) => {
+        setMaterials(rows);
+        setLoadError(null);
+      })
+      .catch(() => {
+        setMaterials([]);
+        setLoadError("Could not load the study materials list. Is the API running and reachable (see Vite proxy / VITE_API_BASE_URL)?");
+      })
+      .finally(() => setLoading(false));
     if (isAuthenticated) {
       studyMaterialApi.accessStatus().then((s) => setEnrolled(s.enrolled));
     }
@@ -497,6 +510,10 @@ export default function ExamTrackDemoPage() {
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="text-[14px] font-semibold">Loading materials…</span>
             </div>
+          ) : loadError ? (
+            <div className="rounded-[28px] border border-amber-200 bg-amber-50/80 py-10 px-4 text-center">
+              <p className="text-[15px] font-bold text-amber-900">{loadError}</p>
+            </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-[28px] border border-dashed border-gray-200 bg-white py-16 text-center">
               <div className="mb-3 text-4xl">📂</div>
@@ -505,7 +522,10 @@ export default function ExamTrackDemoPage() {
                   ? `No study materials uploaded yet for ${demo.name}.`
                   : `No ${activeFilter} materials yet.`}
               </p>
-              <p className="mt-2 text-[13px] text-gray-400">Check back soon — materials are being added.</p>
+              <p className="mt-2 text-[13px] text-gray-400">
+                Check back soon — materials are being added, or your institute can publish PDFs from Admin → Study Materials
+                (exam: JEE/NEET, active, non-suspended tenant).
+              </p>
             </div>
           ) : (
             <AnimatePresence mode="wait">

@@ -15,6 +15,7 @@ import aboutImg   from "@/assets/eddva web img 2.png";
 import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";
 import careerImg  from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
 import aiImg from "@/assets/Learn with AI_ educational inspiration.png";
+import aboutVideo from "@/assets/about.mp4";
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { FadeUp, Label as SLabel, HeroBadge as FloatBadge } from "@/components/landing/LandingPrimitives";
 import { B, P, T, IN, grad, gText, SG } from "@/components/landing/DesignTokens";
@@ -395,7 +396,7 @@ const Index = () => {
                   initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
                   transition={{ duration:0.35, delay: i * 0.05 }}
                   whileHover={{ y:-6, boxShadow:`0 24px 56px ${exam.color}22` }}
-                  className={`group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ${exam.comingSoon ? "border-amber-200/80" : "border-gray-100"}`}>
+                  className={`group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all duration-300 ${exam.comingSoon ? "border-rose-200/60 bg-rose-50/5" : "border-gray-100"}`}>
 
                   {/* hover color wash */}
                   <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -408,8 +409,11 @@ const Index = () => {
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       {exam.comingSoon && (
-                        <div className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                          Coming Soon
+                        <div className="relative">
+                          <div className="absolute inset-0 animate-pulse rounded-full bg-rose-500/20 blur-md" />
+                          <div className="relative rounded-full border border-rose-200 bg-rose-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_2px_10px_rgba(244,63,94,0.3)]">
+                            Coming Soon
+                          </div>
                         </div>
                       )}
                       {exam.popular && (
@@ -592,29 +596,33 @@ const Index = () => {
             style={{ background: `linear-gradient(135deg, ${B}33, #fbbf2444, ${P}33)` }}
             aria-hidden
           />
-          <div className="relative">
-            <img
-              src={careerImg}
-              alt="Students building skills with guided learning and AI support"
-              className="relative w-full rounded-3xl border border-white/90 object-cover shadow-[0_24px_60px_-12px_rgba(15,23,42,0.25)] aspect-[4/3] sm:aspect-[5/4]"
-              loading="lazy"
+          <div className="relative overflow-hidden rounded-3xl border border-white/90 shadow-[0_24px_60px_-12px_rgba(15,23,42,0.25)] aspect-[4/3] sm:aspect-[5/4] bg-slate-900 group">
+            <video
+              src={aboutVideo}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              autoPlay
+              muted
+              loop
+              playsInline
             />
-
-            <div className="absolute -left-2 top-6 max-w-[200px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5 sm:-left-4 sm:top-10 sm:max-w-[220px] sm:p-4">
+            {/* Dark gradient overlay for better text readability and depth */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
+            
+            {/* <div className="absolute -left-2 top-6 max-w-[200px] z-10 rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5 sm:-left-4 sm:top-10 sm:max-w-[220px] sm:p-4">
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
                 <Brain className="h-4 w-4" />
               </div>
               <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">AI study paths</p>
               <p className="mt-0.5 text-[13px] font-semibold leading-snug text-gray-900">Plans that adapt to your pace and goals</p>
-            </div>
+            </div> */}
 
-            <div className="absolute -right-1 bottom-8 max-w-[190px] rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5 sm:-right-2 sm:bottom-10 sm:max-w-[210px] sm:p-4">
+            {/* <div className="absolute -right-1 bottom-8 max-w-[190px] z-10 rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5 sm:-right-2 sm:bottom-10 sm:max-w-[210px] sm:p-4">
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md">
                 <Target className="h-4 w-4" />
               </div>
               <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">Exam-ready focus</p>
               <p className="mt-0.5 text-[13px] font-semibold leading-snug text-gray-900">Structured prep for JEE, NEET & boards</p>
-            </div>
+            </div> */}
           </div>
         </div>
         </div>
@@ -697,149 +705,7 @@ const Index = () => {
       </section> */}
 
 
-      {/* ══════════════════════ ONGOING COURSES ══════════════════════ */}
-      <section id="courses" className="relative overflow-hidden">
-       
-        <img
-          src={coursesImg}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
-        <div className="absolute inset-0" style={{ background:"linear-gradient(180deg, rgba(3,10,28,0.82) 0%, rgba(3,10,28,0.70) 60%, rgba(15,23,42,0.95) 100%)" }} />
-
-  
-        <div className="relative z-10 pb-0 pt-20 lg:pt-28">
-          <div className="landing-shell">
-            <FadeUp className="mb-12 text-center">
-              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
-                <Sparkles className="h-3 w-3" /> Our Learning Philosophy
-              </span>
-              <h2 className="landing-title-feature mt-3 text-white">
-                Learn · Explore · <span style={{ background:"linear-gradient(135deg,#60A5FA,#A78BFA)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Discover · Create</span>
-              </h2>
-              <p className="mx-auto mt-4 max-w-xl text-[16px] font-medium text-white/60">
-                Every course is built to spark curiosity and build real skills that last beyond the exam.
-              </p>
-            </FadeUp>
-          </div>
-        </div>
-
-  
-        <div className="relative z-10 py-10 lg:py-14" style={{ background:"linear-gradient(180deg, transparent 0%, rgba(248,250,252,0.03) 100%)" }}>
-        <div className="landing-shell">
-
-          {/* Header row */}
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <FadeUp><SLabel>Continue Learning</SLabel></FadeUp>
-              <FadeUp delay={0.05} className="mt-3">
-                <h2 className="landing-title-feature text-white">
-                  Pick up where <span style={gText()}>you left off</span>
-                </h2>
-              </FadeUp>
-              <FadeUp delay={0.08} className="mt-2">
-                <p className="text-[15px] text-white/55">Continue your personalized AI-powered courses.</p>
-              </FadeUp>
-            </div>
-            {/* Page dots + progress */}
-            <FadeUp delay={0.1} className="flex items-center gap-3">
-              {Array.from({ length: PAGES }).map((_, i) => (
-                <button key={i} onClick={() => setCoursePage(i)}
-                  className="relative h-2 overflow-hidden rounded-full transition-all"
-                  style={{ width: i === coursePage ? 48 : 8, background: i === coursePage ? `${B}40` : "rgba(255,255,255,0.2)" }}>
-                  {i === coursePage && (
-                    <motion.div className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ width: `${courseProgress}%`, background: grad() }} />
-                  )}
-                </button>
-              ))}
-              <span className="ml-1 text-[12px] font-bold text-white/50">{coursePage + 1} / {PAGES}</span>
-            </FadeUp>
-          </div>
-
-          {/* Full-width 3-col auto-advancing grid */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={coursePage}
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.45, ease: "easeOut" as const }}
-              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              {courses.slice(coursePage * 3, coursePage * 3 + 3).map((course) => (
-                <motion.div key={course.id}
-                  whileHover={{ y: -6, scale: 1.01 }}
-                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl transition-all"
-                >
-                  {/* Image thumbnail */}
-                  <div className="relative h-44 overflow-hidden bg-gray-800">
-                    <img
-                      src={course.thumb}
-                      alt={course.name}
-                      loading="eager"
-                      decoding="async"
-                      style={{ display:"block", width:"100%", height:"100%", objectFit:"cover", objectPosition:"center" }}
-                    />
-                    {/* gradient overlay */}
-                    <div className="absolute inset-0"
-                      style={{ background: `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.65) 100%)` }} />
-                    {/* exam + rating chips */}
-                    <div className="absolute left-4 top-4 flex items-center gap-2">
-                      <span className="rounded-xl bg-white/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-gray-900 backdrop-blur-sm border border-gray-200">
-                        {course.exam}
-                      </span>
-                    </div>
-                    <div className="absolute right-4 top-4 flex items-center gap-1 rounded-xl bg-white/20 px-2.5 py-1 text-[11px] font-bold text-gray-900 backdrop-blur-sm border border-gray-200">
-                      <Star className="h-3 w-3 fill-yellow-300 text-yellow-300" /> {course.rating}
-                    </div>
-                    {/* instructor + play */}
-                    <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-4">
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-white/60">Instructor</p>
-                        <p className="text-[13px] font-bold text-white">{course.instructor}</p>
-                      </div>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md cursor-pointer hover:scale-110 transition-transform">
-                        <Play className="h-4 w-4 fill-current" style={{ color: course.from }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card body */}
-                  <div className="p-5">
-                    <div className="mb-2 flex items-start justify-between gap-2">
-                      <h4 className="text-[15px] font-extrabold leading-snug text-gray-900">{course.name}</h4>
-                      <span className="flex-shrink-0 text-[11px] font-bold" style={{ color: course.color }}>{course.students} joined</span>
-                    </div>
-                    <p className="mb-4 text-[12px] text-gray-400">
-                      {course.chapters} chapters · Last: <span className="font-semibold text-gray-600">{course.lastSeen}</span>
-                    </p>
-
-                    <div className="mb-1 flex justify-between text-[12px] font-bold">
-                      <span className="text-gray-400">Progress</span>
-                      <span style={{ color: course.color }}>{course.pct}%</span>
-                    </div>
-                    <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-gray-100">
-                      <motion.div className="h-full rounded-full"
-                        initial={{ width: 0 }} animate={{ width: `${course.pct}%` }}
-                        transition={{ duration: 0.9, ease: "easeOut" as const }}
-                        style={{ background: `linear-gradient(90deg, ${course.from}, ${course.to})` }} />
-                    </div>
-
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold text-white"
-                      style={{ background: `linear-gradient(135deg, ${course.from}, ${course.to})` }}>
-                      <Play className="h-3.5 w-3.5 fill-current" /> Resume Lesson
-                    </motion.button>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        </div>{/* max-w-7xl */}
-        </div>{/* cards container */}
-      </section>
+      {/* Ongoing courses section disabled */}
 
 
       {/* ══════════════════════ YOUTUBE SECTION ══════════════════════ */}
