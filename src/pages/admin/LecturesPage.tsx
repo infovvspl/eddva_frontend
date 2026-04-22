@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Loader2, EyeOff, BarChart3, X, Play,
   Clock, Users, CheckCircle2, AlertTriangle, ChevronRight,
-  Video, Flame, Radio, Upload, Plus, ChevronDown,
+  Video, Flame, Radio, Upload, Plus, ChevronDown, Youtube,
   GraduationCap, Hash, Link2, Calendar, Check,
   FolderOpen, Folder, ArrowRight, MonitorPlay,
 } from "lucide-react";
@@ -17,6 +17,7 @@ import type { Subject, Chapter, Topic } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
+import { isYouTubeUrl, YOUTUBE_LECTURE_AI_LIMITATION } from "@/lib/lecture-source";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -527,7 +528,7 @@ function RecordedDetailsForm({
   lectureId: string;
   courseId: string;
 }) {
-  const [source, setSource] = useState<"upload" | "youtube">("youtube");
+  const [source, setSource] = useState<"upload" | "youtube">("upload");
   const set = (k: keyof typeof value) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange({ ...value, [k]: e.target.value });
 
@@ -535,7 +536,7 @@ function RecordedDetailsForm({
     <div className="px-6 pt-5 pb-4 space-y-4">
       <div>
         <p className="text-sm font-black text-slate-700 mb-1">Upload a Recorded Lecture</p>
-        <p className="text-xs text-slate-400">Upload a video file to S3 or paste a YouTube URL.</p>
+        <p className="text-xs text-slate-400">Upload a video file to enable AI transcription, notes, and quizzes.</p>
       </div>
 
       <div className="space-y-3">
@@ -573,14 +574,22 @@ function RecordedDetailsForm({
           </button>
           <button
             type="button"
-            onClick={() => setSource("youtube")}
+            disabled
             className={cn(
-              "flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black transition-all",
-              source === "youtube" ? "bg-white text-rose-600 shadow-sm shadow-rose-200/50" : "text-slate-400 hover:text-slate-600"
+              "flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black transition-all opacity-60 cursor-not-allowed",
+              "text-slate-400 bg-slate-50"
             )}
+            title="YouTube lecture URLs are playback-only and do not support AI transcription."
           >
-            <Youtube className="w-3.5 h-3.5" /> YouTube
+            <Youtube className="w-3.5 h-3.5" /> YouTube Unsupported
           </button>
+        </div>
+
+        <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-[11px] leading-relaxed text-amber-700">
+            {YOUTUBE_LECTURE_AI_LIMITATION} Add YouTube videos under topic resources if you only need playback.
+          </p>
         </div>
 
         {source === "upload" ? (
@@ -620,7 +629,7 @@ function RecordedDetailsForm({
         </div>
         <div>
           <p className="text-xs font-black text-blue-700">Recorded Lecture</p>
-          <p className="text-[11px] text-blue-500 mt-0.5">Students can watch anytime with AI-generated notes, quizzes, and progress tracking.</p>
+          <p className="text-[11px] text-blue-500 mt-0.5">Upload the lecture video file to enable AI-generated notes, quizzes, and progress tracking.</p>
         </div>
       </div>
     </div>
@@ -672,6 +681,10 @@ function ScheduleLectureModal({
         });
         toast.success("Live lecture scheduled!");
       } else {
+        if (isYouTubeUrl(recForm.videoUrl)) {
+          toast.error(`${YOUTUBE_LECTURE_AI_LIMITATION} Upload the lecture video file instead.`);
+          return;
+        }
         await createLecture.mutateAsync({
           batchId: selectedBatch.id,
           topicId: selectedEntry.topic.id,
