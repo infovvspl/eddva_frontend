@@ -1,6 +1,12 @@
 import { Sparkles, Award } from "lucide-react";
 import heroImg from "@/assets/hero_illustration.png";
 import founderPhoto from "@/assets/sir 1.png";
+import teamImg1 from "@/assets/img 1.png";
+import teamImg2 from "@/assets/img 2.png";
+import teamImg3 from "@/assets/img 3.png";
+import teamImg4 from "@/assets/img 4.png";
+import teamImg5 from "@/assets/img 5.png";
+import teamImg6 from "@/assets/img 6.png";
 import { B, P } from "@/components/landing/DesignTokens";
 
 const gradHero = `linear-gradient(135deg, ${B}, ${P})`;
@@ -12,46 +18,56 @@ const aboutParagraphs = [
   "Here, learning is not passive. It is precise. Purposeful. Transformative. This is not traditional education. This is intelligent mastery.",
 ] as const;
 
-const TEAM_GRADIENT_FILLS = [
-  "linear-gradient(135deg,#2563eb,#7c3aed)",
-  "linear-gradient(135deg,#7c3aed,#db2777)",
-  "linear-gradient(135deg,#0891b2,#2563eb)",
-  "linear-gradient(135deg,#c026d3,#7c3aed)",
-  "linear-gradient(135deg,#059669,#0d9488)",
-  "linear-gradient(135deg,#ea580c,#ca8a04)",
-] as const;
-
-const team = [
+const team: {
+  name: string;
+  role: string;
+  detail: string;
+  accent: string;
+  photo: string;
+}[] = [
+  {
+    name: "Ankit Tripathy",
+    role: "Additional Director",
+    detail: "Leadership, strategy, and long-term value for Eddva and the learners it serves",
+    accent: "from-slate-500/50 to-indigo-500/50",
+    photo: teamImg2,
+  },
   {
     name: "Ayush Kumar Dubey",
     role: "Senior JEE educator",
     detail: "A decade of experience in academic excellence and student success",
     accent: "from-blue-500/40 to-purple-500/40",
+    photo: teamImg1,
   },
   {
     name: "Priyanka SV",
     role: "Marketing Head",
     detail: "Strategic storytelling and brand vision",
     accent: "from-purple-500/50 to-pink-400/30",
+    photo: teamImg3,
   },
   {
     name: "Subham Mishra",
     role: "Full-Stack AI/ML Developer",
     detail: "Architect of intelligent learning systems",
     accent: "from-cyan-400/40 to-blue-500/50",
+    photo: teamImg6,
   },
   {
     name: "Akankshya Kar",
     role: "AI/ML Developer",
     detail: "Enhancing adaptive intelligence and personalization",
     accent: "from-fuchsia-400/40 to-purple-500/40",
+    photo: teamImg5,
   },
   {
     name: "Bhagyashree Sendh",
     role: "Full-Stack Developer",
     detail: "Crafting seamless and refined digital experiences",
     accent: "from-emerald-400/35 to-teal-500/40",
+    photo: teamImg4,
   },
+
 ];
 
 const founderParagraphs = [
@@ -147,19 +163,20 @@ export function AboutMarketing() {
       <section className="bg-gradient-to-b from-slate-50 via-white to-slate-100 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <Divider />
-          <div className="mb-10 mt-12 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-            <div>
-              <h2 className="text-3xl font-bold sm:text-4xl">
+          <div className="mx-auto mb-12 mt-12 max-w-3xl text-center">
+            <span className="inline-flex items-center rounded-full border border-primary/20 bg-white px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-primary shadow-sm">
+              Our Team
+            </span>
+            <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
                 Where expertise meets <span className="text-gradient-brand">innovation</span>
               </h2>
-              <p className="mt-3 max-w-xl text-muted-foreground">
-                Eddva is shaped by a collective of educators, technologists, and visionaries—each committed to delivering excellence at every layer of the experience.
-              </p>
-            </div>
+            <p className="mt-3 text-muted-foreground">
+              Eddva is shaped by a collective of educators, technologists, and visionaries - each committed to delivering excellence at every layer of the experience.
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
-            {team.map((m) => (
-              <TeamCard key={m.name} {...m} />
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {team.map((m, i) => (
+              <TeamCard key={m.name} {...m} mountainIndex={i} />
             ))}
           </div>
           <div className="mt-12">
@@ -180,50 +197,50 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase() || "?";
-}
-
-function avatarFillForName(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return TEAM_GRADIENT_FILLS[h % TEAM_GRADIENT_FILLS.length]!;
+/** Two rows of three; center column of each row offset for a “mountain” profile */
+function teamMountainClass(index: number) {
+  if (index === 1) return "lg:-translate-y-4";
+  if (index === 4) return "lg:translate-y-4";
+  return "";
 }
 
 function TeamCard({
   name,
   role,
   detail,
-  accent,
+  photo,
+  mountainIndex = 0,
 }: {
   name: string;
   role: string;
   detail?: string;
-  accent?: string;
+  photo: string;
+  mountainIndex?: number;
 }) {
-  const initials = initialsFromName(name);
-  const fill = avatarFillForName(name);
-
   return (
-    <article className="group flex flex-col items-center text-center">
-      <div className="relative">
+    <article
+      className={`group rounded-3xl border border-slate-200/80 bg-white/90 p-6 text-center shadow-sm shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70 ${teamMountainClass(
+        mountainIndex
+      )}`}
+    >
+      <div className="relative mx-auto">
         <div
-          className={`absolute -inset-2 rounded-full bg-gradient-to-br ${accent ?? "from-blue-500/40 to-purple-500/40"} opacity-60 blur-md transition-opacity duration-500 group-hover:opacity-100`}
-        />
-        <div
-          className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-4 border-white text-lg font-bold tracking-tight text-white shadow-lg shadow-slate-200/60 transition-transform duration-500 group-hover:-translate-y-1 sm:h-36 sm:w-36 sm:text-xl"
-          style={{ background: fill }}
-          aria-hidden
+          className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-md shadow-slate-300/60 sm:h-36 sm:w-36"
         >
-          <span className="select-none drop-shadow-sm">{initials}</span>
+          <img
+            src={photo}
+            alt={name}
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            width={400}
+            height={400}
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       </div>
-      <h3 className="mt-5 text-base font-bold text-foreground">{name}</h3>
-      <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-primary/90">{role}</p>
-      {detail ? <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground sm:text-xs">{detail}</p> : null}
+      <h3 className="mt-5 text-lg font-bold text-foreground">{name}</h3>
+      <p className="mt-1 text-sm font-bold uppercase tracking-wider text-primary">{role}</p>
+      {detail ? <p className="mx-auto mt-2 max-w-[28ch] text-xs leading-relaxed text-muted-foreground">{detail}</p> : null}
     </article>
   );
 }
