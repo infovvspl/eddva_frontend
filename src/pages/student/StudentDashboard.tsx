@@ -190,7 +190,7 @@ export default function StudentDashboard() {
             onClick={() =>
               navigate(
                 courses.length > 0
-                  ? "/student/courses"
+                  ? "/student/courses?tab=ongoing"
                   : "/student/courses?discover=1"
               )
             }
@@ -277,7 +277,7 @@ export default function StudentDashboard() {
             <Card>
               <Section
                 title="Continue Learning"
-                action={() => navigate("/student/courses")}
+                action={() => navigate("/student/courses?tab=ongoing")}
                 actionLabel="All courses"
               >
                 <ContinueLearning courses={courses} />

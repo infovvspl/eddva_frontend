@@ -2261,7 +2261,7 @@ const TeacherLecturesPage = () => {
   const deleteLecture = useDeleteLecture();
   const { toast } = useToast();
 
-  const [tab, setTab] = useState<"recorded" | "live">("recorded");
+  const [tab, setTab] = useState<"recorded" | "live">("live");
   const [showUpload, setShowUpload] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [viewLecture, setViewLecture] = useState<Lecture | null>(null);
@@ -2471,8 +2471,8 @@ const TeacherLecturesPage = () => {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
           {([
-            { key: "recorded", label: "Recorded",     icon: Video },
             { key: "live",     label: "Live Classes", icon: Radio },
+            { key: "recorded", label: "Recorded",     icon: Video },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={cn(

@@ -363,19 +363,27 @@ export default function StudentCourseTopicPage() {
   return (
     <div className="max-w-5xl mx-auto pb-32 space-y-6">
 
-      {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2 text-sm text-slate-400 font-medium flex-wrap pt-1">
-        <button onClick={() => navigate("/student/courses")} className="hover:text-indigo-600 transition-colors">
-          My Courses
+      <div className="flex items-center gap-4 pt-2">
+        <button onClick={() => navigate(`/student/courses/${batchId}`)}
+          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm hover:shadow"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        <button onClick={() => navigate(`/student/courses/${batchId}`)} className="hover:text-indigo-600 transition-colors">
-          {subject?.name || "Course"}
-        </button>
-        <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        <span className="text-slate-500">{chapter?.name}</span>
-        <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        <span className="text-slate-800 font-semibold">{topic.name}</span>
+
+        {/* ── Breadcrumb ── */}
+        <div className="flex items-center gap-2 text-sm text-slate-400 font-medium flex-wrap">
+          <button onClick={() => navigate("/student/courses")} className="hover:text-indigo-600 transition-colors">
+            My Courses
+          </button>
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+          <button onClick={() => navigate(`/student/courses/${batchId}`)} className="hover:text-indigo-600 transition-colors">
+            {subject?.name || "Course"}
+          </button>
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+          <span className="text-slate-500">{chapter?.name}</span>
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+          <span className="text-slate-800 font-semibold">{topic.name}</span>
+        </div>
       </div>
 
       {/* ── Topic Hero ── */}

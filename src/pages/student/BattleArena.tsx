@@ -1248,10 +1248,12 @@ function ChallengeScopePicker({
   onBack,
   onStart,
   loading,
+  selectedBatchId,
 }: {
   onBack: () => void;
   onStart: (topicId: string | undefined, label: string) => void;
   loading: boolean;
+  selectedBatchId: string;
 }) {
   const [scopeType, setScopeType] = useState<ScopeType>("topic");
   const [subjectId, setSubjectId] = useState("");
@@ -1261,12 +1263,9 @@ function ChallengeScopePicker({
   const [chapterName, setChapterName] = useState("");
   const [topicName, setTopicName]     = useState("");
 
-  // Use enrolled course curriculum — this is what the student actually has access to
-  const { data: myCourses = [], isLoading: coursesLoading } = useMyCourses();
-  const primaryBatchId = myCourses[0]?.id ?? "";
-  const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(primaryBatchId);
+  const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(selectedBatchId);
 
-  const isLoading = coursesLoading || currLoading;
+  const isLoading = currLoading;
 
   // Derive subject/chapter/topic lists from curriculum
   const subList = curriculum?.subjects ?? [];
@@ -1911,9 +1910,11 @@ type BotTestType = "topic" | "chapter" | "subject";
 function BotPickerScreen({
   onBack,
   onStart,
+  selectedBatchId,
 }: {
   onBack: () => void;
   onStart: (questions: QuizQuestion[], label: string) => void;
+  selectedBatchId: string;
 }) {
   const [testType, setTestType]   = useState<BotTestType>("topic");
   const [subjectId, setSubjectId] = useState("");
@@ -1926,13 +1927,11 @@ function BotPickerScreen({
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState("");
 
-  const { data: subjects, isLoading: subLoading } = useSubjects();
-  const { data: chapters, isLoading: chapLoading } = useChapters(subjectId);
-  const { data: topics,   isLoading: topLoading  } = useTopics(chapterId);
+  const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(selectedBatchId);
 
-  const subList  = Array.isArray(subjects) ? subjects : [];
-  const chapList = Array.isArray(chapters) ? chapters : [];
-  const topList  = Array.isArray(topics)   ? topics   : [];
+  const subList  = curriculum?.subjects ?? [];
+  const chapList = subjectId ? (subList.find((s: any) => s.id === subjectId)?.chapters ?? []) : [];
+  const topList  = chapterId ? (chapList.find((c: any) => c.id === chapterId)?.topics ?? []) : [];
 
   const scopeId =
     testType === "topic"   ? topicId :
@@ -2122,17 +2121,78 @@ interface LobbyUser {
   xpTotal?: number;
   tier?: string;
   status?: "online" | "in_battle" | "waiting";
+  batchIds?: string[];
 }
 
 interface IncomingChallenge {
   challengeId: string;
   fromStudentId: string;
   expiresInSeconds: number;
+  batchId?: string;
+  batchName?: string;
+}
+
+function ChallengeTargetPickerScreen({
+  targetUser,
+  myCourses,
+  onBack,
+  onSendChallenge,
+}: {
+  targetUser: LobbyUser;
+  myCourses: any[];
+  onBack: () => void;
+  onSendChallenge: (batchId: string, batchName: string) => void;
+}) {
+  const commonCourses = myCourses.filter(c => targetUser.batchIds?.includes(c.id));
+  const [selected, setSelected] = useState(commonCourses[0]?.id || "");
+
+  const handleSend = () => {
+    const course = commonCourses.find(c => c.id === selected);
+    if (!course) return;
+    onSendChallenge(course.id, course.name);
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
+      <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
+        <h3 className="text-2xl font-bold">Challenge {targetUser.name}</h3>
+        {commonCourses.length === 0 ? (
+          <p className="text-sm text-slate-500">You don't share any courses with {targetUser.name}.</p>
+        ) : (
+          <div className="text-left space-y-3">
+            <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Select Common Course</label>
+            <select
+              value={selected}
+              onChange={e => setSelected(e.target.value)}
+              className="h-14 w-full px-5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all shadow-sm"
+            >
+              {commonCourses.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className="flex justify-center gap-3">
+          {commonCourses.length > 0 && (
+            <Button className="rounded-xl bg-indigo-600 px-6 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500" onClick={handleSend}>
+              Send Request
+            </Button>
+          )}
+          <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={onBack}>
+            Cancel
+          </Button>
+        </div>
+      </CardGlass>
+    </div>
+  );
 }
 
 function ChallengeLobbyScreen({
   users,
   myStudentId,
+  selectedBatchId,
+  onBatchChange,
+  myCourses,
   onChallenge,
   onChallengeFriend,
   onModeSelect,
@@ -2141,6 +2201,9 @@ function ChallengeLobbyScreen({
 }: {
   users: LobbyUser[];
   myStudentId: string;
+  selectedBatchId: string;
+  onBatchChange: (batchId: string) => void;
+  myCourses: any[];
   onChallenge: (targetStudentId: string) => void;
   onChallengeFriend: () => void;
   onModeSelect: (mode: ModeConfig) => void;
@@ -2148,7 +2211,8 @@ function ChallengeLobbyScreen({
   xpPoints?: number;
 }) {
   const [liveSearch, setLiveSearch] = useState("");
-  const others = users.filter(u => u.studentId !== myStudentId);
+  const othersBase = users.filter(u => u.studentId !== myStudentId);
+  const others = selectedBatchId ? othersBase.filter(u => u.batchIds?.includes(selectedBatchId)) : othersBase;
   const searchLower = liveSearch.trim().toLowerCase();
   const filteredOthers = searchLower
     ? others.filter(u => (u.name ?? "").toLowerCase().includes(searchLower))
@@ -2193,7 +2257,20 @@ function ChallengeLobbyScreen({
         <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
+                {myCourses.length > 0 && (
+                  <select
+                    value={selectedBatchId}
+                    onChange={e => onBatchChange(e.target.value)}
+                    className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 hover:border-indigo-300 transition-colors cursor-pointer"
+                  >
+                    {myCourses.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
                 {others.length + 1} Students Online
@@ -2347,6 +2424,7 @@ function ChallengeLobbyScreen({
 type Stage =
   | "lobby"
   | "challenge_pick"
+  | "challenge_target_pick"
   | "challenge_create"
   | "challenge_sent"
   | "incoming_request"
@@ -2362,6 +2440,7 @@ const BattleArena = () => {
   const { data: me, isLoading: meLoading } = useStudentMe();
   const { data: eloData } = useMyBattleElo();
   const createBattle = useCreateBattle();
+  const { data: myCourses = [], isLoading: coursesLoading } = useMyCourses();
 
   const [stage, setStage]             = useState<Stage>("lobby");
   const [activeMode, setActiveMode]   = useState<ModeConfig | null>(null);
@@ -2374,7 +2453,15 @@ const BattleArena = () => {
   const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(null);
   const [botQuestions, setBotQuestions] = useState<QuizQuestion[] | undefined>(undefined);
   const [challengeCountdown, setChallengeCountdown] = useState(10);
+  const [selectedBatchId, setSelectedBatchId] = useState<string>("");
+  const [challengeTargetId, setChallengeTargetId] = useState<string | null>(null);
   const lobbySocketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    if (myCourses.length > 0 && !selectedBatchId) {
+      setSelectedBatchId(myCourses[0].id);
+    }
+  }, [myCourses, selectedBatchId]);
 
   const student = me?.student;
   const xpPoints = Number(student?.xpPoints ?? eloData?.xpPoints ?? 0);
@@ -2507,12 +2594,19 @@ const BattleArena = () => {
     toast.success("AI battle started.");
   };
 
-  const sendChallenge = (targetStudentId: string) => {
+  const handleDirectChallengeClick = (targetStudentId: string) => {
+    setChallengeTargetId(targetStudentId);
+    setStage("challenge_target_pick");
+  };
+
+  const sendChallenge = (targetStudentId: string, batchId?: string, batchName?: string) => {
     if (!lobbySocketRef.current || !myStudentId) return;
     lobbySocketRef.current.emit("battle:challenge", {
       targetStudentId,
       fromStudentId: myStudentId,
       tenantId: me?.tenantId,
+      batchId,
+      batchName,
     });
   };
 
@@ -2608,6 +2702,7 @@ const BattleArena = () => {
     setIncomingChallenge(null);
     setPendingChallengeId(null);
     setBotQuestions(undefined);
+    setChallengeTargetId(null);
   };
 
   const playAgain = () => {
@@ -2642,7 +2737,10 @@ const BattleArena = () => {
               <ChallengeLobbyScreen
                 users={onlineUsers}
                 myStudentId={myStudentId}
-                onChallenge={sendChallenge}
+                selectedBatchId={selectedBatchId}
+                onBatchChange={setSelectedBatchId}
+                myCourses={myCourses}
+                onChallenge={handleDirectChallengeClick}
                 onChallengeFriend={() => {
                   setActiveMode(MODES.find(m => m.mode === "challenge_friend") ?? MODES[0]);
                   setStage("challenge_pick");
@@ -2650,6 +2748,19 @@ const BattleArena = () => {
                 onModeSelect={handleModeSelect}
                 myName={myName}
                 xpPoints={xpPoints}
+              />
+            </motion.div>
+          )}
+
+          {stage === "challenge_target_pick" && challengeTargetId && (
+            <motion.div key="challenge-target" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ChallengeTargetPickerScreen
+                targetUser={onlineUsers.find(u => u.studentId === challengeTargetId)!}
+                myCourses={myCourses}
+                onBack={() => setStage("lobby")}
+                onSendChallenge={(batchId, batchName) => {
+                  sendChallenge(challengeTargetId, batchId, batchName);
+                }}
               />
             </motion.div>
           )}
@@ -2674,6 +2785,7 @@ const BattleArena = () => {
                   startBattle(cfMode, topicId, label);
                 }}
                 loading={createBattle.isPending}
+                selectedBatchId={selectedBatchId}
               />
             </motion.div>
           )}
@@ -2712,12 +2824,12 @@ const BattleArena = () => {
                     🔥 Incoming Request
                   </div>
                 </div>
-                {/* <div className="space-y-2">
+                <div className="space-y-2">
                   <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                    Mode: Quick Duel
+                    Course: {incomingChallenge.batchName || "Direct Duel"}
                   </p>
-                </div> */}
+                </div>
                 <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.18)]">
                   {challengeCountdown}
                 </div>
@@ -2738,6 +2850,7 @@ const BattleArena = () => {
               <BotPickerScreen
                 onBack={() => setStage("lobby")}
                 onStart={handleBotStart}
+                selectedBatchId={selectedBatchId}
               />
             </motion.div>
           )}
