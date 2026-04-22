@@ -16,7 +16,7 @@ import {
   Eye, Edit3, Send, Calendar, Link2, Users, BarChart2,
   PlayCircle, StopCircle, Zap, BookOpen, ChevronRight,
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
-  HelpCircle, RefreshCw, Trophy, TrendingUp, XCircle,
+  HelpCircle, RefreshCw, Trophy, TrendingUp, XCircle, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ import { getApiOrigin } from "@/lib/api-config";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
+import { isYouTubeUrl, YOUTUBE_LECTURE_AI_LIMITATION } from "@/lib/lecture-source";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -260,6 +261,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
   const [newConcept, setNewConcept] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const isPlaybackOnlySource = isYouTubeUrl(lecture.videoUrl);
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<QuizCheckpoint[]>([]);
@@ -299,7 +301,13 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
 
   const handleGenerateQuiz = async () => {
     if (!lecture.transcript) {
-      toast({ title: "No transcript", description: "Transcript is required to generate quiz questions.", variant: "destructive" });
+      toast({
+        title: "No transcript",
+        description: isPlaybackOnlySource
+          ? YOUTUBE_LECTURE_AI_LIMITATION
+          : "Transcript is required to generate quiz questions.",
+        variant: "destructive",
+      });
       return;
     }
     setIsGeneratingQuiz(true);
@@ -486,8 +494,18 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                 <MarkdownContent content={lecture.aiNotesMarkdown} />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                  <FileText className="w-12 h-12 opacity-20" />
-                  <p className="text-sm">No notes available yet.</p>
+                  {isPlaybackOnlySource ? (
+                    <>
+                      <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
+                      <p className="text-sm text-foreground">AI notes unavailable for YouTube lectures.</p>
+                      <p className="text-xs text-center max-w-sm">{YOUTUBE_LECTURE_AI_LIMITATION}</p>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-12 h-12 opacity-20" />
+                      <p className="text-sm">No notes available yet.</p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -540,9 +558,19 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                    <Mic className="w-12 h-12 opacity-20" />
-                    <p className="text-sm">Transcript not available.</p>
-                    <p className="text-xs">Upload a video to generate a transcript automatically.</p>
+                    {isPlaybackOnlySource ? (
+                      <>
+                        <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
+                        <p className="text-sm text-foreground">Automatic transcript unavailable for YouTube lectures.</p>
+                        <p className="text-xs text-center max-w-sm">{YOUTUBE_LECTURE_AI_LIMITATION}</p>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-12 h-12 opacity-20" />
+                        <p className="text-sm">Transcript not available.</p>
+                        <p className="text-xs">Upload a video to generate a transcript automatically.</p>
+                      </>
+                    )}
                   </div>
                 )
               ) : null}
@@ -574,7 +602,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
               {!lecture.transcript && (
                 <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
                   <Mic className="w-4 h-4 shrink-0" />
-                  <span>A transcript is needed to generate quiz questions. Upload a video first.</span>
+                  <span>{isPlaybackOnlySource ? YOUTUBE_LECTURE_AI_LIMITATION : "A transcript is needed to generate quiz questions. Upload a video first."}</span>
                 </div>
               )}
 
@@ -975,7 +1003,7 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
     enabled: tab === "quiz",
   });
 
-  const isYouTube = (lecture.videoUrl ?? "").includes("youtube") || (lecture.videoUrl ?? "").includes("youtu.be");
+  const isYouTube = isYouTubeUrl(lecture.videoUrl);
 
   const tabs = [
     { key: "overview" as const, label: "Overview", icon: Eye },
@@ -1037,6 +1065,16 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
           {/* ── Overview ── */}
           {tab === "overview" && (
             <div className="p-6 space-y-5">
+              {isYouTube && !lecture.transcript && !lecture.aiNotesMarkdown && (
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">YouTube lecture detected</p>
+                    <p className="text-xs mt-1 leading-relaxed">{YOUTUBE_LECTURE_AI_LIMITATION}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Video preview */}
               {lecture.videoUrl && (
                 <div className="rounded-2xl overflow-hidden aspect-video bg-black">
@@ -1501,6 +1539,15 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      if (isYouTubeUrl(videoUrl)) {
+        toast({
+          title: "YouTube lectures are not supported here",
+          description: `${YOUTUBE_LECTURE_AI_LIMITATION} Add YouTube videos as topic resources if you only need playback.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       let finalVideoUrl = videoUrl;
       let finalThumbnailUrl: string | undefined;
 
@@ -1653,15 +1700,30 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   { value: "upload" as VideoSource, label: "Upload Video", icon: Upload },
                   { value: "youtube" as VideoSource, label: "YouTube URL", icon: Youtube },
                 ] as { value: VideoSource; label: string; icon: any }[]).map(opt => (
-                  <button key={opt.value} type="button" onClick={() => setVideoSource(opt.value)}
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => opt.value === "upload" && setVideoSource(opt.value)}
+                    disabled={opt.value === "youtube"}
                     className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors",
-                      videoSource === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50")}>
+                      opt.value === "youtube"
+                        ? "border-border bg-secondary/40 opacity-60 cursor-not-allowed"
+                        : videoSource === opt.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/50")}>
                     <opt.icon className={cn("w-6 h-6", videoSource === opt.value ? "text-primary" : "text-muted-foreground")} />
                     <span className={cn("text-sm font-medium", videoSource === opt.value ? "text-primary" : "text-muted-foreground")}>
-                      {opt.label}
+                      {opt.value === "youtube" ? "YouTube Unsupported" : opt.label}
                     </span>
                   </button>
                 ))}
+              </div>
+
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs leading-relaxed text-amber-800">
+                  {YOUTUBE_LECTURE_AI_LIMITATION} If you only want to share a YouTube lesson, add it under topic resources instead of as a recorded lecture.
+                </p>
               </div>
 
               {videoSource === "upload" ? (
@@ -1724,7 +1786,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <div className="space-y-1 text-muted-foreground">
                   <p><span className="text-foreground font-medium">Title:</span> {title}</p>
                   <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
-                  <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : videoFile?.name ?? "File upload"}</p>
+                  <p><span className="text-foreground font-medium">Source:</span> {videoFile?.name ?? "Uploaded file"}</p>
                   {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
                 </div>
               </div>
@@ -1734,7 +1796,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 </p>
                 {[
                   { icon: Mic, text: "AI transcribes the full audio (Speech-to-Text)" },
-                  { icon: FileText, text: "Generates complete lecture notes PDF" },
+                  { icon: FileText, text: "Generates structured lecture notes" },
                   { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
                   { icon: Eye, text: "You review & optionally edit the AI notes" },
                   { icon: Send, text: "You publish — students get notified instantly" },
@@ -2354,7 +2416,9 @@ const TeacherLecturesPage = () => {
       title: readyLecture.aiNotesMarkdown ? "AI notes ready! ✨" : "AI processing complete",
       description: readyLecture.aiNotesMarkdown
         ? "Review and publish when you're satisfied."
-        : "AI could not generate notes — add them manually then publish.",
+        : isYouTubeUrl(readyLecture.videoUrl)
+          ? "This lecture uses a YouTube link, so AI notes were skipped. Add notes manually or upload the video file."
+          : "AI could not generate notes — add them manually then publish.",
     });
   }, [lectures, pendingReviewIds, toast]);
 

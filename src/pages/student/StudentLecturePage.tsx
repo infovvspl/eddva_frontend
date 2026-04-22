@@ -10,7 +10,7 @@ import {
   Maximize, RotateCcw, Trophy, Tag, FlaskConical,
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
-  ClipboardList, Link2, Youtube, BookMarked,
+  ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ import { useLectureProgress } from "@/hooks/useLectureProgress";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
 import { FormulasTab } from "@/components/lecture/FormulasTab";
+import { isYouTubeUrl, YOUTUBE_LECTURE_AI_LIMITATION } from "@/lib/lecture-source";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,10 +87,6 @@ const RESOURCE_CONFIG: Record<TopicResourceType, {
   link:  { label: "Link",   icon: Link2,        bg: "bg-slate-50",  text: "text-slate-700",  border: "border-slate-200"  },
   quiz:  { label: "Quiz",   icon: Sparkles,     bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
 };
-
-function isYouTubeUrl(url: string) {
-  return url.includes("youtube.com") || url.includes("youtu.be");
-}
 
 function youtubeThumb(url: string) {
   const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
@@ -593,6 +590,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
   const [notesEn, setNotesEn] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
+  const isPlaybackOnlySource = isYouTubeUrl(lecture.videoUrl);
 
   const handleToggleEnglish = async () => {
     if (enMode) { setEnMode(false); return; }
@@ -668,11 +666,17 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
-              <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-3", isPlaybackOnlySource ? "bg-amber-50" : "bg-indigo-50")}>
+              {isPlaybackOnlySource
+                ? <AlertTriangle className="w-5 h-5 text-amber-500" />
+                : <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />}
             </div>
-            <p className="text-sm font-semibold text-slate-500">AI is generating notes…</p>
-            <p className="text-xs text-slate-400 mt-1">Check back in a moment</p>
+            <p className="text-sm font-semibold text-slate-500">
+              {isPlaybackOnlySource ? "AI notes unavailable for this YouTube lecture" : "AI is generating notes…"}
+            </p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
+              {isPlaybackOnlySource ? YOUTUBE_LECTURE_AI_LIMITATION : "Check back in a moment"}
+            </p>
           </div>
         )}
       </div>
@@ -1031,6 +1035,7 @@ export default function StudentLecturePage() {
   const videoSrc        = lecture.videoUrl ?? "";
   const displayWatchPct = liveWatchPct > 0 ? liveWatchPct : (savedProgress?.watchPercentage ?? 0);
   const isLive          = lecture.type === "live" || lecture.status === "live";
+  const isPlaybackOnlySource = isYouTubeUrl(videoSrc);
 
   // ── Resource groups ──────────────────────────────────────────────────────────
   const videoRes = topicResources.filter(r =>
@@ -1282,7 +1287,11 @@ export default function StudentLecturePage() {
                   <div className="text-left">
                     <p className="text-sm font-bold text-slate-800">AI Study Tools</p>
                     <p className="text-[11px] text-slate-400 font-medium">
-                      {lecture.aiNotesMarkdown ? "Notes ready" : "Notes generating…"}
+                      {lecture.aiNotesMarkdown
+                        ? "Notes ready"
+                        : isPlaybackOnlySource
+                          ? "Upload required for AI notes"
+                          : "Notes generating…"}
                       {checkpoints.length > 0 ? ` · ${checkpoints.length} quiz checkpoints` : ""}
                     </p>
                   </div>
