@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Video, BookOpen, MessageSquare, Users, Layout,
   ChevronRight, Loader2, CheckCircle, Clock,
@@ -19,6 +19,7 @@ import {
   useMarkNotificationRead, useMarkAllNotificationsRead,
 } from "@/hooks/use-teacher";
 import { useTeacherPresenceStats } from "@/hooks/use-presence";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 
 /* ── colours ────────────────────────────────────────────────────────────── */
 const C = {
@@ -86,6 +87,9 @@ const KpiBar = ({ label, value, color, max = 100 }: { label: string; value: numb
 const TeacherDashboard = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const isCompactLayout = useIsCompactLayout();
+  const prefersReducedMotion = useReducedMotion();
+  const lightMotion = isCompactLayout || !!prefersReducedMotion;
 
   const { data, isLoading }           = useTeacherDashboard();
   const { data: presence }            = useTeacherPresenceStats();
@@ -156,7 +160,11 @@ const TeacherDashboard = () => {
 
   /* ── render ─────────────────────────────────────────────────────────── */
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <motion.div
+      initial={lightMotion ? undefined : { opacity: 0, y: 10 }}
+      animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between">
@@ -192,9 +200,9 @@ const TeacherDashboard = () => {
             <AnimatePresence>
               {showNotif && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                  initial={lightMotion ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                  animate={lightMotion ? undefined : { opacity: 1, scale: 1, y: 0 }}
+                  exit={lightMotion ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
                   className="absolute right-0 top-12 w-80 sm:w-96 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden"
                 >
                   <div className="px-4 py-3 border-b border-border flex items-center justify-between">
@@ -252,7 +260,9 @@ const TeacherDashboard = () => {
           { label: "Students Online",  value: presence?.studentsOnline ?? "—", sub: "right now", icon: UserCheck, color: C.teal, path: "/teacher/batches", live: true },
         ].map((s, i) => (
           <motion.button key={s.label} onClick={() => navigate(s.path)}
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+            initial={lightMotion ? undefined : { opacity: 0, y: 12 }}
+            animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={lightMotion ? undefined : { delay: i * 0.06 }}
             className="bg-card border border-border rounded-2xl p-5 text-left hover:bg-secondary/30 transition-colors group relative"
           >
             {(s as any).live && (
@@ -295,7 +305,7 @@ const TeacherDashboard = () => {
 
         {/* Batch Enrollment — Stacked Bar */}
         {batchFillData.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.1 }}
             className="lg:col-span-3 bg-card border border-border rounded-2xl p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
@@ -331,7 +341,7 @@ const TeacherDashboard = () => {
         )}
 
         {/* Doubt Status Pie */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+        <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.12 }}
           className="lg:col-span-2 bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -378,7 +388,7 @@ const TeacherDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* KPI Progress bars */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
+        <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.14 }}
           className="bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -413,7 +423,7 @@ const TeacherDashboard = () => {
 
         {/* Top Confusing Topics */}
         {topTopics.length > 0 ? (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}
+          <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.16 }}
             className="bg-card border border-border rounded-2xl p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
@@ -438,7 +448,7 @@ const TeacherDashboard = () => {
         ) : (
           /* Batch Comparison fallback */
           compData.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}
+            <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.16 }}
               className="bg-card border border-border rounded-2xl p-5">
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -476,7 +486,9 @@ const TeacherDashboard = () => {
               const clr = ins.severity === "critical" ? C.red : ins.severity === "warning" ? C.amber : C.blue;
               return (
                 <motion.div key={i}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                  initial={lightMotion ? undefined : { opacity: 0, y: 8 }}
+                  animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+                  transition={lightMotion ? undefined : { delay: i * 0.06 }}
                   onClick={() => navigate("/teacher/analytics")}
                   className="p-4 rounded-2xl bg-card border border-border cursor-pointer hover:bg-secondary/30 transition-colors"
                   style={{ borderLeft: `3px solid ${clr}` }}

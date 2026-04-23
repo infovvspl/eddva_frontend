@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,7 +9,7 @@ import {
 import { useSendOtp, useVerifyOtp } from "@/hooks/use-auth";
 import { useTenantResolver } from "@/hooks/use-tenant-resolver";
 import loginIllustration from "@/assets/bg.png";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 
 const BLUE = "#2563EB";
 const PURPLE = "#7C3AED";
@@ -157,7 +157,7 @@ const TenantHomePage = () => {
         >
           {/* Logo */}
           <div className="mb-10">
-            <img src={edvaLogo} alt="EDDVA" className="object-contain" />
+            <EddvaLogo className="h-12 w-auto sm:h-14" />
           </div>
 
           {/* Error banner */}

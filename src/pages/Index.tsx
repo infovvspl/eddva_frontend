@@ -1,6 +1,6 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import { motion, AnimatePresence, useInView, useReducedMotion } from "framer-motion";
 import {
   Brain, Zap, MessageCircle, Star,
   Menu, X, ArrowRight, Sparkles, TrendingUp,
@@ -8,20 +8,20 @@ import {
   Search, Smartphone,
   Mail, Phone, MapPin,
   GraduationCap, BarChart,
+  Bell, Rocket,
 } from "lucide-react";
-import edvaLogo from "@/assets/eddva web logo.png";
-import heroIllustration from "@/assets/online-learning-concept-vector-illustration_235222-1269.png";
 import aboutImg   from "@/assets/eddva web img 2.png";
 import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";
 import careerImg  from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
-import aiImg from "@/assets/Learn with AI_ educational inspiration.png";
 import aboutVideo from "@/assets/about.mp4";
-import { LandingLayout } from "@/components/landing/LandingLayout";
+import bgVideo from "@/assets/bg.mp4";
+import LandingLayout from "@/components/landing/LandingLayout";
 import { FadeUp, Label as SLabel, HeroBadge as FloatBadge } from "@/components/landing/LandingPrimitives";
 import { B, P, T, IN, grad, gText, SG } from "@/components/landing/DesignTokens";
 import bg1 from "@/assets/bg1.jpg";
 import bg2 from  "@/assets/bg2.jpg";
-
+import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 
 const cardVariants = {
@@ -32,6 +32,51 @@ const cardVariants = {
     transition: { delay: i * 0.1, duration: 0.5 }
   })
 };
+
+function AutoPlayVideo({
+  src,
+  className,
+  poster,
+}: {
+  src: string;
+  className: string;
+  poster?: string;
+}) {
+  const loadRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const shouldLoad = useInView(loadRef, { amount: 0, margin: "280px 0px" });
+  const isActiveView = useInView(videoRef, { amount: 0.4, margin: "-10% 0px -10% 0px" });
+  const [hasLoadedSource, setHasLoadedSource] = useState(false);
+
+  useEffect(() => {
+    if (shouldLoad) setHasLoadedSource(true);
+  }, [shouldLoad]);
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+    if (isActiveView && !document.hidden) {
+      void videoEl.play().catch(() => {});
+    } else {
+      videoEl.pause();
+    }
+  }, [isActiveView]);
+
+  return (
+    <div ref={loadRef} className="h-full w-full">
+      <video
+        ref={videoRef}
+        src={hasLoadedSource ? src : undefined}
+        className={className}
+        muted
+        loop
+        playsInline
+        preload="none"
+        poster={poster}
+      />
+    </div>
+  );
+}
 /* ── Data ── */
 const examCategories = [
   { id: "jee",   name: "IIT JEE",         icon: "⚛️", color: B,         tags: ["Class 11","Class 12","Dropper"], students: "32K+", desc: "Crack IIT with AI-powered Physics, Chemistry & Maths prep — adaptive tests and full syllabus coverage.", popular: true, href: "/exam/iit-jee" },
@@ -67,6 +112,10 @@ const testimonials = [
 
 /* ════════════════════════════════════════════════════════ */
 const Index = () => {
+  const isCompact = useIsCompactLayout();
+  const reduceMotion = useReducedMotion();
+  const lightHomeMotion = isCompact || reduceMotion;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab,   setActiveTab]   = useState<"all"|"engineering"|"medical"|"boards">("all");
   const [coursePage, setCoursePage] = useState(0);
@@ -127,10 +176,25 @@ const Index = () => {
       <section className="relative overflow-hidden pb-0 pt-16 lg:pt-20">
         {/* layered soft bg */}
         <div className="absolute inset-0 -z-10" style={{ background: SG }} />
-        <motion.div animate={{ scale:[1,1.12,1], opacity:[0.18,0.28,0.18] }} transition={{ duration:9, repeat:Infinity, ease:"easeInOut" as const }}
-          className="pointer-events-none absolute -right-32 -top-32 h-[520px] w-[520px] rounded-full blur-[120px]" style={{ background: B }} />
-        <motion.div animate={{ scale:[1,1.1,1], opacity:[0.12,0.2,0.12] }} transition={{ duration:11, repeat:Infinity, ease:"easeInOut" as const, delay:3 }}
-          className="pointer-events-none absolute -bottom-16 -left-20 h-80 w-80 rounded-full blur-[100px]" style={{ background: P }} />
+        {lightHomeMotion ? (
+          <>
+            <div
+              className="pointer-events-none absolute -right-32 -top-32 h-[min(100vw,520px)] w-[min(100vw,520px)] max-w-[520px] rounded-full blur-[80px] sm:blur-[120px]"
+              style={{ background: B, opacity: 0.24, transform: "scale(1.06)" }}
+            />
+            <div
+              className="pointer-events-none absolute -bottom-16 -left-20 h-64 w-64 max-w-[80vw] rounded-full blur-[70px] sm:h-80 sm:w-80 sm:blur-[100px]"
+              style={{ background: P, opacity: 0.16 }}
+            />
+          </>
+        ) : (
+          <>
+            <motion.div animate={{ scale:[1,1.12,1], opacity:[0.18,0.28,0.18] }} transition={{ duration:9, repeat:Infinity, ease:"easeInOut" as const }}
+              className="pointer-events-none absolute -right-32 -top-32 h-[520px] w-[520px] rounded-full blur-[120px]" style={{ background: B }} />
+            <motion.div animate={{ scale:[1,1.1,1], opacity:[0.12,0.2,0.12] }} transition={{ duration:11, repeat:Infinity, ease:"easeInOut" as const, delay:3 }}
+              className="pointer-events-none absolute -bottom-16 -left-20 h-80 w-80 rounded-full blur-[100px]" style={{ background: P }} />
+          </>
+        )}
         <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.025]"
           style={{ backgroundImage:`radial-gradient(circle, #3B82F6 1.5px, transparent 1.5px)`, backgroundSize:"30px 30px" }} />
 
@@ -158,8 +222,8 @@ const Index = () => {
 
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.2 }}
                 className="mb-6 max-w-xl space-y-4 text-[15px] font-medium leading-relaxed text-gray-600 sm:text-[16px]">
-                <p>
-                  Eddva is not built for average learning. It is designed for those who seek precision, clarity, and an edge.
+                <p className="font-bold">
+                  "Eddva is not built for average learning. It is designed for those who seek precision, clarity, and an edge".
                 </p>
                 <p>
                   Powered by advanced AI, Eddva creates an experience that is deeply personalized, intelligently curated, and relentlessly focused on results. Every interaction is intentional. Every recommendation is refined.
@@ -174,7 +238,7 @@ const Index = () => {
 
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.3 }}
                 className="mb-10 flex flex-wrap gap-3">
-                <motion.div whileHover={{ scale:1.04, boxShadow:`0 16px 40px ${B}40` }} whileTap={{ scale:0.97 }}>
+                <motion.div whileHover={{ scale: 1.04, boxShadow: `0 16px 40px ${B}40` }} whileTap={{ scale: 0.97 }}>
                   <Link to="/register"
                     className="landing-button flex items-center gap-2 text-white shadow-lg"
                     style={{ background: grad() }}>
@@ -188,15 +252,19 @@ const Index = () => {
               </motion.div>
             </div>
 
-            {/* ─ Right illustration ─ */}
-            <motion.div initial={{ opacity:0, x:40 }} animate={{ opacity:1, x:0 }}
-              transition={{ duration:0.8, delay:0.2, ease:"easeOut" as const }}
-              className="relative flex justify-center pb-8 lg:pb-0">
-              {/* glow blob behind */}
-              <div className="absolute inset-10 rounded-full blur-3xl opacity-20" style={{ background: grad() }} />
-
-              <img src={aiImg} alt="Student Learning"
-                className="relative z-10 w-full max-w-[520px] " />
+            {/* ─ Right illustration (static shell + LCP image — no opacity-0 to paint faster) ─ */}
+            <div className="relative flex justify-center pb-8 lg:pb-0">
+              <div className="absolute inset-10 rounded-full blur-3xl opacity-20" style={{ background: grad() }} aria-hidden />
+              <img
+                src="/landing-hero-lcp.png"
+                alt="Student learning on EDDVA with AI"
+                className="relative z-10 h-auto w-full max-w-[520px] object-contain"
+                width={520}
+                height={416}
+                sizes="(min-width: 1024px) 520px, min(90vw, 520px)"
+                decoding="async"
+                fetchPriority="high"
+              />
 
               {/* floating cards */}
               {/* <FloatBadge icon={<Zap className="h-4 w-4" />} label="XP Today" value="+240 pts"
@@ -217,7 +285,7 @@ const Index = () => {
                   </p>
                 </div>
               </motion.div> */}
-            </motion.div>
+            </div>
           </div>
         </div>
 
@@ -228,19 +296,30 @@ const Index = () => {
       </section>
         {/* ══════════════════════ ABOUT ══════════════════════ */}
       <section className="landing-section" id="about"
-        style={{ background:"linear-gradient(160deg, #EFF6FF 0%, #F5F3FF 100%)" }}>
+        style={{ background:"linear-gradient(180deg, #F8FAFC 0%, #F8FBFF 52%, #F6F5FF 100%)" }}>
         <div className="landing-shell">
-          <div className="grid items-center gap-14 lg:grid-cols-2">
+          <div className="mx-auto max-w-[1280px] px-1 sm:px-2">
+          <FadeUp delay={0.08} className="mx-auto mb-8 max-w-[800px] text-center lg:mb-10">
+            <h2 className="landing-title-section mx-auto  text-balance">
+              Built for precision,{" "}
+              <span style={gText()}>clarity, and results</span>
+            </h2>
+            <p className="mx-auto mt-4 max-w-[56ch] text-[15px] font-medium leading-relaxed text-slate-500 sm:text-[16px]">
+              A learning journey that understands you before it guides you—curated, measurable, and always within reach when doubt appears.
+            </p>
+          </FadeUp>
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
 
             {/* About image panel */}
-            <FadeUp>
-              <div className="relative overflow-hidden rounded-3xl shadow-2xl"
-                style={{ boxShadow:"0 32px 80px rgba(59,130,246,0.18)" }}>
-                <img src={aboutImg} alt="Education & Learning" className="h-[480px] w-full object-cover object-center" />
-                {/* gradient overlay */}
-                <div className="absolute inset-0"
-                  style={{ background:"linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(15,23,42,0.75) 100%)" }} />
-                {/* floating stat pills */}
+            <FadeUp className="flex items-center justify-center lg:pr-2">
+              <div className="relative w-full max-w-[760px] overflow-hidden rounded-[30px] shadow-[0_20px_48px_rgba(59,130,246,0.12)] lg:max-w-[720px]">
+                <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[36px] bg-gradient-to-br from-blue-200/45 via-sky-100/35 to-violet-200/45 blur-2xl" />
+                <AutoPlayVideo
+                  src={bgVideo}
+                  poster={aboutImg}
+                  className="h-[300px] w-full object-contain bg-slate-950 object-center sm:h-[360px] lg:h-[408px]"
+                />
+{/*            
                 <div className="absolute bottom-6 left-5 right-5 flex flex-wrap gap-3">
                   {[
                     { icon:"⚡", val:"4,820 XP",   color:"#3B82F6", bg:"rgba(59,130,246,0.15)" },
@@ -255,7 +334,7 @@ const Index = () => {
                       <span className="text-[12px] font-bold text-white">{s.val}</span>
                     </motion.div>
                   ))}
-                </div>
+                </div> */}
                 {/* top label */}
                 <div className="absolute left-5 top-5">
                   <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
@@ -266,25 +345,16 @@ const Index = () => {
               </div>
             </FadeUp>
 
-            {/* Text */}
-            <FadeUp delay={0.15}>
-              <SLabel>Core experience</SLabel>
-              <h2 className="landing-title-section mt-5">
-                Built for precision,{" "}
-                <span style={gText()}>clarity, and results</span>
-              </h2>
-              <p className="mt-4 text-[16px] font-medium leading-relaxed text-gray-500">
-                A learning journey that understands you before it guides you—curated, measurable, and always within reach when doubt appears.
-              </p>
-
-              <div className="mt-8 space-y-4">
+            {/* Feature cards */}
+            <FadeUp delay={0.15} className="mx-auto w-full max-w-[560px] lg:pl-2">
+              <div className="grid gap-3">
                 {[
                   {
                     icon: <Brain className="h-5 w-5" />,
                     color: B,
                     bg: "#EFF6FF",
                     title: "Adaptive Learning",
-                    desc: "A system that understands before it guides. Eddva continuously adapts to your learning behavior, crafting a journey that is uniquely yours—precise, fluid, and efficient.",
+                    desc: "A system that learns how you think before it teaches. Eddva adapts to your pace and patterns, shaping a journey that feels natural, focused, and truly yours.",
                   },
                   {
                     icon: <Zap className="h-5 w-5" />,
@@ -308,25 +378,29 @@ const Index = () => {
                     desc: "Uninterrupted understanding. With instant AI-powered doubt resolution and contextual in-video support, clarity is never delayed.",
                   },
                 ].map(item => (
-                  <motion.div key={item.title} whileHover={{ x:4 }}
-                    className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl" style={{ background:item.bg, color:item.color }}>
+                  <motion.div key={item.title} whileHover={lightHomeMotion ? undefined : { y: -2, scale: 1.01 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="flex items-start gap-4 rounded-2xl bg-white/92 p-4 shadow-[0_8px_22px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.04] transition-all duration-300 hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl" style={{ background:item.bg, color:item.color }}>
                       {item.icon}
                     </div>
                     <div>
-                      <p className="text-[14px] font-bold text-gray-900">{item.title}</p>
-                      <p className="text-[13px] text-gray-500">{item.desc}</p>
+                      <p className="text-[15px] font-bold text-slate-900 sm:text-[16px]">{item.title}</p>
+                      <p className="mt-1 text-[14px] leading-relaxed text-slate-500 sm:text-[14.5px]">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
               </div>
-
-              <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                className="mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
-                style={{ background: grad() }}>
-                Start Your Journey <ArrowRight className="h-4 w-4" />
-              </motion.a>
             </FadeUp>
+          </div>
+          <div className="mt-11 flex justify-center">
+            <motion.a href="/courses" whileHover={lightHomeMotion ? undefined : { scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              className="relative isolate inline-flex items-center gap-2 rounded-2xl px-8 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_32px_rgba(99,102,241,0.28)] transition-transform duration-300"
+              style={{ background: grad() }}>
+              <span className="pointer-events-none absolute -inset-1 -z-10 rounded-[20px] bg-gradient-to-r from-blue-500/20 to-violet-500/25 blur-md" aria-hidden />
+              Start Your Journey <ArrowRight className="h-4 w-4" />
+            </motion.a>
+          </div>
           </div>
         </div>
       </section>
@@ -347,24 +421,30 @@ const Index = () => {
             </h2>
           </FadeUp>
           <FadeUp delay={0.1} className="mb-8 text-center">
-            <p className="mx-auto max-w-2xl text-[16px] font-medium leading-relaxed text-gray-500">
+            <p className="mx-auto max-w-2xl text-[18px] font-medium leading-relaxed text-gray-500">
               Comprehensive preparation for 20+ exams. Pick your goal and we'll build your personalized path.
             </p>
           </FadeUp>
 
           <FadeUp delay={0.11} className="mb-8">
             <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-3">
-              <div className="rounded-full border border-blue-100 bg-white/90 px-4 py-2 text-[12px] font-bold text-gray-700 shadow-sm backdrop-blur">
+              <div className={cn(
+                "rounded-full border border-blue-100 px-5 py-2.5 text-[15px] font-bold text-gray-700 shadow-sm",
+                "bg-white"
+              )}>
                 2 Live tracks: <span className="text-blue-600">JEE</span> and <span className="text-red-500">NEET</span>
               </div>
-              <div className="rounded-full border border-amber-100 bg-amber-50 px-4 py-2 text-[12px] font-bold text-amber-700 shadow-sm">
+              <div className="rounded-full border border-red-100 bg-red-50 px-5 py-2.5 text-[15px] font-bold text-red-700 shadow-sm">
                 School boards are marked as Coming Soon
               </div>
             </div>
           </FadeUp>
 
           {/* Search + tab filter */}
-          <FadeUp delay={0.12} className="mb-8 flex flex-col gap-4 rounded-[28px] border border-white/70 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <FadeUp delay={0.12} className={cn(
+            "mb-8 flex flex-col gap-4 rounded-[28px] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between",
+            "border border-gray-100 bg-white"
+          )}>
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input type="text" placeholder="Search JEE, NEET, Boards..."
@@ -388,15 +468,23 @@ const Index = () => {
           </FadeUp>
 
           {/* Cards */}
-          <AnimatePresence mode="wait">
-            <motion.div key={activeTab + searchQuery} layout
-              className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <AnimatePresence mode={lightHomeMotion ? "sync" : "wait"}>
+            <motion.div
+              key={activeTab + searchQuery}
+              initial={lightHomeMotion ? undefined : { opacity: 0.96 }}
+              animate={lightHomeMotion ? undefined : { opacity: 1 }}
+              transition={lightHomeMotion ? undefined : { duration: 0.18 }}
+              className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
+            >
               {filteredExams.length > 0 ? filteredExams.map((exam, i) => (
-                <motion.div key={exam.id} layout
-                  initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
-                  transition={{ duration:0.35, delay: i * 0.05 }}
-                  whileHover={{ y:-6, boxShadow:`0 24px 56px ${exam.color}22` }}
-                  className={`group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all duration-300 ${exam.comingSoon ? "border-rose-200/60 bg-rose-50/5" : "border-gray-100"}`}>
+                <motion.div
+                  key={exam.id}
+                  initial={lightHomeMotion ? undefined : { opacity: 0, y: 16 }}
+                  animate={lightHomeMotion ? undefined : { opacity: 1, y: 0 }}
+                  exit={lightHomeMotion ? undefined : { opacity: 0, scale: 0.98 }}
+                  transition={lightHomeMotion ? undefined : { duration: 0.26, delay: Math.min(i * 0.04, 0.2) }}
+                  whileHover={lightHomeMotion ? undefined : { y: -3, boxShadow: `0 14px 32px ${exam.color}18` }}
+                  className={`group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all duration-300 ${exam.comingSoon ? "border-amber-200/80" : "border-gray-100"}`}>
 
                   {/* hover color wash */}
                   <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -409,17 +497,19 @@ const Index = () => {
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       {exam.comingSoon && (
-                        <div className="relative">
-                          <div className="absolute inset-0 animate-pulse rounded-full bg-rose-500/20 blur-md" />
-                          <div className="relative rounded-full border border-rose-200 bg-rose-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_2px_10px_rgba(244,63,94,0.3)]">
-                            Coming Soon
-                          </div>
+                        <div className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-[13px] font-black uppercase tracking-[0.18em] text-red-700">
+                          Coming Soon
                         </div>
                       )}
                       {exam.popular && (
-                        <div className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black text-white"
-                          style={{ background: exam.color }}>
-                          <Star className="h-2.5 w-2.5 fill-current" /> Popular
+                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black border transition-all"
+                          style={{ 
+                            color: "#3B82F6", 
+                            backgroundColor: "#3B82F615",
+                            borderColor: "#3B82F633",
+                            boxShadow: "0 0 15px #3B82F625"
+                          }}>
+                          <Star className="h-3 w-3 fill-current" /> Popular
                         </div>
                       )}
                     </div>
@@ -495,15 +585,17 @@ const Index = () => {
  <section className="relative overflow-hidden bg-[#f8fafc]" id="career">
 
       {/* 🌈 Soft Corner Gradients */}
-      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-blue-200/40 blur-[120px] rounded-full" />
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-200/40 blur-[120px] rounded-full" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-pink-200/40 blur-[120px] rounded-full" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-yellow-200/40 blur-[120px] rounded-full" />
+      <div className="absolute top-0 left-0 w-[340px] h-[340px] bg-blue-200/30 blur-[80px] rounded-full" />
+      <div className="absolute top-0 right-0 w-[340px] h-[340px] bg-purple-200/30 blur-[80px] rounded-full" />
+      <div className="absolute bottom-0 left-0 w-[340px] h-[340px] bg-pink-200/30 blur-[80px] rounded-full" />
+      <div className="absolute bottom-0 right-0 w-[340px] h-[340px] bg-yellow-200/30 blur-[80px] rounded-full" />
 
       {/* 🌫️ Optional Background Image */}
       <img
         src={bg1}
         alt="bg"
+        loading="lazy"
+        decoding="async"
         className="absolute inset-0 w-full h-full object-cover opacity-10"
       />
 
@@ -512,7 +604,10 @@ const Index = () => {
         <div className="grid items-center gap-12 md:grid-cols-2 md:gap-14 lg:gap-16">
         <div className="max-w-xl md:max-w-none">
           {/* Badge */}
-          <div className="mb-4 inline-flex items-center gap-2 bg-white/70 border border-gray-200 px-4 py-1 rounded-full backdrop-blur-md">
+          <div className={cn(
+            "mb-4 inline-flex items-center gap-2 border border-gray-200 px-4 py-1 rounded-full",
+            "bg-white"
+          )}>
             <span className="text-yellow-500 text-xs">🏆</span>
             <span className="text-gray-700 text-xs tracking-widest font-semibold">
               CAREER & GROWTH
@@ -540,14 +635,17 @@ const Index = () => {
             {features.map((item, i) => (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -10 }}
+                initial={lightHomeMotion ? undefined : { opacity: 0, y: 24 }}
+                whileInView={lightHomeMotion ? undefined : { opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={lightHomeMotion ? undefined : { delay: i * 0.08 }}
+                whileHover={lightHomeMotion ? undefined : { y: -4 }}
                 className="group relative p-[1px] rounded-2xl"
               >
                 {/* Gradient Border */}
-                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 blur-sm transition`} />
+                {!lightHomeMotion && (
+                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 blur-sm transition`} />
+                )}
 
                 {/* Card */}
                 <div className="relative p-5 rounded-2xl bg-white border border-gray-200 shadow-sm group-hover:shadow-xl transition">
@@ -573,12 +671,12 @@ const Index = () => {
 
           {/* CTA */}
           <div className="flex gap-4">
-            <Link
-              to="/register"
-              className="px-7 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:scale-105 transition shadow-md"
-            >
-              Start Your Journey →
-            </Link>
+                <Link
+                  to="/register"
+                  className="px-7 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:scale-105 transition shadow-md"
+                >
+                  Start Your Journey →
+                </Link>
 
             <a
               href="#about"
@@ -592,18 +690,18 @@ const Index = () => {
         {/* Right: visual + highlight cards */}
         <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-none">
           <div
-            className="pointer-events-none absolute -inset-6 rounded-[2.5rem] opacity-40 blur-3xl"
-            style={{ background: `linear-gradient(135deg, ${B}33, #fbbf2444, ${P}33)` }}
+            className="pointer-events-none absolute -inset-6 rounded-[2.5rem] opacity-30 blur-2xl"
+            style={{ background: `linear-gradient(135deg, ${B}22, #fbbf2433, ${P}22)` }}
             aria-hidden
           />
           <div className="relative overflow-hidden rounded-3xl border border-white/90 shadow-[0_24px_60px_-12px_rgba(15,23,42,0.25)] aspect-[4/3] sm:aspect-[5/4] bg-slate-900 group">
-            <video
+            <AutoPlayVideo
               src={aboutVideo}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-              autoPlay
-              muted
-              loop
-              playsInline
+              poster={aboutImg}
+              className={cn(
+                "absolute inset-0 h-full w-full object-cover transition-transform duration-700",
+                lightHomeMotion ? "" : "group-hover:scale-105"
+              )}
             />
             {/* Dark gradient overlay for better text readability and depth */}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
@@ -741,9 +839,11 @@ const Index = () => {
                 { emoji:"🏫", title:"ICSE / ISC Boards — Science & Maths", sub:"EDDVA Boards Channel", desc:"Smart learning for ICSE Class 9–10 and ISC 11–12", color: P },
               ].map((ch, i) => (
                 <motion.a key={ch.sub} href="https://www.youtube.com/@ChemistryDilSe" target="_blank" rel="noopener noreferrer"
-                  initial={{ opacity:0, x:-20 }} whileInView={{ opacity:1, x:0 }}
-                  viewport={{ once:true }} transition={{ duration:0.4, delay: i*0.08 }}
-                  whileHover={{ x:5, boxShadow:`0 8px 32px ${ch.color}18` }}
+                  initial={lightHomeMotion ? undefined : { opacity: 0, x: -18 }}
+                  whileInView={lightHomeMotion ? undefined : { opacity: 1, x: 0 }}
+                  viewport={{ once:true }}
+                  transition={lightHomeMotion ? undefined : { duration: 0.35, delay: i * 0.06 }}
+                  whileHover={lightHomeMotion ? undefined : { x: 2, boxShadow:`0 8px 22px ${ch.color}14` }}
                   className="group flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-gray-200">
                   <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
                     style={{ background:`${ch.color}12` }}>
@@ -754,7 +854,7 @@ const Index = () => {
                     <p className="text-[11px] font-semibold text-gray-400 mt-0.5">Channel: {ch.sub}</p>
                     <p className="text-[12px] text-gray-500 mt-1">{ch.desc}</p>
                   </div>
-                  <motion.div whileHover={{ scale:1.05 }}
+                  <motion.div whileHover={lightHomeMotion ? undefined : { scale:1.05 }}
                     className="flex-shrink-0 flex items-center gap-1 rounded-xl border px-3 py-1.5 text-[12px] font-bold transition-all"
                     style={{ borderColor:`${ch.color}44`, color: ch.color, background:`${ch.color}08` }}>
                     Visit Channel <ChevronRight className="h-3.5 w-3.5" />
@@ -771,6 +871,7 @@ const Index = () => {
                     className="absolute inset-0 h-full w-full"
                     src="https://www.youtube.com/embed/8M5t19gOnJ8?si=ceuCYmu4AvaTy67J"
                     title="EDDVA YouTube Lesson"
+                    loading="lazy"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     referrerPolicy="strict-origin-when-cross-origin"
@@ -791,7 +892,7 @@ const Index = () => {
                   </p>
                 </div>
                 <motion.a href="https://www.youtube.com/@eddva" target="_blank" rel="noopener noreferrer"
-                  whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
+                  whileHover={lightHomeMotion ? undefined : { scale:1.06 }} whileTap={{ scale:0.96 }}
                   className="flex-shrink-0 rounded-2xl bg-red-600 px-5 py-2.5 text-[13px] font-black text-white shadow-md hover:bg-red-700 transition-colors">
                   Join Now!
                 </motion.a>
@@ -893,7 +994,42 @@ const Index = () => {
     
 
       {/* ══════════════════════ APP DOWNLOAD ══════════════════════ */}
-      <section className="landing-section relative overflow-hidden" id="app" style={{ background:"#FEFCE8" }}>
+      <section className="landing-section relative overflow-hidden pt-32 sm:pt-40" id="app" style={{ background:"#FEFCE8" }}>
+        {/* Top Coming Soon Pill Banner */}
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-5xl">
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex items-center justify-between gap-3 rounded-[24px] sm:rounded-[32px] border border-red-100 bg-gradient-to-r from-red-50/90 to-rose-50/90 px-4 py-3 sm:px-5 sm:py-3.5 shadow-[0_20px_50px_rgba(239,68,68,0.12)] backdrop-blur-md"
+          >
+            <div className="flex items-center gap-2 sm:gap-6">
+              <Sparkles className="hidden h-4 w-4 text-red-400 opacity-60 sm:block" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-white shadow-sm">
+                  <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 fill-red-50" />
+                </div>
+                <span className="text-[15px] sm:text-[20px] font-black tracking-tight text-red-600">Coming Soon!</span>
+              </div>
+              <div className="hidden h-8 w-px bg-red-200 sm:block" />
+              <p className="hidden text-[14px] font-bold text-red-500/80 lg:block">
+                We&apos;re working on something amazing for you.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2 sm:gap-6">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-1.5 rounded-xl sm:rounded-2xl bg-white px-3 py-2 sm:px-6 sm:py-3 text-[11px] sm:text-[14px] font-black text-red-600 shadow-sm transition-all hover:shadow-md"
+              >
+                <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-red-50" />
+                Stay Tuned
+              </motion.button>
+              <Sparkles className="hidden h-4 w-4 text-red-400 opacity-60 sm:block" />
+            </div>
+          </motion.div>
+        </div>
+
         {/* doodle watermark bg */}
         <div className="pointer-events-none absolute inset-0 select-none overflow-hidden opacity-[0.07]">
           {[
@@ -917,14 +1053,14 @@ const Index = () => {
 
         <div className="landing-shell">
           {/* ── Top rating badges ── */}
-          <FadeUp className="mb-14 flex flex-wrap items-center justify-center gap-10">
+          <FadeUp className="mb-14 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
             {[
               { rating:"4.3+", store:"Play Store",  icon:"▶", bg:"#34A853", label:"out of 5" },
               { rating:"4.2+", store:"App Store",   icon:"⬡", bg:"#0071E3", label:"out of 5" },
             ].map(r => (
-              <div key={r.store} className="flex items-center gap-3">
+              <div key={r.store} className="flex items-center gap-2 sm:gap-3">
                 {/* laurel left */}
-                <svg width="28" height="44" viewBox="0 0 28 44" fill="none" className="opacity-80">
+                <svg width="24" height="40" viewBox="0 0 28 44" fill="none" className="opacity-80 sm:w-[28px] sm:h-[44px]">
                   <path d="M14 2 C8 8 4 14 5 20 C6 26 10 30 14 34 C10 30 7 26 8 20 C9 14 12 8 14 2Z" fill="#D97706"/>
                   <path d="M14 8 C10 13 7 18 8 23 C9 28 12 32 14 36" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
                   <path d="M6 12 Q4 16 6 20" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
@@ -932,16 +1068,16 @@ const Index = () => {
                   <path d="M7 28 Q5 32 8 36" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
                 </svg>
                 {/* icon + text */}
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl text-white text-lg shadow-md"
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl text-white text-base sm:text-lg shadow-md"
                     style={{ background:r.bg }}>{r.icon}</div>
                   <div>
-                    <p className="text-[26px] font-black leading-none text-gray-900">{r.rating}</p>
-                    <p className="text-[12px] font-semibold text-gray-500">{r.label}</p>
+                    <p className="text-[20px] sm:text-[26px] font-black leading-none text-gray-900">{r.rating}</p>
+                    <p className="text-[10px] sm:text-[12px] font-semibold text-gray-500">{r.label}</p>
                   </div>
                 </div>
                 {/* laurel right (mirror) */}
-                <svg width="28" height="44" viewBox="0 0 28 44" fill="none" className="scale-x-[-1] opacity-80">
+                <svg width="24" height="40" viewBox="0 0 28 44" fill="none" className="scale-x-[-1] opacity-80 sm:w-[28px] sm:h-[44px]">
                   <path d="M14 2 C8 8 4 14 5 20 C6 26 10 30 14 34 C10 30 7 26 8 20 C9 14 12 8 14 2Z" fill="#D97706"/>
                   <path d="M14 8 C10 13 7 18 8 23 C9 28 12 32 14 36" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
                   <path d="M6 12 Q4 16 6 20" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
@@ -962,7 +1098,7 @@ const Index = () => {
                 <br />across India!
               </h2>
               <p className="mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-600">
-                Download the EDDVA app to access live classes, notes, assignments, and videos — even without internet.
+                The EDDVA mobile app is launching shortly! Get ready to access live classes, notes, assignments, and videos anywhere — even without internet.
               </p>
 
               {/* Dark store buttons */}
@@ -998,7 +1134,9 @@ const Index = () => {
 
             {/* RIGHT — floating phone */}
             <FadeUp delay={0.2} className="flex justify-center">
-              <motion.div animate={{ y:[0,-12,0] }} transition={{ duration:5, repeat:Infinity, ease:"easeInOut" as const }}
+              <motion.div
+                animate={lightHomeMotion ? undefined : { y: [0, -12, 0] }}
+                transition={lightHomeMotion ? undefined : { duration: 5, repeat: Infinity, ease: "easeInOut" as const }}
                 className="relative w-[220px] sm:w-[240px] lg:w-[252px]">
                 <div className="overflow-hidden rounded-[40px] border-[5px] border-gray-800 bg-white shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
                   {/* status bar */}
@@ -1062,12 +1200,22 @@ const Index = () => {
                 <div className="absolute -bottom-6 left-1/2 h-10 w-4/5 -translate-x-1/2 rounded-full blur-2xl opacity-40"
                   style={{ background:"#FDE68A" }} />
                 {/* floating atoms */}
-                <motion.div animate={{ rotate:360 }} transition={{ duration:12, repeat:Infinity, ease:"linear" as const }}
-                  className="absolute -left-10 top-20 text-[28px] select-none sm:text-[36px]">⚛️</motion.div>
-                <motion.div animate={{ y:[0,-8,0] }} transition={{ duration:3, repeat:Infinity, ease:"easeInOut" as const }}
-                  className="absolute -right-8 top-32 text-[24px] select-none sm:text-[30px]">📐</motion.div>
-                <motion.div animate={{ y:[0,8,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" as const, delay:1 }}
-                  className="absolute -left-8 bottom-24 text-[22px] select-none sm:text-[26px]">🧪</motion.div>
+                {lightHomeMotion ? (
+                  <>
+                    <div className="absolute -left-10 top-20 text-[28px] select-none sm:text-[36px]">⚛️</div>
+                    <div className="absolute -right-8 top-32 text-[24px] select-none sm:text-[30px]">📐</div>
+                    <div className="absolute -left-8 bottom-24 text-[22px] select-none sm:text-[26px]">🧪</div>
+                  </>
+                ) : (
+                  <>
+                    <motion.div animate={{ rotate:360 }} transition={{ duration:12, repeat:Infinity, ease:"linear" as const }}
+                      className="absolute -left-10 top-20 text-[28px] select-none sm:text-[36px]">⚛️</motion.div>
+                    <motion.div animate={{ y:[0,-8,0] }} transition={{ duration:3, repeat:Infinity, ease:"easeInOut" as const }}
+                      className="absolute -right-8 top-32 text-[24px] select-none sm:text-[30px]">📐</motion.div>
+                    <motion.div animate={{ y:[0,8,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" as const, delay:1 }}
+                      className="absolute -left-8 bottom-24 text-[22px] select-none sm:text-[26px]">🧪</motion.div>
+                  </>
+                )}
               </motion.div>
             </FadeUp>
           </div>
@@ -1082,6 +1230,8 @@ const Index = () => {
   <img
     src={bg2}
     alt="background"
+    loading="lazy"
+    decoding="async"
     className="absolute inset-0 w-full h-full object-cover opacity-20"
   />
 

@@ -16,11 +16,14 @@ import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { tokenStorage } from "@/lib/api/client";
+import { getApiOrigin } from "@/lib/api-config";
+import { ensureBattleSocket, disconnectBattleSocket } from "@/lib/battle-socket";
 
 const EXAM_OPTIONS = [
   { key: "jee",     label: "JEE",           desc: "Joint Entrance Examination", color: "from-orange-400 to-red-500",    bg: "bg-orange-50",  border: "border-orange-300", text: "text-orange-600"  },
@@ -28,6 +31,14 @@ const EXAM_OPTIONS = [
   { key: "cbse_10", label: "CBSE Class 10", desc: "Board Examinations",          color: "from-blue-400 to-indigo-500",  bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-600"   },
   { key: "cbse_12", label: "CBSE Class 12", desc: "Board Examinations",          color: "from-violet-400 to-purple-500", bg: "bg-violet-50", border: "border-violet-300", text: "text-violet-600" },
 ] as const;
+
+interface IncomingBattleChallenge {
+  challengeId: string;
+  fromStudentId: string;
+  expiresInSeconds: number;
+  batchId?: string;
+  batchName?: string;
+}
 
 interface NavItem {
   label: string;
@@ -98,8 +109,11 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: unreadNotifCount = 0 } = useUnreadCount();
+  const isCompactLayout = useIsCompactLayout();
+  const lightDashboardShell = isCompactLayout || user?.role === "student" || user?.role === "teacher";
 
   // Close profile dropdown on any outside click (production-grade)
   const handleOutsideClick = useCallback((e: MouseEvent) => {
@@ -109,6 +123,10 @@ const DashboardLayout = () => {
   }, []);
 
   useEffect(() => {
+    latestPathRef.current = location.pathname;
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (showUserMenu) {
       document.addEventListener("mousedown", handleOutsideClick, true);
     } else {
@@ -116,6 +134,16 @@ const DashboardLayout = () => {
     }
     return () => document.removeEventListener("mousedown", handleOutsideClick, true);
   }, [showUserMenu, handleOutsideClick]);
+
+  /* Prevent page scroll behind the mobile drawer (iOS / touch) */
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileSidebarOpen]);
 
   usePresenceHeartbeat();
 
@@ -190,6 +218,42 @@ const DashboardLayout = () => {
     updateProfile.mutate({ examTarget: et });
   }
 
+  useEffect(() => {
+    if (!isStudent) return;
+    const myStudentId = me?.student?.id;
+    if (!myStudentId) return;
+
+    const token = tokenStorage.getAccess();
+    if (!token) return;
+
+    const raw = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
+    const backendUrl = (() => {
+      try {
+        return new URL(raw).origin;
+      } catch {
+        return raw;
+      }
+    })();
+
+    const socket = ensureBattleSocket(backendUrl, token);
+
+    socket.on("connect", () => {
+      socket.emit("lobby:join", {
+        studentId: myStudentId,
+        tenantId: user?.tenantId,
+      });
+    });
+
+    socket.on("battle:incoming_request", (payload: IncomingBattleChallenge) => {
+      if (latestPathRef.current.startsWith("/student/battle")) return;
+      navigate("/student/battle", { state: { incomingChallenge: payload } });
+    });
+
+    return () => {
+      disconnectBattleSocket();
+    };
+  }, [isStudent, me?.student?.id, navigate, user?.tenantId]);
+
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
     const isFocusPage = /quiz|live|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
@@ -217,8 +281,9 @@ const DashboardLayout = () => {
       if (meLoading) {
         // Still fetching me — show a neutral loader so there's no content flash
         return (
-          <div className="min-h-screen flex items-center justify-center bg-slate-50 font-poppins">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          <div className="flex min-h-dvh items-center justify-center bg-slate-50 font-poppins">
+            <Loader2 className="h-8 w-8 shrink-0 animate-spin text-indigo-400" aria-hidden />
+            <span className="sr-only">Loading…</span>
           </div>
         );
       }
@@ -240,10 +305,13 @@ const DashboardLayout = () => {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-white border-r border-slate-100 relative overflow-hidden" style={{ boxShadow: "4px 0 24px rgba(0,0,0,0.06)" }}>
+    <div
+      className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
+      style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
+    >
       {/* ── Brand ── */}
       <div className="h-24 px-4 flex items-center justify-center shrink-0 border-b border-slate-100/50">
-        <img src={edvaLogo} alt="EDDVA" className="h-16 w-auto max-w-full object-contain cursor-pointer transition-transform duration-500 hover:scale-105" />
+        <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
       </div>
 
       {/* ── Nav ── */}
@@ -337,11 +405,13 @@ const DashboardLayout = () => {
     : user.role === "super_admin"   ? "/super-admin/settings"
     : "/teacher/profile";
 
+  const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
+
   return (
     <div
-      className={cn("flex h-screen overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "super_admin" || user.role === "teacher") ? "font-sans bg-white" : "font-poppins")}
+      className={cn("flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "super_admin" || user.role === "teacher") ? "font-sans bg-white" : "font-poppins")}
     >
-      <AeroBackground />
+      {!lightDashboardShell && <AeroBackground />}
       
       {/* ── Desktop Sidebar ── */}
       <aside className={cn(
@@ -354,28 +424,56 @@ const DashboardLayout = () => {
       {/* ── Mobile Sidebar ── */}
       <AnimatePresence>
         {mobileSidebarOpen && (
-          <div className="lg:hidden fixed inset-0 z-[100] flex">
-            <motion.div initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: "spring", damping: 26, stiffness: 250 }} className="w-[280px]">
-              <SidebarContent />
+          <div className="fixed inset-0 z-[100] flex lg:hidden">
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="h-full w-[min(280px,100vw-40px)] shadow-xl"
+            >
+              <div className="h-full w-full min-h-0">
+                <SidebarContent />
+              </div>
             </motion.div>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileSidebarOpen(false)} className="flex-1 bg-slate-900/10 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileSidebarOpen(false)}
+              className={cn(
+                "min-h-0 min-w-0 flex-1 touch-none",
+                lightDashboardShell ? "bg-slate-900/16" : "bg-slate-900/20 backdrop-blur-sm"
+              )}
+            />
           </div>
         )}
       </AnimatePresence>
 
-      {/* ── Main Area ── */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <header className="h-20 shrink-0 flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 z-[60] backdrop-blur-3xl" style={{ background: "rgba(255,255,255,0.4)" }}>
-           <div className="flex items-center gap-6">
+      {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
+      <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
+        <header
+          className={cn(
+            "z-[60] flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-3 sm:px-6 md:px-8 lg:px-10",
+            lightDashboardShell
+              ? "bg-white"
+              : "bg-white/80 backdrop-blur-md supports-[backdrop-filter]:md:bg-white/40"
+          )}
+          style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px))" }}
+        >
+           <div className="flex min-w-0 items-center gap-3 sm:gap-6">
               <button
-                onClick={() => window.innerWidth < 1024 ? setMobileSidebarOpen(!mobileSidebarOpen) : setSidebarOpen(!sidebarOpen)}
-                className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm"
+                type="button"
+                onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-100 hover:text-indigo-600"
+                aria-expanded={navOpen}
+                aria-label="Toggle menu"
               >
-                {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                <Menu className="h-4 w-4" />
               </button>
            </div>
 
-           <div className="flex items-center gap-3">
+           <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
               {/* ── Exam Preference Switcher (students only) ── */}
               {isStudent && examTarget && (
                 <div className="relative">
@@ -490,11 +588,15 @@ const DashboardLayout = () => {
            </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
-           <div className={cn(
-             "mx-auto w-full transition-all duration-200",
-             location.pathname.includes("/live") || location.pathname.includes("/quiz") ? "max-w-none p-0" : "max-w-[1700px] px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-24"
-           )}>
+        <main className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
+           <div
+            className={cn(
+              "mx-auto w-full transition-all duration-200",
+              location.pathname.includes("/live") || location.pathname.includes("/quiz")
+                ? "max-w-none p-0"
+                : "max-w-[1700px] px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
+            )}
+           >
               <PageErrorBoundary>
                 <Outlet />
               </PageErrorBoundary>

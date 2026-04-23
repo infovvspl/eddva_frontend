@@ -6,6 +6,7 @@ import { B, P, T, BG_STUDIO } from "@/components/landing/DesignTokens";
 import { FadeUp } from "@/components/landing/LandingPrimitives";
 import { studyMaterialApi, type StudyMaterial, type StudyMaterialExam } from "@/lib/api/study-material";
 import { LANDING_TRACK_TO_EXAM } from "@/lib/landing-study-materials";
+import { useAuthStore } from "@/lib/auth-store";
 import { 
   FileText, Search, 
   ArrowRight, Filter,
@@ -76,6 +77,7 @@ const examCategoryMap: Record<string, { label: string; exam: StudyMaterialExam; 
 
 export default function StudyMaterialPage() {
   const { type = "pyqs" } = useParams<{ type: string }>();
+  const { isAuthenticated } = useAuthStore();
   const [activeSubject, setActiveSubject] = useState("General");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -85,12 +87,24 @@ export default function StudyMaterialPage() {
 
   useEffect(() => {
     if (!examCategory) return;
+    let cancelled = false;
     setLoading(true);
-    studyMaterialApi
-      .listPublic({ exam: examCategory.exam, search: query.trim() || undefined, limit: 200 })
-      .then(setMaterials)
-      .finally(() => setLoading(false));
-  }, [examCategory, query]);
+    const load = async () => {
+      try {
+        const hasAccess = isAuthenticated
+          ? (await studyMaterialApi.accessStatus({ exam: examCategory.exam })).enrolled
+          : false;
+        const rows = hasAccess
+          ? await studyMaterialApi.list({ exam: examCategory.exam, search: query.trim() || undefined, limit: 200 })
+          : await studyMaterialApi.listPublic({ exam: examCategory.exam, search: query.trim() || undefined, limit: 200 });
+        if (!cancelled) setMaterials(rows);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [examCategory, query, isAuthenticated]);
 
   const filteredMaterials = useMemo(() => {
     if (!examCategory) return [];

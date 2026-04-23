@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { format, addDays, startOfWeek, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -12,7 +13,6 @@ import {
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
   useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
-  useUpdateStudentProfile,
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
 
@@ -28,6 +28,13 @@ const EXAM_OPTIONS = [
 
 const YEAR_OPTIONS = [2025, 2026, 2027, 2028];
 const HOURS_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
+const CLASS_OPTIONS = [
+  { key: "9", label: "Class 9" },
+  { key: "10", label: "Class 10" },
+  { key: "11", label: "Class 11" },
+  { key: "12", label: "Class 12" },
+  { key: "dropper", label: "Dropper" },
+];
 
 const SUBJECT_CFG: Record<string, { color: string; bg: string; border: string; dot: string; ring: string }> = {
   Physics:     { color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200", dot: "bg-indigo-500",  ring: "#6366f1" },
@@ -56,21 +63,22 @@ function countdownDays(examYear?: number): number | null {
 
 // ─── Preference Wizard ─────────────────────────────────────────────────────────
 
-interface WizardState { examTarget: string; examYear: number; dailyStudyHours: number; }
+interface WizardState { examTarget: string; examYear: number; currentClass: "9" | "10" | "11" | "12" | "dropper"; dailyStudyHours: number; }
 
-function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardState>; onComplete: (p: WizardState) => void }) {
+function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<WizardState>; onComplete: (p: WizardState) => void; onClose: () => void }) {
   const [step, setStep] = useState(0);
   const [prefs, setPrefs] = useState<WizardState>({
     examTarget:      initial.examTarget      ?? "",
     examYear:        initial.examYear        ?? new Date().getFullYear() + 1,
+    currentClass:    initial.currentClass    ?? "11",
     dailyStudyHours: initial.dailyStudyHours ?? 4,
   });
 
-  const steps = ["Exam Target", "Target Year", "Daily Hours"];
+  const steps = ["Exam Target", "Target Year", "Current Class", "Daily Hours"];
   const canNext = step === 0 ? !!prefs.examTarget : true;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Step indicator */}
         <div className="mb-8">
@@ -89,12 +97,15 @@ function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardStat
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="flex justify-end mb-2">
+            <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700">Close</button>
+          </div>
           {step === 0 && (
             <div>
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎯</div>
                 <h2 className="text-2xl font-bold text-gray-900">What's your target exam?</h2>
-                <p className="text-gray-500 mt-1 text-sm">Your AI roadmap and study plan will be built around this</p>
+                <p className="text-gray-500 mt-1 text-sm">Your study plan will be made based on this exam</p>
               </div>
               <div className="space-y-3">
                 {EXAM_OPTIONS.map(opt => (
@@ -118,7 +129,7 @@ function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardStat
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">📅</div>
                 <h2 className="text-2xl font-bold text-gray-900">Which year are you targeting?</h2>
-                <p className="text-gray-500 mt-1 text-sm">We'll calculate your prep timeline and daily targets</p>
+                <p className="text-gray-500 mt-1 text-sm">This helps us plan your monthly study schedule</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {YEAR_OPTIONS.map(yr => {
@@ -140,9 +151,27 @@ function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardStat
           {step === 2 && (
             <div>
               <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🏫</div>
+                <h2 className="text-2xl font-bold text-gray-900">What is your current class?</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {CLASS_OPTIONS.map(opt => (
+                  <button key={opt.key} onClick={() => setPrefs(p => ({ ...p, currentClass: opt.key as WizardState["currentClass"] }))}
+                    className={`p-4 rounded-xl border-2 text-center transition-all
+                      ${prefs.currentClass === opt.key ? "border-sky-500 bg-sky-50 shadow-sm" : "border-gray-200 hover:border-sky-300 hover:bg-gray-50"}`}>
+                    <div className="text-base font-semibold text-gray-900">{opt.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div>
+              <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">⏰</div>
                 <h2 className="text-2xl font-bold text-gray-900">How many hours per day?</h2>
-                <p className="text-gray-500 mt-1 text-sm">Be realistic — consistency beats cramming every time</p>
+                <p className="text-gray-500 mt-1 text-sm">Choose hours you can follow daily</p>
               </div>
               <div className="grid grid-cols-4 gap-2 mb-6">
                 {HOURS_OPTIONS.map(h => (
@@ -154,7 +183,7 @@ function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardStat
                 ))}
               </div>
               <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Your AI Plan Will Be Based On</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Your Plan Will Be Based On</h3>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
                     <div className="text-base font-bold text-indigo-700">{fmtExam(prefs.examTarget)}</div>
@@ -163,6 +192,10 @@ function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardStat
                   <div>
                     <div className="text-base font-bold text-violet-700">{prefs.examYear}</div>
                     <div className="text-xs text-gray-500">Target Year</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-sky-700">{CLASS_OPTIONS.find(c => c.key === prefs.currentClass)?.label}</div>
+                    <div className="text-xs text-gray-500">Current Class</div>
                   </div>
                   <div>
                     <div className="text-base font-bold text-emerald-700">{prefs.dailyStudyHours}h/day</div>
@@ -185,12 +218,12 @@ function PreferenceWizard({ initial, onComplete }: { initial: Partial<WizardStat
               disabled={!canNext}
               className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
               {step === steps.length - 1
-                ? <><Sparkles className="w-4 h-4" /> Generate My Roadmap &amp; Plan</>
+                ? <><Sparkles className="w-4 h-4" /> Generate Plan</>
                 : <>Continue <ArrowRight className="w-4 h-4" /></>}
             </button>
           </div>
         </div>
-        <p className="text-center text-xs text-gray-400 mt-4">You can change these preferences anytime in your profile</p>
+        <p className="text-center text-xs text-gray-400 mt-4">You can change these later from your profile</p>
       </div>
     </div>
   );
@@ -209,16 +242,16 @@ function GeneratingView() {
             <Brain className="w-10 h-10 text-indigo-500 animate-pulse" />
           </div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Building your personalized roadmap</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Creating your study plan</h2>
         <p className="text-gray-500 mb-8 text-sm">
-          AI is analyzing your exam target, enrolled curriculum, and weak areas to create a custom plan…
+          We are preparing your monthly plan based on your exam and topics...
         </p>
         <div className="space-y-3">
           {[
-            { label: "Scanning your curriculum", icon: "📚" },
-            { label: "Identifying weak topics",  icon: "🔍" },
-            { label: "Building study schedule",  icon: "📅" },
-            { label: "Optimizing for your exam", icon: "🎯" },
+            { label: "Checking your syllabus", icon: "📚" },
+            { label: "Finding important topics",  icon: "🔍" },
+            { label: "Making daily schedule",  icon: "📅" },
+            { label: "Preparing for your exam", icon: "🎯" },
           ].map((s, i) => (
             <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
               <span className="text-lg">{s.icon}</span>
@@ -335,7 +368,7 @@ function CurriculumRoadmap() {
   if (!report?.subjects?.length) return (
     <div className="text-center py-16 text-gray-400">
       <Map className="w-12 h-12 mx-auto mb-3 opacity-30" />
-      <p className="text-sm">Enroll in a course to see your curriculum roadmap</p>
+      <p className="text-sm">AI syllabus is being prepared for your target exam. Please refresh in a few seconds.</p>
     </div>
   );
   const { summary } = report;
@@ -401,10 +434,11 @@ const TYPE_CFG: Record<string, { icon: React.ReactNode; color: string; bg: strin
   doubt_session: { icon: <Brain      className="w-4 h-4" />, color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
 };
 
-function PlanItemCard({ item, onComplete, onSkip }: {
+function PlanItemCard({ item, onComplete, onSkip, onOpen }: {
   item: StudyPlanItem;
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
+  onOpen: (item: StudyPlanItem) => void;
 }) {
   const t       = TYPE_CFG[item.type] ?? TYPE_CFG.lecture;
   const isDone  = item.status === "completed";
@@ -436,6 +470,12 @@ function PlanItemCard({ item, onComplete, onSkip }: {
       </div>
       {!isDone && !isSkip && (
         <div className="flex items-center gap-1 shrink-0">
+          {(item.content?.notesUrl || item.content?.videoUrl || item.content?.topicId) && (
+            <button onClick={() => onOpen(item)}
+              className="px-2 py-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-medium">
+              Open
+            </button>
+          )}
           <button onClick={() => onSkip(item.id)}
             className="px-2 py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
             Skip
@@ -489,6 +529,7 @@ type ActiveTab = "plan" | "roadmap";
 type PlanTab   = "today" | "week";
 
 export default function StudentStudyPlanPage() {
+  const navigate = useNavigate();
   const { data: me, isLoading: meLoading } = useStudentMe();
   const student = me?.student;
 
@@ -502,6 +543,7 @@ export default function StudentStudyPlanPage() {
   const [planTab,     setPlanTab]     = useState<PlanTab>("today");
   const [selectedDay, setSelectedDay] = useState(today);
   const [wizardDone,  setWizardDone]  = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan();
   const { data: weekData   = {} }                         = useWeeklyPlanGrouped(ws, we);
@@ -510,9 +552,7 @@ export default function StudentStudyPlanPage() {
   const regenerate    = useRegeneratePlan();
   const complete      = useCompletePlanItem();
   const skip          = useSkipPlanItem();
-  const updateProfile = useUpdateStudentProfile();
 
-  const hasPrefs = !!(student?.examTarget && student?.examYear);
   const hasPlan  = todayItems.length > 0;
 
   const bySubject = useMemo(() => {
@@ -531,27 +571,25 @@ export default function StudentStudyPlanPage() {
 
   const handleWizardComplete = async (prefs: WizardState) => {
     setWizardDone(true);
-    try {
-      await updateProfile.mutateAsync({
-        examTarget:      prefs.examTarget,
-        examYear:        prefs.examYear,
-        dailyStudyHours: prefs.dailyStudyHours,
-      });
-      generate.mutate(undefined, {
-        onSuccess: () => { toast.success("Your roadmap and study plan are ready!"); setWizardDone(false); },
-        onError:   () => { toast.error("Could not generate plan. Please try again."); setWizardDone(false); },
-      });
-    } catch {
-      toast.error("Could not save preferences.");
-      setWizardDone(false);
-    }
+    generate.mutate({
+      targetExam: prefs.examTarget,
+      examYear: String(prefs.examYear),
+      currentClass: prefs.currentClass,
+      dailyStudyHours: prefs.dailyStudyHours,
+    }, {
+      onSuccess: () => {
+        toast.success("Your roadmap and study plan are ready!");
+        setWizardDone(false);
+        setShowWizard(false);
+      },
+      onError: () => {
+        toast.error("Could not generate plan. Please try again.");
+        setWizardDone(false);
+      },
+    });
   };
 
-  const handleGenerate = () =>
-    generate.mutate(undefined, {
-      onSuccess: () => toast.success("Study plan generated!"),
-      onError:   () => toast.error("Could not generate plan. Please try again."),
-    });
+  const handleGenerate = () => setShowWizard(true);
 
   const handleRegenerate = () =>
     regenerate.mutate(undefined, {
@@ -559,23 +597,53 @@ export default function StudentStudyPlanPage() {
       onError:   () => toast.error("Could not regenerate. Please try again."),
     });
 
+  const handleOpenPlanItem = (item: StudyPlanItem) => {
+    const notesUrl = item.content?.notesUrl?.trim();
+    const videoUrl = item.content?.videoUrl?.trim();
+    const topicId = item.content?.topicId;
+
+    if (item.type === "practice" && topicId) {
+      navigate(`/student/quiz?topicId=${topicId}`);
+      return;
+    }
+    // Study-plan notes should always use AI self-study context, not teacher-uploaded notes files.
+    if (item.type === "revision" && topicId) {
+      navigate(`/student/ai-study/${topicId}`);
+      return;
+    }
+    if ((item.type === "lecture" || item.type === "revision") && videoUrl) {
+      window.open(videoUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (topicId) {
+      navigate(`/student/ai-study/${topicId}`);
+      return;
+    }
+    toast.error("No study resource is attached to this task yet.");
+  };
+
   if (meLoading) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
-  if (!hasPrefs && !wizardDone) return (
-    <PreferenceWizard
-      initial={{ examTarget: student?.examTarget, examYear: student?.examYear, dailyStudyHours: student?.dailyStudyHours ?? 4 }}
-      onComplete={handleWizardComplete}
-    />
-  );
-
   if (wizardDone || generate.isPending || regenerate.isPending) return <GeneratingView />;
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {showWizard && (
+        <PreferenceWizard
+          initial={{
+            examTarget: student?.examTarget,
+            examYear: student?.examYear,
+            currentClass: (student?.currentClass as WizardState["currentClass"]) ?? "11",
+            dailyStudyHours: student?.dailyStudyHours ?? 4,
+          }}
+          onComplete={handleWizardComplete}
+          onClose={() => setShowWizard(false)}
+        />
+      )}
       {/* Hero */}
       <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white">
         <div className="max-w-5xl mx-auto px-4 py-6">
@@ -663,13 +731,13 @@ export default function StudentStudyPlanPage() {
                 ) : !hasPlan ? (
                   <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
                     <Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-gray-900">No plan for today yet</h3>
+                    <h3 className="text-lg font-bold text-gray-900">No plan created yet</h3>
                     <p className="text-gray-500 mt-2 mb-6 text-sm max-w-sm mx-auto">
-                      Let AI generate a personalized schedule based on your {fmtExam(student?.examTarget)} curriculum and weak areas
+                      Click below to create your monthly plan for {fmtExam(student?.examTarget)}
                     </p>
                     <button onClick={handleGenerate}
                       className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors mx-auto flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" /> Generate My Study Plan
+                      <Sparkles className="w-4 h-4" /> Generate Study Plan
                     </button>
                   </div>
                 ) : (
@@ -696,6 +764,7 @@ export default function StudentStudyPlanPage() {
                               <PlanItemCard key={item.id} item={item}
                                 onComplete={id => complete.mutate(id)}
                                 onSkip={id => skip.mutate(id)}
+                                onOpen={handleOpenPlanItem}
                               />
                             ))}
                           </div>
@@ -722,6 +791,7 @@ export default function StudentStudyPlanPage() {
                           <PlanItemCard key={item.id} item={item}
                             onComplete={id => complete.mutate(id)}
                             onSkip={id => skip.mutate(id)}
+                            onOpen={handleOpenPlanItem}
                           />
                         ))}
                       </div>
@@ -752,28 +822,12 @@ export default function StudentStudyPlanPage() {
                   <Sparkles className="w-4 h-4 text-indigo-500" />
                   <h3 className="text-sm font-semibold text-gray-700">AI Plan</h3>
                 </div>
-                <p className="text-xs text-gray-500 mb-3">Regenerate based on your latest test scores and weak topics</p>
+                <p className="text-xs text-gray-500 mb-3">Create a fresh monthly plan with the next set of topics</p>
                 <button onClick={handleRegenerate} disabled={regenerate.isPending}
                   className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
                   <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
-                  {regenerate.isPending ? "Regenerating…" : "Regenerate Plan"}
+                  {regenerate.isPending ? "Creating..." : "Regenerate Plan"}
                 </button>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
-                <div className="space-y-2">
-                  {[
-                    { label: "Practice Tests", icon: <Trophy   className="w-4 h-4" />, cls: "text-red-600    bg-red-50    border-red-100" },
-                    { label: "AI Self Study",  icon: <Brain    className="w-4 h-4" />, cls: "text-indigo-600 bg-indigo-50 border-indigo-100" },
-                    { label: "Battle Arena",   icon: <Zap      className="w-4 h-4" />, cls: "text-orange-600 bg-orange-50 border-orange-100" },
-                    { label: "Ask a Doubt",    icon: <BookOpen className="w-4 h-4" />, cls: "text-teal-600   bg-teal-50   border-teal-100" },
-                  ].map(a => (
-                    <button key={a.label} className={`w-full flex items-center gap-3 p-2.5 rounded-xl border text-sm font-medium hover:shadow-sm transition-all ${a.cls}`}>
-                      {a.icon} {a.label} <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-60" />
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <button onClick={() => setActiveTab("roadmap")}
