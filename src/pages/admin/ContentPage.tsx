@@ -62,13 +62,13 @@ const RES_TYPES: {
   icon: React.ComponentType<{ className?: string }>;
   color: string; bg: string; border: string; isUrl?: boolean; accept?: string;
 }[] = [
-  { value: "pdf",   label: "PDF Notes",  shortLabel: "PDF",     icon: FileText,     color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200",   accept: ".pdf" },
-  { value: "dpp",   label: "DPP",        shortLabel: "DPP",     icon: PenLine,      color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200", accept: ".pdf,.doc,.docx" },
-  { value: "pyq",   label: "PYQ",        shortLabel: "PYQ",     icon: FileQuestion, color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200", accept: ".pdf,.doc,.docx" },
-  { value: "notes", label: "Notes",      shortLabel: "Notes",   icon: BookMarked,   color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
-  { value: "video", label: "YouTube",    shortLabel: "YouTube", icon: Youtube,      color: "text-rose-600",    bg: "bg-rose-50",    border: "border-rose-200",  isUrl: true },
-  { value: "link",  label: "Link",       shortLabel: "Link",    icon: Link2,        color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200",  isUrl: true },
-];
+    { value: "pdf", label: "Lecture Notes", shortLabel: "PDF", icon: FileText, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", accept: ".pdf" },
+    { value: "dpp", label: "DPP", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx" },
+    { value: "pyq", label: "PYQ", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx" },
+    { value: "notes", label: "Notes", shortLabel: "Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
+    { value: "video", label: "YouTube", shortLabel: "YouTube", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
+    { value: "link", label: "Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
+  ];
 
 function rCfg(type: TopicResourceType) {
   return RES_TYPES.find(r => r.value === type) ?? RES_TYPES[0];
@@ -708,7 +708,7 @@ function SubjectTree({
 
   const visibleChapters = search
     ? chapters.filter((ch: Chapter) => matchSearch(ch.name) ||
-        (ch as any).topics?.some?.((t: Topic) => matchSearch(t.name)))
+      (ch as any).topics?.some?.((t: Topic) => matchSearch(t.name)))
     : chapters;
 
   const handleAddChapter = async (name: string) => {
@@ -1154,11 +1154,11 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
       for (const row of rows) {
         const subject = String(row["Subject"] || row["subject"] || "").trim();
         const chapter = String(row["Chapter"] || row["chapter"] || "").trim();
-        const topic   = String(row["Topic"]   || row["topic"]   || "").trim();
+        const topic = String(row["Topic"] || row["topic"] || "").trim();
         if (!subject || !chapter || !topic) continue;
-        const jee   = Number(row["JEE Weightage"]  || row["jeeWeightage"]  || 0);
-        const neet  = Number(row["NEET Weightage"] || row["neetWeightage"] || 0);
-        const mins  = Number(row["Minutes"] || row["estimatedStudyMinutes"] || 60);
+        const jee = Number(row["JEE Weightage"] || row["jeeWeightage"] || 0);
+        const neet = Number(row["NEET Weightage"] || row["neetWeightage"] || 0);
+        const mins = Number(row["Minutes"] || row["estimatedStudyMinutes"] || 60);
 
         if (!subjectMap.has(subject)) subjectMap.set(subject, new Map());
         const chapMap = subjectMap.get(subject)!;
@@ -1263,10 +1263,10 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
               <div className={cn(
                 "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all",
                 step === s ? "bg-indigo-600 text-white" :
-                (["input","preview","done"].indexOf(step) > i) ? "bg-emerald-100 text-emerald-700" :
-                "bg-slate-200 text-slate-400"
+                  (["input", "preview", "done"].indexOf(step) > i) ? "bg-emerald-100 text-emerald-700" :
+                    "bg-slate-200 text-slate-400"
               )}>
-                {(["input","preview","done"].indexOf(step) > i)
+                {(["input", "preview", "done"].indexOf(step) > i)
                   ? <CheckCircle2 className="w-3 h-3" />
                   : <span>{i + 1}</span>}
                 {s === "input" ? "Input" : s === "preview" ? "Preview" : "Done"}
@@ -1370,7 +1370,7 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
                 {[
                   { label: "Subjects", val: parsedSubjects.length, color: "text-indigo-600", bg: "bg-indigo-50" },
                   { label: "Chapters", val: totalChapters, color: "text-amber-600", bg: "bg-amber-50" },
-                  { label: "Topics",   val: totalTopics,   color: "text-emerald-600", bg: "bg-emerald-50" },
+                  { label: "Topics", val: totalTopics, color: "text-emerald-600", bg: "bg-emerald-50" },
                 ].map(s => (
                   <div key={s.label} className={cn("rounded-2xl p-4 text-center", s.bg)}>
                     <p className={cn("text-3xl font-black", s.color)}>{s.val}</p>
@@ -1443,7 +1443,7 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
                   {[
                     { label: "Subjects", val: result.created.subjects },
                     { label: "Chapters", val: result.created.chapters },
-                    { label: "Topics",   val: result.created.topics },
+                    { label: "Topics", val: result.created.topics },
                   ].map(r => (
                     <div key={r.label} className="flex justify-between text-sm">
                       <span className="text-slate-600 font-medium">{r.label}</span>
@@ -1456,7 +1456,7 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
                   {[
                     { label: "Subjects", val: result.skipped.subjects },
                     { label: "Chapters", val: result.skipped.chapters },
-                    { label: "Topics",   val: result.skipped.topics },
+                    { label: "Topics", val: result.skipped.topics },
                   ].map(r => (
                     <div key={r.label} className="flex justify-between text-sm">
                       <span className="text-slate-600 font-medium">{r.label}</span>
@@ -1518,15 +1518,15 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
 // ─── Add Subject Modal ────────────────────────────────────────────────────────
 
 const PRESET_SUBJECTS = [
-  { name: "Physics",          color: "#3B82F6", icon: "⚡" },
-  { name: "Chemistry",        color: "#10B981", icon: "🧪" },
-  { name: "Mathematics",      color: "#F59E0B", icon: "📐" },
-  { name: "Biology",          color: "#22C55E", icon: "🧬" },
-  { name: "English",          color: "#8B5CF6", icon: "📝" },
-  { name: "History",          color: "#EC4899", icon: "📜" },
+  { name: "Physics", color: "#3B82F6", icon: "⚡" },
+  { name: "Chemistry", color: "#10B981", icon: "🧪" },
+  { name: "Mathematics", color: "#F59E0B", icon: "📐" },
+  { name: "Biology", color: "#22C55E", icon: "🧬" },
+  { name: "English", color: "#8B5CF6", icon: "📝" },
+  { name: "History", color: "#EC4899", icon: "📜" },
   { name: "Computer Science", color: "#0EA5E9", icon: "💻" },
-  { name: "Geography",        color: "#14B8A6", icon: "🌍" },
-  { name: "Economics",        color: "#F97316", icon: "📊" },
+  { name: "Geography", color: "#14B8A6", icon: "🌍" },
+  { name: "Economics", color: "#F97316", icon: "📊" },
 ];
 
 function AddSubjectModal({ batchId, examTarget, onClose }: { batchId: string; examTarget: string; onClose: () => void }) {
@@ -1607,7 +1607,7 @@ function AddSubjectModal({ batchId, examTarget, onClose }: { batchId: string; ex
             {/* Color */}
             <div className="flex items-center gap-2">
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Color:</p>
-              {["#3B82F6","#8B5CF6","#10B981","#F59E0B","#EF4444","#EC4899","#0EA5E9","#F97316"].map(c => (
+              {["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#0EA5E9", "#F97316"].map(c => (
                 <button key={c} onClick={() => setColor(c)}
                   className={cn("w-6 h-6 rounded-full transition-all", color === c && "ring-2 ring-offset-2 ring-slate-400 scale-110")}
                   style={{ background: c }} />
@@ -1730,13 +1730,13 @@ function ReactMarkdownContent({ content }: { content: string }) {
 }
 
 const DIFFICULTY_LEVELS = [
-  { id: "basic",        label: "Basic",        desc: "Introductory, easy language" },
-  { id: "intermediate", label: "Intermediate", desc: "Standard curriculum depth"   },
-  { id: "advanced",     label: "Advanced",     desc: "Competitive exam level"       },
+  { id: "basic", label: "Basic", desc: "Introductory, easy language" },
+  { id: "intermediate", label: "Intermediate", desc: "Standard curriculum depth" },
+  { id: "advanced", label: "Advanced", desc: "Competitive exam level" },
 ];
 
 const LENGTH_OPTIONS = [
-  { id: "brief",    label: "Brief",    desc: "~300 words" },
+  { id: "brief", label: "Brief", desc: "~300 words" },
   { id: "standard", label: "Standard", desc: "~800 words" },
   { id: "detailed", label: "Detailed", desc: "~1500 words" },
 ];
@@ -2253,11 +2253,11 @@ function LectureAdminCard({ lec }: { lec: AdminTopicLectureRow }) {
 function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
   const statusColor =
     batch.status === "active" ? "#10B981" :
-    batch.status === "completed" ? "#3B82F6" : "#94A3B8";
+      batch.status === "completed" ? "#3B82F6" : "#94A3B8";
   const statusBg =
     batch.status === "active" ? "bg-emerald-50 text-emerald-700" :
-    batch.status === "completed" ? "bg-blue-50 text-blue-700" :
-    "bg-slate-100 text-slate-500";
+      batch.status === "completed" ? "bg-blue-50 text-blue-700" :
+        "bg-slate-100 text-slate-500";
 
   return (
     <motion.button
@@ -2443,8 +2443,8 @@ const ContentPage = () => {
   // ── Phase 2: Course selected — header + tree + content ───────────────────
   const statusBg =
     selectedBatch.status === "active" ? "bg-emerald-100 text-emerald-700" :
-    selectedBatch.status === "completed" ? "bg-blue-100 text-blue-700" :
-    "bg-slate-100 text-slate-500";
+      selectedBatch.status === "completed" ? "bg-blue-100 text-blue-700" :
+        "bg-slate-100 text-slate-500";
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-50 overflow-hidden">

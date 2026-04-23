@@ -10,7 +10,7 @@ function createQuietProxyLogger(): Logger {
     const s = typeof msg === "string" ? msg : String(msg ?? "");
     return (
       (s.includes("http proxy error") || s.includes("ws proxy error") || s.includes("ws proxy socket error")) &&
-      (s.includes("ECONNREFUSED") || s.includes("ETIMEDOUT") || s.includes("ENOTFOUND"))
+      (s.includes("ECONNREFUSED") || s.includes("ETIMEDOUT") || s.includes("ENOTFOUND") || s.includes("ECONNRESET"))
     );
   };
   return {

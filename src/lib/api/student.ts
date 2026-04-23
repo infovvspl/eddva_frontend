@@ -727,8 +727,15 @@ export async function getWeeklyPlanGrouped(startDate: string, endDate: string): 
   return data as Record<string, StudyPlanItem[]>;
 }
 
-export async function generatePlan(): Promise<{ message: string }> {
-  const res = await apiClient.post("/study-plans/generate", {});
+export interface GeneratePlanPayload {
+  targetExam: string;
+  examYear: string;
+  currentClass: "9" | "10" | "11" | "12" | "dropper";
+  dailyStudyHours: number;
+}
+
+export async function generatePlan(payload: GeneratePlanPayload): Promise<{ message: string }> {
+  const res = await apiClient.post("/study-plans/generate", payload);
   return extractData(res);
 }
 
@@ -896,6 +903,11 @@ export async function getLeaderboard(params?: {
   return extractData<LeaderboardResult>(res);
 }
 
+export async function getBattleLeaderboard(): Promise<LeaderboardResult> {
+  const res = await apiClient.get("/battles/leaderboard");
+  return extractData<LeaderboardResult>(res);
+}
+
 export async function logEngagement(payload: {
   lectureId?: string;
   state: "confused" | "bored" | "engaged" | "thriving" | "frustrated";
@@ -960,6 +972,19 @@ export interface BattleRoom {
   maxParticipants?: number;
 }
 
+export interface BattleHistoryEntry {
+  battleId: string;
+  roomCode: string;
+  mode: BattleMode;
+  status: string;
+  topicName?: string | null;
+  roundsWon: number;
+  eloChange: number;
+  xpEarned: number;
+  isWinner: boolean;
+  endedAt?: string | null;
+}
+
 export interface DailyBattle {
   id: string;
   scheduledAt: string;
@@ -999,10 +1024,10 @@ export async function getDailyBattle(): Promise<DailyBattle | null> {
   }
 }
 
-export async function getMyBattleHistory(): Promise<BattleRoom[]> {
+export async function getMyBattleHistory(): Promise<BattleHistoryEntry[]> {
   try {
     const res = await apiClient.get("/battles/my-history");
-    return extractData<BattleRoom[]>(res) ?? [];
+    return extractData<BattleHistoryEntry[]>(res) ?? [];
   } catch {
     return [];
   }

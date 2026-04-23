@@ -273,6 +273,7 @@ export default function StudentAiStudyPage() {
   const [showFlashcards, setShowFlashcards] = useState(false);
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [flashcardFlipped, setFlashcardFlipped] = useState(false);
+  const [flashcardDoubtInput, setFlashcardDoubtInput] = useState("");
   const notesContentRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
   const savedTextRef = useRef<string>("");
@@ -402,6 +403,15 @@ export default function StudentAiStudyPage() {
     setChatInput("");
     askMut.mutate({ topicId, sessionId, question: q });
   }, [chatInput, sessionId, topicId, askMut]);
+
+  const handleFlashcardDoubtAsk = useCallback(() => {
+    const q = flashcardDoubtInput.trim();
+    if (!q || !sessionId || askMut.isPending) return;
+    askMut.mutate(
+      { topicId, sessionId, question: q },
+      { onSuccess: () => setFlashcardDoubtInput("") },
+    );
+  }, [flashcardDoubtInput, sessionId, askMut, topicId]);
 
   const handleAskAboutQuestion = useCallback((question: string) => {
     const prompt = `Explain this practice question in-depth: "${question}"`;
@@ -995,6 +1005,49 @@ export default function StudentAiStudyPage() {
                           >
                             Next <ArrowRight className="w-4 h-4" />
                           </button>
+                        </div>
+
+                        <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
+                          <div className="text-xs font-semibold text-indigo-700 mb-2">Doubt Box (for this notes topic)</div>
+                          <div className="space-y-2 max-h-32 overflow-y-auto mb-3">
+                            {sessionData.conversation.length ? (
+                              sessionData.conversation.slice(-3).map((msg, i) => (
+                                <div
+                                  key={`${msg.timestamp}-${i}`}
+                                  className={cn(
+                                    "text-[11px] rounded px-2 py-1",
+                                    msg.role === "student" ? "bg-white text-slate-700" : "bg-indigo-100 text-indigo-900",
+                                  )}
+                                >
+                                  {normalizeAiMessage(msg.message)}
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-[11px] text-slate-500">Ask your doubt here while revising flashcards.</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              value={flashcardDoubtInput}
+                              onChange={(e) => setFlashcardDoubtInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleFlashcardDoubtAsk();
+                                }
+                              }}
+                              placeholder="Ask your doubt..."
+                              className="flex-1 text-xs px-3 py-2 rounded-lg border border-indigo-200 bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleFlashcardDoubtAsk}
+                              disabled={!flashcardDoubtInput.trim() || askMut.isPending || !sessionId}
+                              className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50"
+                            >
+                              {askMut.isPending ? "Asking..." : "Ask"}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
