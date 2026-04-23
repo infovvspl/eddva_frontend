@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 import {
   getMyBatches,
   getMockTests,
@@ -2063,6 +2064,7 @@ function CreateWizardModal({ onClose, onSuccess }: { onClose: () => void; onSucc
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function TeacherQuizzesPage() {
+  const isCompactLayout = useIsCompactLayout();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [viewQuiz, setViewQuiz] = useState<MockTest | null>(null);
@@ -2087,6 +2089,39 @@ export default function TeacherQuizzesPage() {
     : filterStatus === "draft"
     ? quizzes.filter(q => !q.isPublished && !q.scheduledAt)
     : quizzes;
+  const initialBatchSize = isCompactLayout ? 9 : 15;
+  const loadMoreBatchSize = isCompactLayout ? 6 : 9;
+  const [visibleCount, setVisibleCount] = useState(initialBatchSize);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setVisibleCount((prev) => {
+      const max = filtered.length || initialBatchSize;
+      return Math.max(initialBatchSize, Math.min(prev, max));
+    });
+  }, [filtered.length, initialBatchSize]);
+
+  const visibleQuizzes = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
+  );
+  const canLoadMore = visibleQuizzes.length < filtered.length;
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !canLoadMore || isLoading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setVisibleCount((prev) => Math.min(prev + loadMoreBatchSize, filtered.length));
+      },
+      { rootMargin: isCompactLayout ? "220px 0px" : "300px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [canLoadMore, filtered.length, isCompactLayout, isLoading, loadMoreBatchSize]);
 
   const deleteM = useMutation({
     mutationFn: deleteMockTest,
@@ -2175,15 +2210,27 @@ export default function TeacherQuizzesPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((q) => (
-            <QuizCard
-              key={q.id}
-              quiz={q}
-              onView={() => setViewQuiz(q)}
-              onDelete={() => handleDelete(q)}
-            />
-          ))}
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {visibleQuizzes.map((q) => (
+              <QuizCard
+                key={q.id}
+                quiz={q}
+                onView={() => setViewQuiz(q)}
+                onDelete={() => handleDelete(q)}
+              />
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground px-1">
+            Showing {visibleQuizzes.length} of {filtered.length} quizzes
+          </p>
+        </div>
+      )}
+
+      {canLoadMore && !isLoading && (
+        <div ref={loadMoreRef} className="flex items-center justify-center py-2 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="ml-2 text-xs font-medium">Loading more quizzes...</span>
         </div>
       )}
 

@@ -9,7 +9,7 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-motion";
 import {
   Video, Plus, Loader2, X, Trash2, CheckCircle, Clock, Radio,
   Upload, Youtube, Image as ImageIcon, FileText, Sparkles,
@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 import {
   useMyLectures, useCreateLecture, useDeleteLecture,
   useUpdateLecture, useLectureStats, useMyBatches,
@@ -1827,7 +1828,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     thumbnailPreview ? "border-transparent" : "border-border hover:border-primary/50")}
                     onClick={() => thumbRef.current?.click()}>
                     {thumbnailPreview
-                      ? <img src={thumbnailPreview} alt="" className="w-full h-full object-cover" />
+                      ? <img src={thumbnailPreview} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       : <ImageIcon className="w-5 h-5 text-muted-foreground" />}
                   </div>
                   <div>
@@ -2149,7 +2150,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         {/* Thumbnail */}
         <div className="w-28 h-18 rounded-xl bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center relative group/thumb">
           {lecture.thumbnailUrl
-            ? <img src={lecture.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+            ? <img src={lecture.thumbnailUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             : <Video className="w-7 h-7 text-muted-foreground/40" />}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
             <PlayCircle className="w-8 h-8 text-white" />
@@ -2340,6 +2341,9 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TeacherLecturesPage = () => {
+  const isCompactLayout = useIsCompactLayout();
+  const prefersReducedMotion = useReducedMotion();
+  const lightMotion = isCompactLayout || !!prefersReducedMotion;
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterBatch = searchParams.get("batchId") ?? "";
@@ -2473,6 +2477,64 @@ const TeacherLecturesPage = () => {
 
   const recorded = filtered.filter(l => l.type === "recorded");
   const live = filtered.filter(l => l.type === "live");
+  const sortedLive = useMemo(
+    () =>
+      [...live].sort((a, b) => {
+        const order = { live: 0, scheduled: 1, ended: 2 };
+        return (order[a.status as keyof typeof order] ?? 9) - (order[b.status as keyof typeof order] ?? 9);
+      }),
+    [live],
+  );
+  const initialBatchSize = isCompactLayout ? 8 : 14;
+  const loadMoreBatchSize = isCompactLayout ? 6 : 10;
+  const [recordedVisibleCount, setRecordedVisibleCount] = useState(initialBatchSize);
+  const [liveVisibleCount, setLiveVisibleCount] = useState(initialBatchSize);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setRecordedVisibleCount(prev => {
+      const max = recorded.length || initialBatchSize;
+      return Math.max(initialBatchSize, Math.min(prev, max));
+    });
+  }, [recorded.length, initialBatchSize]);
+
+  useEffect(() => {
+    setLiveVisibleCount(prev => {
+      const max = sortedLive.length || initialBatchSize;
+      return Math.max(initialBatchSize, Math.min(prev, max));
+    });
+  }, [sortedLive.length, initialBatchSize]);
+
+  const visibleRecorded = useMemo(
+    () => recorded.slice(0, recordedVisibleCount),
+    [recorded, recordedVisibleCount],
+  );
+  const visibleLive = useMemo(
+    () => sortedLive.slice(0, liveVisibleCount),
+    [sortedLive, liveVisibleCount],
+  );
+  const canLoadMore =
+    tab === "recorded"
+      ? visibleRecorded.length < recorded.length
+      : visibleLive.length < sortedLive.length;
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !canLoadMore || isLoading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        if (tab === "recorded") {
+          setRecordedVisibleCount((prev) => Math.min(prev + loadMoreBatchSize, recorded.length));
+        } else {
+          setLiveVisibleCount((prev) => Math.min(prev + loadMoreBatchSize, sortedLive.length));
+        }
+      },
+      { rootMargin: isCompactLayout ? "220px 0px" : "320px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [canLoadMore, isLoading, isCompactLayout, loadMoreBatchSize, recorded.length, sortedLive.length, tab]);
 
   // Auto-poll every 8s when any recorded lecture is still processing
   // (handles the case where the user refreshes mid-processing)
@@ -2539,6 +2601,7 @@ const TeacherLecturesPage = () => {
   };
 
   return (
+    <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
     <>
     {/* Panels are siblings of (not inside) the motion.div — position:fixed children
         of a transformed element don't position relative to the viewport */}
@@ -2567,7 +2630,7 @@ const TeacherLecturesPage = () => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20"
+      className={cn("max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
     >
 
       {/* ── Header ── */}
@@ -2704,7 +2767,7 @@ const TeacherLecturesPage = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {recorded.map(l => (
+            {visibleRecorded.map(l => (
               <RecordedCard
                 key={l.id}
                 lecture={l}
@@ -2716,6 +2779,9 @@ const TeacherLecturesPage = () => {
                 onRetranscribe={() => handleRetranscribe(l.id)}
               />
             ))}
+            <p className="text-xs text-slate-500 px-1">
+              Showing {visibleRecorded.length} of {recorded.length} recorded lectures
+            </p>
           </div>
         )
       ) : (
@@ -2726,21 +2792,29 @@ const TeacherLecturesPage = () => {
             <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {live
-              .sort((a, b) => {
-                const order = { live: 0, scheduled: 1, ended: 2 };
-                return (order[a.status as keyof typeof order] ?? 9) - (order[b.status as keyof typeof order] ?? 9);
-              })
-              .map(l => (
-                <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)} />
-              ))}
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {visibleLive.map(l => (
+                  <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)} />
+                ))}
+            </div>
+            <p className="text-xs text-slate-500 px-1">
+              Showing {visibleLive.length} of {sortedLive.length} live classes
+            </p>
           </div>
         )
       )}
 
+      {canLoadMore && !isLoading && (
+        <div ref={loadMoreRef} className="flex items-center justify-center py-2">
+          <Loader2 className={cn("w-4 h-4 text-slate-400 animate-spin", lightMotion && "animate-none")} />
+          <span className="ml-2 text-xs font-medium text-slate-500">Loading more lectures...</span>
+        </div>
+      )}
+
     </motion.div>
     </>
+    </MotionConfig>
   );
 };
 

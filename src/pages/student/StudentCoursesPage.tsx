@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Play, FileText, FlaskConical, BookOpen, Search,
   ShieldCheck, Loader2, CalendarDays,
@@ -13,6 +13,7 @@ import type { MyCourse } from "@/lib/api/student";
 import type { PublicBatch } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { getApiOrigin } from "@/lib/api-config";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 
 const _API_ORIGIN = getApiOrigin();
 
@@ -47,7 +48,7 @@ const EXAM_GRADIENTS: Record<string, string> = {
 
 // ─── All Courses Tab ──────────────────────────────────────────────────────────
 
-function AllCoursesTab({ enrolledIds }: { enrolledIds: Set<string> }) {
+function AllCoursesTab({ enrolledIds, lightMotion }: { enrolledIds: Set<string>; lightMotion: boolean }) {
   const navigate = useNavigate();
   const { data: me } = useStudentMe();
   const { data: discoverData, isLoading } = useDiscoverBatches();
@@ -140,7 +141,7 @@ function AllCoursesTab({ enrolledIds }: { enrolledIds: Set<string> }) {
       )}
 
       {!isLoading && filtered.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        <motion.div initial={lightMotion ? undefined : { opacity: 0 }} animate={lightMotion ? undefined : { opacity: 1 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((batch, i) => {
             const thumb = resolveUrl(batch.thumbnailUrl);
@@ -150,15 +151,20 @@ function AllCoursesTab({ enrolledIds }: { enrolledIds: Set<string> }) {
             return (
               <motion.div
                 key={batch.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.3 }}
-                className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all duration-300 overflow-hidden group flex flex-col"
+                initial={lightMotion ? undefined : { opacity: 0, y: 14 }}
+                animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={lightMotion ? undefined : { delay: i * 0.03, duration: 0.24 }}
+                className={cn(
+                  "bg-white rounded-3xl border border-slate-100 shadow-sm transition-all duration-300 overflow-hidden group flex flex-col",
+                  lightMotion ? "hover:shadow-sm" : "hover:shadow-lg hover:border-indigo-100"
+                )}
               >
                 <div className="relative h-44 overflow-hidden shrink-0">
                   {thumb ? (
                     <img src={thumb} alt={batch.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      decoding="async"
+                      className={cn("w-full h-full object-cover transition-transform duration-500", lightMotion ? "" : "group-hover:scale-105")}
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                   ) : (
                     <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
@@ -168,7 +174,10 @@ function AllCoursesTab({ enrolledIds }: { enrolledIds: Set<string> }) {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
                   <div className="absolute top-3 left-3 flex gap-1.5">
-                    <span className="px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[10px] font-bold text-slate-700 uppercase tracking-wide shadow-sm">
+                    <span className={cn(
+                      "px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-700 uppercase tracking-wide shadow-sm",
+                      lightMotion ? "bg-white" : "bg-white/90 backdrop-blur-sm"
+                    )}>
                       {batch.examTarget}
                     </span>
                   </div>
@@ -343,6 +352,9 @@ type Tab = "courses" | "ongoing" | "completed";
 
 export default function StudentCoursesPage() {
   const navigate = useNavigate();
+  const isCompactLayout = useIsCompactLayout();
+  const prefersReducedMotion = useReducedMotion();
+  const lightMotion = isCompactLayout || !!prefersReducedMotion;
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: courses = [], isLoading } = useMyCourses();
   const { user } = useAuthStore();
@@ -444,11 +456,17 @@ export default function StudentCoursesPage() {
 
       {/* Tab content */}
       <AnimatePresence mode="wait">
-        <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+        <motion.div
+          key={activeTab}
+          initial={lightMotion ? undefined : { opacity: 0, y: 8 }}
+          animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+          exit={lightMotion ? undefined : { opacity: 0 }}
+          transition={lightMotion ? undefined : { duration: 0.18 }}
+        >
 
           {/* ── All Courses ── */}
           {activeTab === "courses" && (
-            <AllCoursesTab enrolledIds={enrolledIds} />
+            <AllCoursesTab enrolledIds={enrolledIds} lightMotion={lightMotion} />
           )}
 
           {/* ── Ongoing ── */}
