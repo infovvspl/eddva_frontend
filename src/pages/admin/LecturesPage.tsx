@@ -17,7 +17,7 @@ import type { Subject, Chapter, Topic } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
-import { isYouTubeUrl, YOUTUBE_LECTURE_AI_LIMITATION } from "@/lib/lecture-source";
+import { isYouTubeUrl, isValidYouTubeLectureUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -536,7 +536,7 @@ function RecordedDetailsForm({
     <div className="px-6 pt-5 pb-4 space-y-4">
       <div>
         <p className="text-sm font-black text-slate-700 mb-1">Upload a Recorded Lecture</p>
-        <p className="text-xs text-slate-400">Upload a video file to enable AI transcription, notes, and quizzes.</p>
+        <p className="text-xs text-slate-400">Upload a video or paste YouTube — AI uses speech-to-text or captions for notes and quizzes.</p>
       </div>
 
       <div className="space-y-3">
@@ -564,7 +564,10 @@ function RecordedDetailsForm({
         <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
           <button
             type="button"
-            onClick={() => setSource("upload")}
+            onClick={() => {
+              setSource("upload");
+              if (isYouTubeUrl(value.videoUrl)) onChange({ ...value, videoUrl: "" });
+            }}
             className={cn(
               "flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black transition-all",
               source === "upload" ? "bg-white text-blue-600 shadow-sm shadow-blue-200/50" : "text-slate-400 hover:text-slate-600"
@@ -574,21 +577,25 @@ function RecordedDetailsForm({
           </button>
           <button
             type="button"
-            disabled
+            onClick={() => {
+              setSource("youtube");
+              if (!isYouTubeUrl(value.videoUrl)) onChange({ ...value, videoUrl: "" });
+            }}
             className={cn(
-              "flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black transition-all opacity-60 cursor-not-allowed",
-              "text-slate-400 bg-slate-50"
+              "flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black transition-all",
+              source === "youtube" ? "bg-white text-blue-600 shadow-sm shadow-blue-200/50" : "text-slate-400 hover:text-slate-600"
             )}
-            title="YouTube lecture URLs are playback-only and do not support AI transcription."
           >
-            <Youtube className="w-3.5 h-3.5" /> YouTube Unsupported
+            <Youtube className="w-3.5 h-3.5" /> YouTube URL
           </button>
         </div>
 
         <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-[11px] leading-relaxed text-amber-700">
-            {YOUTUBE_LECTURE_AI_LIMITATION} Add YouTube videos under topic resources if you only need playback.
+            {source === "youtube"
+              ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} Use topic resources for playback-only links.`
+              : "Large files upload to your storage, then run the same AI pipeline as teachers."}
           </p>
         </div>
 
@@ -629,7 +636,7 @@ function RecordedDetailsForm({
         </div>
         <div>
           <p className="text-xs font-black text-blue-700">Recorded Lecture</p>
-          <p className="text-[11px] text-blue-500 mt-0.5">Upload the lecture video file to enable AI-generated notes, quizzes, and progress tracking.</p>
+          <p className="text-[11px] text-blue-500 mt-0.5">File uploads or YouTube links enable AI notes, in-video quizzes, and progress tracking.</p>
         </div>
       </div>
     </div>
@@ -681,8 +688,9 @@ function ScheduleLectureModal({
         });
         toast.success("Live lecture scheduled!");
       } else {
-        if (isYouTubeUrl(recForm.videoUrl)) {
-          toast.error(`${YOUTUBE_LECTURE_AI_LIMITATION} Upload the lecture video file instead.`);
+        const v = recForm.videoUrl.trim();
+        if (isYouTubeUrl(v) && !isValidYouTubeLectureUrl(v)) {
+          toast.error("Invalid YouTube URL. Use a watch, Shorts, embed, or youtu.be link.");
           return;
         }
         await createLecture.mutateAsync({

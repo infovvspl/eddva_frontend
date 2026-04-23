@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, type MutableRefObject } from "react";
 import { upsertLectureProgress } from "@/lib/api/teacher";
 import type { LectureCompletionReward } from "@/lib/api/teacher";
 
@@ -7,10 +7,18 @@ interface ProgressState {
   lastPositionSeconds: number;
 }
 
+/** When the lecture plays in a YouTube iframe, drive progress from this ref instead of &lt;video&gt;. */
+export type ExternalLecturePlayback = {
+  watchPercentage: number;
+  lastPositionSeconds: number;
+  isPlaying: boolean;
+};
+
 export function useLectureProgress(
   lectureId: string,
   videoRef: React.RefObject<HTMLVideoElement>,
   onCompletion?: (reward: LectureCompletionReward) => void,
+  externalPlaybackRef?: MutableRefObject<ExternalLecturePlayback | null>,
 ) {
   const rewindCountRef = useRef(0);
   const confusionFlagsRef = useRef<{ timestampSeconds: number; rewindCount: number }[]>([]);
@@ -33,16 +41,24 @@ export function useLectureProgress(
   }, [lectureId, onCompletion]);
 
   const getCurrentState = useCallback((): ProgressState => {
+    const ext = externalPlaybackRef?.current;
+    if (ext) {
+      return {
+        watchPercentage: ext.watchPercentage,
+        lastPositionSeconds: ext.lastPositionSeconds,
+      };
+    }
     const v = videoRef.current;
     if (!v) return { watchPercentage: 0, lastPositionSeconds: 0 };
     return {
       watchPercentage: v.duration ? (v.currentTime / v.duration) * 100 : 0,
       lastPositionSeconds: Math.floor(v.currentTime),
     };
-  }, [videoRef]);
+  }, [videoRef, externalPlaybackRef]);
 
   // Track rewinds and confusion flags
   useEffect(() => {
+    if (externalPlaybackRef) return;
     const v = videoRef.current;
     if (!v) return;
     const onSeeked = () => {
@@ -82,15 +98,17 @@ export function useLectureProgress(
       v.removeEventListener("pause", onPause);
       v.removeEventListener("ended", onEnded);
     };
-  }, [videoRef, save, getCurrentState]);
+  }, [videoRef, save, getCurrentState, externalPlaybackRef]);
 
   // 30-second interval save
   useEffect(() => {
     const interval = setInterval(() => {
-      if (isPlayingRef.current) save(getCurrentState());
+      const ext = externalPlaybackRef?.current;
+      if (ext?.isPlaying) save(getCurrentState());
+      else if (isPlayingRef.current) save(getCurrentState());
     }, 30000);
     return () => clearInterval(interval);
-  }, [save, getCurrentState]);
+  }, [save, getCurrentState, externalPlaybackRef]);
 
   // Save on tab visibility change and beforeunload
   useEffect(() => {
@@ -104,5 +122,9 @@ export function useLectureProgress(
     };
   }, [save, getCurrentState]);
 
-  return { rewindCountRef, confusionFlagsRef };
+  const flushSave = useCallback(async () => {
+    await save(getCurrentState());
+  }, [save, getCurrentState]);
+
+  return { rewindCountRef, confusionFlagsRef, flushSave };
 }
