@@ -21,7 +21,9 @@ import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useUnreadCount } from "@/hooks/use-notifications";
-import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { tokenStorage } from "@/lib/api/client";
+import { getApiOrigin } from "@/lib/api-config";
+import { ensureBattleSocket, disconnectBattleSocket } from "@/lib/battle-socket";
 
 const EXAM_OPTIONS = [
   { key: "jee",     label: "JEE",           desc: "Joint Entrance Examination", color: "from-orange-400 to-red-500",    bg: "bg-orange-50",  border: "border-orange-300", text: "text-orange-600"  },
@@ -29,6 +31,14 @@ const EXAM_OPTIONS = [
   { key: "cbse_10", label: "CBSE Class 10", desc: "Board Examinations",          color: "from-blue-400 to-indigo-500",  bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-600"   },
   { key: "cbse_12", label: "CBSE Class 12", desc: "Board Examinations",          color: "from-violet-400 to-purple-500", bg: "bg-violet-50", border: "border-violet-300", text: "text-violet-600" },
 ] as const;
+
+interface IncomingBattleChallenge {
+  challengeId: string;
+  fromStudentId: string;
+  expiresInSeconds: number;
+  batchId?: string;
+  batchName?: string;
+}
 
 interface NavItem {
   label: string;
@@ -99,6 +109,7 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: unreadNotifCount = 0 } = useUnreadCount();
   const isCompactLayout = useIsCompactLayout();
@@ -110,6 +121,10 @@ const DashboardLayout = () => {
       setShowUserMenu(false);
     }
   }, []);
+
+  useEffect(() => {
+    latestPathRef.current = location.pathname;
+  }, [location.pathname]);
 
   useEffect(() => {
     if (showUserMenu) {
@@ -202,6 +217,42 @@ const DashboardLayout = () => {
     setPrefDropdownOpen(false);
     updateProfile.mutate({ examTarget: et });
   }
+
+  useEffect(() => {
+    if (!isStudent) return;
+    const myStudentId = me?.student?.id;
+    if (!myStudentId) return;
+
+    const token = tokenStorage.getAccess();
+    if (!token) return;
+
+    const raw = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
+    const backendUrl = (() => {
+      try {
+        return new URL(raw).origin;
+      } catch {
+        return raw;
+      }
+    })();
+
+    const socket = ensureBattleSocket(backendUrl, token);
+
+    socket.on("connect", () => {
+      socket.emit("lobby:join", {
+        studentId: myStudentId,
+        tenantId: user?.tenantId,
+      });
+    });
+
+    socket.on("battle:incoming_request", (payload: IncomingBattleChallenge) => {
+      if (latestPathRef.current.startsWith("/student/battle")) return;
+      navigate("/student/battle", { state: { incomingChallenge: payload } });
+    });
+
+    return () => {
+      disconnectBattleSocket();
+    };
+  }, [isStudent, me?.student?.id, navigate, user?.tenantId]);
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {

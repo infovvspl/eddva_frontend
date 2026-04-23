@@ -305,10 +305,7 @@ export function useGeneratePlan() {
 export function useRegeneratePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      await studentApi.clearPlan();
-      return studentApi.regeneratePlan();
-    },
+    mutationFn: studentApi.regeneratePlan,
     onSuccess: async () => {
       // Clear stale cached plan slices first, then force active refetch.
       qc.removeQueries({ queryKey: ["student", "plan"] });
@@ -470,7 +467,7 @@ export function useCancelBattle() {
 export function useBattleLeaderboard() {
   return useQuery({
     queryKey: studentKeys.leaderboard({ scope: "battle_xp" }),
-    queryFn: () => studentApi.getLeaderboard({ scope: "battle_xp" }),
+    queryFn: () => studentApi.getBattleLeaderboard(),
     staleTime: 60_000,
     retry: false,
   });
@@ -480,6 +477,15 @@ export function useMyBattleElo() {
   return useQuery({
     queryKey: studentKeys.battleElo,
     queryFn: studentApi.getMyBattleElo,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useMyBattleHistory() {
+  return useQuery({
+    queryKey: ["student", "battle", "history"],
+    queryFn: studentApi.getMyBattleHistory,
     staleTime: 60_000,
     retry: false,
   });

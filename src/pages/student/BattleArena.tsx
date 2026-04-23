@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import {
   Swords, Zap, Users, Globe, UserPlus,
   Trophy, Clock, ArrowLeft, ArrowRight, Copy, Check,
@@ -28,7 +29,7 @@ import {
   studentKeys,
   useStudentMe, useCreateBattle,
   useCancelBattle, useBattleRoom, useJoinBattle,
-  useBattleLeaderboard, useMyBattleElo,
+  useBattleLeaderboard, useMyBattleElo, useMyBattleHistory,
   useMyCourses, useCourseCurriculum,
   useSubjects, useChapters, useTopics,
 } from "@/hooks/use-student";
@@ -38,6 +39,21 @@ import { BattleMode, BattleRoom, getBotPracticeQuestions } from "@/lib/api/stude
 import { tokenStorage } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
 import { toast } from "sonner";
+import { io, Socket } from "socket.io-client";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+} from "recharts";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 const BLUE   = "#4F46E5"; // Indigo-600
@@ -61,8 +77,6 @@ const CardGlass = ({ children, className, onClick }: { children: React.ReactNode
     {children}
   </motion.div>
 );
-
-import { io, Socket } from "socket.io-client";
 
 // ─── Tier Config ─────────────────────────────────────────────────────────────
 
@@ -230,7 +244,7 @@ function BattleInProgress({
   myStudentId: string;
   myName: string;
   myAvatarUrl?: string | null;
-  onEnd: () => void;
+  onEnd: (reason?: string) => void;
   onResult: (result: BattleResult) => void;
   prefetchedQuestions?: QuizQuestion[];
   topicLabel?: string;
@@ -264,7 +278,6 @@ function BattleInProgress({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processRoundResultRef = useRef<(data: any) => void>(null!);
 
-  // Strip any path (e.g. /api/v1) — socket.io needs just the origin
   const backendUrl = (() => {
     const raw = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
     try { return new URL(raw).origin; } catch { return raw; }
@@ -521,26 +534,29 @@ function BattleInProgress({
       transports: ["websocket"],
     });
     socketRef.current = socket;
-
-    socket.on("connect", () => {
+    setConnected(false);
+    const onConnect = () => {
       setConnected(true);
       socket.emit("battle:join", { roomCode: room.roomCode, studentId: myStudentId });
-    });
+    };
+    socket.on("connect", onConnect);
 
-    socket.on("connect_error", () => {
+    const onConnectError = () => {
       toast.error("Failed to connect to battle server.");
-    });
+    };
+    socket.on("connect_error", onConnectError);
 
-    socket.on("battle:player_joined", (data: { participants: any[] }) => {
+    const onPlayerJoined = (data: { participants: any[] }) => {
       const opp = data.participants.find((p: any) => p.studentId !== myStudentId);
       if (opp) {
         setOpponentName(opp.name ?? "Opponent");
         setOpponentStudentId(opp.studentId ?? "");
         setOpponentAvatarUrl(opp.avatarUrl ?? null);
       }
-    });
+    };
+    socket.on("battle:player_joined", onPlayerJoined);
 
-    socket.on("battle:start", (data: {
+    const onBattleStart = (data: {
       battle: any;
       participants?: any[];
       firstQuestion: QuizQuestion;
@@ -559,9 +575,10 @@ function BattleInProgress({
       setCurrentQuestion(data.firstQuestion);
       answerSentRef.current = false;
       startTimer();
-    });
+    };
+    socket.on("battle:start", onBattleStart);
 
-    socket.on("battle:question", (data: { question: QuizQuestion; roundNumber: number }) => {
+    const onQuestion = (data: { question: QuizQuestion; roundNumber: number }) => {
       setCurrentQuestion(data.question);
       setRoundNumber(data.roundNumber);
       setSelected(null);
@@ -571,9 +588,10 @@ function BattleInProgress({
       setWaiting(false);
       answerSentRef.current = false;
       startTimer();
-    });
+    };
+    socket.on("battle:question", onQuestion);
 
-    socket.on("battle:round_result", (data: {
+    const onRoundResult = (data: {
       roundNumber: number;
       winnerId: string | null;
       correctOptionId: string;
@@ -585,9 +603,10 @@ function BattleInProgress({
         correctOptionId: data.correctOptionId,
         scores: data.scores,
       });
-    });
+    };
+    socket.on("battle:round_result", onRoundResult);
 
-    socket.on("battle:end", (data: {
+    const onBattleEnd = (data: {
       winnerId: string | null;
       isDraw?: boolean;
       finalScores: {
@@ -619,17 +638,21 @@ function BattleInProgress({
         xpEarned: me?.xpEarned ?? 0,
         newElo: me?.newElo ?? 1000,
       });
-    });
+    };
+    socket.on("battle:end", onBattleEnd);
 
-    socket.on("battle:opponent_left", () => {
-      toast("Opponent disconnected.");
+    const onOpponentLeft = (payload?: { message?: string }) => {
+      const reason = payload?.message || "Battle ended: opponent left the match.";
+      toast.error(reason);
       clearTimer();
-      onEnd();
-    });
+      onEnd(reason);
+    };
+    socket.on("battle:opponent_left", onOpponentLeft);
 
-    socket.on("battle:error", (data: { message: string }) => {
+    const onBattleError = (data: { message: string }) => {
       toast.error(data.message ?? "Battle error.");
-    });
+    };
+    socket.on("battle:error", onBattleError);
 
     return () => {
       clearTimer();
@@ -877,7 +900,7 @@ function BattleInProgress({
 
       {/* Manual Termination */}
       <div className="flex justify-center pt-10">
-        <button onClick={onEnd} className="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-white border border-red-100 text-red-500 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-red-50 transition-all">
+        <button onClick={() => onEnd()} className="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-white border border-red-100 text-red-500 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-red-50 transition-all">
           <X className="w-4 h-4" /> Leave Battle
         </button>
       </div>
@@ -1606,25 +1629,30 @@ function MatchmakingScreen({
     const token = tokenStorage.getAccess();
     const socket = io(`${backendUrl}/battle`, { auth: { token }, transports: ["websocket"] });
 
-    socket.on("connect", () => {
+    const onConnect = () => {
       socket.emit("battle:join", { roomCode: room.roomCode, studentId: myStudentId });
-    });
+    };
+    socket.on("connect", onConnect);
 
-    socket.on("battle:player_joined", (data: { participants: any[] }) => {
+    const onPlayerJoined = (data: { participants: any[] }) => {
       const opp = data.participants.find((p: any) => p.studentId !== myStudentId);
       if (opp) setOpponentName(opp.name ?? "Opponent");
-    });
+    };
+    socket.on("battle:player_joined", onPlayerJoined);
 
-    socket.on("battle:start", (data: any) => {
-      socket.disconnect();
+    const onBattleStartEvent = (_data: any) => {
       onBattleStart({ ...currentRoom, status: "in_progress" });
-    });
+    };
+    socket.on("battle:start", onBattleStartEvent);
 
-    socket.on("battle:error", (data: { message: string }) => {
+    const onBattleError = (data: { message: string }) => {
       toast.error(data.message);
-    });
+    };
+    socket.on("battle:error", onBattleError);
 
-    return () => { socket.disconnect(); };
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -2114,6 +2142,7 @@ function BotPickerScreen({
 interface LobbyUser {
   studentId: string;
   socketId: string;
+  isChallengeable?: boolean;
   name: string;
   avatarUrl?: string | null;
   eloRating?: number;
@@ -2210,9 +2239,18 @@ function ChallengeLobbyScreen({
   myName: string;
   xpPoints?: number;
 }) {
+  const [activePanel, setActivePanel] = useState<"arena" | "leaderboard" | "history">("arena");
+  const { data: battleLb, isLoading: lbLoading } = useBattleLeaderboard();
+  const { data: history = [], isLoading: historyLoading } = useMyBattleHistory();
+  const [historyOutcome, setHistoryOutcome] = useState<"all" | "win" | "loss">("all");
+  const [historyMode, setHistoryMode] = useState<"all" | string>("all");
+  const [historyFrom, setHistoryFrom] = useState("");
+  const [historyTo, setHistoryTo] = useState("");
+  const [historyPage, setHistoryPage] = useState(1);
+  const historyPageSize = 8;
   const [liveSearch, setLiveSearch] = useState("");
   const othersBase = users.filter(u => u.studentId !== myStudentId);
-  const others = selectedBatchId ? othersBase.filter(u => u.batchIds?.includes(selectedBatchId)) : othersBase;
+  const others = othersBase;
   const searchLower = liveSearch.trim().toLowerCase();
   const filteredOthers = searchLower
     ? others.filter(u => (u.name ?? "").toLowerCase().includes(searchLower))
@@ -2234,24 +2272,364 @@ function ChallengeLobbyScreen({
     return { label: "Online", cls: "text-emerald-600", dot: "bg-emerald-500" };
   };
 
+  const Sidebar = () => (
+    <CardGlass className="border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+      <div className="space-y-2">
+        <button
+          onClick={() => setActivePanel("arena")}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+            activePanel === "arena" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
+          )}
+        >
+          <Swords className="h-4 w-4" />
+          <span className="text-sm font-semibold">Battle Arena</span>
+        </button>
+        <button
+          onClick={() => setActivePanel("leaderboard")}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+            activePanel === "leaderboard" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
+          )}
+        >
+          <Trophy className="h-4 w-4" />
+          <span className="text-sm font-semibold">Leaderboard</span>
+        </button>
+        <button
+          onClick={() => setActivePanel("history")}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+            activePanel === "history" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
+          )}
+        >
+          <Clock className="h-4 w-4" />
+          <span className="text-sm font-semibold">History</span>
+        </button>
+      </div>
+    </CardGlass>
+  );
+
+  if (activePanel === "leaderboard") {
+    const dummyEntries = [
+      { rank: 1, studentId: "d1", name: "Aarav", score: 1820, eloTier: "diamond", avatarUrl: null },
+      { rank: 2, studentId: "d2", name: "Diya", score: 1690, eloTier: "platinum", avatarUrl: null },
+      { rank: 3, studentId: "d3", name: "Vivaan", score: 1540, eloTier: "gold", avatarUrl: null },
+      { rank: 4, studentId: "d4", name: "Anaya", score: 1460, eloTier: "gold", avatarUrl: null },
+      { rank: 5, studentId: "d5", name: "Kabir", score: 1380, eloTier: "silver", avatarUrl: null },
+      { rank: 6, studentId: "d6", name: "Ira", score: 1295, eloTier: "silver", avatarUrl: null },
+      { rank: 7, studentId: "d7", name: "Reyansh", score: 1210, eloTier: "bronze", avatarUrl: null },
+      { rank: 8, studentId: "d8", name: "Saanvi", score: 1160, eloTier: "bronze", avatarUrl: null },
+      { rank: 9, studentId: "d9", name: "Advik", score: 1090, eloTier: "iron", avatarUrl: null },
+      { rank: 10, studentId: "d10", name: "Myra", score: 1030, eloTier: "iron", avatarUrl: null },
+    ];
+    const dummyHistory = [
+      { xpEarned: 24, eloChange: 12, isWinner: true, endedAt: "2026-04-10T10:00:00Z" },
+      { xpEarned: 12, eloChange: -6, isWinner: false, endedAt: "2026-04-11T10:00:00Z" },
+      { xpEarned: 30, eloChange: 15, isWinner: true, endedAt: "2026-04-12T10:00:00Z" },
+      { xpEarned: 18, eloChange: 8, isWinner: true, endedAt: "2026-04-13T10:00:00Z" },
+      { xpEarned: 9, eloChange: -5, isWinner: false, endedAt: "2026-04-14T10:00:00Z" },
+      { xpEarned: 22, eloChange: 11, isWinner: true, endedAt: "2026-04-15T10:00:00Z" },
+      { xpEarned: 15, eloChange: 6, isWinner: true, endedAt: "2026-04-16T10:00:00Z" },
+      { xpEarned: 10, eloChange: -4, isWinner: false, endedAt: "2026-04-17T10:00:00Z" },
+    ];
+    const hasRealEntries = (battleLb?.data?.length ?? 0) > 0;
+    const hasRealHistory = (history?.length ?? 0) > 0;
+    const entries = hasRealEntries ? (battleLb?.data ?? []) : dummyEntries;
+    const historyForCharts = hasRealHistory ? history : dummyHistory;
+    const topTenRaw = entries.slice(0, 10).map((e) => ({
+      name: (e.name || "User").slice(0, 10),
+      score: Number(e.score || 0),
+    }));
+    const topTen = topTenRaw.length
+      ? topTenRaw
+      : [
+          { name: "Aarav", score: 1820 },
+          { name: "Diya", score: 1690 },
+          { name: "Vivaan", score: 1540 },
+          { name: "Anaya", score: 1460 },
+          { name: "Kabir", score: 1380 },
+        ];
+    const recentHistory = [...historyForCharts]
+      .filter((h) => !!h.endedAt)
+      .sort((a, b) => new Date(a.endedAt || 0).getTime() - new Date(b.endedAt || 0).getTime())
+      .slice(-12);
+    const xpTrendRaw = recentHistory.map((h, i) => ({
+      match: `M${i + 1}`,
+      xp: Number(h.xpEarned || 0),
+    }));
+    const xpTrend = xpTrendRaw.length
+      ? xpTrendRaw
+      : [
+          { match: "M1", xp: 24 },
+          { match: "M2", xp: 12 },
+          { match: "M3", xp: 30 },
+          { match: "M4", xp: 18 },
+          { match: "M5", xp: 22 },
+        ];
+    const xpPerMatchRaw = recentHistory.map((h, i) => ({
+      match: `M${i + 1}`,
+      xp: Number(h.xpEarned || 0),
+      elo: Number(h.eloChange || 0),
+    }));
+    const xpPerMatch = xpPerMatchRaw.length
+      ? xpPerMatchRaw
+      : [
+          { match: "M1", xp: 24, elo: 12 },
+          { match: "M2", xp: 12, elo: -6 },
+          { match: "M3", xp: 30, elo: 15 },
+          { match: "M4", xp: 18, elo: 8 },
+          { match: "M5", xp: 22, elo: 11 },
+        ];
+    const winCount = historyForCharts.filter((h) => h.isWinner).length;
+    const lossCount = Math.max(0, historyForCharts.length - winCount);
+    const modeWinLossRaw = [
+      { name: "Wins", value: winCount, color: "#10B981" },
+      { name: "Losses", value: lossCount, color: "#EF4444" },
+    ];
+    const modeWinLoss = modeWinLossRaw.some((x) => x.value > 0)
+      ? modeWinLossRaw
+      : [
+          { name: "Wins", value: 6, color: "#10B981" },
+          { name: "Losses", value: 4, color: "#EF4444" },
+        ];
+
+    return (
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+        <Sidebar />
+        <div className="space-y-6">
+        <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-2">Battle XP Leaderboard</h2>
+          <p className="text-sm text-slate-500">Graph view</p>
+          {lbLoading ? (
+            <div className="text-slate-500 text-sm">Loading leaderboard...</div>
+          ) : (
+            <div className="space-y-2">
+              {!hasRealEntries && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                  Showing sample graph data until real battle stats are available.
+                </div>
+              )}
+            </div>
+          )}
+        </CardGlass>
+
+        {!lbLoading && (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <h3 className="mb-3 text-sm font-bold text-slate-700">Top 10 Battle XP</h3>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topTen}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Bar dataKey="score" fill="#4F46E5" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardGlass>
+
+            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <h3 className="mb-3 text-sm font-bold text-slate-700">Win / Loss Split</h3>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={modeWinLoss} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                      {modeWinLoss.map((d) => (
+                        <Cell key={d.name} fill={d.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardGlass>
+
+            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <h3 className="mb-3 text-sm font-bold text-slate-700">Your XP Trend (Recent Matches)</h3>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={xpTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis dataKey="match" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="xp" stroke="#06B6D4" strokeWidth={2.5} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardGlass>
+
+            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <h3 className="mb-3 text-sm font-bold text-slate-700">XP Per Match</h3>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={xpPerMatch}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis dataKey="match" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Bar dataKey="xp" fill="#10B981" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardGlass>
+          </div>
+        )}
+        </div>
+      </div>
+    );
+  }
+
+  if (activePanel === "history") {
+    const historyModeCategory = (mode?: string): "challenge_friend" | "challenge_anyone" => {
+      return String(mode || "").toLowerCase() === "challenge_friend" ? "challenge_friend" : "challenge_anyone";
+    };
+    const historyModeLabel = (mode?: string): string => {
+      return historyModeCategory(mode) === "challenge_friend" ? "CHALLENGE FRIEND" : "CHALLENGE ANYONE";
+    };
+    const normalized = history.map((item) => ({
+      ...item,
+      modeCategory: historyModeCategory(String(item.mode || "")),
+      endedAtDate: item.endedAt ? new Date(item.endedAt) : null,
+    }));
+    const modeOptions: Array<"challenge_friend" | "challenge_anyone"> = ["challenge_friend", "challenge_anyone"];
+    const filtered = normalized.filter((item) => {
+      if (historyOutcome === "win" && !item.isWinner) return false;
+      if (historyOutcome === "loss" && item.isWinner) return false;
+      if (historyMode !== "all" && item.modeCategory !== historyMode) return false;
+      if (historyFrom && item.endedAtDate && item.endedAtDate < new Date(`${historyFrom}T00:00:00`)) return false;
+      if (historyFrom && !item.endedAtDate) return false;
+      if (historyTo && item.endedAtDate && item.endedAtDate > new Date(`${historyTo}T23:59:59`)) return false;
+      if (historyTo && !item.endedAtDate) return false;
+      return true;
+    });
+    const totalPages = Math.max(1, Math.ceil(filtered.length / historyPageSize));
+    const safePage = Math.min(historyPage, totalPages);
+    const pageStart = (safePage - 1) * historyPageSize;
+    const pageItems = filtered.slice(pageStart, pageStart + historyPageSize);
+
+    return (
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+        <Sidebar />
+        <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-4">Battle History</h2>
+          <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+            <select
+              value={historyOutcome}
+              onChange={(e) => { setHistoryOutcome(e.target.value as "all" | "win" | "loss"); setHistoryPage(1); }}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
+            >
+              <option value="all">All Results</option>
+              <option value="win">Wins</option>
+              <option value="loss">Losses</option>
+            </select>
+            <select
+              value={historyMode}
+              onChange={(e) => { setHistoryMode(e.target.value); setHistoryPage(1); }}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
+            >
+              <option value="all">All Modes</option>
+              {modeOptions.map((m) => (
+                <option key={m} value={m}>{m === "challenge_friend" ? "Challenge Friend" : "Challenge Anyone"}</option>
+              ))}
+            </select>
+            <Input
+              type="date"
+              value={historyFrom}
+              onChange={(e) => { setHistoryFrom(e.target.value); setHistoryPage(1); }}
+              className="h-10 rounded-xl text-xs font-semibold"
+            />
+            <Input
+              type="date"
+              value={historyTo}
+              onChange={(e) => { setHistoryTo(e.target.value); setHistoryPage(1); }}
+              className="h-10 rounded-xl text-xs font-semibold"
+            />
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl text-xs font-semibold"
+              onClick={() => {
+                setHistoryOutcome("all");
+                setHistoryMode("all");
+                setHistoryFrom("");
+                setHistoryTo("");
+                setHistoryPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+          {historyLoading ? (
+            <div className="text-slate-500 text-sm">Loading battle history...</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-slate-500 text-sm">No previous battles yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {pageItems.map((item) => (
+                <div key={item.battleId} className="rounded-xl border border-slate-100 px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-slate-800">{historyModeLabel(String(item.mode || ""))}</div>
+                    <div className={cn("text-xs font-bold", item.isWinner ? "text-emerald-600" : "text-rose-500")}>
+                      {item.isWinner ? "WIN" : "LOSS"}
+                    </div>
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    Code: {item.roomCode} {item.topicName ? `• ${item.topicName}` : ""}
+                  </div>
+                  <div className="mt-2 flex items-center gap-4 text-xs">
+                    <span className="text-indigo-600 font-semibold">+{item.xpEarned ?? 0} XP</span>
+                    <span className={cn("font-semibold", (item.eloChange ?? 0) >= 0 ? "text-emerald-600" : "text-rose-500")}>
+                      ELO {item.eloChange >= 0 ? "+" : ""}{item.eloChange ?? 0}
+                    </span>
+                    <span className="text-slate-400">Rounds won: {item.roundsWon ?? 0}</span>
+                    {item.endedAt && (
+                      <span className="text-slate-400">
+                        {new Date(item.endedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
+                  <div className="text-xs text-slate-500">
+                    Showing {pageStart + 1}-{Math.min(pageStart + historyPageSize, filtered.length)} of {filtered.length}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-8 rounded-lg px-3 text-xs"
+                      disabled={safePage <= 1}
+                      onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                    >
+                      Prev
+                    </Button>
+                    <div className="px-2 text-xs font-semibold text-slate-700">
+                      {safePage} / {totalPages}
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="h-8 rounded-lg px-3 text-xs"
+                      disabled={safePage >= totalPages}
+                      onClick={() => setHistoryPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardGlass>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
-      <CardGlass className="border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-        <div className="space-y-2">
-          <button className="flex w-full items-center gap-3 rounded-xl bg-indigo-50 px-3 py-2 text-left text-indigo-700">
-            <Swords className="h-4 w-4" />
-            <span className="text-sm font-semibold">Battle Arena</span>
-          </button>
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-600 transition-colors hover:bg-slate-50">
-            <Trophy className="h-4 w-4" />
-            <span className="text-sm font-semibold">Leaderboard</span>
-          </button>
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-600 transition-colors hover:bg-slate-50">
-            <Clock className="h-4 w-4" />
-            <span className="text-sm font-semibold">History</span>
-          </button>
-        </div>
-      </CardGlass>
+      <Sidebar />
 
       <div className="space-y-6">
         <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
@@ -2360,7 +2738,7 @@ function ChallengeLobbyScreen({
                 <div className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60">
                   <Users className="h-7 w-7 text-slate-300" />
                   <p className="text-sm text-slate-500">You're the only one online right now</p>
-                  <p className="text-[11px] text-slate-400">Other players will appear here when they join the arena</p>
+                  <p className="text-[11px] text-slate-400">Other players will appear here when they come online</p>
                 </div>
               )}
               {others.length > 0 && filteredOthers.length === 0 && (
@@ -2404,8 +2782,13 @@ function ChallengeLobbyScreen({
                         </div>
                       </div>
                     </div>
-                    <Button size="sm" className="rounded-xl bg-indigo-600 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500" onClick={() => onChallenge(u.studentId)}>
-                      Challenge
+                    <Button
+                      size="sm"
+                      disabled={!u.isChallengeable}
+                      className="rounded-xl bg-indigo-600 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500 disabled:bg-slate-300 disabled:text-slate-600"
+                      onClick={() => onChallenge(u.studentId)}
+                    >
+                      {u.isChallengeable ? "Challenge" : "Offline Arena"}
                     </Button>
                   </div>
                 );
@@ -2437,6 +2820,7 @@ type Stage =
 
 const BattleArena = () => {
   const queryClient = useQueryClient();
+  const location = useLocation();
   const { data: me, isLoading: meLoading } = useStudentMe();
   const { data: eloData } = useMyBattleElo();
   const createBattle = useCreateBattle();
@@ -2456,12 +2840,22 @@ const BattleArena = () => {
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [challengeTargetId, setChallengeTargetId] = useState<string | null>(null);
   const lobbySocketRef = useRef<Socket | null>(null);
+  const consumedGlobalChallengeRef = useRef(false);
 
   useEffect(() => {
     if (myCourses.length > 0 && !selectedBatchId) {
       setSelectedBatchId(myCourses[0].id);
     }
   }, [myCourses, selectedBatchId]);
+
+  useEffect(() => {
+    const navState = location.state as { incomingChallenge?: IncomingChallenge } | null;
+    const incomingFromGlobal = navState?.incomingChallenge;
+    if (!incomingFromGlobal || consumedGlobalChallengeRef.current) return;
+    consumedGlobalChallengeRef.current = true;
+    setIncomingChallenge(incomingFromGlobal);
+    setStage("incoming_request");
+  }, [location.state]);
 
   const student = me?.student;
   const xpPoints = Number(student?.xpPoints ?? eloData?.xpPoints ?? 0);
@@ -2485,44 +2879,51 @@ const BattleArena = () => {
     });
     lobbySocketRef.current = socket;
 
-    socket.on("connect", () => {
+    const onConnect = () => {
       socket.emit("lobby:join", {
         studentId: myStudentId,
         tenantId: me?.tenantId,
       });
-    });
+    };
+    socket.on("connect", onConnect);
+    onConnect();
 
-    socket.on("lobby:online_users", (payload: { users: LobbyUser[] }) => {
+    const onOnlineUsers = (payload: { users: LobbyUser[] }) => {
       setOnlineUsers(Array.isArray(payload?.users) ? payload.users : []);
-    });
+    };
+    socket.on("lobby:online_users", onOnlineUsers);
 
-    socket.on("battle:incoming_request", (payload: IncomingChallenge) => {
+    const onIncomingRequest = (payload: IncomingChallenge) => {
       setIncomingChallenge(payload);
       setStage("incoming_request");
-    });
+    };
+    socket.on("battle:incoming_request", onIncomingRequest);
 
-    socket.on("battle:challenge_sent", (payload: { challengeId: string }) => {
+    const onChallengeSent = (payload: { challengeId: string }) => {
       setPendingChallengeId(payload.challengeId);
       setStage("challenge_sent");
       toast("Challenge sent.");
-    });
+    };
+    socket.on("battle:challenge_sent", onChallengeSent);
 
-    socket.on("battle:challenge_rejected", () => {
+    const onChallengeRejected = () => {
       setPendingChallengeId(null);
       setStage("lobby");
       toast.error("Challenge rejected.");
-    });
+    };
+    socket.on("battle:challenge_rejected", onChallengeRejected);
 
-    socket.on("battle:challenge_accepted", (payload: { room: BattleRoom }) => {
+    const onChallengeAccepted = (payload: { room: BattleRoom }) => {
       setPendingChallengeId(null);
       setIncomingChallenge(null);
       setActiveMode(MODES.find(m => m.mode === "challenge_friend") ?? MODES[0]);
       setBattleRoom(payload.room);
       setStage("in_battle");
       toast.success("Challenge accepted. Battle starting!");
-    });
+    };
+    socket.on("battle:challenge_accepted", onChallengeAccepted);
 
-    socket.on("battle:challenge_timeout", () => {
+    const onChallengeTimeout = () => {
       setPendingChallengeId(null);
       setActiveMode({
         mode: "bot",
@@ -2545,14 +2946,16 @@ const BattleArena = () => {
       setBotQuestions(undefined);
       setStage("in_battle");
       toast("No response in 30s. Starting bot battle.");
-    });
+    };
+    socket.on("battle:challenge_timeout", onChallengeTimeout);
 
-    socket.on("battle:challenge_error", (payload: { message?: string }) => {
+    const onChallengeError = (payload: { message?: string }) => {
       const msg = payload?.message ?? "Challenge failed";
       setPendingChallengeId(null);
       setStage("lobby");
       toast.error(msg);
-    });
+    };
+    socket.on("battle:challenge_error", onChallengeError);
 
     return () => {
       socket.disconnect();
@@ -2664,6 +3067,10 @@ const BattleArena = () => {
     setBattleRoom(room);
     setStage("in_battle");
     toast.success("Battle started! Good luck!");
+  };
+
+  const handleBattleForcedClose = (reason?: string) => {
+    reset();
   };
 
   const handleBattleResult = (result: BattleResult) => {
@@ -2883,7 +3290,7 @@ const BattleArena = () => {
                 myStudentId={myStudentId}
                 myName={myName}
                 myAvatarUrl={myAvatarUrl}
-                onEnd={reset}
+                onEnd={handleBattleForcedClose}
                 onResult={handleBattleResult}
                 prefetchedQuestions={botQuestions}
                 topicLabel={topicName || undefined}
