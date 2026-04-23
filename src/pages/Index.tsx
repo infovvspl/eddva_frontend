@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
@@ -10,13 +10,11 @@ import {
   GraduationCap, BarChart,
 } from "lucide-react";
 import edvaLogo from "@/assets/eddva web logo.png";
-import heroIllustration from "@/assets/online-learning-concept-vector-illustration_235222-1269.png";
 import aboutImg   from "@/assets/eddva web img 2.png";
 import coursesImg from "@/assets/chalkboard-with-learn-explore-discover-create-education-concept_1296762-4420.jpg";
 import careerImg  from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
-import aiImg from "@/assets/Learn with AI_ educational inspiration.png";
 import aboutVideo from "@/assets/about.mp4";
-import { LandingLayout } from "@/components/landing/LandingLayout";
+import LandingLayout from "@/components/landing/LandingLayout";
 import { FadeUp, Label as SLabel, HeroBadge as FloatBadge } from "@/components/landing/LandingPrimitives";
 import { B, P, T, IN, grad, gText, SG } from "@/components/landing/DesignTokens";
 import bg1 from "@/assets/bg1.jpg";
@@ -158,8 +156,8 @@ const Index = () => {
 
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.2 }}
                 className="mb-6 max-w-xl space-y-4 text-[15px] font-medium leading-relaxed text-gray-600 sm:text-[16px]">
-                <p>
-                  Eddva is not built for average learning. It is designed for those who seek precision, clarity, and an edge.
+                <p className="font-bold">
+                  "Eddva is not built for average learning. It is designed for those who seek precision, clarity, and an edge".
                 </p>
                 <p>
                   Powered by advanced AI, Eddva creates an experience that is deeply personalized, intelligently curated, and relentlessly focused on results. Every interaction is intentional. Every recommendation is refined.
@@ -174,7 +172,7 @@ const Index = () => {
 
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.3 }}
                 className="mb-10 flex flex-wrap gap-3">
-                <motion.div whileHover={{ scale:1.04, boxShadow:`0 16px 40px ${B}40` }} whileTap={{ scale:0.97 }}>
+                <motion.div whileHover={{ scale: 1.04, boxShadow: `0 16px 40px ${B}40` }} whileTap={{ scale: 0.97 }}>
                   <Link to="/register"
                     className="landing-button flex items-center gap-2 text-white shadow-lg"
                     style={{ background: grad() }}>
@@ -188,15 +186,19 @@ const Index = () => {
               </motion.div>
             </div>
 
-            {/* ─ Right illustration ─ */}
-            <motion.div initial={{ opacity:0, x:40 }} animate={{ opacity:1, x:0 }}
-              transition={{ duration:0.8, delay:0.2, ease:"easeOut" as const }}
-              className="relative flex justify-center pb-8 lg:pb-0">
-              {/* glow blob behind */}
-              <div className="absolute inset-10 rounded-full blur-3xl opacity-20" style={{ background: grad() }} />
-
-              <img src={aiImg} alt="Student Learning"
-                className="relative z-10 w-full max-w-[520px] " />
+            {/* ─ Right illustration (static shell + LCP image — no opacity-0 to paint faster) ─ */}
+            <div className="relative flex justify-center pb-8 lg:pb-0">
+              <div className="absolute inset-10 rounded-full blur-3xl opacity-20" style={{ background: grad() }} aria-hidden />
+              <img
+                src="/landing-hero-lcp.png"
+                alt="Student learning on EDDVA with AI"
+                className="relative z-10 h-auto w-full max-w-[520px] object-contain"
+                width={520}
+                height={416}
+                sizes="(min-width: 1024px) 520px, min(90vw, 520px)"
+                decoding="async"
+                fetchPriority="high"
+              />
 
               {/* floating cards */}
               {/* <FloatBadge icon={<Zap className="h-4 w-4" />} label="XP Today" value="+240 pts"
@@ -217,7 +219,7 @@ const Index = () => {
                   </p>
                 </div>
               </motion.div> */}
-            </motion.div>
+            </div>
           </div>
         </div>
 
@@ -240,7 +242,7 @@ const Index = () => {
                 {/* gradient overlay */}
                 <div className="absolute inset-0"
                   style={{ background:"linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(15,23,42,0.75) 100%)" }} />
-                {/* floating stat pills */}
+{/*            
                 <div className="absolute bottom-6 left-5 right-5 flex flex-wrap gap-3">
                   {[
                     { icon:"⚡", val:"4,820 XP",   color:"#3B82F6", bg:"rgba(59,130,246,0.15)" },
@@ -255,7 +257,7 @@ const Index = () => {
                       <span className="text-[12px] font-bold text-white">{s.val}</span>
                     </motion.div>
                   ))}
-                </div>
+                </div> */}
                 {/* top label */}
                 <div className="absolute left-5 top-5">
                   <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
@@ -268,7 +270,7 @@ const Index = () => {
 
             {/* Text */}
             <FadeUp delay={0.15}>
-              <SLabel>Core experience</SLabel>
+              <SLabel>Our Offerings</SLabel>
               <h2 className="landing-title-section mt-5">
                 Built for precision,{" "}
                 <span style={gText()}>clarity, and results</span>
@@ -321,11 +323,13 @@ const Index = () => {
                 ))}
               </div>
 
-              <motion.a href="#exams" whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                className="mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
-                style={{ background: grad() }}>
-                Start Your Journey <ArrowRight className="h-4 w-4" />
-              </motion.a>
+              <div className="mt-10 flex justify-center">
+                <motion.a href="/courses" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
+                  style={{ background: grad() }}>
+                  Start Your Journey <ArrowRight className="h-4 w-4" />
+                </motion.a>
+              </div>
             </FadeUp>
           </div>
         </div>
@@ -347,17 +351,17 @@ const Index = () => {
             </h2>
           </FadeUp>
           <FadeUp delay={0.1} className="mb-8 text-center">
-            <p className="mx-auto max-w-2xl text-[16px] font-medium leading-relaxed text-gray-500">
+            <p className="mx-auto max-w-2xl text-[18px] font-medium leading-relaxed text-gray-500">
               Comprehensive preparation for 20+ exams. Pick your goal and we'll build your personalized path.
             </p>
           </FadeUp>
 
           <FadeUp delay={0.11} className="mb-8">
             <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-3">
-              <div className="rounded-full border border-blue-100 bg-white/90 px-4 py-2 text-[12px] font-bold text-gray-700 shadow-sm backdrop-blur">
+              <div className="rounded-full border border-blue-100 bg-white/90 px-5 py-2.5 text-[15px] font-bold text-gray-700 shadow-sm backdrop-blur">
                 2 Live tracks: <span className="text-blue-600">JEE</span> and <span className="text-red-500">NEET</span>
               </div>
-              <div className="rounded-full border border-amber-100 bg-amber-50 px-4 py-2 text-[12px] font-bold text-amber-700 shadow-sm">
+              <div className="rounded-full border border-red-100 bg-red-50 px-5 py-2.5 text-[15px] font-bold text-red-700 shadow-sm">
                 School boards are marked as Coming Soon
               </div>
             </div>
@@ -396,7 +400,7 @@ const Index = () => {
                   initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
                   transition={{ duration:0.35, delay: i * 0.05 }}
                   whileHover={{ y:-6, boxShadow:`0 24px 56px ${exam.color}22` }}
-                  className={`group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all duration-300 ${exam.comingSoon ? "border-rose-200/60 bg-rose-50/5" : "border-gray-100"}`}>
+                  className={`group relative overflow-hidden rounded-[28px] border bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all duration-300 ${exam.comingSoon ? "border-amber-200/80" : "border-gray-100"}`}>
 
                   {/* hover color wash */}
                   <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -409,17 +413,19 @@ const Index = () => {
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       {exam.comingSoon && (
-                        <div className="relative">
-                          <div className="absolute inset-0 animate-pulse rounded-full bg-rose-500/20 blur-md" />
-                          <div className="relative rounded-full border border-rose-200 bg-rose-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_2px_10px_rgba(244,63,94,0.3)]">
-                            Coming Soon
-                          </div>
+                        <div className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-[13px] font-black uppercase tracking-[0.18em] text-red-700">
+                          Coming Soon
                         </div>
                       )}
                       {exam.popular && (
-                        <div className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black text-white"
-                          style={{ background: exam.color }}>
-                          <Star className="h-2.5 w-2.5 fill-current" /> Popular
+                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black border transition-all"
+                          style={{ 
+                            color: "#3B82F6", 
+                            backgroundColor: "#3B82F615",
+                            borderColor: "#3B82F633",
+                            boxShadow: "0 0 15px #3B82F625"
+                          }}>
+                          <Star className="h-3 w-3 fill-current" /> Popular
                         </div>
                       )}
                     </div>
@@ -573,12 +579,12 @@ const Index = () => {
 
           {/* CTA */}
           <div className="flex gap-4">
-            <Link
-              to="/register"
-              className="px-7 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:scale-105 transition shadow-md"
-            >
-              Start Your Journey →
-            </Link>
+                <Link
+                  to="/register"
+                  className="px-7 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:scale-105 transition shadow-md"
+                >
+                  Start Your Journey →
+                </Link>
 
             <a
               href="#about"
@@ -956,13 +962,17 @@ const Index = () => {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             {/* LEFT */}
             <FadeUp>
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-1.5 shadow-sm">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                <span className="text-[12px] font-black uppercase tracking-[0.15em] text-red-600">Mobile App Coming Soon</span>
+              </div>
               <h2 className="landing-title-feature mb-4 text-gray-900">
                 Join over{" "}
                 <em className="not-italic font-black" style={gText()}>500K+ learners</em>
                 <br />across India!
               </h2>
               <p className="mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-600">
-                Download the EDDVA app to access live classes, notes, assignments, and videos — even without internet.
+                The EDDVA mobile app is launching shortly! Get ready to access live classes, notes, assignments, and videos anywhere — even without internet.
               </p>
 
               {/* Dark store buttons */}

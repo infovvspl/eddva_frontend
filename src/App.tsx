@@ -84,6 +84,7 @@ import CareerPage from "./pages/landing/CareerPage";
 import ExamTrackDemoPage from "./pages/landing/ExamTrackDemoPage";
 import PrivacyPolicyPage from "./pages/landing/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/landing/TermsOfServicePage";
+import CookiePolicyPage from "./pages/landing/CookiePolicyPage";
 
 const queryClient = new QueryClient();
 
@@ -197,6 +198,7 @@ const TenantRoutes = () => (
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+    <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
@@ -223,6 +225,7 @@ const PlatformRoutes = () => (
     <Route path="/study-material/:type" element={<StudyMaterialPage />} />
     <Route path="/study-material" element={<StudyMaterialPage />} />
     <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+    <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />

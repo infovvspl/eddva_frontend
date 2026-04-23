@@ -27,7 +27,7 @@ export const LandingNavbar = () => {
         <nav className="hidden items-center gap-6 lg:gap-8 md:flex">
           {navLinks.map(link => (
             <Link key={link.name} to={link.href}
-              className="group relative text-[14px] font-black uppercase tracking-widest text-gray-500 transition-colors hover:text-blue-600">
+              className="group relative text-[18px] font-black uppercase tracking-widest text-black transition-colors hover:text-blue-600">
               {link.name}
               <span className="absolute -bottom-1 left-0 h-0.5 w-0 origin-left scale-x-0 bg-blue-600 transition-all group-hover:w-full group-hover:scale-x-100" />
             </Link>
@@ -37,14 +37,13 @@ export const LandingNavbar = () => {
 
         <div className="hidden items-center gap-4 md:flex">
           <Link to="/login"
-            className="rounded-xl px-4 py-2.5 text-[14px] font-bold text-gray-600 transition-all hover:bg-blue-50/50 hover:text-blue-600">
+            className="rounded-xl px-4 py-2.5 text-[18px] font-bold text-gray-600 transition-all hover:bg-blue-50/50 hover:text-blue-600">
             Login
           </Link>
-          <motion.div whileHover={{ scale: 1.05, boxShadow: `0 12px 30px ${B}33` }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.05, boxShadow: `0 12px 30px rgba(230, 0, 0, 0.2)` }} whileTap={{ scale: 0.95 }}>
             <Link to="/register"
-              className="landing-button relative flex items-center gap-2 overflow-hidden text-white shadow-lg"
-              style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-              Register Free <Sparkles className="h-4 w-4" />
+              className="btn-register-glossy shadow-lg">
+              REGISTER NOW
             </Link>
           </motion.div>
         </div>
@@ -71,9 +70,8 @@ export const LandingNavbar = () => {
                 Login
               </Link>
               <Link to="/register" onClick={() => setMenuOpen(false)}
-                className="landing-button block text-center text-white shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${B}, ${P})` }}>
-                Register Free
+                className="btn-register-glossy block text-center shadow-lg">
+                REGISTER NOW
               </Link>
             </div>
           </motion.div>

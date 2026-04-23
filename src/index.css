@@ -182,6 +182,40 @@
     letter-spacing: -0.025em;
     font-weight: 800;
   }
+
+  .btn-register-glossy {
+    @apply relative inline-flex items-center justify-center font-black transition-all duration-200 transform;
+    background: linear-gradient(180deg, #FF3B3B 0%, #E60000 45%, #CC0000 50%, #B30000 100%);
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.85rem 2.5rem;
+    border-radius: 9999px;
+    border: 1px solid #800000;
+    box-shadow: 
+      inset 0 4px 6px rgba(255, 255, 255, 0.4),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.2),
+      0 8px 24px rgba(230, 0, 0, 0.25),
+      0 12px 32px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-register-glossy:hover {
+    @apply scale-105;
+    background: linear-gradient(180deg, #FF4D4D 0%, #FF1A1A 45%, #E60000 50%, #CC0000 100%);
+    box-shadow: 
+      inset 0 6px 8px rgba(255, 255, 255, 0.5),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.2),
+      0 12px 32px rgba(230, 0, 0, 0.35),
+      0 16px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-register-glossy:active {
+    @apply scale-95 translate-y-1;
+    box-shadow: 
+      inset 0 4px 8px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.1);
+  }
 }
 
 @layer utilities {

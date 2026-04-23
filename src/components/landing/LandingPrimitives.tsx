@@ -50,7 +50,7 @@ export const Label = ({ children, color = B }: { children: React.ReactNode; colo
 
   return (
     <span 
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[12px] font-bold uppercase tracking-widest ${isPreset ? styles[color] : ""}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[16px] font-bold uppercase tracking-widest ${isPreset ? styles[color] : ""}`}
       style={!isPreset ? { background: color + "14", color, border: `1px solid ${color}30` } : {}}
     >
       <Sparkles className="h-3 w-3" />{children}

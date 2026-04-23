@@ -31,6 +31,7 @@ const columns: { title: string; items: NavItem[] }[] = [
       { label: "Book Demo", href: `mailto:${CONTACT_EMAIL}?subject=Book%20a%20demo` },
       { label: "Partner With Us", href: `mailto:${CONTACT_EMAIL}?subject=Partnership%20enquiry` },
       { label: "Privacy Policy", to: "/privacy-policy" },
+      { label: "Cookie Policy", to: "/cookie-policy" },
       { label: "Terms", to: "/terms" },
     ],
   },
