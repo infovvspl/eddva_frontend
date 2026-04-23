@@ -61,7 +61,7 @@ export interface Lecture {
   transcriptHi?: string;
   transcriptStatus?: "pending" | "processing" | "done" | "failed";
   transcriptLanguage?: string;
-  lectureLanguage?: "en" | "hi";
+  lectureLanguage?: "en" | "hi" | "hinglish";
   createdAt: string;
   batch?: { id: string; name: string };
   topic?: {
@@ -82,7 +82,7 @@ export interface CreateLecturePayload {
   thumbnailUrl?: string;
   scheduledAt?: string;
   liveMeetingUrl?: string;
-  lectureLanguage?: "en" | "hi";
+  lectureLanguage?: "en" | "hi" | "hinglish";
   status?: string;
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
