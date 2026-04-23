@@ -30,7 +30,7 @@ export function CookieConsentBar() {
     <div
       role="dialog"
       aria-label="Cookie notice"
-      className="fixed bottom-0 left-0 right-0 z-[55] border-t border-gray-200 bg-white/95 px-4 py-4 shadow-[0_-8px_32px_rgba(15,23,42,0.08)] backdrop-blur-md sm:px-6"
+      className="fixed bottom-0 left-0 right-0 z-[55] border-t border-gray-200 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_32px_rgba(15,23,42,0.08)] sm:px-6 supports-[backdrop-filter]:md:bg-white/95 supports-[backdrop-filter]:md:backdrop-blur-md"
     >
       <div className="landing-shell flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-relaxed text-gray-600 sm:max-w-[min(52rem,75%)] pr-2">

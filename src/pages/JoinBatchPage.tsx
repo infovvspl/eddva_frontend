@@ -10,7 +10,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { apiClient } from "@/lib/api/client";
 import * as adminApi from "@/lib/api/admin";
 import type { BatchPreview } from "@/lib/api/admin";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { getApiOrigin } from "@/lib/api-config";
 
 const API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
@@ -144,7 +144,9 @@ const loadRazorpay = () => {
 
       {/* Logo */}
       <div className="mb-8">
-        <img src={edvaLogo} alt="ApexIQ" className="h-10 object-contain cursor-pointer" onClick={() => navigate("/")} />
+        <button type="button" onClick={() => navigate("/")} className="rounded-lg bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+          <EddvaLogo className="h-10 w-auto" />
+        </button>
       </div>
 
       <motion.div

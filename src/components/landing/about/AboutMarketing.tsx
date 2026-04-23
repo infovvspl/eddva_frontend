@@ -1,4 +1,4 @@
-import { Sparkles, Award } from "lucide-react";
+import { Sparkles, Award, Target, TrendingUp, BookOpen } from "lucide-react";
 import heroImg from "@/assets/hero_illustration.png";
 import founderPhoto from "@/assets/sir 1.png";
 import teamImg1 from "@/assets/img 1.png";
@@ -26,7 +26,7 @@ const team: {
   photo: string;
 }[] = [
   {
-    name: "Ankit Tripathy",
+    name: "Ankit Tripathi",
     role: "Additional Director",
     detail: "Leadership, strategy, and long-term value for Eddva and the learners it serves",
     accent: "from-slate-500/50 to-indigo-500/50",
@@ -71,7 +71,7 @@ const team: {
 ];
 
 const founderParagraphs = [
-  "Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee, embodies a legacy of discipline, leadership, and purpose. From serving the nation with distinction to building Port Translogistics Pvt. Ltd. into a respected enterprise, his journey reflects a relentless pursuit of excellence.",
+  "Lt. Col. Anil Tripathi (Retd.), Sena Medal Awardee, embodies a legacy of discipline, leadership, and purpose. From serving the nation with distinction to building Port Translogistics Pvt. Ltd. into a respected enterprise, his journey reflects a relentless pursuit of excellence.",
   "Yet, beyond achievement, he recognized a deeper gap—a learning system that lacked adaptability, depth, and true understanding.",
   "He envisioned something better: a platform that doesn’t just deliver information, but interprets, adapts, and empowers.",
   "Eddva was born from that vision—a refined learning ecosystem designed for those who refuse to settle for conventional paths.",
@@ -101,11 +101,7 @@ export function AboutMarketing() {
                 </p>
               ))}
             </div>
-            <div className="flex flex-wrap gap-8 border-t border-slate-200/80 pt-8">
-              <Stat value="Learn" label="with clarity" />
-              <Stat value="Perform" label="with confidence" />
-              <Stat value="Stay ahead" label="with Eddva" />
-            </div>
+       
           </div>
           <div className="relative md:sticky md:top-28">
             <div
@@ -132,8 +128,8 @@ export function AboutMarketing() {
               <Award className="h-3.5 w-3.5" /> Founder&apos;s Story
             </span>
             <h2 className="mt-6 text-3xl font-bold sm:text-4xl">Built on discipline. Driven by vision.</h2>
-            <p className="mt-2 text-sm font-medium text-muted-foreground">
-              Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee
+            <p className="mt-2 text-xl font-medium text-muted-foreground">
+              Lt. Col. Anil Tripathi (Retd.), Sena Medal Awardee
             </p>
             <div className="mt-8 space-y-4 text-base leading-relaxed text-foreground/85 sm:text-lg">
               {founderParagraphs.map((p, i) => (
@@ -141,19 +137,28 @@ export function AboutMarketing() {
               ))}
             </div>
           </div>
-          <figure className="mx-auto w-full max-w-sm shrink-0 md:mx-0">
-            <div className="relative overflow-hidden rounded-3xl border-2 border-slate-200/80 bg-slate-100 shadow-lg shadow-slate-200/50">
-              <img
-                src={founderPhoto}
-                alt="Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee"
-                loading="lazy"
-                width={640}
-                height={800}
-                className="aspect-[4/5] w-full object-cover object-top"
-              />
+          <figure className="mx-auto w-full max-w-sm shrink-0 md:mx-0 relative group">
+            {/* Decorative soft glow */}
+            <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-blue-500/10 to-purple-500/10 blur-xl transition-all duration-500 group-hover:from-blue-500/20 group-hover:to-purple-500/20" aria-hidden="true" />
+            
+            {/* Premium layered frame */}
+            <div className="relative rounded-[2rem] bg-gradient-to-br from-blue-50 via-white to-purple-50 p-2 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 transition-transform duration-500 group-hover:-translate-y-1">
+              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/60 bg-slate-50">
+                <img
+                  src={founderPhoto}
+                  alt="Lt. Col. Anil Tripathi (Retd.), Sena Medal Awardee"
+                  loading="lazy"
+                  width={640}
+                  height={800}
+                  className="aspect-[4/5] w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                />
+                {/* Subtle gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              </div>
             </div>
-            <figcaption className="mt-3 text-center text-xs text-muted-foreground md:text-left">
-              Lt. Col. Anil Tripathi (Retd.), Sena Medal awardee
+            
+            <figcaption className="mt-5 text-center text-[14px] font-bold text-slate-500 transition-colors duration-300 group-hover:text-blue-600 md:text-left">
+              Lt. Col. Anil Tripathi (Retd.), Sena Medal Awardee
             </figcaption>
           </figure>
         </div>
@@ -175,8 +180,8 @@ export function AboutMarketing() {
             </p>
           </div>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {team.map((m, i) => (
-              <TeamCard key={m.name} {...m} mountainIndex={i} />
+            {team.map((m) => (
+              <TeamCard key={m.name} {...m} />
             ))}
           </div>
           <div className="mt-12">
@@ -188,45 +193,33 @@ export function AboutMarketing() {
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, label, icon: Icon, color }: { value: string; label: string; icon: any; color: string }) {
   return (
-    <div>
-      <div className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">{value}</div>
-      <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white/50 p-5 shadow-sm transition-all hover:border-slate-300 hover:bg-white hover:shadow-md">
+      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${color}`}>
+        <Icon className="h-6 w-6" />
+      </div>
+      <div className="text-left">
+        <div className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{value}</div>
+        <div className="mt-0.5 text-xs font-semibold text-slate-500">{label}</div>
+      </div>
     </div>
   );
-}
-
-/** Two rows of three; center column of each row offset for a “mountain” profile */
-function teamMountainClass(index: number) {
-  if (index === 1) return "lg:-translate-y-4";
-  if (index === 4) return "lg:translate-y-4";
-  return "";
 }
 
 function TeamCard({
   name,
   role,
-  detail,
   photo,
-  mountainIndex = 0,
 }: {
   name: string;
   role: string;
-  detail?: string;
   photo: string;
-  mountainIndex?: number;
 }) {
   return (
-    <article
-      className={`group rounded-3xl border border-slate-200/80 bg-white/90 p-6 text-center shadow-sm shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70 ${teamMountainClass(
-        mountainIndex
-      )}`}
-    >
-      <div className="relative mx-auto">
-        <div
-          className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-md shadow-slate-300/60 sm:h-36 sm:w-36"
-        >
+    <div className="group relative h-full rounded-[2rem] bg-gradient-to-br from-purple-500 to-blue-500 p-[2px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20">
+      <div className="flex h-full flex-col rounded-[calc(2rem-2px)] bg-white/95 p-6 text-center shadow-sm backdrop-blur-sm">
+        <div className="relative mx-auto h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-white shadow-md shadow-slate-300/60 sm:h-36 sm:w-36">
           <img
             src={photo}
             alt={name}
@@ -237,11 +230,12 @@ function TeamCard({
             decoding="async"
           />
         </div>
+        <div className="mt-6 flex grow flex-col justify-center">
+          <h3 className="text-xl font-extrabold text-foreground sm:text-2xl">{name}</h3>
+          <p className="mt-2 text-xs font-black uppercase tracking-[0.15em] text-primary sm:text-sm">{role}</p>
+        </div>
       </div>
-      <h3 className="mt-5 text-lg font-bold text-foreground">{name}</h3>
-      <p className="mt-1 text-sm font-bold uppercase tracking-wider text-primary">{role}</p>
-      {detail ? <p className="mx-auto mt-2 max-w-[28ch] text-xs leading-relaxed text-muted-foreground">{detail}</p> : null}
-    </article>
+    </div>
   );
 }
 

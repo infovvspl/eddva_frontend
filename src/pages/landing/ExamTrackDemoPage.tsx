@@ -12,6 +12,7 @@ import { B, IN, P, T, gText } from "@/components/landing/DesignTokens";
 import { useAuthStore } from "@/lib/auth-store";
 import { studyMaterialApi, type StudyMaterial } from "@/lib/api/study-material";
 import { LANDING_TRACK_TO_EXAM } from "@/lib/landing-study-materials";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 
 // ── Static per-exam content ──────────────────────────────────────────────────
 
@@ -121,8 +122,7 @@ function PdfPreviewModal({
     >
       <motion.div
         initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-        className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl"
-        style={{ maxHeight: "90vh" }}
+        className="relative flex min-h-0 w-full max-w-3xl max-h-[90dvh] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl sm:max-h-[min(90dvh,90vh)]"
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-4">
@@ -142,11 +142,10 @@ function PdfPreviewModal({
         </div>
 
         {/* PDF iframe */}
-        <div className="relative flex-1 overflow-hidden bg-gray-100" style={{ minHeight: 380 }}>
+        <div className="relative min-h-0 flex-1 overflow-hidden bg-gray-100" style={{ minHeight: "min(380px,45dvh)" }}>
           <iframe
             src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-            className="h-full w-full border-0"
-            style={{ minHeight: 380 }}
+            className="h-full min-h-[min(380px,45dvh)] w-full border-0"
             title="PDF Preview"
           />
 
@@ -236,11 +235,12 @@ function MaterialCard({
   onPreview: (m: StudyMaterial) => void;
 }) {
   const tc = TYPE_COLORS[material.type] ?? color;
+  const isCompact = useIsCompactLayout();
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }} transition={{ duration: 0.4 }}
-      whileHover={{ y: -4, boxShadow: `0 20px 50px ${color}18` }}
+      whileHover={isCompact ? undefined : { y: -4, boxShadow: `0 20px 50px ${color}18` }}
       className="flex flex-col rounded-[24px] border border-gray-100 bg-white p-5 shadow-sm"
     >
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -298,22 +298,40 @@ export default function ExamTrackDemoPage() {
   const materialsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setLoadError(null);
-    studyMaterialApi
-      .listPublic({ exam: demo.examKey, limit: 200 })
-      .then((rows) => {
-        setMaterials(rows);
-        setLoadError(null);
-      })
-      .catch(() => {
-        setMaterials([]);
-        setLoadError("Could not load the study materials list. Is the API running and reachable (see Vite proxy / VITE_API_BASE_URL)?");
-      })
-      .finally(() => setLoading(false));
-    if (isAuthenticated) {
-      studyMaterialApi.accessStatus().then((s) => setEnrolled(s.enrolled));
-    }
+    const load = async () => {
+      try {
+        let hasAccess = false;
+        if (isAuthenticated) {
+          const s = await studyMaterialApi.accessStatus({ exam: demo.examKey });
+          hasAccess = !!s.enrolled;
+          if (!cancelled) setEnrolled(hasAccess);
+        } else if (!cancelled) {
+          setEnrolled(false);
+        }
+
+        const rows = hasAccess
+          ? await studyMaterialApi.list({ exam: demo.examKey, limit: 200 })
+          : await studyMaterialApi.listPublic({ exam: demo.examKey, limit: 200 });
+
+        if (!cancelled) {
+          setMaterials(rows);
+          setLoadError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setMaterials([]);
+          setLoadError("Could not load the study materials list. Is the API running and reachable (see Vite proxy / VITE_API_BASE_URL)?");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void load();
+    return () => { cancelled = true; };
   }, [demo.examKey, isAuthenticated]);
 
   const filtered = activeFilter === "all"

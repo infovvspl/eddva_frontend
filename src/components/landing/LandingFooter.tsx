@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 
 const CONTACT_EMAIL = "hello@eddva.com";
 
@@ -68,15 +68,15 @@ function FooterLink({ item }: { item: NavItem }) {
 export const LandingFooter = () => (
   <footer className="border-t border-gray-100 bg-white py-14 sm:py-16">
     <div className="landing-shell">
-      <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-4">
-        <div>
+      <div className="grid gap-10 text-center md:grid-cols-2 md:text-left xl:grid-cols-4">
+        <div className="flex flex-col items-center md:items-start">
           <Link to="/" className="inline-block">
-            <img src={edvaLogo} alt="EDDVA" className="mb-5 h-19  object-contain" />
+            <EddvaLogo className="mb-5" />
           </Link>
-       
+
         </div>
         {columns.map((col) => (
-          <div key={col.title}>
+          <div key={col.title} className="flex flex-col items-center md:items-start">
             <h5 className="mb-5 text-[12px] font-bold uppercase tracking-widest text-gray-400">{col.title}</h5>
             <ul className="space-y-2.5">
               {col.items.map((item) => (
@@ -88,7 +88,7 @@ export const LandingFooter = () => (
           </div>
         ))}
       </div>
-      <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 sm:flex-row">
+      <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 text-center sm:flex-row sm:text-left">
         <p className="text-[13px] text-gray-400">
           © {new Date().getFullYear()} EDDVA — Education Plus Advancement. All rights reserved.
         </p>

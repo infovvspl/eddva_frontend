@@ -272,6 +272,33 @@ export default function Courses() {
                     className="h-14 w-full rounded-2xl border border-slate-200/90 bg-white/95 pl-12 pr-4 text-sm font-medium text-slate-900 shadow-sm outline-none ring-slate-200 transition focus:ring-2"
                   />
                 </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="mr-1 text-sm font-semibold text-slate-500">Quick filters:</span>
+                  {["JEE", "NEET", "Foundation", "Crash Course"].map((f) => {
+                    const isActive = query.toLowerCase() === f.toLowerCase();
+                    return (
+                      <button
+                        key={f}
+                        onClick={() => setQuery(isActive ? "" : f)}
+                        className={`rounded-full border px-4 py-1.5 text-sm font-semibold shadow-sm transition ${
+                          isActive
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                  {query && !["jee", "neet", "foundation", "crash course"].includes(query.toLowerCase()) && (
+                    <button
+                      onClick={() => setQuery("")}
+                      className="rounded-full px-4 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-50/80"
+                    >
+                      Clear search
+                    </button>
+                  )}
+                </div>
               </div>
             </>
           )}

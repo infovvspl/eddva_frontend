@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   Menu, X, Sparkles
 } from "lucide-react";
-import edvaLogo from "@/assets/eddva web logo.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { B, P } from "./DesignTokens";
 
 export const LandingNavbar = () => {
@@ -18,13 +18,13 @@ export const LandingNavbar = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-100/80 bg-white/80 backdrop-blur-xl">
-      <div className="landing-shell flex items-center justify-between py-3.5">
-        <Link to="/" className="flex items-center">
-          <img src={edvaLogo} alt="EDDVA" className=" object-contain" />
+    <header className="fixed top-0 z-50 w-full border-b border-gray-100/80 bg-white/95 supports-[backdrop-filter]:md:bg-white/80 supports-[backdrop-filter]:md:backdrop-blur-lg">
+      <div className="landing-shell flex items-center justify-between py-2">
+        <Link to="/" className="flex max-w-[min(58vw,12rem)] shrink-0 items-center sm:max-w-[16rem]">
+          <EddvaLogo className="h-20 w-auto sm:h-18" />
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:gap-8 md:flex">
+        <nav className="hidden items-center gap-6 lg:flex lg:gap-8">
           {navLinks.map(link => (
             <Link key={link.name} to={link.href}
               className="group relative text-[18px] font-black uppercase tracking-widest text-black transition-colors hover:text-blue-600">
@@ -35,7 +35,7 @@ export const LandingNavbar = () => {
 
         </nav>
 
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-4 lg:flex">
           <Link to="/login"
             className="rounded-xl px-4 py-2.5 text-[18px] font-bold text-gray-600 transition-all hover:bg-blue-50/50 hover:text-blue-600">
             Login
@@ -48,7 +48,7 @@ export const LandingNavbar = () => {
           </motion.div>
         </div>
 
-        <button className="rounded-xl p-2 hover:bg-gray-100 md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
+        <button className="rounded-xl p-2 hover:bg-gray-100 lg:hidden" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
@@ -56,7 +56,7 @@ export const LandingNavbar = () => {
       <AnimatePresence>
         {menuOpen && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-gray-100 bg-white px-4 pb-6 sm:px-5 md:hidden">
+            className="overflow-hidden border-t border-gray-100 bg-white px-4 pb-6 sm:px-5 lg:hidden">
             {navLinks.map(link => (
               <Link key={link.name} to={link.href}
                 onClick={() => setMenuOpen(false)}
