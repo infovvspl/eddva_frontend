@@ -4,7 +4,6 @@ const PRESET_CLASSES = ["9", "10", "11", "12", "dropper"] as const;
 export const BATCH_EXAM_TARGET_OPTIONS = [
   { value: "jee", label: "JEE" },
   { value: "neet", label: "NEET" },
-  { value: "both", label: "Both / General" },
   { value: "custom", label: "Custom" },
 ] as const;
 
@@ -79,6 +78,5 @@ export function formatBatchExamTargetLabel(value?: string | null) {
   if (!normalized) return "Course";
   if (normalized === "jee") return "JEE";
   if (normalized === "neet") return "NEET";
-  if (normalized === "both") return "Both / General";
   return normalized;
 }
