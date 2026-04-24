@@ -942,7 +942,9 @@ export default function LiveClassRoom() {
         recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
         recordingStreamRef.current = null;
 
-        const mimeType = recorder.mimeType || "video/webm";
+        const rawMimeType = recorder.mimeType || "video/webm";
+        // Strip codec params — backend file filter only checks the base type (e.g. "video/webm")
+        const mimeType = rawMimeType.split(";")[0].trim();
         const blob = new Blob(recordingChunksRef.current, { type: mimeType });
         recordingChunksRef.current = [];
         mediaRecorderRef.current = null;
@@ -952,6 +954,7 @@ export default function LiveClassRoom() {
 
         const ext = mimeType.includes("mp4") ? ".mp4" : ".webm";
         const file = new File([blob], `recording${ext}`, { type: mimeType });
+        console.log("[Recording] Uploading blob:", blob.size, "bytes, type:", file.type, "lectureId:", lId);
         toast.info("Saving recording…", { id: "rec-upload", duration: 120_000 });
         try {
           const url = await uploadLiveRecordingToBackend(lId, file);
@@ -959,9 +962,10 @@ export default function LiveClassRoom() {
           toast.dismiss("rec-upload");
           toast.success("Recording saved!");
           resolve(url);
-        } catch (err) {
+        } catch (err: any) {
           toast.dismiss("rec-upload");
-          console.warn("[Recording] upload failed:", err);
+          const detail = err?.response?.data?.message ?? err?.response?.data ?? err?.message ?? String(err);
+          console.error("[Recording] upload failed — status:", err?.response?.status, "detail:", detail);
           resolve(null);
         }
       };
