@@ -1009,10 +1009,16 @@ export interface DailyBattle {
   status: string;
 }
 
-export async function createBattle(mode: BattleMode, topicId?: string, topicName?: string): Promise<BattleRoom> {
+export async function createBattle(
+  mode: BattleMode,
+  topicId?: string,
+  topicName?: string,
+  difficulty?: "easy" | "medium" | "hard",
+): Promise<BattleRoom> {
   const payload: Record<string, string> = { mode };
   if (topicId) payload.topicId = topicId;
   if (topicName) payload.topicName = topicName;
+  if (difficulty) payload.difficulty = difficulty;
   const res = await apiClient.post("/battles/create", payload);
   return extractData<BattleRoom>(res);
 }
@@ -1230,7 +1236,8 @@ export interface AiPracticeQuestion {
   question: string;
   answer: string;
   explanation: string;
-  options?: string[];
+  options?: Array<string | { optionLabel?: string; content?: string; text?: string; value?: string }>;
+  choices?: Array<string | { optionLabel?: string; content?: string; text?: string; value?: string }>;
 }
 
 export interface AiStudySessionData {
