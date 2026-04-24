@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Clock, ClipboardList, CheckCircle,
   XCircle, Minus, Trophy, Target, Zap, BarChart3, Loader2,
   AlertTriangle, ChevronRight, BookOpen, Flag, RotateCcw,
-  TrendingUp, Calendar, Award,
+  TrendingUp, Calendar, Award, Check,
 } from "lucide-react";
 import {
   getMockTestById, startSession, submitAnswer, submitSession,
@@ -15,6 +15,7 @@ import type { QuizQuestion, TestSession, SessionResult, SessionResultAttempt } f
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { uploadToS3 } from "@/lib/api/upload";
 
 // ─── Timer hook ───────────────────────────────────────────────────────────────
 function useCountdown(total: number, running: boolean, onExpire: () => void) {
@@ -39,6 +40,13 @@ function fmt(s: number) {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
+function isAttemptComplete(q: QuizQuestion, selected: string[] | undefined): boolean {
+  if (!selected || selected.length === 0) return false;
+  if (q.type === "descriptive") return Boolean(selected[0]?.trim());
+  if (q.type === "integer") return Boolean(selected[0]?.toString().trim());
+  return selected.length > 0;
+}
+
 // ─── Palette dot ─────────────────────────────────────────────────────────────
 type QStatus = "unanswered" | "answered" | "current";
 function PaletteDot({ status, idx, onClick }: { status: QStatus; idx: number; onClick: () => void }) {
@@ -58,16 +66,71 @@ function PaletteDot({ status, idx, onClick }: { status: QStatus; idx: number; on
 }
 
 // ─── Question view ────────────────────────────────────────────────────────────
+const TYPE_PILL: Record<QuizQuestion["type"], { label: string; className: string }> = {
+  mcq_single: { label: "MCQ", className: "bg-sky-100 text-sky-800" },
+  mcq_multi: { label: "MSQ (multi)", className: "bg-violet-100 text-violet-800" },
+  integer: { label: "Integer", className: "bg-amber-100 text-amber-800" },
+  descriptive: { label: "Written", className: "bg-rose-100 text-rose-800" },
+};
+
 function QuestionView({
-  question, index, total, selected, onSelect,
+  question, index, total, selected, imageUrls, onSelect, onImageUrlsChange,
 }: {
   question: QuizQuestion; index: number; total: number;
-  selected: string[]; onSelect: (v: string) => void;
+  selected: string[];
+  imageUrls?: string[];
+  onSelect: (v: string) => void;
+  onImageUrlsChange?: (urls: string[]) => void;
 }) {
   const isInteger = question.type === "integer";
   const isMulti = question.type === "mcq_multi";
+  const isDescriptive = question.type === "descriptive";
   const [intVal, setIntVal] = useState(selected[0] ?? "");
-  useEffect(() => { setIntVal(selected[0] ?? ""); }, [question.id]);
+  const [textVal, setTextVal] = useState(selected[0] ?? "");
+  const [uploading, setUploading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { setIntVal(selected[0] ?? ""); }, [question.id, selected]);
+  useEffect(() => { setTextVal(selected[0] ?? ""); }, [question.id, selected]);
+
+  const queueDescriptiveSave = (raw: string) => {
+    setTextVal(raw);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => onSelect(raw), 500);
+  };
+
+  const handlePickImages = async (files: FileList | null) => {
+    if (!files?.length) return;
+    if (!onImageUrlsChange) return;
+    setUploading(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        const url = await uploadToS3(
+          {
+            type: "doubt-response-image",
+            fileName: file.name,
+            contentType: file.type || "image/jpeg",
+            fileSize: file.size,
+          },
+          file,
+        );
+        uploaded.push(url);
+      }
+      onImageUrlsChange([...(imageUrls || []), ...uploaded]);
+      toast.success(`${uploaded.length} handwritten page(s) uploaded`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to upload handwritten page.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
+
+  const typePill = TYPE_PILL[question.type] ?? TYPE_PILL.mcq_single;
 
   return (
     <motion.div
@@ -79,6 +142,7 @@ function QuestionView({
         <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700">
           Q{index + 1} / {total}
         </span>
+        <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", typePill.className)}>{typePill.label}</span>
         <span className={cn(
           "text-xs font-semibold px-2.5 py-1 rounded-full",
           question.difficulty === "easy"   && "bg-emerald-100 text-emerald-700",
@@ -99,7 +163,35 @@ function QuestionView({
         </p>
       </div>
 
-      {isInteger ? (
+      {isDescriptive ? (
+        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
+          <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Your answer</p>
+          <textarea
+            value={textVal}
+            onChange={e => queueDescriptiveSave(e.target.value)}
+            rows={6}
+            placeholder="Write your answer here. It is saved automatically as you type."
+            className="w-full p-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y min-h-[140px]"
+          />
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] text-slate-500 font-medium">Upload handwritten pages (for diagrams/stepwork)</label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={uploading}
+                onChange={(e) => handlePickImages(e.target.files)}
+                className="text-[11px]"
+              />
+            </div>
+            {!!imageUrls?.length && (
+              <p className="text-[11px] text-emerald-700">{imageUrls.length} page(s) attached.</p>
+            )}
+            {uploading && <p className="text-[11px] text-indigo-600">Uploading pages…</p>}
+          </div>
+        </div>
+      ) : isInteger ? (
         <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
           <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Enter integer answer</p>
           <input
@@ -112,10 +204,13 @@ function QuestionView({
         </div>
       ) : (
         <div className="space-y-2.5">
+          {isMulti && (
+            <p className="text-xs text-slate-500 font-medium">Select all correct options.</p>
+          )}
           {(question.options ?? []).map((opt) => {
             const isSel = selected.includes(opt.id);
             return (
-              <button key={opt.id} onClick={() => onSelect(opt.id)}
+              <button key={opt.id} type="button" onClick={() => onSelect(opt.id)}
                 className={cn(
                   "w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all",
                   isSel ? "bg-indigo-50 border-indigo-400 shadow-sm" : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30",
@@ -126,7 +221,7 @@ function QuestionView({
                   isMulti ? "rounded-md" : "rounded-full",
                   isSel ? "border-indigo-500 bg-indigo-500" : "border-slate-300",
                 )}>
-                  {isSel && <div className="w-2 h-2 rounded-full bg-white" />}
+                  {isSel && (isMulti ? <Check className="w-3 h-3 text-white" strokeWidth={3} /> : <div className="w-2 h-2 rounded-full bg-white" />)}
                 </div>
                 <span className={cn("text-sm font-medium leading-snug", isSel ? "text-indigo-800" : "text-slate-700")}>
                   {opt.content}
@@ -326,10 +421,11 @@ function ResultsScreen({
             const explanationOnly = q.reviewMode === "explanation_only";
             const opts = q.options ?? [];
             const skipped = attempt.errorType === "skip";
+            const isDesc = q.type === "descriptive";
             return (
               <div key={attempt.questionId} className={cn(
                 "rounded-2xl border p-4 space-y-3",
-                attempt.isCorrect
+                isDesc ? "bg-slate-50/80 border-slate-200" : attempt.isCorrect
                   ? "bg-emerald-50/60 border-emerald-200"
                   : skipped
                     ? "bg-slate-50 border-slate-200"
@@ -340,7 +436,9 @@ function ResultsScreen({
                     Q{i + 1}
                   </span>
                   <p className="text-sm font-medium text-slate-800 leading-snug flex-1">{q.content}</p>
-                  {attempt.isCorrect
+                  {isDesc ? (
+                    <BookOpen className="w-5 h-5 text-slate-500 shrink-0" aria-hidden />
+                  ) : attempt.isCorrect
                     ? <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
                     : skipped
                       ? <Minus className="w-5 h-5 text-slate-400 shrink-0" />
@@ -351,7 +449,46 @@ function ResultsScreen({
                   <ExplanationBlock text={solutionTextFromQuestion(q)} videoUrl={solutionVideoFromQuestion(q)} />
                 ) : (
                   <>
-                    {q.type === "integer" ? (
+                    {q.type === "descriptive" ? (
+                      <div className="space-y-2 text-sm rounded-xl border border-slate-200 bg-white/80 p-3">
+                        <p className="text-[10px] font-bold uppercase text-slate-500">Your response</p>
+                        <p className="text-slate-800 whitespace-pre-wrap leading-relaxed">
+                          {(attempt as { integerAnswer?: string }).integerAnswer?.trim() || "—"}
+                        </p>
+                        {solutionTextFromQuestion(q) ? (
+                          <div className="pt-2 border-t border-slate-100">
+                            <p className="text-[10px] font-bold uppercase text-emerald-700 mb-1">Model / key points</p>
+                            <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{solutionTextFromQuestion(q)}</p>
+                          </div>
+                        ) : null}
+                        {(() => {
+                          const rb = (attempt as any)?.analysis?.rubricBreakdown as Record<string, number> | null | undefined;
+                          if (!rb || !Object.keys(rb).length) return null;
+                          return (
+                            <div className="pt-2 border-t border-slate-100">
+                              <p className="text-[10px] font-bold uppercase text-indigo-700 mb-1">Rubric breakdown</p>
+                              <p className="text-slate-700 text-xs leading-relaxed">
+                                {Object.entries(rb)
+                                  .map(([k, v]) => `${k}: ${v}`)
+                                  .join(" | ")}
+                              </p>
+                            </div>
+                          );
+                        })()}
+                        {!!(attempt.answerImageUrls || []).length && (
+                          <div className="pt-2 border-t border-slate-100">
+                            <p className="text-[10px] font-bold uppercase text-slate-500 mb-1">Attached handwritten page(s)</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(attempt.answerImageUrls || []).map((u, idx) => (
+                                <a key={u} href={u} target="_blank" rel="noopener noreferrer" className="text-[11px] text-indigo-700 underline">
+                                  Page {idx + 1}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : q.type === "integer" ? (
                       <div className="space-y-2 text-sm rounded-xl border border-slate-200 bg-white/80 p-3">
                         <p className="text-slate-600">
                           Your answer:{" "}
@@ -440,6 +577,7 @@ export default function StudentMockTestPage() {
   const [questions, setQuestions]     = useState<QuizQuestion[]>([]);
   const [currentQ, setCurrentQ]       = useState(0);
   const [answers, setAnswers]         = useState<Record<string, string[]>>({});
+  const [answerImages, setAnswerImages] = useState<Record<string, string[]>>({});
   const [result, setResult]           = useState<SessionResult | null>(null);
   const [elapsed, setElapsed]         = useState(0);
 
@@ -477,6 +615,7 @@ export default function StudentMockTestPage() {
         setQuestions((active.questions as QuizQuestion[]) ?? (test.questions as QuizQuestion[]) ?? []);
         setCurrentQ(0);
         setAnswers({});
+        setAnswerImages({});
         setStage("running");
         toast.info("Resuming your session…");
       } else {
@@ -509,6 +648,7 @@ export default function StudentMockTestPage() {
       setQuestions((sess.questions as QuizQuestion[]) ?? []);
       setCurrentQ(0);
       setAnswers({});
+      setAnswerImages({});
       setElapsed(0);
       setStage("running");
     } catch (err: any) {
@@ -517,21 +657,25 @@ export default function StudentMockTestPage() {
     }
   };
 
-  const handleSelect = async (optionId: string) => {
+  const handleSelect = async (value: string) => {
     const q = questions[currentQ];
     if (!q || !session) return;
     const isMulti = q.type === "mcq_multi";
     const isInteger = q.type === "integer";
+    const isDesc = q.type === "descriptive";
     const prev = answers[q.id] ?? [];
-    const next = isMulti
-      ? (prev.includes(optionId) ? prev.filter(id => id !== optionId) : [...prev, optionId])
-      : [optionId];
-    setAnswers(a => ({ ...a, [q.id]: next }));
+    const next: string[] = isDesc || isInteger
+      ? [value]
+      : isMulti
+        ? (prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value])
+        : [value];
+    setAnswers((a) => ({ ...a, [q.id]: next }));
     try {
       await submitAnswer(session.id, {
         questionId: q.id,
-        selectedOptionIds: isInteger ? undefined : next,
-        integerResponse: isInteger ? optionId : undefined,
+        selectedOptionIds: isInteger || isDesc ? undefined : next,
+        integerResponse: isInteger || isDesc ? value : undefined,
+        answerImageUrls: isDesc ? (answerImages[q.id] || []) : undefined,
         timeTakenSeconds: totalSecs - secs,
       });
     } catch { /* graded on final submit */ }
@@ -554,7 +698,7 @@ export default function StudentMockTestPage() {
 
   const handleSubmit = async (timedOut = false) => {
     if (!timedOut) {
-      const unanswered = questions.length - Object.values(answers).filter(a => a.length > 0).length;
+      const unanswered = questions.filter((q) => !isAttemptComplete(q, answers[q.id])).length;
       if (unanswered > 0) {
         const ok = window.confirm(`${unanswered} question${unanswered > 1 ? "s" : ""} unanswered. Submit anyway?`);
         if (!ok) return;
@@ -581,6 +725,7 @@ export default function StudentMockTestPage() {
     setResult(null);
     setSession(null);
     setAnswers({});
+      setAnswerImages({});
     setCurrentQ(0);
     setStage("intro");
   };
@@ -642,7 +787,7 @@ export default function StudentMockTestPage() {
             </p>
             <ul className="text-xs text-amber-700 space-y-1 list-disc list-inside">
               <li>Timer starts immediately and cannot be paused.</li>
-              <li>Answers are saved automatically as you select.</li>
+              <li>Answers are saved automatically (including multi-select, integer, and written responses).</li>
               {mockTest.shuffleQuestions && <li>Questions are shuffled each attempt.</li>}
               <li>Submit before the timer expires to avoid auto-submission.</li>
             </ul>
@@ -682,7 +827,7 @@ export default function StudentMockTestPage() {
   // ── Running ───────────────────────────────────────────────────────────────
   if (stage === "running" && questions.length > 0) {
     const q = questions[currentQ];
-    const answeredCount = Object.values(answers).filter(a => a.length > 0).length;
+    const answeredCount = questions.filter((qItem) => isAttemptComplete(qItem, answers[qItem.id])).length;
 
     return (
       <div className="max-w-3xl mx-auto px-4 pb-24">
@@ -712,7 +857,20 @@ export default function StudentMockTestPage() {
         <AnimatePresence mode="wait">
           <QuestionView
             key={q.id} question={q} index={currentQ} total={questions.length}
-            selected={answers[q.id] ?? []} onSelect={handleSelect}
+            selected={answers[q.id] ?? []}
+            imageUrls={answerImages[q.id] ?? []}
+            onImageUrlsChange={(urls) => {
+              setAnswerImages((m) => ({ ...m, [q.id]: urls }));
+              if (session && q.type === "descriptive") {
+                submitAnswer(session.id, {
+                  questionId: q.id,
+                  integerResponse: (answers[q.id] ?? [])[0] ?? "",
+                  answerImageUrls: urls,
+                  timeTakenSeconds: totalSecs - secs,
+                }).catch(() => {});
+              }
+            }}
+            onSelect={handleSelect}
           />
         </AnimatePresence>
 
@@ -748,7 +906,7 @@ export default function StudentMockTestPage() {
           <div className="flex flex-wrap gap-2">
             {questions.map((qItem, i) => (
               <PaletteDot key={qItem.id} idx={i} onClick={() => setCurrentQ(i)}
-                status={i === currentQ ? "current" : answers[qItem.id]?.length > 0 ? "answered" : "unanswered"}
+                status={i === currentQ ? "current" : isAttemptComplete(qItem, answers[qItem.id]) ? "answered" : "unanswered"}
               />
             ))}
           </div>

@@ -72,59 +72,189 @@ function fmtDateTime(d: string) {
   return new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+function cleanAiMarkdown(md: string) {
+  if (!md) return "";
+  return String(md)
+    .replace(/\\n/g, "\n")
+    .replace(/```+/g, " ")
+    .replace(/\$(.*?)\$/gs, (_m, inner) =>
+      String(inner)
+        .replace(/\\text\s*\{([^}]*)\}/g, "$1")
+        .replace(/\\pi/g, "pi")
+        .replace(/\\times/g, " x ")
+        .replace(/\\gt/g, ">")
+        .replace(/\\lt/g, "<")
+        .replace(/\\geq?/g, ">=")
+        .replace(/\\leq?/g, "<=")
+        .trim(),
+    )
+    .replace(/\\text\s*\{([^}]*)\}/g, "$1")
+    .replace(/<\/?(?:noise|music|silence|pause|speaker\s*\d+|babble|cough|laugh(?:ter)?|applause|breath|sneeze)[^>]*\/?>/gi, "")
+    .replace(/\[(?:silence|music|noise|speaker \d+|pause|babble|cough|laughter|applause|breath|sneeze)\]/gi, "")
+    .replace(/([^\n])\s*(#{1,4} )/g, "$1\n\n$2")
+    .replace(/([^\n])\s*(\* |- |\d+\. )/g, "$1\n$2")
+    .replace(/\bXB\s*=\s*1\s+XA\b/gi, "XB = 1 - XA")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
 // ─── Processing Animation ─────────────────────────────────────────────────────
 
-const AI_STEPS = [
+const AI_STEPS_EN = [
   { icon: Mic,        label: "Transcribing audio" },
   { icon: Brain,      label: "Analysing content" },
   { icon: FileText,   label: "Generating lecture notes" },
   { icon: ListChecks, label: "Extracting key concepts" },
 ];
 
+const AI_STEPS_HINGLISH = [
+  { icon: Mic,        label: "Transcribing Hinglish audio" },
+  { icon: Brain,      label: "Translating to English (Sarvam AI)" },
+  { icon: FileText,   label: "Generating lecture notes" },
+  { icon: ListChecks, label: "Extracting key concepts" },
+];
+
+// Sub-steps shown under "Transcribing audio" as time elapses
+const TRANSCRIBE_SUB_EN = [
+  "Downloading video from storage…",
+  "Splitting audio into chunks…",
+  "Sending chunks to Whisper AI…",
+  "Finishing transcription…",
+];
+const TRANSCRIBE_SUB_HINGLISH = [
+  "Downloading video from storage…",
+  "Splitting audio into chunks…",
+  "Transcribing Hinglish audio…",
+  "Finishing transcription…",
+];
+
+function fmtElapsed(secs: number) {
+  if (secs < 60) return `${secs}s`;
+  return `${Math.floor(secs / 60)}m ${secs % 60}s`;
+}
+
 function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeStep?: number }) {
-  // If activeStep is not explicitly provided (e.g. from artificial delay), derive from real status
-  const currentStep = activeStep !== undefined ? activeStep : (
-    lecture.status === "draft" || lecture.status === "published" ? 4 :
-    lecture.status === "processing" && lecture.transcriptStatus === "done" ? 2 :
-    lecture.transcriptStatus === "processing" ? 0 : 1
+  const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
+  const steps = isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
+  const subSteps = isHinglish ? TRANSCRIBE_SUB_HINGLISH : TRANSCRIBE_SUB_EN;
+
+  const isActive = lecture.status === "processing"
+    || lecture.transcriptStatus === "processing"
+    || lecture.transcriptStatus === "pending";
+
+  // Live elapsed-seconds counter while processing
+  const [elapsed, setElapsed] = useState(() =>
+    Math.max(0, Math.floor((Date.now() - new Date(lecture.createdAt).getTime()) / 1000))
   );
+  useEffect(() => {
+    if (!isActive) return;
+    const id = setInterval(() =>
+      setElapsed(Math.max(0, Math.floor((Date.now() - new Date(lecture.createdAt).getTime()) / 1000)))
+    , 1000);
+    return () => clearInterval(id);
+  }, [isActive, lecture.createdAt]);
+
+  // Derive current step from elapsed time when not explicitly provided.
+  // Timing based on observed logs: transcription ~100s, translation ~30s, notes ~50s.
+  const timeBasedStep =
+    elapsed < 100 ? 0 :   // transcribing
+    elapsed < 130 ? 1 :   // analysing / translating
+    elapsed < 190 ? 2 :   // generating notes
+    3;                     // extracting concepts
+
+  const currentStep = activeStep !== undefined ? activeStep : (
+    lecture.status === "draft" || lecture.status === "published" ? steps.length :
+    lecture.status === "processing" && lecture.transcriptStatus === "done" ? 2 :
+    lecture.transcriptStatus === "processing" ? timeBasedStep : 1
+  );
+
+  // Sub-step hint shown while transcription is the active step
+  const subStepIdx =
+    elapsed < 15  ? 0 :
+    elapsed < 35  ? 1 :
+    elapsed < 95  ? 2 :
+    3;
+  const showSubStep = currentStep === 0 && isActive;
+
+  // Smooth progress: within a step, advance from step-start % to step-end %
+  const STEP_BOUNDARIES = [0, 52, 68, 84, 100]; // % at start of each step + end
+  const stepStart = STEP_BOUNDARIES[currentStep] ?? 0;
+  const stepEnd   = STEP_BOUNDARIES[Math.min(currentStep + 1, STEP_BOUNDARIES.length - 1)];
+  const withinStep = currentStep === 0
+    ? Math.min(elapsed / 100, 1)
+    : currentStep === 1
+    ? Math.min((elapsed - 100) / 30, 1)
+    : currentStep === 2
+    ? Math.min((elapsed - 130) / 60, 1)
+    : Math.min((elapsed - 190) / 30, 1);
+  const progressPct = Math.round(stepStart + (stepEnd - stepStart) * withinStep);
+
+  const estTotal = isHinglish ? "3–5 min" : "2–4 min";
 
   return (
     <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
           <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
         </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">AI is processing "{lecture.title}"</p>
-          <p className="text-xs text-muted-foreground">No action needed — we'll notify you when ready</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">
+            AI is processing &ldquo;{lecture.title}&rdquo;
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {isHinglish
+              ? "Hinglish → English → Notes. No action needed."
+              : "No action needed — we'll notify you when ready"}
+          </p>
         </div>
+        {isActive && (
+          <div className="shrink-0 text-right">
+            <p className="text-xs font-mono font-semibold text-blue-600">{fmtElapsed(elapsed)}</p>
+            <p className="text-[10px] text-muted-foreground">est. {estTotal}</p>
+          </div>
+        )}
       </div>
       <div className="space-y-2">
-        {AI_STEPS.map((s, i) => {
-          const done = i < currentStep;
+        {steps.map((s, i) => {
+          const done    = i < currentStep;
           const current = i === currentStep;
+          const Icon    = s.icon;
           return (
-            <div key={i} className="flex items-center gap-2.5">
-              {done
-                ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                : current
-                ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
-                : <div className="w-4 h-4 rounded-full border border-muted-foreground/30 shrink-0" />}
-              <span className={cn("text-xs",
-                done ? "text-muted-foreground line-through" :
-                current ? "text-foreground font-medium" :
-                "text-muted-foreground/50")}>
-                {s.label}
-              </span>
+            <div key={i}>
+              <div className="flex items-center gap-2.5">
+                {done
+                  ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                  : current
+                  ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
+                  : <div className="w-4 h-4 rounded-full border border-muted-foreground/30 shrink-0" />}
+                <span className={cn("text-xs flex items-center gap-1.5",
+                  done    ? "text-muted-foreground line-through" :
+                  current ? "text-foreground font-medium" :
+                  "text-muted-foreground/50")}>
+                  <Icon className="w-3 h-3 shrink-0" />
+                  {s.label}
+                </span>
+              </div>
+              {/* Sub-step hint — only under the active transcription step */}
+              {current && showSubStep && i === 0 && (
+                <p className="ml-[26px] text-[11px] text-blue-500/70 mt-0.5 animate-pulse">
+                  {subSteps[subStepIdx]}
+                </p>
+              )}
             </div>
           );
         })}
       </div>
-      {/* Indeterminate progress bar */}
-      <div className="w-full h-1 bg-blue-500/10 rounded-full overflow-hidden">
-        <div className="h-full bg-blue-500 rounded-full animate-[indeterminate_1.5s_ease-in-out_infinite]"
-          style={{ width: `${Math.round(((activeStep + 1) / AI_STEPS.length) * 100)}%`, transition: "width 0.8s ease" }} />
+      {/* Smooth progress bar */}
+      <div className="space-y-1">
+        <div className="w-full h-1.5 bg-blue-500/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-linear"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground text-right">{progressPct}% complete</p>
       </div>
     </div>
   );
@@ -133,6 +263,19 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
 // ─── Markdown Renderer (Preview) ─────────────────────────────────────────────
 
 function MarkdownContent({ content }: { content: string }) {
+  // If the content is raw HTML (generated by Tiptap), render as HTML.
+  // We check for typical wrapper tags Tiptap generates.
+  const isHtml = /<[a-z][\s\S]*>/i.test(content) && (content.includes('<p>') || content.includes('<h1>') || content.includes('<ul>'));
+
+  if (isHtml) {
+    return (
+      <div 
+        className="prose-notes prose prose-sm prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80 text-foreground max-w-none"
+        dangerouslySetInnerHTML={{ __html: content }} 
+      />
+    );
+  }
+
   return (
     <div className="prose-notes">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
@@ -266,6 +409,7 @@ type NotesPanelTab = "preview" | "edit" | "transcript" | "quiz" | "analytics";
 
 function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () => void }) {
   const updateLecture = useUpdateLecture();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [tab, setTab] = useState<NotesPanelTab>("preview");
   const [htmlContent, setHtmlContent] = useState("");
@@ -273,7 +417,15 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
   const [newConcept, setNewConcept] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
   const youtubeSource = isYouTubeUrl(lecture.videoUrl);
+
+  // Sync key-concepts from fresh data (but only if user hasn't locally edited)
+  useEffect(() => {
+    if (!hasChanges && lecture?.aiKeyConcepts) {
+      setConcepts(lecture.aiKeyConcepts);
+    }
+  }, [lecture?.aiKeyConcepts, hasChanges]);
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<QuizCheckpoint[]>([]);
@@ -379,7 +531,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
 
   // Convert markdown to simple HTML for Tiptap initial load
   const initialHtml = useMemo(() => {
-    const md = lecture.aiNotesMarkdown || "";
+    const md = cleanAiMarkdown(lecture.aiNotesMarkdown || "");
     if (!md) return "";
     // Basic markdown → HTML conversion for Tiptap
     return md
@@ -402,7 +554,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
     try {
       await updateLecture.mutateAsync({
         id: lecture.id, status: "published" as any,
-        aiNotesMarkdown: htmlContent || lecture.aiNotesMarkdown,
+        aiNotesMarkdown: htmlContent || cleanAiMarkdown(lecture.aiNotesMarkdown || ""),
         aiKeyConcepts: concepts,
       } as any);
       toast({ title: "Lecture published!", description: "Students can now view this lecture and its notes." });
@@ -416,7 +568,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
     try {
       await updateLecture.mutateAsync({
         id: lecture.id,
-        aiNotesMarkdown: htmlContent || lecture.aiNotesMarkdown,
+        aiNotesMarkdown: htmlContent || cleanAiMarkdown(lecture.aiNotesMarkdown || ""),
         aiKeyConcepts: concepts,
       } as any);
       setHasChanges(false);
@@ -503,7 +655,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
           {tab === "preview" && (
             <div className="h-full overflow-y-auto px-8 py-6">
               {lecture.aiNotesMarkdown ? (
-                <MarkdownContent content={lecture.aiNotesMarkdown} />
+                <MarkdownContent content={cleanAiMarkdown(lecture.aiNotesMarkdown)} />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                   {(lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") ? (
@@ -511,7 +663,11 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                       <Loader2 className="w-12 h-12 opacity-60 text-primary animate-spin" />
                       <p className="text-sm text-foreground">Generating AI notes…</p>
                       <p className="text-xs text-center max-w-sm">
-                        {youtubeSource ? "Pulling YouTube captions and summarising." : "Transcribing audio and generating notes."}
+                        {youtubeSource
+                          ? "Pulling YouTube captions and summarising."
+                          : lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi"
+                          ? "Transcribing audio → translating to English → generating notes. This may take 5–10 minutes."
+                          : "Transcribing audio and generating notes."}
                       </p>
                     </>
                   ) : lecture.transcriptStatus === "failed" ? (
@@ -575,7 +731,14 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Mic className="w-3.5 h-3.5 text-primary" />
-                      <span>Auto-transcribed · {lecture.transcriptLanguage === "hi" ? "Hindi" : "English"}</span>
+                      <span>
+                        Auto-transcribed ·{" "}
+                        {lecture.transcriptLanguage === "hinglish"
+                          ? "Hinglish → translated to English"
+                          : lecture.transcriptLanguage === "hi"
+                          ? "Hindi → translated to English"
+                          : "English"}
+                      </span>
                     </div>
                     <div className="bg-secondary/40 rounded-xl p-5 text-sm text-foreground leading-7 whitespace-pre-wrap font-mono">
                       {lecture.transcript}
@@ -588,7 +751,11 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                         <Loader2 className="w-12 h-12 opacity-60 text-primary animate-spin" />
                         <p className="text-sm text-foreground">Preparing transcript…</p>
                         <p className="text-xs text-center max-w-sm">
-                          {youtubeSource ? "Fetching captions from YouTube." : "Transcribing uploaded video."}
+                          {youtubeSource
+                            ? "Fetching captions from YouTube."
+                            : lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi"
+                            ? "Transcribing Hinglish audio and translating to English via Sarvam AI."
+                            : "Transcribing uploaded video."}
                         </p>
                       </>
                     ) : lecture.transcriptStatus === "failed" ? (
@@ -1238,9 +1405,7 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5" /> Lecture Notes
                   </p>
-                  <div className="prose prose-sm prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80 prose-code:text-primary max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{lecture.aiNotesMarkdown}</ReactMarkdown>
-                  </div>
+                  <MarkdownContent content={cleanAiMarkdown(lecture.aiNotesMarkdown)} />
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -1509,7 +1674,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const [topicId, setTopicId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [lectureLanguage, setLectureLanguage] = useState<"en" | "hi">("en");
+  const [lectureLanguage, setLectureLanguage] = useState<"en" | "hi" | "hinglish">("en");
   const [videoSource, setVideoSource] = useState<VideoSource>("upload");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null); // actual File for upload
@@ -1725,11 +1890,11 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   placeholder="Brief description for students…" rows={2} className="resize-none" />
               </div>
               <div className="space-y-1.5">
-                <Label>Lecture Language <span className="text-muted-foreground font-normal">(upload: speech-to-text · YouTube: notes language)</span></Label>
+                <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
                 <div className="flex gap-2">
                   {([
                     { value: "en" as const, label: "English", sub: "Default" },
-                    { value: "hi" as const, label: "हिंदी", sub: "Hindi" },
+                    { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
                   ] as const).map(opt => (
                     <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
                       className={cn(
@@ -1744,7 +1909,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   ))}
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  AI will transcribe using Whisper in the selected language. Students can request a Hindi translation of English transcripts.
+                  Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes.
                 </p>
               </div>
             </div>
@@ -1787,7 +1952,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <p className="text-xs leading-relaxed text-amber-800">
                   {videoSource === "youtube"
                     ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
-                    : "Uploaded videos are transcribed with speech-to-text. Choose Hindi or English before continuing."}
+                    : "Uploaded videos are transcribed with speech-to-text. Choose English or Hindi before continuing."}
                 </p>
               </div>
 
@@ -1846,11 +2011,16 @@ function UploadModal({ onClose, onSuccess, batches }: {
           {/* Step 3: Confirmation */}
           {step === 3 && (
             <div className="space-y-4">
+              {/* Summary card */}
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-2 text-sm">
                 <p className="font-semibold text-foreground">Ready to upload</p>
                 <div className="space-y-1 text-muted-foreground">
                   <p><span className="text-foreground font-medium">Title:</span> {title}</p>
                   <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
+                  <p>
+                    <span className="text-foreground font-medium">Language:</span>{" "}
+                    {lectureLanguage === "hi" ? "Hindi / Hinglish" : "English"}
+                  </p>
                   <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
                   {videoSource === "youtube" ? (
                     <p className="break-all"><span className="text-foreground font-medium">URL:</span> {videoUrl.trim()}</p>
@@ -1862,17 +2032,51 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   )}
                 </div>
               </div>
+
+              {/* Upload progress bar — shown only while submitting a file upload */}
+              {isSubmitting && videoSource === "upload" && videoFile && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {uploadProgress < 100 ? `Uploading video… ${uploadProgress}%` : "Processing…"}
+                    </span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                  {uploadProgress === 100 && (
+                    <p className="text-xs text-muted-foreground">
+                      Upload complete — creating lecture &amp; starting AI processing…
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* AI pipeline steps */}
               <div className="rounded-xl border border-border p-5 space-y-3">
                 <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" /> What happens after upload
                 </p>
-                {[
-                  { icon: Mic, text: "AI transcribes the full audio (Speech-to-Text)" },
-                  { icon: FileText, text: "Generates structured lecture notes" },
-                  { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
-                  { icon: Eye, text: "You review & optionally edit the AI notes" },
-                  { icon: Send, text: "You publish — students get notified instantly" },
-                ].map((s, i) => (
+                {(lectureLanguage === "hi"
+                  ? [
+                    { icon: Mic,        text: "Transcribes Hindi / Hinglish audio" },
+                    { icon: Brain,      text: "Translates transcript to English via Sarvam AI" },
+                    { icon: FileText,   text: "Generates structured English lecture notes" },
+                    { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
+                    { icon: Eye,        text: "You review & optionally edit the AI notes" },
+                    { icon: Send,       text: "You publish — students get notified instantly" },
+                  ]
+                  : [
+                    { icon: Mic,        text: "AI transcribes the full audio (Speech-to-Text)" },
+                    { icon: FileText,   text: "Generates structured lecture notes" },
+                    { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
+                    { icon: Eye,        text: "You review & optionally edit the AI notes" },
+                    { icon: Send,       text: "You publish — students get notified instantly" },
+                  ]
+                ).map((s, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                       <s.icon className="w-3.5 h-3.5 text-primary" />
@@ -2250,10 +2454,11 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
     if (!recordingUrl) return;
     setIsSaving(true);
     try {
-      await updateLecture.mutateAsync({ id: lecture.id, videoUrl: recordingUrl } as any);
-      toast({ title: "Recording attached", description: "It has been saved as a recorded lecture and AI notes are processing." });
+      await import("@/lib/api/live-class").then(m => m.attachRecording(lecture.id, recordingUrl));
+      toast({ title: "Recording attached", description: "Saved as a recorded lecture. AI notes are now processing." });
       setShowRecordingInput(false);
-    } catch { toast({ title: "Failed", variant: "destructive" }); }
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+    } catch { toast({ title: "Failed to attach recording", variant: "destructive" }); }
     finally { setIsSaving(false); }
   };
 
@@ -2418,7 +2623,13 @@ const TeacherLecturesPage = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [viewLecture, setViewLecture] = useState<Lecture | null>(null);
-  const [reviewLecture, setReviewLecture] = useState<Lecture | null>(null);
+  // Store only the ID so the panel always gets the latest live data from the
+  // lectures list (fixes the infinite-spinner-after-transcription bug).
+  const [reviewLectureId, setReviewLectureId] = useState<string | null>(null);
+  const reviewLecture = useMemo(
+    () => (reviewLectureId ? (lectures ?? []).find(l => l.id === reviewLectureId) ?? null : null),
+    [reviewLectureId, lectures],
+  );
   const [statsLecture, setStatsLecture] = useState<Lecture | null>(null);
 
   // Track per-lecture AI processing step for animated UI (0–3)
@@ -2552,14 +2763,18 @@ const TeacherLecturesPage = () => {
     return () => observer.disconnect();
   }, [canLoadMore, isLoading, isCompactLayout, loadMoreBatchSize, recorded.length, sortedLive.length, tab]);
 
-  // Auto-poll every 8s when any recorded lecture is still processing
+  // Auto-poll every 5s when any recorded lecture is still processing
   // (handles the case where the user refreshes mid-processing)
-  const hasProcessing = Object.keys(processingSteps).length > 0 || recorded.some(l => l.status === "processing");
+  const hasProcessing = Object.keys(processingSteps).length > 0 || recorded.some(l =>
+    l.status === "processing" ||
+    l.transcriptStatus === "processing" ||
+    l.transcriptStatus === "pending"
+  );
   useEffect(() => {
     if (!hasProcessing) return;
     const id = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
-    }, 8000);
+    }, 5000);
     return () => clearInterval(id);
   }, [hasProcessing, queryClient]);
 
@@ -2582,12 +2797,15 @@ const TeacherLecturesPage = () => {
   useEffect(() => {
     if (pendingReviewIds.size === 0) return;
     const readyLecture = (lectures ?? []).find(
-      l => pendingReviewIds.has(l.id) && (l.status === "draft" || l.status === "published"),
+      l => pendingReviewIds.has(l.id) 
+        && (l.status === "draft" || l.status === "published")
+        && (l.transcriptStatus === "done" || l.transcriptStatus === "failed")
     );
     if (!readyLecture) return;
 
     setPendingReviewIds(prev => { const n = new Set(prev); n.delete(readyLecture.id); return n; });
-    setReviewLecture(readyLecture);
+    // Store only the ID — the panel derives fresh data from the live lectures list
+    setReviewLectureId(readyLecture.id);
     toast({
       title: readyLecture.aiNotesMarkdown ? "AI notes ready! ✨" : "AI processing complete",
       description: readyLecture.aiNotesMarkdown
@@ -2627,10 +2845,10 @@ const TeacherLecturesPage = () => {
           key="lecture-detail"
           lecture={viewLecture}
           onClose={() => setViewLecture(null)}
-          onReview={() => { setViewLecture(null); setReviewLecture(viewLecture); }}
+          onReview={() => { setViewLecture(null); setReviewLectureId(viewLecture.id); }}
         />
       )}
-      {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLecture(null)} />}
+      {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLectureId(null)} />}
       {statsLecture && <StatsPanel key="stats" lecture={statsLecture} onClose={() => setStatsLecture(null)} />}
       {showUpload && (
         <UploadModal
@@ -2789,7 +3007,7 @@ const TeacherLecturesPage = () => {
                 lecture={l}
                 processingStep={processingSteps[l.id]}
                 onView={() => setViewLecture(l)}
-                onReview={() => setReviewLecture(l)}
+                onReview={() => setReviewLectureId(l.id)}
                 onStats={() => setStatsLecture(l)}
                 onDelete={() => handleDelete(l.id)}
                 onRetranscribe={() => handleRetranscribe(l.id)}
@@ -2835,3 +3053,8 @@ const TeacherLecturesPage = () => {
 };
 
 export default TeacherLecturesPage;
+
+
+
+
+

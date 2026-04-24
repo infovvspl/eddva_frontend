@@ -21,8 +21,10 @@ import { toast } from "sonner";
 import {
   getLiveClassToken, startLiveClass, endLiveClass, getLiveSession,
   respondToPoll, createPoll, closePoll, getChatHistory, getPolls,
+  attachRecording,
   type LiveSessionInfo, type LiveChatMessage, type LivePoll,
 } from "@/lib/api/live-class";
+import { uploadLiveRecordingToBackend } from "@/lib/api/upload";
 import { cn } from "@/lib/utils";
 import { getApiOrigin } from "@/lib/api-config";
 
@@ -818,7 +820,11 @@ export default function LiveClassRoom() {
   const [unreadChat, setUnreadChat] = useState(0);
   const [viewMode, setViewMode] = useState<"speaker" | "grid">("speaker");
   const [durationTick, setDurationTick] = useState(0);
+  const [isBrowserRecording, setIsBrowserRecording] = useState(false);
   const startTimeRef = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const localAudioTrackRef = useRef<ILocalAudioTrack | null>(null);
 
   const myId = user?.id ?? "";
 
@@ -858,6 +864,110 @@ export default function LiveClassRoom() {
     const t = setInterval(loadSession, 4000);
     return () => clearInterval(t);
   }, [isTeacher, isJoined, ended, session?.status, loadSession]);
+
+  // ── Browser recording (fallback when Agora cloud recording fails)
+  // Uses getUserMedia directly — more reliable than extracting from Agora SDK tracks
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+
+  const startBrowserRecording = useCallback(async () => {
+    console.log("[Recording] startBrowserRecording called");
+    try {
+      if (typeof MediaRecorder === "undefined") {
+        console.warn("[Recording] MediaRecorder not supported in this browser");
+        return;
+      }
+
+      let stream: MediaStream | null = null;
+
+      // Attempt 1: camera + mic
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 15 } },
+          audio: { echoCancellation: true, noiseSuppression: true },
+        });
+      } catch { /* no camera */ }
+
+      // Attempt 2: mic only
+      if (!stream) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch { /* no mic */ }
+      }
+
+      // Attempt 3: reuse Agora's already-acquired audio track
+      if (!stream) {
+        const agoraMediaTrack = localAudioTrackRef.current?.getMediaStreamTrack?.();
+        if (agoraMediaTrack) {
+          stream = new MediaStream([agoraMediaTrack]);
+          console.log("[Recording] Using Agora audio track as source");
+        }
+      }
+
+      if (!stream) {
+        console.warn("[Recording] No audio/video source available — skipping recording");
+        return;
+      }
+
+      recordingStreamRef.current = stream;
+
+      const mimeType =
+        ["video/webm;codecs=vp8,opus", "video/webm;codecs=vp9,opus", "video/webm"].find(
+          (t) => MediaRecorder.isTypeSupported(t),
+        ) ?? "";
+
+      const recorder = new MediaRecorder(stream, {
+        mimeType: mimeType || undefined,
+        videoBitsPerSecond: 300_000,
+      });
+      recordingChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data?.size > 0) recordingChunksRef.current.push(e.data);
+      };
+      recorder.start(10_000);
+      mediaRecorderRef.current = recorder;
+      setIsBrowserRecording(true);
+      console.log("[Recording] Started via getUserMedia, mimeType:", mimeType || "browser default");
+    } catch (err) {
+      console.warn("[Recording] Failed to start:", err);
+    }
+  }, []);
+
+  const stopBrowserRecordingAndUpload = useCallback(async (lId: string): Promise<string | null> => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") return null;
+
+    return new Promise<string | null>((resolve) => {
+      recorder.onstop = async () => {
+        // Release camera/mic
+        recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
+        recordingStreamRef.current = null;
+
+        const mimeType = recorder.mimeType || "video/webm";
+        const blob = new Blob(recordingChunksRef.current, { type: mimeType });
+        recordingChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        setIsBrowserRecording(false);
+
+        if (blob.size < 1024) { resolve(null); return; }
+
+        const ext = mimeType.includes("mp4") ? ".mp4" : ".webm";
+        const file = new File([blob], `recording${ext}`, { type: mimeType });
+        toast.info("Saving recording…", { id: "rec-upload", duration: 120_000 });
+        try {
+          const url = await uploadLiveRecordingToBackend(lId, file);
+          await attachRecording(lId, url);
+          toast.dismiss("rec-upload");
+          toast.success("Recording saved!");
+          resolve(url);
+        } catch (err) {
+          toast.dismiss("rec-upload");
+          console.warn("[Recording] upload failed:", err);
+          resolve(null);
+        }
+      };
+      recorder.stop();
+    });
+  }, []);
 
   // ── Agora leave
   const leaveAgora = useCallback(async () => {
@@ -931,6 +1041,7 @@ export default function LiveClassRoom() {
           { AEC: true, ANS: true, AGC: true },
           { encoderConfig: "720p_2" },
         );
+        localAudioTrackRef.current = audio;
         setLocalAudioTrack(audio);
         setLocalVideoTrack(video);
         await client.publish([audio, video]);
@@ -938,6 +1049,7 @@ export default function LiveClassRoom() {
         console.warn("Camera/mic failed, trying mic only", err);
         try {
           const audio = await AgoraRTC.createMicrophoneAudioTrack();
+          localAudioTrackRef.current = audio;
           setLocalAudioTrack(audio);
           await client.publish(audio);
           setIsCamOn(false);
@@ -1008,11 +1120,17 @@ export default function LiveClassRoom() {
       if (!isTeacher) toast.info("New poll: " + poll.question);
     });
 
-    socket.on("live:poll-closed", (poll: LivePoll) => {
-      setPolls((prev) => prev.map((p) => (p.id === poll.id ? poll : p)));
+    socket.on("live:poll-closed", (data: { pollId: string; results: any; correctOptionIndex?: number | null }) => {
+      setPolls((prev) =>
+        prev.map((p) =>
+          p.id === data.pollId
+            ? { ...p, isActive: false, results: data.results, correctOptionIndex: data.correctOptionIndex ?? p.correctOptionIndex }
+            : p,
+        ),
+      );
     });
 
-    socket.on("live:poll-results", (data: { pollId: string; results: any }) => {
+    socket.on("live:poll-results-update", (data: { pollId: string; results: any }) => {
       setPolls((prev) =>
         prev.map((p) => (p.id === data.pollId ? { ...p, results: data.results } : p)),
       );
@@ -1092,6 +1210,7 @@ export default function LiveClassRoom() {
       setSession((prev) => (prev ? { ...prev, status: "live", startedAt: new Date().toISOString() } : prev));
       await joinAgora(r.token, r.channelName, r.uid, "host");
       connectSocket(r.sessionId, r.uid);
+      await startBrowserRecording();
     } catch (err: any) {
       const msg = err?.message ?? String(err);
       toast.error(msg.startsWith("Failed to connect") ? msg : "Failed to start class — check console");
@@ -1108,6 +1227,7 @@ export default function LiveClassRoom() {
       const r = await getLiveClassToken(lectureId!, "host");
       await joinAgora(r.token, r.channelName, r.uid, "host");
       connectSocket(r.sessionId, r.uid);
+      await startBrowserRecording();
     } catch (err: any) {
       const msg = err?.message ?? String(err);
       toast.error(msg.startsWith("Failed to connect") ? msg : "Failed to rejoin class — check console");
@@ -1123,7 +1243,25 @@ export default function LiveClassRoom() {
     setIsEnding(true);
     try {
       const r = await endLiveClass(lectureId!);
-      setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount, recordingUrl: r.recordingUrl });
+
+      let finalRecordingUrl = r.recordingUrl;
+
+      if (!finalRecordingUrl) {
+        // Agora cloud recording didn't produce a URL — use browser recording fallback.
+        // Must run BEFORE leaveAgora so Agora tracks are still alive.
+        finalRecordingUrl = await stopBrowserRecordingAndUpload(lectureId!);
+      } else {
+        // Cloud recording succeeded — discard browser recording chunks
+        const rec = mediaRecorderRef.current;
+        if (rec && rec.state !== "inactive") {
+          rec.ondataavailable = null;
+          rec.stop();
+        }
+        recordingChunksRef.current = [];
+        mediaRecorderRef.current = null;
+      }
+
+      setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount, recordingUrl: finalRecordingUrl });
       setEnded(true);
       leaveAgora();
       socketRef.current?.disconnect();
@@ -1236,8 +1374,8 @@ export default function LiveClassRoom() {
   // ── Teacher: create poll
   const handleCreatePoll = async (question: string, options: string[], correctIndex?: number) => {
     if (!socketSessionId) return;
-    const poll = await createPoll(socketSessionId, question, options, correctIndex);
-    setPolls((prev) => [poll, ...prev]);
+    await createPoll(socketSessionId, question, options, correctIndex);
+    // Poll is added via the live:new-poll socket event broadcast to all clients
   };
 
   // ── Teacher: close poll
@@ -1746,10 +1884,16 @@ export default function LiveClassRoom() {
                 />
               )}
               <div className="w-px h-8 bg-white/10" />
+              {isTeacher && isBrowserRecording && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/20">
+                  <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                  <span className="text-[10px] font-bold text-red-300 uppercase tracking-wider">REC</span>
+                </div>
+              )}
               {isTeacher ? (
                 <CtrlBtn
                   icon={isEnding ? <Loader2 className="w-5 h-5 animate-spin" /> : <PhoneOff className="w-5 h-5" />}
-                  label="End"
+                  label={isEnding ? "Saving…" : "End"}
                   onClick={handleEnd}
                   danger
                   disabled={isEnding}

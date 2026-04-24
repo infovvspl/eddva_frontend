@@ -595,11 +595,20 @@ export interface SessionResultAttempt {
   errorType?: string;
   selectedOptionIds?: string[];
   correctOptionIds?: string[];
+  /** Student's numeric or free-text response (same field as DB `integer_answer`) */
   integerAnswer?: string | null;
+  answerImageUrls?: string[];
   questionContent?: string;
   options?: (QuizOption & { isCorrect: boolean })[];
   /** Per-question review payload from API (preferred over mock test questions) */
   question?: QuizQuestion | null;
+  analysis?: {
+    isCorrect?: boolean;
+    marksAwarded?: number;
+    errorType?: string | null;
+    timeTakenSeconds?: number;
+    rubricBreakdown?: Record<string, number> | null;
+  };
 }
 
 export interface SessionResult {
@@ -654,6 +663,7 @@ export async function submitAnswer(
     questionId: string;
     selectedOptionIds?: string[];
     integerResponse?: string;
+    answerImageUrls?: string[];
     timeTakenSeconds?: number;
   }
 ): Promise<void> {
@@ -1220,6 +1230,7 @@ export interface AiPracticeQuestion {
   question: string;
   answer: string;
   explanation: string;
+  options?: string[];
 }
 
 export interface AiStudySessionData {

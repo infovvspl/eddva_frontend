@@ -834,7 +834,7 @@ export interface CreateMockTestPayload {
 export interface MockTestQuestion {
   id: string;
   content: string;
-  type: "mcq_single" | "mcq_multi" | "integer";
+  type: "mcq_single" | "mcq_multi" | "integer" | "descriptive";
   difficulty: "easy" | "medium" | "hard";
   marksCorrect: number;
   marksWrong: number;
@@ -843,20 +843,26 @@ export interface MockTestQuestion {
 
 export interface CreateMockTestQuestionPayload {
   content: string;
-  type: "mcq_single" | "mcq_multi" | "integer";
+  type: "mcq_single" | "mcq_multi" | "integer" | "descriptive";
   difficulty: "easy" | "medium" | "hard";
   marksCorrect: number;
   marksWrong: number;
   options?: { optionLabel: string; content: string; isCorrect: boolean }[];
   integerAnswer?: string;
+  /** Model / rubric text for descriptive questions */
+  solutionText?: string;
 }
 
 // ─── AI Question Generation ──────────────────────────────────────────────────
 
 export interface AiGeneratedQuestion {
   questionText: string;
-  options: { label: string; text: string }[];
+  options: { label: string; text: string; isCorrect?: boolean }[];
   correctOption: string;
+  /** When the AI marks multiple options correct (MSQ) */
+  correctOptions?: string[];
+  /** From backend / bridge for integer-type items */
+  integerHint?: string;
   difficulty?: string;
   subject?: string;
   explanation?: string;
@@ -898,27 +904,65 @@ function mapRawToAiGeneratedQuestion(q: any): AiGeneratedQuestion {
     .toUpperCase();
   const options = optionsRaw.map((o: any, i: number) => {
     if (typeof o === "string") {
-      return { label: String.fromCharCode(65 + i), text: o };
+      return { label: String.fromCharCode(65 + i), text: o, isCorrect: false };
     }
     const label = String(o.label || o.optionLabel || String.fromCharCode(65 + i)).toUpperCase();
     const text = (o.text || o.content || o.value || "").trim();
-    return { label, text };
+    const isCorrect = Boolean(o.isCorrect);
+    return { label, text, isCorrect };
   });
-  let correctOption = correctFromField || "A";
-  if (!correctFromField && optionsRaw.some((o: any) => typeof o === "object" && o && "isCorrect" in o)) {
+  const multiCorrect = optionsRaw
+    .filter((o: any) => o && typeof o === "object" && o.isCorrect)
+    .map((o: any) => String(o.label || o.optionLabel || "").toUpperCase())
+    .filter(Boolean);
+  const coMulti = (q as any).correctOptions ?? (q as any).correct_options;
+  const correctFromMulti = Array.isArray(coMulti)
+    ? coMulti.map((s: any) => String(s).toUpperCase().replace(/[^A-E]/g, "")).filter(Boolean)
+    : [];
+  const combinedCorrect = correctFromMulti.length > 0 ? correctFromMulti : multiCorrect;
+  let correctOption = correctFromField || (combinedCorrect[0] ?? "A");
+  if (!correctFromField && !combinedCorrect.length && optionsRaw.some((o: any) => typeof o === "object" && o && "isCorrect" in o)) {
     const hit = optionsRaw.find((o: any) => o?.isCorrect);
     const lab = hit?.label ?? hit?.optionLabel;
     if (lab) correctOption = String(lab).toUpperCase();
   }
+  for (const o of options) {
+    if (combinedCorrect.length) o.isCorrect = combinedCorrect.includes(o.label);
+  }
+  const intHint = (q as { integerAnswer?: string }).integerAnswer;
+  if (intHint != null && String(intHint).trim() !== "" && options.length === 0) {
+    return {
+      questionText,
+      options: [],
+      correctOption: "A",
+      correctOptions: undefined,
+      integerHint: String(intHint).trim(),
+      difficulty: q.difficulty ?? "medium",
+      subject: q.subject ?? "",
+      explanation: q.explanation ?? "",
+    };
+  }
   return {
     questionText,
     options,
-    correctOption,
+    correctOption: correctOption || "A",
+    correctOptions: combinedCorrect.length > 1 ? combinedCorrect : undefined,
+    integerHint: undefined,
     difficulty: q.difficulty ?? "medium",
     subject: q.subject ?? "",
     explanation: q.explanation ?? "",
   };
 }
+
+/** Question `type` sent to /ai/questions/generate (mapped server-side to Ollama /test/generate). */
+export type MockAiGenerateType =
+  | "mcq_single"
+  | "mcq_multi"
+  | "integer"
+  | "descriptive"
+  | "short_descriptive"
+  | "board_mix"
+  | "mix";
 
 /**
  * Admin mock tests: topic-based MCQs via Nest → Django `/test/generate/`.
@@ -931,10 +975,10 @@ export async function aiGenerateMockTestQuestions(params: {
   easyCount: number;
   mediumCount: number;
   hardCount: number;
-  questionType?: "mcq_single" | "mcq_multi" | "integer";
+  questionType?: MockAiGenerateType;
 }): Promise<AiGeneratedQuestion[]> {
   const topicId = (params.topicId && params.topicId.trim()) || MOCK_AI_TOPIC_PLACEHOLDER_ID;
-  const type = params.questionType ?? "mcq_single";
+  const type = (params.questionType ?? "mcq_single") as string;
   const buckets: { difficulty: "easy" | "medium" | "hard"; n: number }[] = [
     { difficulty: "easy", n: params.easyCount },
     { difficulty: "medium", n: params.mediumCount },
@@ -945,6 +989,9 @@ export async function aiGenerateMockTestQuestions(params: {
     buckets.length > 0 ? buckets : [{ difficulty: "medium" as const, n: params.totalCount }];
 
   const out: AiGeneratedQuestion[] = [];
+  const seen = new Set<string>();
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/\s+/g, " ").replace(/[^\w\s]/g, "").trim();
 
   const pushChunk = async (
     difficulty: "easy" | "medium" | "hard",
@@ -967,7 +1014,13 @@ export async function aiGenerateMockTestQuestions(params: {
     const list = extractAiQuestionList(data);
     const mapped = list
       .map(mapRawToAiGeneratedQuestion)
-      .filter((q) => q.questionText.trim().length > 0);
+      .filter((q) => q.questionText.trim().length > 0)
+      .filter((q) => {
+        const k = norm(q.questionText);
+        if (!k || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
     return mapped;
   };
 
@@ -998,6 +1051,43 @@ export async function aiGenerateMockTestQuestions(params: {
   }
 
   return out.slice(0, params.totalCount);
+}
+
+/**
+ * Run multiple AI generate passes (different question `type` / instructions) and concatenate.
+ * Segment counts should sum to `totalCount` (or fewer — remaining slots are not filled).
+ */
+export async function aiGenerateMockTestQuestionMix(params: {
+  topicId?: string;
+  topicName: string;
+  totalCount: number;
+  easyCount: number;
+  mediumCount: number;
+  hardCount: number;
+  segments: { questionType: MockAiGenerateType; count: number; topicAppend?: string }[];
+}): Promise<AiGeneratedQuestion[]> {
+  const { totalCount, easyCount, mediumCount, hardCount, segments, topicName, topicId } = params;
+  const wE = totalCount > 0 ? easyCount / totalCount : 0;
+  const wM = totalCount > 0 ? mediumCount / totalCount : 0;
+  const wH = totalCount > 0 ? hardCount / totalCount : 0;
+  const out: AiGeneratedQuestion[] = [];
+  for (const seg of segments) {
+    if (seg.count <= 0) continue;
+    const se = Math.max(0, Math.round(seg.count * wE));
+    const sh = Math.max(0, Math.round(seg.count * wH));
+    const sm = Math.max(0, seg.count - se - sh);
+    const sub = await aiGenerateMockTestQuestions({
+      topicId,
+      topicName: `${topicName}${seg.topicAppend ?? ""}`.trim(),
+      totalCount: seg.count,
+      easyCount: se,
+      mediumCount: sm,
+      hardCount: sh,
+      questionType: seg.questionType,
+    });
+    out.push(...sub);
+  }
+  return out.slice(0, totalCount);
 }
 
 /** In-video quiz from lecture transcript (not used for admin mock tests). */

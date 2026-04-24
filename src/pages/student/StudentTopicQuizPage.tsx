@@ -6,7 +6,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, BarChart3,
   Target, ArrowLeft, Flame, BookOpen, Sparkles,
   Brain, Trophy, Search, Play, Monitor, Zap, Layers,
-  ArrowRight, ShieldCheck, BrainCircuit, Activity, Info
+  ArrowRight, ShieldCheck, BrainCircuit, Activity, Info, Check,
 } from "lucide-react";
 import {
   getMockTests, startSession, submitAnswer, submitSession,
@@ -38,6 +38,16 @@ function fmt(s: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
+function isTopicQuizAnswered(
+  q: QuizQuestion | AiQuizQuestion,
+  selected: string[] | undefined,
+) {
+  if (!selected?.length) return false;
+  if (q.type === "descriptive") return Boolean(selected[0]?.trim());
+  if (q.type === "integer") return Boolean(selected[0]?.toString().trim());
+  return true;
+}
+
 // ─── Question Card (shared) ───────────────────────────────────────────────────
 function QuestionCard({
   question, index, total, selected, onSelect,
@@ -48,8 +58,13 @@ function QuestionCard({
   onSelect: (v: string) => void;
 }) {
   const isInteger = question.type === "integer";
+  const isMulti = question.type === "mcq_multi";
+  const isDesc = question.type === "descriptive";
   const [intVal, setIntVal] = useState("");
-  useEffect(() => { setIntVal(""); }, [question.id]);
+  const [textVal, setTextVal] = useState("");
+  const debRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => { setIntVal(selected[0] ?? ""); setTextVal(selected[0] ?? ""); }, [question.id, selected]);
+  useEffect(() => () => { if (debRef.current) clearTimeout(debRef.current); }, []);
 
   return (
     <motion.div
@@ -63,6 +78,9 @@ function QuestionCard({
           <span className="text-[10px] font-black px-4 py-2 rounded-xl bg-slate-900 text-white uppercase tracking-[0.2em] shadow-xl">
             Probe {index + 1} / {total}
           </span>
+          <span className="text-[10px] font-black text-violet-700 uppercase tracking-widest border border-violet-100 px-3 py-1.5 rounded-xl bg-violet-50">
+            {isDesc ? "Written" : isInteger ? "Integer" : isMulti ? "MSQ" : "MCQ"}
+          </span>
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50">Impact: {question.difficulty}</span>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">+{question.marksCorrect} Pts</span>
@@ -75,7 +93,27 @@ function QuestionCard({
         </p>
       </CardGlass>
 
-      {isInteger ? (
+      {isDesc ? (
+        <CardGlass className="p-10 border-slate-200/80 bg-white/70">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4 block">Your answer</label>
+          <textarea
+            value={textVal}
+            onChange={e => {
+              const v = e.target.value;
+              setTextVal(v);
+              if (debRef.current) clearTimeout(debRef.current);
+              debRef.current = setTimeout(() => onSelect(v), 450);
+            }}
+            onBlur={() => {
+              if (debRef.current) clearTimeout(debRef.current);
+              onSelect(textVal);
+            }}
+            rows={6}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-base font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-100 resize-y min-h-[160px]"
+            placeholder="Type your response…"
+          />
+        </CardGlass>
+      ) : isInteger ? (
         <CardGlass className="p-12 border-indigo-500/10 bg-indigo-50/50">
           <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 block text-center italic">Numerical Identity Entry</label>
           <input
@@ -87,10 +125,14 @@ function QuestionCard({
         </CardGlass>
       ) : (
         <div className="grid grid-cols-1 gap-4">
+          {isMulti && (
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider px-1">Select all that apply</p>
+          )}
           {question.options?.map((opt, i) => {
             const isSelected = selected.includes(opt.id);
             return (
               <motion.button
+                type="button"
                 whileHover={{ scale: 1.01, x: 10 }} whileTap={{ scale: 0.99 }}
                 key={opt.id} onClick={() => onSelect(opt.id)}
                 className={cn(
@@ -102,7 +144,9 @@ function QuestionCard({
                   "w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors",
                   isSelected ? "bg-white text-slate-900 border-transparent shadow-lg" : "bg-slate-50 border-slate-100 text-slate-300"
                 )}>
-                  {String.fromCharCode(65 + i)}
+                  {isMulti
+                    ? (isSelected ? <Check className="w-6 h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>)
+                    : String.fromCharCode(65 + i)}
                 </div>
                 <span className="text-lg font-black uppercase italic tracking-tight flex-1">{opt.content}</span>
               </motion.button>
@@ -263,7 +307,7 @@ function QuizRunner({
                      className={cn(
                         "shrink-0 transition-all border shadow-sm",
                         i === currentQ ? "w-8 h-8 rounded-lg bg-slate-900 border-slate-900 scale-110" : 
-                        answers[questions[i].id]?.length > 0 ? (isAi ? "w-5 h-5 rounded bg-purple-500/40 border-purple-500/10" : "w-5 h-5 rounded bg-blue-500/40 border-blue-500/10") : "w-5 h-5 rounded bg-white border-slate-100"
+                        isTopicQuizAnswered(questions[i], answers[questions[i].id]) ? (isAi ? "w-5 h-5 rounded bg-purple-500/40 border-purple-500/10" : "w-5 h-5 rounded bg-blue-500/40 border-blue-500/10") : "w-5 h-5 rounded bg-white border-slate-100"
                      )}
                    />
                  ))}
@@ -274,7 +318,7 @@ function QuizRunner({
                 className={cn(
                   "w-16 h-16 rounded-2xl flex items-center justify-center transition-all shadow-xl",
                   isLast ? "bg-emerald-500 text-white shadow-emerald-500/20" : 
-                  selected.length > 0 ? (isAi ? "bg-purple-600 text-white shadow-purple-500/20" : "bg-blue-600 text-white shadow-blue-500/20") : "bg-white border border-slate-100 text-slate-200"
+                  isTopicQuizAnswered(q, selected) ? (isAi ? "bg-purple-600 text-white shadow-purple-500/20" : "bg-blue-600 text-white shadow-blue-500/20") : "bg-white border border-slate-100 text-slate-200"
                 )}
               >
                 {isLast ? <CheckCircle className="w-6 h-6" /> : <ArrowRight className="w-6 h-6" />}
@@ -339,13 +383,26 @@ export default function StudentTopicQuizPage() {
     } catch (err: any) { toast.error(err?.response?.data?.message ?? "Link failure."); setStage("info"); }
   };
 
-  const handleTeacherSelect = async (optionId: string) => {
+  const handleTeacherSelect = async (value: string) => {
     const q = questions[currentQ] as QuizQuestion;
     if (!q || !session) return;
     const isMulti = q.type === "mcq_multi";
-    const next = q.type === "integer" ? [optionId] : isMulti ? (answers[q.id]?.includes(optionId) ? answers[q.id].filter(id => id !== optionId) : [...(answers[q.id] || []), optionId]) : [optionId];
-    setAnswers(a => ({ ...a, [q.id]: next }));
-    try { await submitAnswer(session.id, { questionId: q.id, selectedOptionIds: q.type === "integer" ? undefined : next, integerResponse: q.type === "integer" ? optionId : undefined }); } catch {}
+    const isInt = q.type === "integer";
+    const isDesc = q.type === "descriptive";
+    const next =
+      isInt || isDesc
+        ? [value]
+        : isMulti
+          ? (answers[q.id]?.includes(value) ? answers[q.id].filter((id) => id !== value) : [...(answers[q.id] || []), value])
+          : [value];
+    setAnswers((a) => ({ ...a, [q.id]: next }));
+    try {
+      await submitAnswer(session.id, {
+        questionId: q.id,
+        selectedOptionIds: isInt || isDesc ? undefined : next,
+        integerResponse: isInt || isDesc ? value : undefined,
+      });
+    } catch { /* best-effort */ }
   };
 
   const handleTeacherSubmit = async (timedOut: boolean) => {
@@ -554,6 +611,12 @@ export default function StudentTopicQuizPage() {
                            const sel = answers[q.id] || [];
                            const correct = q.options.filter(o => o.isCorrect).map(o => o.id);
                            const isRight = sel.length > 0 && sel.every(s => correct.includes(s));
+                           const selectedLabels = q.options
+                             .filter((o) => sel.includes(o.id))
+                             .map((o) => `${o.optionLabel}. ${o.content}`);
+                           const correctLabels = q.options
+                             .filter((o) => correct.includes(o.id))
+                             .map((o) => `${o.optionLabel}. ${o.content}`);
                            return (
                               <div key={i} className={cn("p-6 rounded-[2rem] border transition-all", isRight ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
                                  <div className="flex gap-4 mb-4">
@@ -561,6 +624,24 @@ export default function StudentTopicQuizPage() {
                                        {isRight ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                                     </div>
                                     <p className="text-base font-black text-slate-900 uppercase italic">{q.content}</p>
+                                 </div>
+                                 <div className="space-y-3">
+                                   <div className="rounded-xl border border-slate-200 bg-white/80 p-4">
+                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Your answer</p>
+                                     <p className="text-sm font-semibold text-slate-700">
+                                       {selectedLabels.length ? selectedLabels.join(" | ") : "Not answered"}
+                                     </p>
+                                   </div>
+                                   <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-2">Correct answer</p>
+                                     <p className="text-sm font-semibold text-emerald-900">{correctLabels.join(" | ")}</p>
+                                   </div>
+                                   <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 mb-2">Explanation</p>
+                                     <p className="text-sm font-medium text-slate-700 leading-relaxed">
+                                       {q.explanation?.trim() || "Explanation not available."}
+                                     </p>
+                                   </div>
                                  </div>
                               </div>
                            );

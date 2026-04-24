@@ -8,7 +8,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, Flame,
   BarChart3, Sparkles, BookOpen, Target, Brain,
   Monitor, Zap, Layers, Info, ArrowLeft, ArrowRight,
-  ShieldCheck, BrainCircuit, Activity
+  ShieldCheck, BrainCircuit, Activity, Check,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { patchDiagnosticCompleted } from "@/lib/auth-store";
@@ -23,6 +23,13 @@ import { cn } from "@/lib/utils";
 
 // ─── Stage Types ──────────────────────────────────────────────────────────────
 type Stage = "info" | "loading" | "quiz" | "submitting" | "results" | "generating_plan";
+
+function isQuestionAnswered(q: QuizQuestion, selected: string[] | undefined) {
+  if (!selected?.length) return false;
+  if (q.type === "descriptive") return Boolean(selected[0]?.trim());
+  if (q.type === "integer") return Boolean(selected[0]?.toString().trim());
+  return true;
+}
 
 // ─── Countdown Timer Hook ─────────────────────────────────────────────────────
 function useTimer(initialSeconds: number, onExpire: () => void) {
@@ -112,8 +119,16 @@ function QuestionCard({
   question: QuizQuestion; index: number; total: number; selected: string[]; onSelect: (optionId: string) => void;
 }) {
   const isInteger = question.type === "integer";
+  const isMulti = question.type === "mcq_multi";
+  const isDesc = question.type === "descriptive";
   const [intVal, setIntVal] = useState("");
-  useEffect(() => { setIntVal(""); }, [question.id]);
+  const [textVal, setTextVal] = useState("");
+  const debRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => { setIntVal(selected[0] ?? ""); setTextVal(selected[0] ?? ""); }, [question.id, selected]);
+  useEffect(() => () => { if (debRef.current) clearTimeout(debRef.current); }, []);
+
+  const typeLabel =
+    isDesc ? "Written" : isInteger ? "Integer" : isMulti ? "MSQ" : "MCQ";
 
   return (
     <motion.div
@@ -127,6 +142,7 @@ function QuestionCard({
           <span className="text-[10px] font-black px-4 py-2 rounded-xl bg-slate-900 text-white uppercase tracking-[0.2em] shadow-xl">
             Probe {index + 1} / {total}
           </span>
+          <span className="text-[10px] font-black text-violet-700 uppercase tracking-widest border border-violet-100 px-3 py-1.5 rounded-xl bg-violet-50">{typeLabel}</span>
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50">Intensity: {question.difficulty}</span>
           {"topic" in question && question.topic && (
             <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest border border-blue-100 px-3 py-1.5 rounded-xl bg-blue-50/50">{question.topic.name}</span>
@@ -138,7 +154,27 @@ function QuestionCard({
         </p>
       </CardGlass>
 
-      {isInteger ? (
+      {isDesc ? (
+        <CardGlass className="p-10 border-slate-200/80 bg-white/70">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4 block">Your answer</label>
+          <textarea
+            value={textVal}
+            onChange={e => {
+              const v = e.target.value;
+              setTextVal(v);
+              if (debRef.current) clearTimeout(debRef.current);
+              debRef.current = setTimeout(() => onSelect(v), 450);
+            }}
+            onBlur={() => {
+              if (debRef.current) clearTimeout(debRef.current);
+              onSelect(textVal);
+            }}
+            rows={6}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-base font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-100 resize-y min-h-[160px]"
+            placeholder="Type your response…"
+          />
+        </CardGlass>
+      ) : isInteger ? (
         <CardGlass className="p-12 border-indigo-500/10 bg-indigo-50/50">
           <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 block text-center italic">Numerical Matrix Input</label>
           <input
@@ -150,10 +186,14 @@ function QuestionCard({
         </CardGlass>
       ) : (
         <div className="grid grid-cols-1 gap-4">
+          {isMulti && (
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider px-1">Select all that apply</p>
+          )}
           {question.options?.map((opt, i) => {
             const isSelected = selected.includes(opt.id);
             return (
               <motion.button
+                type="button"
                 whileHover={{ scale: 1.01, x: 10 }} whileTap={{ scale: 0.99 }}
                 key={opt.id} onClick={() => onSelect(opt.id)}
                 className={cn(
@@ -165,7 +205,7 @@ function QuestionCard({
                   "w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors",
                   isSelected ? "bg-white text-slate-900 border-transparent shadow-lg" : "bg-slate-50 border-slate-100 text-slate-300"
                 )}>
-                  {String.fromCharCode(65 + i)}
+                  {isMulti ? (isSelected ? <Check className="w-6 h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>) : String.fromCharCode(65 + i)}
                 </div>
                 <span className="text-lg font-black uppercase italic tracking-tight flex-1">{opt.content}</span>
               </motion.button>
@@ -346,14 +386,21 @@ export default function DiagnosticTestPage() {
     }
   };
 
-  const handleSelectOption = async (optionId: string) => {
+  const handleSelectOption = async (value: string) => {
     const q = questions[currentQ];
     if (!q || !session) return;
-    let next: string[] = q.type === "mcq_multi" ? (answers[q.id]?.includes(optionId) ? answers[q.id].filter(id => id !== optionId) : [...(answers[q.id] || []), optionId]) : [optionId];
-    setAnswers(a => ({ ...a, [q.id]: next }));
+    const next: string[] =
+      q.type === "mcq_multi"
+        ? (answers[q.id]?.includes(value) ? answers[q.id].filter((id) => id !== value) : [...(answers[q.id] || []), value])
+        : [value];
+    setAnswers((a) => ({ ...a, [q.id]: next }));
     try {
-      await submitAnswer(session.id, { questionId: q.id, selectedOptionIds: q.type === "integer" ? undefined : next, integerResponse: q.type === "integer" ? optionId : undefined });
-    } catch {}
+      await submitAnswer(session.id, {
+        questionId: q.id,
+        selectedOptionIds: q.type === "integer" || q.type === "descriptive" ? undefined : next,
+        integerResponse: q.type === "integer" || q.type === "descriptive" ? value : undefined,
+      });
+    } catch { /* best-effort */ }
   };
 
   const handleSubmit = async (timedOut: boolean) => {
@@ -470,7 +517,7 @@ export default function DiagnosticTestPage() {
                     className={cn(
                        "shrink-0 transition-all border shadow-sm",
                        i === currentQ ? "w-8 h-8 rounded-lg bg-slate-900 border-slate-900 scale-110" : 
-                       (answers[questions[i].id]?.length > 0) ? "w-5 h-5 rounded bg-blue-500/40 border-blue-500/10" : "w-5 h-5 rounded bg-white border-slate-100"
+                       isQuestionAnswered(questions[i], answers[questions[i].id]) ? "w-5 h-5 rounded bg-blue-500/40 border-blue-500/10" : "w-5 h-5 rounded bg-white border-slate-100"
                     )}
                   />
                 ))}

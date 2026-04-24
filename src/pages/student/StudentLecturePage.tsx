@@ -10,16 +10,12 @@ import {
   Maximize, RotateCcw, Trophy, Tag, FlaskConical,
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
-<<<<<<< HEAD
-  ClipboardList, Link2, Youtube, BookMarked,
-  AlertTriangle,
-  Video,
-=======
   ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
->>>>>>> c33d59df0bcebc453b8c012f6562f96e96172eb9
+  Video,
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
+import { cleanAiNotesContent } from "@/lib/ai-notes";
 import { apiClient, extractData } from "@/lib/api/client";
 import {
   getQuizCheckpoints, submitQuizResponse, translateTranscriptToHindi, translateNotesToEnglish,
@@ -800,7 +796,8 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
     }
   };
 
-  const displayNotes = enMode && notesEn ? notesEn : lecture.aiNotesMarkdown;
+  const rawNotes = enMode && notesEn ? notesEn : lecture.aiNotesMarkdown;
+  const displayNotes = cleanAiNotesContent(rawNotes ?? "");
 
   return (
     <div className="space-y-4">
@@ -820,7 +817,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
       )}
 
       <div className="bg-white rounded-2xl border border-slate-100">
-        {lecture.aiNotesMarkdown ? (
+        {displayNotes ? (
           <div className="p-5">
             {/* Header row with title + language toggle */}
             <div className="flex items-center justify-between mb-4">
@@ -853,7 +850,11 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
             )}
 
             <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-headings:font-bold prose-p:text-slate-600 prose-p:text-xs prose-p:leading-relaxed prose-strong:text-indigo-600 prose-code:bg-slate-50 prose-code:text-emerald-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayNotes ?? ""}</ReactMarkdown>
+              {displayNotes && /<[a-z][\s\S]*>/i.test(displayNotes) && (displayNotes.includes('<p>') || displayNotes.includes('<h1>') || displayNotes.includes('<ul>')) ? (
+                 <div dangerouslySetInnerHTML={{ __html: displayNotes }} />
+              ) : (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayNotes ?? ""}</ReactMarkdown>
+              )}
             </div>
           </div>
         ) : (

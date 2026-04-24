@@ -169,6 +169,37 @@ export async function uploadLectureVideoThroughBackend(
   return url;
 }
 
+export async function uploadDoubtImageThroughBackend(
+  file: File,
+  onProgress?: (e: UploadProgressEvent) => void,
+): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await apiClient.post("/upload/doubt-response-image", form, {
+    transformRequest: [(data, headers) => {
+      delete headers["Content-Type"];
+      return data;
+    }],
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        onProgress({
+          loaded: e.loaded,
+          total: e.total,
+          percent: Math.round((e.loaded / e.total) * 100),
+        });
+      }
+    },
+  });
+
+  const payload = extractData<{ url: string }>(res);
+  const url = payload?.url;
+  if (!url || typeof url !== "string") {
+    throw new Error("Upload succeeded but no file URL was returned.");
+  }
+  return url;
+}
+
 export async function putFileToS3(
   uploadUrl: string,
   file: File,
@@ -215,6 +246,11 @@ export async function uploadToS3(
   const payloadError = validateUploadPayload(merged);
   if (payloadError) throw new Error(payloadError);
 
+  // For doubt images, use backend proxy upload to avoid browser->S3 CORS preflight failures.
+  if (merged.type === "doubt-response-image") {
+    return uploadDoubtImageThroughBackend(file, onProgress);
+  }
+
   const { uploadUrl, fileUrl } = await requestUploadUrl(merged);
   await putFileToS3(uploadUrl, file, merged.contentType, onProgress);
   return fileUrl;
@@ -226,4 +262,37 @@ export async function uploadToS3(
 
 export async function deleteS3File(payload: DeleteFileRequest): Promise<void> {
   await apiClient.delete("/upload", { data: payload });
+}
+
+// Upload a live class browser recording without requiring courseId
+export async function uploadLiveRecordingToBackend(
+  lectureId: string,
+  file: File,
+  onProgress?: (e: UploadProgressEvent) => void,
+): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("lectureId", lectureId);
+
+  const res = await apiClient.post("/content/lectures/upload-video", form, {
+    timeout: 0,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+    transformRequest: [(data: any, headers: any) => {
+      delete headers["Content-Type"];
+      return data;
+    }],
+    onUploadProgress: (e: any) => {
+      if (onProgress && e.total) {
+        onProgress({ loaded: e.loaded, total: e.total, percent: Math.round((e.loaded / e.total) * 100) });
+      }
+    },
+  });
+
+  const payload = extractData<{ url: string }>(res);
+  const url = payload?.url;
+  if (!url || typeof url !== "string") {
+    throw new Error("Upload succeeded but no file URL was returned.");
+  }
+  return url;
 }

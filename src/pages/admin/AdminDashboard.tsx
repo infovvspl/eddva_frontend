@@ -274,7 +274,6 @@ const AdminDashboard = () => {
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 mb-5">Quick Actions</h3>
             <div className="space-y-2.5">
               {[
-                { label: "Create Course", icon: Plus, path: "/admin/batches", color: "bg-blue-500" },
                 { label: "Build Content", icon: BookOpen, path: "/admin/content", color: "bg-indigo-500" },
                 { label: "Schedule Class", icon: Radio, path: "/teacher/lectures", color: "bg-red-500" },
                 { label: "View Analytics", icon: BarChart2, path: "/teacher/analytics", color: "bg-violet-500" },
