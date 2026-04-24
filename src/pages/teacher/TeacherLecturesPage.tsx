@@ -2454,10 +2454,11 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
     if (!recordingUrl) return;
     setIsSaving(true);
     try {
-      await updateLecture.mutateAsync({ id: lecture.id, videoUrl: recordingUrl } as any);
-      toast({ title: "Recording attached", description: "It has been saved as a recorded lecture and AI notes are processing." });
+      await import("@/lib/api/live-class").then(m => m.attachRecording(lecture.id, recordingUrl));
+      toast({ title: "Recording attached", description: "Saved as a recorded lecture. AI notes are now processing." });
       setShowRecordingInput(false);
-    } catch { toast({ title: "Failed", variant: "destructive" }); }
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+    } catch { toast({ title: "Failed to attach recording", variant: "destructive" }); }
     finally { setIsSaving(false); }
   };
 

@@ -160,3 +160,10 @@ export const pinMessage = async (
 ): Promise<void> => {
   await apiClient.post(`/live-class/${sessionId}/chat/${messageId}/pin`);
 };
+
+export const attachRecording = async (
+  lectureId: string,
+  recordingUrl: string,
+): Promise<void> => {
+  await apiClient.patch(`/live-class/${lectureId}/attach-recording`, { recordingUrl });
+};
