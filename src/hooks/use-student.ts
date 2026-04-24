@@ -447,8 +447,17 @@ export function useBattleRoom(battleId: string, enabled: boolean) {
 
 export function useCreateBattle() {
   return useMutation({
-    mutationFn: ({ mode, topicId, topicName }: { mode: studentApi.BattleMode; topicId?: string; topicName?: string }) =>
-      studentApi.createBattle(mode, topicId, topicName),
+    mutationFn: ({
+      mode,
+      topicId,
+      topicName,
+      difficulty,
+    }: {
+      mode: studentApi.BattleMode;
+      topicId?: string;
+      topicName?: string;
+      difficulty?: "easy" | "medium" | "hard";
+    }) => studentApi.createBattle(mode, topicId, topicName, difficulty),
   });
 }
 

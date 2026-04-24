@@ -1266,6 +1266,7 @@ function JoinRoomScreen({
 // ─── Challenge Scope Picker (for Create Code flow) ───────────────────────────
 
 type ScopeType = "topic" | "chapter" | "subject";
+type BattleDifficulty = "easy" | "medium" | "hard";
 
 function ChallengeScopePicker({
   onBack,
@@ -1274,7 +1275,7 @@ function ChallengeScopePicker({
   selectedBatchId,
 }: {
   onBack: () => void;
-  onStart: (topicId: string | undefined, label: string) => void;
+  onStart: (topicId: string | undefined, label: string, difficulty: BattleDifficulty) => void;
   loading: boolean;
   selectedBatchId: string;
 }) {
@@ -1285,6 +1286,7 @@ function ChallengeScopePicker({
   const [subjectName, setSubjectName] = useState("");
   const [chapterName, setChapterName] = useState("");
   const [topicName, setTopicName]     = useState("");
+  const [difficulty, setDifficulty]   = useState<BattleDifficulty>("medium");
 
   const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(selectedBatchId);
 
@@ -1307,16 +1309,16 @@ function ChallengeScopePicker({
   const handleStart = () => {
     if (!canStart) return;
     if (scopeType === "topic") {
-      onStart(topicId, topicName);
+      onStart(topicId, topicName, difficulty);
     } else if (scopeType === "chapter") {
       // Pick first topic of that chapter as the AI question anchor
       const firstTopic = topList[0];
-      onStart(firstTopic?.id, chapterName);
+      onStart(firstTopic?.id, chapterName, difficulty);
     } else {
       // Subject — let backend pick a topic from that subject
       const firstChapter = chapList[0];
       const firstTopic = firstChapter?.topics?.[0];
-      onStart(firstTopic?.id, subjectName);
+      onStart(firstTopic?.id, subjectName, difficulty);
     }
   };
 
@@ -1324,6 +1326,11 @@ function ChallengeScopePicker({
     { key: "subject", label: "Subject", desc: "Mixed questions from a subject" },
     { key: "chapter", label: "Chapter", desc: "Questions from one chapter" },
     { key: "topic",   label: "Topic",   desc: "Deep dive into one topic" },
+  ];
+  const DIFFICULTY_TABS: { key: BattleDifficulty; label: string; desc: string }[] = [
+    { key: "easy", label: "Easy", desc: "Warm-up level questions" },
+    { key: "medium", label: "Medium", desc: "Balanced exam practice" },
+    { key: "hard", label: "Hard", desc: "Advanced challenge mode" },
   ];
 
   const resetSelections = () => {
@@ -1451,6 +1458,31 @@ function ChallengeScopePicker({
         )}
       </CardGlass>
 
+      <CardGlass className="p-8 border-slate-100 space-y-4 bg-white/40">
+        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest ml-1">
+          Select Difficulty
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {DIFFICULTY_TABS.map((d) => (
+            <button
+              key={d.key}
+              onClick={() => setDifficulty(d.key)}
+              className={cn(
+                "p-4 rounded-2xl border text-left transition-all",
+                difficulty === d.key
+                  ? "border-indigo-400 bg-indigo-50/40"
+                  : "border-slate-100 bg-white hover:border-indigo-200",
+              )}
+            >
+              <p className={cn("text-[11px] font-bold uppercase tracking-tight", difficulty === d.key ? "text-slate-800" : "text-slate-400")}>
+                {d.label}
+              </p>
+              <p className="text-[9px] font-bold text-slate-300 mt-1 leading-relaxed uppercase tracking-widest">{d.desc}</p>
+            </button>
+          ))}
+        </div>
+      </CardGlass>
+
       {/* Selected scope summary + CTA */}
       {canStart && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -1460,6 +1492,7 @@ function ChallengeScopePicker({
               {scopeType === "topic"   && topicName   && `Topic: ${topicName}`}
               {scopeType === "chapter" && chapterName && `Chapter: ${chapterName}`}
               {scopeType === "subject" && subjectName && `Subject: ${subjectName}`}
+              {` • Difficulty: ${difficulty.toUpperCase()}`}
             </p>
           </div>
           <Button
@@ -2991,10 +3024,15 @@ const BattleArena = () => {
     }
   };
 
-  const startBattle = (mode: ModeConfig, topId?: string, topName?: string) => {
+  const startBattle = (
+    mode: ModeConfig,
+    topId?: string,
+    topName?: string,
+    difficulty?: BattleDifficulty,
+  ) => {
     setTopicName(topName ?? "");
     createBattle.mutate(
-      { mode: mode.mode, topicId: topId, topicName: topName },
+      { mode: mode.mode, topicId: topId, topicName: topName, difficulty },
       {
         onSuccess: (room) => {
           setBattleRoom(room);
@@ -3151,10 +3189,10 @@ const BattleArena = () => {
             <motion.div key="challenge-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <ChallengeScopePicker
                 onBack={() => setStage("challenge_pick")}
-                onStart={(topicId, label) => {
+                onStart={(topicId, label, difficulty) => {
                   const cfMode = MODES.find(m => m.mode === "challenge_friend")!;
                   setActiveMode(cfMode);
-                  startBattle(cfMode, topicId, label);
+                  startBattle(cfMode, topicId, label, difficulty);
                 }}
                 loading={createBattle.isPending}
                 selectedBatchId={selectedBatchId}
