@@ -10,7 +10,7 @@ import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
   Loader2, CheckCircle, Send, Clock,
   ChevronDown, Trophy, Lightbulb, AlertTriangle,
-  Sigma, Monitor, Zap, Info, ArrowRight, BrainCircuit, Highlighter, StickyNote,
+  Monitor, Zap, Info, ArrowRight, BrainCircuit, Highlighter, StickyNote, ListTodo,
   X
 } from "lucide-react";
 import {
@@ -63,15 +63,36 @@ const mdClassBase = [
 
 function normalizeAiMessage(message: unknown): string {
   if (typeof message === "string") {
-    const trimmed = message.trim();
-    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+    const tryParseJsonPayload = (input: string): string | null => {
+      const trimmedInput = input.trim();
+      if (!trimmedInput) return null;
       try {
-        return normalizeAiMessage(JSON.parse(trimmed));
+        return normalizeAiMessage(JSON.parse(trimmedInput));
       } catch {
-        return message;
+        return null;
       }
+    };
+
+    const trimmed = message.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const directParsed = tryParseJsonPayload(trimmed);
+    if (directParsed) return directParsed;
+
+    // If model adds pre/post text around JSON, extract the largest JSON object/array segment.
+    const firstBrace = trimmed.indexOf("{");
+    const lastBrace = trimmed.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      const extractedObject = trimmed.slice(firstBrace, lastBrace + 1);
+      const parsedObject = tryParseJsonPayload(extractedObject);
+      if (parsedObject) return parsedObject;
     }
-    return message;
+    const firstBracket = trimmed.indexOf("[");
+    const lastBracket = trimmed.lastIndexOf("]");
+    if (firstBracket !== -1 && lastBracket > firstBracket) {
+      const extractedArray = trimmed.slice(firstBracket, lastBracket + 1);
+      const parsedArray = tryParseJsonPayload(extractedArray);
+      if (parsedArray) return parsedArray;
+    }
+    return trimmed;
   }
   if (message && typeof message === "object") {
     const m = message as any;
@@ -109,22 +130,6 @@ function normalizeLessonMarkdown(md: string): string {
     .replace(/\n##\s*.*Core Concepts[\s\S]*?(?=\n##\s+|$)/gi, "\n");
 }
 
-function normalizeFormulaForKatex(formula: string): string {
-  const raw = String(formula || "")
-    .replace(/\u200B/g, "")
-    .replace(/\r/g, "")
-    .replace(/\n+/g, " ")
-    // Common AI output form: F_action -> F_{action}
-    .replace(/([A-Za-z])_([A-Za-z]{2,})\b/g, "$1_{$2}")
-    // Keep KaTeX happy when escaped text is emitted without braces.
-    .replace(/\\text\s+([A-Za-z]+)/g, "\\text{$1}")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!raw) return "";
-  if (raw.includes("$$") || raw.includes("$")) return raw;
-  return `$$${raw}$$`;
-}
-
 function normalizeReadableText(text: string): string {
   return String(text || "")
     .replace(/\u00A0/g, " ")
@@ -142,6 +147,32 @@ function normalizeReadableText(text: string): string {
 
 type SavedHighlight = { text: string; color: string };
 type InlineComment = { id: string; text: string; quote: string; top: number };
+
+function parseMcqOptions(rawQuestion: string, rawOptions?: string[]) {
+  const optionsFromPayload = Array.isArray(rawOptions)
+    ? rawOptions.map((opt) => String(opt || "").trim()).filter(Boolean)
+    : [];
+  if (optionsFromPayload.length >= 2) {
+    return { question: rawQuestion.trim(), options: optionsFromPayload };
+  }
+
+  const normalized = String(rawQuestion || "").replace(/\r/g, "\n");
+  const markerRegex = /(?:^|\n)\s*(?:[A-Da-d][\).\]:-]|\(\s*[A-Da-d]\s*\))\s*/g;
+  const matches = Array.from(normalized.matchAll(markerRegex));
+  if (matches.length < 2) {
+    return { question: rawQuestion.trim(), options: [] as string[] };
+  }
+
+  const firstMarker = matches[0].index ?? 0;
+  const questionStem = normalized.slice(0, firstMarker).trim();
+  const options = matches.map((match, idx) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = idx + 1 < matches.length ? (matches[idx + 1].index ?? normalized.length) : normalized.length;
+    return normalized.slice(start, end).trim();
+  }).filter(Boolean);
+
+  return { question: questionStem || rawQuestion.trim(), options };
+}
 
 function storageKey(kind: "highlights" | "notes" | "inline-comments", topicId: string): string {
   return `ai-study-${kind}-${topicId}`;
@@ -223,6 +254,17 @@ function StudyMetric({
 // ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
   const [open, setOpen] = useState(false);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
+  const parsed = useMemo(() => parseMcqOptions(q.question, q.options), [q.question, q.options]);
+  const correctOptionIndex = useMemo(() => {
+    const answer = String(q.answer || "").trim();
+    if (!answer) return null;
+    const letterMatch = answer.match(/\b([A-Da-d])\b/);
+    if (letterMatch?.[1]) return letterMatch[1].toUpperCase().charCodeAt(0) - 65;
+    const startsMatch = answer.match(/^\s*([A-Da-d])[\).\]:-]/);
+    if (startsMatch?.[1]) return startsMatch[1].toUpperCase().charCodeAt(0) - 65;
+    return null;
+  }, [q.answer]);
 
   return (
     <CardGlass className={cn("p-0 overflow-hidden transition-all duration-300 border-slate-200 bg-white shadow-sm", open ? "shadow-md" : "hover:shadow-md")}>
@@ -233,7 +275,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
            <span className="text-[11px] font-semibold text-slate-500">Q{index + 1}</span>
         </div>
-        <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 truncate">{q.question}</p>
+        <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 truncate">{parsed.question}</p>
         <motion.div animate={{ rotate: open ? 180 : 0 }}>
            <ChevronDown className="w-5 h-5 text-slate-400" />
         </motion.div>
@@ -246,6 +288,46 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
             className="overflow-hidden"
           >
             <div className="px-5 pb-6 pt-3 border-t border-slate-100 space-y-5">
+              {parsed.options.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                    <ListTodo className="w-4 h-4" /> Options
+                  </p>
+                  <div className="space-y-2">
+                    {parsed.options.map((option, optionIndex) => (
+                      <button
+                        key={`${option}-${optionIndex}`}
+                        type="button"
+                        onClick={() => setSelectedOptionIndex(optionIndex)}
+                        className={cn(
+                          "w-full text-left text-sm font-medium leading-relaxed p-3 rounded-xl border transition-colors",
+                          selectedOptionIndex === optionIndex
+                            ? "bg-blue-100 border-blue-300 text-slate-800"
+                            : "bg-blue-50 border-blue-100 text-slate-700 hover:bg-blue-100/70",
+                        )}
+                      >
+                        <span className="font-semibold text-blue-700 mr-2">
+                          {String.fromCharCode(65 + optionIndex)}.
+                        </span>
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedOptionIndex !== null && correctOptionIndex !== null && (
+                    <p
+                      className={cn(
+                        "mt-2 text-xs font-semibold",
+                        selectedOptionIndex === correctOptionIndex ? "text-emerald-700" : "text-rose-700",
+                      )}
+                    >
+                      {selectedOptionIndex === correctOptionIndex
+                        ? "Correct option selected."
+                        : `Selected ${String.fromCharCode(65 + selectedOptionIndex)}. Correct option: ${String.fromCharCode(65 + correctOptionIndex)}.`}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
                    <CheckCircle className="w-4 h-4" /> Solution Core
@@ -454,10 +536,15 @@ export default function StudentAiStudyPage() {
   }, [flashcardDoubtInput, sessionId, askMut, topicId]);
 
   const handleAskAboutQuestion = useCallback((question: string) => {
-    const prompt = `Explain this practice question in-depth: "${question}"`;
+    const prompt = question.trim();
     setChatInput(prompt);
     setActiveTab("ask");
-    setTimeout(() => { if (sessionId) { setChatInput(""); askMut.mutate({ topicId, sessionId, question: prompt }); } }, 100);
+    setTimeout(() => {
+      if (sessionId) {
+        setChatInput("");
+        askMut.mutate({ topicId, sessionId, question: prompt });
+      }
+    }, 100);
   }, [sessionId, topicId, askMut]);
 
   const handleComplete = useCallback(() => {
@@ -544,8 +631,8 @@ export default function StudentAiStudyPage() {
             <div className="absolute inset-0 bg-blue-100 rounded-[2.5rem] animate-ping opacity-30 z-0" />
          </div>
          <div className="space-y-4">
-            <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter text-center">Neural Nexus Initializing</h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Synthesizing personalized curriculum...</p>
+            <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter text-center">Opening Study Session</h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Creating personalized curriculum...</p>
          </div>
       </div>
     );
@@ -575,8 +662,6 @@ export default function StudentAiStudyPage() {
 
   return (
     <div className="relative pb-16">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_48%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.14),_transparent_38%),linear-gradient(180deg,_rgba(248,250,252,1)_0%,_rgba(255,255,255,0.96)_100%)]" />
-
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <CardGlass className="overflow-hidden border-slate-200/80 bg-white/90 p-5 shadow-sm sm:p-7 lg:p-8">
           <div className="flex flex-col gap-6">
@@ -616,36 +701,12 @@ export default function StudentAiStudyPage() {
                   </p>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
-                <StudyMetric
-                  label="Time"
-                  value={formatTime(elapsed)}
-                  icon={<Clock className="h-5 w-5 text-blue-700" />}
-                  accentClass="bg-blue-50 text-blue-700"
-                />
-                <StudyMetric
-                  label="Concepts"
-                  value={String(sessionData.keyConcepts.length || 0)}
-                  icon={<Lightbulb className="h-5 w-5 text-amber-700" />}
-                  accentClass="bg-amber-50 text-amber-700"
-                />
-                <StudyMetric
-                  label="Formulas"
-                  value={String(sessionData.formulas.length || 0)}
-                  icon={<Sigma className="h-5 w-5 text-emerald-700" />}
-                  accentClass="bg-emerald-50 text-emerald-700"
-                />
-                <StudyMetric
-                  label="Practice"
-                  value={String(sessionData.practiceQuestions.length || 0)}
-                  icon={<Brain className="h-5 w-5 text-violet-700" />}
-                  accentClass="bg-violet-50 text-violet-700"
-                />
-              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-4">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                Time spent: {formatTime(elapsed)}
+              </span>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {tabs.map((tab) => (
                   <button
@@ -690,129 +751,8 @@ export default function StudentAiStudyPage() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -18 }}
-              className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+              className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]"
             >
-              <div className="space-y-6">
-                {normalizedLessonMarkdown ? (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-8">
-                    <div className="mb-8 flex flex-col gap-5 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
-                      <div className="space-y-3">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                          <Monitor className="h-3.5 w-3.5" />
-                          Guided Notes
-                        </span>
-                        <div>
-                          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                            Study the notes carefully
-                          </h2>
-                          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                            Use zoom controls for comfortable reading, then annotate the parts you want to revise later.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center overflow-hidden rounded-full border border-slate-200 bg-white">
-                          <button
-                            onClick={() => setNotesZoom((z) => (z === "lg" ? "md" : z === "md" ? "sm" : "sm"))}
-                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                          >
-                            A-
-                          </button>
-                          <button
-                            onClick={() => setNotesZoom("md")}
-                            className="border-x border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-50"
-                          >
-                            100%
-                          </button>
-                          <button
-                            onClick={() => setNotesZoom((z) => (z === "sm" ? "md" : z === "md" ? "lg" : "lg"))}
-                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                          >
-                            A+
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFlashcardIndex(0);
-                            setFlashcardFlipped(false);
-                            setShowFlashcards(true);
-                          }}
-                          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
-                        >
-                          <Brain className="h-4 w-4" />
-                          Flashcards
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      {!isCompactLayout &&
-                        inlineComments.map((comment) => (
-                          <button
-                            key={comment.id}
-                            type="button"
-                            onClick={() => {
-                              setActiveInlineCommentId(comment.id);
-                              setToolPanel("notes");
-                            }}
-                            className={cn(
-                              "absolute right-0 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition-colors",
-                              activeInlineCommentId === comment.id
-                                ? "border-blue-300 bg-blue-600 text-white"
-                                : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
-                            )}
-                            style={{ top: comment.top }}
-                            title={comment.text}
-                          >
-                            <StickyNote className="h-4 w-4" />
-                          </button>
-                        ))}
-
-                      <div ref={notesContentRef} className={cn("relative pr-0 lg:pr-12", mdClassBase, mdZoomClass)}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {normalizedLessonMarkdown}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  </CardGlass>
-                ) : (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-10 text-center shadow-sm">
-                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-slate-300" />
-                    <p className="text-sm font-medium text-slate-500">Generating your lesson notes...</p>
-                  </CardGlass>
-                )}
-
-                {!!sessionData.practiceQuestions.length && (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-slate-900">Practice questions</h3>
-                        <p className="mt-1 text-sm text-slate-600">
-                          Review worked examples, then ask the AI for a deeper explanation when needed.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("ask")}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
-                      >
-                        Open AI chat
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="mt-5 grid gap-4">
-                      {sessionData.practiceQuestions.map((question, index) => (
-                        <PracticeCard key={`${question.question}-${index}`} q={question} index={index} onAskAI={handleAskAboutQuestion} />
-                      ))}
-                    </div>
-                  </CardGlass>
-                )}
-              </div>
-
               <div className="space-y-6 lg:sticky lg:top-24">
                 <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
@@ -1003,83 +943,6 @@ export default function StudentAiStudyPage() {
                   )}
                 </CardGlass>
 
-                {!!sessionData.keyConcepts.length && (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                        <Lightbulb className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900">Key concepts</h3>
-                        <p className="text-sm text-slate-500">The most important ideas to remember from this topic.</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      {sessionData.keyConcepts.map((concept, index) => (
-                        <button
-                          key={`${concept}-${index}`}
-                          type="button"
-                          onClick={() => handleAskAboutQuestion(`Explain this concept clearly with one example: ${normalizeReadableText(concept)}`)}
-                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
-                        >
-                          {normalizeReadableText(concept)}
-                        </button>
-                      ))}
-                    </div>
-                  </CardGlass>
-                )}
-
-                {!!sessionData.formulas.length && (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                        <Sigma className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900">Formula board</h3>
-                        <p className="text-sm text-slate-500">Important expressions collected for quick revision.</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-3">
-                      {sessionData.formulas.map((formula, index) => (
-                        <div key={`${formula}-${index}`} className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
-                          <div className={cn(mdClassBase, "prose-p:mb-0 prose-p:text-sm prose-code:text-xs prose-h2:text-xl prose-h3:text-base")}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {normalizeFormulaForKatex(formula)}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardGlass>
-                )}
-
-                {!!sessionData.commonMistakes.length && (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
-                        <AlertTriangle className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900">Common mistakes</h3>
-                        <p className="text-sm text-slate-500">Watch these while revising and solving questions.</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      {sessionData.commonMistakes.map((mistake, index) => (
-                        <button
-                          key={`${mistake}-${index}`}
-                          type="button"
-                          onClick={() => handleAskAboutQuestion(`How do I avoid this mistake in exams: ${normalizeReadableText(mistake)}?`)}
-                          className="w-full rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-rose-100/70"
-                        >
-                          {normalizeReadableText(mistake)}
-                        </button>
-                      ))}
-                    </div>
-                  </CardGlass>
-                )}
-
                 <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -1170,6 +1033,128 @@ export default function StudentAiStudyPage() {
                   )}
                 </CardGlass>
               </div>
+
+              <div className="space-y-6">
+                {normalizedLessonMarkdown ? (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 sm:p-8">
+                    <div className="mb-8 flex flex-col gap-5 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
+                      <div className="space-y-3">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                          <Monitor className="h-3.5 w-3.5" />
+                          Guided Notes
+                        </span>
+                        <div>
+                          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                            Study the notes carefully
+                          </h2>
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                            Use zoom controls for comfortable reading, then annotate the parts you want to revise later.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center overflow-hidden rounded-full border border-slate-200 bg-white">
+                          <button
+                            onClick={() => setNotesZoom((z) => (z === "lg" ? "md" : z === "md" ? "sm" : "sm"))}
+                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                            A-
+                          </button>
+                          <button
+                            onClick={() => setNotesZoom("md")}
+                            className="border-x border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-50"
+                          >
+                            100%
+                          </button>
+                          <button
+                            onClick={() => setNotesZoom((z) => (z === "sm" ? "md" : z === "md" ? "lg" : "lg"))}
+                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                            A+
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFlashcardIndex(0);
+                            setFlashcardFlipped(false);
+                            setShowFlashcards(true);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                        >
+                          <Brain className="h-4 w-4" />
+                          Flashcards
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      {!isCompactLayout &&
+                        inlineComments.map((comment) => (
+                          <button
+                            key={comment.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveInlineCommentId(comment.id);
+                              setToolPanel("notes");
+                            }}
+                            className={cn(
+                              "absolute right-0 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition-colors",
+                              activeInlineCommentId === comment.id
+                                ? "border-blue-300 bg-blue-600 text-white"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
+                            )}
+                            style={{ top: comment.top }}
+                            title={comment.text}
+                          >
+                            <StickyNote className="h-4 w-4" />
+                          </button>
+                        ))}
+
+                      <div ref={notesContentRef} className={cn("relative pr-0 lg:pr-12", mdClassBase, mdZoomClass)}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {normalizedLessonMarkdown}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </CardGlass>
+                ) : (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-10 text-center shadow-sm">
+                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-slate-300" />
+                    <p className="text-sm font-medium text-slate-500">Generating your lesson notes...</p>
+                  </CardGlass>
+                )}
+
+                {!!sessionData.practiceQuestions.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900">Practice questions</h3>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Review worked examples, then ask the AI for a deeper explanation when needed.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("ask")}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                      >
+                        Open AI chat
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-5 grid gap-4">
+                      {sessionData.practiceQuestions.map((question, index) => (
+                        <PracticeCard key={`${question.question}-${index}`} q={question} index={index} onAskAI={handleAskAboutQuestion} />
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+              </div>
+
             </motion.div>
           ) : (
             <motion.div
