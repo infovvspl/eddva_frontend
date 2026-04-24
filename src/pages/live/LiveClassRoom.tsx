@@ -1008,11 +1008,17 @@ export default function LiveClassRoom() {
       if (!isTeacher) toast.info("New poll: " + poll.question);
     });
 
-    socket.on("live:poll-closed", (poll: LivePoll) => {
-      setPolls((prev) => prev.map((p) => (p.id === poll.id ? poll : p)));
+    socket.on("live:poll-closed", (data: { pollId: string; results: any; correctOptionIndex?: number | null }) => {
+      setPolls((prev) =>
+        prev.map((p) =>
+          p.id === data.pollId
+            ? { ...p, isActive: false, results: data.results, correctOptionIndex: data.correctOptionIndex ?? p.correctOptionIndex }
+            : p,
+        ),
+      );
     });
 
-    socket.on("live:poll-results", (data: { pollId: string; results: any }) => {
+    socket.on("live:poll-results-update", (data: { pollId: string; results: any }) => {
       setPolls((prev) =>
         prev.map((p) => (p.id === data.pollId ? { ...p, results: data.results } : p)),
       );
@@ -1236,8 +1242,8 @@ export default function LiveClassRoom() {
   // ── Teacher: create poll
   const handleCreatePoll = async (question: string, options: string[], correctIndex?: number) => {
     if (!socketSessionId) return;
-    const poll = await createPoll(socketSessionId, question, options, correctIndex);
-    setPolls((prev) => [poll, ...prev]);
+    await createPoll(socketSessionId, question, options, correctIndex);
+    // Poll is added via the live:new-poll socket event broadcast to all clients
   };
 
   // ── Teacher: close poll
