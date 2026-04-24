@@ -10,13 +10,7 @@ import {
   Maximize, RotateCcw, Trophy, Tag, FlaskConical,
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
-<<<<<<< HEAD
-  ClipboardList, Link2, Youtube, BookMarked,
-  AlertTriangle,
-  Video,
-=======
   ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
->>>>>>> c33d59df0bcebc453b8c012f6562f96e96172eb9
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
