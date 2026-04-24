@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import * as authApi from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 
 const B = "#3B82F6"; // Softer Blue
@@ -212,7 +212,7 @@ const LoginPage = () => {
         >
           {/* Logo */}
           <div className="mb-10">
-            <img src={edvaLogo} alt="EDDVA" className=" object-contain" />
+            <EddvaLogo className="" />
           </div>
 
           {/* Error banner */}
@@ -541,13 +541,13 @@ const LoginPage = () => {
         </div>
 
         {/* Floating stat cards */}
-        <div className="absolute top-[10%] left-12 flex flex-col gap-6 z-20">
+        {/* <div className="absolute top-[10%] left-12 flex flex-col gap-6 z-20">
           <StatCard icon={<BookOpen className="h-5 w-5" />}      label="Total Topics" value="500+"      color={B} delay={0.3}  />
           <StatCard icon={<Trophy className="h-5 w-5" />}        label="Success Rate"  value="98.4%"     color={P} delay={0.45} />
         </div>
         <div className="absolute bottom-[12%] right-12 z-20">
           <StatCard icon={<GraduationCap className="h-5 w-5" />} label="Active Students" value="50,000+" color={G} delay={0.6}  />
-        </div>
+        </div> */}
 
         {/* Center Focal Point */}
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}

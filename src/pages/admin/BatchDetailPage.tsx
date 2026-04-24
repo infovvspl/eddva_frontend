@@ -5,16 +5,27 @@ import {
   ArrowLeft, Loader2, Users, Edit2, Trash2, X,
   Check, Copy, ImageIcon, DollarSign,
   BookOpen, GraduationCap, Plus,
-  CheckCircle2, PauseCircle, PlayCircle, Link, Calendar
+  CheckCircle2, PauseCircle, PlayCircle, Link, Calendar, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   useBatch,
   useUpdateBatch, useDeleteBatch,
   useUploadBatchThumbnail, useGenerateInviteLink,
 } from "@/hooks/use-admin";
 import { getApiOrigin } from "@/lib/api-config";
+import {
+  BATCH_CLASS_OPTIONS,
+  BATCH_EXAM_TARGET_OPTIONS,
+  formatBatchClassLabel,
+  formatBatchExamTargetLabel,
+  normalizeBatchClassInput,
+  normalizeBatchExamTargetInput,
+  resolveBatchClassFormState,
+  resolveBatchExamTargetFormState,
+} from "@/lib/batch-form";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -31,6 +42,22 @@ function resolveMediaUrl(url?: string) {
   if (!url) return undefined;
   if (url.startsWith("http")) return url;
   return `${_API_ORIGIN}${url}`;
+}
+
+function resolveBatchFormValues(form: {
+  examTarget: string;
+  customExamTarget: string;
+  class: string;
+  customClass: string;
+}) {
+  const examTarget = form.examTarget === "custom"
+    ? normalizeBatchExamTargetInput(form.customExamTarget)
+    : normalizeBatchExamTargetInput(form.examTarget);
+  const classLevel = form.class === "custom"
+    ? normalizeBatchClassInput(form.customClass)
+    : normalizeBatchClassInput(form.class);
+
+  return { examTarget, class: classLevel };
 }
 
 function CopyBtn({ text }: { text: string }) {
@@ -71,7 +98,7 @@ function CourseThumbnail({ name, examTarget, imageUrl, className = "" }: {
         style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "12px 12px" }} />
       <span className="text-white font-black text-3xl relative z-10">{initials}</span>
       <span className="text-white/60 text-[10px] font-black uppercase tracking-widest mt-1 relative z-10">
-        {examTarget?.toUpperCase() || "—"}
+        {formatBatchExamTargetLabel(examTarget)}
       </span>
     </div>
   );
@@ -85,12 +112,16 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
   const thumbRef = useRef<HTMLInputElement>(null);
 
   const resolvedInitialThumb = resolveMediaUrl(batch.thumbnailUrl) ?? "";
+  const initialExamState = resolveBatchExamTargetFormState(batch.examTarget);
+  const initialClassState = resolveBatchClassFormState(batch.class);
 
   const [form, setForm] = useState({
     name: batch.name ?? "",
     description: batch.description ?? "",
-    examTarget: batch.examTarget ?? "jee",
-    class: batch.class ?? "11",
+    examTarget: initialExamState.selected,
+    customExamTarget: initialExamState.custom,
+    class: initialClassState.selected,
+    customClass: initialClassState.custom,
     isPaid: batch.isPaid ?? false,
     feeAmount: batch.feeAmount ? String(batch.feeAmount) : "",
     startDate: batch.startDate ? batch.startDate.split("T")[0] : "",
@@ -120,6 +151,15 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError("");
+    const resolved = resolveBatchFormValues(form);
+    if (!resolved.examTarget) {
+      setError("Exam target is required.");
+      return;
+    }
+    if (!resolved.class) {
+      setError("Class level is required.");
+      return;
+    }
     if (form.isPaid && (!form.feeAmount || Number(form.feeAmount) <= 0)) {
       setError("Fee amount is required for paid courses."); return;
     }
@@ -128,8 +168,8 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
         id: batch.id,
         name: form.name,
         description: form.description || undefined,
-        examTarget: form.examTarget,
-        class: form.class,
+        examTarget: resolved.examTarget,
+        class: resolved.class,
         isPaid: form.isPaid,
         feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
         startDate: form.startDate || undefined,
@@ -178,19 +218,37 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
               <label className="text-xs font-semibold text-slate-500 mb-1 block">Exam Target</label>
               <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
                 className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                <option value="jee">JEE</option>
-                <option value="neet">NEET</option>
-                <option value="both">Both / General</option>
+                {BATCH_EXAM_TARGET_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
+              {form.examTarget === "custom" && (
+                <input
+                  required
+                  value={form.customExamTarget}
+                  onChange={e => setForm({ ...form, customExamTarget: e.target.value })}
+                  placeholder="Enter custom target"
+                  className="w-full mt-2 h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400"
+                />
+              )}
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1 block">Class Level</label>
               <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
                 className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                {["8","9","10","11","12","DROPPER"].map(c => (
-                  <option key={c} value={c}>{c === "DROPPER" ? "Dropper" : `Class ${c}`}</option>
+                {BATCH_CLASS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
+              {form.class === "custom" && (
+                <input
+                  required
+                  value={form.customClass}
+                  onChange={e => setForm({ ...form, customClass: e.target.value })}
+                  placeholder="Enter custom class"
+                  className="w-full mt-2 h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400"
+                />
+              )}
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1 block">Start Date</label>
@@ -392,6 +450,7 @@ export default function BatchDetailPage() {
   const deleteBatch = useDeleteBatch();
 
   const [showEdit, setShowEdit] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   const handleStatusChange = async (status: string) => {
     try { await updateBatch.mutateAsync({ id: id!, status }); toast.success(`Course marked as ${status}`); }
@@ -456,6 +515,10 @@ export default function BatchDetailPage() {
               <CheckCircle2 className="w-5 h-5" />
             </button>
           )}
+          <button onClick={() => navigate(`/admin/content?batchId=${batch.id}`)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+            <BookOpen className="w-4 h-4" /> Content
+          </button>
           <button onClick={() => setShowEdit(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
             <Edit2 className="w-4 h-4" /> Edit
@@ -496,7 +559,22 @@ export default function BatchDetailPage() {
 
             {/* Description */}
             {batch.description && (
-              <p className="text-sm text-slate-500 leading-relaxed max-w-2xl">{batch.description}</p>
+              <div className="max-w-2xl">
+                <p className={cn(
+                  "text-sm text-slate-500 leading-relaxed transition-all",
+                  !descExpanded && "line-clamp-3"
+                )}>
+                  {batch.description}
+                </p>
+                {batch.description.length > 150 && (
+                  <button
+                    onClick={() => setDescExpanded(!descExpanded)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 mt-1 focus:outline-none"
+                  >
+                    {descExpanded ? "See less" : "See more"}
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Info grid */}
@@ -519,8 +597,8 @@ export default function BatchDetailPage() {
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase">
                   <GraduationCap className="w-3.5 h-3.5" /> Target
                 </div>
-                <p className="text-sm font-black text-slate-800">{batch.examTarget?.toUpperCase()}</p>
-                <p className="text-xs text-slate-400">Class {batch.class}</p>
+                <p className="text-sm font-black text-slate-800">{formatBatchExamTargetLabel(batch.examTarget)}</p>
+                <p className="text-xs text-slate-400">{formatBatchClassLabel(batch.class)}</p>
               </div>
 
               {/* Revenue */}

@@ -1,0 +1,9 @@
+export const MB = 1024 * 1024;
+export const GB = 1024 * MB;
+
+export const MAX_MATERIAL_FILE_SIZE_MB = 100;
+export const MAX_MATERIAL_FILE_SIZE_BYTES = MAX_MATERIAL_FILE_SIZE_MB * MB;
+
+export const MAX_LECTURE_VIDEO_SIZE_GB = 2;
+export const MAX_LECTURE_VIDEO_SIZE_BYTES = MAX_LECTURE_VIDEO_SIZE_GB * GB;
+

@@ -5,7 +5,7 @@ import {
   CheckCircle2, Sparkles, ChevronRight, Loader2,
   ArrowRight, CalendarDays, GraduationCap,
 } from "lucide-react";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { useAuthStore } from "@/lib/auth-store";
 import { useUpdateStudentProfile } from "@/hooks/use-student";
 import { cn } from "@/lib/utils";
@@ -145,7 +145,7 @@ export default function StudentOnboardingPage() {
       <div className="w-full max-w-lg relative z-10">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <img src={edvaLogo} alt="EDDVA" className="h-12 object-contain" />
+          <EddvaLogo className="h-12 w-auto" />
         </div>
 
         {/* Card */}

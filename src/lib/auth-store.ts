@@ -43,3 +43,19 @@ export function patchDiagnosticCompleted(store: ReturnType<typeof useAuthStore.g
     },
   });
 }
+
+/** After battle / any server-side XP grant — keep header & persisted auth in sync until /me refetches */
+export function patchStudentXpDelta(delta: number) {
+  if (!delta || delta <= 0) return;
+  const user = useAuthStore.getState().user;
+  if (!user?.studentProfile) return;
+  useAuthStore.setState({
+    user: {
+      ...user,
+      studentProfile: {
+        ...user.studentProfile,
+        xpPoints: (user.studentProfile.xpPoints ?? 0) + delta,
+      },
+    },
+  });
+}

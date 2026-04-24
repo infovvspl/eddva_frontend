@@ -1,14 +1,16 @@
 import { useState, useLayoutEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import DppContentRenderer from "@/components/DppContentRenderer";
 import {
   ArrowLeft, ChevronRight, Play, CheckCircle2, Clock,
   Download, ExternalLink, FileText, BookOpen, Trophy,
   ClipboardList, FlaskConical, Youtube, File, Link2,
   Loader2, AlertCircle, Video, Zap, Lock, Sparkles,
-  BarChart2, PlayCircle,
+  BarChart2, PlayCircle, X, Printer,
 } from "lucide-react";
 import { useCourseTopicDetail } from "@/hooks/use-student";
+import { getResourceDownloadUrl } from "@/lib/api/student";
 import type { TopicLecture, TopicResource } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -39,12 +41,18 @@ const RESOURCE_META: Record<string, {
 }> = {
   dpp:   { label: "DPP",   icon: <ClipboardList className="w-3.5 h-3.5" />, color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200" },
   pyq:   { label: "PYQ",   icon: <Trophy className="w-3.5 h-3.5" />,        color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200" },
-  pdf:   { label: "PDF",   icon: <File className="w-3.5 h-3.5" />,          color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200" },
-  notes: { label: "Notes", icon: <FileText className="w-3.5 h-3.5" />,      color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200" },
+  pdf:   { label: "Lecture Notes",      icon: <File className="w-3.5 h-3.5" />,          color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200" },
+  notes: { label: "Handwritten Notes", icon: <FileText className="w-3.5 h-3.5" />,      color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200" },
   video: { label: "Video", icon: <Youtube className="w-3.5 h-3.5" />,       color: "text-rose-600",    bg: "bg-rose-50",    border: "border-rose-200" },
   link:  { label: "Link",  icon: <Link2 className="w-3.5 h-3.5" />,         color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200" },
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
 };
+
+function getYouTubeThumbnail(url?: string | null) {
+  if (!url) return null;
+  const m = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null;
+}
 
 // ─── Lecture Card ─────────────────────────────────────────────────────────────
 
@@ -56,8 +64,10 @@ function LectureCard({
   const navigate = useNavigate();
   const pct = lecture.watchProgress ?? 0;
   const done = !!lecture.isCompleted;
-  const thumb = resolveUrl(lecture.thumbnailUrl);
+  const thumb = resolveUrl(lecture.thumbnailUrl) || getYouTubeThumbnail(lecture.videoUrl);
   const dur = fmtDuration(lecture.duration);
+  const isLiveNow = lecture.status === "live";
+  const recordingPending = lecture.type === "live" && lecture.status === "ended" && !lecture.videoUrl;
 
   const handleClick = () => {
     // Pass return path so the lecture player can navigate back here
@@ -108,6 +118,15 @@ function LectureCard({
         <div className="absolute top-2 left-2 w-5 h-5 rounded-md bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <span className="text-[9px] font-black text-white">{index + 1}</span>
         </div>
+
+        {(isLiveNow || recordingPending) && (
+          <div className={cn(
+            "absolute top-2 right-2 rounded-md px-2 py-0.5 text-[9px] font-black text-white",
+            isLiveNow ? "bg-red-500 animate-pulse" : "bg-amber-500"
+          )}>
+            {isLiveNow ? "LIVE" : "RECORDING SOON"}
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -138,6 +157,11 @@ function LectureCard({
           {pct === 0 && !done && (
             <span className="text-[11px] font-semibold text-slate-400">Not started</span>
           )}
+          {recordingPending && (
+            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+              Recording processing
+            </span>
+          )}
         </div>
       </div>
 
@@ -151,45 +175,136 @@ function LectureCard({
   );
 }
 
+// ─── AI Content Viewer Modal ──────────────────────────────────────────────────
+
+function AiContentModal({ title, content, type, onClose }: {
+  title: string; content: string; type: string; onClose: () => void;
+}) {
+  const meta = RESOURCE_META[type] ?? RESOURCE_META.dpp;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97 }}
+        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl my-8 overflow-hidden"
+      >
+        {/* Header */}
+        <div className={cn("flex items-center gap-3 px-6 py-4 border-b", meta.bg, meta.border)}>
+          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", meta.bg, meta.color)}>
+            {meta.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-800 text-sm line-clamp-1">{title}</p>
+            <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>{meta.label}</span>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all"
+            title="Print"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[75vh]">
+          <DppContentRenderer content={content} />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Resource Card ─────────────────────────────────────────────────────────────
 
-function ResourceCard({ res }: { res: TopicResource }) {
+function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string }) {
   const meta = RESOURCE_META[String(res.type ?? "").toLowerCase()] ?? RESOURCE_META.link;
-  const url = res.externalUrl || resolveUrl(res.fileUrl);
+  const [loading, setLoading] = useState(false);
+  const [aiModal, setAiModal] = useState<{ content: string } | null>(null);
 
-  const handleOpen = () => {
-    if (!url) { toast.error("Resource not available yet"); return; }
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleOpen = async () => {
+    // AI-generated content — description is already in the loaded data, no API call needed
+    if (!res.fileUrl && !res.externalUrl) {
+      if (res.description) {
+        setAiModal({ content: res.description });
+      } else {
+        toast.error("Resource not available yet — teacher is still preparing it");
+      }
+      return;
+    }
+
+    // External link (YouTube, etc.)
+    if (res.externalUrl) {
+      window.open(res.externalUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // Uploaded S3 file — get presigned URL, fall back to direct URL
+    setLoading(true);
+    try {
+      const result = await getResourceDownloadUrl(topicId, res.id);
+      if (result.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      } else {
+        window.open(resolveUrl(res.fileUrl)!, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      // backend endpoint not deployed yet — try direct S3 URL (works if bucket is public)
+      window.open(resolveUrl(res.fileUrl)!, "_blank", "noopener,noreferrer");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      onClick={handleOpen}
-      className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group"
-    >
-      <div className={cn(
-        "w-10 h-10 rounded-xl flex items-center justify-center border shrink-0",
-        meta.bg, meta.border, meta.color
-      )}>
-        {meta.icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-          {res.title}
-        </p>
-        <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>
-          {meta.label}
-        </span>
-      </div>
-      <div className={cn(
-        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
-        "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
-      )}>
-        {res.externalUrl ? <ExternalLink className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-      </div>
-    </motion.div>
+    <>
+      {aiModal && (
+        <AiContentModal
+          title={res.title}
+          content={aiModal.content}
+          type={String(res.type ?? "").toLowerCase()}
+          onClose={() => setAiModal(null)}
+        />
+      )}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={loading ? undefined : handleOpen}
+        className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group"
+      >
+        <div className={cn(
+          "w-10 h-10 rounded-xl flex items-center justify-center border shrink-0",
+          meta.bg, meta.border, meta.color
+        )}>
+          {meta.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+            {res.title}
+          </p>
+          <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>
+            {meta.label}
+          </span>
+        </div>
+        <div className={cn(
+          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
+          "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
+        )}>
+          {loading
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : res.externalUrl
+              ? <ExternalLink className="w-3.5 h-3.5" />
+              : <Download className="w-3.5 h-3.5" />
+          }
+        </div>
+      </motion.div>
+    </>
   );
 }
 
@@ -264,19 +379,27 @@ export default function StudentCourseTopicPage() {
   return (
     <div className="max-w-5xl mx-auto pb-32 space-y-6">
 
-      {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2 text-sm text-slate-400 font-medium flex-wrap pt-1">
-        <button onClick={() => navigate("/student/courses")} className="hover:text-indigo-600 transition-colors">
-          My Courses
+      <div className="flex items-center gap-4 pt-2">
+        <button onClick={() => navigate(`/student/courses/${batchId}`)}
+          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm hover:shadow"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        <button onClick={() => navigate(`/student/courses/${batchId}`)} className="hover:text-indigo-600 transition-colors">
-          {subject?.name || "Course"}
-        </button>
-        <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        <span className="text-slate-500">{chapter?.name}</span>
-        <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        <span className="text-slate-800 font-semibold">{topic.name}</span>
+
+        {/* ── Breadcrumb ── */}
+        <div className="flex items-center gap-2 text-sm text-slate-400 font-medium flex-wrap">
+          <button onClick={() => navigate("/student/courses")} className="hover:text-indigo-600 transition-colors">
+            My Courses
+          </button>
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+          <button onClick={() => navigate(`/student/courses/${batchId}`)} className="hover:text-indigo-600 transition-colors">
+            {subject?.name || "Course"}
+          </button>
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+          <span className="text-slate-500">{chapter?.name}</span>
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+          <span className="text-slate-800 font-semibold">{topic.name}</span>
+        </div>
       </div>
 
       {/* ── Topic Hero ── */}
@@ -465,7 +588,7 @@ export default function StudentCourseTopicPage() {
             ) : (
               <motion.div key={resourceTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {activeResources.map(r => <ResourceCard key={r.id} res={r} />)}
+                {activeResources.map(r => <ResourceCard key={r.id} res={r} topicId={topicId} />)}
               </motion.div>
             )}
           </AnimatePresence>

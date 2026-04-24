@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import * as authApi from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 
 const INDIGO = "#4F46E5";
 const VIOLET = "#7C3AED";
@@ -97,7 +97,7 @@ const SuperAdminLoginPage = () => {
         >
           {/* Logo */}
           <div className="mb-12">
-            <img src={edvaLogo} alt="EDDVA" className="h-10 w-auto object-contain" />
+            <EddvaLogo className="h-10 w-auto" />
           </div>
 
           <div className="mb-10">

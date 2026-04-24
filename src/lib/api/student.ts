@@ -192,8 +192,11 @@ export interface TopicLecture {
   id: string;
   title: string;
   description?: string;
+  type?: "recorded" | "live";
+  status?: string;
   duration?: number;
   videoUrl?: string;
+  liveMeetingUrl?: string;
   thumbnailUrl?: string;
   watchProgress?: number;
   isCompleted?: boolean;
@@ -207,6 +210,7 @@ export interface TopicResource {
   title: string;
   fileUrl: string | null;
   externalUrl?: string | null;
+  description?: string | null;
   fileSize?: number;
   sortOrder?: number;
 }
@@ -385,8 +389,11 @@ export async function getCourseTopicDetail(batchId: string, topicId: string): Pr
       id: l.id,
       title: l.title ?? "",
       description: l.description,
+      type: l.type,
+      status: l.status,
       duration: l.durationSeconds ?? l.videoDurationSeconds ?? l.duration,
       videoUrl: l.videoUrl,
+      liveMeetingUrl: l.liveMeetingUrl,
       thumbnailUrl: l.thumbnailUrl,
       watchProgress: prog.watchPercentage ?? l.watchProgress ?? 0,
       isCompleted: prog.isCompleted ?? l.isCompleted ?? false,
@@ -533,6 +540,8 @@ export interface QuizOption {
   id: string;
   optionLabel: string;
   content: string;
+  /** Present on post-submit review for wrong answers */
+  isCorrect?: boolean | null;
 }
 
 export interface QuizQuestion {
@@ -544,6 +553,13 @@ export interface QuizQuestion {
   marksWrong: number;
   topic?: { id: string; name: string };
   options?: QuizOption[];
+  contentImageUrl?: string | null;
+  /** Correct value for integer-type questions (review after wrong answer) */
+  integerAnswer?: string | null;
+  solutionText?: string | null;
+  solutionVideoUrl?: string | null;
+  /** Set by API after submit: explanation-only vs full answer key */
+  reviewMode?: "explanation_only" | "full_solution";
 }
 
 export interface TestSession {
@@ -572,6 +588,20 @@ export interface ErrorBreakdown {
   skip: number;
 }
 
+export interface SessionResultAttempt {
+  questionId: string;
+  isCorrect: boolean;
+  marksAwarded: number;
+  errorType?: string;
+  selectedOptionIds?: string[];
+  correctOptionIds?: string[];
+  integerAnswer?: string | null;
+  questionContent?: string;
+  options?: (QuizOption & { isCorrect: boolean })[];
+  /** Per-question review payload from API (preferred over mock test questions) */
+  question?: QuizQuestion | null;
+}
+
 export interface SessionResult {
   id: string;
   totalScore: number;
@@ -581,16 +611,7 @@ export interface SessionResult {
   accuracy: number;
   status: string;
   errorBreakdown: ErrorBreakdown;
-  attempts: {
-    questionId: string;
-    isCorrect: boolean;
-    marksAwarded: number;
-    errorType?: string;
-    selectedOptionIds?: string[];
-    correctOptionIds?: string[];
-    questionContent?: string;
-    options?: (QuizOption & { isCorrect: boolean })[];
-  }[];
+  attempts: SessionResultAttempt[];
 }
 
 export async function getMockTests(params?: {
@@ -676,6 +697,17 @@ export interface StudyPlanItem {
   refId: string;
   scheduledDate: string;
   xpReward?: number;
+  content?: {
+    topicId?: string;
+    topicName?: string;
+    chapterName?: string | null;
+    subjectName?: string | null;
+    taskKind?: "youtube_video" | "ai_notes" | "practice";
+    videoTitle?: string | null;
+    videoUrl?: string | null;
+    notesTitle?: string | null;
+    notesUrl?: string | null;
+  };
 }
 
 export async function getTodaysPlan(): Promise<StudyPlanItem[]> {
@@ -701,13 +733,25 @@ export async function getWeeklyPlanGrouped(startDate: string, endDate: string): 
   return data as Record<string, StudyPlanItem[]>;
 }
 
-export async function generatePlan(): Promise<{ message: string }> {
-  const res = await apiClient.post("/study-plans/generate", {});
+export interface GeneratePlanPayload {
+  targetExam: string;
+  examYear: string;
+  currentClass: "9" | "10" | "11" | "12" | "dropper";
+  dailyStudyHours: number;
+}
+
+export async function generatePlan(payload: GeneratePlanPayload): Promise<{ message: string }> {
+  const res = await apiClient.post("/study-plans/generate", payload);
   return extractData(res);
 }
 
 export async function regeneratePlan(): Promise<{ message: string }> {
   const res = await apiClient.post("/study-plans/regenerate", {});
+  return extractData(res);
+}
+
+export async function clearPlan(): Promise<{ message: string }> {
+  const res = await apiClient.post("/study-plans/clear", {});
   return extractData(res);
 }
 
@@ -728,6 +772,14 @@ export async function getNextAction(): Promise<StudyPlanItem | null> {
   } catch {
     return null;
   }
+}
+
+export async function getResourceDownloadUrl(
+  topicId: string,
+  resourceId: string,
+): Promise<{ url: string | null; type: 'file' | 'external' | 'ai-content'; content?: string | null }> {
+  const res = await apiClient.get(`/content/topics/${topicId}/resources/${resourceId}/download-url`);
+  return extractData(res);
 }
 
 // ─── Doubts ────────────────────────────────────────────────────────────────────
@@ -857,6 +909,11 @@ export async function getLeaderboard(params?: {
   return extractData<LeaderboardResult>(res);
 }
 
+export async function getBattleLeaderboard(): Promise<LeaderboardResult> {
+  const res = await apiClient.get("/battles/leaderboard");
+  return extractData<LeaderboardResult>(res);
+}
+
 export async function logEngagement(payload: {
   lectureId?: string;
   state: "confused" | "bored" | "engaged" | "thriving" | "frustrated";
@@ -874,6 +931,7 @@ export interface StudentDashboardData {
   currentEloTier: string;
   rank?: number;
   weakTopics: { topicId: string; topicName: string; subjectName?: string; accuracy: number; severity: string }[];
+  recommendations?: string[];
   overallAccuracy: number;
   pendingLectures: number;
   testsAttempted: number;
@@ -896,6 +954,9 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
       accuracy: Number(w.accuracy ?? 0),
       severity: String(w.severity ?? "medium"),
     })),
+    recommendations: Array.isArray(raw.recommendations)
+      ? (raw.recommendations as unknown[]).map((x) => String(x))
+      : [],
     overallAccuracy: Number(raw.overallAccuracy ?? 0),
     pendingLectures: Number(raw.pendingLectures ?? 0),
     testsAttempted: Number(raw.testsAttempted ?? 0),
@@ -911,6 +972,23 @@ export interface BattleRoom {
   roomCode: string;
   status: "waiting" | "in_progress" | "completed";
   mode: BattleMode;
+  totalRounds?: number;
+  secondsPerRound?: number;
+  participantCount?: number;
+  maxParticipants?: number;
+}
+
+export interface BattleHistoryEntry {
+  battleId: string;
+  roomCode: string;
+  mode: BattleMode;
+  status: string;
+  topicName?: string | null;
+  roundsWon: number;
+  eloChange: number;
+  xpEarned: number;
+  isWinner: boolean;
+  endedAt?: string | null;
 }
 
 export interface DailyBattle {
@@ -921,9 +999,10 @@ export interface DailyBattle {
   status: string;
 }
 
-export async function createBattle(mode: BattleMode, topicId?: string): Promise<BattleRoom> {
+export async function createBattle(mode: BattleMode, topicId?: string, topicName?: string): Promise<BattleRoom> {
   const payload: Record<string, string> = { mode };
   if (topicId) payload.topicId = topicId;
+  if (topicName) payload.topicName = topicName;
   const res = await apiClient.post("/battles/create", payload);
   return extractData<BattleRoom>(res);
 }
@@ -951,10 +1030,10 @@ export async function getDailyBattle(): Promise<DailyBattle | null> {
   }
 }
 
-export async function getMyBattleHistory(): Promise<BattleRoom[]> {
+export async function getMyBattleHistory(): Promise<BattleHistoryEntry[]> {
   try {
     const res = await apiClient.get("/battles/my-history");
-    return extractData<BattleRoom[]>(res) ?? [];
+    return extractData<BattleHistoryEntry[]>(res) ?? [];
   } catch {
     return [];
   }
@@ -962,6 +1041,7 @@ export async function getMyBattleHistory(): Promise<BattleRoom[]> {
 
 export interface BattleElo {
   eloRating: number;
+  xpPoints: number;
   tier: string;
   battleXp: number;
   battlesPlayed: number;

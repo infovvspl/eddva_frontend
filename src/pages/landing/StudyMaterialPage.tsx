@@ -1,9 +1,12 @@
-﻿import React, { useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { B, P, T, BG_STUDIO } from "@/components/landing/DesignTokens";
 import { FadeUp } from "@/components/landing/LandingPrimitives";
+import { studyMaterialApi, type StudyMaterial, type StudyMaterialExam } from "@/lib/api/study-material";
+import { LANDING_TRACK_TO_EXAM } from "@/lib/landing-study-materials";
+import { useAuthStore } from "@/lib/auth-store";
 import { 
   FileText, Search, 
   ArrowRight, Filter,
@@ -67,11 +70,47 @@ const CONTENT_MAP: Record<string, any> = {
 };
 
 const subjects = ["General", "Physics", "Chemistry", "Math", "Biology"];
+const examCategoryMap: Record<string, { label: string; exam: StudyMaterialExam; color: string }> = {
+  "iit-jee": { label: "IIT JEE", exam: LANDING_TRACK_TO_EXAM["iit-jee"], color: B },
+  "neet-ug": { label: "NEET UG", exam: LANDING_TRACK_TO_EXAM["neet-ug"], color: "#EF4444" },
+};
 
 export default function StudyMaterialPage() {
   const { type = "pyqs" } = useParams<{ type: string }>();
+  const { isAuthenticated } = useAuthStore();
   const [activeSubject, setActiveSubject] = useState("General");
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const content = CONTENT_MAP[type] || CONTENT_MAP.pyqs;
+  const examCategory = examCategoryMap[type];
+
+  useEffect(() => {
+    if (!examCategory) return;
+    let cancelled = false;
+    setLoading(true);
+    const load = async () => {
+      try {
+        const hasAccess = isAuthenticated
+          ? (await studyMaterialApi.accessStatus({ exam: examCategory.exam })).enrolled
+          : false;
+        const rows = hasAccess
+          ? await studyMaterialApi.list({ exam: examCategory.exam, search: query.trim() || undefined, limit: 200 })
+          : await studyMaterialApi.listPublic({ exam: examCategory.exam, search: query.trim() || undefined, limit: 200 });
+        if (!cancelled) setMaterials(rows);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [examCategory, query, isAuthenticated]);
+
+  const filteredMaterials = useMemo(() => {
+    if (!examCategory) return [];
+    if (activeSubject === "General") return materials;
+    return materials.filter((m) => (m.subject ?? "").toLowerCase().includes(activeSubject.toLowerCase()));
+  }, [activeSubject, materials, examCategory]);
 
   return (
     <LandingLayout>
@@ -118,7 +157,9 @@ export default function StudyMaterialPage() {
                   <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search resources..."
+                    placeholder={examCategory ? `Search ${examCategory.label} study materials...` : "Search resources..."}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
                     className="w-full h-14 rounded-2xl border border-gray-200 bg-white/90 pl-14 pr-6 text-gray-900 outline-none focus:border-blue-400 focus:bg-white transition-all font-bold shadow-lg backdrop-blur-sm"
                   />
                 </div>
@@ -149,14 +190,14 @@ export default function StudyMaterialPage() {
            <div className="landing-shell">
               <div className="flex items-center justify-between gap-8 h-20">
                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                    {Object.keys(CONTENT_MAP).map(key => (
+                    {[...Object.keys(CONTENT_MAP), "iit-jee", "neet-ug"].map(key => (
                       <Link 
                         key={key} 
                         to={`/study-material/${key}`}
                         className={`px-6 py-2 rounded-xl text-[14px] font-bold uppercase tracking-wider transition-all
                           ${type === key ? "bg-gray-900 text-white shadow-lg" : "text-gray-400 hover:text-gray-900"}`}
                       >
-                         {key}
+                         {key === "iit-jee" ? "IIT JEE" : key === "neet-ug" ? "NEET" : key}
                       </Link>
                     ))}
                  </div>
@@ -180,7 +221,48 @@ export default function StudyMaterialPage() {
         {/* ── Standard Grid ── */}
         <section className="landing-section">
            <div className="landing-shell">
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {examCategory ? (
+                loading ? (
+                  <div className="py-20 text-center text-gray-500 font-semibold">Loading study materials...</div>
+                ) : filteredMaterials.length === 0 ? (
+                  <div className="py-20 text-center text-gray-500">
+                    <p className="text-lg font-bold">No materials found for {examCategory.label}</p>
+                    <p className="mt-2 text-sm">Try another subject or search term.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {filteredMaterials.map((item, i) => (
+                      <FadeUp key={item.id} delay={i * 0.05}>
+                        <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 transition-all hover:shadow-xl hover:border-gray-200">
+                          <div className="mb-3">
+                            <span className="inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest"
+                              style={{ background: `${examCategory.color}1a`, color: examCategory.color }}>
+                              {item.type.replace("_", " ")}
+                            </span>
+                          </div>
+                          <h3 className="text-[18px] font-black text-gray-900 mb-2 leading-tight">{item.title}</h3>
+                          <p className="text-[13px] font-medium text-gray-500 line-clamp-2">{item.description || item.chapter || "Curated study material"}</p>
+                          <div className="mt-4 text-[12px] text-gray-400">
+                            {[item.subject, item.totalPages ? `${item.totalPages} pages` : null].filter(Boolean).join(" · ")}
+                          </div>
+                          <div className="mt-6 flex items-center justify-between border-t border-gray-50 pt-4">
+                            <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400">
+                              <Clock className="h-4 w-4" /> Preview available
+                            </div>
+                            <Link
+                              to={`/exam/${type}#materials`}
+                              className="flex items-center gap-2 text-[13px] font-black text-gray-900 hover:text-blue-600 transition-colors"
+                            >
+                              Open <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          </div>
+                        </div>
+                      </FadeUp>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                  {content.items.map((item: any, i: number) => (
                    <FadeUp key={item.id} delay={i * 0.05}>
                       <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 transition-all hover:shadow-xl hover:border-gray-200">
@@ -207,7 +289,8 @@ export default function StudyMaterialPage() {
                       </div>
                    </FadeUp>
                  ))}
-              </div>
+                </div>
+              )}
               
               <div className="mt-20 text-center">
                  <button className="px-10 py-4 rounded-2xl border-2 border-gray-100 text-[14px] font-black uppercase tracking-widest text-gray-500 hover:border-gray-900 hover:text-gray-900 transition-all">

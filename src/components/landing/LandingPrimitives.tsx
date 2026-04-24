@@ -27,7 +27,7 @@ export const FadeUp = ({
   children, delay = 0, className = "",
 }: { children: React.ReactNode; delay?: number; className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const inView = useInView(ref, { once: true, amount: 0.2, margin: "0px 0px -48px 0px" });
   return (
     <motion.div ref={ref}
       initial={{ opacity: 0, y: 28 }}
@@ -50,7 +50,7 @@ export const Label = ({ children, color = B }: { children: React.ReactNode; colo
 
   return (
     <span 
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[12px] font-bold uppercase tracking-widest ${isPreset ? styles[color] : ""}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[16px] font-bold uppercase tracking-widest ${isPreset ? styles[color] : ""}`}
       style={!isPreset ? { background: color + "14", color, border: `1px solid ${color}30` } : {}}
     >
       <Sparkles className="h-3 w-3" />{children}

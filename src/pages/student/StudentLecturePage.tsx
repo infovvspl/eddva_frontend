@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type MutableRefObject } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -10,7 +10,13 @@ import {
   Maximize, RotateCcw, Trophy, Tag, FlaskConical,
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
+<<<<<<< HEAD
   ClipboardList, Link2, Youtube, BookMarked,
+  AlertTriangle,
+  Video,
+=======
+  ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
+>>>>>>> c33d59df0bcebc453b8c012f6562f96e96172eb9
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
@@ -24,10 +30,19 @@ import { getTopicProgress, generateAiQuiz, completeAiQuiz, type TopicProgress, t
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWatchPercentage } from "@/hooks/useWatchPercentage";
-import { useLectureProgress } from "@/hooks/useLectureProgress";
+import { useLectureProgress, type ExternalLecturePlayback } from "@/hooks/useLectureProgress";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
 import { FormulasTab } from "@/components/lecture/FormulasTab";
+import { isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
+import {
+  ensureYouTubeIframeApi,
+  extractYouTubeVideoIdFromUrl,
+  YT_ENDED,
+  YT_PAUSED,
+  YT_PLAYING,
+  type YTPlayer,
+} from "@/lib/youtube-iframe-api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,10 +101,6 @@ const RESOURCE_CONFIG: Record<TopicResourceType, {
   link:  { label: "Link",   icon: Link2,        bg: "bg-slate-50",  text: "text-slate-700",  border: "border-slate-200"  },
   quiz:  { label: "Quiz",   icon: Sparkles,     bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
 };
-
-function isYouTubeUrl(url: string) {
-  return url.includes("youtube.com") || url.includes("youtu.be");
-}
 
 function youtubeThumb(url: string) {
   const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
@@ -279,11 +290,11 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="absolute inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm"
     >
       <motion.div
         initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
       >
         <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -362,25 +373,65 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
 
 // ─── Video Player ──────────────────────────────────────────────────────────────
 
-function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, currentTime, resumeAt, onEnded }: {
-  src: string; checkpoints: QuizCheckpoint[]; lectureId: string;
+function VideoPlayer({
+  src,
+  checkpoints,
+  lectureId,
+  videoRef,
+  onDoubtClick,
+  resumeAt,
+  onEnded,
+  externalPlaybackRef,
+  onFlushLectureProgress,
+  onYouTubeTick,
+}: {
+  src: string;
+  checkpoints: QuizCheckpoint[];
+  lectureId: string;
   videoRef: React.RefObject<HTMLVideoElement>;
-  onDoubtClick: () => void; currentTime: number; resumeAt?: number;
+  onDoubtClick: () => void;
+  resumeAt?: number;
   onEnded?: () => void;
+  externalPlaybackRef?: MutableRefObject<ExternalLecturePlayback | null>;
+  onFlushLectureProgress?: () => void | Promise<void>;
+  /** Throttled (~3/s) so parent can update progress UI without reading refs during render */
+  onYouTubeTick?: (percent: number, seconds: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const ytContainerRef = useRef<HTMLDivElement>(null);
+  const ytPlayerRef = useRef<YTPlayer | null>(null);
+  const ytTickRef = useRef<ReturnType<typeof setInterval>>();
+  const checkpointsRef = useRef(checkpoints);
+  const activeQuizRef = useRef<QuizCheckpoint | null>(null);
+  const shownIdsRef = useRef<Set<string>>(new Set());
+
   const [playing, setPlaying] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [activeQuiz, setActiveQuiz] = useState<QuizCheckpoint | null>(null);
-  const [shownIds, setShownIds] = useState<Set<string>>(new Set());
   const [quizIndex, setQuizIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [resumeToast, setResumeToast] = useState<string | null>(null);
   const [videoEnded, setVideoEnded] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const lastUiReport = useRef(0);
+
+  useEffect(() => {
+    checkpointsRef.current = checkpoints;
+  }, [checkpoints]);
+
+  useEffect(() => {
+    activeQuizRef.current = activeQuiz;
+  }, [activeQuiz]);
+
+  useEffect(() => {
+    shownIdsRef.current = new Set();
+    lastUiReport.current = 0;
+  }, [src]);
+
+  const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
 
   const showControls = () => {
     setControlsVisible(true);
@@ -399,23 +450,29 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
     if (!v || !duration) return;
     const pct = (v.currentTime / duration) * 100;
     setLocalTime(v.currentTime);
-    for (const cp of checkpoints) {
-      if (shownIds.has(cp.id)) continue;
+    const cps = checkpointsRef.current;
+    for (const cp of cps) {
+      if (shownIdsRef.current.has(cp.id)) continue;
       if (pct >= cp.triggerAtPercent) {
         v.pause();
+        shownIdsRef.current.add(cp.id);
         setActiveQuiz(cp);
-        setShownIds(prev => new Set(prev).add(cp.id));
-        setQuizIndex(checkpoints.indexOf(cp));
+        setQuizIndex(cps.indexOf(cp));
         break;
       }
     }
-  }, [duration, checkpoints, shownIds, videoRef]);
+  }, [duration, videoRef]);
 
   const handleAnswer = async (option: string) => {
     if (!activeQuiz) throw new Error("no quiz");
     const v = videoRef.current;
-    const taken = v ? Math.max(0, 30 - Math.floor((v.currentTime ?? 0) % 30)) : undefined;
-    return await submitQuizResponse(lectureId, { questionId: activeQuiz.id, selectedOption: option, timeTakenSeconds: taken });
+    const t = isYouTube ? localTime : (v?.currentTime ?? 0);
+    const taken = Math.max(0, 30 - Math.floor(t % 30));
+    return await submitQuizResponse(lectureId, {
+      questionId: activeQuiz.id,
+      selectedOption: option,
+      timeTakenSeconds: taken,
+    });
   };
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -425,18 +482,143 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
     v.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
   };
 
+  useEffect(() => {
+    if (!isYouTube) return;
+    const videoId = extractYouTubeVideoIdFromUrl(src);
+    if (!videoId || !ytContainerRef.current) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        await ensureYouTubeIframeApi();
+      } catch {
+        return;
+      }
+      if (cancelled || !ytContainerRef.current || !window.YT?.Player) return;
+
+      new window.YT.Player(ytContainerRef.current, {
+        videoId,
+        width: "100%",
+        height: "100%",
+        playerVars: {
+          enablejsapi: 1,
+          playsinline: 1,
+          modestbranding: 1,
+          rel: 0,
+          origin: typeof window !== "undefined" ? window.location.origin : undefined,
+        },
+        events: {
+          onReady: (ev: { target: YTPlayer }) => {
+            if (cancelled) return;
+            const p = ev.target;
+            ytPlayerRef.current = p;
+            let dur = 0;
+            try {
+              dur = p.getDuration();
+            } catch { /* */ }
+            if (dur > 0) setDuration(dur);
+            if (resumeAt && resumeAt > 5) {
+              p.seekTo(resumeAt, true);
+              const mins = Math.floor(resumeAt / 60);
+              const secs = String(Math.floor(resumeAt % 60)).padStart(2, "0");
+              setResumeToast(`Resuming at ${mins}:${secs}`);
+              setTimeout(() => setResumeToast(null), 3000);
+            }
+
+            ytTickRef.current = setInterval(() => {
+              const player = ytPlayerRef.current;
+              if (!player || cancelled) return;
+              let cur = 0;
+              let dur2 = 0;
+              let st = YT_PAUSED;
+              try {
+                cur = player.getCurrentTime();
+                dur2 = player.getDuration();
+                st = player.getPlayerState();
+              } catch {
+                return;
+              }
+              if (dur2 > 0) setDuration(dur2);
+              setLocalTime(cur);
+              const pct = dur2 > 0 ? (cur / dur2) * 100 : 0;
+              const isPlayingNow = st === YT_PLAYING;
+              setPlaying(isPlayingNow);
+              if (externalPlaybackRef) {
+                externalPlaybackRef.current = {
+                  watchPercentage: pct,
+                  lastPositionSeconds: Math.floor(cur),
+                  isPlaying: isPlayingNow,
+                };
+              }
+              const now = Date.now();
+              if (onYouTubeTick && now - lastUiReport.current >= 320) {
+                lastUiReport.current = now;
+                onYouTubeTick(pct, Math.floor(cur));
+              }
+              if (activeQuizRef.current) return;
+              const cps = checkpointsRef.current;
+              for (const cp of cps) {
+                if (shownIdsRef.current.has(cp.id)) continue;
+                if (pct >= cp.triggerAtPercent) {
+                  try {
+                    player.pauseVideo();
+                  } catch { /* */ }
+                  shownIdsRef.current.add(cp.id);
+                  setActiveQuiz(cp);
+                  setQuizIndex(cps.indexOf(cp));
+                  break;
+                }
+              }
+            }, 250);
+          },
+          onStateChange: (ev: { data: number; target: YTPlayer }) => {
+            if (ev.data !== YT_ENDED) return;
+            setPlaying(false);
+            setVideoEnded(true);
+            const p = ev.target;
+            let dur2 = 0;
+            try {
+              dur2 = p.getDuration();
+            } catch { /* */ }
+            if (externalPlaybackRef) {
+              externalPlaybackRef.current = {
+                watchPercentage: 100,
+                lastPositionSeconds: Math.floor(dur2),
+                isPlaying: false,
+              };
+            }
+            void onFlushLectureProgress?.();
+          },
+        },
+      } as Record<string, unknown>);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (ytTickRef.current) clearInterval(ytTickRef.current);
+      try {
+        ytPlayerRef.current?.destroy?.();
+      } catch { /* */ }
+      ytPlayerRef.current = null;
+      if (externalPlaybackRef) externalPlaybackRef.current = null;
+    };
+  }, [isYouTube, src, resumeAt, externalPlaybackRef, onFlushLectureProgress, onYouTubeTick]);
+
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
   const progressPct = duration ? (localTime / duration) * 100 : 0;
-  const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
+
+  const resumePlaybackAfterQuiz = () => {
+    setActiveQuiz(null);
+    if (isYouTube) ytPlayerRef.current?.playVideo();
+    else void videoRef.current?.play();
+  };
 
   return (
     <div ref={containerRef} className="relative bg-black rounded-2xl overflow-hidden aspect-video"
       onMouseMove={showControls} onClick={!isYouTube ? togglePlay : undefined}>
       {isYouTube ? (
-        <iframe
-          src={`${src.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}?enablejsapi=1`}
-          className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen
-        />
+        <div ref={ytContainerRef} className="w-full h-full min-h-[200px]" />
       ) : (
         <video ref={videoRef} src={src} className="w-full h-full object-contain"
           onTimeUpdate={handleTimeUpdate}
@@ -454,14 +636,14 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
           }}
           onPlay={() => { setPlaying(true); setVideoEnded(false); hideTimer.current = setTimeout(() => setControlsVisible(false), 3000); }}
           onPause={() => { setPlaying(false); setControlsVisible(true); clearTimeout(hideTimer.current); }}
-          onEnded={() => { setPlaying(false); setVideoEnded(true); setControlsVisible(true); onEnded?.(); }}
+          onEnded={() => { setPlaying(false); setVideoEnded(true); setControlsVisible(true); }}
         />
       )}
 
       <AnimatePresence>
         {activeQuiz && (
           <QuizPopup question={activeQuiz} questionIndex={quizIndex} total={checkpoints.length}
-            onAnswer={handleAnswer} onClose={() => { setActiveQuiz(null); videoRef.current?.play(); }} />
+            onAnswer={handleAnswer} onClose={resumePlaybackAfterQuiz} />
         )}
       </AnimatePresence>
 
@@ -494,7 +676,19 @@ function VideoPlayer({ src, checkpoints, lectureId, videoRef, onDoubtClick, curr
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full">
                 <button
-                  onClick={() => { setVideoEnded(false); const v = videoRef.current; if (v) { v.currentTime = 0; v.play(); } }}
+                  onClick={() => {
+                    setVideoEnded(false);
+                    if (isYouTube) {
+                      ytPlayerRef.current?.seekTo(0, true);
+                      ytPlayerRef.current?.playVideo();
+                    } else {
+                      const v = videoRef.current;
+                      if (v) {
+                        v.currentTime = 0;
+                        void v.play();
+                      }
+                    }
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-white/20 text-white/80 text-sm font-semibold hover:bg-white/10 transition-all"
                 >
                   <RotateCcw className="w-4 h-4" /> Replay
@@ -587,6 +781,8 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
   const [notesEn, setNotesEn] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
+  const youtubeSource = isYouTubeUrl(lecture.videoUrl);
+  const ts = lecture.transcriptStatus;
 
   const handleToggleEnglish = async () => {
     if (enMode) { setEnMode(false); return; }
@@ -662,11 +858,28 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
-              <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center mb-3",
+              ts === "failed" ? "bg-amber-50" : "bg-indigo-50",
+            )}>
+              {ts === "failed" ? (
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              ) : (
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+              )}
             </div>
-            <p className="text-sm font-semibold text-slate-500">AI is generating notes…</p>
-            <p className="text-xs text-slate-400 mt-1">Check back in a moment</p>
+            <p className="text-sm font-semibold text-slate-500">
+              {ts === "failed" ? "AI notes could not be generated" : "AI is generating notes…"}
+            </p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
+              {ts === "failed"
+                ? (youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "The lecture could not be processed. Try again later.")
+                : ts === "processing" || ts === "pending"
+                  ? (youtubeSource ? "Using YouTube captions when available." : "Check back in a moment.")
+                  : youtubeSource
+                    ? "Notes appear here once captions are processed."
+                    : "Check back in a moment."}
+            </p>
           </div>
         )}
       </div>
@@ -791,7 +1004,7 @@ function VideosPanel({ resources }: { resources: TopicResource[] }) {
   const [active, setActive] = useState<TopicResource>(resources[0]);
 
   const toEmbedUrl = (url: string) => {
-    const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    const m = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
     if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
     return url;
   };
@@ -900,7 +1113,8 @@ function ResourceListPanel({ resources, type }: { resources: TopicResource[]; ty
 
 function LectureInfoCard({ lecture }: { lecture: Lecture }) {
   const duration = fmtDuration(lecture.videoDurationSeconds);
-  const isLive = lecture.type === "live" || lecture.status === "live";
+  const isLiveNow = lecture.status === "live";
+  const recordingPending = lecture.type === "live" && lecture.status === "ended" && !lecture.videoUrl;
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-4">
       <h2 className="text-base font-bold text-slate-900 mb-1 leading-snug">{lecture.title}</h2>
@@ -914,7 +1128,7 @@ function LectureInfoCard({ lecture }: { lecture: Lecture }) {
           </span>
         )}
         <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg">
-          <Layers className="w-3 h-3 text-slate-400" /> {isLive ? "Live Class" : "Recorded"}
+          <Layers className="w-3 h-3 text-slate-400" /> {recordingPending ? "Recording Pending" : isLiveNow ? "Live Class" : "Recorded"}
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg">
           <Calendar className="w-3 h-3 text-slate-400" /> {fmtDate(lecture.createdAt)}
@@ -929,242 +1143,6 @@ function LectureInfoCard({ lecture }: { lecture: Lecture }) {
   );
 }
 
-// ─── Topic Quiz Modal ─────────────────────────────────────────────────────────
-
-function TopicQuizModal({ topicId, topicName, onClose }: {
-  topicId: string; topicName: string; onClose: () => void;
-}) {
-  type Phase = "loading" | "question" | "result" | "error";
-  const [phase, setPhase] = useState<Phase>("loading");
-  const [questions, setQuestions] = useState<AiQuizQuestion[]>([]);
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ correct: number; total: number; accuracy: number } | null>(null);
-  const [errorMsg, setErrorMsg] = useState("");
-
-  useEffect(() => {
-    generateAiQuiz(topicId)
-      .then(data => { setQuestions(data.questions); setPhase("question"); })
-      .catch(() => { setErrorMsg("Could not generate quiz. Please try again."); setPhase("error"); });
-  }, [topicId]);
-
-  const q = questions[current];
-  const totalQ = questions.length;
-  const progress = totalQ > 0 ? ((current) / totalQ) * 100 : 0;
-
-  const handleSelect = (optId: string) => {
-    if (answers[q.id]) return;
-    setAnswers(prev => ({ ...prev, [q.id]: optId }));
-  };
-
-  const handleNext = () => {
-    if (current < totalQ - 1) { setCurrent(c => c + 1); return; }
-    handleSubmit();
-  };
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    const correct = questions.filter(qu => {
-      const chosen = answers[qu.id];
-      return qu.options.find(o => o.id === chosen)?.isCorrect === true;
-    }).length;
-    const accuracy = totalQ > 0 ? Math.round((correct / totalQ) * 100) : 0;
-    try {
-      await completeAiQuiz(topicId, {
-        score: correct * 4,
-        totalMarks: totalQ * 4,
-        accuracy,
-        correctCount: correct,
-        wrongCount: totalQ - correct,
-      });
-    } catch { /* non-blocking */ }
-    setResult({ correct, total: totalQ, accuracy });
-    setPhase("result");
-    setSubmitting(false);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <motion.div
-        initial={{ scale: 0.93, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.93, y: 24 }}
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-slate-800">Topic Quiz</p>
-              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">{topicName}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 transition-all">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto">
-          <AnimatePresence mode="wait">
-
-            {phase === "loading" && (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
-                  <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
-                </div>
-                <p className="text-sm font-semibold text-slate-500">Generating quiz questions…</p>
-                <p className="text-xs text-slate-400">AI is crafting questions for {topicName}</p>
-              </motion.div>
-            )}
-
-            {phase === "error" && (
-              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-20 gap-4 px-6 text-center">
-                <XCircle className="w-12 h-12 text-red-400" />
-                <p className="text-sm font-bold text-slate-700">{errorMsg}</p>
-                <button onClick={onClose}
-                  className="px-5 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-indigo-600 transition-colors">
-                  Close
-                </button>
-              </motion.div>
-            )}
-
-            {phase === "question" && q && (
-              <motion.div key={`q-${current}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
-                className="p-6 space-y-5">
-                {/* Progress bar */}
-                <div>
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                    <span>Question {current + 1} of {totalQ}</span>
-                    <span className={cn("px-2 py-0.5 rounded-lg text-[10px]",
-                      q.difficulty === "hard" ? "bg-red-50 text-red-600" :
-                      q.difficulty === "easy" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
-                    )}>{q.difficulty}</span>
-                  </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-                  </div>
-                </div>
-
-                {/* Question */}
-                <p className="text-base font-bold text-slate-800 leading-snug">{q.content}</p>
-
-                {/* Options */}
-                <div className="space-y-2.5">
-                  {q.options.map((opt, oi) => {
-                    const chosen = answers[q.id];
-                    const isSelected = chosen === opt.id;
-                    const showResult = !!chosen;
-                    const isCorrect = opt.isCorrect;
-                    const isWrong = showResult && isSelected && !isCorrect;
-                    return (
-                      <button key={opt.id} onClick={() => handleSelect(opt.id)} disabled={showResult}
-                        className={cn(
-                          "w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left text-sm font-medium transition-all",
-                          !showResult && !isSelected && "border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200 text-slate-700",
-                          !showResult && isSelected && "border-indigo-400 bg-indigo-50 text-indigo-700",
-                          showResult && isCorrect && "border-emerald-400 bg-emerald-50 text-emerald-700",
-                          showResult && isWrong && "border-red-400 bg-red-50 text-red-600",
-                          showResult && !isCorrect && !isWrong && "border-slate-100 bg-white opacity-40 text-slate-500",
-                        )}>
-                        <span className={cn(
-                          "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0",
-                          !showResult && isSelected ? "bg-indigo-600 text-white" :
-                          showResult && isCorrect ? "bg-emerald-500 text-white" :
-                          showResult && isWrong ? "bg-red-500 text-white" : "bg-slate-100 text-slate-500"
-                        )}>
-                          {String.fromCharCode(65 + oi)}
-                        </span>
-                        <span className="flex-1">{opt.content}</span>
-                        {showResult && isCorrect && <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />}
-                        {showResult && isWrong && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Explanation after answer */}
-                {answers[q.id] && q.explanation && (
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Explanation</p>
-                    <p className="text-sm text-slate-600 leading-relaxed">{q.explanation}</p>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {phase === "result" && result && (
-              <motion.div key="result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                className="p-6 space-y-5 text-center">
-                <div className={cn(
-                  "w-24 h-24 rounded-3xl mx-auto flex items-center justify-center text-4xl font-black",
-                  result.accuracy >= 70 ? "bg-emerald-100 text-emerald-700" :
-                  result.accuracy >= 40 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"
-                )}>
-                  {result.accuracy}%
-                </div>
-                <div>
-                  <p className="text-xl font-black text-slate-900">
-                    {result.accuracy >= 70 ? "Well done!" : result.accuracy >= 40 ? "Good effort!" : "Keep practicing!"}
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1">
-                    {result.correct} correct out of {result.total} questions
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Correct", val: result.correct, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-                    { label: "Wrong", val: result.total - result.correct, color: "text-red-600 bg-red-50 border-red-200" },
-                    { label: "Accuracy", val: `${result.accuracy}%`, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
-                  ].map(s => (
-                    <div key={s.label} className={cn("rounded-2xl border p-3", s.color)}>
-                      <p className="text-lg font-black">{s.val}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {result.accuracy >= 70 && (
-                  <div className="flex items-center justify-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-2xl p-3">
-                    <CheckCircle className="w-4 h-4" /> Topic progress updated!
-                  </div>
-                )}
-
-                <button onClick={onClose}
-                  className="w-full py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm hover:bg-indigo-600 transition-colors">
-                  Done
-                </button>
-              </motion.div>
-            )}
-
-          </AnimatePresence>
-        </div>
-
-        {/* Footer — Next button shown during question phase */}
-        {phase === "question" && answers[q?.id] && (
-          <div className="px-6 py-4 border-t border-slate-100">
-            <button onClick={handleNext} disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50">
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                current < totalQ - 1 ? <><ChevronRight className="w-4 h-4" /> Next Question</> :
-                <><Sparkles className="w-4 h-4" /> Finish Quiz</>
-              }
-            </button>
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
-  );
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -1177,14 +1155,27 @@ export default function StudentLecturePage() {
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
 
-  const fromPath = searchParams.get("from");
-  const handleBack = () => fromPath ? navigate(fromPath) : navigate(-1);
+  const handleBack = () => {
+    const from = searchParams.get("from");
+    if (from) {
+      navigate(from);
+    } else {
+      // Fallback: Check if we have history, otherwise go to lectures list
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate("/student/lectures");
+      }
+    }
+  };
 
   const [activeAiTab,  setActiveAiTab]  = useState<AiTabKey>("notes");
   const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
   const [aiOpen,       setAiOpen]       = useState(true);
   const [mobileAiOpen, setMobileAiOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ytPlaybackRef = useRef<ExternalLecturePlayback | null>(null);
+  const [ytDisplay, setYtDisplay] = useState({ pct: 0, sec: 0 });
   const [doubtTimestamp,   setDoubtTimestamp]   = useState(0);
   const [topicProgress,    setTopicProgress]    = useState<TopicProgress | null>(null);
   const [mockTestId,       setMockTestId]       = useState<string | null>(null);
@@ -1224,6 +1215,11 @@ export default function StudentLecturePage() {
     fetchMockTestForTopic(lecture.topicId).then(setMockTestId);
   }, [lecture?.topicId]);
 
+  useEffect(() => {
+    ytPlaybackRef.current = null;
+    setYtDisplay({ pct: 0, sec: 0 });
+  }, [id]);
+
   const handleCompletion = useCallback((reward: LectureCompletionReward) => {
     setCompletionReward(reward);
     toast.success(reward.message);
@@ -1231,7 +1227,13 @@ export default function StudentLecturePage() {
     qc.invalidateQueries({ queryKey: ["student", "me"] });
   }, [qc]);
 
-  useLectureProgress(id ?? "", videoRef, handleCompletion);
+  const { flushSave } = useLectureProgress(id ?? "", videoRef, handleCompletion, ytPlaybackRef);
+
+  const flushLectureProgress = useCallback(() => flushSave(), [flushSave]);
+
+  const onYouTubeTick = useCallback((pct: number, sec: number) => {
+    setYtDisplay({ pct, sec });
+  }, []);
 
   // ── Loading ──
   if (lectureLoading) return (
@@ -1241,27 +1243,23 @@ export default function StudentLecturePage() {
     </div>
   );
 
-  // ── Access locked ──
-  if ((lectureError as any)?.response?.status === 403) return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 gap-6">
-      <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center">
-        <Lock className="w-7 h-7 text-slate-300" />
-      </div>
-      <div>
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Access Restricted</h2>
-        <p className="text-sm text-slate-500 max-w-xs">Complete 90% of the previous topic to unlock this lecture.</p>
-      </div>
-      <button onClick={handleBack} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-semibold rounded-2xl hover:bg-indigo-600 transition-colors text-sm">
-        <ArrowLeft className="w-4 h-4" /> Go Back
-      </button>
-    </div>
-  );
+
 
   if (!lecture) return null;
 
   const videoSrc        = lecture.videoUrl ?? "";
-  const displayWatchPct = liveWatchPct > 0 ? liveWatchPct : (savedProgress?.watchPercentage ?? 0);
-  const isLive          = lecture.type === "live" || lecture.status === "live";
+  const hasPlayableVideo = !!videoSrc;
+  const isYtLecture     = isYouTubeUrl(videoSrc);
+  const displayWatchPct = isYtLecture
+    ? Math.max(savedProgress?.watchPercentage ?? 0, ytDisplay.pct)
+    : liveWatchPct > 0
+      ? liveWatchPct
+      : (savedProgress?.watchPercentage ?? 0);
+  const isLiveNow       = lecture.status === "live";
+  const isScheduledLive = lecture.type === "live" && lecture.status === "scheduled";
+  const recordingPending = lecture.type === "live" && lecture.status === "ended" && !hasPlayableVideo;
+  const isLive          = isLiveNow;
+  const isPlaybackOnlySource = isYouTubeUrl(videoSrc);
 
   // ── Resource groups ──────────────────────────────────────────────────────────
   const videoRes = topicResources.filter(r =>
@@ -1422,7 +1420,7 @@ export default function StudentLecturePage() {
             )}
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-bold text-slate-800 truncate leading-tight">{lecture.title}</h1>
-              {isLive && (
+              {isLiveNow && (
                 <span className="shrink-0 flex items-center gap-1 text-red-500 text-xs font-bold">
                   <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
                 </span>
@@ -1431,7 +1429,7 @@ export default function StudentLecturePage() {
           </div>
 
           {/* Progress — sm+ */}
-          {!isLive && (
+          {!isLiveNow && hasPlayableVideo && (
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <div className="text-right hidden md:block">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-0.5">Progress</p>
@@ -1473,22 +1471,66 @@ export default function StudentLecturePage() {
           <div className="min-w-0 space-y-3 lg:space-y-4">
 
             {/* Video player */}
-            <VideoPlayer
-              src={videoSrc} checkpoints={checkpoints} lectureId={id!}
-              videoRef={videoRef}
-              onDoubtClick={() => {
-                setDoubtTimestamp(liveCurrentTime);
-                setActiveAiTab("doubt");
-                setAiOpen(true);
-                setMobileAiOpen(true);
-              }}
-              currentTime={liveCurrentTime}
-              resumeAt={savedProgress?.lastPositionSeconds}
-              onEnded={!isLive && lecture.topicId ? () => setShowQuizModal(true) : undefined}
-            />
+            {hasPlayableVideo ? (
+              <VideoPlayer
+                src={videoSrc} checkpoints={checkpoints} lectureId={id!}
+                videoRef={videoRef}
+                onDoubtClick={() => {
+                  setDoubtTimestamp(isYtLecture ? ytDisplay.sec : liveCurrentTime);
+                  setActiveAiTab("doubt");
+                  setAiOpen(true);
+                  setMobileAiOpen(true);
+                }}
+                resumeAt={savedProgress?.lastPositionSeconds}
+                onEnded={!isLiveNow && mockTestId ? () => navigate(`/student/quiz?mockTestId=${mockTestId}`) : undefined}
+                externalPlaybackRef={ytPlaybackRef}
+                onFlushLectureProgress={flushLectureProgress}
+                onYouTubeTick={isYtLecture ? onYouTubeTick : undefined}
+              />
+            ) : (
+              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 aspect-video flex items-center justify-center">
+                <div className="max-w-md px-6 text-center">
+                  <div className={cn(
+                    "w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center",
+                    isLiveNow ? "bg-red-500/20" : recordingPending ? "bg-amber-500/20" : "bg-slate-700/70"
+                  )}>
+                    <Video className={cn(
+                      "w-7 h-7",
+                      isLiveNow ? "text-red-300" : recordingPending ? "text-amber-300" : "text-slate-300"
+                    )} />
+                  </div>
+                  <h3 className="text-xl font-black text-white">
+                    {isLiveNow
+                      ? "Live class is running"
+                      : recordingPending
+                        ? "Recording is being prepared"
+                        : isScheduledLive
+                          ? "Class has not started yet"
+                          : "Video is not available"}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                    {isLiveNow
+                      ? "Join the live room to attend the class in real time."
+                      : recordingPending
+                        ? "This class has ended. The recording will appear here automatically once processing finishes."
+                        : isScheduledLive
+                          ? "Come back when the teacher starts the class."
+                          : "The teacher has not attached a playable recording yet."}
+                  </p>
+                  {isLiveNow && (
+                    <button
+                      onClick={() => navigate(`/live/${id}`)}
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-600 transition-colors"
+                    >
+                      <Play className="w-4 h-4 fill-current" /> Join Live Class
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Mobile progress bar */}
-            {!isLive && (
+            {!isLiveNow && hasPlayableVideo && (
               <div className="flex items-center gap-3 sm:hidden px-1">
                 <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <motion.div animate={{ width: `${displayWatchPct}%` }} className="h-full bg-indigo-500 rounded-full" />
@@ -1513,7 +1555,17 @@ export default function StudentLecturePage() {
                   <div className="text-left">
                     <p className="text-sm font-bold text-slate-800">AI Study Tools</p>
                     <p className="text-[11px] text-slate-400 font-medium">
-                      {lecture.aiNotesMarkdown ? "Notes ready" : "Notes generating…"}
+                      {!hasPlayableVideo
+                        ? recordingPending
+                          ? "Recording is being prepared"
+                          : isScheduledLive
+                            ? "Live class not started"
+                            : "Video not available"
+                        : lecture.aiNotesMarkdown
+                        ? "Notes ready"
+                        : isPlaybackOnlySource
+                          ? "Upload required for AI notes"
+                          : "Notes generating…"}
                       {checkpoints.length > 0 ? ` · ${checkpoints.length} quiz checkpoints` : ""}
                     </p>
                   </div>
@@ -1611,12 +1663,12 @@ export default function StudentLecturePage() {
               </div>
             </div>
 
-            {/* ── Topic Quiz CTA ── */}
-            {!isLive && lecture.topicId && (
+            {/* ── Topic Quiz CTA — only when teacher has uploaded a quiz ── */}
+            {!isLive && mockTestId && (
               <motion.button
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-                onClick={() => setShowQuizModal(true)}
+                onClick={() => navigate(`/student/quiz?mockTestId=${mockTestId}`)}
                 className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-900 text-white shadow-lg group"
               >
                 <div className="flex items-center gap-3">
@@ -1690,16 +1742,6 @@ export default function StudentLecturePage() {
         </div>
       </div>
 
-      {/* ── Topic Quiz Modal ── */}
-      <AnimatePresence>
-        {showQuizModal && lecture.topicId && (
-          <TopicQuizModal
-            topicId={lecture.topicId}
-            topicName={lecture.topic?.name ?? lecture.title}
-            onClose={() => setShowQuizModal(false)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

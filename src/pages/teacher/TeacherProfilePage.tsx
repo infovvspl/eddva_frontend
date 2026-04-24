@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCompleteTeacherOnboarding, useUploadAvatar } from "@/hooks/use-auth";
 import { getMe } from "@/lib/api/auth";
+import { backfillStudyMaterialsFromTopicResources } from "@/lib/api/teacher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,6 +126,7 @@ export default function TeacherProfilePage() {
   const [editing, setEditing] = useState<"personal" | "professional" | "about" | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isBackfilling, setIsBackfilling] = useState(false);
 
   // Personal fields
   const [fullName, setFullName] = useState(user?.name || "");
@@ -274,6 +276,25 @@ export default function TeacherProfilePage() {
   ];
   const completionPct = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100);
 
+  const handleBackfillStudyMaterials = async () => {
+    setIsBackfilling(true);
+    try {
+      const result = await backfillStudyMaterialsFromTopicResources();
+      toast({
+        title: "Study materials sync completed",
+        description: `Scanned ${result.scanned}, inserted ${result.inserted}, skipped ${result.skipped}.`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Sync failed",
+        description: e?.response?.data?.message || "Could not run backfill now. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBackfilling(false);
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-3xl mx-auto">
 
@@ -407,6 +428,18 @@ export default function TeacherProfilePage() {
             <InfoRow label="State" value={tp?.state} />
           </>
         )}
+      </SectionCard>
+
+      <SectionCard title="Study Materials Sync" icon={Zap}>
+        <p className="text-sm text-muted-foreground">
+          If IIT JEE / NEET landing pages show empty materials, run a one-time sync to copy uploaded topic resources into the study-material catalog.
+        </p>
+        <div className="mt-4">
+          <Button onClick={handleBackfillStudyMaterials} disabled={isBackfilling} className="gap-2">
+            {isBackfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            {isBackfilling ? "Syncing..." : "Run Study Material Backfill"}
+          </Button>
+        </div>
       </SectionCard>
 
       {/* ── Professional Info ───────────────────────────────────────────────── */}

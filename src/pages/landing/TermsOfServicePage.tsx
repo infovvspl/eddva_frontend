@@ -102,7 +102,11 @@ export default function TermsOfServicePage() {
             <Link to="/privacy-policy" className="font-semibold text-blue-600 hover:underline">
               Privacy Policy
             </Link>{" "}
-            explains how we handle personal data.
+            and{" "}
+            <Link to="/cookie-policy" className="font-semibold text-blue-600 hover:underline">
+              Cookie Policy
+            </Link>{" "}
+            describe how we handle personal data and cookies.
           </p>
 
           <p className="mt-6">

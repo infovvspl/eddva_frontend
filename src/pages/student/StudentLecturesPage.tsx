@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Play, Clock, Loader2, Video, BookOpen,
   Bookmark, BookmarkCheck, Zap, Brain, AlertTriangle,
@@ -12,6 +12,7 @@ import { useAllBatchLectures, useAllEnrolledSubjectNames } from "@/hooks/use-stu
 import type { StudentLecture } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { getApiOrigin } from "@/lib/api-config";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -305,20 +306,22 @@ function InsightPanel({ lectures }: { lectures: StudentLecture[] }) {
 // ─── Lecture Card ─────────────────────────────────────────────────────────────
 
 function LectureCard({
-  lecture, bookmarked, onBookmark, onWatch, index,
+  lecture, bookmarked, onBookmark, onWatch, index, lightMotion,
 }: {
   lecture: StudentLecture;
   bookmarked: boolean;
   onBookmark: (id: string) => void;
   onWatch: (id: string) => void;
   index: number;
+  lightMotion: boolean;
 }) {
   const [imgErr, setImgErr] = useState(false);
   const thumb = resolveUrl(lecture.thumbnailUrl);
   const pct = lecture.studentProgress?.watchPercentage ?? 0;
   const isDone = lecture.studentProgress?.isCompleted ?? false;
   const isLive = lecture.status === "live";
-  const isClickable = ["published", "live", "ended"].includes(lecture.status);
+  const isScheduledLive = lecture.type === "live" && lecture.status === "scheduled";
+  const isClickable = ["published", "live", "ended"].includes(lecture.status) || isScheduledLive;
 
   const aiSummary = useMemo(() => {
     if (lecture.aiKeyConcepts?.length) return lecture.aiKeyConcepts.slice(0, 2).join(" · ");
@@ -326,22 +329,32 @@ function LectureCard({
     return null;
   }, [lecture]);
 
-  const actionLabel = isDone ? "Revise" : pct > 0 ? "Resume" : "Start";
-  const actionIcon  = isDone ? <RotateCcw className="w-3.5 h-3.5" /> : pct > 0 ? <Play className="w-3.5 h-3.5 fill-current" /> : <PlayCircle className="w-3.5 h-3.5" />;
+  const actionLabel = isDone ? "Revise" : pct > 0 ? "Resume" : isScheduledLive ? "Not Started" : "Start";
+  const actionIcon = isDone
+    ? <RotateCcw className="w-3.5 h-3.5" />
+    : pct > 0
+      ? <Play className="w-3.5 h-3.5 fill-current" />
+      : isScheduledLive
+        ? <Clock className="w-3.5 h-3.5" />
+        : <PlayCircle className="w-3.5 h-3.5" />;
   const actionColor = isDone
     ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
     : pct > 0
       ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-500/30"
-      : "bg-slate-900 text-white border-slate-900 hover:bg-indigo-600 hover:border-indigo-600";
+      : isScheduledLive
+        ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 cursor-not-allowed"
+        : "bg-slate-900 text-white border-slate-900 hover:bg-indigo-600 hover:border-indigo-600";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.06, 0.4) }}
+      initial={lightMotion ? undefined : { opacity: 0, y: 16 }}
+      animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={lightMotion ? undefined : { delay: Math.min(index * 0.06, 0.4) }}
       className={cn(
-        "bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-100/80 shadow-sm",
-        "hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5",
+        lightMotion
+          ? "bg-white rounded-2xl border border-slate-100 shadow-sm"
+          : "bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-100/80 shadow-sm",
+        lightMotion ? "hover:shadow-sm" : "hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5",
         "transition-all duration-300 overflow-hidden group",
         !isClickable && "opacity-50"
       )}
@@ -349,7 +362,12 @@ function LectureCard({
       <div className="relative h-44 overflow-hidden bg-slate-50">
         {thumb && !imgErr ? (
           <img src={thumb} alt={lecture.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            loading="lazy"
+            decoding="async"
+            className={cn(
+              "w-full h-full object-cover transition-transform duration-700",
+              lightMotion ? "" : "group-hover:scale-105"
+            )}
             onError={() => setImgErr(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100">
@@ -362,6 +380,11 @@ function LectureCard({
           {isLive && (
             <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm">
               <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
+            </span>
+          )}
+          {isScheduledLive && (
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-400 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm">
+              <Clock className="w-2.5 h-2.5" /> Scheduled
             </span>
           )}
           {isDone && (
@@ -378,7 +401,10 @@ function LectureCard({
 
         <button
           onClick={e => { e.stopPropagation(); onBookmark(lecture.id); }}
-          className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-sm"
+          className={cn(
+            "absolute top-3 right-3 w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white transition-colors shadow-sm",
+            lightMotion ? "bg-white" : "bg-white/90 backdrop-blur-sm"
+          )}
         >
           {bookmarked
             ? <BookmarkCheck className="w-3.5 h-3.5 text-indigo-600" />
@@ -387,7 +413,10 @@ function LectureCard({
         </button>
 
         {lecture.videoDurationSeconds && (
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm">
+          <div className={cn(
+            "absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full",
+            lightMotion ? "bg-black/55" : "bg-black/50 backdrop-blur-sm"
+          )}>
             <Clock className="w-2.5 h-2.5 text-white/80" />
             <span className="text-[9px] font-bold text-white">{fmtDuration(lecture.videoDurationSeconds)}</span>
           </div>
@@ -417,8 +446,8 @@ function LectureCard({
         )}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
           <button
-            onClick={() => isClickable && onWatch(lecture.id)}
-            disabled={!isClickable}
+            onClick={() => !isScheduledLive && isClickable && onWatch(lecture.id)}
+            disabled={!isClickable || isScheduledLive}
             className={cn(
               "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all",
               actionColor
@@ -427,8 +456,12 @@ function LectureCard({
             {actionIcon} {actionLabel}
           </button>
           <button
-            onClick={() => isClickable && onWatch(lecture.id)}
-            className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
+            onClick={() => !isScheduledLive && isClickable && onWatch(lecture.id)}
+            disabled={isScheduledLive}
+            className={cn(
+              "w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 transition-all",
+              isScheduledLive ? "opacity-40 cursor-not-allowed" : "hover:bg-indigo-600 hover:text-white hover:border-indigo-600"
+            )}
           >
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
@@ -474,12 +507,19 @@ function EmptyState() {
 
 export default function StudentLecturesPage() {
   const navigate = useNavigate();
+  const isCompactLayout = useIsCompactLayout();
+  const prefersReducedMotion = useReducedMotion();
+  const lightMotion = isCompactLayout || !!prefersReducedMotion;
+  const initialBatchSize = isCompactLayout ? 12 : 18;
+  const loadMoreBatchSize = isCompactLayout ? 8 : 12;
   const [searchParams, setSearchParams] = useSearchParams();
   const [lectureType, setLectureType] = useState<LectureType>("all");
   const [subject, setSubject]         = useState<string>("all");
   const [status, setStatus]           = useState<StatusKey>("all");
   const [search, setSearch]           = useState("");
   const [bookmarks, setBookmarks]     = useState<Set<string>>(loadBookmarks);
+  const [visibleCount, setVisibleCount] = useState(initialBatchSize);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { data: lectures, isLoading } = useAllBatchLectures();
   const enrolledSubjectNames = useAllEnrolledSubjectNames();
@@ -554,22 +594,59 @@ export default function StudentLecturesPage() {
       };
       return score(a) - score(b);
     });
-  }, [all, lectureType, subject, status, search, bookmarks]);
+  }, [all, lectureType, subject, status, search]);
 
   const liveLectures = useMemo(() => all.filter(l => l.status === "live"), [all]);
+  const visibleLectures = useMemo(
+    () => filtered.slice(0, Math.min(visibleCount, filtered.length)),
+    [filtered, visibleCount]
+  );
+  const hasMoreLectures = visibleCount < filtered.length;
+
+  useEffect(() => {
+    setVisibleCount(initialBatchSize);
+  }, [initialBatchSize, lectureType, subject, status, search, all.length]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || isLoading || !hasMoreLectures) return;
+
+    const scrollRoot = target.closest("main");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        setVisibleCount((v) => {
+          if (v >= filtered.length) return v;
+          return Math.min(v + loadMoreBatchSize, filtered.length);
+        });
+      },
+      {
+        root: scrollRoot instanceof HTMLElement ? scrollRoot : null,
+        rootMargin: "320px 0px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [filtered.length, hasMoreLectures, isLoading, loadMoreBatchSize]);
 
   return (
     <div className="min-h-screen pb-24 relative">
-      <div
-        className="fixed inset-0 pointer-events-none opacity-[0.025]"
-        style={{ backgroundImage: "radial-gradient(circle, #6366f1 1px, transparent 1px)", backgroundSize: "28px 28px" }}
-      />
+      {!lightMotion && (
+        <div
+          className="fixed inset-0 pointer-events-none opacity-[0.025]"
+          style={{ backgroundImage: "radial-gradient(circle, #6366f1 1px, transparent 1px)", backgroundSize: "28px 28px" }}
+        />
+      )}
 
       <div className="relative max-w-[1600px] mx-auto space-y-6">
 
         {/* ── Header ── */}
         <motion.div
-          initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
+          initial={lightMotion ? undefined : { opacity: 0, y: -12 }}
+          animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
           className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
         >
           <div>
@@ -585,11 +662,12 @@ export default function StudentLecturesPage() {
 
           {liveLectures.length > 0 && (
             <motion.button
-              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              initial={lightMotion ? undefined : { opacity: 0, scale: 0.9 }}
+              animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
               onClick={() => liveLectures[0] && handleWatch(liveLectures[0].id)}
               className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-500/30 hover:bg-red-600 transition-colors"
             >
-              <Radio className="w-4 h-4 animate-pulse" />
+              <Radio className={cn("w-4 h-4", lightMotion ? "" : "animate-pulse")} />
               {liveLectures.length} Live Now
             </motion.button>
           )}
@@ -597,7 +675,9 @@ export default function StudentLecturesPage() {
 
         {/* ── Search ── */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          initial={lightMotion ? undefined : { opacity: 0, y: 8 }}
+          animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={lightMotion ? undefined : { delay: 0.05 }}
           className="relative group"
         >
           <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-400 opacity-0 group-focus-within:opacity-100 transition-opacity blur-[2px]" />
@@ -622,7 +702,9 @@ export default function StudentLecturesPage() {
 
         {/* ── Filter Bar ── */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          initial={lightMotion ? undefined : { opacity: 0, y: 8 }}
+          animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={lightMotion ? undefined : { delay: 0.1 }}
           className="flex items-center gap-2 flex-wrap"
         >
           {/* Subject dropdown (built from your enrolled lectures) */}
@@ -643,7 +725,7 @@ export default function StudentLecturesPage() {
           <FilterDropdown
             value={status}
             options={STATUS_OPTIONS}
-            onChange={setStatus}
+            onChange={(v) => setStatus(v as StatusKey)}
             active={status !== "all"}
           />
 
@@ -698,23 +780,40 @@ export default function StudentLecturesPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode={lightMotion ? "sync" : "popLayout"}>
                   {filtered.length === 0 ? (
                     <EmptyState />
                   ) : (
-                    filtered.map((lec, i) => (
-                      <motion.div key={lec.id} layout exit={{ opacity: 0, scale: 0.95 }}>
+                    visibleLectures.map((lec, i) => (
+                      <motion.div key={lec.id} layout={!lightMotion} exit={lightMotion ? undefined : { opacity: 0, scale: 0.95 }}>
                         <LectureCard
                           lecture={lec}
                           bookmarked={bookmarks.has(lec.id)}
                           onBookmark={toggleBookmark}
                           onWatch={handleWatch}
                           index={i}
+                          lightMotion={lightMotion}
                         />
                       </motion.div>
                     ))
                   )}
                 </AnimatePresence>
+              </div>
+            )}
+            {!isLoading && filtered.length > 0 && (
+              <div className="mt-5 flex flex-col items-center gap-3">
+                <p className="text-xs font-medium text-slate-400">
+                  Showing {visibleLectures.length} of {filtered.length} lectures
+                </p>
+                {hasMoreLectures && (
+                  <>
+                    <div ref={loadMoreRef} className="h-1 w-full" aria-hidden />
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600">
+                      <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+                      Loading more lectures...
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

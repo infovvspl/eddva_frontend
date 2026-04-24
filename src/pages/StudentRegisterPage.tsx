@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -7,7 +7,7 @@ import {
   BookOpen, Trophy, Users, Sparkles, GraduationCap,
   Hash, Home, ChevronDown, Target, Zap, ChevronLeft,
 } from "lucide-react";
-import edvaLogo from "@/assets/EDVA LOGO 04.png";
+import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 import { apiClient } from "@/lib/api/client";
 
@@ -281,7 +281,9 @@ const StudentRegisterPage = () => {
 
           {/* Logo */}
           <div className="mb-10 flex items-center justify-between">
-            <img src={edvaLogo} alt="EDDVA" className=" object-contain cursor-pointer" onClick={() => navigate("/")} />
+            <button type="button" onClick={() => navigate("/")} className="rounded-lg bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+              <EddvaLogo className="h-24" />
+            </button>
             <Link to="/login" className="text-[13px] font-black text-blue-600 uppercase tracking-wider hover:underline underline-offset-4">
               Sign In
             </Link>
@@ -483,13 +485,13 @@ const StudentRegisterPage = () => {
         </div>
 
         {/* Floating Metrics */}
-        <div className="absolute top-[8%] left-12 flex flex-col gap-5 z-20">
+        {/* <div className="absolute top-[8%] left-12 flex flex-col gap-5 z-20">
           <StatCard icon={<Zap className="h-5 w-5"/>}    label="AI Power" value="+42% Speed" color="#FACC15" delay={0.4} />
           <StatCard icon={<Target className="h-5 w-5"/>} label="Accuracy" value="96.8%"      color={INDIGO} delay={0.5} />
         </div>
         <div className="absolute bottom-[10%] right-12 z-20">
           <StatCard icon={<Trophy className="h-5 w-5"/>} label="Global Rank" value="#1 Rate"  color={PURPLE} delay={0.6} />
-        </div>
+        </div> */}
 
         <motion.div
            initial={{ opacity: 0, scale: 0.9 }}

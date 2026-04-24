@@ -171,6 +171,16 @@ export async function getTeacherDashboard(): Promise<TeacherDashboardStats> {
   };
 }
 
+export async function backfillStudyMaterialsFromTopicResources(): Promise<{
+  tenantId: string;
+  scanned: number;
+  inserted: number;
+  skipped: number;
+}> {
+  const res = await apiClient.post("/admin/study-materials/backfill-topic-resources");
+  return extractData<{ tenantId: string; scanned: number; inserted: number; skipped: number }>(res);
+}
+
 // ─── Batches ──────────────────────────────────────────────────────────────────
 
 /** Returns subject-teacher assignments for a batch (used to filter subject dropdown) */
@@ -595,6 +605,8 @@ export interface CreateQuestionPayload {
   marksCorrect?: number;
   marksWrong?: number;
   integerAnswer?: string;
+  /** Shown after mock test submit (review); populate from AI explanation when generating */
+  solutionText?: string;
   tags?: string[];
   options?: { optionLabel: string; content: string; isCorrect: boolean; sortOrder?: number }[];
 }

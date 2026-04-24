@@ -306,8 +306,13 @@ export function useRegeneratePlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: studentApi.regeneratePlan,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["student", "plan"] });
+    onSuccess: async () => {
+      // Clear stale cached plan slices first, then force active refetch.
+      qc.removeQueries({ queryKey: ["student", "plan"] });
+      await qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      await qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
+      await qc.invalidateQueries({ queryKey: [...studentKeys.plan, "next-action"] });
+      await qc.refetchQueries({ queryKey: ["student", "plan"], type: "active" });
     },
   });
 }
@@ -442,8 +447,8 @@ export function useBattleRoom(battleId: string, enabled: boolean) {
 
 export function useCreateBattle() {
   return useMutation({
-    mutationFn: ({ mode, topicId }: { mode: studentApi.BattleMode; topicId?: string }) =>
-      studentApi.createBattle(mode, topicId),
+    mutationFn: ({ mode, topicId, topicName }: { mode: studentApi.BattleMode; topicId?: string; topicName?: string }) =>
+      studentApi.createBattle(mode, topicId, topicName),
   });
 }
 
@@ -462,7 +467,7 @@ export function useCancelBattle() {
 export function useBattleLeaderboard() {
   return useQuery({
     queryKey: studentKeys.leaderboard({ scope: "battle_xp" }),
-    queryFn: () => studentApi.getLeaderboard({ scope: "battle_xp" }),
+    queryFn: () => studentApi.getBattleLeaderboard(),
     staleTime: 60_000,
     retry: false,
   });
@@ -472,6 +477,15 @@ export function useMyBattleElo() {
   return useQuery({
     queryKey: studentKeys.battleElo,
     queryFn: studentApi.getMyBattleElo,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useMyBattleHistory() {
+  return useQuery({
+    queryKey: ["student", "battle", "history"],
+    queryFn: studentApi.getMyBattleHistory,
     staleTime: 60_000,
     retry: false,
   });

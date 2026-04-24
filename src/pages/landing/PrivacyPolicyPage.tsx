@@ -116,6 +116,10 @@ export default function PrivacyPolicyPage() {
 
           <p className="mt-8 text-sm text-gray-500">
             See also our{" "}
+            <Link to="/cookie-policy" className="font-semibold text-blue-600 hover:underline">
+              Cookie Policy
+            </Link>{" "}
+            and{" "}
             <Link to="/terms" className="font-semibold text-blue-600 hover:underline">
               Terms of Service
             </Link>

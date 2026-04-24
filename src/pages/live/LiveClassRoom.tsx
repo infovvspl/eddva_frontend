@@ -1030,6 +1030,10 @@ export default function LiveClassRoom() {
       leaveAgora();
       setEnded(true);
     });
+
+    socket.on("live:error", (err: { message?: string }) => {
+      toast.error(err?.message || "Live class error — please rejoin");
+    });
   }, [user, isTeacher, leaveAgora, panel]);
 
   // ── Load initial chat + polls once joined

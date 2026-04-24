@@ -1,25 +1,26 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
-  FlaskConical, Loader2, CheckCircle, Send, Clock,
-  ChevronDown, ChevronUp, Trophy, Lightbulb, AlertTriangle,
-  Sigma, Target, Layers, Monitor, Zap, Info, ArrowRight, BrainCircuit
+  Loader2, CheckCircle, Send, Clock,
+  ChevronDown, Trophy, Lightbulb, AlertTriangle,
+  Sigma, Monitor, Zap, Info, ArrowRight, BrainCircuit, Highlighter, StickyNote,
+  X
 } from "lucide-react";
 import {
   useAiStudySession, useStartAiStudy, useAskAiQuestion,
-  useCompleteAiStudy, useStudyStatus,
+  useCompleteAiStudy,
 } from "@/hooks/use-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
 import { CardGlass } from "@/components/shared/CardGlass";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-
-// ─── Design Tokens ─────────────────────────────────────────────────────────────
-const BLUE   = "#2563EB";
-const PURPLE = "#7C3AED";
 
 // ─── Elapsed timer ─────────────────────────────────────────────────────────────
 function useElapsedTimer(running: boolean, initialSeconds = 0) {
@@ -47,35 +48,194 @@ function formatTime(s: number) {
 }
 
 // ─── Markdown styles (Modernized for Aero) ──────────────────────────────────────
-const mdClass = [
+const mdClassBase = [
   "prose max-w-none",
-  "prose-h2:text-2xl prose-h2:font-black prose-h2:text-slate-900 prose-h2:mt-12 prose-h2:mb-6 prose-h2:italic prose-h2:uppercase prose-h2:tracking-tight",
-  "prose-h3:text-lg prose-h3:font-black prose-h3:text-slate-800 prose-h3:mt-8 prose-h3:mb-4 prose-h3:uppercase",
-  "prose-p:text-slate-600 prose-p:leading-relaxed prose-p:mb-6 prose-p:text-lg prose-p:font-medium",
+  "prose-h2:font-black prose-h2:text-slate-900 prose-h2:mt-10 prose-h2:mb-5 prose-h2:tracking-tight",
+  "prose-h3:font-bold prose-h3:text-slate-800 prose-h3:mt-7 prose-h3:mb-3",
+  "prose-p:text-slate-700 prose-p:leading-relaxed prose-p:mb-5 prose-p:font-medium",
   "prose-strong:text-slate-900 prose-strong:font-black prose-strong:bg-blue-50 prose-strong:px-1.5 prose-strong:py-0.5 prose-strong:rounded-lg",
-  "prose-code:bg-slate-100 prose-code:text-blue-600 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:text-[14px] prose-code:font-mono prose-code:font-black prose-code:before:content-none prose-code:after:content-none",
-  "prose-pre:bg-slate-900 prose-pre:text-white prose-pre:rounded-3xl prose-pre:p-8 prose-pre:shadow-2xl",
-  "prose-ul:text-slate-600 prose-ul:space-y-4 prose-ul:my-6 prose-ul:text-lg",
+  "prose-code:bg-slate-100 prose-code:text-blue-600 prose-code:px-2 prose-code:py-1 prose-code:rounded-lg prose-code:font-mono prose-code:font-black prose-code:before:content-none prose-code:after:content-none",
+  "prose-pre:bg-slate-900 prose-pre:text-white prose-pre:rounded-2xl prose-pre:p-6 prose-pre:shadow-xl",
+  "prose-ul:text-slate-700 prose-ul:space-y-3 prose-ul:my-5",
   "prose-li:marker:text-blue-500 prose-li:marker:font-black",
-  "prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/50 prose-blockquote:rounded-3xl prose-blockquote:px-8 prose-blockquote:py-6 prose-blockquote:text-slate-700 prose-blockquote:font-bold prose-blockquote:italic prose-blockquote:my-8",
+  "prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/50 prose-blockquote:rounded-2xl prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:text-slate-700 prose-blockquote:my-6",
 ].join(" ");
+
+function normalizeAiMessage(message: unknown): string {
+  if (typeof message === "string") {
+    const trimmed = message.trim();
+    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+      try {
+        return normalizeAiMessage(JSON.parse(trimmed));
+      } catch {
+        return message;
+      }
+    }
+    return message;
+  }
+  if (message && typeof message === "object") {
+    const m = message as any;
+    if (typeof m.response === "string") return m.response;
+    if (typeof m.answer === "string") return m.answer;
+    if (typeof m.message === "string") return m.message;
+    if (Array.isArray(m.hints) && m.hints.length) {
+      const hints = m.hints.map((h: unknown) => `- ${String(h)}`).join("\n");
+      return `Hints:\n${hints}`;
+    }
+    return JSON.stringify(message);
+  }
+  return String(message ?? "");
+}
+
+
+function normalizeLessonMarkdown(md: string): string {
+  return String(md || "")
+    // Unescape double-escaped backslashes from JSON payloads
+    .replace(/\\\\/g, "\\")
+    // Convert LaTeX bracket math to markdown math delimiters
+    .replace(/\\\[((?:.|\n)*?)\\\]/g, (_m, inner) => `\n\n$$${inner}$$\n\n`)
+    .replace(/\\\(((?:.|\n)*?)\\\)/g, (_m, inner) => `$${inner}$`)
+    // If AI emits "Formula: <latex-like expression>" without delimiters, wrap it
+    .replace(
+      /(^|\n)\s*(Formula|Equation)\s*:\s*([^\n]+)/gi,
+      (_m, prefix, label, expr) => {
+        const e = String(expr || "").trim();
+        const looksMath = /[=+\-*/^]|\\[a-zA-Z]+|[Δδαβγθλμπσω]/.test(e);
+        if (!looksMath) return `${prefix}${label}: ${e}`;
+        return `${prefix}${label}: $$${e}$$`;
+      },
+    )
+    // User requested removing "Core Concepts/Cores" section from rendered notes.
+    .replace(/\n##\s*.*Core Concepts[\s\S]*?(?=\n##\s+|$)/gi, "\n");
+}
+
+function normalizeFormulaForKatex(formula: string): string {
+  const raw = String(formula || "")
+    .replace(/\u200B/g, "")
+    .replace(/\r/g, "")
+    .replace(/\n+/g, " ")
+    // Common AI output form: F_action -> F_{action}
+    .replace(/([A-Za-z])_([A-Za-z]{2,})\b/g, "$1_{$2}")
+    // Keep KaTeX happy when escaped text is emitted without braces.
+    .replace(/\\text\s+([A-Za-z]+)/g, "\\text{$1}")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!raw) return "";
+  if (raw.includes("$$") || raw.includes("$")) return raw;
+  return `$$${raw}$$`;
+}
+
+function normalizeReadableText(text: string): string {
+  return String(text || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    // "Cleardefinition" -> "Clear definition"
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // "cell senergy" / "ATP.Circle" -> proper spacing
+    .replace(/([A-Za-z])([.:,;!?()])/g, "$1 $2")
+    .replace(/([.:,;!?()])([A-Za-z])/g, "$1 $2")
+    // keep math minus but add spacing around it for readability
+    .replace(/\s*[-−]\s*/g, " − ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+type SavedHighlight = { text: string; color: string };
+type InlineComment = { id: string; text: string; quote: string; top: number };
+
+function storageKey(kind: "highlights" | "notes" | "inline-comments", topicId: string): string {
+  return `ai-study-${kind}-${topicId}`;
+}
+
+function NotesFlashcard({
+  question,
+  answer,
+  explanation,
+  flipped,
+  onToggle,
+}: {
+  question: string;
+  answer: string;
+  explanation?: string;
+  flipped: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full text-left"
+      style={{ perspective: "1200px" }}
+    >
+      <div
+        className="relative min-h-[180px] transition-transform duration-500"
+        style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+      >
+        <div
+          className="absolute inset-0 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-3">Question</p>
+          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{question}</p>
+          <p className="text-[11px] text-slate-500 mt-4">Click to reveal answer</p>
+        </div>
+        <div
+          className="absolute inset-0 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm overflow-auto"
+          style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-3">Answer</p>
+          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{answer}</p>
+          {explanation && <p className="text-xs text-slate-600 mt-3 leading-relaxed">{explanation}</p>}
+          <p className="text-[11px] text-slate-500 mt-3">Click to flip back</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function StudyMetric({
+  icon,
+  label,
+  value,
+  accentClass,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  accentClass: string;
+}) {
+  return (
+    <div className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+          <p className="mt-3 text-xl font-bold text-slate-900 sm:text-2xl">{value}</p>
+        </div>
+        <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", accentClass)}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 // ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <CardGlass className={cn("p-0 overflow-hidden transition-all duration-300", open ? "shadow-2xl border-white" : "hover:bg-white/40")}>
+    <CardGlass className={cn("p-0 overflow-hidden transition-all duration-300 border-slate-200 bg-white shadow-sm", open ? "shadow-md" : "hover:shadow-md")}>
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-6 p-8 text-left transition-colors"
+        className="w-full flex items-center gap-4 p-5 text-left transition-colors"
       >
-        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 shadow-inner">
-           <span className="text-xs font-black text-slate-400">Q{index + 1}</span>
+        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+           <span className="text-[11px] font-semibold text-slate-500">Q{index + 1}</span>
         </div>
-        <p className="text-lg font-black text-slate-900 uppercase italic tracking-tight flex-1 truncate">{q.question}</p>
+        <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 truncate">{q.question}</p>
         <motion.div animate={{ rotate: open ? 180 : 0 }}>
-           <ChevronDown className="w-6 h-6 text-slate-400" />
+           <ChevronDown className="w-5 h-5 text-slate-400" />
         </motion.div>
       </button>
 
@@ -85,27 +245,27 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
             initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-8 pb-10 pt-4 border-t border-slate-100 space-y-8">
+            <div className="px-5 pb-6 pt-3 border-t border-slate-100 space-y-5">
               <div>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
                    <CheckCircle className="w-4 h-4" /> Solution Core
                 </p>
-                <div className="text-base font-bold text-slate-800 leading-relaxed bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-inner">{q.answer}</div>
+                <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">{q.answer}</div>
               </div>
               {q.explanation && (
                 <div>
-                  <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <p className="text-[11px] font-semibold text-amber-600 mb-2 flex items-center gap-2">
                      <Lightbulb className="w-4 h-4" /> Logic Synthesis
                   </p>
-                  <div className="text-base font-bold text-slate-700 leading-relaxed bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-inner">{q.explanation}</div>
+                  <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">{q.explanation}</div>
                 </div>
               )}
               <motion.button
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 onClick={(e) => { e.stopPropagation(); onAskAI(q.question); }}
-                className="w-full flex items-center justify-center gap-4 py-5 rounded-[1.5rem] bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 text-white text-xs font-semibold shadow-sm"
               >
-                <MessageSquare className="w-5 h-5" /> Request AI Logic Expansion
+                <MessageSquare className="w-4 h-4" /> Ask AI for explanation
               </motion.button>
             </div>
           </motion.div>
@@ -115,7 +275,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
   );
 }
 
-type Tab = "lesson" | "concepts" | "practice" | "ask";
+type Tab = "lesson" | "ask";
 
 export default function StudentAiStudyPage() {
   const { topicId = "" } = useParams<{ topicId: string }>();
@@ -126,16 +286,56 @@ export default function StudentAiStudyPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [notesZoom, setNotesZoom] = useState<"sm" | "md" | "lg">("md");
+  const [highlights, setHighlights] = useState<SavedHighlight[]>([]);
+  const [highlightColor, setHighlightColor] = useState("#fef08a");
+  const [noteDraft, setNoteDraft] = useState("");
+  const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
+  const [activeInlineCommentId, setActiveInlineCommentId] = useState<string | null>(null);
+  const [toolPanel, setToolPanel] = useState<"highlights" | "notes" | null>(null);
+  const [showFlashcards, setShowFlashcards] = useState(false);
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [flashcardFlipped, setFlashcardFlipped] = useState(false);
+  const [flashcardDoubtInput, setFlashcardDoubtInput] = useState("");
+  const notesContentRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+  const savedTextRef = useRef<string>("");
+  const isCompactLayout = useIsCompactLayout();
 
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
   const startMut = useStartAiStudy();
   const askMut = useAskAiQuestion();
   const completeMut = useCompleteAiStudy();
 
-  const sessionData: AiStudySessionData | undefined = startMut.data ?? session;
+  const sessionData: AiStudySessionData | undefined = session ?? startMut.data;
   const sessionId = sessionData?.id;
   const timerRunning = !!sessionId && !completed;
   const elapsed = useElapsedTimer(timerRunning, sessionData?.timeSpentSeconds ?? 0);
+  const normalizedLessonMarkdown = useMemo(
+    () => normalizeLessonMarkdown(sessionData?.lessonMarkdown ?? ""),
+    [sessionData?.lessonMarkdown],
+  );
+  const mdZoomClass = useMemo(() => {
+    if (notesZoom === "sm") return "prose-h2:text-2xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm prose-code:text-[12px]";
+    if (notesZoom === "lg") return "prose-h2:text-4xl prose-h3:text-xl prose-p:text-lg prose-ul:text-lg prose-code:text-[15px]";
+    return "prose-h2:text-3xl prose-h3:text-lg prose-p:text-base prose-ul:text-base prose-code:text-[13px]";
+  }, [notesZoom]);
+  const lessonWordCount = useMemo(
+    () => normalizedLessonMarkdown.replace(/[#>*_`-]/g, " ").split(/\s+/).filter(Boolean).length,
+    [normalizedLessonMarkdown],
+  );
+  const estimatedLessonMinutes = useMemo(
+    () => Math.max(6, Math.round(lessonWordCount / 170) || 0),
+    [lessonWordCount],
+  );
+  const quickAskPrompts = useMemo(() => {
+    const prompts = [
+      ...(sessionData?.keyConcepts ?? []).slice(0, 2).map((concept) => `Explain ${normalizeReadableText(concept)} in simple words.`),
+      ...(sessionData?.commonMistakes ?? []).slice(0, 1).map((mistake) => `Why do students make this mistake: ${normalizeReadableText(mistake)}?`),
+      ...(sessionData?.practiceQuestions ?? []).slice(0, 1).map((question) => `Walk me through this practice question step by step: "${question.question}"`),
+    ];
+    return Array.from(new Set(prompts)).slice(0, isCompactLayout ? 3 : 4);
+  }, [isCompactLayout, sessionData?.commonMistakes, sessionData?.keyConcepts, sessionData?.practiceQuestions]);
 
   useEffect(() => {
     if (!sessionLoading && !session && !startMut.isPending && !startMut.data) {
@@ -146,6 +346,96 @@ export default function StudentAiStudyPage() {
 
   useEffect(() => { if (sessionData?.isCompleted) setCompleted(true); }, [sessionData?.isCompleted]);
   useEffect(() => { if (activeTab === "ask") chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [sessionData?.conversation, activeTab]);
+  useEffect(() => {
+    if (!topicId) return;
+    try {
+      const h = localStorage.getItem(storageKey("highlights", topicId));
+      const c = localStorage.getItem(storageKey("inline-comments", topicId));
+      setHighlights(h ? JSON.parse(h) : []);
+      setInlineComments(c ? JSON.parse(c) : []);
+    } catch {
+      setHighlights([]);
+      setInlineComments([]);
+    }
+  }, [topicId]);
+
+  useEffect(() => {
+    if (!topicId) return;
+    localStorage.setItem(storageKey("highlights", topicId), JSON.stringify(highlights));
+  }, [topicId, highlights]);
+
+  useEffect(() => {
+    if (!topicId) return;
+    localStorage.setItem(storageKey("inline-comments", topicId), JSON.stringify(inlineComments));
+  }, [topicId, inlineComments]);
+
+  // Track the user's current selection inside the notes so clicking panel buttons
+  // doesn't drop it. We save a cloned Range + its text on every valid selectionchange.
+  useEffect(() => {
+    const handler = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const root = notesContentRef.current;
+      if (!root) return;
+      const anchor = sel.anchorNode;
+      if (!anchor || !root.contains(anchor)) return;
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+      savedTextRef.current = sel.toString().trim().replace(/\s+/g, " ");
+    };
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, []);
+
+  // After markdown + KaTeX finish rendering, re-apply saved highlights once. We skip
+  // any text nodes inside KaTeX output so we don't corrupt math rendering.
+  useEffect(() => {
+    if (activeTab !== "lesson") return;
+    const root = notesContentRef.current;
+    if (!root || !sessionData?.lessonMarkdown) return;
+    const timer = setTimeout(() => {
+      highlights.forEach((h) => {
+        if (!h.text) return;
+        const already = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
+        if (already.some((el) => (el.textContent || "").includes(h.text))) return;
+
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: (node) => {
+            let parent: HTMLElement | null = (node.parentElement as HTMLElement) || null;
+            while (parent && parent !== root) {
+              if (parent.classList && (parent.classList.contains("katex") || parent.classList.contains("katex-html") || parent.classList.contains("katex-mathml"))) {
+                return NodeFilter.FILTER_REJECT;
+              }
+              if (parent.tagName === "MARK") return NodeFilter.FILTER_REJECT;
+              parent = parent.parentElement;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          },
+        } as NodeFilter);
+        let node = walker.nextNode();
+        while (node) {
+          const nv = node.nodeValue || "";
+          const idx = nv.indexOf(h.text);
+          if (idx >= 0) {
+            try {
+              const range = document.createRange();
+              range.setStart(node, idx);
+              range.setEnd(node, idx + h.text.length);
+              const mark = document.createElement("mark");
+              mark.setAttribute("data-user-highlight", "1");
+              mark.style.backgroundColor = h.color;
+              mark.style.padding = "0 1px";
+              range.surroundContents(mark);
+            } catch {
+              /* boundary-crossing match — skip */
+            }
+            break;
+          }
+          node = walker.nextNode();
+        }
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [activeTab, sessionData?.lessonMarkdown, highlights]);
 
   const handleSend = useCallback(() => {
     const q = chatInput.trim();
@@ -153,6 +443,15 @@ export default function StudentAiStudyPage() {
     setChatInput("");
     askMut.mutate({ topicId, sessionId, question: q });
   }, [chatInput, sessionId, topicId, askMut]);
+
+  const handleFlashcardDoubtAsk = useCallback(() => {
+    const q = flashcardDoubtInput.trim();
+    if (!q || !sessionId || askMut.isPending) return;
+    askMut.mutate(
+      { topicId, sessionId, question: q },
+      { onSuccess: () => setFlashcardDoubtInput("") },
+    );
+  }, [flashcardDoubtInput, sessionId, askMut, topicId]);
 
   const handleAskAboutQuestion = useCallback((question: string) => {
     const prompt = `Explain this practice question in-depth: "${question}"`;
@@ -168,6 +467,73 @@ export default function StudentAiStudyPage() {
     });
   }, [sessionId, topicId, elapsed, completeMut]);
 
+  // Get the range/text the user most recently selected inside the notes, falling
+  // back to the saved ref when focus has moved to the tool panel (buttons/textarea).
+  const getActiveNotesRange = useCallback((): { range: Range; text: string } | null => {
+    const notesRoot = notesContentRef.current;
+    if (!notesRoot) return null;
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+      const anchor = selection.anchorNode;
+      if (anchor && notesRoot.contains(anchor)) {
+        const text = selection.toString().trim().replace(/\s+/g, " ");
+        if (text) return { range: selection.getRangeAt(0).cloneRange(), text };
+      }
+    }
+    if (savedRangeRef.current && savedTextRef.current) {
+      return { range: savedRangeRef.current.cloneRange(), text: savedTextRef.current };
+    }
+    return null;
+  }, []);
+
+  const handleCaptureHighlight = useCallback(() => {
+    const active = getActiveNotesRange();
+    if (!active) return;
+    const { range, text: selectedText } = active;
+
+    const mark = document.createElement("mark");
+    mark.setAttribute("data-user-highlight", "1");
+    mark.style.backgroundColor = highlightColor;
+    mark.style.padding = "0 1px";
+    try {
+      range.surroundContents(mark);
+    } catch {
+      try {
+        const extracted = range.extractContents();
+        mark.appendChild(extracted);
+        range.insertNode(mark);
+      } catch {
+        /* boundary-crossing selection — skip DOM wrap, still save in sidebar */
+      }
+    }
+
+    setHighlights((prev) => [{ text: selectedText, color: highlightColor }, ...prev].slice(0, 30));
+    window.getSelection()?.removeAllRanges();
+    savedRangeRef.current = null;
+    savedTextRef.current = "";
+  }, [highlightColor, getActiveNotesRange]);
+
+  const handleAddInlineComment = useCallback(() => {
+    const text = noteDraft.trim();
+    if (!text) return;
+    const active = getActiveNotesRange();
+    if (!active) return;
+    const { range, text: selectedText } = active;
+    const notesRoot = notesContentRef.current;
+    if (!notesRoot) return;
+
+    const rect = range.getBoundingClientRect();
+    const rootRect = notesRoot.getBoundingClientRect();
+    const top = Math.max(0, rect.top - rootRect.top + notesRoot.scrollTop);
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setInlineComments((prev) => [{ id, text, quote: selectedText, top }, ...prev].slice(0, 50));
+    setActiveInlineCommentId(id);
+    setNoteDraft("");
+    window.getSelection()?.removeAllRanges();
+    savedRangeRef.current = null;
+    savedTextRef.current = "";
+  }, [noteDraft, getActiveNotesRange]);
+
   if (startMut.isPending || (sessionLoading && !session)) {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-center">
@@ -179,7 +545,7 @@ export default function StudentAiStudyPage() {
          </div>
          <div className="space-y-4">
             <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter text-center">Neural Nexus Initializing</h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Synthesizing personalized curriculum manifest...</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Synthesizing personalized curriculum...</p>
          </div>
       </div>
     );
@@ -203,325 +569,1026 @@ export default function StudentAiStudyPage() {
   if (!sessionData) return null;
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "lesson",   label: "Archive",    icon: <BookOpen className="w-4 h-4" /> },
-    { id: "concepts", label: "Cores",      icon: <Layers className="w-4 h-4" /> },
-    { id: "practice", label: "Simulator",  icon: <Target className="w-4 h-4" /> },
+    { id: "lesson",   label: "Notes",    icon: <BookOpen className="w-4 h-4" /> },
     { id: "ask",      label: "Ask AI",     icon: <BrainCircuit className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="flex flex-col space-y-12 pb-32">
-        {/* Status Terminal */}
-        <CardGlass className="px-10 py-6 border-white bg-white/60 flex items-center justify-between sticky top-0 z-50">
-           <div className="flex items-center gap-6">
-              <button
-                onClick={() => navigate(-1)}
-                className="w-11 h-11 rounded-xl bg-white border border-slate-100 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-xl group"
-              >
-                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              </button>
-              <div>
-                 <div className="flex items-center gap-3 mb-1">
-                    <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg"><Sparkles className="w-3 h-3" /></div>
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Neural Nexus</span>
-                 </div>
-                 <h1 className="text-xl font-black text-slate-900 italic tracking-tighter leading-none uppercase">{sessionData.topicName}</h1>
-              </div>
-           </div>
+    <div className="relative pb-16">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_48%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.14),_transparent_38%),linear-gradient(180deg,_rgba(248,250,252,1)_0%,_rgba(255,255,255,0.96)_100%)]" />
 
-           <div className="flex items-center gap-8">
-              <div className="flex items-center gap-3 bg-white border border-slate-100 px-5 py-2.5 rounded-xl shadow-xl">
-                 <Clock className="w-4 h-4 text-slate-400" />
-                 <span className="text-sm font-black text-slate-900 tabular-nums uppercase italic leading-none">{formatTime(elapsed)} Sync</span>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <CardGlass className="overflow-hidden border-slate-200/80 bg-white/90 p-5 shadow-sm sm:p-7 lg:p-8">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex items-start gap-4 sm:gap-5">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AI Study Session
+                    </span>
+                    {completed && (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Completed
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">Topic Workspace</p>
+                    <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                      {sessionData.topicName || "AI Study"}
+                    </h1>
+                  </div>
+
+                  <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-[15px]">
+                    Learn from structured notes, save your own highlights and comments, practice key questions,
+                    and ask the AI whenever a concept still feels unclear.
+                  </p>
+                </div>
               </div>
-              {completed && (
-                 <div className="flex items-center gap-3 bg-emerald-500 text-white border border-emerald-600 px-5 py-2.5 rounded-xl shadow-xl">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none">Analyzed</span>
-                 </div>
-              )}
-           </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
+                <StudyMetric
+                  label="Time"
+                  value={formatTime(elapsed)}
+                  icon={<Clock className="h-5 w-5 text-blue-700" />}
+                  accentClass="bg-blue-50 text-blue-700"
+                />
+                <StudyMetric
+                  label="Concepts"
+                  value={String(sessionData.keyConcepts.length || 0)}
+                  icon={<Lightbulb className="h-5 w-5 text-amber-700" />}
+                  accentClass="bg-amber-50 text-amber-700"
+                />
+                <StudyMetric
+                  label="Formulas"
+                  value={String(sessionData.formulas.length || 0)}
+                  icon={<Sigma className="h-5 w-5 text-emerald-700" />}
+                  accentClass="bg-emerald-50 text-emerald-700"
+                />
+                <StudyMetric
+                  label="Practice"
+                  value={String(sessionData.practiceQuestions.length || 0)}
+                  icon={<Brain className="h-5 w-5 text-violet-700" />}
+                  accentClass="bg-violet-50 text-violet-700"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-4">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
+                      activeTab === tab.id
+                        ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
+                    )}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                    {tab.id === "ask" && sessionData.conversation.length > 0 && (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-bold text-current">
+                        {Math.ceil(sessionData.conversation.length / 2)}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="hidden h-5 w-px bg-slate-200 sm:block" />
+
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">
+                  Estimated reading time: ~{estimatedLessonMinutes} min
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">
+                  {lessonWordCount.toLocaleString()} words
+                </span>
+              </div>
+            </div>
+          </div>
         </CardGlass>
 
-        {/* Tab Console */}
-        <div className="flex gap-4 overflow-x-auto scrollbar-none pb-2">
-           {tabs.map(tab => (
-             <button
-               key={tab.id} onClick={() => setActiveTab(tab.id)}
-               className={cn(
-                 "flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all border-2",
-                 activeTab === tab.id ? "bg-slate-900 text-white border-slate-900 shadow-2xl scale-[1.05]" : "bg-white/60 text-slate-400 border-transparent hover:border-white hover:bg-white"
-               )}
-             >
-               {tab.icon} {tab.label}
-               {tab.id === "ask" && sessionData.conversation.length > 0 && (
-                 <span className="ml-2 w-5 h-5 rounded-lg bg-blue-500 text-white flex items-center justify-center text-[9px] shadow-lg">
-                   {Math.ceil(sessionData.conversation.length / 2)}
-                 </span>
-               )}
-             </button>
-           ))}
-        </div>
+        <AnimatePresence mode="wait">
+          {activeTab === "lesson" ? (
+            <motion.div
+              key="lesson"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -18 }}
+              className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+            >
+              <div className="space-y-6">
+                {normalizedLessonMarkdown ? (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-8">
+                    <div className="mb-8 flex flex-col gap-5 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
+                      <div className="space-y-3">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                          <Monitor className="h-3.5 w-3.5" />
+                          Guided Notes
+                        </span>
+                        <div>
+                          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                            Study the notes carefully
+                          </h2>
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                            Use zoom controls for comfortable reading, then annotate the parts you want to revise later.
+                          </p>
+                        </div>
+                      </div>
 
-        {/* Main Content Arena */}
-        <div className="max-w-5xl mx-auto w-full">
-           <AnimatePresence mode="wait">
-             {activeTab === "lesson" && (
-               <motion.div key="lesson" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}>
-                  {sessionData.lessonMarkdown ? (
-                    <CardGlass className="p-10 sm:p-20 border-white relative">
-                       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full -mr-32 -mt-32 pointer-events-none" />
-                       
-                       <div className="mb-16 pb-16 border-b border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-10">
-                          <div className="flex-1">
-                             <div className="flex items-center gap-3 mb-6">
-                                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-50/50 shadow-inner"><Monitor className="w-4 h-4" /> System Generated Matrix</span>
-                             </div>
-                             <h1 className="text-4xl sm:text-6xl font-black text-slate-900 leading-tight uppercase italic tracking-tighter">{sessionData.topicName}</h1>
-                          </div>
-                          <div className="flex items-center gap-6 bg-slate-50 px-8 py-5 rounded-[2rem] border border-slate-100 shadow-inner">
-                             <div className="text-right">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Archive Density</p>
-                                <p className="text-sm font-black text-slate-900 uppercase">~20 min Cycle</p>
-                             </div>
-                             <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm"><Info className="w-6 h-6 text-slate-400" /></div>
-                          </div>
-                       </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center overflow-hidden rounded-full border border-slate-200 bg-white">
+                          <button
+                            onClick={() => setNotesZoom((z) => (z === "lg" ? "md" : z === "md" ? "sm" : "sm"))}
+                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                            A-
+                          </button>
+                          <button
+                            onClick={() => setNotesZoom("md")}
+                            className="border-x border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-50"
+                          >
+                            100%
+                          </button>
+                          <button
+                            onClick={() => setNotesZoom((z) => (z === "sm" ? "md" : z === "md" ? "lg" : "lg"))}
+                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                            A+
+                          </button>
+                        </div>
 
-                       <div className={mdClass}>
-                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{sessionData.lessonMarkdown}</ReactMarkdown>
-                       </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFlashcardIndex(0);
+                            setFlashcardFlipped(false);
+                            setShowFlashcards(true);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                        >
+                          <Brain className="h-4 w-4" />
+                          Flashcards
+                        </button>
+                      </div>
+                    </div>
 
-                       {!completed && (
-                          <div className="mt-24 pt-16 border-t border-slate-100 flex flex-col items-center">
-                             <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center shadow-inner mb-8"><CheckCircle className="w-10 h-10" /></div>
-                             <h3 className="text-2xl font-black text-slate-900 uppercase italic mb-2">Protocol Finalized?</h3>
-                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-10">Mark this sector as resolved to propagate XP total.</p>
-                             <motion.button
-                               whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(16,185,129,0.3)" }} whileTap={{ scale: 0.98 }}
-                               onClick={() => setShowComplete(true)}
-                               className="px-16 py-6 rounded-[2.5rem] bg-emerald-500 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-emerald-600"
-                             >
-                               Commit Data Entry
-                             </motion.button>
+                    <div className="relative">
+                      {!isCompactLayout &&
+                        inlineComments.map((comment) => (
+                          <button
+                            key={comment.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveInlineCommentId(comment.id);
+                              setToolPanel("notes");
+                            }}
+                            className={cn(
+                              "absolute right-0 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition-colors",
+                              activeInlineCommentId === comment.id
+                                ? "border-blue-300 bg-blue-600 text-white"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
+                            )}
+                            style={{ top: comment.top }}
+                            title={comment.text}
+                          >
+                            <StickyNote className="h-4 w-4" />
+                          </button>
+                        ))}
+
+                      <div ref={notesContentRef} className={cn("relative pr-0 lg:pr-12", mdClassBase, mdZoomClass)}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {normalizedLessonMarkdown}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </CardGlass>
+                ) : (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-10 text-center shadow-sm">
+                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-slate-300" />
+                    <p className="text-sm font-medium text-slate-500">Generating your lesson notes...</p>
+                  </CardGlass>
+                )}
+
+                {!!sessionData.practiceQuestions.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900">Practice questions</h3>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Review worked examples, then ask the AI for a deeper explanation when needed.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("ask")}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                      >
+                        Open AI chat
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-5 grid gap-4">
+                      {sessionData.practiceQuestions.map((question, index) => (
+                        <PracticeCard key={`${question.question}-${index}`} q={question} index={index} onAskAI={handleAskAboutQuestion} />
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+              </div>
+
+              <div className="space-y-6 lg:sticky lg:top-24">
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Study toolkit</h3>
+                      <p className="mt-1 text-sm text-slate-500">Keep your revision notes and highlights beside the lesson.</p>
+                    </div>
+                    <Info className="h-5 w-5 text-slate-400" />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setToolPanel((value) => (value === "highlights" ? null : "highlights"))}
+                      className={cn(
+                        "inline-flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-xs font-semibold transition-colors",
+                        toolPanel === "highlights"
+                          ? "border-amber-300 bg-amber-50 text-amber-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50",
+                      )}
+                    >
+                      <Highlighter className="h-4 w-4" />
+                      Highlight
+                    </button>
+
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setToolPanel((value) => (value === "notes" ? null : "notes"))}
+                      className={cn(
+                        "inline-flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-xs font-semibold transition-colors",
+                        toolPanel === "notes"
+                          ? "border-blue-300 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50",
+                      )}
+                    >
+                      <StickyNote className="h-4 w-4" />
+                      Comment
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFlashcardIndex(0);
+                        setFlashcardFlipped(false);
+                        setShowFlashcards(true);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs font-semibold text-slate-600 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                    >
+                      <Brain className="h-4 w-4" />
+                      Cards
+                    </button>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    {toolPanel === "highlights" && (
+                      <motion.div
+                        key="highlight-panel"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mt-5 rounded-[1.5rem] border border-amber-100 bg-amber-50/70 p-4"
+                        onMouseDown={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") e.preventDefault();
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-semibold text-slate-900">Highlighter</h4>
+                          {savedTextRef.current && <span className="text-[11px] font-medium text-emerald-600">Selection ready</span>}
+                        </div>
+                        <p className="mt-2 text-[12px] leading-5 text-slate-600">
+                          Select any line in the notes, choose a color, then save it as a highlight for later revision.
+                        </p>
+                        <div className="mt-3 flex items-center gap-2">
+                          {["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"].map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => setHighlightColor(color)}
+                              className={cn(
+                                "h-8 w-8 rounded-full border-2 transition-transform",
+                                highlightColor === color ? "scale-110 border-slate-900" : "border-white",
+                              )}
+                              style={{ backgroundColor: color }}
+                              title="Pick highlight color"
+                            />
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={handleCaptureHighlight}
+                          className="mt-4 w-full rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
+                        >
+                          Save highlight
+                        </button>
+
+                        <div className="mt-4 space-y-2">
+                          {highlights.length === 0 ? (
+                            <p className="text-xs text-slate-400">No highlights yet.</p>
+                          ) : (
+                            highlights.map((highlight, index) => (
+                              <div
+                                key={`${highlight.text}-${index}`}
+                                className="rounded-xl border px-3 py-2 text-xs font-medium text-slate-700"
+                                style={{ backgroundColor: highlight.color, borderColor: highlight.color }}
+                              >
+                                {highlight.text}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {toolPanel === "notes" && (
+                      <motion.div
+                        key="notes-panel"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mt-5 rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-semibold text-slate-900">Comments</h4>
+                          {savedTextRef.current && <span className="text-[11px] font-medium text-emerald-600">Selection ready</span>}
+                        </div>
+                        <p className="mt-2 text-[12px] leading-5 text-slate-600">
+                          Select a line from the notes, add your own reminder, and jump back to it from here later.
+                        </p>
+
+                        {savedTextRef.current && (
+                          <div className="mt-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-[11px] italic text-slate-600">
+                            "{savedTextRef.current.slice(0, 120)}{savedTextRef.current.length > 120 ? "…" : ""}"
                           </div>
-                       )}
-                    </CardGlass>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-40 border-2 border-dashed border-white/60 rounded-[3rem]">
-                       <Loader2 className="w-12 h-12 animate-spin text-slate-300 mb-6" />
-                       <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Reconstructing Data...</p>
+                        )}
+
+                        <textarea
+                          value={noteDraft}
+                          onChange={(e) => setNoteDraft(e.target.value)}
+                          placeholder="Write your comment..."
+                          rows={3}
+                          className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        />
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={handleAddInlineComment}
+                          disabled={!noteDraft.trim()}
+                          className="mt-3 w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-40"
+                        >
+                          Add comment
+                        </button>
+
+                        <div className="mt-4 space-y-2">
+                          {inlineComments.length === 0 ? (
+                            <p className="text-xs text-slate-400">No comments yet.</p>
+                          ) : (
+                            inlineComments.map((comment) => (
+                              <button
+                                key={comment.id}
+                                type="button"
+                                onClick={() => setActiveInlineCommentId(comment.id)}
+                                className={cn(
+                                  "w-full rounded-xl border px-3 py-3 text-left text-xs font-medium transition-colors",
+                                  activeInlineCommentId === comment.id
+                                    ? "border-blue-200 bg-white text-blue-900"
+                                    : "border-slate-200 bg-white/80 text-slate-700 hover:border-blue-100",
+                                )}
+                              >
+                                <p className="truncate font-semibold">{comment.quote}</p>
+                                <p className="mt-1 leading-5">{comment.text}</p>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {!toolPanel && (
+                    <div className="mt-5 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/80 p-4 text-sm leading-6 text-slate-500">
+                      Your highlights and comments stay on this device, so you can come back to the same notes and pick up where you left off.
                     </div>
                   )}
-               </motion.div>
-             )}
-
-             {activeTab === "concepts" && (
-               <motion.div key="concepts" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     {/* Key Concepts */}
-                     {sessionData.keyConcepts.length > 0 && (
-                        <CardGlass className="p-10 border-white h-full relative overflow-hidden bg-white/60">
-                           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[50px] rounded-full pointer-events-none" />
-                           <div className="flex items-center gap-4 mb-10">
-                              <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-xl"><Layers className="w-6 h-6" /></div>
-                              <h3 className="text-xl font-black text-slate-900 uppercase italic">Command Cores</h3>
-                           </div>
-                           <div className="space-y-4">
-                             {sessionData.keyConcepts.map((concept, i) => (
-                               <div key={i} className="flex gap-5 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm hover:shadow-md transition-all group">
-                                  <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-xs text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">{i+1}</div>
-                                  <p className="flex-1 text-base font-bold text-slate-700 leading-relaxed">{concept}</p>
-                               </div>
-                             ))}
-                           </div>
-                        </CardGlass>
-                     )}
-
-                     {/* Formulas & Mistakes */}
-                     <div className="space-y-8">
-                        {sessionData.formulas.length > 0 && (
-                          <CardGlass className="p-10 border-white bg-indigo-50/50">
-                             <div className="flex items-center gap-4 mb-8">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xl shadow-indigo-500/20"><Sigma className="w-6 h-6" /></div>
-                                <h3 className="text-xl font-black text-slate-900 uppercase italic">Matrix Algorithms</h3>
-                             </div>
-                             <div className="space-y-4">
-                               {sessionData.formulas.map((formula, i) => (
-                                 <div key={i} className="p-6 rounded-[1.5rem] bg-white font-mono text-base font-black text-indigo-700 shadow-inner border border-indigo-100 flex items-center gap-4">
-                                    <Zap className="w-5 h-5 opacity-40 shrink-0" /> {formula}
-                                 </div>
-                               ))}
-                             </div>
-                          </CardGlass>
-                        )}
-                        {sessionData.commonMistakes.length > 0 && (
-                          <CardGlass className="p-10 border-white bg-red-50/50">
-                             <div className="flex items-center gap-4 mb-8">
-                                <div className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-xl shadow-red-500/20"><AlertTriangle className="w-6 h-6" /></div>
-                                <h3 className="text-xl font-black text-slate-900 uppercase italic">System Hazards</h3>
-                             </div>
-                             <div className="space-y-4">
-                               {sessionData.commonMistakes.map((mistake, i) => (
-                                 <div key={i} className="flex gap-5 p-6 rounded-[1.5rem] bg-white border border-red-100/50">
-                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-red-500 shadow-sm shrink-0"><AlertTriangle className="w-4 h-4" /></div>
-                                    <p className="text-base font-bold text-slate-800 leading-relaxed">{mistake}</p>
-                                 </div>
-                               ))}
-                             </div>
-                          </CardGlass>
-                        )}
-                     </div>
-                  </div>
-               </motion.div>
-             )}
-
-             {activeTab === "practice" && (
-               <motion.div key="practice" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-6">
-                  <div className="flex items-center gap-5 mb-12 px-6">
-                     <div className="w-14 h-14 rounded-[1.5rem] bg-slate-900 text-white flex items-center justify-center shadow-2xl relative">
-                        <Target className="w-7 h-7" />
-                        <div className="absolute inset-0 bg-blue-500 rounded-[1.5rem] blur-xl opacity-20" />
-                     </div>
-                     <div>
-                        <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Engagement Simulator</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">{sessionData.practiceQuestions.length} Operational Scenarios Loaded</p>
-                     </div>
-                  </div>
-                  <div className="space-y-6">
-                    {sessionData.practiceQuestions.map((q, i) => (
-                      <PracticeCard key={i} q={q} index={i} onAskAI={handleAskAboutQuestion} />
-                    ))}
-                  </div>
-               </motion.div>
-             )}
-
-             {activeTab === "ask" && (
-               <motion.div key="ask" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="flex flex-col h-full min-h-[600px]">
-                  <CardGlass className={cn("flex-1 p-8 sm:p-12 mb-20 flex flex-col relative bg-white/60", sessionData.conversation.length === 0 ? "justify-center items-center text-center" : "")}>
-                     <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none" />
-                     
-                     <AnimatePresence mode="popLayout">
-                        {sessionData.conversation.length === 0 ? (
-                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
-                              <div className="w-32 h-32 rounded-[3.5rem] bg-indigo-600/10 border border-indigo-100 flex items-center justify-center mb-10 relative">
-                                 <BrainCircuit className="w-16 h-16 text-indigo-600" />
-                                 <div className="absolute inset-0 bg-indigo-200 rounded-[3.5rem] blur-3xl opacity-30" />
-                              </div>
-                              <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-4">Neural Query Protocol</h2>
-                              <p className="text-base font-bold text-slate-400 uppercase tracking-widest max-w-sm leading-relaxed">System active. Awaiting prompt for curriculum deep-scan.</p>
-                           </motion.div>
-                        ) : (
-                           <div className="space-y-10 pb-20">
-                              {sessionData.conversation.map((msg, i) => (
-                                 <motion.div key={i} initial={{ opacity: 0, x: msg.role === "student" ? 20 : -20 }} animate={{ opacity: 1, x: 0 }}
-                                    className={cn("flex gap-6 max-w-[85%] group", msg.role === "student" ? "ml-auto flex-row-reverse" : "mr-auto flex-row")}
-                                 >
-                                    <div className={cn(
-                                       "w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl shrink-0 transition-transform group-hover:scale-110",
-                                       msg.role === "ai" ? "bg-indigo-600 text-white" : "bg-slate-900 text-white"
-                                    )}>
-                                       {msg.role === "ai" ? <Sparkles className="w-6 h-6" /> : "ME"}
-                                    </div>
-                                    <div className={cn(
-                                       "p-8 rounded-[2.5rem] text-lg font-bold shadow-2xl relative",
-                                       msg.role === "student" ? "bg-slate-900 text-white rounded-tr-none" : "bg-white border border-slate-100 text-slate-800 rounded-tl-none"
-                                    )}>
-                                       {msg.role === "ai" ? (
-                                          <div className={cn(mdClass, "!prose-sm !prose-p:text-slate-800 !prose-p:text-base")}>
-                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.message}</ReactMarkdown>
-                                          </div>
-                                       ) : msg.message}
-                                    </div>
-                                 </motion.div>
-                              ))}
-                              {askMut.isPending && (
-                                 <div className="flex gap-6">
-                                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center animate-pulse"><Sparkles className="w-6 h-6" /></div>
-                                    <div className="bg-white border border-slate-100 rounded-[2.5rem] rounded-tl-none p-8 flex items-center gap-3 shadow-xl">
-                                       {[0, 1, 2].map(i => <motion.div key={i} className="w-3 h-3 rounded-full bg-indigo-500" animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }} />)}
-                                    </div>
-                                 </div>
-                              )}
-                              <div ref={chatEndRef} />
-                           </div>
-                        )}
-                     </AnimatePresence>
-                  </CardGlass>
-               </motion.div>
-             )}
-           </AnimatePresence>
-        </div>
-
-        {/* Global Action Terminal */}
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-3xl px-10">
-           <CardGlass className="p-4 sm:p-6 border-white/60 bg-white/80 backdrop-blur-3xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)]">
-              {activeTab === "ask" ? (
-                 <div className="flex items-end gap-5">
-                    <textarea
-                      value={chatInput} onChange={e => setChatInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                      placeholder="Dispatch neural query..." rows={1} disabled={askMut.isPending}
-                      className="flex-1 resize-none bg-white border border-slate-100 rounded-2xl px-8 py-5 text-base font-bold text-slate-900 placeholder:text-slate-300 placeholder:font-black placeholder:uppercase focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all shadow-inner"
-                      style={{ maxHeight: 200 }} />
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!chatInput.trim() || askMut.isPending}
-                      className="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-2xl shadow-blue-500/40 disabled:opacity-40 transition-all shrink-0">
-                      {askMut.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
-                    </motion.button>
-                 </div>
-              ) : completed ? (
-                 <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-4">
-                    <div className="flex items-center gap-4">
-                       <CheckCircle className="w-8 h-8 text-emerald-500" />
-                       <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Success</p>
-                          <p className="text-lg font-black text-slate-900 uppercase italic">Session Synchronized</p>
-                       </div>
-                    </div>
-                    <button onClick={() => navigate(-1)} className="px-10 py-5 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-3">Return to Directory <ArrowRight className="w-5 h-5" /></button>
-                 </div>
-              ) : (
-                 <div className={cn("flex items-center gap-4 transition-all duration-500", showComplete ? "flex-row" : "flex-row-reverse")}>
-                    {showComplete ? (
-                       <>
-                          <button onClick={() => setShowComplete(false)} className="px-8 py-4 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Abort</button>
-                          <motion.button 
-                            initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-                            onClick={handleComplete} disabled={completeMut.isPending}
-                            className="flex-1 py-5 rounded-[1.5rem] bg-emerald-500 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-3"
-                          >
-                            {completeMut.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />} Verify Sector Resolution
-                          </motion.button>
-                       </>
-                    ) : (
-                       <motion.button 
-                         whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                         onClick={() => setShowComplete(true)}
-                         className="w-full py-5 rounded-[1.5rem] bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-3"
-                       >
-                         <Trophy className="w-5 h-5" /> Mark Manifest as Complete
-                       </motion.button>
-                    )}
-                 </div>
-              )}
-           </CardGlass>
-        </div>
-
-        {/* XP Celebration */}
-        <AnimatePresence>
-           {completed && completeMut.data && completeMut.isSuccess && (
-             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.5 }}
-               className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
-                <CardGlass className="px-12 py-8 bg-amber-500 border-amber-400 text-white flex items-center gap-8 shadow-[0_40px_100px_-10px_rgba(245,158,11,0.5)]">
-                   <div className="w-16 h-16 rounded-3xl bg-white/20 border border-white/40 flex items-center justify-center shadow-lg"><Trophy className="w-10 h-10" /></div>
-                   <div>
-                      <p className="text-4xl font-black italic tracking-tighter">+{completeMut.data.xpEarned} XP</p>
-                      <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Rank Propagation Synchronized</p>
-                   </div>
                 </CardGlass>
-             </motion.div>
-           )}
+
+                {!!sessionData.keyConcepts.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                        <Lightbulb className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Key concepts</h3>
+                        <p className="text-sm text-slate-500">The most important ideas to remember from this topic.</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {sessionData.keyConcepts.map((concept, index) => (
+                        <button
+                          key={`${concept}-${index}`}
+                          type="button"
+                          onClick={() => handleAskAboutQuestion(`Explain this concept clearly with one example: ${normalizeReadableText(concept)}`)}
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          {normalizeReadableText(concept)}
+                        </button>
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+
+                {!!sessionData.formulas.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                        <Sigma className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Formula board</h3>
+                        <p className="text-sm text-slate-500">Important expressions collected for quick revision.</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      {sessionData.formulas.map((formula, index) => (
+                        <div key={`${formula}-${index}`} className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                          <div className={cn(mdClassBase, "prose-p:mb-0 prose-p:text-sm prose-code:text-xs prose-h2:text-xl prose-h3:text-base")}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {normalizeFormulaForKatex(formula)}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+
+                {!!sessionData.commonMistakes.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+                        <AlertTriangle className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Common mistakes</h3>
+                        <p className="text-sm text-slate-500">Watch these while revising and solving questions.</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {sessionData.commonMistakes.map((mistake, index) => (
+                        <button
+                          key={`${mistake}-${index}`}
+                          type="button"
+                          onClick={() => handleAskAboutQuestion(`How do I avoid this mistake in exams: ${normalizeReadableText(mistake)}?`)}
+                          className="w-full rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-rose-100/70"
+                        >
+                          {normalizeReadableText(mistake)}
+                        </button>
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Session progress</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {completed
+                          ? "This topic is marked complete."
+                          : "Finish the topic once you are confident with the notes and practice questions."}
+                      </p>
+                    </div>
+                    <div className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-2xl",
+                      completed ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700",
+                    )}>
+                      {completed ? <CheckCircle className="h-5 w-5" /> : <Trophy className="h-5 w-5" />}
+                    </div>
+                  </div>
+
+                  {completed ? (
+                    <div className="mt-5 space-y-4">
+                      <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4">
+                        <p className="text-sm font-semibold text-emerald-800">Topic completed successfully</p>
+                        <p className="mt-1 text-sm text-emerald-700">
+                          {completeMut.data?.xpEarned
+                            ? `You just earned +${completeMut.data.xpEarned} XP for this session.`
+                            : "Your progress has been saved and synced to your study roadmap."}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                      >
+                        Back to previous page
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : showComplete ? (
+                    <div className="mt-5 space-y-4">
+                      <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50 p-4">
+                        <p className="text-sm font-semibold text-slate-900">Ready to complete this topic?</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Confirm only after you are comfortable with the concepts, formulas, and practice set.
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowComplete(false)}
+                          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                          Not yet
+                        </button>
+                        <button
+                          onClick={handleComplete}
+                          disabled={completeMut.isPending}
+                          className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-50"
+                        >
+                          {completeMut.isPending ? (
+                            <span className="inline-flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Saving...
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-2">
+                              <Zap className="h-4 w-4" />
+                              Confirm complete
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 space-y-3">
+                      <button
+                        onClick={() => setShowComplete(true)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      >
+                        <Trophy className="h-4 w-4" />
+                        Mark topic complete
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("ask")}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Ask AI before finishing
+                      </button>
+                    </div>
+                  )}
+                </CardGlass>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="ask"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -18 }}
+              className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+            >
+              <CardGlass className="overflow-hidden border-slate-200/80 bg-white/92 p-0 shadow-sm">
+                <div className="border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-900">Ask the AI tutor</h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                        Ask for concept clarification, solution steps, shortcuts, or common mistakes for this topic.
+                      </p>
+                    </div>
+                    <div className="inline-flex items-center gap-2 self-start rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                      <BrainCircuit className="h-4 w-4 text-blue-600" />
+                      {sessionData.conversation.length ? `${Math.ceil(sessionData.conversation.length / 2)} doubts asked` : "No doubts asked yet"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex min-h-[620px] flex-col">
+                  <div className={cn("flex-1 p-4 sm:p-6", sessionData.conversation.length === 0 ? "flex items-center justify-center" : "overflow-y-auto")}>
+                    <AnimatePresence mode="popLayout">
+                      {sessionData.conversation.length === 0 ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="mx-auto max-w-lg text-center"
+                        >
+                          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-blue-50 text-blue-700 shadow-sm">
+                            <BrainCircuit className="h-10 w-10" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-slate-900">Start with your first question</h3>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">
+                            Try asking for a simpler explanation, a worked numerical example, or a quick revision summary.
+                          </p>
+                        </motion.div>
+                      ) : (
+                        <div className="space-y-6">
+                          {sessionData.conversation.map((msg, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: msg.role === "student" ? 18 : -18 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className={cn(
+                                "flex gap-3 sm:gap-4",
+                                msg.role === "student" ? "justify-end" : "justify-start",
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "flex max-w-[92%] gap-3 sm:max-w-[80%]",
+                                  msg.role === "student" ? "flex-row-reverse" : "flex-row",
+                                )}
+                              >
+                                <div
+                                  className={cn(
+                                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm",
+                                    msg.role === "ai" ? "bg-blue-600" : "bg-slate-900",
+                                  )}
+                                >
+                                  {msg.role === "ai" ? <Sparkles className="h-5 w-5" /> : "ME"}
+                                </div>
+                                <div
+                                  className={cn(
+                                    "rounded-[1.75rem] px-4 py-3 shadow-sm sm:px-5 sm:py-4",
+                                    msg.role === "student"
+                                      ? "rounded-tr-md bg-slate-900 text-white"
+                                      : "rounded-tl-md border border-slate-200 bg-white text-slate-800",
+                                  )}
+                                >
+                                  {msg.role === "ai" ? (
+                                    <div className={cn(mdClassBase, "prose-h2:text-xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm !prose-p:text-slate-800")}>
+                                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                        {normalizeAiMessage(msg.message)}
+                                      </ReactMarkdown>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm leading-6">{msg.message}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+
+                          {askMut.isPending && (
+                            <div className="flex justify-start gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                                <Sparkles className="h-5 w-5" />
+                              </div>
+                              <div className="flex items-center gap-2 rounded-[1.75rem] rounded-tl-md border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                                {[0, 1, 2].map((i) => (
+                                  <motion.div
+                                    key={i}
+                                    className="h-2.5 w-2.5 rounded-full bg-blue-500"
+                                    animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
+                                    transition={{ repeat: Infinity, duration: 1, delay: i * 0.18 }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div ref={chatEndRef} />
+                        </div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/95 p-4 backdrop-blur sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <textarea
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                          }
+                        }}
+                        placeholder="Ask a doubt about this topic..."
+                        rows={isCompactLayout ? 3 : 2}
+                        disabled={askMut.isPending}
+                        className="min-h-[96px] flex-1 resize-none rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                      <button
+                        onClick={handleSend}
+                        disabled={!chatInput.trim() || askMut.isPending}
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-40 sm:h-[96px] sm:w-[96px] sm:flex-col"
+                      >
+                        {askMut.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                        <span>Send</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </CardGlass>
+
+              <div className="space-y-6 lg:sticky lg:top-24">
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <h3 className="text-lg font-bold text-slate-900">Suggested prompts</h3>
+                  <p className="mt-1 text-sm text-slate-500">Use one of these to start quickly.</p>
+
+                  <div className="mt-4 space-y-2">
+                    {quickAskPrompts.length === 0 ? (
+                      <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                        Ask for summaries, shortcuts, solved examples, or revision help.
+                      </p>
+                    ) : (
+                      quickAskPrompts.map((prompt, index) => (
+                        <button
+                          key={`${prompt}-${index}`}
+                          type="button"
+                          onClick={() => setChatInput(prompt)}
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          {prompt}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </CardGlass>
+
+                {!!sessionData.practiceQuestions.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-900">Practice question help</h3>
+                    <p className="mt-1 text-sm text-slate-500">Jump from a question directly into an explanation.</p>
+
+                    <div className="mt-4 space-y-2">
+                      {sessionData.practiceQuestions.slice(0, 4).map((question, index) => (
+                        <button
+                          key={`${question.question}-${index}`}
+                          type="button"
+                          onClick={() => handleAskAboutQuestion(question.question)}
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                            Question {index + 1}
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {question.question}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <h3 className="text-lg font-bold text-slate-900">Session progress</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {completed ? "This topic is already complete." : "You can still ask a few more doubts before marking it complete."}
+                  </p>
+
+                  {completed ? (
+                    <div className="mt-5 space-y-3">
+                      <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
+                        Session saved. Revisit the notes anytime for revision.
+                      </div>
+                      <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                      >
+                        Back to previous page
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : showComplete ? (
+                    <div className="mt-5 space-y-3">
+                      <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50 p-4 text-sm text-slate-700">
+                        You are about to finish this session and save your progress.
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowComplete(false)}
+                          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleComplete}
+                          disabled={completeMut.isPending}
+                          className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-50"
+                        >
+                          {completeMut.isPending ? "Saving..." : "Confirm"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 space-y-3">
+                      <button
+                        onClick={() => setShowComplete(true)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      >
+                        <Trophy className="h-4 w-4" />
+                        Mark topic complete
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("lesson")}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        Back to notes
+                      </button>
+                    </div>
+                  )}
+                </CardGlass>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
+
+        <AnimatePresence>
+          {showFlashcards && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+              onClick={() => setShowFlashcards(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.94, y: 20 }}
+                transition={{ type: "spring", stiffness: 280, damping: 28 }}
+                className="w-full max-w-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <CardGlass className="relative border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
+                  <button
+                    type="button"
+                    onClick={() => setShowFlashcards(false)}
+                    className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                    title="Close"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                      <Brain className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Flashcards</h3>
+                      <p className="text-sm text-slate-500">Flip through quick revision cards for this topic.</p>
+                    </div>
+                  </div>
+
+                  {sessionData.practiceQuestions.length === 0 ? (
+                    <div className="py-16 text-center text-sm text-slate-500">No flashcards available for this topic yet.</div>
+                  ) : (() => {
+                    const total = sessionData.practiceQuestions.length;
+                    const safeIndex = Math.min(flashcardIndex, total - 1);
+                    const card = sessionData.practiceQuestions[safeIndex];
+                    return (
+                      <div className="mt-5">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Card {safeIndex + 1} of {total}
+                          </span>
+                          <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full bg-emerald-500 transition-all duration-300"
+                              style={{ width: `${((safeIndex + 1) / total) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <NotesFlashcard
+                          question={card.question}
+                          answer={card.answer}
+                          explanation={card.explanation}
+                          flipped={flashcardFlipped}
+                          onToggle={() => setFlashcardFlipped((f) => !f)}
+                        />
+
+                        <div className="mt-6 flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFlashcardFlipped(false);
+                              setFlashcardIndex((index) => (index - 1 + total) % total);
+                            }}
+                            disabled={total <= 1}
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFlashcardFlipped(false);
+                              setFlashcardIndex((index) => (index + 1) % total);
+                            }}
+                            disabled={total <= 1}
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-40"
+                          >
+                            Next
+                            <ArrowRight className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <div className="mt-5 rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4">
+                          <div className="mb-2 text-sm font-semibold text-blue-800">Doubt box</div>
+                          <div className="mb-3 max-h-32 space-y-2 overflow-y-auto">
+                            {sessionData.conversation.length ? (
+                              sessionData.conversation.slice(-3).map((msg, index) => (
+                                <div
+                                  key={`${msg.timestamp}-${index}`}
+                                  className={cn(
+                                    "rounded-xl px-3 py-2 text-[11px]",
+                                    msg.role === "student" ? "bg-white text-slate-700" : "bg-blue-100 text-blue-900",
+                                  )}
+                                >
+                                  {normalizeAiMessage(msg.message)}
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-[11px] text-slate-500">Ask your doubt here while revising flashcards.</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              value={flashcardDoubtInput}
+                              onChange={(e) => setFlashcardDoubtInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleFlashcardDoubtAsk();
+                                }
+                              }}
+                              placeholder="Ask your doubt..."
+                              className="flex-1 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleFlashcardDoubtAsk}
+                              disabled={!flashcardDoubtInput.trim() || askMut.isPending || !sessionId}
+                              className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                            >
+                              {askMut.isPending ? "Asking..." : "Ask"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardGlass>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {completed && completeMut.data && completeMut.isSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.6 }}
+              className="fixed left-1/2 top-24 z-[100] -translate-x-1/2 pointer-events-none"
+            >
+              <CardGlass className="flex items-center gap-6 border-amber-300 bg-amber-500 px-8 py-5 text-white shadow-[0_32px_80px_-18px_rgba(245,158,11,0.55)]">
+                <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-white/40 bg-white/20">
+                  <Trophy className="h-8 w-8" />
+                </div>
+                <div>
+                  <p className="text-3xl font-black tracking-tight">+{completeMut.data.xpEarned} XP</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/85">Progress synced</p>
+                </div>
+              </CardGlass>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

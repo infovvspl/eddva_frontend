@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Flame, Zap, Target, BookOpen, Sparkles,
   ChevronRight, AlertTriangle, ArrowUpRight, ArrowDownRight,
   Brain, BarChart3, Activity, LogOut,
   Edit3, Camera, X, Check, Loader2, Layers,
-  Star, ShieldCheck, Clock, Crosshair, TrendingUp, User,
+  Star, ShieldCheck, Clock, Crosshair, TrendingUp, User, ArrowLeft,
 } from "lucide-react";
 import {
   useStudentMe, useProgressReport, useWeeklyActivity,
@@ -15,6 +15,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 
 // ─── Design Tokens (original palette preserved) ───────────────────────────────
 const BLUE    = "#2563EB";
@@ -273,6 +274,9 @@ function EditModal({ me, onClose }: { me: any; onClose: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function StudentProfilePage() {
+  const isCompactLayout = useIsCompactLayout();
+  const prefersReducedMotion = useReducedMotion();
+  const lightMotion = isCompactLayout || !!prefersReducedMotion;
   const [showEdit, setShowEdit]   = useState(false);
   const [aiReady, setAiReady]     = useState(false);
   const { logout }                = useAuthStore();
@@ -317,15 +321,28 @@ export default function StudentProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-20 space-y-5">
+      {/* Back */}
+      <div className="mb-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+      </div>
 
       {/* ── PROFILE HEADER ── */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+      <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 16 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
         className="relative overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-8">
         {/* Subtle gradient accent top-left */}
-        <div className="absolute top-0 left-0 w-72 h-72 rounded-full pointer-events-none opacity-[0.06]"
-          style={{ background: `radial-gradient(circle, ${PURPLE}, transparent)`, filter: "blur(60px)" }} />
-        <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none opacity-[0.04]"
-          style={{ background: `radial-gradient(circle, ${BLUE}, transparent)`, filter: "blur(50px)" }} />
+        {!lightMotion && (
+          <>
+            <div className="absolute top-0 left-0 w-72 h-72 rounded-full pointer-events-none opacity-[0.06]"
+              style={{ background: `radial-gradient(circle, ${PURPLE}, transparent)`, filter: "blur(60px)" }} />
+            <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none opacity-[0.04]"
+              style={{ background: `radial-gradient(circle, ${BLUE}, transparent)`, filter: "blur(50px)" }} />
+          </>
+        )}
 
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6">
           {/* Avatar + ring */}
@@ -334,7 +351,7 @@ export default function StudentProfilePage() {
               <div className="w-[76px] h-[76px] rounded-xl overflow-hidden shadow-md"
                 style={{ background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})` }}>
                 {me?.profilePictureUrl
-                  ? <img src={me.profilePictureUrl} className="w-full h-full object-cover" alt="" />
+                  ? <img src={me.profilePictureUrl} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="" />
                   : <div className="w-full h-full flex items-center justify-center text-white text-2xl font-black">
                       {me?.fullName?.[0]?.toUpperCase() ?? "?"}
                     </div>}
@@ -430,7 +447,12 @@ export default function StudentProfilePage() {
           { icon: Target, value: `${Math.round(summary?.overallAccuracy ?? 0)}%`, label: "Accuracy Index", trend: (summary?.overallAccuracy ?? 0) > 60 ? "up" : "down" as any, color: BLUE, sub: `${summary?.totalPYQAttempted ?? 0} PYQs` },
           { icon: ShieldCheck, value: (s?.xpPoints ?? 0).toLocaleString(), label: "XP Points", trend: "neutral" as any, color: EMERALD, sub: `Rank: ${tier.label}` },
         ].map((m, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 * i }}>
+          <motion.div
+            key={i}
+            initial={lightMotion ? undefined : { opacity: 0, y: 16 }}
+            animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={lightMotion ? undefined : { delay: 0.06 * i }}
+          >
             <MetricCard {...m} />
           </motion.div>
         ))}
@@ -508,8 +530,8 @@ export default function StudentProfilePage() {
         <div className="space-y-5">
 
           {/* AI Insight */}
-          <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+          <motion.div initial={lightMotion ? undefined : { opacity: 0, scale: 0.97 }} animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
+            transition={lightMotion ? undefined : { delay: 0.2 }}
             className="relative overflow-hidden rounded-3xl p-5 text-white"
             style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${PURPLE} 100%)`, boxShadow: `0 8px 40px ${BLUE}30` }}>
             {/* Decorative circles */}
@@ -562,8 +584,8 @@ export default function StudentProfilePage() {
               const crit  = subj.overallAccuracy < 25;
               const color = crit ? "#ef4444" : ORANGE;
               return (
-                <motion.div key={i} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 + i * 0.07 }}
+                <motion.div key={i} initial={lightMotion ? undefined : { opacity: 0, x: 8 }} animate={lightMotion ? undefined : { opacity: 1, x: 0 }}
+                  transition={lightMotion ? undefined : { delay: 0.15 + i * 0.07 }}
                   className="flex items-center gap-3 p-3 rounded-xl border mb-2 last:mb-0"
                   style={{ borderColor: `${color}25`, background: `${color}06` }}>
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" style={{ color }} />

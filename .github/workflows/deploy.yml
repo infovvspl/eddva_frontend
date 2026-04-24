@@ -1,0 +1,59 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for production
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://api.eddva.in/api/v1
+          VITE_BACKEND_URL: https://api.eddva.in/api/v1
+          VITE_SOCKET_URL: https://api.eddva.in
+          VITE_AI_URL: https://ai.eddva.in
+          VITE_APP_ENV: production
+          VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
+          VITE_SARVAM_API_KEY: ${{ secrets.VITE_SARVAM_API_KEY }}
+
+      - name: Copy built files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: 'dist/*'
+          target: '/tmp/eddva_frontend_deploy'
+          strip_components: 1
+
+      - name: Swap files & reload Nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo rm -rf /var/www/eddva_frontend
+            sudo mv /tmp/eddva_frontend_deploy /var/www/eddva_frontend
+            sudo chown -R www-data:www-data /var/www/eddva_frontend
+            sudo chmod -R 755 /var/www/eddva_frontend
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "Frontend deployed successfully at $(date)"

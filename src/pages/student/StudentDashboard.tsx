@@ -1,6 +1,6 @@
 import { Loader2, BookOpen, ChevronRight, Flame, Zap, Trophy, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useStudentMe, useMyCourses, useStudentDashboard, useMyPerformance } from "@/hooks/use-student";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import LeaderboardPreview from "@/components/student/dashboard/LeaderboardPrevie
 import Recommendations from "@/components/student/dashboard/Recommendations";
 import QuickActions from "@/components/student/dashboard/QuickActions";
 import { getApiOrigin } from "@/lib/api-config";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const _API_ORIGIN = getApiOrigin();
@@ -91,6 +92,9 @@ function DashboardSkeleton() {
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const isCompactLayout = useIsCompactLayout();
+  const prefersReducedMotion = useReducedMotion();
+  const lightMotion = isCompactLayout || !!prefersReducedMotion;
   const { data: me, isLoading: meLoading } = useStudentMe();
   const { data: rawCourses = [], isLoading: coursesLoading } = useMyCourses();
   const { data: dash, isLoading: dashLoading } = useStudentDashboard();
@@ -129,14 +133,14 @@ export default function StudentDashboard() {
     ? Math.round(courses.reduce((s: number, c: any) => s + c.progress, 0) / courses.length)
     : 0;
 
-  const fade = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+  const fade = lightMotion ? {} : { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
   return (
     <motion.div
       className="space-y-6 pb-10"
-      initial="hidden"
-      animate="show"
-      variants={{ show: { transition: { staggerChildren: 0.07 } } }}
+      initial={lightMotion ? undefined : "hidden"}
+      animate={lightMotion ? undefined : "show"}
+      variants={lightMotion ? undefined : { show: { transition: { staggerChildren: 0.06 } } }}
     >
       {/* ── HERO BANNER ───────────────────────────────────────────────────── */}
 <motion.div variants={fade}>
@@ -144,11 +148,11 @@ export default function StudentDashboard() {
     bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-500">
 
     {/* Glass overlay */}
-    <div className="absolute inset-0 bg-white/10 backdrop-blur-xl" />
+    <div className={cn("absolute inset-0", lightMotion ? "bg-white/8" : "bg-white/10 backdrop-blur-xl")} />
 
     {/* Glow effects */}
-    <div className="absolute -top-20 -right-20 w-72 h-72 bg-purple-400/30 rounded-full blur-3xl" />
-    <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-blue-400/30 rounded-full blur-3xl" />
+    <div className={cn("absolute -top-20 -right-20 rounded-full", lightMotion ? "h-56 w-56 bg-purple-400/22 blur-2xl" : "w-72 h-72 bg-purple-400/30 blur-3xl")} />
+    <div className={cn("absolute -bottom-20 -left-20 rounded-full", lightMotion ? "h-56 w-56 bg-blue-400/22 blur-2xl" : "w-72 h-72 bg-blue-400/30 blur-3xl")} />
 
     <div className="relative z-10 flex items-center justify-between gap-6">
 
@@ -190,7 +194,7 @@ export default function StudentDashboard() {
             onClick={() =>
               navigate(
                 courses.length > 0
-                  ? "/student/courses"
+                  ? "/student/courses?tab=ongoing"
                   : "/student/courses?discover=1"
               )
             }
@@ -218,6 +222,8 @@ export default function StudentDashboard() {
           <img
             src={student}
             alt="student"
+            loading="lazy"
+            decoding="async"
             className="w-full drop-shadow-2xl"
           />
         </div>
@@ -232,7 +238,7 @@ export default function StudentDashboard() {
             <div
               key={chip.label}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl 
-                bg-white/20 border border-white/20 backdrop-blur-md hover:scale-105 transition"
+                bg-white/20 border border-white/20 transition"
             >
               <span>{chip.icon}</span>
               <div>
@@ -260,11 +266,11 @@ export default function StudentDashboard() {
       </motion.div>
 
       {/* ── QUICK ACTIONS ─────────────────────────────────────────────────── */}
-      <motion.div variants={fade}>
+      {/* <motion.div variants={fade}>
         <Section title="Quick Actions">
           <QuickActions />
         </Section>
-      </motion.div>
+      </motion.div> */}
 
       {/* ── MAIN CONTENT GRID ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -277,7 +283,7 @@ export default function StudentDashboard() {
             <Card>
               <Section
                 title="Continue Learning"
-                action={() => navigate("/student/courses")}
+                action={() => navigate("/student/courses?tab=ongoing")}
                 actionLabel="All courses"
               >
                 <ContinueLearning courses={courses} />
@@ -305,7 +311,7 @@ export default function StudentDashboard() {
               action={() => navigate("/student/learn")}
               actionLabel="Explore"
             >
-              <Recommendations weakTopics={weakTopics} />
+              <Recommendations weakTopics={weakTopics} suggestions={dash?.recommendations} />
             </Section>
           </motion.div>
         </div>

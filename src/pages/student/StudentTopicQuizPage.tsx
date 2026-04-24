@@ -122,7 +122,7 @@ function ScoreRing({ accuracy, score, outOf, correct, wrong, skipped }: {
   return (
     <CardGlass className="p-10 border-white bg-slate-900 text-white relative overflow-hidden mb-10">
        <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
-       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Sync Results Manifest</h3>
+       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Show Results</h3>
        <div className="flex items-center gap-10 flex-col sm:flex-row">
           <div className="relative w-32 h-32 shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -204,7 +204,7 @@ function QuizRunner({
 
   return (
     <div className="flex flex-col space-y-12">
-        <CardGlass className="px-10 py-6 border-white bg-white/60 flex items-center justify-between sticky top-0 z-50">
+        <CardGlass className="px-5 sm:px-6 py-3 border-slate-200 bg-white shadow-sm flex items-center justify-between sticky top-0 z-50">
            <div className="flex items-center gap-6">
               <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shadow-xl", isAi ? "bg-purple-600 text-white" : "bg-slate-900 text-white")}>
                  {isAi ? <Sparkles className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
@@ -217,11 +217,11 @@ function QuizRunner({
 
            <div className="flex items-center gap-8">
               <div className={cn(
-                 "flex items-center gap-4 px-6 py-2.5 rounded-xl border transition-all shadow-xl",
+                 "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all shadow-sm",
                  timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
               )}>
-                 <Clock className="w-5 h-5" />
-                 <span className="text-xl font-black italic tracking-tighter tabular-nums leading-none">{fmt(seconds)}</span>
+                 <Clock className="w-3.5 h-3.5" />
+                 <span className="text-xs sm:text-sm font-semibold tabular-nums leading-none">{fmt(seconds)}</span>
               </div>
               <motion.button
                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -292,6 +292,7 @@ export default function StudentTopicQuizPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const topicId = params.get("topicId") ?? "";
+  const [showReview, setShowReview] = useState(false);
 
   const [stage, setStage]         = useState<Stage>("loading");
   const [mockTest, setMockTest]   = useState<MockTestListItem | null>(null);
@@ -388,6 +389,12 @@ export default function StudentTopicQuizPage() {
     } catch { setStage("ai_quiz"); }
   };
 
+  useEffect(() => {
+    if (stage !== "ai_results") {
+      setShowReview(false);
+    }
+  }, [stage]);
+
   if (["loading", "ai_generating", "submitting", "ai_submitting"].includes(stage)) {
     return (
       <div className="py-40 flex flex-col items-center justify-center text-center gap-10">
@@ -401,25 +408,36 @@ export default function StudentTopicQuizPage() {
 
   if (stage === "no_quiz") {
     return (
-      <div className="py-20 flex flex-col items-center justify-center text-center">
-         <div className="w-full max-w-lg">
-            <header className="text-center mb-12">
-               <button onClick={() => navigate(-1)} className="w-12 h-12 rounded-2xl bg-white/60 border border-white flex items-center justify-center text-slate-400 hover:bg-slate-900 hover:text-white transition-all mx-auto mb-10"><ArrowLeft className="w-6 h-6" /></button>
-               <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Sync Point Absent</h2>
-               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none">Curriculum sector has no pre-defined probes.</p>
-            </header>
-            
-            <CardGlass className="p-10 border-purple-500/20 bg-purple-50/60 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 blur-[50px] rounded-full pointer-events-none" />
-               <div className="w-16 h-16 rounded-[1.5rem] bg-purple-600 text-white flex items-center justify-center shadow-xl mb-10"><Sparkles className="w-8 h-8" /></div>
-               <h3 className="text-xl font-black text-slate-900 uppercase italic mb-3">AI Override Protocol</h3>
-               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">Generate a personalized 5-question matrix to propagate sector progress.</p>
-               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiGenerate}
-                 className="w-full py-6 rounded-[2rem] bg-purple-600 text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
-                 Activate AI Probe
-               </motion.button>
-            </CardGlass>
-         </div>
+      <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+        <div className="w-full max-w-xl">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all mx-auto mb-8 shadow-sm"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">No quiz available</h2>
+          <p className="text-sm text-slate-500 mb-10">This topic does not have a published quiz yet.</p>
+
+          <CardGlass className="p-8 border-slate-200 bg-white shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mx-auto mb-6">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">Try AI Practice</h3>
+            <p className="text-sm text-slate-500 leading-relaxed mb-8">
+              Generate a quick personalized quiz to continue your progress.
+            </p>
+            <motion.button
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={handleAiGenerate}
+              className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition"
+            >
+              Generate AI Quiz
+            </motion.button>
+          </CardGlass>
+        </div>
       </div>
     );
   }
@@ -428,23 +446,23 @@ export default function StudentTopicQuizPage() {
     return (
       <div className="py-20 flex items-center justify-center p-6">
          <div className="w-full max-w-lg">
-            <CardGlass className="p-10 border-white bg-white/60">
-               <div className="w-16 h-16 rounded-[1.5rem] bg-purple-600 text-white flex items-center justify-center shadow-xl mb-10"><BrainCircuit className="w-8 h-8" /></div>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Neural Matrix Ready</p>
-               <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-8 leading-none">{aiQuizData.topicName}</h1>
+            <CardGlass className="p-8 border-slate-200 bg-white shadow-sm">
+               <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-6"><BrainCircuit className="w-6 h-6" /></div>
+               <p className="text-xs font-semibold text-indigo-600 mb-1">AI quiz ready</p>
+               <h1 className="text-3xl font-bold text-slate-900 mb-7 leading-tight">{aiQuizData.topicName}</h1>
                <div className="grid grid-cols-2 gap-4 mb-10">
-                  <div className="p-5 rounded-2xl bg-white border border-slate-50 shadow-sm">
-                     <Clock className="w-4 h-4 text-purple-600 mb-2" />
-                     <p className="text-xs font-black text-slate-900 uppercase">{aiQuizData.durationMinutes}m Cycle</p>
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                     <Clock className="w-4 h-4 text-indigo-600 mb-2" />
+                     <p className="text-xs font-semibold text-slate-800">{aiQuizData.durationMinutes} min duration</p>
                   </div>
-                  <div className="p-5 rounded-2xl bg-white border border-slate-50 shadow-sm">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                      <Target className="w-4 h-4 text-emerald-500 mb-2" />
-                     <p className="text-xs font-black text-slate-900 uppercase">70% Threshold</p>
+                     <p className="text-xs font-semibold text-slate-800">70% target score</p>
                   </div>
                </div>
                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiStart}
-                 className="w-full py-6 rounded-[2rem] bg-purple-600 text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
-                 Enter Simulation
+                 className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition">
+                 Start Quiz
                </motion.button>
             </CardGlass>
          </div>
@@ -456,23 +474,23 @@ export default function StudentTopicQuizPage() {
     return (
       <div className="py-20 flex items-center justify-center p-6 text-center">
          <div className="w-full max-w-lg">
-            <CardGlass className="p-10 border-white bg-white/60 text-center">
-               <div className="w-20 h-20 rounded-[2rem] bg-slate-900 text-white flex items-center justify-center shadow-2xl mx-auto mb-10"><ClipboardList className="w-10 h-10" /></div>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Curriculum Probe Manifest</p>
-               <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-10 leading-none">{mockTest.title}</h1>
+            <CardGlass className="p-8 border-slate-200 bg-white text-center shadow-sm">
+               <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mx-auto mb-7"><ClipboardList className="w-8 h-8" /></div>
+               <p className="text-xs font-semibold text-indigo-600 mb-1">Ready to begin</p>
+               <h1 className="text-3xl font-bold text-slate-900 mb-8 leading-tight">{mockTest.title}</h1>
                <div className="flex gap-4 mb-10">
-                  <div className="flex-1 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm">
+                  <div className="flex-1 p-5 rounded-xl bg-slate-50 border border-slate-100">
                      <Activity className="w-5 h-5 text-blue-600 mx-auto mb-3" />
-                     <p className="text-[10px] font-black text-slate-900 uppercase">{mockTest.durationMinutes}m Window</p>
+                     <p className="text-xs font-semibold text-slate-800">{mockTest.durationMinutes} min duration</p>
                   </div>
-                  <div className="flex-1 p-6 rounded-[2rem] bg-white border border-slate-50 shadow-sm">
+                  <div className="flex-1 p-5 rounded-xl bg-slate-50 border border-slate-100">
                      <Target className="w-5 h-5 text-emerald-500 mx-auto mb-3" />
-                     <p className="text-[10px] font-black text-slate-900 uppercase">70% Sync</p>
+                     <p className="text-xs font-semibold text-slate-800">70% target score</p>
                   </div>
                </div>
                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleTeacherStart}
-                 className="w-full py-6 rounded-[2.5rem] bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
-                 Begin Synchronization
+                 className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition">
+                 Start Quiz
                </motion.button>
             </CardGlass>
          </div>
@@ -512,7 +530,6 @@ export default function StudentTopicQuizPage() {
   }
 
   if (stage === "ai_results" && aiResult && aiQuizData) {
-    const [showReview, setShowReview] = useState(false);
     return (
       <div className="py-20 px-6">
          <div className="w-full max-w-4xl mx-auto">

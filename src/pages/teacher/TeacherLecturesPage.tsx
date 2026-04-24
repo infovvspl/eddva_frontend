@@ -9,14 +9,14 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-motion";
 import {
   Video, Plus, Loader2, X, Trash2, CheckCircle, Clock, Radio,
   Upload, Youtube, Image as ImageIcon, FileText, Sparkles,
   Eye, Edit3, Send, Calendar, Link2, Users, BarChart2,
   PlayCircle, StopCircle, Zap, BookOpen, ChevronRight,
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
-  HelpCircle, RefreshCw, Trophy, TrendingUp, XCircle,
+  HelpCircle, RefreshCw, Trophy, TrendingUp, XCircle, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 import {
   useMyLectures, useCreateLecture, useDeleteLecture,
   useUpdateLecture, useLectureStats, useMyBatches,
@@ -42,6 +43,11 @@ import { getApiOrigin } from "@/lib/api-config";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
+import {
+  isYouTubeUrl,
+  isValidYouTubeLectureUrl,
+  YOUTUBE_LECTURE_CAPTIONS_HINT,
+} from "@/lib/lecture-source";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -75,7 +81,14 @@ const AI_STEPS = [
   { icon: ListChecks, label: "Extracting key concepts" },
 ];
 
-function AiProcessingCard({ lecture, activeStep = 1 }: { lecture: Lecture; activeStep?: number }) {
+function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeStep?: number }) {
+  // If activeStep is not explicitly provided (e.g. from artificial delay), derive from real status
+  const currentStep = activeStep !== undefined ? activeStep : (
+    lecture.status === "draft" || lecture.status === "published" ? 4 :
+    lecture.status === "processing" && lecture.transcriptStatus === "done" ? 2 :
+    lecture.transcriptStatus === "processing" ? 0 : 1
+  );
+
   return (
     <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3">
       <div className="flex items-center gap-2.5">
@@ -89,8 +102,8 @@ function AiProcessingCard({ lecture, activeStep = 1 }: { lecture: Lecture; activ
       </div>
       <div className="space-y-2">
         {AI_STEPS.map((s, i) => {
-          const done = i < activeStep;
-          const current = i === activeStep;
+          const done = i < currentStep;
+          const current = i === currentStep;
           return (
             <div key={i} className="flex items-center gap-2.5">
               {done
@@ -260,6 +273,7 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
   const [newConcept, setNewConcept] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const youtubeSource = isYouTubeUrl(lecture.videoUrl);
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<QuizCheckpoint[]>([]);
@@ -299,7 +313,13 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
 
   const handleGenerateQuiz = async () => {
     if (!lecture.transcript) {
-      toast({ title: "No transcript", description: "Transcript is required to generate quiz questions.", variant: "destructive" });
+      toast({
+        title: "No transcript",
+        description: youtubeSource
+          ? YOUTUBE_LECTURE_CAPTIONS_HINT
+          : "Transcript is required to generate quiz questions.",
+        variant: "destructive",
+      });
       return;
     }
     setIsGeneratingQuiz(true);
@@ -486,8 +506,31 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                 <MarkdownContent content={lecture.aiNotesMarkdown} />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                  <FileText className="w-12 h-12 opacity-20" />
-                  <p className="text-sm">No notes available yet.</p>
+                  {(lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") ? (
+                    <>
+                      <Loader2 className="w-12 h-12 opacity-60 text-primary animate-spin" />
+                      <p className="text-sm text-foreground">Generating AI notes…</p>
+                      <p className="text-xs text-center max-w-sm">
+                        {youtubeSource ? "Pulling YouTube captions and summarising." : "Transcribing audio and generating notes."}
+                      </p>
+                    </>
+                  ) : lecture.transcriptStatus === "failed" ? (
+                    <>
+                      <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
+                      <p className="text-sm text-foreground">AI notes could not be generated</p>
+                      <p className="text-xs text-center max-w-sm">
+                        {youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "Check the video URL and try re-transcribe from the lecture list."}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-12 h-12 opacity-20" />
+                      <p className="text-sm">No notes available yet.</p>
+                      {youtubeSource && lecture.transcript && (
+                        <p className="text-xs text-center max-w-sm text-muted-foreground">Transcript is ready — try refreshing, or edit notes manually.</p>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -540,9 +583,31 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                    <Mic className="w-12 h-12 opacity-20" />
-                    <p className="text-sm">Transcript not available.</p>
-                    <p className="text-xs">Upload a video to generate a transcript automatically.</p>
+                    {(lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") ? (
+                      <>
+                        <Loader2 className="w-12 h-12 opacity-60 text-primary animate-spin" />
+                        <p className="text-sm text-foreground">Preparing transcript…</p>
+                        <p className="text-xs text-center max-w-sm">
+                          {youtubeSource ? "Fetching captions from YouTube." : "Transcribing uploaded video."}
+                        </p>
+                      </>
+                    ) : lecture.transcriptStatus === "failed" ? (
+                      <>
+                        <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
+                        <p className="text-sm text-foreground">Transcript unavailable</p>
+                        <p className="text-xs text-center max-w-sm">
+                          {youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "Check the video URL and try again from the lecture list."}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-12 h-12 opacity-20" />
+                        <p className="text-sm">Transcript not available.</p>
+                        <p className="text-xs text-center max-w-sm">
+                          {youtubeSource ? YOUTUBE_LECTURE_CAPTIONS_HINT : "Upload a video to generate a transcript automatically."}
+                        </p>
+                      </>
+                    )}
                   </div>
                 )
               ) : null}
@@ -574,7 +639,11 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
               {!lecture.transcript && (
                 <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
                   <Mic className="w-4 h-4 shrink-0" />
-                  <span>A transcript is needed to generate quiz questions. Upload a video first.</span>
+                  <span>
+                    {!lecture.transcript && youtubeSource
+                      ? YOUTUBE_LECTURE_CAPTIONS_HINT
+                      : "A transcript is needed to generate quiz questions. Wait for processing or upload a captioned video."}
+                  </span>
                 </div>
               )}
 
@@ -975,7 +1044,7 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
     enabled: tab === "quiz",
   });
 
-  const isYouTube = (lecture.videoUrl ?? "").includes("youtube") || (lecture.videoUrl ?? "").includes("youtu.be");
+  const isYouTube = isYouTubeUrl(lecture.videoUrl);
 
   const tabs = [
     { key: "overview" as const, label: "Overview", icon: Eye },
@@ -1037,6 +1106,25 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
           {/* ── Overview ── */}
           {tab === "overview" && (
             <div className="p-6 space-y-5">
+              {isYouTube && (lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") && (
+                <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  <Loader2 className="w-4 h-4 shrink-0 mt-0.5 animate-spin text-blue-600" />
+                  <div>
+                    <p className="font-semibold">Processing YouTube lecture</p>
+                    <p className="text-xs mt-1 leading-relaxed">Fetching captions and generating AI notes. Refresh in a minute if this stays empty.</p>
+                  </div>
+                </div>
+              )}
+              {isYouTube && lecture.transcriptStatus === "failed" && (
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">Captions or AI processing failed</p>
+                    <p className="text-xs mt-1 leading-relaxed">{YOUTUBE_LECTURE_CAPTIONS_HINT}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Video preview */}
               {lecture.videoUrl && (
                 <div className="rounded-2xl overflow-hidden aspect-video bg-black">
@@ -1501,10 +1589,27 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      let finalVideoUrl = videoUrl;
+      const trimmedUrl = videoUrl.trim();
+
+      if (videoSource === "youtube") {
+        if (!isYouTubeUrl(trimmedUrl)) {
+          toast({ title: "Not a YouTube URL", description: "Paste a youtube.com or youtu.be link.", variant: "destructive" });
+          return;
+        }
+        if (!isValidYouTubeLectureUrl(trimmedUrl)) {
+          toast({
+            title: "Invalid YouTube link",
+            description: "Use a watch, Shorts, embed, or youtu.be URL with a valid video id.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      let finalVideoUrl = trimmedUrl;
       let finalThumbnailUrl: string | undefined;
 
-      if (videoFile) {
+      if (videoSource === "upload" && videoFile) {
         finalVideoUrl = await uploadToS3("/content/lectures/upload-video", videoFile, setUploadProgress);
       }
 
@@ -1525,7 +1630,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
       toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
       onClose();
       // Kick off background AI processing — non-blocking
-      onSuccess(lecture.id, videoUrl, topicId);
+      onSuccess(lecture.id, lecture.videoUrl ?? finalVideoUrl, topicId);
     } catch (err: any) {
       toast({ title: err?.response?.data?.message || err?.message || "Upload failed", variant: "destructive" });
     } finally { setIsSubmitting(false); }
@@ -1620,7 +1725,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   placeholder="Brief description for students…" rows={2} className="resize-none" />
               </div>
               <div className="space-y-1.5">
-                <Label>Lecture Language <span className="text-muted-foreground font-normal">(for AI transcription)</span></Label>
+                <Label>Lecture Language <span className="text-muted-foreground font-normal">(upload: speech-to-text · YouTube: notes language)</span></Label>
                 <div className="flex gap-2">
                   {([
                     { value: "en" as const, label: "English", sub: "Default" },
@@ -1653,15 +1758,37 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   { value: "upload" as VideoSource, label: "Upload Video", icon: Upload },
                   { value: "youtube" as VideoSource, label: "YouTube URL", icon: Youtube },
                 ] as { value: VideoSource; label: string; icon: any }[]).map(opt => (
-                  <button key={opt.value} type="button" onClick={() => setVideoSource(opt.value)}
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setVideoSource(opt.value);
+                      if (opt.value === "youtube") {
+                        setVideoFile(null);
+                        if (!isYouTubeUrl(videoUrl)) setVideoUrl("");
+                      } else if (isYouTubeUrl(videoUrl)) {
+                        setVideoUrl("");
+                      }
+                    }}
                     className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors",
-                      videoSource === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50")}>
+                      videoSource === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/50")}>
                     <opt.icon className={cn("w-6 h-6", videoSource === opt.value ? "text-primary" : "text-muted-foreground")} />
                     <span className={cn("text-sm font-medium", videoSource === opt.value ? "text-primary" : "text-muted-foreground")}>
                       {opt.label}
                     </span>
                   </button>
                 ))}
+              </div>
+
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs leading-relaxed text-amber-800">
+                  {videoSource === "youtube"
+                    ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
+                    : "Uploaded videos are transcribed with speech-to-text. Choose Hindi or English before continuing."}
+                </p>
               </div>
 
               {videoSource === "upload" ? (
@@ -1689,7 +1816,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="pl-9" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Students will stream directly from YouTube.</p>
+                  <p className="text-[10px] text-muted-foreground">Students watch on YouTube; AI uses captions for notes and quizzes.</p>
                 </div>
               )}
 
@@ -1701,7 +1828,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     thumbnailPreview ? "border-transparent" : "border-border hover:border-primary/50")}
                     onClick={() => thumbRef.current?.click()}>
                     {thumbnailPreview
-                      ? <img src={thumbnailPreview} alt="" className="w-full h-full object-cover" />
+                      ? <img src={thumbnailPreview} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       : <ImageIcon className="w-5 h-5 text-muted-foreground" />}
                   </div>
                   <div>
@@ -1724,8 +1851,15 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <div className="space-y-1 text-muted-foreground">
                   <p><span className="text-foreground font-medium">Title:</span> {title}</p>
                   <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
-                  <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : videoFile?.name ?? "File upload"}</p>
-                  {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+                  <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
+                  {videoSource === "youtube" ? (
+                    <p className="break-all"><span className="text-foreground font-medium">URL:</span> {videoUrl.trim()}</p>
+                  ) : (
+                    <>
+                      <p><span className="text-foreground font-medium">File:</span> {videoFile?.name ?? "Uploaded file"}</p>
+                      {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+                    </>
+                  )}
                 </div>
               </div>
               <div className="rounded-xl border border-border p-5 space-y-3">
@@ -1734,7 +1868,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 </p>
                 {[
                   { icon: Mic, text: "AI transcribes the full audio (Speech-to-Text)" },
-                  { icon: FileText, text: "Generates complete lecture notes PDF" },
+                  { icon: FileText, text: "Generates structured lecture notes" },
                   { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
                   { icon: Eye, text: "You review & optionally edit the AI notes" },
                   { icon: Send, text: "You publish — students get notified instantly" },
@@ -1758,16 +1892,16 @@ function UploadModal({ onClose, onSuccess, batches }: {
           </Button>
           {step < 3 ? (
             <Button onClick={() => setStep(s => (s + 1) as UploadStep)}
-              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl)}
+              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim())}
               className="gap-2">
               Continue <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 min-w-[160px]">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {isSubmitting && videoFile && uploadProgress < 100
+              {isSubmitting && videoSource === "upload" && videoFile && uploadProgress < 100
                 ? `Uploading ${uploadProgress}%`
-                : isSubmitting ? "Processing…" : "Upload & Process"}
+                : isSubmitting ? "Processing…" : videoSource === "youtube" ? "Save & process" : "Upload & Process"}
             </Button>
           )}
         </div>
@@ -1790,11 +1924,40 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
   const [topicId, setTopicId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: subjects } = useSubjects();
+  const { user } = useAuthStore();
+  const teacherId = user?.id ?? "";
+
+  const handleBatchChange = (id: string) => {
+    setBatchId(id);
+    setSubjectId("");
+    setChapterId("");
+    setTopicId("");
+  };
+
+  const { data: allSubjects, isLoading: subjectsLoading } = useSubjects(batchId || undefined);
   const { data: chapters } = useChapters(subjectId);
   const { data: topics } = useTopics(chapterId);
 
-  const subjectList: any[] = Array.isArray(subjects) ? subjects : [];
+  const { data: batchAssignments = [], isLoading: assignmentsLoading } = useQuery({
+    queryKey: ["batch-subject-teachers", batchId],
+    queryFn: () => getBatchSubjectTeachers(batchId),
+    enabled: !!batchId,
+  });
+
+  const isPrimaryTeacher = !!batchId && batches.find((b: any) => b.id === batchId)?.teacherId === teacherId;
+  const assignedSubjectNames = batchAssignments
+    .filter((a: any) => a.teacherId === teacherId)
+    .map((a: any) => a.subjectName.toLowerCase().trim());
+  const hasAnyAssignments = batchAssignments.length > 0;
+  const subjectsReady = !subjectsLoading && !(!!batchId && assignmentsLoading);
+  const subjectList: any[] = !subjectsReady
+    ? []
+    : !hasAnyAssignments || (isPrimaryTeacher && assignedSubjectNames.length === 0)
+      ? (allSubjects ?? [])
+      : (allSubjects ?? []).filter(
+          (s: any) => assignedSubjectNames.includes(s.name.toLowerCase().trim())
+        );
+
   const chapterList: any[] = Array.isArray(chapters) ? chapters : [];
   const topicList: any[] = Array.isArray(topics) ? topics : [];
 
@@ -1849,7 +2012,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5 col-span-2">
                   <Label>Batch *</Label>
-                  <select required value={batchId} onChange={e => setBatchId(e.target.value)}
+                  <select required value={batchId} onChange={e => handleBatchChange(e.target.value)}
                     className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
                     <option value="">Select batch…</option>
                     {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1858,26 +2021,33 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
                 {/* Subject → Chapter → Topic */}
                 <div className="space-y-1.5">
                   <Label>Subject *</Label>
-                  <select required value={subjectId} onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                    <option value="">Select subject…</option>
-                    {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <select required value={subjectId}
+                    onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                    disabled={!batchId}
+                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
+                    <option value="">
+                      {!batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…"}
+                    </option>
+                    {subjectList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                  {batchId && subjectsReady && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjectList.length === 0 && (
+                    <p className="text-xs text-amber-500 mt-1">No subjects assigned to you for this batch. Contact your admin.</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Chapter *</Label>
                   <select required value={chapterId} onChange={e => { setChapterId(e.target.value); setTopicId(""); }} disabled={!subjectId}
                     className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
-                    <option value="">Select chapter…</option>
-                    {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <option value="">{!subjectId ? "Select subject first…" : "Select chapter…"}</option>
+                    {chapterList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5 col-span-2">
                   <Label>Topic *</Label>
                   <select required value={topicId} onChange={e => setTopicId(e.target.value)} disabled={!chapterId}
                     className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
-                    <option value="">Select topic…</option>
-                    {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    <option value="">{!chapterId ? "Select chapter first…" : "Select topic…"}</option>
+                    {topicList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5 col-span-2">
@@ -1980,7 +2150,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         {/* Thumbnail */}
         <div className="w-28 h-18 rounded-xl bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center relative group/thumb">
           {lecture.thumbnailUrl
-            ? <img src={lecture.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+            ? <img src={lecture.thumbnailUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             : <Video className="w-7 h-7 text-muted-foreground/40" />}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
             <PlayCircle className="w-8 h-8 text-white" />
@@ -2011,9 +2181,9 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
               )}
             </div>
           </div>
-          {(processingStep !== undefined || lecture.status === "processing") && (
+          {(processingStep !== undefined || lecture.status === "processing") && lecture.status !== "draft" && lecture.status !== "published" && (
             <div className="mt-3">
-              <AiProcessingCard lecture={lecture} activeStep={processingStep ?? 0} />
+              <AiProcessingCard lecture={lecture} activeStep={processingStep} />
             </div>
           )}
           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
@@ -2056,6 +2226,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
   const [recordingUrl, setRecordingUrl] = useState("");
   const [showRecordingInput, setShowRecordingInput] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const recordingReady = !!lecture.videoUrl;
+  const recordingPending = lecture.status === "ended" && !recordingReady;
 
   const startClass = () => {
     navigate(`/live/${lecture.id}`);
@@ -2063,9 +2235,14 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
 
   const endClass = async () => {
     try {
-      await import("@/lib/api/live-class").then(m => m.endLiveClass(lecture.id));
-      toast({ title: "Class ended", description: "Attendance has been marked for all students." });
-      queryClient.invalidateQueries({ queryKey: ["my-lectures"] });
+      const result = await import("@/lib/api/live-class").then(m => m.endLiveClass(lecture.id));
+      toast({
+        title: "Class ended",
+        description: result.recordingUrl
+          ? "Recording has been saved as a recorded lecture."
+          : "Attendance marked. Recording is still processing.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
     } catch { toast({ title: "Failed to end class", variant: "destructive" }); }
   };
 
@@ -2073,8 +2250,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
     if (!recordingUrl) return;
     setIsSaving(true);
     try {
-      await updateLecture.mutateAsync({ id: lecture.id, liveMeetingUrl: recordingUrl } as any);
-      toast({ title: "Recording link saved!", description: "Students can now watch the recording." });
+      await updateLecture.mutateAsync({ id: lecture.id, videoUrl: recordingUrl } as any);
+      toast({ title: "Recording attached", description: "It has been saved as a recorded lecture and AI notes are processing." });
       setShowRecordingInput(false);
     } catch { toast({ title: "Failed", variant: "destructive" }); }
     finally { setIsSaving(false); }
@@ -2111,6 +2288,15 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
           </a>
         )}
 
+        {recordingPending && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+            <Loader2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 animate-spin" />
+            <p className="text-xs text-amber-800">
+              Recording is not available yet. It will appear here automatically, or you can attach a recording URL manually.
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 flex-wrap">
           {lecture.status === "scheduled" && (
             <Button size="sm" onClick={startClass} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
@@ -2127,9 +2313,9 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
               </Button>
             </>
           )}
-          {lecture.status === "ended" && !lecture.liveMeetingUrl && !showRecordingInput && (
+          {lecture.status === "ended" && !recordingReady && !showRecordingInput && (
             <Button size="sm" variant="outline" onClick={() => setShowRecordingInput(true)} className="gap-1.5 h-8 text-xs">
-              <Link2 className="w-3.5 h-3.5" /> Add Recording Link
+              <Link2 className="w-3.5 h-3.5" /> Attach Recording
             </Button>
           )}
           <button onClick={onDelete} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1">
@@ -2150,8 +2336,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
           </div>
         )}
 
-        {lecture.status === "ended" && lecture.liveMeetingUrl && (
-          <a href={lecture.liveMeetingUrl} target="_blank" rel="noreferrer"
+        {lecture.status === "ended" && lecture.videoUrl && (
+          <a href={lecture.videoUrl} target="_blank" rel="noreferrer"
             className="flex items-center gap-2 text-xs text-primary font-medium hover:underline">
             <PlayCircle className="w-3.5 h-3.5" /> Watch Recording
           </a>
@@ -2171,6 +2357,9 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TeacherLecturesPage = () => {
+  const isCompactLayout = useIsCompactLayout();
+  const prefersReducedMotion = useReducedMotion();
+  const lightMotion = isCompactLayout || !!prefersReducedMotion;
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterBatch = searchParams.get("batchId") ?? "";
@@ -2225,7 +2414,7 @@ const TeacherLecturesPage = () => {
   const deleteLecture = useDeleteLecture();
   const { toast } = useToast();
 
-  const [tab, setTab] = useState<"recorded" | "live">("recorded");
+  const [tab, setTab] = useState<"recorded" | "live">("live");
   const [showUpload, setShowUpload] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [viewLecture, setViewLecture] = useState<Lecture | null>(null);
@@ -2304,6 +2493,64 @@ const TeacherLecturesPage = () => {
 
   const recorded = filtered.filter(l => l.type === "recorded");
   const live = filtered.filter(l => l.type === "live");
+  const sortedLive = useMemo(
+    () =>
+      [...live].sort((a, b) => {
+        const order = { live: 0, scheduled: 1, ended: 2 };
+        return (order[a.status as keyof typeof order] ?? 9) - (order[b.status as keyof typeof order] ?? 9);
+      }),
+    [live],
+  );
+  const initialBatchSize = isCompactLayout ? 8 : 14;
+  const loadMoreBatchSize = isCompactLayout ? 6 : 10;
+  const [recordedVisibleCount, setRecordedVisibleCount] = useState(initialBatchSize);
+  const [liveVisibleCount, setLiveVisibleCount] = useState(initialBatchSize);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setRecordedVisibleCount(prev => {
+      const max = recorded.length || initialBatchSize;
+      return Math.max(initialBatchSize, Math.min(prev, max));
+    });
+  }, [recorded.length, initialBatchSize]);
+
+  useEffect(() => {
+    setLiveVisibleCount(prev => {
+      const max = sortedLive.length || initialBatchSize;
+      return Math.max(initialBatchSize, Math.min(prev, max));
+    });
+  }, [sortedLive.length, initialBatchSize]);
+
+  const visibleRecorded = useMemo(
+    () => recorded.slice(0, recordedVisibleCount),
+    [recorded, recordedVisibleCount],
+  );
+  const visibleLive = useMemo(
+    () => sortedLive.slice(0, liveVisibleCount),
+    [sortedLive, liveVisibleCount],
+  );
+  const canLoadMore =
+    tab === "recorded"
+      ? visibleRecorded.length < recorded.length
+      : visibleLive.length < sortedLive.length;
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !canLoadMore || isLoading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        if (tab === "recorded") {
+          setRecordedVisibleCount((prev) => Math.min(prev + loadMoreBatchSize, recorded.length));
+        } else {
+          setLiveVisibleCount((prev) => Math.min(prev + loadMoreBatchSize, sortedLive.length));
+        }
+      },
+      { rootMargin: isCompactLayout ? "220px 0px" : "320px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [canLoadMore, isLoading, isCompactLayout, loadMoreBatchSize, recorded.length, sortedLive.length, tab]);
 
   // Auto-poll every 8s when any recorded lecture is still processing
   // (handles the case where the user refreshes mid-processing)
@@ -2322,21 +2569,12 @@ const TeacherLecturesPage = () => {
   // After a lecture is uploaded, animate the processing steps UI while the
   // backend handles AI (speech-to-text + notes via Django).
   // We do NOT call the AI from the frontend — the backend already does it.
-  const triggerAiProcessing = useCallback(async (lectureId: string, _videoUrl: string, _topicId: string) => {
-    const advance = (step: number) =>
-      setProcessingSteps(prev => ({ ...prev, [lectureId]: step }));
-
+  const triggerAiProcessing = useCallback((lectureId: string) => {
     // Mark this lecture as pending review so we can auto-open the panel
     setPendingReviewIds(prev => new Set(prev).add(lectureId));
 
-    // Animate through steps (purely cosmetic — matches backend pipeline timing)
-    advance(0); await new Promise(r => setTimeout(r, 3000));
-    advance(1); await new Promise(r => setTimeout(r, 5000));
-    advance(2); await new Promise(r => setTimeout(r, 4000));
-    advance(3);
-
-    // Clear animation tracker
-    setProcessingSteps(prev => { const n = { ...prev }; delete n[lectureId]; return n; });
+    // Instantly refresh list to show the new lecture in 'processing' state
+    queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
     queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
   }, [queryClient]);
 
@@ -2354,7 +2592,9 @@ const TeacherLecturesPage = () => {
       title: readyLecture.aiNotesMarkdown ? "AI notes ready! ✨" : "AI processing complete",
       description: readyLecture.aiNotesMarkdown
         ? "Review and publish when you're satisfied."
-        : "AI could not generate notes — add them manually then publish.",
+        : isYouTubeUrl(readyLecture.videoUrl)
+          ? `YouTube lecture: ${readyLecture.transcriptStatus === "failed" ? YOUTUBE_LECTURE_CAPTIONS_HINT : "If notes are missing, check captions on the video or try re-transcribe."}`
+          : "AI could not generate notes — add them manually then publish.",
     });
   }, [lectures, pendingReviewIds, toast]);
 
@@ -2370,13 +2610,14 @@ const TeacherLecturesPage = () => {
     try {
       await retranscribeLecture(id);
       toast({ title: "Transcription started", description: "AI is re-transcribing the lecture. This may take a few minutes." });
-      queryClient.invalidateQueries({ queryKey: ["myLectures"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
     } catch {
       toast({ title: "Failed to start transcription", variant: "destructive" });
     }
   };
 
   return (
+    <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
     <>
     {/* Panels are siblings of (not inside) the motion.div — position:fixed children
         of a transformed element don't position relative to the viewport */}
@@ -2405,7 +2646,7 @@ const TeacherLecturesPage = () => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20"
+      className={cn("max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
     >
 
       {/* ── Header ── */}
@@ -2435,8 +2676,8 @@ const TeacherLecturesPage = () => {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
           {([
-            { key: "recorded", label: "Recorded",     icon: Video },
             { key: "live",     label: "Live Classes", icon: Radio },
+            { key: "recorded", label: "Recorded",     icon: Video },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={cn(
@@ -2542,7 +2783,7 @@ const TeacherLecturesPage = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {recorded.map(l => (
+            {visibleRecorded.map(l => (
               <RecordedCard
                 key={l.id}
                 lecture={l}
@@ -2554,6 +2795,9 @@ const TeacherLecturesPage = () => {
                 onRetranscribe={() => handleRetranscribe(l.id)}
               />
             ))}
+            <p className="text-xs text-slate-500 px-1">
+              Showing {visibleRecorded.length} of {recorded.length} recorded lectures
+            </p>
           </div>
         )
       ) : (
@@ -2564,21 +2808,29 @@ const TeacherLecturesPage = () => {
             <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {live
-              .sort((a, b) => {
-                const order = { live: 0, scheduled: 1, ended: 2 };
-                return (order[a.status as keyof typeof order] ?? 9) - (order[b.status as keyof typeof order] ?? 9);
-              })
-              .map(l => (
-                <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)} />
-              ))}
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {visibleLive.map(l => (
+                  <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)} />
+                ))}
+            </div>
+            <p className="text-xs text-slate-500 px-1">
+              Showing {visibleLive.length} of {sortedLive.length} live classes
+            </p>
           </div>
         )
       )}
 
+      {canLoadMore && !isLoading && (
+        <div ref={loadMoreRef} className="flex items-center justify-center py-2">
+          <Loader2 className={cn("w-4 h-4 text-slate-400 animate-spin", lightMotion && "animate-none")} />
+          <span className="ml-2 text-xs font-medium text-slate-500">Loading more lectures...</span>
+        </div>
+      )}
+
     </motion.div>
     </>
+    </MotionConfig>
   );
 };
 
