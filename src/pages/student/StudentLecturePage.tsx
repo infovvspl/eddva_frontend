@@ -1107,7 +1107,8 @@ function ResourceListPanel({ resources, type }: { resources: TopicResource[]; ty
 
 function LectureInfoCard({ lecture }: { lecture: Lecture }) {
   const duration = fmtDuration(lecture.videoDurationSeconds);
-  const isLive = lecture.type === "live" || lecture.status === "live";
+  const isLiveNow = lecture.status === "live";
+  const recordingPending = lecture.type === "live" && lecture.status === "ended" && !lecture.videoUrl;
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-4">
       <h2 className="text-base font-bold text-slate-900 mb-1 leading-snug">{lecture.title}</h2>
@@ -1121,7 +1122,7 @@ function LectureInfoCard({ lecture }: { lecture: Lecture }) {
           </span>
         )}
         <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg">
-          <Layers className="w-3 h-3 text-slate-400" /> {isLive ? "Live Class" : "Recorded"}
+          <Layers className="w-3 h-3 text-slate-400" /> {recordingPending ? "Recording Pending" : isLiveNow ? "Live Class" : "Recorded"}
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg">
           <Calendar className="w-3 h-3 text-slate-400" /> {fmtDate(lecture.createdAt)}
@@ -1240,13 +1241,17 @@ export default function StudentLecturePage() {
   if (!lecture) return null;
 
   const videoSrc        = lecture.videoUrl ?? "";
+  const hasPlayableVideo = !!videoSrc;
   const isYtLecture     = isYouTubeUrl(videoSrc);
   const displayWatchPct = isYtLecture
     ? Math.max(savedProgress?.watchPercentage ?? 0, ytDisplay.pct)
     : liveWatchPct > 0
       ? liveWatchPct
       : (savedProgress?.watchPercentage ?? 0);
-  const isLive          = lecture.type === "live" || lecture.status === "live";
+  const isLiveNow       = lecture.status === "live";
+  const isScheduledLive = lecture.type === "live" && lecture.status === "scheduled";
+  const recordingPending = lecture.type === "live" && lecture.status === "ended" && !hasPlayableVideo;
+  const isLive          = isLiveNow;
   const isPlaybackOnlySource = isYouTubeUrl(videoSrc);
 
   // ── Resource groups ──────────────────────────────────────────────────────────
@@ -1408,7 +1413,7 @@ export default function StudentLecturePage() {
             )}
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-bold text-slate-800 truncate leading-tight">{lecture.title}</h1>
-              {isLive && (
+              {isLiveNow && (
                 <span className="shrink-0 flex items-center gap-1 text-red-500 text-xs font-bold">
                   <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
                 </span>
@@ -1417,7 +1422,7 @@ export default function StudentLecturePage() {
           </div>
 
           {/* Progress — sm+ */}
-          {!isLive && (
+          {!isLiveNow && hasPlayableVideo && (
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <div className="text-right hidden md:block">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-0.5">Progress</p>
@@ -1459,24 +1464,66 @@ export default function StudentLecturePage() {
           <div className="min-w-0 space-y-3 lg:space-y-4">
 
             {/* Video player */}
-            <VideoPlayer
-              src={videoSrc} checkpoints={checkpoints} lectureId={id!}
-              videoRef={videoRef}
-              onDoubtClick={() => {
-                setDoubtTimestamp(isYtLecture ? ytDisplay.sec : liveCurrentTime);
-                setActiveAiTab("doubt");
-                setAiOpen(true);
-                setMobileAiOpen(true);
-              }}
-              resumeAt={savedProgress?.lastPositionSeconds}
-              onEnded={!isLive && mockTestId ? () => navigate(`/student/quiz?mockTestId=${mockTestId}`) : undefined}
-              externalPlaybackRef={ytPlaybackRef}
-              onFlushLectureProgress={flushLectureProgress}
-              onYouTubeTick={isYtLecture ? onYouTubeTick : undefined}
-            />
+            {hasPlayableVideo ? (
+              <VideoPlayer
+                src={videoSrc} checkpoints={checkpoints} lectureId={id!}
+                videoRef={videoRef}
+                onDoubtClick={() => {
+                  setDoubtTimestamp(isYtLecture ? ytDisplay.sec : liveCurrentTime);
+                  setActiveAiTab("doubt");
+                  setAiOpen(true);
+                  setMobileAiOpen(true);
+                }}
+                resumeAt={savedProgress?.lastPositionSeconds}
+                onEnded={!isLiveNow && mockTestId ? () => navigate(`/student/quiz?mockTestId=${mockTestId}`) : undefined}
+                externalPlaybackRef={ytPlaybackRef}
+                onFlushLectureProgress={flushLectureProgress}
+                onYouTubeTick={isYtLecture ? onYouTubeTick : undefined}
+              />
+            ) : (
+              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 aspect-video flex items-center justify-center">
+                <div className="max-w-md px-6 text-center">
+                  <div className={cn(
+                    "w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center",
+                    isLiveNow ? "bg-red-500/20" : recordingPending ? "bg-amber-500/20" : "bg-slate-700/70"
+                  )}>
+                    <Video className={cn(
+                      "w-7 h-7",
+                      isLiveNow ? "text-red-300" : recordingPending ? "text-amber-300" : "text-slate-300"
+                    )} />
+                  </div>
+                  <h3 className="text-xl font-black text-white">
+                    {isLiveNow
+                      ? "Live class is running"
+                      : recordingPending
+                        ? "Recording is being prepared"
+                        : isScheduledLive
+                          ? "Class has not started yet"
+                          : "Video is not available"}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                    {isLiveNow
+                      ? "Join the live room to attend the class in real time."
+                      : recordingPending
+                        ? "This class has ended. The recording will appear here automatically once processing finishes."
+                        : isScheduledLive
+                          ? "Come back when the teacher starts the class."
+                          : "The teacher has not attached a playable recording yet."}
+                  </p>
+                  {isLiveNow && (
+                    <button
+                      onClick={() => navigate(`/live/${id}`)}
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-600 transition-colors"
+                    >
+                      <Play className="w-4 h-4 fill-current" /> Join Live Class
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Mobile progress bar */}
-            {!isLive && (
+            {!isLiveNow && hasPlayableVideo && (
               <div className="flex items-center gap-3 sm:hidden px-1">
                 <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <motion.div animate={{ width: `${displayWatchPct}%` }} className="h-full bg-indigo-500 rounded-full" />
@@ -1501,7 +1548,13 @@ export default function StudentLecturePage() {
                   <div className="text-left">
                     <p className="text-sm font-bold text-slate-800">AI Study Tools</p>
                     <p className="text-[11px] text-slate-400 font-medium">
-                      {lecture.aiNotesMarkdown
+                      {!hasPlayableVideo
+                        ? recordingPending
+                          ? "Recording is being prepared"
+                          : isScheduledLive
+                            ? "Live class not started"
+                            : "Video not available"
+                        : lecture.aiNotesMarkdown
                         ? "Notes ready"
                         : isPlaybackOnlySource
                           ? "Upload required for AI notes"

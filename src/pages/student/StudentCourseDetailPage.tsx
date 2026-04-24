@@ -66,8 +66,8 @@ function subjectColor(name?: string) {
 const RESOURCE_META: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
   dpp:   { label: "DPP",   icon: <ClipboardList className="w-4 h-4" />, color: "text-orange-600",  bg: "bg-orange-50 border-orange-200" },
   pyq:   { label: "PYQ",   icon: <Trophy className="w-4 h-4" />,        color: "text-violet-600",  bg: "bg-violet-50 border-violet-200" },
-  pdf:   { label: "PDF",   icon: <File className="w-4 h-4" />,          color: "text-red-600",     bg: "bg-red-50 border-red-200" },
-  notes: { label: "Notes", icon: <FileText className="w-4 h-4" />,      color: "text-blue-600",    bg: "bg-blue-50 border-blue-200" },
+  pdf:   { label: "Lecture Notes",      icon: <File className="w-4 h-4" />,          color: "text-red-600",     bg: "bg-red-50 border-red-200" },
+  notes: { label: "Handwritten Notes", icon: <FileText className="w-4 h-4" />,      color: "text-blue-600",    bg: "bg-blue-50 border-blue-200" },
   video: { label: "Video", icon: <Youtube className="w-4 h-4" />,       color: "text-red-600",     bg: "bg-red-50 border-red-200" },
   link:  { label: "Link",  icon: <ExternalLink className="w-4 h-4" />,  color: "text-teal-600",    bg: "bg-teal-50 border-teal-200" },
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-4 h-4" />,  color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
@@ -1184,7 +1184,8 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
   const [imgErr, setImgErr] = useState(false);
   const progress = lecture.studentProgress?.watchPercentage ?? 0;
   const isCompleted = lecture.studentProgress?.isCompleted ?? false;
-  const isLive = lecture.type === "live";
+  const isLiveNow = lecture.status === "live";
+  const recordingPending = lecture.type === "live" && lecture.status === "ended" && !lecture.videoUrl;
   const thumb = resolveUrl(lecture.thumbnailUrl);
   const mins = lecture.videoDurationSeconds ? Math.ceil(lecture.videoDurationSeconds / 60) : null;
   const yt = isYoutubeLectureUrl(lecture.videoUrl);
@@ -1211,12 +1212,16 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
             <CheckCircle2 className="w-3 h-3" /> Watched
           </span>
         )}
-        {(isLive || yt) && (
+        {(isLiveNow || yt || recordingPending) && (
           <span className={cn(
             "absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 text-white text-[10px] font-bold rounded-lg",
-            isLive ? "bg-red-500 animate-pulse" : "bg-red-600"
+            isLiveNow ? "bg-red-500 animate-pulse" : recordingPending ? "bg-amber-500" : "bg-red-600"
           )}>
-            {isLive ? "● Live" : <span className="flex items-center gap-1"><Youtube className="w-3 h-3" /> YouTube</span>}
+            {isLiveNow
+              ? "● Live"
+              : recordingPending
+                ? "Recording Soon"
+                : <span className="flex items-center gap-1"><Youtube className="w-3 h-3" /> YouTube</span>}
           </span>
         )}
         {mins && (
@@ -1251,8 +1256,11 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
         {lecture.description && (
           <p className="text-[11px] text-slate-500 line-clamp-3 mb-2 leading-relaxed">{lecture.description}</p>
         )}
-        {isLive && lecture.liveMeetingUrl && (
+        {isLiveNow && lecture.liveMeetingUrl && (
           <p className="text-[10px] text-violet-600 font-semibold mb-1">Tap card to open — live link on watch page</p>
+        )}
+        {recordingPending && (
+          <p className="text-[10px] text-amber-600 font-semibold mb-1">Class ended. Recording is being prepared.</p>
         )}
         {progress > 0 && (
           <div className="mt-auto pt-2">
