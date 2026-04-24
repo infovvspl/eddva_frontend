@@ -24,14 +24,14 @@ export const HeroBadge = ({
 
 /* ─── Scroll-reveal wrapper ─── */
 export const FadeUp = ({
-  children, delay = 0, className = "",
-}: { children: React.ReactNode; delay?: number; className?: string }) => {
+  children, delay = 0, className = "", disableInitial = false,
+}: { children: React.ReactNode; delay?: number; className?: string; disableInitial?: boolean }) => {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.2, margin: "0px 0px -48px 0px" });
   return (
     <motion.div ref={ref}
-      initial={{ opacity: 0, y: 28 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
+      initial={disableInitial ? false : { opacity: 0, y: 28 }}
+      animate={disableInitial ? undefined : (inView ? { opacity: 1, y: 0 } : {})}
       transition={{ duration: 0.55, delay, ease: "easeOut" }}
       className={className}>
       {children}

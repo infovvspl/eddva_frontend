@@ -37,8 +37,9 @@ export const LandingNavbar = () => {
 
         <div className="hidden items-center gap-4 lg:flex">
           <Link to="/login"
-            className="rounded-xl px-4 py-2.5 text-[18px] font-bold text-gray-600 transition-all hover:bg-blue-50/50 hover:text-blue-600">
+            className="group relative text-[18px] font-black uppercase tracking-widest text-black transition-colors hover:text-blue-600">
             Login
+            <span className="absolute -bottom-1 left-0 h-0.5 w-0 origin-left scale-x-0 bg-blue-600 transition-all group-hover:w-full group-hover:scale-x-100" />
           </Link>
           <motion.div whileHover={{ scale: 1.05, boxShadow: `0 12px 30px rgba(230, 0, 0, 0.2)` }} whileTap={{ scale: 0.95 }}>
             <Link to="/register"
@@ -66,7 +67,7 @@ export const LandingNavbar = () => {
             ))}
             <div className="mt-4 flex flex-col gap-3">
               <Link to="/login" onClick={() => setMenuOpen(false)}
-                className="block rounded-2xl border-2 border-gray-100 py-3.5 text-center text-[15px] font-black text-gray-700 hover:bg-gray-50 transition-colors">
+                className="block py-4 text-[14px] font-black uppercase tracking-widest text-gray-700 hover:text-blue-600 border-b border-gray-50">
                 Login
               </Link>
               <Link to="/register" onClick={() => setMenuOpen(false)}

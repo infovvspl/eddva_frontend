@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -94,7 +94,44 @@ function PdfPreviewModal({
   const { isAuthenticated } = useAuthStore();
   const [downloading, setDownloading] = useState(false);
   const [dlError, setDlError] = useState("");
-  const previewUrl = studyMaterialApi.previewPublicUrl(material.id);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfError, setPdfError] = useState("");
+
+  // Fetch the PDF blob via apiClient so auth + tenant headers are sent
+  const fetchPreview = useCallback(async () => {
+    setPdfLoading(true);
+    setPdfError("");
+    setBlobUrl(null);
+    try {
+      const previewEndpoint = studyMaterialApi.previewPublicUrl(material.id);
+      const response = await fetch(previewEndpoint, {
+        headers: {
+          ...(localStorage.getItem("eddva_access_token")
+            ? { Authorization: `Bearer ${localStorage.getItem("eddva_access_token")}` }
+            : {}),
+          // pass tenant subdomain header if present
+          ...((() => { const h = window.location.hostname.split("."); return h.length > 2 ? { "X-Tenant-Subdomain": h[0] } : {}; })()),
+        },
+      });
+      if (!response.ok) throw new Error(`Server returned ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setBlobUrl(url);
+    } catch (err: any) {
+      setPdfError(err?.message || "Failed to load PDF preview.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [material.id]);
+
+  useEffect(() => {
+    fetchPreview();
+    return () => {
+      // revoke the object URL on unmount to free memory
+      setBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    };
+  }, [fetchPreview]);
 
   const handleDownload = async () => {
     if (!isAuthenticated) { navigate("/register"); return; }
@@ -141,13 +178,33 @@ function PdfPreviewModal({
           </button>
         </div>
 
-        {/* PDF iframe */}
+        {/* PDF iframe — loaded via blob URL so auth headers work */}
         <div className="relative min-h-0 flex-1 overflow-hidden bg-gray-100" style={{ minHeight: "min(380px,45dvh)" }}>
-          <iframe
-            src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-            className="h-full min-h-[min(380px,45dvh)] w-full border-0"
-            title="PDF Preview"
-          />
+          {pdfLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <p className="text-[13px] font-semibold text-gray-400">Loading preview…</p>
+            </div>
+          )}
+          {pdfError && !pdfLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50 px-8 text-center">
+              <AlertCircle className="h-8 w-8 text-red-400" />
+              <p className="text-[13px] font-semibold text-red-500">{pdfError}</p>
+              <button
+                onClick={fetchPreview}
+                className="mt-1 rounded-xl border border-gray-200 bg-white px-4 py-2 text-[12px] font-bold text-gray-600 hover:bg-gray-50"
+              >
+                Reload
+              </button>
+            </div>
+          )}
+          {blobUrl && (
+            <iframe
+              src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+              className="h-full min-h-[min(380px,45dvh)] w-full border-0"
+              title="PDF Preview"
+            />
+          )}
 
           {/* Blur gate at bottom when not enrolled */}
           {!enrolled && (
@@ -342,7 +399,7 @@ export default function ExamTrackDemoPage() {
     { key: "all",          label: "All" },
     { key: "notes",        label: "Notes" },
     { key: "pyq",          label: "PYQs" },
-    { key: "formula_sheet",label: "Formula Sheets" },
+    // { key: "formula_sheet",label: "Formula Sheets" },
     { key: "dpp",          label: "DPPs" },
   ] as const;
 

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -157,8 +157,8 @@ const exams = [
 const categories = ["All", "Engineering", "Medical", "Boards"];
 
 const statusConfig = {
-  live:       { label: "Live Now",     bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
-  upcoming:   { label: "Upcoming",     bg: "#EFF6FF", color: "#2563EB", dot: "#3B82F6" },
+  live: { label: "Live Now", bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
+  upcoming: { label: "Upcoming", bg: "#EFF6FF", color: "#2563EB", dot: "#3B82F6" },
   "reg-closed": { label: "Reg Closed", bg: "#FEF2F2", color: "#DC2626", dot: "#EF4444" },
 };
 
@@ -214,16 +214,16 @@ export default function CareerPage() {
                   >
                     View All Exams <ArrowRight className="h-4 w-4" />
                   </motion.a>
-             
+
                 </div>
               </FadeUp>
 
               {/* floating exam stat chips */}
               <div className="absolute bottom-16 right-8 hidden flex-col gap-3 lg:flex">
                 {[
-                  { icon: "⚛️", val: "JEE Mains",  sub: "Jan 22, 2025" },
-                  { icon: "🩺", val: "NEET UG",    sub: "May 4, 2025"  },
-                  { icon: "🎓", val: "CBSE Boards", sub: "Feb 15, 2025" },
+                  { icon: "⚛️", val: "JEE Mains",  },
+                  { icon: "🩺", val: "NEET UG",  },
+                  { icon: "🎓", val: "CBSE Boards",  },
                 ].map((s, i) => (
                   <motion.div
                     key={s.val}
@@ -244,32 +244,6 @@ export default function CareerPage() {
           </div>
         </section>
 
-        {/* ══ QUICK STATS ══ */}
-        <section className="bg-white py-12">
-          <div className="landing-shell">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[
-                { icon: <Target className="h-6 w-6" />,     val: "8+",    label: "Major Exams",      color: B },
-                { icon: <TrendingUp className="h-6 w-6" />, val: "50L+",  label: "Students Appear",  color: P },
-                { icon: <Award className="h-6 w-6" />,      val: "98%",   label: "Our Selection Rate", color: T },
-                { icon: <BookOpen className="h-6 w-6" />,   val: "500+",  label: "Prep Resources",   color: IN },
-              ].map((s, i) => (
-                <FadeUp key={s.label} delay={i * 0.08}>
-                  <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
-                      style={{ background: `${s.color}12`, color: s.color }}>
-                      {s.icon}
-                    </div>
-                    <div>
-                      <p className="text-[22px] font-extrabold text-gray-900 leading-none">{s.val}</p>
-                      <p className="mt-1 text-[12px] font-semibold text-gray-400">{s.label}</p>
-                    </div>
-                  </div>
-                </FadeUp>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* ══ UPCOMING EXAMS LIST ══ */}
         <section className="landing-section" id="exams"

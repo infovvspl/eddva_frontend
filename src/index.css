@@ -182,7 +182,7 @@
 
   .landing-title-hero {
     font-size: clamp(2.5rem, 3.1vw + 1.6rem, 3.85rem);
-    line-height: 1.05;
+    line-height: 1.2;
     letter-spacing: -0.03em;
     font-weight: 800;
   }

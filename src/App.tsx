@@ -49,6 +49,7 @@ const TeacherStudentDetailPage = lazy(() => import("./pages/teacher/TeacherStude
 const TeacherQuizzesPage = lazy(() => import("./pages/teacher/TeacherQuizzesPage"));
 const TeacherDoubtsPage = lazy(() => import("./pages/teacher/TeacherDoubtsPage"));
 const TeacherAnalyticsPage = lazy(() => import("./pages/teacher/TeacherAnalyticsPage"));
+const TeacherContentPage = lazy(() => import("./pages/teacher/TeacherContentPage"));
 const TeacherAIToolsPage = lazy(() => import("./pages/teacher/TeacherAIToolsPage"));
 const TeacherProfilePage = lazy(() => import("./pages/teacher/TeacherProfilePage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
@@ -146,6 +147,7 @@ const TeacherRoutes = () => (
     </Route>
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
+      <Route path="/teacher/content" element={<TeacherContentPage />} />
       <Route path="/teacher/lectures" element={<TeacherLecturesPage />} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
