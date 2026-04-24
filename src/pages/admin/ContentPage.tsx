@@ -186,76 +186,44 @@ function isYoutubeLikeUrl(url?: string | null) {
   return u.includes("youtube.com") || u.includes("youtu.be");
 }
 
-// ─── Resource Card ─────────────────────────────────────────────────────────────
+// ─── Resource Row ──────────────────────────────────────────────────────────────
 
-function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
+function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
   const cfg = rCfg(String(r.type ?? "").toLowerCase() as TopicResourceType);
   const Icon = cfg.icon;
   const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
   const rawYtUrl = r.externalUrl || (isYoutubeLikeUrl(r.fileUrl ?? undefined) ? r.fileUrl! : null);
   const ytId = rawYtUrl ? getYouTubeId(rawYtUrl) : null;
-  const isYt = !!ytId || isYoutubeLikeUrl(rawYtUrl ?? undefined);
-  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden hover:border-slate-200 hover:shadow-md transition-all"
+      exit={{ opacity: 0 }}
+      className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all"
     >
-      {/* YouTube thumbnail strip */}
-      {isYt && (
-        <div className="relative h-28 bg-slate-900 overflow-hidden">
-          {ytId && (
-            <img
-              src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
-              alt={r.title}
-              className="w-full h-full object-cover opacity-80"
-            />
-          )}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-              <Play className="w-5 h-5 text-white fill-white ml-0.5" />
-            </div>
-          </div>
-          <div className={cn("absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white", "bg-red-600")}>
-            <Youtube className="w-2.5 h-2.5" /> YouTube
-          </div>
-        </div>
-      )}
-
-      {/* Non-YouTube file type banner */}
-      {!isYt && (
-        <div className={cn("flex items-center gap-2 px-3 py-2 border-b", cfg.bg, cfg.border)}>
-          <Icon className={cn("w-3.5 h-3.5", cfg.color)} />
-          <span className={cn("text-[10px] font-black uppercase tracking-widest", cfg.color)}>{cfg.shortLabel}</span>
-          {r.fileSizeKb && <span className="ml-auto text-[10px] text-slate-400">{fmtSize(r.fileSizeKb)}</span>}
-        </div>
-      )}
-
-      <div className="p-3">
-        <p className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">{r.title}</p>
-        {r.description && <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{r.description}</p>}
-        {r.externalUrl && !isYt && (
-          <p className="text-[10px] text-blue-500 mt-1 truncate">{r.externalUrl}</p>
-        )}
+      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", cfg.bg)}>
+        <Icon className={cn("w-4 h-4", cfg.color)} />
       </div>
-
-      {/* Action row */}
-      <div className="flex items-center justify-between px-3 pb-3">
-        {href ? (
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-800 truncate">{r.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          {r.fileSizeKb && <span className="text-[10px] text-slate-400">{fmtSize(r.fileSizeKb)}</span>}
+          {ytId && <span className="text-[10px] text-red-500 font-semibold flex items-center gap-0.5"><Youtube className="w-2.5 h-2.5" /> YouTube</span>}
+          {r.externalUrl && !ytId && <span className="text-[10px] text-slate-400 truncate max-w-[200px]">{r.externalUrl}</span>}
+        </div>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        {href && (
           <a href={href} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 hover:text-blue-700">
+            className="h-7 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center gap-1 transition-all">
             <ExternalLink className="w-3 h-3" />
-            {isYt ? "Watch" : r.type === "pdf" || r.type === "dpp" || r.type === "pyq" ? "View PDF" : "Open"}
+            {ytId ? "Watch" : "Open"}
           </a>
-        ) : <span />}
-        <button
-          onClick={onDelete}
-          className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-        >
+        )}
+        <button onClick={onDelete}
+          className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -263,56 +231,32 @@ function ResourceCard({ r, onDelete }: { r: TopicResource; onDelete: () => void 
   );
 }
 
-// ─── Upload Panel ──────────────────────────────────────────────────────────────
+// ─── Add Resource Modal ────────────────────────────────────────────────────────
 
-function UploadPanel({
-  topicId, topicName, batchId,
-  filterType, setFilterType,
+function AddResourceModal({
+  topicId, topicName, batchId, initialType, onClose,
 }: {
-  topicId: string;
-  topicName: string;
-  batchId: string;
-  filterType: TopicResourceType | "all";
-  setFilterType: (t: TopicResourceType | "all") => void;
+  topicId: string; topicName: string; batchId: string;
+  initialType?: TopicResourceType; onClose: () => void;
 }) {
-  const { data: resources = [], isLoading } = useTopicResources(topicId);
-  const { data: batchLecturesRaw = [], isLoading: lecturesLoading } = useBatchContentLectures(batchId);
-  const topicLectures = React.useMemo(() => {
-    const arr = Array.isArray(batchLecturesRaw) ? batchLecturesRaw : [];
-    return (arr as AdminTopicLectureRow[]).filter(l => {
-      const lid = l.topic?.id ?? l.topicId;
-      return lid != null && String(lid) === String(topicId);
-    });
-  }, [batchLecturesRaw, topicId]);
-  const upload = useUploadTopicResource(topicId, batchId);
-  const deleteRes = useDeleteTopicResource(topicId);
-  const addLink = useAddTopicResourceLink(topicId);
-
-
-  const [activeType, setActiveType] = useState<TopicResourceType>("pdf");
-  const [mode, setMode] = useState<"upload" | "link">("upload");
-  const [showUploader, setShowUploader] = useState(true);
+  const [step, setStep] = useState<"type" | "input">(initialType ? "input" : "type");
+  const [selectedType, setSelectedType] = useState<TopicResourceType>(initialType ?? "pdf");
   const [title, setTitle] = useState("");
   const [urlInput, setUrlInput] = useState("");
-  const [dragging, setDragging] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const activeCfg = rCfg(activeType);
+  const upload = useUploadTopicResource(topicId, batchId);
+  const addLink = useAddTopicResourceLink(topicId);
+  const activeCfg = rCfg(selectedType);
   const isUrlType = activeCfg.isUrl;
 
-  /** Clean a raw filename into a readable title */
   const cleanFilename = (name: string) =>
-    name
-      .replace(/\.[^.]+$/, "")              // strip extension
-      .replace(/[_-]/g, " ")               // underscores/hyphens → spaces
-      .replace(/\s{2,}/g, " ")             // collapse whitespace
-      .trim();
+    name.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ").replace(/\s{2,}/g, " ").trim();
 
   const stageFile = (file: File) => {
     if (file.size > MAX_MATERIAL_FILE_SIZE_MB * 1024 * 1024) {
-      toast.error(`File must be ≤ ${MAX_MATERIAL_FILE_SIZE_MB} MB`);
-      return;
+      toast.error(`File must be ≤ ${MAX_MATERIAL_FILE_SIZE_MB} MB`); return;
     }
     setPendingFile(file);
     if (!title.trim()) setTitle(cleanFilename(file.name));
@@ -322,35 +266,233 @@ function UploadPanel({
     if (!pendingFile) return;
     const t = title.trim() || cleanFilename(pendingFile.name);
     try {
-      await upload.mutateAsync({ file: pendingFile, type: activeType, title: t });
-      toast.success(`${activeCfg.label} uploaded`);
-      setTitle("");
-      setPendingFile(null);
-      if (fileRef.current) fileRef.current.value = "";
+      await upload.mutateAsync({ file: pendingFile, type: selectedType, title: t });
+      toast.success(`${activeCfg.label} uploaded`); onClose();
     } catch { toast.error("Upload failed — please try again"); }
-  };
-
-  const cancelPending = () => {
-    setPendingFile(null);
-    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleAddLink = async () => {
     if (!urlInput.trim()) { toast.error("Paste a URL first"); return; }
     const t = title.trim() || (isYouTube(urlInput) ? "YouTube Video" : "External Link");
-    const type: TopicResourceType = isYouTube(urlInput) ? "video" : activeType;
+    const type: TopicResourceType = isYouTube(urlInput) ? "video" : selectedType;
     try {
       await addLink.mutateAsync({ title: t, type, externalUrl: urlInput.trim() });
-      toast.success("Link saved");
-      setTitle(""); setUrlInput("");
+      toast.success("Link saved"); onClose();
     } catch { toast.error("Failed to save link"); }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault(); setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) stageFile(file);
-  };
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            {step === "input" && !initialType && (
+              <button onClick={() => setStep("type")}
+                className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+            <div>
+              <h3 className="text-sm font-black text-slate-900">
+                {step === "type" ? "What would you like to add?" : `Add ${activeCfg.label}`}
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[240px]">{topicName}</p>
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {step === "type" ? (
+            <motion.div key="type" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
+              className="p-5">
+              <div className="grid grid-cols-2 gap-3">
+                {RES_TYPES.map(rt => {
+                  const Icon = rt.icon;
+                  return (
+                    <button key={rt.value}
+                      onClick={() => { setSelectedType(rt.value); setStep("input"); }}
+                      className={cn("flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all hover:shadow-sm", rt.bg, rt.border)}>
+                      <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center shrink-0">
+                        <Icon className={cn("w-5 h-5", rt.color)} />
+                      </div>
+                      <div>
+                        <p className={cn("text-sm font-black", rt.color)}>{rt.label}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{rt.isUrl ? "Paste URL" : "Upload file"}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div key="input" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
+              className="p-5 space-y-4">
+              <div className={cn("inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black", activeCfg.bg, activeCfg.border, activeCfg.color)}>
+                <activeCfg.icon className="w-3.5 h-3.5" />
+                {activeCfg.label}
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Title</label>
+                <input
+                  placeholder="Give this resource a clear title…"
+                  value={title} onChange={e => setTitle(e.target.value)}
+                  className="w-full h-10 px-4 text-sm bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 focus:bg-white transition-all"
+                />
+              </div>
+
+              {isUrlType ? (
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">URL</label>
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                      {isYouTube(urlInput) ? <Youtube className="w-4 h-4 text-red-500" /> : <Link2 className="w-4 h-4 text-slate-400" />}
+                    </div>
+                    <input autoFocus placeholder="https://youtube.com/... or any URL"
+                      value={urlInput} onChange={e => setUrlInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") handleAddLink(); }}
+                      className="w-full h-10 pl-10 pr-4 text-sm bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 focus:bg-white transition-all"
+                    />
+                  </div>
+                  {isYouTube(urlInput) && (
+                    <p className="text-[11px] text-red-500 font-semibold mt-1.5 flex items-center gap-1">
+                      <Youtube className="w-3 h-3" /> YouTube video detected
+                    </p>
+                  )}
+                </div>
+              ) : pendingFile ? (
+                <div className={cn("rounded-2xl border-2 p-4 flex items-center gap-3", activeCfg.bg, activeCfg.border)}>
+                  <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center shrink-0">
+                    <activeCfg.icon className={cn("w-5 h-5", activeCfg.color)} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800 truncate">{pendingFile.name}</p>
+                    <p className="text-xs text-slate-500">{fmtSize(Math.round(pendingFile.size / 1024))}</p>
+                  </div>
+                  <button onClick={() => { setPendingFile(null); setTitle(""); if (fileRef.current) fileRef.current.value = ""; }}
+                    className="w-7 h-7 rounded-xl bg-white/80 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">File</label>
+                  <div
+                    onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) stageFile(f); }}
+                    onClick={() => fileRef.current?.click()}
+                    className={cn("border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all",
+                      dragging ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300 hover:bg-slate-50")}
+                  >
+                    <div className={cn("w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center", activeCfg.bg)}>
+                      <Upload className={cn("w-6 h-6", activeCfg.color)} />
+                    </div>
+                    <p className="text-sm font-bold text-slate-600">Drop file or <span className="text-blue-600">browse</span></p>
+                    <p className="text-xs text-slate-400 mt-1">Max {MAX_MATERIAL_FILE_SIZE_MB} MB · {activeCfg.accept?.split(",").join(", ")}</p>
+                    <input ref={fileRef} type="file" accept={activeCfg.accept} className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={isUrlType ? handleAddLink : handleConfirmUpload}
+                disabled={isUrlType ? addLink.isPending || !urlInput.trim() : upload.isPending || !pendingFile}
+                className="w-full h-11 rounded-2xl text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-40 transition-opacity"
+                style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                {(upload.isPending || addLink.isPending)
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {isUrlType ? "Saving…" : "Uploading…"}</>
+                  : <>{isUrlType ? <Link2 className="w-4 h-4" /> : <Upload className="w-4 h-4" />} {isUrlType ? "Save Link" : "Upload File"}</>}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Compact Lecture Row ───────────────────────────────────────────────────────
+
+function CompactLectureRow({ lec }: { lec: AdminTopicLectureRow }) {
+  const videoHref = lec.videoUrl ? resolveUrl(lec.videoUrl) : "";
+  const s = (lec.status || "").toLowerCase();
+  const statusCls = s === "published" ? "text-emerald-700 bg-emerald-50 border-emerald-100"
+    : s === "live" ? "text-red-700 bg-red-50 border-red-100"
+    : s === "scheduled" ? "text-amber-700 bg-amber-50 border-amber-100"
+    : "text-slate-500 bg-slate-100 border-slate-200";
+  return (
+    <div className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
+      <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+        <Play className="w-4 h-4 text-rose-500" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-800 truncate">{lec.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full border", statusCls)}>{lec.status}</span>
+          {lec.scheduledAt && <span className="text-[10px] text-slate-400">{new Date(lec.scheduledAt).toLocaleDateString()}</span>}
+        </div>
+      </div>
+      {videoHref && (
+        <a href={videoHref} target="_blank" rel="noopener noreferrer"
+          className="opacity-0 group-hover:opacity-100 h-7 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 flex items-center gap-1 transition-all shrink-0">
+          <ExternalLink className="w-3 h-3" /> Open
+        </a>
+      )}
+    </div>
+  );
+}
+
+// ─── Resource Workspace ────────────────────────────────────────────────────────
+
+function ResourceWorkspace({
+  topicId, topicName, batchId, subject, chapter, onNavigateToLectures, onOpenAi,
+}: {
+  topicId: string; topicName: string; batchId: string;
+  subject: Subject; chapter: Chapter;
+  onNavigateToLectures: () => void;
+  onOpenAi: () => void;
+}) {
+  const { data: resources = [], isLoading } = useTopicResources(topicId);
+  const { data: batchLecturesRaw = [] } = useBatchContentLectures(batchId);
+  const deleteRes = useDeleteTopicResource(topicId);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalType, setAddModalType] = useState<TopicResourceType | undefined>(undefined);
+
+  const topicLectures = useMemo(() => {
+    const arr = Array.isArray(batchLecturesRaw) ? batchLecturesRaw : [];
+    return (arr as AdminTopicLectureRow[]).filter(l => {
+      const lid = l.topic?.id ?? (l as any).topicId;
+      return lid != null && String(lid) === String(topicId);
+    });
+  }, [batchLecturesRaw, topicId]);
+
+
+  const isYtResource = (r: TopicResource) =>
+    isYoutubeLikeUrl(r.externalUrl ?? undefined) || isYoutubeLikeUrl(r.fileUrl ?? undefined);
+
+  const grouped = useMemo(() => {
+    const g: Record<TopicResourceType, TopicResource[]> = { pdf: [], dpp: [], pyq: [], notes: [], video: [], link: [], quiz: [] };
+    for (const r of resources) {
+      const t = String(r.type ?? "").toLowerCase() as TopicResourceType;
+      if ((t === "link" || t === "video") && isYtResource(r)) { g.video.push(r); }
+      else if (g[t]) { g[t].push(r); }
+    }
+    return g;
+  }, [resources]);
+
+  const openAdd = (type?: TopicResourceType) => { setAddModalType(type); setShowAddModal(true); };
+  const hasAnything = resources.length > 0 || topicLectures.length > 0;
 
   const handleDelete = async (r: TopicResource) => {
     if (!confirm(`Delete "${r.title}"?`)) return;
@@ -358,285 +500,124 @@ function UploadPanel({
     catch { toast.error("Delete failed"); }
   };
 
-  const normResType = (r: TopicResource) => String(r.type ?? "").toLowerCase() as TopicResourceType;
-
-  const matchesVideoFilter = (r: TopicResource) => {
-    const t = normResType(r);
-    if (t === "video") return true;
-    if (t === "link" && (isYoutubeLikeUrl(r.externalUrl ?? undefined) || isYoutubeLikeUrl(r.fileUrl ?? undefined))) return true;
-    return false;
-  };
-
-  /** File rows only — lectures are shown separately when filter is "all" or "video". */
-  const filteredFiles = React.useMemo(() => {
-    if (filterType === "all") return resources;
-    if (filterType === "video") return resources.filter(matchesVideoFilter);
-    return resources.filter(r => normResType(r) === filterType);
-  }, [resources, filterType]);
-
-  const showLecturesBlock = filterType === "all" || filterType === "video";
-  const typeCounts = RES_TYPES.map(rt => ({
-    ...rt,
-    count: rt.value === "video"
-      ? resources.filter(matchesVideoFilter).length
-      : resources.filter(r => normResType(r) === rt.value).length,
-  }));
-  const hasTopicLectures = topicLectures.length > 0;
-  const hasAnything = resources.length > 0 || hasTopicLectures;
-  const listLoading = isLoading || lecturesLoading;
-
   return (
-    <div className="flex min-h-0 flex-col h-full overflow-hidden">
-      {/* ── Header ── */}
-      <div className="px-6 py-4 border-b border-slate-100 shrink-0 bg-white">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-400 mb-0.5">Topic Resources</p>
-            <h2 className="text-lg font-black text-slate-900 leading-tight">{topicName}</h2>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-            <Layers className="w-3.5 h-3.5" />
-            <span className="font-bold">{resources.length} item{resources.length !== 1 ? "s" : ""}</span>
-          </div>
+    <div className="flex flex-col h-full bg-white">
+      {/* Header */}
+      <div className="shrink-0 px-6 pt-5 pb-4 border-b border-slate-100">
+        <div className="flex items-center gap-1.5 text-xs mb-2">
+          <span className="font-bold" style={{ color: subject.colorCode ?? "#6B7280" }}>{subject.name}</span>
+          <ChevronRight className="w-3 h-3 text-slate-300" />
+          <span className="font-bold text-amber-600">{chapter.name}</span>
         </div>
-
-      </div>
-
-      {/* ── Add Resource Section ── */}
-      <div className="sticky top-0 z-10 px-6 py-3 border-b border-slate-100 bg-slate-50/95 backdrop-blur-sm shrink-0">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Add Resource</p>
-          <button
-            type="button"
-            onClick={() => setShowUploader(v => !v)}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500 hover:text-slate-700"
-          >
-            {showUploader ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            {showUploader ? "Hide" : "Show"}
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-xl font-black text-slate-900 leading-tight">{topicName}</h2>
+          <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-xl font-bold shrink-0 mt-0.5">
+            {resources.length} item{resources.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 mt-4 flex-wrap">
+          <button onClick={() => openAdd()}
+            className="flex items-center gap-2 h-9 px-4 rounded-xl text-white text-sm font-black transition-opacity hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+            <Plus className="w-4 h-4" /> Add Resource
+          </button>
+          <button onClick={onOpenAi}
+            className="flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-black bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors">
+            <Sparkles className="w-4 h-4" /> AI Generate
+          </button>
+          <button onClick={onNavigateToLectures}
+            className="flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-black bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors ml-auto">
+            <Play className="w-4 h-4 text-rose-400" /> Lectures
           </button>
         </div>
-
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => setFilterType("all")}
-            className={cn(
-              "rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide",
-              filterType === "all" ? "border-slate-700 bg-slate-800 text-white" : "border-slate-200 bg-white text-slate-500"
-            )}
-          >
-            All ({resources.length})
-          </button>
-          {typeCounts.map(rt => (
-            <button
-              key={`flt-${rt.value}`}
-              type="button"
-              onClick={() => setFilterType(rt.value)}
-              className={cn(
-                "rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide",
-                filterType === rt.value ? cn(rt.border, rt.bg, rt.color) : "border-slate-200 bg-white text-slate-500"
-              )}
-            >
-              {rt.shortLabel} ({rt.count})
-            </button>
-          ))}
-        </div>
-
-        {showUploader && (
-          <>
-
-        {/* Type selector */}
-        <div className="grid grid-cols-6 gap-1.5 mb-3">
-          {RES_TYPES.map(rt => {
-            const Icon = rt.icon;
-            const sel = activeType === rt.value;
-            return (
-              <button
-                key={rt.value}
-                type="button"
-                onClick={() => {
-                  setActiveType(rt.value);
-                  setMode(rt.isUrl ? "link" : "upload");
-                  setFilterType(filterType === rt.value ? "all" : rt.value);
-                }}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-2 rounded-xl border text-center transition-all",
-                  filterType === rt.value ? cn(rt.bg, rt.color, rt.border, "shadow-sm") : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600"
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-wide leading-none">{rt.shortLabel}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Mode toggle for file types */}
-        {!isUrlType && (
-          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-0.5 mb-3 w-fit">
-            {(["upload", "link"] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={cn("px-4 py-1.5 rounded-[10px] text-[11px] font-black uppercase tracking-wide transition-all",
-                  mode === m ? "bg-slate-900 text-white shadow-sm" : "text-slate-400 hover:text-slate-700"
-                )}>
-                {m === "upload" ? "Upload File" : "Paste URL"}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Title input */}
-        <input
-          placeholder="Title (auto-filled from filename if empty)"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          className="w-full h-9 px-3.5 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors mb-2"
-        />
-
-        {/* Upload or Link input */}
-        {(mode === "link" || isUrlType) ? (
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                {isYouTube(urlInput)
-                  ? <Youtube className="w-4 h-4 text-red-500" />
-                  : <Link2 className="w-4 h-4 text-slate-400" />}
-              </div>
-              <input
-                placeholder="https://youtube.com/... or any URL"
-                value={urlInput}
-                onChange={e => setUrlInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") handleAddLink(); }}
-                className="w-full h-9 pl-9 pr-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
-              />
-            </div>
-            <button
-              onClick={handleAddLink}
-              disabled={addLink.isPending || !urlInput.trim()}
-              className="h-9 px-4 rounded-xl font-black text-white text-xs flex items-center gap-1.5 disabled:opacity-40 transition-opacity shrink-0"
-              style={{ background: "linear-gradient(135deg, #013889,#0257c8)" }}
-            >
-              {addLink.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              Save
-            </button>
-          </div>
-        ) : pendingFile ? (
-          /* ── Staged: file selected, confirm before upload ── */
-          <div className="rounded-xl border-2 border-blue-300 bg-blue-50/60 p-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", activeCfg.bg)}>
-                <activeCfg.icon className={cn("w-4 h-4", activeCfg.color)} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-black text-slate-700 truncate">{pendingFile.name}</p>
-                <p className="text-[10px] text-slate-400">{fmtSize(Math.round(pendingFile.size / 1024))}</p>
-              </div>
-              <button onClick={cancelPending} className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <input
-              autoFocus
-              placeholder="Give this file a meaningful title…"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") handleConfirmUpload(); if (e.key === "Escape") cancelPending(); }}
-              className="w-full h-8 px-3 text-sm bg-white border border-blue-300 rounded-lg outline-none focus:border-blue-500"
-            />
-            <button
-              onClick={handleConfirmUpload}
-              disabled={upload.isPending || !title.trim()}
-              className="w-full h-8 rounded-lg font-black text-white text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 transition-opacity"
-              style={{ background: "linear-gradient(135deg, #013889,#0257c8)" }}
-            >
-              {upload.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-              {upload.isPending ? "Uploading…" : "Upload"}
-            </button>
-          </div>
-        ) : (
-          <div
-            onDragOver={e => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => fileRef.current?.click()}
-            className={cn(
-              "relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
-              dragging
-                ? "border-blue-400 bg-blue-50 scale-[1.01]"
-                : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30"
-            )}
-          >
-            <div className={cn("w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center", activeCfg.bg)}>
-              <Upload className={cn("w-5 h-5", activeCfg.color)} />
-            </div>
-            <p className="text-sm font-bold text-slate-600">
-              Drop {activeCfg.label} here or <span className="text-blue-600">browse</span>
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Max {MAX_MATERIAL_FILE_SIZE_MB} MB · {activeCfg.accept?.split(",").join(", ")}</p>
-            <input ref={fileRef} type="file" accept={activeCfg.accept} className="hidden"
-              onChange={e => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
-          </div>
-        )}
-          </>
-        )}
       </div>
 
-      {/* ── Resource Grid (+ lectures linked to this topic) ── */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 pr-4">
-        {listLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>
+      {/* Resource sections */}
+      <div className="flex-1 overflow-y-auto px-6 py-5">
+        {isLoading ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>
         ) : !hasAnything ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mb-4">
               <Layers className="w-8 h-8 text-slate-300" />
             </div>
-            <p className="text-base font-black text-slate-500">No resources yet</p>
-            <p className="text-sm text-slate-400 mt-1 max-w-xs">
-              Upload a PDF, add a DPP or PYQ file, or paste a YouTube link above.
+            <p className="text-lg font-black text-slate-600 mb-1">No resources yet</p>
+            <p className="text-sm text-slate-400 mb-6 max-w-xs leading-relaxed">
+              Upload study materials, DPPs, or add YouTube links for this topic.
             </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-sm">
+              {RES_TYPES.map(rt => {
+                const Icon = rt.icon;
+                return (
+                  <button key={rt.value} onClick={() => openAdd(rt.value)}
+                    className={cn("flex items-center gap-2 p-3 rounded-2xl border-2 text-left transition-all hover:shadow-sm", rt.bg, rt.border)}>
+                    <Icon className={cn("w-4 h-4 shrink-0", rt.color)} />
+                    <span className={cn("text-xs font-bold", rt.color)}>{rt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : (
-          <div className="space-y-6" key={`${topicId}-${filterType}`}>
-            {showLecturesBlock && hasTopicLectures && (
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
-                  <Play className="w-3.5 h-3.5 text-rose-500" /> Lectures (uploaded in Lectures — linked to this topic)
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {topicLectures.map((lec: AdminTopicLectureRow) => (
-                    <LectureAdminCard key={lec.id} lec={lec} />
-                  ))}
+          <div className="space-y-7">
+            {topicLectures.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center">
+                      <Play className="w-3 h-3 text-rose-500" />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-700">Lectures</h3>
+                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{topicLectures.length}</span>
+                  </div>
+                  <button onClick={onNavigateToLectures}
+                    className="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1 transition-colors">
+                    Manage <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
-              </div>
+                <div className="space-y-2">
+                  {topicLectures.map(lec => <CompactLectureRow key={lec.id} lec={lec} />)}
+                </div>
+              </section>
             )}
-            {resources.length === 0 ? (
-              !hasTopicLectures ? null : (
-                <p className="text-sm text-slate-400 text-center py-4">No file / link resources for this topic yet — add them above.</p>
-              )
-            ) : filteredFiles.length === 0 ? (
-              !(filterType === "video" && hasTopicLectures) && (
-                <div className="text-center py-10">
-                  <p className="text-sm text-slate-400">No {filterType} resources yet.</p>
-                  <button type="button" onClick={() => setFilterType("all")} className="text-xs text-blue-500 font-bold mt-1 hover:underline">Show all</button>
-                </div>
-              )
-            ) : (
-              <div>
-                {showLecturesBlock && hasTopicLectures && (
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Topic files & links</p>
-                )}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {RES_TYPES.map(rt => {
+              const items = grouped[rt.value];
+              if (!items || items.length === 0) return null;
+              const Icon = rt.icon;
+              return (
+                <section key={rt.value}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", rt.bg)}>
+                        <Icon className={cn("w-3.5 h-3.5", rt.color)} />
+                      </div>
+                      <h3 className={cn("text-sm font-black", rt.color)}>{rt.label}</h3>
+                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{items.length}</span>
+                    </div>
+                    <button onClick={() => openAdd(rt.value)}
+                      className="text-xs font-bold text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
+                      <Plus className="w-3 h-3" /> Add
+                    </button>
+                  </div>
                   <AnimatePresence mode="popLayout">
-                    {filteredFiles.map(r => (
-                      <ResourceCard key={`${filterType}-${r.id}`} r={r} onDelete={() => handleDelete(r)} />
-                    ))}
+                    <div className="space-y-2">
+                      {items.map(r => <ResourceRow key={r.id} r={r} onDelete={() => handleDelete(r)} />)}
+                    </div>
                   </AnimatePresence>
-                </div>
-              </div>
-            )}
+                </section>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {showAddModal && (
+        <AddResourceModal
+          topicId={topicId} topicName={topicName} batchId={batchId}
+          initialType={addModalType}
+          onClose={() => { setShowAddModal(false); setAddModalType(undefined); }}
+        />
+      )}
     </div>
   );
 }
@@ -2625,10 +2606,8 @@ const ContentPage = () => {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
   const [batchStatusFilter, setBatchStatusFilter] = useState<"active" | "all" | "upcoming" | "completed">("active");
-  const [rightTab, setRightTab] = useState<"resources" | "ai">("resources");
+  const [showAiPanel, setShowAiPanel] = useState(false);
   const [recentBatchId, setRecentBatchId] = useState<string | null>(null);
-  /** Lifted from UploadPanel so list filter state cannot get stuck inside a stale child. */
-  const [topicResourceFilter, setTopicResourceFilter] = useState<TopicResourceType | "all">("all");
 
   useEffect(() => {
     const bId = searchParams.get("batchId");
@@ -2638,9 +2617,6 @@ const ContentPage = () => {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    setTopicResourceFilter("all");
-  }, [selectedEntry?.topic.id]);
 
   useEffect(() => {
     const saved = localStorage.getItem("admin_content_recent_batch_id");
@@ -2865,123 +2841,134 @@ const ContentPage = () => {
       </div>
 
       {/* ── Body: Tree + Content ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
 
         {/* Left: Tree Navigator */}
-        <div className="w-72 shrink-0 flex flex-col bg-white border-r border-slate-200 overflow-hidden">
+        <div className="w-80 shrink-0 flex flex-col bg-white border-r border-slate-200 overflow-hidden">
           <TreeNav
             batchId={selectedBatch.id}
             examTarget={selectedBatch.examTarget}
             selectedTopic={selectedEntry}
             onSelectTopic={(topic, chapter, subject) => {
               setSelectedEntry({ topic, chapter, subject });
-              setRightTab("resources");
+              setShowAiPanel(false);
             }}
             onAddSubject={() => setShowAddSubject(true)}
           />
         </div>
 
         {/* Right: Resource workspace */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
-          <div className="shrink-0 border-b border-slate-100 p-4">
-            <ContentCoverageOverview batchId={selectedBatch.id} selectedEntry={selectedEntry} />
-          </div>
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 min-w-0">
           {!selectedEntry ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center gap-5">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-50 to-violet-50 flex items-center justify-center">
-                <Layers className="w-10 h-10 text-blue-300" />
+            /* ── No topic selected: welcome state ── */
+            <div className="flex-1 flex flex-col overflow-y-auto">
+              {/* Coverage overview at top */}
+              <div className="p-6 pb-0">
+                <ContentCoverageOverview batchId={selectedBatch.id} selectedEntry={null} />
               </div>
-              <div className="max-w-sm">
-                <p className="text-lg font-black text-slate-700">Select a Topic</p>
-                <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-                  Expand any subject in the tree on the left, open a chapter, then click a topic to start managing its resources.
-                </p>
-              </div>
-              {/* Resource type guide */}
-              <div className="grid grid-cols-3 gap-2 mt-1 w-full max-w-xs">
-                {RES_TYPES.map(rt => {
-                  const Icon = rt.icon;
-                  return (
-                    <div key={rt.value} className={cn("flex items-center gap-2 px-3 py-2 rounded-2xl border", rt.bg, rt.border)}>
-                      <Icon className={cn("w-3.5 h-3.5 shrink-0", rt.color)} />
-                      <span className={cn("text-xs font-bold", rt.color)}>{rt.label}</span>
-                    </div>
-                  );
-                })}
+              {/* Select a topic prompt */}
+              <div className="flex-1 flex flex-col items-center justify-center p-10 text-center gap-6">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-50 to-violet-50 flex items-center justify-center border border-blue-100 shadow-sm">
+                  <Layers className="w-10 h-10 text-blue-300" />
+                </div>
+                <div className="max-w-sm">
+                  <p className="text-lg font-black text-slate-700">Select a Topic to Begin</p>
+                  <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+                    Expand a subject in the tree on the left, open a chapter, then click any topic to manage its resources.
+                  </p>
+                </div>
+                {/* Resource type guide */}
+                <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
+                  {RES_TYPES.map(rt => {
+                    const Icon = rt.icon;
+                    return (
+                      <div key={rt.value} className={cn("flex items-center gap-2 px-3 py-2 rounded-2xl border bg-white shadow-sm", rt.border)}>
+                        <Icon className={cn("w-3.5 h-3.5 shrink-0", rt.color)} />
+                        <span className={cn("text-xs font-bold", rt.color)}>{rt.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           ) : (
-            <>
-              {/* Tab switcher */}
-              <div className="shrink-0 flex items-center gap-1 px-5 pt-4 pb-0 border-b border-slate-100">
-                <button
-                  onClick={() => setRightTab("resources")}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2.5 text-sm font-black rounded-t-xl border-b-2 transition-all",
-                    rightTab === "resources"
-                      ? "border-blue-600 text-blue-700 bg-blue-50/60"
-                      : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50"
-                  )}
-                >
-                  <Layers className="w-4 h-4" />
-                  Resources
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const q = new URLSearchParams({
-                      batchId: selectedBatch.id,
-                      subjectId: selectedEntry.subject.id,
-                      chapterId: selectedEntry.chapter.id,
-                      topicId: selectedEntry.topic.id,
-                    });
-                    navigate(`/teacher/lectures?${q.toString()}`);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-black rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-rose-700 hover:bg-rose-50/40 transition-all"
-                >
-                  <Play className="w-4 h-4" />
-                  Lectures
-                </button>
-                <button
-                  onClick={() => setRightTab("ai")}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2.5 text-sm font-black rounded-t-xl border-b-2 transition-all",
-                    rightTab === "ai"
-                      ? "border-violet-600 text-violet-700 bg-violet-50/60"
-                      : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50"
-                  )}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  AI Generate
-                  <span className="text-[9px] font-black uppercase tracking-widest bg-gradient-to-r from-violet-500 to-indigo-500 text-white px-1.5 py-0.5 rounded-full">
-                    NEW
-                  </span>
-                </button>
-              </div>
+            /* ── Topic selected: workspace ── */
+            <div className="flex-1 overflow-hidden flex">
+              <ResourceWorkspace
+                key={selectedEntry.topic.id}
+                topicId={selectedEntry.topic.id}
+                topicName={selectedEntry.topic.name}
+                batchId={selectedBatch.id}
+                subject={selectedEntry.subject}
+                chapter={selectedEntry.chapter}
+                onNavigateToLectures={() => {
+                  const q = new URLSearchParams({
+                    batchId: selectedBatch.id,
+                    subjectId: selectedEntry.subject.id,
+                    chapterId: selectedEntry.chapter.id,
+                    topicId: selectedEntry.topic.id,
+                  });
+                  navigate(`/teacher/lectures?${q.toString()}`);
+                }}
+                onOpenAi={() => setShowAiPanel(true)}
+              />
+            </div>
+          )}
+        </div>
 
-              {/* Tab content */}
-              <div className="min-h-0 flex-1 overflow-hidden">
-                {rightTab === "resources" ? (
-                  <UploadPanel
-                    key={selectedEntry.topic.id}
-                    topicId={selectedEntry.topic.id}
-                    topicName={selectedEntry.topic.name}
-                    batchId={selectedBatch.id}
-                    filterType={topicResourceFilter}
-                    setFilterType={setTopicResourceFilter}
-                  />
-                ) : (
+        {/* ── AI Slide-over panel ── */}
+        <AnimatePresence>
+          {showAiPanel && selectedEntry && (
+            <>
+              {/* backdrop */}
+              <motion.div
+                key="ai-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/20 z-20"
+                onClick={() => setShowAiPanel(false)}
+              />
+              {/* panel */}
+              <motion.div
+                key="ai-panel"
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                className="absolute right-0 top-0 bottom-0 w-[520px] max-w-full bg-white shadow-2xl z-30 flex flex-col overflow-hidden border-l border-slate-200"
+              >
+                {/* Panel header */}
+                <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-indigo-50">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-800">AI Content Generator</p>
+                      <p className="text-[11px] text-violet-600 font-semibold truncate max-w-[260px]">{selectedEntry.topic.name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowAiPanel(false)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {/* Panel body */}
+                <div className="flex-1 overflow-hidden">
                   <AiContentPanel
                     topicId={selectedEntry.topic.id}
                     topicName={selectedEntry.topic.name}
                     subjectName={selectedEntry.subject.name}
                     chapterName={selectedEntry.chapter.name}
                   />
-                )}
-              </div>
+                </div>
+              </motion.div>
             </>
           )}
-        </div>
+        </AnimatePresence>
       </div>
 
       {/* Add Subject Modal */}
