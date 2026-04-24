@@ -365,7 +365,11 @@ const Index = () => {
 
               {/* Feature cards */}
               <FadeUp disableInitial delay={0.15} className="mx-auto w-full max-w-[560px] lg:pl-2">
-                <div className="grid gap-3">
+                <div className="relative grid gap-3">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-3 -z-10 rounded-[28px] bg-gradient-to-br from-amber-200/40 via-yellow-100/25 to-orange-200/35 blur-xl"
+                  />
                   {[
                     {
                       icon: <Brain className="h-5 w-5" />,
@@ -398,7 +402,7 @@ const Index = () => {
                   ].map(item => (
                     <motion.div key={item.title} whileHover={lightHomeMotion ? undefined : { y: -1 }}
                       transition={{ duration: 0.25, ease: "easeOut" }}
-                      className="flex items-start gap-4 rounded-2xl bg-white/92 p-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)] ring-1 ring-black/[0.03] transition-transform duration-200">
+                      className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white/92 p-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)] ring-1 ring-slate-200/70 transition-transform duration-200">
                       <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl" style={{ background: item.bg, color: item.color }}>
                         {item.icon}
                       </div>

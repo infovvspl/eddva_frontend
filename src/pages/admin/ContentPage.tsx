@@ -1564,8 +1564,9 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
               {/* Mode toggle */}
               <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
                 {([
+                    { id: "excel", label: "Upload Excel/CSV", icon: FileSpreadsheet },
                   { id: "json", label: "Paste JSON", icon: ClipboardList },
-                  { id: "excel", label: "Upload Excel/CSV", icon: FileSpreadsheet },
+                
                 ] as { id: ImportMode; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
