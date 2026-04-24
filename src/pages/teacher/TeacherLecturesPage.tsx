@@ -115,59 +115,146 @@ const AI_STEPS_HINGLISH = [
   { icon: ListChecks, label: "Extracting key concepts" },
 ];
 
+// Sub-steps shown under "Transcribing audio" as time elapses
+const TRANSCRIBE_SUB_EN = [
+  "Downloading video from storage…",
+  "Splitting audio into chunks…",
+  "Sending chunks to Whisper AI…",
+  "Finishing transcription…",
+];
+const TRANSCRIBE_SUB_HINGLISH = [
+  "Downloading video from storage…",
+  "Splitting audio into chunks…",
+  "Transcribing Hinglish audio…",
+  "Finishing transcription…",
+];
+
+function fmtElapsed(secs: number) {
+  if (secs < 60) return `${secs}s`;
+  return `${Math.floor(secs / 60)}m ${secs % 60}s`;
+}
+
 function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeStep?: number }) {
   const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
   const steps = isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
+  const subSteps = isHinglish ? TRANSCRIBE_SUB_HINGLISH : TRANSCRIBE_SUB_EN;
 
-  // If activeStep is not explicitly provided, derive from real status
+  const isActive = lecture.status === "processing"
+    || lecture.transcriptStatus === "processing"
+    || lecture.transcriptStatus === "pending";
+
+  // Live elapsed-seconds counter while processing
+  const [elapsed, setElapsed] = useState(() =>
+    Math.max(0, Math.floor((Date.now() - new Date(lecture.createdAt).getTime()) / 1000))
+  );
+  useEffect(() => {
+    if (!isActive) return;
+    const id = setInterval(() =>
+      setElapsed(Math.max(0, Math.floor((Date.now() - new Date(lecture.createdAt).getTime()) / 1000)))
+    , 1000);
+    return () => clearInterval(id);
+  }, [isActive, lecture.createdAt]);
+
+  // Derive current step from elapsed time when not explicitly provided.
+  // Timing based on observed logs: transcription ~100s, translation ~30s, notes ~50s.
+  const timeBasedStep =
+    elapsed < 100 ? 0 :   // transcribing
+    elapsed < 130 ? 1 :   // analysing / translating
+    elapsed < 190 ? 2 :   // generating notes
+    3;                     // extracting concepts
+
   const currentStep = activeStep !== undefined ? activeStep : (
     lecture.status === "draft" || lecture.status === "published" ? steps.length :
     lecture.status === "processing" && lecture.transcriptStatus === "done" ? 2 :
-    lecture.transcriptStatus === "processing" ? 0 : 1
+    lecture.transcriptStatus === "processing" ? timeBasedStep : 1
   );
 
-  const progressPct = Math.round(((currentStep + 1) / steps.length) * 100);
+  // Sub-step hint shown while transcription is the active step
+  const subStepIdx =
+    elapsed < 15  ? 0 :
+    elapsed < 35  ? 1 :
+    elapsed < 95  ? 2 :
+    3;
+  const showSubStep = currentStep === 0 && isActive;
+
+  // Smooth progress: within a step, advance from step-start % to step-end %
+  const STEP_BOUNDARIES = [0, 52, 68, 84, 100]; // % at start of each step + end
+  const stepStart = STEP_BOUNDARIES[currentStep] ?? 0;
+  const stepEnd   = STEP_BOUNDARIES[Math.min(currentStep + 1, STEP_BOUNDARIES.length - 1)];
+  const withinStep = currentStep === 0
+    ? Math.min(elapsed / 100, 1)
+    : currentStep === 1
+    ? Math.min((elapsed - 100) / 30, 1)
+    : currentStep === 2
+    ? Math.min((elapsed - 130) / 60, 1)
+    : Math.min((elapsed - 190) / 30, 1);
+  const progressPct = Math.round(stepStart + (stepEnd - stepStart) * withinStep);
+
+  const estTotal = isHinglish ? "3–5 min" : "2–4 min";
 
   return (
     <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
           <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
         </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">AI is processing "{lecture.title}"</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">
+            AI is processing &ldquo;{lecture.title}&rdquo;
+          </p>
           <p className="text-xs text-muted-foreground">
             {isHinglish
-              ? "Hinglish → English translation → Notes. No action needed."
+              ? "Hinglish → English → Notes. No action needed."
               : "No action needed — we'll notify you when ready"}
           </p>
         </div>
+        {isActive && (
+          <div className="shrink-0 text-right">
+            <p className="text-xs font-mono font-semibold text-blue-600">{fmtElapsed(elapsed)}</p>
+            <p className="text-[10px] text-muted-foreground">est. {estTotal}</p>
+          </div>
+        )}
       </div>
       <div className="space-y-2">
         {steps.map((s, i) => {
-          const done = i < currentStep;
+          const done    = i < currentStep;
           const current = i === currentStep;
+          const Icon    = s.icon;
           return (
-            <div key={i} className="flex items-center gap-2.5">
-              {done
-                ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                : current
-                ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
-                : <div className="w-4 h-4 rounded-full border border-muted-foreground/30 shrink-0" />}
-              <span className={cn("text-xs",
-                done ? "text-muted-foreground line-through" :
-                current ? "text-foreground font-medium" :
-                "text-muted-foreground/50")}>
-                {s.label}
-              </span>
+            <div key={i}>
+              <div className="flex items-center gap-2.5">
+                {done
+                  ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                  : current
+                  ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
+                  : <div className="w-4 h-4 rounded-full border border-muted-foreground/30 shrink-0" />}
+                <span className={cn("text-xs flex items-center gap-1.5",
+                  done    ? "text-muted-foreground line-through" :
+                  current ? "text-foreground font-medium" :
+                  "text-muted-foreground/50")}>
+                  <Icon className="w-3 h-3 shrink-0" />
+                  {s.label}
+                </span>
+              </div>
+              {/* Sub-step hint — only under the active transcription step */}
+              {current && showSubStep && i === 0 && (
+                <p className="ml-[26px] text-[11px] text-blue-500/70 mt-0.5 animate-pulse">
+                  {subSteps[subStepIdx]}
+                </p>
+              )}
             </div>
           );
         })}
       </div>
-      {/* Progress bar */}
-      <div className="w-full h-1 bg-blue-500/10 rounded-full overflow-hidden">
-        <div className="h-full bg-blue-500 rounded-full"
-          style={{ width: `${progressPct}%`, transition: "width 0.8s ease" }} />
+      {/* Smooth progress bar */}
+      <div className="space-y-1">
+        <div className="w-full h-1.5 bg-blue-500/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-linear"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground text-right">{progressPct}% complete</p>
       </div>
     </div>
   );
@@ -2675,18 +2762,18 @@ const TeacherLecturesPage = () => {
     return () => observer.disconnect();
   }, [canLoadMore, isLoading, isCompactLayout, loadMoreBatchSize, recorded.length, sortedLive.length, tab]);
 
-  // Auto-poll every 8s when any recorded lecture is still processing
+  // Auto-poll every 5s when any recorded lecture is still processing
   // (handles the case where the user refreshes mid-processing)
-  const hasProcessing = Object.keys(processingSteps).length > 0 || recorded.some(l => 
-    l.status === "processing" || 
-    l.transcriptStatus === "processing" || 
+  const hasProcessing = Object.keys(processingSteps).length > 0 || recorded.some(l =>
+    l.status === "processing" ||
+    l.transcriptStatus === "processing" ||
     l.transcriptStatus === "pending"
   );
   useEffect(() => {
     if (!hasProcessing) return;
     const id = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
-    }, 8000);
+    }, 5000);
     return () => clearInterval(id);
   }, [hasProcessing, queryClient]);
 
