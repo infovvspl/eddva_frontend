@@ -2343,6 +2343,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
   const [recordingUrl, setRecordingUrl] = useState("");
   const [showRecordingInput, setShowRecordingInput] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const recordingReady = !!lecture.videoUrl;
+  const recordingPending = lecture.status === "ended" && !recordingReady;
 
   const startClass = () => {
     navigate(`/live/${lecture.id}`);
@@ -2350,9 +2352,14 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
 
   const endClass = async () => {
     try {
-      await import("@/lib/api/live-class").then(m => m.endLiveClass(lecture.id));
-      toast({ title: "Class ended", description: "Attendance has been marked for all students." });
-      queryClient.invalidateQueries({ queryKey: ["my-lectures"] });
+      const result = await import("@/lib/api/live-class").then(m => m.endLiveClass(lecture.id));
+      toast({
+        title: "Class ended",
+        description: result.recordingUrl
+          ? "Recording has been saved as a recorded lecture."
+          : "Attendance marked. Recording is still processing.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
     } catch { toast({ title: "Failed to end class", variant: "destructive" }); }
   };
 
@@ -2360,8 +2367,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
     if (!recordingUrl) return;
     setIsSaving(true);
     try {
-      await updateLecture.mutateAsync({ id: lecture.id, liveMeetingUrl: recordingUrl } as any);
-      toast({ title: "Recording link saved!", description: "Students can now watch the recording." });
+      await updateLecture.mutateAsync({ id: lecture.id, videoUrl: recordingUrl } as any);
+      toast({ title: "Recording attached", description: "It has been saved as a recorded lecture and AI notes are processing." });
       setShowRecordingInput(false);
     } catch { toast({ title: "Failed", variant: "destructive" }); }
     finally { setIsSaving(false); }
@@ -2398,6 +2405,15 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
           </a>
         )}
 
+        {recordingPending && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+            <Loader2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 animate-spin" />
+            <p className="text-xs text-amber-800">
+              Recording is not available yet. It will appear here automatically, or you can attach a recording URL manually.
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 flex-wrap">
           {lecture.status === "scheduled" && (
             <Button size="sm" onClick={startClass} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
@@ -2414,9 +2430,9 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
               </Button>
             </>
           )}
-          {lecture.status === "ended" && !lecture.liveMeetingUrl && !showRecordingInput && (
+          {lecture.status === "ended" && !recordingReady && !showRecordingInput && (
             <Button size="sm" variant="outline" onClick={() => setShowRecordingInput(true)} className="gap-1.5 h-8 text-xs">
-              <Link2 className="w-3.5 h-3.5" /> Add Recording Link
+              <Link2 className="w-3.5 h-3.5" /> Attach Recording
             </Button>
           )}
           <button onClick={onDelete} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1">
@@ -2437,8 +2453,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
           </div>
         )}
 
-        {lecture.status === "ended" && lecture.liveMeetingUrl && (
-          <a href={lecture.liveMeetingUrl} target="_blank" rel="noreferrer"
+        {lecture.status === "ended" && lecture.videoUrl && (
+          <a href={lecture.videoUrl} target="_blank" rel="noreferrer"
             className="flex items-center gap-2 text-xs text-primary font-medium hover:underline">
             <PlayCircle className="w-3.5 h-3.5" /> Watch Recording
           </a>
@@ -2686,7 +2702,7 @@ const TeacherLecturesPage = () => {
 
     // Instantly refresh list to show the new lecture in 'processing' state
     queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
-    queryClient.invalidateQueries({ queryKey: ["my-lectures"] });
+    queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
   }, [queryClient]);
 
   // Auto-open the review panel when the backend finishes AI processing
@@ -2724,7 +2740,7 @@ const TeacherLecturesPage = () => {
     try {
       await retranscribeLecture(id);
       toast({ title: "Transcription started", description: "AI is re-transcribing the lecture. This may take a few minutes." });
-      queryClient.invalidateQueries({ queryKey: ["myLectures"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
     } catch {
       toast({ title: "Failed to start transcription", variant: "destructive" });
     }

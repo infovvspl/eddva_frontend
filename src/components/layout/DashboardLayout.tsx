@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout } from "@/hooks/use-auth";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 import type { UserRole } from "@/lib/types";
 import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,

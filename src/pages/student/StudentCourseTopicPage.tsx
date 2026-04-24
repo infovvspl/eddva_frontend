@@ -41,8 +41,8 @@ const RESOURCE_META: Record<string, {
 }> = {
   dpp:   { label: "DPP",   icon: <ClipboardList className="w-3.5 h-3.5" />, color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200" },
   pyq:   { label: "PYQ",   icon: <Trophy className="w-3.5 h-3.5" />,        color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200" },
-  pdf:   { label: "PDF",   icon: <File className="w-3.5 h-3.5" />,          color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200" },
-  notes: { label: "Notes", icon: <FileText className="w-3.5 h-3.5" />,      color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200" },
+  pdf:   { label: "Lecture Notes",      icon: <File className="w-3.5 h-3.5" />,          color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200" },
+  notes: { label: "Handwritten Notes", icon: <FileText className="w-3.5 h-3.5" />,      color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200" },
   video: { label: "Video", icon: <Youtube className="w-3.5 h-3.5" />,       color: "text-rose-600",    bg: "bg-rose-50",    border: "border-rose-200" },
   link:  { label: "Link",  icon: <Link2 className="w-3.5 h-3.5" />,         color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200" },
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
@@ -66,6 +66,8 @@ function LectureCard({
   const done = !!lecture.isCompleted;
   const thumb = resolveUrl(lecture.thumbnailUrl) || getYouTubeThumbnail(lecture.videoUrl);
   const dur = fmtDuration(lecture.duration);
+  const isLiveNow = lecture.status === "live";
+  const recordingPending = lecture.type === "live" && lecture.status === "ended" && !lecture.videoUrl;
 
   const handleClick = () => {
     // Pass return path so the lecture player can navigate back here
@@ -116,6 +118,15 @@ function LectureCard({
         <div className="absolute top-2 left-2 w-5 h-5 rounded-md bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <span className="text-[9px] font-black text-white">{index + 1}</span>
         </div>
+
+        {(isLiveNow || recordingPending) && (
+          <div className={cn(
+            "absolute top-2 right-2 rounded-md px-2 py-0.5 text-[9px] font-black text-white",
+            isLiveNow ? "bg-red-500 animate-pulse" : "bg-amber-500"
+          )}>
+            {isLiveNow ? "LIVE" : "RECORDING SOON"}
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -145,6 +156,11 @@ function LectureCard({
           )}
           {pct === 0 && !done && (
             <span className="text-[11px] font-semibold text-slate-400">Not started</span>
+          )}
+          {recordingPending && (
+            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+              Recording processing
+            </span>
           )}
         </div>
       </div>

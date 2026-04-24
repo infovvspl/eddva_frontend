@@ -62,10 +62,10 @@ const RES_TYPES: {
   icon: React.ComponentType<{ className?: string }>;
   color: string; bg: string; border: string; isUrl?: boolean; accept?: string;
 }[] = [
-    { value: "pdf", label: "Lecture Notes", shortLabel: "PDF", icon: FileText, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", accept: ".pdf" },
+    { value: "pdf", label: "Lecture Notes", shortLabel: "Lecture Notes", icon: FileText, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", accept: ".pdf" },
     { value: "dpp", label: "DPP", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx" },
     { value: "pyq", label: "PYQ", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx" },
-    { value: "notes", label: "Notes", shortLabel: "Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
+    { value: "notes", label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
     { value: "video", label: "YouTube", shortLabel: "YouTube", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
     { value: "link", label: "Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
   ];

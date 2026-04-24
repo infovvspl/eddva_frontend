@@ -8,22 +8,19 @@ import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
-  FlaskConical, Loader2, CheckCircle, Send, Clock,
-  ChevronDown, ChevronUp, Trophy, Lightbulb, AlertTriangle,
+  Loader2, CheckCircle, Send, Clock,
+  ChevronDown, Trophy, Lightbulb, AlertTriangle,
   Sigma, Monitor, Zap, Info, ArrowRight, BrainCircuit, Highlighter, StickyNote,
   X
 } from "lucide-react";
 import {
   useAiStudySession, useStartAiStudy, useAskAiQuestion,
-  useCompleteAiStudy, useStudyStatus,
+  useCompleteAiStudy,
 } from "@/hooks/use-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
 import { CardGlass } from "@/components/shared/CardGlass";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-
-// ─── Design Tokens ─────────────────────────────────────────────────────────────
-const BLUE   = "#2563EB";
-const PURPLE = "#7C3AED";
 
 // ─── Elapsed timer ─────────────────────────────────────────────────────────────
 function useElapsedTimer(running: boolean, initialSeconds = 0) {
@@ -196,6 +193,32 @@ function NotesFlashcard({
   );
 }
 
+function StudyMetric({
+  icon,
+  label,
+  value,
+  accentClass,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  accentClass: string;
+}) {
+  return (
+    <div className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+          <p className="mt-3 text-xl font-bold text-slate-900 sm:text-2xl">{value}</p>
+        </div>
+        <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", accentClass)}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 // ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
@@ -277,6 +300,7 @@ export default function StudentAiStudyPage() {
   const notesContentRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
   const savedTextRef = useRef<string>("");
+  const isCompactLayout = useIsCompactLayout();
 
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
   const startMut = useStartAiStudy();
@@ -296,6 +320,22 @@ export default function StudentAiStudyPage() {
     if (notesZoom === "lg") return "prose-h2:text-4xl prose-h3:text-xl prose-p:text-lg prose-ul:text-lg prose-code:text-[15px]";
     return "prose-h2:text-3xl prose-h3:text-lg prose-p:text-base prose-ul:text-base prose-code:text-[13px]";
   }, [notesZoom]);
+  const lessonWordCount = useMemo(
+    () => normalizedLessonMarkdown.replace(/[#>*_`-]/g, " ").split(/\s+/).filter(Boolean).length,
+    [normalizedLessonMarkdown],
+  );
+  const estimatedLessonMinutes = useMemo(
+    () => Math.max(6, Math.round(lessonWordCount / 170) || 0),
+    [lessonWordCount],
+  );
+  const quickAskPrompts = useMemo(() => {
+    const prompts = [
+      ...(sessionData?.keyConcepts ?? []).slice(0, 2).map((concept) => `Explain ${normalizeReadableText(concept)} in simple words.`),
+      ...(sessionData?.commonMistakes ?? []).slice(0, 1).map((mistake) => `Why do students make this mistake: ${normalizeReadableText(mistake)}?`),
+      ...(sessionData?.practiceQuestions ?? []).slice(0, 1).map((question) => `Walk me through this practice question step by step: "${question.question}"`),
+    ];
+    return Array.from(new Set(prompts)).slice(0, isCompactLayout ? 3 : 4);
+  }, [isCompactLayout, sessionData?.commonMistakes, sessionData?.keyConcepts, sessionData?.practiceQuestions]);
 
   useEffect(() => {
     if (!sessionLoading && !session && !startMut.isPending && !startMut.data) {
@@ -534,388 +574,892 @@ export default function StudentAiStudyPage() {
   ];
 
   return (
-    <div className="flex flex-col space-y-12 pb-32">
-        {/* Status Terminal */}
-        <CardGlass className="px-4 sm:px-6 py-3 border-slate-200 bg-white shadow-sm flex items-center justify-between sticky top-0 z-50">
-           <div className="flex items-center gap-6">
-              <button
-                onClick={() => navigate(-1)}
-                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all shadow-sm group"
-              >
-                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              </button>
-              <div>
-                 <div className="flex items-center gap-3 mb-1">
-                   <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center"><Sparkles className="w-3 h-3" /></div>
-                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">AI Study</span>
-                 </div>
-                <h1 className="text-lg sm:text-xl font-bold text-slate-900 leading-none">{sessionData.topicName}</h1>
-              </div>
-           </div>
+    <div className="relative pb-16">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_48%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.14),_transparent_38%),linear-gradient(180deg,_rgba(248,250,252,1)_0%,_rgba(255,255,255,0.96)_100%)]" />
 
-           <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-                 <Clock className="w-4 h-4 text-slate-400" />
-                 <span className="text-xs font-semibold text-slate-900 tabular-nums leading-none">{formatTime(elapsed)}</span>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <CardGlass className="overflow-hidden border-slate-200/80 bg-white/90 p-5 shadow-sm sm:p-7 lg:p-8">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex items-start gap-4 sm:gap-5">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AI Study Session
+                    </span>
+                    {completed && (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Completed
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">Topic Workspace</p>
+                    <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                      {sessionData.topicName || "AI Study"}
+                    </h1>
+                  </div>
+
+                  <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-[15px]">
+                    Learn from structured notes, save your own highlights and comments, practice key questions,
+                    and ask the AI whenever a concept still feels unclear.
+                  </p>
+                </div>
               </div>
-              {completed && (
-                 <div className="hidden sm:flex items-center gap-2 bg-emerald-500 text-white border border-emerald-600 px-4 py-2 rounded-xl">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-[10px] font-semibold leading-none">Completed</span>
-                 </div>
-              )}
-           </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
+                <StudyMetric
+                  label="Time"
+                  value={formatTime(elapsed)}
+                  icon={<Clock className="h-5 w-5 text-blue-700" />}
+                  accentClass="bg-blue-50 text-blue-700"
+                />
+                <StudyMetric
+                  label="Concepts"
+                  value={String(sessionData.keyConcepts.length || 0)}
+                  icon={<Lightbulb className="h-5 w-5 text-amber-700" />}
+                  accentClass="bg-amber-50 text-amber-700"
+                />
+                <StudyMetric
+                  label="Formulas"
+                  value={String(sessionData.formulas.length || 0)}
+                  icon={<Sigma className="h-5 w-5 text-emerald-700" />}
+                  accentClass="bg-emerald-50 text-emerald-700"
+                />
+                <StudyMetric
+                  label="Practice"
+                  value={String(sessionData.practiceQuestions.length || 0)}
+                  icon={<Brain className="h-5 w-5 text-violet-700" />}
+                  accentClass="bg-violet-50 text-violet-700"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-4">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
+                      activeTab === tab.id
+                        ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
+                    )}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                    {tab.id === "ask" && sessionData.conversation.length > 0 && (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-bold text-current">
+                        {Math.ceil(sessionData.conversation.length / 2)}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="hidden h-5 w-px bg-slate-200 sm:block" />
+
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">
+                  Estimated reading time: ~{estimatedLessonMinutes} min
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">
+                  {lessonWordCount.toLocaleString()} words
+                </span>
+              </div>
+            </div>
+          </div>
         </CardGlass>
 
-        {/* Tab Console */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2">
-           {tabs.map(tab => (
-             <button
-               key={tab.id} onClick={() => setActiveTab(tab.id)}
-               className={cn(
-                 "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all border",
-                 activeTab === tab.id ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-indigo-200"
-               )}
-             >
-               {tab.icon} {tab.label}
-               {tab.id === "ask" && sessionData.conversation.length > 0 && (
-                 <span className="ml-1 w-5 h-5 rounded-md bg-blue-500 text-white flex items-center justify-center text-[9px] shadow-sm">
-                   {Math.ceil(sessionData.conversation.length / 2)}
-                 </span>
-               )}
-             </button>
-           ))}
-        </div>
-
-        {/* Main Content Arena */}
-        <div className="max-w-5xl mx-auto w-full">
-           <AnimatePresence mode="wait">
-             {activeTab === "lesson" && (
-               <motion.div key="lesson" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}>
-                  {normalizedLessonMarkdown ? (
-                    <CardGlass className="p-6 sm:p-10 border-slate-200 bg-white shadow-sm relative">
-                       
-                       <div className="mb-10 pb-8 border-b border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-8">
-                          <div className="flex-1">
-                             <div className="flex items-center gap-3 mb-4">
-                                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-semibold text-indigo-600 uppercase tracking-wider bg-indigo-50 border border-indigo-100"><Monitor className="w-3.5 h-3.5" /> Study Notes</span>
-                             </div>
-                             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">{sessionData.topicName}</h1>
-                          </div>
-                          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
-                             <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden">
-                               <button
-                                 onClick={() => setNotesZoom(z => (z === "lg" ? "md" : z === "md" ? "sm" : "sm"))}
-                                 className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                               >
-                                 A-
-                               </button>
-                               <button
-                                 onClick={() => setNotesZoom("md")}
-                                 className="px-2.5 py-1.5 text-[10px] font-semibold text-slate-500 border-x border-slate-200 hover:bg-slate-50"
-                               >
-                                 100%
-                               </button>
-                               <button
-                                 onClick={() => setNotesZoom(z => (z === "sm" ? "md" : z === "md" ? "lg" : "lg"))}
-                                 className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                               >
-                                 A+
-                               </button>
-                             </div>
-                             <div className="text-right">
-                                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Estimated Time</p>
-                                <p className="text-sm font-semibold text-slate-900">~20 mins</p>
-                             </div>
-                             <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center"><Info className="w-5 h-5 text-slate-400" /></div>
-                          </div>
-                       </div>
-
-                       <div ref={notesContentRef} className={cn(mdClassBase, mdZoomClass)}>
-                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                           {normalizedLessonMarkdown}
-                         </ReactMarkdown>
-                       </div>
-
-                       {!completed && (
-                         <div className="mt-14 pt-10 border-t border-slate-100 flex flex-col items-center">
-                            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-500 border border-emerald-100 flex items-center justify-center mb-6"><CheckCircle className="w-7 h-7" /></div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Finish this topic?</h3>
-                            <p className="text-sm text-slate-500 mb-8">Mark complete to save progress and XP.</p>
-                             <motion.button
-                              whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}
-                               onClick={() => setShowComplete(true)}
-                              className="px-10 py-3.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-sm hover:bg-emerald-600"
-                             >
-                              Mark Complete
-                             </motion.button>
-                          </div>
-                       )}
-                    </CardGlass>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-40 border-2 border-dashed border-white/60 rounded-[3rem]">
-                       <Loader2 className="w-12 h-12 animate-spin text-slate-300 mb-6" />
-                       <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Reconstructing Data...</p>
-                    </div>
-                  )}
-               </motion.div>
-             )}
-
-             {activeTab === "ask" && (
-               <motion.div key="ask" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="flex flex-col h-full min-h-[600px]">
-                 <CardGlass className={cn("flex-1 p-6 sm:p-8 mb-20 flex flex-col relative bg-white border-slate-200 shadow-sm", sessionData.conversation.length === 0 ? "justify-center items-center text-center" : "")}>
-                     <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none" />
-                     
-                     <AnimatePresence mode="popLayout">
-                        {sessionData.conversation.length === 0 ? (
-                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
-                              <div className="w-32 h-32 rounded-[3.5rem] bg-indigo-600/10 border border-indigo-100 flex items-center justify-center mb-10 relative">
-                                 <BrainCircuit className="w-16 h-16 text-indigo-600" />
-                                 <div className="absolute inset-0 bg-indigo-200 rounded-[3.5rem] blur-3xl opacity-30" />
-                              </div>
-                              <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-4">Neural Query Protocol</h2>
-                              <p className="text-sm font-medium text-slate-500 max-w-sm leading-relaxed">Ask any doubt about this topic and get AI help.</p>
-                           </motion.div>
-                        ) : (
-                           <div className="space-y-10 pb-20">
-                              {sessionData.conversation.map((msg, i) => (
-                                 <motion.div key={i} initial={{ opacity: 0, x: msg.role === "student" ? 20 : -20 }} animate={{ opacity: 1, x: 0 }}
-                                    className={cn("flex gap-6 max-w-[85%] group", msg.role === "student" ? "ml-auto flex-row-reverse" : "mr-auto flex-row")}
-                                 >
-                                    <div className={cn(
-                                       "w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl shrink-0 transition-transform group-hover:scale-110",
-                                       msg.role === "ai" ? "bg-indigo-600 text-white" : "bg-slate-900 text-white"
-                                    )}>
-                                       {msg.role === "ai" ? <Sparkles className="w-6 h-6" /> : "ME"}
-                                    </div>
-                                    <div className={cn(
-                                       "p-5 rounded-2xl text-sm font-medium shadow-sm relative",
-                                       msg.role === "student" ? "bg-slate-900 text-white rounded-tr-none" : "bg-white border border-slate-100 text-slate-800 rounded-tl-none"
-                                    )}>
-                                       {msg.role === "ai" ? (
-                                          <div className={cn(mdClassBase, "prose-h2:text-xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm !prose-p:text-slate-800")}>
-                                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                               {normalizeAiMessage(msg.message)}
-                                             </ReactMarkdown>
-                                          </div>
-                                       ) : msg.message}
-                                    </div>
-                                 </motion.div>
-                              ))}
-                              {askMut.isPending && (
-                                 <div className="flex gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center animate-pulse"><Sparkles className="w-6 h-6" /></div>
-                                    <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-none p-5 flex items-center gap-2 shadow-sm">
-                                       {[0, 1, 2].map(i => <motion.div key={i} className="w-3 h-3 rounded-full bg-indigo-500" animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }} />)}
-                                    </div>
-                                 </div>
-                              )}
-                              <div ref={chatEndRef} />
-                           </div>
-                        )}
-                     </AnimatePresence>
-                  </CardGlass>
-               </motion.div>
-             )}
-           </AnimatePresence>
-        </div>
-
-        {activeTab === "lesson" && (
-          <div className="fixed right-5 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setToolPanel((v) => (v === "highlights" ? null : "highlights"))}
-              className={cn(
-                "w-11 h-11 rounded-xl border flex items-center justify-center shadow-sm transition-colors",
-                toolPanel === "highlights" ? "bg-amber-100 border-amber-300 text-amber-700" : "bg-white border-slate-200 text-slate-600",
-              )}
-              title="Highlighter"
-            >
-              <Highlighter className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setToolPanel((v) => (v === "notes" ? null : "notes"))}
-              className={cn(
-                "w-11 h-11 rounded-xl border flex items-center justify-center shadow-sm transition-colors",
-                toolPanel === "notes" ? "bg-indigo-100 border-indigo-300 text-indigo-700" : "bg-white border-slate-200 text-slate-600",
-              )}
-              title="Comments"
-            >
-              <StickyNote className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setFlashcardIndex(0);
-                setFlashcardFlipped(false);
-                setShowFlashcards(true);
-              }}
-              className="w-11 h-11 rounded-xl border bg-white border-slate-200 text-slate-600 flex items-center justify-center shadow-sm transition-colors hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700"
-              title="Flashcards"
-            >
-              <Brain className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-
-        <AnimatePresence>
-          {activeTab === "lesson" && toolPanel && (
+        <AnimatePresence mode="wait">
+          {activeTab === "lesson" ? (
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 30 }}
-              className="fixed right-20 top-1/2 -translate-y-1/2 z-40 w-[360px] max-w-[calc(100vw-6rem)]"
+              key="lesson"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -18 }}
+              className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
             >
-              <CardGlass className="p-5 border-slate-200 bg-white shadow-lg">
-                {toolPanel === "highlights" && (
-                  <div onMouseDown={(e) => {
-                    // Prevent selection loss when clicking anywhere in panel except the highlights list.
-                    const target = e.target as HTMLElement;
-                    if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") e.preventDefault();
-                  }}>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <h3 className="text-sm font-semibold text-slate-900">Highlighter</h3>
-                      {savedTextRef.current && (
-                        <span className="text-[10px] font-medium text-emerald-600">Selection ready</span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500 mb-3">
-                      Select text in the notes, then pick a color and click <span className="font-semibold">Highlight</span>.
-                    </p>
-                    <div className="flex items-center gap-2 mb-3">
-                      {["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"].map((c) => (
+              <div className="space-y-6">
+                {normalizedLessonMarkdown ? (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-8">
+                    <div className="mb-8 flex flex-col gap-5 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
+                      <div className="space-y-3">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                          <Monitor className="h-3.5 w-3.5" />
+                          Guided Notes
+                        </span>
+                        <div>
+                          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                            Study the notes carefully
+                          </h2>
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                            Use zoom controls for comfortable reading, then annotate the parts you want to revise later.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center overflow-hidden rounded-full border border-slate-200 bg-white">
+                          <button
+                            onClick={() => setNotesZoom((z) => (z === "lg" ? "md" : z === "md" ? "sm" : "sm"))}
+                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                            A-
+                          </button>
+                          <button
+                            onClick={() => setNotesZoom("md")}
+                            className="border-x border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-50"
+                          >
+                            100%
+                          </button>
+                          <button
+                            onClick={() => setNotesZoom((z) => (z === "sm" ? "md" : z === "md" ? "lg" : "lg"))}
+                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                            A+
+                          </button>
+                        </div>
+
                         <button
-                          key={c}
                           type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => setHighlightColor(c)}
-                          className={cn("w-7 h-7 rounded-full border-2 transition-transform", highlightColor === c ? "border-slate-900 scale-110" : "border-slate-200")}
-                          style={{ backgroundColor: c }}
-                          title="Pick highlight color"
-                        />
+                          onClick={() => {
+                            setFlashcardIndex(0);
+                            setFlashcardFlipped(false);
+                            setShowFlashcards(true);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                        >
+                          <Brain className="h-4 w-4" />
+                          Flashcards
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      {!isCompactLayout &&
+                        inlineComments.map((comment) => (
+                          <button
+                            key={comment.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveInlineCommentId(comment.id);
+                              setToolPanel("notes");
+                            }}
+                            className={cn(
+                              "absolute right-0 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition-colors",
+                              activeInlineCommentId === comment.id
+                                ? "border-blue-300 bg-blue-600 text-white"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
+                            )}
+                            style={{ top: comment.top }}
+                            title={comment.text}
+                          >
+                            <StickyNote className="h-4 w-4" />
+                          </button>
+                        ))}
+
+                      <div ref={notesContentRef} className={cn("relative pr-0 lg:pr-12", mdClassBase, mdZoomClass)}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {normalizedLessonMarkdown}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </CardGlass>
+                ) : (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-10 text-center shadow-sm">
+                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-slate-300" />
+                    <p className="text-sm font-medium text-slate-500">Generating your lesson notes...</p>
+                  </CardGlass>
+                )}
+
+                {!!sessionData.practiceQuestions.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900">Practice questions</h3>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Review worked examples, then ask the AI for a deeper explanation when needed.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("ask")}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                      >
+                        Open AI chat
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-5 grid gap-4">
+                      {sessionData.practiceQuestions.map((question, index) => (
+                        <PracticeCard key={`${question.question}-${index}`} q={question} index={index} onAskAI={handleAskAboutQuestion} />
                       ))}
                     </div>
+                  </CardGlass>
+                )}
+              </div>
+
+              <div className="space-y-6 lg:sticky lg:top-24">
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Study toolkit</h3>
+                      <p className="mt-1 text-sm text-slate-500">Keep your revision notes and highlights beside the lesson.</p>
+                    </div>
+                    <Info className="h-5 w-5 text-slate-400" />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={handleCaptureHighlight}
-                      className="w-full mb-4 py-2.5 rounded-xl text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-colors"
+                      onClick={() => setToolPanel((value) => (value === "highlights" ? null : "highlights"))}
+                      className={cn(
+                        "inline-flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-xs font-semibold transition-colors",
+                        toolPanel === "highlights"
+                          ? "border-amber-300 bg-amber-50 text-amber-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50",
+                      )}
                     >
-                      Highlight selection
+                      <Highlighter className="h-4 w-4" />
+                      Highlight
                     </button>
-                    {highlights.length === 0 ? (
-                      <p className="text-xs text-slate-400">No highlights yet.</p>
-                    ) : (
-                      <div className="space-y-2 max-h-80 overflow-auto pr-1">
-                        {highlights.map((h, i) => (
-                          <div key={`${h.text}-${i}`} className="text-xs font-medium text-slate-700 border rounded-lg px-3 py-2" style={{ backgroundColor: h.color, borderColor: h.color }}>
-                            {h.text}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setToolPanel((value) => (value === "notes" ? null : "notes"))}
+                      className={cn(
+                        "inline-flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-xs font-semibold transition-colors",
+                        toolPanel === "notes"
+                          ? "border-blue-300 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50",
+                      )}
+                    >
+                      <StickyNote className="h-4 w-4" />
+                      Comment
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFlashcardIndex(0);
+                        setFlashcardFlipped(false);
+                        setShowFlashcards(true);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs font-semibold text-slate-600 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                    >
+                      <Brain className="h-4 w-4" />
+                      Cards
+                    </button>
                   </div>
+
+                  <AnimatePresence mode="wait">
+                    {toolPanel === "highlights" && (
+                      <motion.div
+                        key="highlight-panel"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mt-5 rounded-[1.5rem] border border-amber-100 bg-amber-50/70 p-4"
+                        onMouseDown={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") e.preventDefault();
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-semibold text-slate-900">Highlighter</h4>
+                          {savedTextRef.current && <span className="text-[11px] font-medium text-emerald-600">Selection ready</span>}
+                        </div>
+                        <p className="mt-2 text-[12px] leading-5 text-slate-600">
+                          Select any line in the notes, choose a color, then save it as a highlight for later revision.
+                        </p>
+                        <div className="mt-3 flex items-center gap-2">
+                          {["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"].map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => setHighlightColor(color)}
+                              className={cn(
+                                "h-8 w-8 rounded-full border-2 transition-transform",
+                                highlightColor === color ? "scale-110 border-slate-900" : "border-white",
+                              )}
+                              style={{ backgroundColor: color }}
+                              title="Pick highlight color"
+                            />
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={handleCaptureHighlight}
+                          className="mt-4 w-full rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
+                        >
+                          Save highlight
+                        </button>
+
+                        <div className="mt-4 space-y-2">
+                          {highlights.length === 0 ? (
+                            <p className="text-xs text-slate-400">No highlights yet.</p>
+                          ) : (
+                            highlights.map((highlight, index) => (
+                              <div
+                                key={`${highlight.text}-${index}`}
+                                className="rounded-xl border px-3 py-2 text-xs font-medium text-slate-700"
+                                style={{ backgroundColor: highlight.color, borderColor: highlight.color }}
+                              >
+                                {highlight.text}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {toolPanel === "notes" && (
+                      <motion.div
+                        key="notes-panel"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mt-5 rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-semibold text-slate-900">Comments</h4>
+                          {savedTextRef.current && <span className="text-[11px] font-medium text-emerald-600">Selection ready</span>}
+                        </div>
+                        <p className="mt-2 text-[12px] leading-5 text-slate-600">
+                          Select a line from the notes, add your own reminder, and jump back to it from here later.
+                        </p>
+
+                        {savedTextRef.current && (
+                          <div className="mt-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-[11px] italic text-slate-600">
+                            "{savedTextRef.current.slice(0, 120)}{savedTextRef.current.length > 120 ? "…" : ""}"
+                          </div>
+                        )}
+
+                        <textarea
+                          value={noteDraft}
+                          onChange={(e) => setNoteDraft(e.target.value)}
+                          placeholder="Write your comment..."
+                          rows={3}
+                          className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        />
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={handleAddInlineComment}
+                          disabled={!noteDraft.trim()}
+                          className="mt-3 w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-40"
+                        >
+                          Add comment
+                        </button>
+
+                        <div className="mt-4 space-y-2">
+                          {inlineComments.length === 0 ? (
+                            <p className="text-xs text-slate-400">No comments yet.</p>
+                          ) : (
+                            inlineComments.map((comment) => (
+                              <button
+                                key={comment.id}
+                                type="button"
+                                onClick={() => setActiveInlineCommentId(comment.id)}
+                                className={cn(
+                                  "w-full rounded-xl border px-3 py-3 text-left text-xs font-medium transition-colors",
+                                  activeInlineCommentId === comment.id
+                                    ? "border-blue-200 bg-white text-blue-900"
+                                    : "border-slate-200 bg-white/80 text-slate-700 hover:border-blue-100",
+                                )}
+                              >
+                                <p className="truncate font-semibold">{comment.quote}</p>
+                                <p className="mt-1 leading-5">{comment.text}</p>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {!toolPanel && (
+                    <div className="mt-5 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/80 p-4 text-sm leading-6 text-slate-500">
+                      Your highlights and comments stay on this device, so you can come back to the same notes and pick up where you left off.
+                    </div>
+                  )}
+                </CardGlass>
+
+                {!!sessionData.keyConcepts.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                        <Lightbulb className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Key concepts</h3>
+                        <p className="text-sm text-slate-500">The most important ideas to remember from this topic.</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {sessionData.keyConcepts.map((concept, index) => (
+                        <button
+                          key={`${concept}-${index}`}
+                          type="button"
+                          onClick={() => handleAskAboutQuestion(`Explain this concept clearly with one example: ${normalizeReadableText(concept)}`)}
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          {normalizeReadableText(concept)}
+                        </button>
+                      ))}
+                    </div>
+                  </CardGlass>
                 )}
 
-                {toolPanel === "notes" && (
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <h3 className="text-sm font-semibold text-slate-900">Comments</h3>
-                      {savedTextRef.current && (
-                        <span className="text-[10px] font-medium text-emerald-600">Selection ready</span>
-                      )}
+                {!!sessionData.formulas.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                        <Sigma className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Formula board</h3>
+                        <p className="text-sm text-slate-500">Important expressions collected for quick revision.</p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 mb-3">
-                      Select text in the notes, type your comment below, then click <span className="font-semibold">Add</span>. An icon will appear next to that line.
-                    </p>
-                    <div className="space-y-3">
-                      {savedTextRef.current && (
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 italic">
-                          "{savedTextRef.current.slice(0, 120)}{savedTextRef.current.length > 120 ? "…" : ""}"
+                    <div className="mt-4 space-y-3">
+                      {sessionData.formulas.map((formula, index) => (
+                        <div key={`${formula}-${index}`} className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                          <div className={cn(mdClassBase, "prose-p:mb-0 prose-p:text-sm prose-code:text-xs prose-h2:text-xl prose-h3:text-base")}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {normalizeFormulaForKatex(formula)}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+
+                {!!sessionData.commonMistakes.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+                        <AlertTriangle className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Common mistakes</h3>
+                        <p className="text-sm text-slate-500">Watch these while revising and solving questions.</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {sessionData.commonMistakes.map((mistake, index) => (
+                        <button
+                          key={`${mistake}-${index}`}
+                          type="button"
+                          onClick={() => handleAskAboutQuestion(`How do I avoid this mistake in exams: ${normalizeReadableText(mistake)}?`)}
+                          className="w-full rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-rose-100/70"
+                        >
+                          {normalizeReadableText(mistake)}
+                        </button>
+                      ))}
+                    </div>
+                  </CardGlass>
+                )}
+
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Session progress</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {completed
+                          ? "This topic is marked complete."
+                          : "Finish the topic once you are confident with the notes and practice questions."}
+                      </p>
+                    </div>
+                    <div className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-2xl",
+                      completed ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700",
+                    )}>
+                      {completed ? <CheckCircle className="h-5 w-5" /> : <Trophy className="h-5 w-5" />}
+                    </div>
+                  </div>
+
+                  {completed ? (
+                    <div className="mt-5 space-y-4">
+                      <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4">
+                        <p className="text-sm font-semibold text-emerald-800">Topic completed successfully</p>
+                        <p className="mt-1 text-sm text-emerald-700">
+                          {completeMut.data?.xpEarned
+                            ? `You just earned +${completeMut.data.xpEarned} XP for this session.`
+                            : "Your progress has been saved and synced to your study roadmap."}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                      >
+                        Back to previous page
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : showComplete ? (
+                    <div className="mt-5 space-y-4">
+                      <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50 p-4">
+                        <p className="text-sm font-semibold text-slate-900">Ready to complete this topic?</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Confirm only after you are comfortable with the concepts, formulas, and practice set.
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowComplete(false)}
+                          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                          Not yet
+                        </button>
+                        <button
+                          onClick={handleComplete}
+                          disabled={completeMut.isPending}
+                          className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-50"
+                        >
+                          {completeMut.isPending ? (
+                            <span className="inline-flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Saving...
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-2">
+                              <Zap className="h-4 w-4" />
+                              Confirm complete
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 space-y-3">
+                      <button
+                        onClick={() => setShowComplete(true)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      >
+                        <Trophy className="h-4 w-4" />
+                        Mark topic complete
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("ask")}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Ask AI before finishing
+                      </button>
+                    </div>
+                  )}
+                </CardGlass>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="ask"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -18 }}
+              className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+            >
+              <CardGlass className="overflow-hidden border-slate-200/80 bg-white/92 p-0 shadow-sm">
+                <div className="border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-900">Ask the AI tutor</h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                        Ask for concept clarification, solution steps, shortcuts, or common mistakes for this topic.
+                      </p>
+                    </div>
+                    <div className="inline-flex items-center gap-2 self-start rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                      <BrainCircuit className="h-4 w-4 text-blue-600" />
+                      {sessionData.conversation.length ? `${Math.ceil(sessionData.conversation.length / 2)} doubts asked` : "No doubts asked yet"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex min-h-[620px] flex-col">
+                  <div className={cn("flex-1 p-4 sm:p-6", sessionData.conversation.length === 0 ? "flex items-center justify-center" : "overflow-y-auto")}>
+                    <AnimatePresence mode="popLayout">
+                      {sessionData.conversation.length === 0 ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="mx-auto max-w-lg text-center"
+                        >
+                          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-blue-50 text-blue-700 shadow-sm">
+                            <BrainCircuit className="h-10 w-10" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-slate-900">Start with your first question</h3>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">
+                            Try asking for a simpler explanation, a worked numerical example, or a quick revision summary.
+                          </p>
+                        </motion.div>
+                      ) : (
+                        <div className="space-y-6">
+                          {sessionData.conversation.map((msg, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: msg.role === "student" ? 18 : -18 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className={cn(
+                                "flex gap-3 sm:gap-4",
+                                msg.role === "student" ? "justify-end" : "justify-start",
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "flex max-w-[92%] gap-3 sm:max-w-[80%]",
+                                  msg.role === "student" ? "flex-row-reverse" : "flex-row",
+                                )}
+                              >
+                                <div
+                                  className={cn(
+                                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm",
+                                    msg.role === "ai" ? "bg-blue-600" : "bg-slate-900",
+                                  )}
+                                >
+                                  {msg.role === "ai" ? <Sparkles className="h-5 w-5" /> : "ME"}
+                                </div>
+                                <div
+                                  className={cn(
+                                    "rounded-[1.75rem] px-4 py-3 shadow-sm sm:px-5 sm:py-4",
+                                    msg.role === "student"
+                                      ? "rounded-tr-md bg-slate-900 text-white"
+                                      : "rounded-tl-md border border-slate-200 bg-white text-slate-800",
+                                  )}
+                                >
+                                  {msg.role === "ai" ? (
+                                    <div className={cn(mdClassBase, "prose-h2:text-xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm !prose-p:text-slate-800")}>
+                                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                        {normalizeAiMessage(msg.message)}
+                                      </ReactMarkdown>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm leading-6">{msg.message}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+
+                          {askMut.isPending && (
+                            <div className="flex justify-start gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                                <Sparkles className="h-5 w-5" />
+                              </div>
+                              <div className="flex items-center gap-2 rounded-[1.75rem] rounded-tl-md border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                                {[0, 1, 2].map((i) => (
+                                  <motion.div
+                                    key={i}
+                                    className="h-2.5 w-2.5 rounded-full bg-blue-500"
+                                    animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
+                                    transition={{ repeat: Infinity, duration: 1, delay: i * 0.18 }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div ref={chatEndRef} />
                         </div>
                       )}
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/95 p-4 backdrop-blur sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                       <textarea
-                        value={noteDraft}
-                        onChange={(e) => setNoteDraft(e.target.value)}
-                        placeholder="Write your comment..."
-                        rows={3}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                          }
+                        }}
+                        placeholder="Ask a doubt about this topic..."
+                        rows={isCompactLayout ? 3 : 2}
+                        disabled={askMut.isPending}
+                        className="min-h-[96px] flex-1 resize-none rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                       />
                       <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={handleAddInlineComment}
-                        disabled={!noteDraft.trim()}
-                        className="w-full py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 shadow-sm transition-colors"
+                        onClick={handleSend}
+                        disabled={!chatInput.trim() || askMut.isPending}
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-40 sm:h-[96px] sm:w-[96px] sm:flex-col"
                       >
-                        Add comment on selected line
+                        {askMut.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                        <span>Send</span>
                       </button>
-                      <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                        {inlineComments.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setActiveInlineCommentId(c.id)}
-                            className={cn("w-full text-left text-xs font-medium border rounded-lg px-3 py-2", activeInlineCommentId === c.id ? "bg-indigo-50 border-indigo-200 text-indigo-800" : "bg-slate-50 border-slate-200 text-slate-700")}
-                          >
-                            <p className="font-semibold mb-1 truncate">{c.quote}</p>
-                            <p>{c.text}</p>
-                          </button>
-                        ))}
-                        {inlineComments.length === 0 && <p className="text-xs text-slate-400">No comments yet.</p>}
-                      </div>
-                      {activeInlineCommentId && (
-                        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900">
-                          {inlineComments.find((c) => c.id === activeInlineCommentId)?.text}
-                        </div>
-                      )}
                     </div>
                   </div>
+                </div>
+              </CardGlass>
+
+              <div className="space-y-6 lg:sticky lg:top-24">
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <h3 className="text-lg font-bold text-slate-900">Suggested prompts</h3>
+                  <p className="mt-1 text-sm text-slate-500">Use one of these to start quickly.</p>
+
+                  <div className="mt-4 space-y-2">
+                    {quickAskPrompts.length === 0 ? (
+                      <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                        Ask for summaries, shortcuts, solved examples, or revision help.
+                      </p>
+                    ) : (
+                      quickAskPrompts.map((prompt, index) => (
+                        <button
+                          key={`${prompt}-${index}`}
+                          type="button"
+                          onClick={() => setChatInput(prompt)}
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          {prompt}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </CardGlass>
+
+                {!!sessionData.practiceQuestions.length && (
+                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-900">Practice question help</h3>
+                    <p className="mt-1 text-sm text-slate-500">Jump from a question directly into an explanation.</p>
+
+                    <div className="mt-4 space-y-2">
+                      {sessionData.practiceQuestions.slice(0, 4).map((question, index) => (
+                        <button
+                          key={`${question.question}-${index}`}
+                          type="button"
+                          onClick={() => handleAskAboutQuestion(question.question)}
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                            Question {index + 1}
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {question.question}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </CardGlass>
                 )}
 
-              </CardGlass>
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                  <h3 className="text-lg font-bold text-slate-900">Session progress</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {completed ? "This topic is already complete." : "You can still ask a few more doubts before marking it complete."}
+                  </p>
+
+                  {completed ? (
+                    <div className="mt-5 space-y-3">
+                      <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
+                        Session saved. Revisit the notes anytime for revision.
+                      </div>
+                      <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                      >
+                        Back to previous page
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : showComplete ? (
+                    <div className="mt-5 space-y-3">
+                      <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50 p-4 text-sm text-slate-700">
+                        You are about to finish this session and save your progress.
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowComplete(false)}
+                          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleComplete}
+                          disabled={completeMut.isPending}
+                          className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-50"
+                        >
+                          {completeMut.isPending ? "Saving..." : "Confirm"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 space-y-3">
+                      <button
+                        onClick={() => setShowComplete(true)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      >
+                        <Trophy className="h-4 w-4" />
+                        Mark topic complete
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("lesson")}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        Back to notes
+                      </button>
+                    </div>
+                  )}
+                </CardGlass>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Flashcards centered modal */}
         <AnimatePresence>
           {showFlashcards && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
               onClick={() => setShowFlashcards(false)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.94, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                exit={{ opacity: 0, scale: 0.94, y: 20 }}
+                transition={{ type: "spring", stiffness: 280, damping: 28 }}
                 className="w-full max-w-xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <CardGlass className="p-6 sm:p-8 border-slate-200 bg-white shadow-2xl relative">
+                <CardGlass className="relative border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
                   <button
                     type="button"
                     onClick={() => setShowFlashcards(false)}
-                    className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+                    className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
                     title="Close"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </button>
 
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                      <Brain className="w-4.5 h-4.5" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                      <Brain className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 leading-none">Flashcards</h3>
-                      <p className="text-[11px] text-slate-500 mt-1">Tap the card to flip and reveal the answer.</p>
+                      <h3 className="text-lg font-bold text-slate-900">Flashcards</h3>
+                      <p className="text-sm text-slate-500">Flip through quick revision cards for this topic.</p>
                     </div>
                   </div>
 
@@ -927,11 +1471,11 @@ export default function StudentAiStudyPage() {
                     const card = sessionData.practiceQuestions[safeIndex];
                     return (
                       <div className="mt-5">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                             Card {safeIndex + 1} of {total}
                           </span>
-                          <div className="flex-1 mx-4 h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-100">
                             <div
                               className="h-full bg-emerald-500 transition-all duration-300"
                               style={{ width: `${((safeIndex + 1) / total) * 100}%` }}
@@ -939,58 +1483,23 @@ export default function StudentAiStudyPage() {
                           </div>
                         </div>
 
-                        <div style={{ perspective: "1200px" }}>
-                          <button
-                            type="button"
-                            onClick={() => setFlashcardFlipped((f) => !f)}
-                            className="w-full text-left"
-                          >
-                            <div
-                              className="relative min-h-[260px] transition-transform duration-500"
-                              style={{
-                                transformStyle: "preserve-3d",
-                                transform: flashcardFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                              }}
-                            >
-                              <div
-                                className="absolute inset-0 rounded-2xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm flex flex-col"
-                                style={{ backfaceVisibility: "hidden" }}
-                              >
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-3">Question</p>
-                                <p className="text-base font-semibold text-slate-800 leading-relaxed flex-1">
-                                  {card.question}
-                                </p>
-                                <p className="text-[11px] text-slate-500 mt-4">Click card to reveal answer</p>
-                              </div>
-                              <div
-                                className="absolute inset-0 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm overflow-auto flex flex-col"
-                                style={{
-                                  backfaceVisibility: "hidden",
-                                  transform: "rotateY(180deg)",
-                                }}
-                              >
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-3">Answer</p>
-                                <p className="text-base font-semibold text-slate-800 leading-relaxed">
-                                  {card.answer}
-                                </p>
-                                {card.explanation && (
-                                  <p className="text-xs text-slate-600 mt-3 leading-relaxed">{card.explanation}</p>
-                                )}
-                                <p className="text-[11px] text-slate-500 mt-auto pt-3">Click card to flip back</p>
-                              </div>
-                            </div>
-                          </button>
-                        </div>
+                        <NotesFlashcard
+                          question={card.question}
+                          answer={card.answer}
+                          explanation={card.explanation}
+                          flipped={flashcardFlipped}
+                          onToggle={() => setFlashcardFlipped((f) => !f)}
+                        />
 
                         <div className="mt-6 flex items-center justify-between gap-3">
                           <button
                             type="button"
                             onClick={() => {
                               setFlashcardFlipped(false);
-                              setFlashcardIndex((i) => (i - 1 + total) % total);
+                              setFlashcardIndex((index) => (index - 1 + total) % total);
                             }}
                             disabled={total <= 1}
-                            className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-semibold disabled:opacity-40 hover:bg-slate-50"
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
                           >
                             Previous
                           </button>
@@ -998,25 +1507,26 @@ export default function StudentAiStudyPage() {
                             type="button"
                             onClick={() => {
                               setFlashcardFlipped(false);
-                              setFlashcardIndex((i) => (i + 1) % total);
+                              setFlashcardIndex((index) => (index + 1) % total);
                             }}
                             disabled={total <= 1}
-                            className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white text-xs font-semibold shadow-sm hover:bg-emerald-600 disabled:opacity-40 flex items-center justify-center gap-2"
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-40"
                           >
-                            Next <ArrowRight className="w-4 h-4" />
+                            Next
+                            <ArrowRight className="h-4 w-4" />
                           </button>
                         </div>
 
-                        <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
-                          <div className="text-xs font-semibold text-indigo-700 mb-2">Doubt Box (for this notes topic)</div>
-                          <div className="space-y-2 max-h-32 overflow-y-auto mb-3">
+                        <div className="mt-5 rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4">
+                          <div className="mb-2 text-sm font-semibold text-blue-800">Doubt box</div>
+                          <div className="mb-3 max-h-32 space-y-2 overflow-y-auto">
                             {sessionData.conversation.length ? (
-                              sessionData.conversation.slice(-3).map((msg, i) => (
+                              sessionData.conversation.slice(-3).map((msg, index) => (
                                 <div
-                                  key={`${msg.timestamp}-${i}`}
+                                  key={`${msg.timestamp}-${index}`}
                                   className={cn(
-                                    "text-[11px] rounded px-2 py-1",
-                                    msg.role === "student" ? "bg-white text-slate-700" : "bg-indigo-100 text-indigo-900",
+                                    "rounded-xl px-3 py-2 text-[11px]",
+                                    msg.role === "student" ? "bg-white text-slate-700" : "bg-blue-100 text-blue-900",
                                   )}
                                 >
                                   {normalizeAiMessage(msg.message)}
@@ -1037,13 +1547,13 @@ export default function StudentAiStudyPage() {
                                 }
                               }}
                               placeholder="Ask your doubt..."
-                              className="flex-1 text-xs px-3 py-2 rounded-lg border border-indigo-200 bg-white"
+                              className="flex-1 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs"
                             />
                             <button
                               type="button"
                               onClick={handleFlashcardDoubtAsk}
                               disabled={!flashcardDoubtInput.trim() || askMut.isPending || !sessionId}
-                              className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50"
+                              className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                             >
                               {askMut.isPending ? "Asking..." : "Ask"}
                             </button>
@@ -1058,75 +1568,27 @@ export default function StudentAiStudyPage() {
           )}
         </AnimatePresence>
 
-        {/* Global Action Terminal */}
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-3xl px-10">
-           <CardGlass className="p-4 sm:p-6 border-white/60 bg-white/80 backdrop-blur-3xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)]">
-              {activeTab === "ask" ? (
-                 <div className="flex items-end gap-5">
-                    <textarea
-                      value={chatInput} onChange={e => setChatInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                      placeholder="Ask a doubt..." rows={1} disabled={askMut.isPending}
-                      className="flex-1 resize-none bg-white border border-slate-100 rounded-2xl px-8 py-5 text-base font-bold text-slate-900 placeholder:text-slate-300 placeholder:font-black placeholder:uppercase focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all shadow-inner"
-                      style={{ maxHeight: 200 }} />
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!chatInput.trim() || askMut.isPending}
-                      className="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-2xl shadow-blue-500/40 disabled:opacity-40 transition-all shrink-0">
-                      {askMut.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
-                    </motion.button>
-                 </div>
-              ) : completed ? (
-                 <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-4">
-                    <div className="flex items-center gap-4">
-                       <CheckCircle className="w-8 h-8 text-emerald-500" />
-                       <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Success</p>
-                          <p className="text-lg font-black text-slate-900 uppercase italic">Session Synchronized</p>
-                       </div>
-                    </div>
-                    <button onClick={() => navigate(-1)} className="px-10 py-5 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-3">Return to Directory <ArrowRight className="w-5 h-5" /></button>
-                 </div>
-              ) : (
-                 <div className={cn("flex items-center gap-4 transition-all duration-500", showComplete ? "flex-row" : "flex-row-reverse")}>
-                    {showComplete ? (
-                       <>
-                          <button onClick={() => setShowComplete(false)} className="px-8 py-4 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Abort</button>
-                          <motion.button 
-                            initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-                            onClick={handleComplete} disabled={completeMut.isPending}
-                            className="flex-1 py-5 rounded-[1.5rem] bg-emerald-500 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-3"
-                          >
-                            {completeMut.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />} Verify Sector Resolution
-                          </motion.button>
-                       </>
-                    ) : (
-                       <motion.button 
-                         whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                         onClick={() => setShowComplete(true)}
-                         className="w-full py-5 rounded-[1.5rem] bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-3"
-                       >
-                         <Trophy className="w-5 h-5" /> Mark as Complete
-                       </motion.button>
-                    )}
-                 </div>
-              )}
-           </CardGlass>
-        </div>
-
-        {/* XP Celebration */}
         <AnimatePresence>
-           {completed && completeMut.data && completeMut.isSuccess && (
-             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.5 }}
-               className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
-                <CardGlass className="px-12 py-8 bg-amber-500 border-amber-400 text-white flex items-center gap-8 shadow-[0_40px_100px_-10px_rgba(245,158,11,0.5)]">
-                   <div className="w-16 h-16 rounded-3xl bg-white/20 border border-white/40 flex items-center justify-center shadow-lg"><Trophy className="w-10 h-10" /></div>
-                   <div>
-                      <p className="text-4xl font-black italic tracking-tighter">+{completeMut.data.xpEarned} XP</p>
-                      <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Rank Propagation Synchronized</p>
-                   </div>
-                </CardGlass>
-             </motion.div>
-           )}
+          {completed && completeMut.data && completeMut.isSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.6 }}
+              className="fixed left-1/2 top-24 z-[100] -translate-x-1/2 pointer-events-none"
+            >
+              <CardGlass className="flex items-center gap-6 border-amber-300 bg-amber-500 px-8 py-5 text-white shadow-[0_32px_80px_-18px_rgba(245,158,11,0.55)]">
+                <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-white/40 bg-white/20">
+                  <Trophy className="h-8 w-8" />
+                </div>
+                <div>
+                  <p className="text-3xl font-black tracking-tight">+{completeMut.data.xpEarned} XP</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/85">Progress synced</p>
+                </div>
+              </CardGlass>
+            </motion.div>
+          )}
         </AnimatePresence>
+      </div>
     </div>
   );
 }

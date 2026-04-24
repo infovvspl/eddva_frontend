@@ -192,8 +192,11 @@ export interface TopicLecture {
   id: string;
   title: string;
   description?: string;
+  type?: "recorded" | "live";
+  status?: string;
   duration?: number;
   videoUrl?: string;
+  liveMeetingUrl?: string;
   thumbnailUrl?: string;
   watchProgress?: number;
   isCompleted?: boolean;
@@ -386,8 +389,11 @@ export async function getCourseTopicDetail(batchId: string, topicId: string): Pr
       id: l.id,
       title: l.title ?? "",
       description: l.description,
+      type: l.type,
+      status: l.status,
       duration: l.durationSeconds ?? l.videoDurationSeconds ?? l.duration,
       videoUrl: l.videoUrl,
+      liveMeetingUrl: l.liveMeetingUrl,
       thumbnailUrl: l.thumbnailUrl,
       watchProgress: prog.watchPercentage ?? l.watchProgress ?? 0,
       isCompleted: prog.isCompleted ?? l.isCompleted ?? false,
