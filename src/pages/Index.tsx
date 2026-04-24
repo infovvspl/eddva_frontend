@@ -271,7 +271,7 @@ const Index = () => {
                 height={416}
                 sizes="(min-width: 1024px) 520px, min(90vw, 520px)"
                 decoding="async"
-                fetchPriority="high"
+                {...{ fetchpriority: "high" } as { fetchpriority: "high" }}
               />
 
               {/* floating cards */}

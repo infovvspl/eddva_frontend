@@ -5,13 +5,15 @@ import {
   ArrowLeft, ArrowRight, Clock, ClipboardList, CheckCircle,
   XCircle, Minus, Trophy, Target, Zap, BarChart3, Loader2,
   AlertTriangle, ChevronRight, BookOpen, Flag, RotateCcw,
-  TrendingUp, Calendar, Award, Check,
+  TrendingUp, Calendar, Award, Check, X,
 } from "lucide-react";
 import {
   getMockTestById, startSession, submitAnswer, submitSession,
-  getMockTestSessions, getSessionResult, isSessionCompleted,
+  getMockTestSessions, getSessionResult, getSessionById, isSessionCompleted,
 } from "@/lib/api/student";
-import type { QuizQuestion, TestSession, SessionResult, SessionResultAttempt } from "@/lib/api/student";
+import type {
+  QuizQuestion, TestSession, SessionResult, SessionResultAttempt, InProgressSessionAttempt,
+} from "@/lib/api/student";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -40,11 +42,46 @@ function fmt(s: number) {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-function isAttemptComplete(q: QuizQuestion, selected: string[] | undefined): boolean {
+function isAttemptComplete(
+  q: QuizQuestion,
+  selected: string[] | undefined,
+  imageUrls?: string[],
+): boolean {
+  if (q.type === "descriptive") {
+    return Boolean(
+      (selected && selected[0]?.trim()) || (Array.isArray(imageUrls) && imageUrls.length > 0),
+    );
+  }
   if (!selected || selected.length === 0) return false;
-  if (q.type === "descriptive") return Boolean(selected[0]?.trim());
   if (q.type === "integer") return Boolean(selected[0]?.toString().trim());
   return selected.length > 0;
+}
+
+function hydrateFromAttempts(
+  attempts: InProgressSessionAttempt[] | undefined,
+  questions: QuizQuestion[],
+): { answers: Record<string, string[]>; answerImages: Record<string, string[]> } {
+  const answers: Record<string, string[]> = {};
+  const answerImages: Record<string, string[]> = {};
+  if (!attempts?.length) return { answers, answerImages };
+  const byQ = new Map(attempts.map((a) => [a.questionId, a]));
+  for (const q of questions) {
+    const a = byQ.get(q.id);
+    if (!a) continue;
+    const raw = a as { answer_image_urls?: string[]; integer_answer?: string | null };
+    const imageUrls = a.answerImageUrls ?? raw.answer_image_urls ?? [];
+    if (q.type === "mcq_single" || q.type === "mcq_multi") {
+      if (a.selectedOptionIds?.length) answers[q.id] = a.selectedOptionIds;
+    } else if (q.type === "integer") {
+      const v = a.integerAnswer ?? raw.integer_answer;
+      if (v != null && String(v).trim() !== "") answers[q.id] = [String(v)];
+    } else if (q.type === "descriptive") {
+      const v = a.integerAnswer ?? raw.integer_answer;
+      if (v != null) answers[q.id] = [String(v)];
+      if (Array.isArray(imageUrls) && imageUrls.length) answerImages[q.id] = [...imageUrls];
+    }
+  }
+  return { answers, answerImages };
 }
 
 // ─── Palette dot ─────────────────────────────────────────────────────────────
@@ -74,12 +111,14 @@ const TYPE_PILL: Record<QuizQuestion["type"], { label: string; className: string
 };
 
 function QuestionView({
-  question, index, total, selected, imageUrls, onSelect, onImageUrlsChange,
+  question, index, total, selected, imageUrls, onSelect, onImageUrlsChange, onDescriptiveInput,
 }: {
   question: QuizQuestion; index: number; total: number;
   selected: string[];
   imageUrls?: string[];
   onSelect: (v: string) => void;
+  /** Fires on every textarea change; parent debounces auto-save. */
+  onDescriptiveInput?: (v: string) => void;
   onImageUrlsChange?: (urls: string[]) => void;
 }) {
   const isInteger = question.type === "integer";
@@ -88,16 +127,9 @@ function QuestionView({
   const [intVal, setIntVal] = useState(selected[0] ?? "");
   const [textVal, setTextVal] = useState(selected[0] ?? "");
   const [uploading, setUploading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setIntVal(selected[0] ?? ""); }, [question.id, selected]);
   useEffect(() => { setTextVal(selected[0] ?? ""); }, [question.id, selected]);
-
-  const queueDescriptiveSave = (raw: string) => {
-    setTextVal(raw);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => onSelect(raw), 500);
-  };
 
   const handlePickImages = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -125,10 +157,6 @@ function QuestionView({
       setUploading(false);
     }
   };
-
-  useEffect(() => () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-  }, []);
 
   const typePill = TYPE_PILL[question.type] ?? TYPE_PILL.mcq_single;
 
@@ -168,7 +196,11 @@ function QuestionView({
           <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Your answer</p>
           <textarea
             value={textVal}
-            onChange={e => queueDescriptiveSave(e.target.value)}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setTextVal(raw);
+              onDescriptiveInput?.(raw);
+            }}
             rows={6}
             placeholder="Write your answer here. It is saved automatically as you type."
             className="w-full p-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y min-h-[140px]"
@@ -186,9 +218,42 @@ function QuestionView({
               />
             </div>
             {!!imageUrls?.length && (
-              <p className="text-[11px] text-emerald-700">{imageUrls.length} page(s) attached.</p>
+              <ul className="space-y-2 mt-2">
+                {imageUrls.map((url, idx) => (
+                  <li
+                    key={`${url}-${idx}`}
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 pr-1"
+                  >
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-100">
+                      <img
+                        src={url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-slate-700">Page {idx + 1}</p>
+                      <p className="text-[10px] text-slate-400 truncate" title={url}>
+                        {url.length > 48 ? `${url.slice(0, 24)}…${url.slice(-12)}` : url}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onImageUrlsChange?.((imageUrls || []).filter((_, i) => i !== idx))}
+                      className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600"
+                      title="Remove this page"
+                      aria-label={`Remove page ${idx + 1}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
             {uploading && <p className="text-[11px] text-indigo-600">Uploading pages…</p>}
+            <p className="text-[10px] text-slate-500 leading-relaxed max-w-lg">
+              Handwritten images are stored securely. Your work is read from them (using vision AI) and combined with anything you typed for grading.
+            </p>
           </div>
         </div>
       ) : isInteger ? (
@@ -580,6 +645,12 @@ export default function StudentMockTestPage() {
   const [answerImages, setAnswerImages] = useState<Record<string, string[]>>({});
   const [result, setResult]           = useState<SessionResult | null>(null);
   const [elapsed, setElapsed]         = useState(0);
+  const doSubmitRef = useRef<((timedOut?: boolean) => Promise<void>) | null>(null);
+  const desSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
+  const answerImagesRef = useRef<Record<string, string[]>>({});
+  const answersRef = useRef<Record<string, string[]>>({});
+  useEffect(() => { answerImagesRef.current = answerImages; }, [answerImages]);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
 
   const totalSecs = (mockTest?.durationMinutes ?? 60) * 60;
   const remaining = Math.max(0, totalSecs - elapsed);
@@ -588,12 +659,51 @@ export default function StudentMockTestPage() {
   const handleTimeUp = useCallback(() => {
     if (stage === "running" && session) {
       toast.warning("Time's up! Auto-submitting…");
-      doSubmit(true);
+      void doSubmitRef.current?.(true);
     }
-  }, [stage, session]); // eslint-disable-line
+  }, [stage, session]);
 
   const secs = useCountdown(remaining, stage === "running", handleTimeUp);
   const timerDanger = secs < 120;
+
+  const flushDescriptiveIfNeeded = useCallback(async () => {
+    if (!session || !questions.length) return;
+    const q = questions[currentQ];
+    if (q.type !== "descriptive") return;
+    const t = desSaveTimers.current[q.id];
+    if (t) {
+      clearTimeout(t);
+      desSaveTimers.current[q.id] = null;
+    }
+    const text = (answersRef.current[q.id] || [])[0] ?? "";
+    const urls = answerImagesRef.current[q.id] || [];
+    try {
+      await submitAnswer(session.id, {
+        questionId: q.id,
+        integerResponse: text,
+        answerImageUrls: urls,
+        timeTakenSeconds: totalSecs - secs,
+      });
+    } catch { /* best-effort */ }
+  }, [session, questions, currentQ, totalSecs, secs]);
+
+  const handleDescriptiveInput = useCallback(
+    (q: QuizQuestion, value: string) => {
+      setAnswers((a) => ({ ...a, [q.id]: [value] }));
+      if (!session) return;
+      const prior = desSaveTimers.current[q.id];
+      if (prior) clearTimeout(prior);
+      desSaveTimers.current[q.id] = setTimeout(() => {
+        submitAnswer(session.id, {
+          questionId: q.id,
+          integerResponse: value,
+          answerImageUrls: answerImagesRef.current[q.id] || [],
+          timeTakenSeconds: totalSecs - secs,
+        }).catch(() => {});
+      }, 500);
+    },
+    [session, totalSecs, secs],
+  );
 
   // ── Initial load ──────────────────────────────────────────────────────────
   const loadPage = useCallback(async () => {
@@ -611,11 +721,17 @@ export default function StudentMockTestPage() {
       if (active) {
         const elapsed = Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000);
         setElapsed(elapsed);
-        setSession(active);
-        setQuestions((active.questions as QuizQuestion[]) ?? (test.questions as QuizQuestion[]) ?? []);
+        const full = await getSessionById(active.id);
+        const qs = (full.questions as QuizQuestion[]) ?? (test.questions as QuizQuestion[]) ?? [];
+        setSession({ ...active, questions: full.questions, attempts: full.attempts } as any);
+        setQuestions(qs);
         setCurrentQ(0);
-        setAnswers({});
-        setAnswerImages({});
+        const { answers: a, answerImages: img } = hydrateFromAttempts(
+          (full as TestSession & { attempts?: InProgressSessionAttempt[] }).attempts,
+          qs,
+        );
+        setAnswers(a);
+        setAnswerImages(img);
         setStage("running");
         toast.info("Resuming your session…");
       } else {
@@ -660,11 +776,11 @@ export default function StudentMockTestPage() {
   const handleSelect = async (value: string) => {
     const q = questions[currentQ];
     if (!q || !session) return;
+    if (q.type === "descriptive") return;
     const isMulti = q.type === "mcq_multi";
     const isInteger = q.type === "integer";
-    const isDesc = q.type === "descriptive";
     const prev = answers[q.id] ?? [];
-    const next: string[] = isDesc || isInteger
+    const next: string[] = isInteger
       ? [value]
       : isMulti
         ? (prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value])
@@ -673,9 +789,8 @@ export default function StudentMockTestPage() {
     try {
       await submitAnswer(session.id, {
         questionId: q.id,
-        selectedOptionIds: isInteger || isDesc ? undefined : next,
-        integerResponse: isInteger || isDesc ? value : undefined,
-        answerImageUrls: isDesc ? (answerImages[q.id] || []) : undefined,
+        selectedOptionIds: isInteger ? undefined : next,
+        integerResponse: isInteger ? value : undefined,
         timeTakenSeconds: totalSecs - secs,
       });
     } catch { /* graded on final submit */ }
@@ -683,6 +798,7 @@ export default function StudentMockTestPage() {
 
   const doSubmit = async (timedOut = false) => {
     if (!session) return;
+    await flushDescriptiveIfNeeded();
     setStage("submitting");
     try {
       const res = await submitSession(session.id);
@@ -695,10 +811,13 @@ export default function StudentMockTestPage() {
       setStage("running");
     }
   };
+  doSubmitRef.current = doSubmit;
 
   const handleSubmit = async (timedOut = false) => {
     if (!timedOut) {
-      const unanswered = questions.filter((q) => !isAttemptComplete(q, answers[q.id])).length;
+      const unanswered = questions.filter(
+        (q) => !isAttemptComplete(q, answers[q.id], answerImages[q.id]),
+      ).length;
       if (unanswered > 0) {
         const ok = window.confirm(`${unanswered} question${unanswered > 1 ? "s" : ""} unanswered. Submit anyway?`);
         if (!ok) return;
@@ -827,23 +946,52 @@ export default function StudentMockTestPage() {
   // ── Running ───────────────────────────────────────────────────────────────
   if (stage === "running" && questions.length > 0) {
     const q = questions[currentQ];
-    const answeredCount = questions.filter((qItem) => isAttemptComplete(qItem, answers[qItem.id])).length;
+    const answeredCount = questions.filter((qItem) =>
+      isAttemptComplete(qItem, answers[qItem.id], answerImages[qItem.id]),
+    ).length;
 
     return (
       <div className="max-w-3xl mx-auto px-4 pb-24">
         {/* Sticky header */}
-        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 py-3 mb-6 flex items-center justify-between gap-4 -mx-4 px-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => navigate(-1)} className="shrink-0 w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 py-3 mb-6 flex items-center justify-between gap-2 sm:gap-4 -mx-4 px-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="shrink-0 w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+              title="Back"
+              aria-label="Back"
+            >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <p className="text-sm font-bold text-slate-800 truncate">{mockTest?.title}</p>
           </div>
-          <div className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm shrink-0",
-            timerDanger ? "bg-red-500 text-white animate-pulse" : "bg-slate-100 text-slate-800",
-          )}>
-            <Clock className="w-4 h-4" /> {fmt(secs)}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Close this test? Your last answers are saved; you can resume this mock test from the list when you come back.",
+                  )
+                ) {
+                  navigate(-1);
+                }
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              title="Close test"
+              aria-label="Close test and leave"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div
+              className={cn(
+                "flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-bold text-sm",
+                timerDanger ? "bg-red-500 text-white animate-pulse" : "bg-slate-100 text-slate-800",
+              )}
+            >
+              <Clock className="w-4 h-4" /> {fmt(secs)}
+            </div>
           </div>
         </div>
 
@@ -859,12 +1007,19 @@ export default function StudentMockTestPage() {
             key={q.id} question={q} index={currentQ} total={questions.length}
             selected={answers[q.id] ?? []}
             imageUrls={answerImages[q.id] ?? []}
+            onDescriptiveInput={(text) => handleDescriptiveInput(q, text)}
             onImageUrlsChange={(urls) => {
               setAnswerImages((m) => ({ ...m, [q.id]: urls }));
+              const t = desSaveTimers.current[q.id];
+              if (t) {
+                clearTimeout(t);
+                desSaveTimers.current[q.id] = null;
+              }
               if (session && q.type === "descriptive") {
+                const text = (answersRef.current[q.id] ?? [])[0] ?? "";
                 submitAnswer(session.id, {
                   questionId: q.id,
-                  integerResponse: (answers[q.id] ?? [])[0] ?? "",
+                  integerResponse: text,
                   answerImageUrls: urls,
                   timeTakenSeconds: totalSecs - secs,
                 }).catch(() => {});
@@ -877,13 +1032,21 @@ export default function StudentMockTestPage() {
         {/* Nav */}
         <div className="mt-6 flex items-center gap-3">
           <button
-            onClick={() => setCurrentQ(i => Math.max(i - 1, 0))} disabled={currentQ === 0}
+            onClick={async () => {
+              await flushDescriptiveIfNeeded();
+              setCurrentQ((i) => Math.max(i - 1, 0));
+            }} disabled={currentQ === 0}
             className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 shadow-sm"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={() => { if (currentQ < questions.length - 1) setCurrentQ(i => i + 1); }}
+            onClick={async () => {
+              if (currentQ < questions.length - 1) {
+                await flushDescriptiveIfNeeded();
+                setCurrentQ((i) => i + 1);
+              }
+            }}
             disabled={currentQ === questions.length - 1}
             className="flex-1 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-indigo-100 disabled:opacity-30"
           >
@@ -905,8 +1068,14 @@ export default function StudentMockTestPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {questions.map((qItem, i) => (
-              <PaletteDot key={qItem.id} idx={i} onClick={() => setCurrentQ(i)}
-                status={i === currentQ ? "current" : isAttemptComplete(qItem, answers[qItem.id]) ? "answered" : "unanswered"}
+              <PaletteDot
+                key={qItem.id}
+                idx={i}
+                onClick={async () => {
+                  if (i !== currentQ) await flushDescriptiveIfNeeded();
+                  setCurrentQ(i);
+                }}
+                status={i === currentQ ? "current" : isAttemptComplete(qItem, answers[qItem.id], answerImages[qItem.id]) ? "answered" : "unanswered"}
               />
             ))}
           </div>

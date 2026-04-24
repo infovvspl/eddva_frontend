@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import {
   useMockTests, useCreateMockTest, useDeleteMockTest, usePublishMockTest,
   useMockTestDetail, useUpdateMockTest, useRemoveQuestionFromMockTest, useBatches,
-  useSubjects, useChapters, useTopics,
+  useBatch, useSubjects, useChapters, useTopics,
 } from "@/hooks/use-admin";
 import { createQuestion, aiGenerateMockTestQuestions } from "@/lib/api/admin";
 import type {
@@ -786,6 +786,8 @@ function AIGeneratePanel({
   batchId,
   testCategory,
   questionMixId,
+  batchExamTarget,
+  batchClass,
   initSubjectId = "", initSubjectName = "",
   initChapterId = "", initChapterName = "",
   initTopicId = "",  initTopicName = "",
@@ -794,6 +796,9 @@ function AIGeneratePanel({
   batchId?: string;
   testCategory?: TestCategory | null;
   questionMixId: QuestionMixId;
+  /** From institute batch: steers phrasing, difficulty feel, and model-answer style. */
+  batchExamTarget?: string;
+  batchClass?: string;
   initSubjectId?: string; initSubjectName?: string;
   initChapterId?: string; initChapterName?: string;
   initTopicId?: string;   initTopicName?: string;
@@ -826,6 +831,7 @@ function AIGeneratePanel({
   const topicList = Array.isArray(topics) ? topics : [];
 
   const cfg = EXAM_CONFIGS[exam] ?? EXAM_CONFIGS.JEE;
+  const isCbseMix = questionMixId.startsWith("cbse_");
   const topicSelected = !!aiTopicId;
   const requestedCount = countMode === "custom"
     ? Math.max(1, Math.min(300, Number(customCount) || 0))
@@ -864,7 +870,7 @@ function AIGeneratePanel({
     );
 
     const extra = customInstructions.trim() ? ` Extra focus: ${customInstructions.trim()}` : "";
-    const isCbse = questionMixId.startsWith("cbse_");
+    const isCbse = isCbseMix;
     const difficultyPrompt =
       difficultyMode === "mixed"
         ? " Difficulty mix required: roughly 30% easy, 45% medium, 25% hard."
@@ -889,6 +895,14 @@ function AIGeneratePanel({
       topicName = isCbse
         ? `CBSE-oriented work covering (${cfg.description}). Subjects: ${cfg.subjects.join(", ")}. Syllabus hints: ${cfg.topics.join(" | ")}.${difficultyPrompt} ${extra}`.trim()
         : `${exam} multi-subject diagnostic (${cfg.description}). Subjects: ${cfg.subjects.join(", ")}. Syllabus hints: ${cfg.topics.join(" | ")}. Balanced coverage; match the Test details question type mix.${difficultyPrompt}${extra}`.trim();
+    }
+
+    if (batchExamTarget?.trim() || batchClass?.trim()) {
+      const cohort = `Institute batch cohort: target exam "${(batchExamTarget || "").trim() || "as configured"}"; class/grade: ${(batchClass || "").trim() || "—"}.`;
+      const styleHint = isCbse
+        ? " Merge with the board-style mix and CBSE mark-step guidance already in this request: do not drop NCERT-appropriate 2/3/4/5-mark-style stems and model answers; use the cohort to sharpen which class/board exam and phrasing, while keeping stepwise working and mark-weighting that prepare students for boards."
+        : " Align phrasing, traps, and model solutions with the stated competitive entrance; balance speed and rigour; model answers can be compact but must be methodologically correct for that exam.";
+      topicName = `${topicName} ${cohort}${styleHint}`.trim();
     }
 
     try {
@@ -1358,6 +1372,18 @@ function AIGeneratePanel({
         </p>
       </div>
 
+      {(batchExamTarget || batchClass) && (
+        <p className="text-xs text-slate-600 rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-2 leading-relaxed">
+          <span className="font-semibold text-slate-700">Cohort: </span>
+          {batchExamTarget ? <span>{batchExamTarget}</span> : null}
+          {batchExamTarget && batchClass ? " · " : null}
+          {batchClass ? <span>Class {batchClass}</span> : null}
+          {isCbseMix
+            ? " — adds to the CBSE mix: board-style mark steps, NCERT-appropriate model answers, and class/exam phrasing (not a replacement for the board test pattern)."
+            : " — phrasing and solutions align with the batch's target entrance exam."}
+        </p>
+      )}
+
       {!topicSelected && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-xs font-semibold text-slate-500 mb-2">Subjects covered:</p>
@@ -1672,6 +1698,7 @@ function CreateTestModal({
   const { data: subjects } = useSubjects(batchId);
   const { data: chapters } = useChapters(scope.subjectId);
   const { data: topics } = useTopics(scope.chapterId);
+  const { data: createModalBatch } = useBatch(batchId);
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
   const topicList = Array.isArray(topics) ? topics : [];
@@ -2078,6 +2105,8 @@ function CreateTestModal({
                     batchId={batchId}
                     testCategory={testCategory}
                     questionMixId={questionMixId}
+                    batchExamTarget={createModalBatch?.examTarget}
+                    batchClass={createModalBatch?.class}
                     initSubjectId={scope.subjectId}
                     initSubjectName={scope.subjectName}
                     initChapterId={scope.chapterId}
