@@ -150,9 +150,18 @@ function normalizeReadableText(text: string): string {
 type SavedHighlight = { text: string; color: string };
 type InlineComment = { id: string; text: string; quote: string; top: number };
 
-function parseMcqOptions(rawQuestion: string, rawOptions?: string[]) {
+function parseMcqOptions(rawQuestion: string, rawOptions?: unknown[]) {
   const optionsFromPayload = Array.isArray(rawOptions)
-    ? rawOptions.map((opt) => String(opt || "").trim()).filter(Boolean)
+    ? rawOptions
+      .map((opt) => {
+        if (typeof opt === "string") return opt.trim();
+        if (opt && typeof opt === "object") {
+          const o = opt as Record<string, unknown>;
+          return String(o.content ?? o.text ?? o.value ?? "").trim();
+        }
+        return "";
+      })
+      .filter(Boolean)
     : [];
   if (optionsFromPayload.length >= 2) {
     return { question: rawQuestion.trim(), options: optionsFromPayload };
@@ -257,7 +266,16 @@ function StudyMetric({
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
   const [open, setOpen] = useState(false);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
-  const parsed = useMemo(() => parseMcqOptions(q.question, q.options), [q.question, q.options]);
+  const parsed = useMemo(() => {
+    const rawFromAny = (q as any).options ?? (q as any).choices ?? (q as any).optionList ?? [];
+    const primary = parseMcqOptions(q.question, rawFromAny);
+    if (primary.options.length > 0) return primary;
+    // Fallback: sometimes options are appended in answer text by upstream generator.
+    const fromAnswer = parseMcqOptions(q.question, []);
+    if (fromAnswer.options.length > 0) return fromAnswer;
+    const combined = parseMcqOptions(`${q.question}\n${q.answer}`, []);
+    return combined.options.length ? combined : primary;
+  }, [q]);
   const correctOptionIndex = useMemo(() => {
     const answer = String(q.answer || "").trim();
     if (!answer) return null;

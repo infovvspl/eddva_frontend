@@ -69,33 +69,32 @@ function QuestionCard({
   return (
     <motion.div
       key={question.id} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-      className="space-y-10"
+      className="space-y-6"
     >
-      <CardGlass className="p-10 sm:p-14 border-white relative overflow-hidden bg-white/40">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 blur-[50px] rounded-full pointer-events-none" />
+      <CardGlass className="p-6 sm:p-8 border-slate-200/80 relative overflow-hidden bg-white shadow-sm">
         
-        <div className="flex items-center gap-4 mb-10 flex-wrap">
-          <span className="text-[10px] font-black px-4 py-2 rounded-xl bg-slate-900 text-white uppercase tracking-[0.2em] shadow-xl">
-            Probe {index + 1} / {total}
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <span className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-slate-900 text-white">
+            Question {index + 1} / {total}
           </span>
-          <span className="text-[10px] font-black text-violet-700 uppercase tracking-widest border border-violet-100 px-3 py-1.5 rounded-xl bg-violet-50">
+          <span className="text-[11px] font-semibold text-violet-700 border border-violet-200 px-3 py-1.5 rounded-lg bg-violet-50">
             {isDesc ? "Written" : isInteger ? "Integer" : isMulti ? "MSQ" : "MCQ"}
           </span>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50">Impact: {question.difficulty}</span>
+          <span className="text-[11px] font-medium text-slate-500 border border-slate-200 px-3 py-1.5 rounded-lg bg-slate-50">Difficulty: {question.difficulty}</span>
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">+{question.marksCorrect} Pts</span>
-            {question.marksWrong > 0 && <span className="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1.5 rounded-xl border border-red-100">-{question.marksWrong} Pts</span>}
+            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">+{question.marksCorrect}</span>
+            {question.marksWrong > 0 && <span className="text-[11px] font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200">-{question.marksWrong}</span>}
           </div>
         </div>
         
-        <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-relaxed uppercase italic tracking-tighter select-none">
+        <p className="text-lg sm:text-2xl font-semibold text-slate-900 leading-relaxed select-none">
            {question.content}
         </p>
       </CardGlass>
 
       {isDesc ? (
-        <CardGlass className="p-10 border-slate-200/80 bg-white/70">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4 block">Your answer</label>
+        <CardGlass className="p-6 border-slate-200/80 bg-white shadow-sm">
+          <label className="text-[11px] font-semibold text-slate-500 mb-3 block">Your answer</label>
           <textarea
             value={textVal}
             onChange={e => {
@@ -114,19 +113,19 @@ function QuestionCard({
           />
         </CardGlass>
       ) : isInteger ? (
-        <CardGlass className="p-12 border-indigo-500/10 bg-indigo-50/50">
-          <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 block text-center italic">Numerical Identity Entry</label>
+        <CardGlass className="p-6 sm:p-8 border-indigo-200 bg-indigo-50/40 shadow-sm">
+          <label className="text-[11px] font-semibold text-slate-500 mb-6 block text-center">Numerical answer</label>
           <input
             type="number" value={intVal}
             onChange={e => { setIntVal(e.target.value); onSelect(e.target.value); }}
             placeholder="0"
-            className="w-full max-w-sm mx-auto block bg-white border border-slate-100 rounded-[2.5rem] px-10 py-8 text-5xl font-black text-slate-900 text-center focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder-slate-100 shadow-inner"
+            className="w-full max-w-sm mx-auto block bg-white border border-slate-200 rounded-2xl px-8 py-5 text-3xl font-bold text-slate-900 text-center focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder-slate-300 shadow-sm"
           />
         </CardGlass>
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {isMulti && (
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider px-1">Select all that apply</p>
+            <p className="text-xs text-slate-500 font-semibold px-1">Select all that apply</p>
           )}
           {question.options?.map((opt, i) => {
             const isSelected = selected.includes(opt.id);
@@ -136,19 +135,19 @@ function QuestionCard({
                 whileHover={{ scale: 1.01, x: 10 }} whileTap={{ scale: 0.99 }}
                 key={opt.id} onClick={() => onSelect(opt.id)}
                 className={cn(
-                  "w-full flex items-center gap-6 px-8 py-6 rounded-[2rem] border-2 text-left transition-all",
-                  isSelected ? "bg-slate-900 border-slate-900 text-white shadow-2xl scale-[1.02]" : "bg-white/60 border-white text-slate-800 hover:bg-white hover:border-slate-200"
+                  "w-full flex items-center gap-4 px-5 py-4 rounded-2xl border text-left transition-all",
+                  isSelected ? "bg-blue-600 border-blue-600 text-white shadow-md scale-[1.01]" : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-slate-300"
                 )}
               >
                 <div className={cn(
-                  "w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center text-sm font-black border-2 transition-colors",
-                  isSelected ? "bg-white text-slate-900 border-transparent shadow-lg" : "bg-slate-50 border-slate-100 text-slate-300"
+                  "w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-sm font-semibold border transition-colors",
+                  isSelected ? "bg-white text-blue-700 border-white" : "bg-slate-50 border-slate-200 text-slate-500"
                 )}>
                   {isMulti
                     ? (isSelected ? <Check className="w-6 h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>)
                     : String.fromCharCode(65 + i)}
                 </div>
-                <span className="text-lg font-black uppercase italic tracking-tight flex-1">{opt.content}</span>
+                <span className="text-base font-medium tracking-tight flex-1">{opt.content}</span>
               </motion.button>
             );
           })}
@@ -247,21 +246,21 @@ function QuizRunner({
   const selected = q ? (answers[q.id] || []) : [];
 
   return (
-    <div className="flex flex-col space-y-12">
-        <CardGlass className="px-5 sm:px-6 py-3 border-slate-200 bg-white shadow-sm flex items-center justify-between sticky top-0 z-50">
+    <div className="flex flex-col space-y-8">
+        <CardGlass className="px-4 sm:px-5 py-3 border-slate-200 bg-white shadow-sm flex items-center justify-between sticky top-0 z-50">
            <div className="flex items-center gap-6">
-              <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shadow-xl", isAi ? "bg-purple-600 text-white" : "bg-slate-900 text-white")}>
+              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shadow-sm", isAi ? "bg-purple-600 text-white" : "bg-slate-900 text-white")}>
                  {isAi ? <Sparkles className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
               </div>
               <div className="min-w-0">
-                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{isAi ? "AI GENERATED PROBE" : "CURRICULUM SYNC"}</p>
-                 <h3 className="text-lg font-black text-slate-900 uppercase italic leading-none truncate max-w-[200px] sm:max-w-none">{title}</h3>
+                 <p className="text-[10px] font-semibold text-slate-500 leading-none mb-1">{isAi ? "AI Practice Quiz" : "Practice Quiz"}</p>
+                 <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-none truncate max-w-[200px] sm:max-w-none">{title}</h3>
               </div>
            </div>
 
            <div className="flex items-center gap-8">
               <div className={cn(
-                 "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all shadow-sm",
+                 "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
                  timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
               )}>
                  <Clock className="w-3.5 h-3.5" />
@@ -270,9 +269,9 @@ function QuizRunner({
               <motion.button
                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                 onClick={onSubmit}
-                className="hidden sm:flex px-10 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                className="hidden sm:flex px-5 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow-sm"
               >
-                Finalize Sync
+                Submit
               </motion.button>
            </div>
         </CardGlass>
@@ -292,11 +291,11 @@ function QuizRunner({
         </div>
 
         <div className="max-w-4xl mx-auto w-full">
-           <CardGlass className="p-5 border-white bg-white/60 flex items-center justify-between gap-10 shadow-2xl">
+           <CardGlass className="p-4 border-slate-200 bg-white flex items-center justify-between gap-6 shadow-sm">
               <button
                 onClick={() => setCurrentQ(Math.max(currentQ - 1, 0))}
                 disabled={currentQ === 0}
-                className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-950 hover:text-white transition-all disabled:opacity-20 shadow-sm"
+                className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-900 hover:text-white transition-all disabled:opacity-30"
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
@@ -306,8 +305,8 @@ function QuizRunner({
                    <button key={i} onClick={() => setCurrentQ(i)}
                      className={cn(
                         "shrink-0 transition-all border shadow-sm",
-                        i === currentQ ? "w-8 h-8 rounded-lg bg-slate-900 border-slate-900 scale-110" : 
-                        isTopicQuizAnswered(questions[i], answers[questions[i].id]) ? (isAi ? "w-5 h-5 rounded bg-purple-500/40 border-purple-500/10" : "w-5 h-5 rounded bg-blue-500/40 border-blue-500/10") : "w-5 h-5 rounded bg-white border-slate-100"
+                        i === currentQ ? "w-7 h-7 rounded-lg bg-slate-900 border-slate-900 scale-110" : 
+                        isTopicQuizAnswered(questions[i], answers[questions[i].id]) ? (isAi ? "w-4 h-4 rounded bg-purple-500/50 border-purple-400/40" : "w-4 h-4 rounded bg-blue-500/50 border-blue-400/40") : "w-4 h-4 rounded bg-white border-slate-200"
                      )}
                    />
                  ))}
@@ -316,7 +315,7 @@ function QuizRunner({
               <button
                 onClick={onNext}
                 className={cn(
-                  "w-16 h-16 rounded-2xl flex items-center justify-center transition-all shadow-xl",
+                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-sm",
                   isLast ? "bg-emerald-500 text-white shadow-emerald-500/20" : 
                   isTopicQuizAnswered(q, selected) ? (isAi ? "bg-purple-600 text-white shadow-purple-500/20" : "bg-blue-600 text-white shadow-blue-500/20") : "bg-white border border-slate-100 text-slate-200"
                 )}
@@ -447,7 +446,7 @@ export default function StudentTopicQuizPage() {
   };
 
   useEffect(() => {
-    if (stage !== "ai_results") {
+    if (stage !== "ai_results" && stage !== "results") {
       setShowReview(false);
     }
   }, [stage]);
@@ -580,6 +579,54 @@ export default function StudentTopicQuizPage() {
                <ScoreRing accuracy={accuracy} score={teacherResult.totalScore} outOf={mockTest.totalMarks} correct={teacherResult.totalCorrect} wrong={teacherResult.totalWrong} skipped={teacherResult.totalSkipped} />
                {teacherResult.errorBreakdown && <ErrorAnalysis eb={teacherResult.errorBreakdown} totalWrong={teacherResult.totalWrong} />}
             </div>
+            <CardGlass className="p-8 border-white mt-10 mb-10 overflow-hidden">
+              <button onClick={() => setShowReview(!showReview)} className="w-full flex items-center justify-between">
+                <div className="flex items-center gap-4"><Info className="w-5 h-5 text-slate-400" /><span className="text-sm font-black text-slate-900 uppercase italic">Review Answers</span></div>
+                <ChevronRight className={cn("w-6 h-6 text-slate-300 transition-transform", showReview && "rotate-90")} />
+              </button>
+              <AnimatePresence>
+                {showReview && (
+                  <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="pt-8 space-y-5">
+                    {teacherResult.attempts.map((attempt, i) => {
+                      const sourceQuestion =
+                        attempt.question
+                        ?? questions.find((q) => q.id === attempt.questionId)
+                        ?? null;
+                      const optionPool = ((attempt.options && attempt.options.length > 0)
+                        ? attempt.options
+                        : (sourceQuestion?.options ?? [])) as Array<{ id: string; optionLabel?: string; content?: string; isCorrect?: boolean | null }>;
+                      const selectedIds = attempt.selectedOptionIds ?? [];
+                      const selectedOptions = optionPool.filter((o) => selectedIds.includes(o.id));
+                      const correctIds = attempt.correctOptionIds ?? optionPool.filter((o) => Boolean(o.isCorrect)).map((o) => o.id);
+                      const correctOptions = optionPool.filter((o) => correctIds.includes(o.id));
+                      const sourceQuestionAny = sourceQuestion as any;
+                      const explanation =
+                        attempt.question?.solutionText?.trim()
+                        || sourceQuestionAny?.solutionText?.trim?.()
+                        || "Explanation not available.";
+                      const prompt = attempt.question?.content || sourceQuestion?.content || attempt.questionContent || `Question ${i + 1}`;
+                      const selectedText = selectedOptions.length
+                        ? selectedOptions.map((o, oi) => `${o.optionLabel ?? String.fromCharCode(65 + oi)}. ${o.content ?? ""}`.trim()).join(" | ")
+                        : (attempt.integerAnswer?.trim() || "Not answered");
+                      const correctText = correctOptions.length
+                        ? correctOptions.map((o, oi) => `${o.optionLabel ?? String.fromCharCode(65 + oi)}. ${o.content ?? ""}`.trim()).join(" | ")
+                        : (attempt.question?.integerAnswer?.trim() || sourceQuestionAny?.integerAnswer?.trim?.() || "Not available");
+                      return (
+                        <div key={`${attempt.questionId}-${i}`} className={cn("p-6 rounded-[1.5rem] border", attempt.isCorrect ? "bg-emerald-50 border-emerald-100" : "bg-rose-50 border-rose-100")}>
+                          <p className="text-sm font-bold text-slate-900 mb-3">{prompt}</p>
+                          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Your answer</p>
+                          <p className="text-sm text-slate-700 mb-3">{selectedText}</p>
+                          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Correct answer</p>
+                          <p className="text-sm text-emerald-900 mb-3">{correctText}</p>
+                          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1">Explanation</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{explanation}</p>
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </CardGlass>
             <button onClick={() => navigate(-1)} className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Directory <ArrowRight className="w-6 h-6" /></button>
          </div>
       </div>
