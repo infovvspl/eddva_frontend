@@ -2310,45 +2310,15 @@ function ChallengeLobbyScreen({
   );
 
   if (activePanel === "leaderboard") {
-    const dummyEntries = [
-      { rank: 1, studentId: "d1", name: "Aarav", score: 1820, eloTier: "diamond", avatarUrl: null },
-      { rank: 2, studentId: "d2", name: "Diya", score: 1690, eloTier: "platinum", avatarUrl: null },
-      { rank: 3, studentId: "d3", name: "Vivaan", score: 1540, eloTier: "gold", avatarUrl: null },
-      { rank: 4, studentId: "d4", name: "Anaya", score: 1460, eloTier: "gold", avatarUrl: null },
-      { rank: 5, studentId: "d5", name: "Kabir", score: 1380, eloTier: "silver", avatarUrl: null },
-      { rank: 6, studentId: "d6", name: "Ira", score: 1295, eloTier: "silver", avatarUrl: null },
-      { rank: 7, studentId: "d7", name: "Reyansh", score: 1210, eloTier: "bronze", avatarUrl: null },
-      { rank: 8, studentId: "d8", name: "Saanvi", score: 1160, eloTier: "bronze", avatarUrl: null },
-      { rank: 9, studentId: "d9", name: "Advik", score: 1090, eloTier: "iron", avatarUrl: null },
-      { rank: 10, studentId: "d10", name: "Myra", score: 1030, eloTier: "iron", avatarUrl: null },
-    ];
-    const dummyHistory = [
-      { xpEarned: 24, eloChange: 12, isWinner: true, endedAt: "2026-04-10T10:00:00Z" },
-      { xpEarned: 12, eloChange: -6, isWinner: false, endedAt: "2026-04-11T10:00:00Z" },
-      { xpEarned: 30, eloChange: 15, isWinner: true, endedAt: "2026-04-12T10:00:00Z" },
-      { xpEarned: 18, eloChange: 8, isWinner: true, endedAt: "2026-04-13T10:00:00Z" },
-      { xpEarned: 9, eloChange: -5, isWinner: false, endedAt: "2026-04-14T10:00:00Z" },
-      { xpEarned: 22, eloChange: 11, isWinner: true, endedAt: "2026-04-15T10:00:00Z" },
-      { xpEarned: 15, eloChange: 6, isWinner: true, endedAt: "2026-04-16T10:00:00Z" },
-      { xpEarned: 10, eloChange: -4, isWinner: false, endedAt: "2026-04-17T10:00:00Z" },
-    ];
     const hasRealEntries = (battleLb?.data?.length ?? 0) > 0;
     const hasRealHistory = (history?.length ?? 0) > 0;
-    const entries = hasRealEntries ? (battleLb?.data ?? []) : dummyEntries;
-    const historyForCharts = hasRealHistory ? history : dummyHistory;
+    const entries = hasRealEntries ? (battleLb?.data ?? []) : [];
+    const historyForCharts = hasRealHistory ? history : [];
     const topTenRaw = entries.slice(0, 10).map((e) => ({
       name: (e.name || "User").slice(0, 10),
       score: Number(e.score || 0),
     }));
-    const topTen = topTenRaw.length
-      ? topTenRaw
-      : [
-          { name: "Aarav", score: 1820 },
-          { name: "Diya", score: 1690 },
-          { name: "Vivaan", score: 1540 },
-          { name: "Anaya", score: 1460 },
-          { name: "Kabir", score: 1380 },
-        ];
+    const topTen = topTenRaw;
     const recentHistory = [...historyForCharts]
       .filter((h) => !!h.endedAt)
       .sort((a, b) => new Date(a.endedAt || 0).getTime() - new Date(b.endedAt || 0).getTime())
@@ -2357,41 +2327,20 @@ function ChallengeLobbyScreen({
       match: `M${i + 1}`,
       xp: Number(h.xpEarned || 0),
     }));
-    const xpTrend = xpTrendRaw.length
-      ? xpTrendRaw
-      : [
-          { match: "M1", xp: 24 },
-          { match: "M2", xp: 12 },
-          { match: "M3", xp: 30 },
-          { match: "M4", xp: 18 },
-          { match: "M5", xp: 22 },
-        ];
+    const xpTrend = xpTrendRaw;
     const xpPerMatchRaw = recentHistory.map((h, i) => ({
       match: `M${i + 1}`,
       xp: Number(h.xpEarned || 0),
       elo: Number(h.eloChange || 0),
     }));
-    const xpPerMatch = xpPerMatchRaw.length
-      ? xpPerMatchRaw
-      : [
-          { match: "M1", xp: 24, elo: 12 },
-          { match: "M2", xp: 12, elo: -6 },
-          { match: "M3", xp: 30, elo: 15 },
-          { match: "M4", xp: 18, elo: 8 },
-          { match: "M5", xp: 22, elo: 11 },
-        ];
+    const xpPerMatch = xpPerMatchRaw;
     const winCount = historyForCharts.filter((h) => h.isWinner).length;
     const lossCount = Math.max(0, historyForCharts.length - winCount);
     const modeWinLossRaw = [
       { name: "Wins", value: winCount, color: "#10B981" },
       { name: "Losses", value: lossCount, color: "#EF4444" },
     ];
-    const modeWinLoss = modeWinLossRaw.some((x) => x.value > 0)
-      ? modeWinLossRaw
-      : [
-          { name: "Wins", value: 6, color: "#10B981" },
-          { name: "Losses", value: 4, color: "#EF4444" },
-        ];
+    const modeWinLoss = modeWinLossRaw;
 
     return (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
@@ -2405,8 +2354,8 @@ function ChallengeLobbyScreen({
           ) : (
             <div className="space-y-2">
               {!hasRealEntries && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
-                  Showing sample graph data until real battle stats are available.
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                  No leaderboard data available yet.
                 </div>
               )}
             </div>
@@ -2418,61 +2367,77 @@ function ChallengeLobbyScreen({
             <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
               <h3 className="mb-3 text-sm font-bold text-slate-700">Top 10 Battle XP</h3>
               <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topTen}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Bar dataKey="score" fill="#4F46E5" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {topTen.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topTen}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Bar dataKey="score" fill="#4F46E5" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardGlass>
 
             <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
               <h3 className="mb-3 text-sm font-bold text-slate-700">Win / Loss Split</h3>
               <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={modeWinLoss} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                      {modeWinLoss.map((d) => (
-                        <Cell key={d.name} fill={d.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                {modeWinLoss.every((d) => d.value === 0) ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={modeWinLoss} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                        {modeWinLoss.map((d) => (
+                          <Cell key={d.name} fill={d.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardGlass>
 
             <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
               <h3 className="mb-3 text-sm font-bold text-slate-700">Your XP Trend (Recent Matches)</h3>
               <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={xpTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                    <XAxis dataKey="match" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="xp" stroke="#06B6D4" strokeWidth={2.5} dot={{ r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
+                {xpTrend.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={xpTrend}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis dataKey="match" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="xp" stroke="#06B6D4" strokeWidth={2.5} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardGlass>
 
             <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
               <h3 className="mb-3 text-sm font-bold text-slate-700">XP Per Match</h3>
               <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={xpPerMatch}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                    <XAxis dataKey="match" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Bar dataKey="xp" fill="#10B981" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {xpPerMatch.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={xpPerMatch}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis dataKey="match" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Bar dataKey="xp" fill="#10B981" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardGlass>
           </div>

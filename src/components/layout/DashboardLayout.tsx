@@ -72,6 +72,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
   ],
   teacher: [
     { label: "Dashboard",       path: "/teacher",           icon: Home            },
+    { label: "Content",         path: "/teacher/content",   icon: GraduationCap   },
     { label: "Lectures",        path: "/teacher/lectures",  icon: Video           },
     { label: "Quizzes & Tests", path: "/teacher/quizzes",   icon: BookOpen        },
     { label: "Doubt Queue",     path: "/teacher/doubts",    icon: MessageSquare, badge: 5 },

@@ -194,7 +194,7 @@ const StudentRegisterPage = () => {
     }
     if (s === 2) {
       if (form.phone.length < 10) return "Enter a valid 10-digit phone number.";
-      if (form.altPhone.length < 10) return "Enter a valid 10-digit alternate phone number.";
+      if (form.altPhone && form.altPhone.length < 10) return "Enter a valid 10-digit alternate phone number.";
       if (!form.address.trim()) return "Address is required.";
       if (!form.postOffice.trim()) return "Post office is required.";
       if (!form.city.trim()) return "City is required.";
@@ -230,7 +230,7 @@ const StudentRegisterPage = () => {
         fullName:               form.name,
         careOf:                 form.careOf,
         phoneNumber:            `+91${form.phone}`,
-        alternatePhoneNumber:   `+91${form.altPhone}`,
+        alternatePhoneNumber:   form.altPhone ? `+91${form.altPhone}` : undefined,
         email:                  form.email,
         address:                form.address,
         postOffice:             form.postOffice,
@@ -370,7 +370,7 @@ const StudentRegisterPage = () => {
                       <>
                         <div className="grid grid-cols-2 gap-4">
                           <Field icon={<Smartphone className="h-4 w-4" />} label="Mobile" placeholder="9876543210" value={form.phone} onChange={set("phone")} numeric maxLength={10} disabled={loading} />
-                          <Field icon={<Smartphone className="h-4 w-4" />} label="Alt. Mobile" placeholder="9876543210" value={form.altPhone} onChange={set("altPhone")} numeric maxLength={10} disabled={loading} />
+                          <Field icon={<Smartphone className="h-4 w-4" />} label="Alt. Mobile (Optional)" placeholder="9876543210" value={form.altPhone} onChange={set("altPhone")} numeric maxLength={10} disabled={loading} />
                         </div>
                         <Field icon={<Home className="h-4 w-4" />} label="Address" placeholder="Building, Street, Area" value={form.address} onChange={set("address")} disabled={loading} />
                         <div className="grid grid-cols-2 gap-4">

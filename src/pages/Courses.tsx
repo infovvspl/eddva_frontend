@@ -10,6 +10,8 @@ import {
   MapPin,
   Loader2,
   BookOpen,
+  ChevronDown,
+  Filter,
 } from "lucide-react";
 import { B, P } from "@/components/landing/DesignTokens";
 import exploreCoursesBg from "@/assets/bg2.jpg";
@@ -257,48 +259,52 @@ export default function Courses() {
                 </div>
               </div>
 
-              <div className="mx-auto mt-10 max-w-xl sm:mx-0 sm:max-w-md">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={
-                      isPlatform
-                        ? "Search by course, institute, exam, or teacher…"
-                        : "Search by course, exam, or teacher…"
-                    }
-                    className="h-14 w-full rounded-2xl border border-slate-200/90 bg-white/95 pl-12 pr-4 text-sm font-medium text-slate-900 shadow-sm outline-none ring-slate-200 transition focus:ring-2"
-                  />
+              <div className="mx-auto mt-10 max-w-2xl sm:mx-0">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="search"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={
+                        isPlatform
+                          ? "Search by course, institute, exam, or teacher…"
+                          : "Search by course, exam, or teacher…"
+                      }
+                      className="h-14 w-full rounded-2xl border border-slate-200/90 bg-white/95 pl-12 pr-4 text-sm font-medium text-slate-900 shadow-sm outline-none ring-slate-200 transition focus:ring-2"
+                    />
+                  </div>
+
+                  <div className="relative shrink-0 sm:w-48">
+                    <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
+                      <Filter className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <select
+                      value={["jee", "neet", "foundation", "crash course"].includes(query.toLowerCase()) ? query : ""}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="h-14 w-full appearance-none rounded-2xl border border-slate-200/90 bg-white/95 pl-10 pr-10 text-sm font-bold text-slate-700 shadow-sm outline-none ring-slate-200 transition focus:ring-2"
+                    >
+                      <option value="">All Categories</option>
+                      <option value="JEE">JEE</option>
+                      <option value="NEET">NEET</option>
+                      <option value="Foundation">Foundation</option>
+                      <option value="Crash Course">Crash Course</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="mr-1 text-sm font-semibold text-slate-500">Quick filters:</span>
-                  {["JEE", "NEET", "Foundation", "Crash Course"].map((f) => {
-                    const isActive = query.toLowerCase() === f.toLowerCase();
-                    return (
-                      <button
-                        key={f}
-                        onClick={() => setQuery(isActive ? "" : f)}
-                        className={`rounded-full border px-4 py-1.5 text-sm font-semibold shadow-sm transition ${
-                          isActive
-                            ? "border-slate-900 bg-slate-900 text-white"
-                            : "border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                        }`}
-                      >
-                        {f}
-                      </button>
-                    );
-                  })}
-                  {query && !["jee", "neet", "foundation", "crash course"].includes(query.toLowerCase()) && (
+
+                {query && (
+                  <div className="mt-3 flex justify-end">
                     <button
                       onClick={() => setQuery("")}
-                      className="rounded-full px-4 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-50/80"
+                      className="text-xs font-bold text-red-500 transition hover:text-red-600 hover:underline"
                     >
-                      Clear search
+                      Clear filters & search
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </>
           )}

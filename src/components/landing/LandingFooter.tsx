@@ -9,11 +9,11 @@ const columns: { title: string; items: NavItem[] }[] = [
   {
     title: "Platform",
     items: [
-      { label: "AI Assessment", to: "/exams-registration" },
-      { label: "Doubt Solver", to: "/about-us" },
-      { label: "Live Classes", to: "/#videos" },
-      { label: "Mock Tests", to: "/courses" },
-      { label: "Analytics", to: "/career" },
+      { label: "AI Assessment", to: "/" },
+      { label: "Doubt Solver", to: "/" },
+      { label: "Live Classes", to: "/" },
+      { label: "Mock Tests", to: "/" },
+
     ],
   },
   {
@@ -27,11 +27,9 @@ const columns: { title: string; items: NavItem[] }[] = [
   {
     title: "Support",
     items: [
-      { label: "Help Center", to: "/study-material" },
-      { label: "Book Demo", href: `mailto:${CONTACT_EMAIL}?subject=Book%20a%20demo` },
-      { label: "Partner With Us", href: `mailto:${CONTACT_EMAIL}?subject=Partnership%20enquiry` },
+
       { label: "Privacy Policy", to: "/privacy-policy" },
-      { label: "Cookie Policy", to: "/cookie-policy" },
+  
       { label: "Terms", to: "/terms" },
     ],
   },
@@ -77,8 +75,8 @@ export const LandingFooter = () => (
         </div>
         {columns.map((col) => (
           <div key={col.title} className="flex flex-col items-center md:items-start">
-            <h5 className="mb-5 text-[12px] font-bold uppercase tracking-widest text-gray-400">{col.title}</h5>
-            <ul className="space-y-2.5">
+            <h5 className="mb-5 text-[16px] font-bold uppercase tracking-widest text-black-400">{col.title}</h5>
+            <ul className="space-y-2.5 text-black-400">
               {col.items.map((item) => (
                 <li key={item.label}>
                   <FooterLink item={item} />

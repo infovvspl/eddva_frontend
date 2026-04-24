@@ -1,8 +1,9 @@
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus, Loader2, BookOpen, FileText, X,
   Layers, Upload, Trash2, ExternalLink, Link2,
@@ -13,7 +14,7 @@ import {
   Sparkles, Brain, FlaskConical, StickyNote, ListChecks,
   Lightbulb, BookText, Wand2, ChevronUp, Zap, Lock,
   FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList, Clock,
-  Pencil, AlertTriangle,
+  Pencil, AlertTriangle, Filter,
 } from "lucide-react";
 import {
   useBatches,
@@ -24,6 +25,7 @@ import {
   useBulkImportCurriculum,
   useBatchContentLectures,
 } from "@/hooks/use-admin";
+import * as adminApi from "@/lib/api/admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -289,6 +291,7 @@ function UploadPanel({
 
   const [activeType, setActiveType] = useState<TopicResourceType>("pdf");
   const [mode, setMode] = useState<"upload" | "link">("upload");
+  const [showUploader, setShowUploader] = useState(true);
   const [title, setTitle] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -383,7 +386,7 @@ function UploadPanel({
   const listLoading = isLoading || lecturesLoading;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex min-h-0 flex-col h-full overflow-hidden">
       {/* ── Header ── */}
       <div className="px-6 py-4 border-b border-slate-100 shrink-0 bg-white">
         <div className="flex items-start justify-between">
@@ -400,8 +403,47 @@ function UploadPanel({
       </div>
 
       {/* ── Add Resource Section ── */}
-      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/60 shrink-0">
-        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3">Add Resource</p>
+      <div className="sticky top-0 z-10 px-6 py-3 border-b border-slate-100 bg-slate-50/95 backdrop-blur-sm shrink-0">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Add Resource</p>
+          <button
+            type="button"
+            onClick={() => setShowUploader(v => !v)}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500 hover:text-slate-700"
+          >
+            {showUploader ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showUploader ? "Hide" : "Show"}
+          </button>
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setFilterType("all")}
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide",
+              filterType === "all" ? "border-slate-700 bg-slate-800 text-white" : "border-slate-200 bg-white text-slate-500"
+            )}
+          >
+            All ({resources.length})
+          </button>
+          {typeCounts.map(rt => (
+            <button
+              key={`flt-${rt.value}`}
+              type="button"
+              onClick={() => setFilterType(rt.value)}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide",
+                filterType === rt.value ? cn(rt.border, rt.bg, rt.color) : "border-slate-200 bg-white text-slate-500"
+              )}
+            >
+              {rt.shortLabel} ({rt.count})
+            </button>
+          ))}
+        </div>
+
+        {showUploader && (
+          <>
 
         {/* Type selector */}
         <div className="grid grid-cols-6 gap-1.5 mb-3">
@@ -535,10 +577,12 @@ function UploadPanel({
               onChange={e => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
           </div>
         )}
+          </>
+        )}
       </div>
 
       {/* ── Resource Grid (+ lectures linked to this topic) ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 pr-4">
         {listLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>
         ) : !hasAnything ? (
@@ -581,7 +625,7 @@ function UploadPanel({
                 {showLecturesBlock && hasTopicLectures && (
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Topic files & links</p>
                 )}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                   <AnimatePresence mode="popLayout">
                     {filteredFiles.map(r => (
                       <ResourceCard key={`${filterType}-${r.id}`} r={r} onDelete={() => handleDelete(r)} />
@@ -1083,6 +1127,241 @@ function TopicRow({
         )}
       </div>
     </>
+  );
+}
+
+type TopicCoverage = {
+  id: string;
+  name: string;
+  studyMaterialCount: number;
+  dppCount: number;
+  totalCount: number;
+};
+
+type ChapterCoverage = {
+  id: string;
+  name: string;
+  studyMaterialCount: number;
+  dppCount: number;
+  totalCount: number;
+  topics: TopicCoverage[];
+};
+
+type SubjectCoverage = {
+  id: string;
+  name: string;
+  studyMaterialCount: number;
+  dppCount: number;
+  totalCount: number;
+  chapters: ChapterCoverage[];
+};
+
+type CoverageSummary = {
+  subjectCount: number;
+  chapterCount: number;
+  topicCount: number;
+  studyMaterialCount: number;
+  dppCount: number;
+  totalContentCount: number;
+  subjects: SubjectCoverage[];
+};
+
+function isStudyMaterial(type?: string | null) {
+  const t = String(type ?? "").toLowerCase();
+  return t === "pdf" || t === "notes" || t === "video" || t === "link" || t === "pyq" || t === "quiz";
+}
+
+function ContentCoverageOverview({
+  batchId,
+  selectedEntry,
+}: {
+  batchId: string;
+  selectedEntry: { topic: Topic; chapter: Chapter; subject: Subject } | null;
+}) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "content-coverage", batchId],
+    enabled: !!batchId,
+    queryFn: async (): Promise<CoverageSummary> => {
+      const subjects = (await adminApi.listSubjects(batchId)) ?? [];
+      const subjectRows = await Promise.all(
+        subjects.map(async (subject) => {
+          const chapters = (await adminApi.listChapters(subject.id)) ?? [];
+          const chapterRows = await Promise.all(
+            chapters.map(async (chapter) => {
+              const topics = (await adminApi.listTopics(chapter.id)) ?? [];
+              const topicRows = await Promise.all(
+                topics.map(async (topic) => {
+                  const resources = (await adminApi.listTopicResources(topic.id)) ?? [];
+                  const dppCount = resources.filter((r) => String(r.type ?? "").toLowerCase() === "dpp").length;
+                  const studyMaterialCount = resources.filter((r) => isStudyMaterial(r.type)).length;
+                  return {
+                    id: topic.id,
+                    name: topic.name,
+                    dppCount,
+                    studyMaterialCount,
+                    totalCount: resources.length,
+                  } as TopicCoverage;
+                }),
+              );
+              return {
+                id: chapter.id,
+                name: chapter.name,
+                dppCount: topicRows.reduce((s, t) => s + t.dppCount, 0),
+                studyMaterialCount: topicRows.reduce((s, t) => s + t.studyMaterialCount, 0),
+                totalCount: topicRows.reduce((s, t) => s + t.totalCount, 0),
+                topics: topicRows,
+              } as ChapterCoverage;
+            }),
+          );
+          return {
+            id: subject.id,
+            name: subject.name,
+            dppCount: chapterRows.reduce((s, c) => s + c.dppCount, 0),
+            studyMaterialCount: chapterRows.reduce((s, c) => s + c.studyMaterialCount, 0),
+            totalCount: chapterRows.reduce((s, c) => s + c.totalCount, 0),
+            chapters: chapterRows,
+          } as SubjectCoverage;
+        }),
+      );
+
+      const chapterCount = subjectRows.reduce((s, sub) => s + sub.chapters.length, 0);
+      const topicCount = subjectRows.reduce(
+        (s, sub) => s + sub.chapters.reduce((inner, ch) => inner + ch.topics.length, 0),
+        0,
+      );
+
+      return {
+        subjectCount: subjectRows.length,
+        chapterCount,
+        topicCount,
+        studyMaterialCount: subjectRows.reduce((s, sub) => s + sub.studyMaterialCount, 0),
+        dppCount: subjectRows.reduce((s, sub) => s + sub.dppCount, 0),
+        totalContentCount: subjectRows.reduce((s, sub) => s + sub.totalCount, 0),
+        subjects: subjectRows,
+      };
+    },
+    staleTime: 20_000,
+  });
+
+  const activePath = useMemo(() => {
+    if (!selectedEntry) return "";
+    return `${selectedEntry.subject.id}:${selectedEntry.chapter.id}:${selectedEntry.topic.id}`;
+  }, [selectedEntry]);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-2 text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm font-semibold">Loading content overview…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-100 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Coverage Overview</p>
+            <p className="mt-1 text-sm text-slate-600">Subject-wise, chapter-wise and topic-wise upload counts.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowBreakdown(v => !v)}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500 hover:text-slate-700"
+          >
+            {showBreakdown ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showBreakdown ? "Hide details" : "Show details"}
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="rounded-xl bg-slate-50 p-3">
+          <p className="text-[10px] font-black uppercase text-slate-400">Subjects</p>
+          <p className="mt-1 text-lg font-black text-slate-800">{data.subjectCount}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3">
+          <p className="text-[10px] font-black uppercase text-slate-400">Chapters</p>
+          <p className="mt-1 text-lg font-black text-slate-800">{data.chapterCount}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3">
+          <p className="text-[10px] font-black uppercase text-slate-400">Topics</p>
+          <p className="mt-1 text-lg font-black text-slate-800">{data.topicCount}</p>
+        </div>
+        <div className="rounded-xl bg-blue-50 p-3">
+          <p className="text-[10px] font-black uppercase text-blue-500">Study Material</p>
+          <p className="mt-1 text-lg font-black text-blue-700">{data.studyMaterialCount}</p>
+        </div>
+        <div className="rounded-xl bg-amber-50 p-3">
+          <p className="text-[10px] font-black uppercase text-amber-500">DPP</p>
+          <p className="mt-1 text-lg font-black text-amber-700">{data.dppCount}</p>
+        </div>
+        <div className="rounded-xl bg-emerald-50 p-3">
+          <p className="text-[10px] font-black uppercase text-emerald-500">Total Files</p>
+          <p className="mt-1 text-lg font-black text-emerald-700">{data.totalContentCount}</p>
+        </div>
+      </div>
+
+      {showBreakdown && (
+        <div className="max-h-[220px] overflow-auto border-t border-slate-100 p-3 space-y-2">
+        {data.subjects.length === 0 ? (
+          <p className="p-3 text-sm text-slate-400">No subjects available yet.</p>
+        ) : (
+          data.subjects.map((subject) => (
+            <details key={subject.id} className="rounded-xl border border-slate-100 bg-slate-50/60" open>
+              <summary className="flex cursor-pointer items-center justify-between gap-2 p-3">
+                <span className="text-sm font-black text-slate-800">{subject.name}</span>
+                <span className="flex items-center gap-2 text-[10px] font-black">
+                  <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">SM {subject.studyMaterialCount}</span>
+                  <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">DPP {subject.dppCount}</span>
+                </span>
+              </summary>
+              <div className="space-y-1 px-2 pb-2">
+                {subject.chapters.map((chapter) => (
+                  <details key={chapter.id} className="rounded-lg border border-slate-100 bg-white" open={false}>
+                    <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2">
+                      <span className="text-xs font-bold text-slate-700">{chapter.name}</span>
+                      <span className="flex items-center gap-2 text-[10px] font-black">
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">SM {chapter.studyMaterialCount}</span>
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">DPP {chapter.dppCount}</span>
+                      </span>
+                    </summary>
+                    <div className="space-y-1 px-2 pb-2">
+                      {chapter.topics.map((topic) => {
+                        const isActive =
+                          activePath === `${subject.id}:${chapter.id}:${topic.id}`;
+                        return (
+                          <div
+                            key={topic.id}
+                            className={cn(
+                              "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px]",
+                              isActive ? "bg-indigo-50 text-indigo-800" : "bg-slate-50 text-slate-700",
+                            )}
+                          >
+                            <span className="truncate font-semibold">{topic.name}</span>
+                            <span className="ml-3 flex items-center gap-1.5 font-black">
+                              <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700">SM {topic.studyMaterialCount}</span>
+                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">DPP {topic.dppCount}</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </details>
+          ))
+        )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2344,41 +2623,53 @@ const ContentPage = () => {
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
+  const [batchStatusFilter, setBatchStatusFilter] = useState<"active" | "all" | "upcoming" | "completed">("active");
   const [rightTab, setRightTab] = useState<"resources" | "ai">("resources");
+  const [recentBatchId, setRecentBatchId] = useState<string | null>(null);
   /** Lifted from UploadPanel so list filter state cannot get stuck inside a stale child. */
   const [topicResourceFilter, setTopicResourceFilter] = useState<TopicResourceType | "all">("all");
+
+  useEffect(() => {
+    const bId = searchParams.get("batchId");
+    setSelectedBatchId(bId);
+    if (!bId) {
+      setSelectedEntry(null);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setTopicResourceFilter("all");
   }, [selectedEntry?.topic.id]);
 
-  /** Only auto-open the first course once on load — never after "Courses" back (null selection). */
-  const didInitialBatchAutopick = useRef(false);
   useEffect(() => {
-    if (didInitialBatchAutopick.current) return;
-    if (!selectedBatchId && batchList.length > 0) {
-      setSelectedBatchId(initialBatchId || batchList[0].id);
-      didInitialBatchAutopick.current = true;
-    }
-  }, [batchList, selectedBatchId, initialBatchId]);
+    const saved = localStorage.getItem("admin_content_recent_batch_id");
+    if (saved) setRecentBatchId(saved);
+  }, []);
 
   const selectedBatch = batchList.find(b => b.id === selectedBatchId);
+  const recentBatch = batchList.find(b => b.id === recentBatchId);
 
-  const filteredBatches = batchList.filter(b =>
-    b.name.toLowerCase().includes(batchSearch.toLowerCase())
-  );
+  const filteredBatches = batchList.filter((b) => {
+    const matchesSearch = b.name.toLowerCase().includes(batchSearch.toLowerCase());
+    const status = String(b.status ?? "").toLowerCase();
+    const matchesStatus = batchStatusFilter === "all" ? true : status === batchStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleSelectBatch = (id: string) => {
     if (id !== selectedBatchId) {
       setSelectedBatchId(id);
       setSelectedEntry(null);
     }
+    setRecentBatchId(id);
+    localStorage.setItem("admin_content_recent_batch_id", id);
   };
 
   const handleBack = () => {
     setSelectedBatchId(null);
     setSelectedEntry(null);
     setBatchSearch("");
+    setBatchStatusFilter("active");
   };
 
   // ── Phase 1: No course selected — full-width course grid ──────────────────
@@ -2386,21 +2677,80 @@ const ContentPage = () => {
     return (
       <div className="min-h-[calc(100vh-80px)] bg-slate-50 p-6">
         {/* Page header */}
-        <div className="mb-6">
+        <div className="mb-5">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Content Manager</p>
           <h1 className="text-2xl font-black text-slate-900">Your Courses</h1>
           <p className="text-sm text-slate-500 mt-1">Select a course to manage its subjects, chapters, topics and resources.</p>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-sm mb-6">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          <input
-            placeholder="Search courses…"
-            value={batchSearch}
-            onChange={e => setBatchSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-400 shadow-sm transition-colors"
-          />
+        {/* Quick stats + continue card */}
+        <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto]">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">
+              Ongoing: {batchList.filter((b) => String(b.status ?? "").toLowerCase() === "active").length}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
+              Total: {batchList.length}
+            </span>
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-700">
+              Showing: {filteredBatches.length}
+            </span>
+          </div>
+          {recentBatch && (
+            <button
+              type="button"
+              onClick={() => handleSelectBatch(recentBatch.id)}
+              className="group flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-left hover:bg-indigo-100 transition-colors"
+            >
+              <Clock className="h-4 w-4 text-indigo-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-wide text-indigo-500">Continue where you left off</p>
+                <p className="text-xs font-bold text-indigo-900 truncate">{recentBatch.name}</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-indigo-400 group-hover:text-indigo-600" />
+            </button>
+          )}
+        </div>
+
+        {/* Search & Filters Row */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* Search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <input
+              placeholder="Search courses…"
+              value={batchSearch}
+              onChange={e => setBatchSearch(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-400 shadow-sm transition-colors"
+            />
+          </div>
+
+          {/* Status filter dropdown */}
+          <div className="relative shrink-0 sm:w-44">
+            <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
+              <Filter className="h-3.5 w-3.5 text-slate-400" />
+            </div>
+            <select
+              value={batchStatusFilter}
+              onChange={e => setBatchStatusFilter(e.target.value as any)}
+              className="h-10 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-9 pr-10 text-xs font-black text-slate-600 shadow-sm outline-none transition focus:border-blue-400"
+            >
+              <option value="active">Ongoing</option>
+              <option value="all">All Status</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="completed">Completed</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          {batchSearch && (
+            <button
+              onClick={() => setBatchSearch("")}
+              className="text-xs font-bold text-red-500 hover:underline transition-all"
+            >
+              Clear search
+            </button>
+          )}
         </div>
 
         {/* Course cards grid */}
@@ -2414,9 +2764,9 @@ const ContentPage = () => {
               <BookOpen className="w-10 h-10 text-slate-300" />
             </div>
             <p className="text-lg font-black text-slate-500">
-              {batchSearch ? "No courses match your search" : "No courses yet"}
+              {batchSearch || batchStatusFilter !== "all" ? "No courses match current filters" : "No courses yet"}
             </p>
-            {!batchSearch && (
+            {!batchSearch && batchStatusFilter === "all" && (
               <p className="text-sm text-slate-400 mt-1">Create a course from the Batches page first.</p>
             )}
           </div>
@@ -2532,6 +2882,9 @@ const ContentPage = () => {
 
         {/* Right: Resource workspace */}
         <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
+          <div className="shrink-0 border-b border-slate-100 p-4">
+            <ContentCoverageOverview batchId={selectedBatch.id} selectedEntry={selectedEntry} />
+          </div>
           {!selectedEntry ? (
             <div className="flex-1 flex flex-col items-center justify-center p-10 text-center gap-5">
               <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-50 to-violet-50 flex items-center justify-center">
@@ -2606,7 +2959,7 @@ const ContentPage = () => {
               </div>
 
               {/* Tab content */}
-              <div className="flex-1 overflow-hidden">
+              <div className="min-h-0 flex-1 overflow-hidden">
                 {rightTab === "resources" ? (
                   <UploadPanel
                     key={selectedEntry.topic.id}
