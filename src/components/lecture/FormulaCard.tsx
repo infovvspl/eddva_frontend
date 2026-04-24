@@ -50,7 +50,7 @@ export function FormulaCard({ name, latex, description }: Props) {
         }}
       />
       {description && (
-        <p className="text-xs leading-5" style={{ color: "#484F58" }}>{description}</p>
+        <p className="text-xs leading-5" style={{ color: "#8B949E" }}>{description}</p>
       )}
     </div>
   );
