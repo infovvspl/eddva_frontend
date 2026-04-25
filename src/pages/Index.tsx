@@ -45,8 +45,17 @@ function AutoPlayVideo({
   const loadRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const shouldLoad = useInView(loadRef, { amount: 0, margin: "280px 0px" });
-  const isActiveView = useInView(videoRef, { amount: 0.4, margin: "-10% 0px -10% 0px" });
+  const isActiveView = useInView(videoRef, { amount: 0.2, margin: "-10% 0px -10% 0px" });
   const [hasLoadedSource, setHasLoadedSource] = useState(false);
+  const [showTapToPlay, setShowTapToPlay] = useState(false);
+
+  const tryPlay = () => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !isActiveView || document.hidden) return;
+    void videoEl.play()
+      .then(() => setShowTapToPlay(false))
+      .catch(() => setShowTapToPlay(true));
+  };
 
   useEffect(() => {
     if (shouldLoad) setHasLoadedSource(true);
@@ -55,25 +64,101 @@ function AutoPlayVideo({
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl) return;
+    videoEl.muted = true;
+    videoEl.setAttribute("muted", "");
     if (isActiveView && !document.hidden) {
-      void videoEl.play().catch(() => { });
+      tryPlay();
     } else {
       videoEl.pause();
     }
   }, [isActiveView]);
 
+  useEffect(() => {
+    if (!hasLoadedSource) return;
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    // Some mobile browsers ignore the first autoplay request after dynamic src attach.
+    // Force a load and retry play a few times while media initializes.
+    videoEl.load();
+    const retryTimers = [120, 420, 900].map((delay) =>
+      window.setTimeout(() => {
+        tryPlay();
+      }, delay)
+    );
+
+    return () => {
+      retryTimers.forEach((timerId) => window.clearTimeout(timerId));
+    };
+  }, [hasLoadedSource, isActiveView]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      const videoEl = videoRef.current;
+      if (!videoEl) return;
+      if (document.hidden) {
+        videoEl.pause();
+        return;
+      }
+      if (isActiveView) {
+        tryPlay();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [isActiveView]);
+
+  const handleCanPlay = () => {
+    tryPlay();
+  };
+
+  const handleLoadedData = () => {
+    tryPlay();
+  };
+
+  const handleManualPlay = () => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+    videoEl.muted = true;
+    videoEl.setAttribute("muted", "");
+    void videoEl.play()
+      .then(() => setShowTapToPlay(false))
+      .catch(() => setShowTapToPlay(true));
+  };
+
   return (
-    <div ref={loadRef} className="h-full w-full">
+    <div ref={loadRef} className="relative h-full w-full">
       <video
         ref={videoRef}
         src={hasLoadedSource ? src : undefined}
         className={className}
+        autoPlay
         muted
         loop
         playsInline
-        preload="none"
+        {...({ "webkit-playsinline": "true" } as Record<string, string>)}
+        preload={hasLoadedSource ? "auto" : "metadata"}
         poster={poster}
+        onCanPlay={handleCanPlay}
+        onLoadedData={handleLoadedData}
+        onPlay={() => setShowTapToPlay(false)}
       />
+      {showTapToPlay && hasLoadedSource && (
+        <button
+          type="button"
+          onClick={handleManualPlay}
+          className="absolute inset-0 z-10 flex items-center justify-center bg-black/25 text-white"
+          aria-label="Tap to play video"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-black/60 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
+            <Play className="h-4 w-4 fill-white" />
+            Tap to play
+          </span>
+        </button>
+      )}
     </div>
   );
 }
@@ -116,13 +201,15 @@ const Index = () => {
   const reduceMotion = useReducedMotion();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const lightHomeMotion = isCompact || reduceMotion || isInitialLoad;
+  const useStaticMedia = reduceMotion || isInitialLoad;
 
   useEffect(() => {
+    const initialMotionDelay = isCompact ? 250 : 900;
     const settleTimer = window.setTimeout(() => {
       setIsInitialLoad(false);
-    }, 1400);
+    }, initialMotionDelay);
     return () => window.clearTimeout(settleTimer);
-  }, []);
+  }, [isCompact]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "engineering" | "medical" | "boards">("all");
@@ -322,7 +409,7 @@ const Index = () => {
               <FadeUp disableInitial className="flex items-center justify-center lg:pr-2">
                 <div className="relative w-full max-w-[760px] overflow-hidden rounded-[30px] shadow-[0_20px_48px_rgba(59,130,246,0.12)] lg:max-w-[720px]">
                   <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[36px] bg-gradient-to-br from-blue-200/45 via-sky-100/35 to-violet-200/45 blur-2xl" />
-                  {lightHomeMotion ? (
+                  {useStaticMedia ? (
                     <img
                       src={aboutImg}
                       alt="EDDVA live learning preview"
@@ -703,7 +790,7 @@ const Index = () => {
                 aria-hidden
               />
               <div className="relative overflow-hidden rounded-3xl border border-white/90 shadow-[0_24px_60px_-12px_rgba(15,23,42,0.25)] aspect-[4/3] sm:aspect-[5/4] bg-slate-900 group">
-                {lightHomeMotion ? (
+                  {useStaticMedia ? (
                   <img
                     src={aboutImg}
                     alt="Build your future with EDDVA"

@@ -675,7 +675,7 @@ export interface AiQuizResult {
   questions: QuizCheckpoint[];
 }
 
-export async function generateQuizForLecture(payload: { transcript: string; lectureTitle?: string; topicId?: string }): Promise<AiQuizResult> {
+export async function generateQuizForLecture(payload: { transcript: string; lectureTitle?: string; topicId?: string; sourceType?: "transcript" | "notes" }): Promise<AiQuizResult> {
   const res = await apiClient.post("/ai/quiz/generate", payload, { timeout: 120_000 });
   return extractData<AiQuizResult>(res);
 }
