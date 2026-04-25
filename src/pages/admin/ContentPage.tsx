@@ -13,7 +13,7 @@ import {
   FileQuestion, BookMarked, PenLine, Search,
   ChevronDown, ChevronRight, ChevronLeft, GraduationCap, Hash,
   AlertCircle, Check, Youtube, MoreVertical,
-  FolderOpen, Folder, Play, Eye, LayoutGrid, Users,
+  FolderOpen, Folder, Play, Eye, Layout, LayoutGrid, Users,
   Sparkles, Brain, FlaskConical, StickyNote, ListChecks,
   Lightbulb, BookText, Wand2, ChevronUp, Zap, Lock,
   FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList, Clock,
@@ -69,6 +69,9 @@ function formatCoverageRefreshed(ts: number | undefined) {
     return "—";
   }
 }
+
+/** Same primary CTA look as Batches (New Course) and other admin pages */
+const ADMIN_PRIMARY_GRADIENT: React.CSSProperties = { background: "linear-gradient(135deg, #013889, #0257c8)" };
 
 // ─── Resource type config ──────────────────────────────────────────────────────
 
@@ -1437,23 +1440,26 @@ function ContentStepIndicator({ view, courseName }: { view: RightBrowseView; cou
   const stepNum = activeIdx >= 0 ? activeIdx + 1 : 1;
 
   return (
-    <div className="mb-4 rounded-2xl border-2 border-slate-200/90 bg-gradient-to-br from-white via-white to-slate-50/90 p-4 shadow-sm sm:p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+    <div className="mb-2 rounded-3xl border border-slate-100 bg-white p-3.5 shadow-sm sm:p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100/80 pb-3">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Course</p>
           <p className="truncate text-sm font-black text-slate-900">{courseName}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-black tracking-wide text-white shadow-sm">
+        <span
+          className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-black tracking-wide text-white shadow-sm"
+          style={ADMIN_PRIMARY_GRADIENT}
+        >
           Step {stepNum} of 4
         </span>
       </div>
-      <div className="flex flex-wrap items-center gap-y-2" role="list">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0" role="list">
         {steps.map((s, i) => {
           const stepIdx = order.indexOf(s.id);
           const isDone = activeIdx > stepIdx;
           const isCurrent = activeIdx === stepIdx;
           return (
-            <div key={s.id} className="flex items-center" role="listitem">
+            <div key={s.id} className="flex items-center shrink-0" role="listitem">
               {i > 0 && (
                 <ChevronRight className="mx-1 h-4 w-4 shrink-0 text-slate-300 sm:mx-2" aria-hidden />
               )}
@@ -1471,7 +1477,7 @@ function ContentStepIndicator({ view, courseName }: { view: RightBrowseView; cou
                 </span>
                 <span
                   className={cn(
-                    "text-sm font-black tracking-tight sm:text-[15px]",
+                    "text-[13px] font-black tracking-tight sm:text-[15px]",
                     isCurrent && "text-slate-900",
                     isDone && !isCurrent && "text-emerald-700",
                     !isDone && !isCurrent && "text-slate-400",
@@ -1642,12 +1648,15 @@ function SubjectBrowseView({
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl font-black tracking-tight text-slate-900">Subjects</h2>
+          <h2 className="inline-flex items-center gap-2 text-xl font-black tracking-tight text-slate-900">
+            <GraduationCap className="h-5 w-5 text-indigo-600" />
+            Subjects
+          </h2>
           <p className="mt-0.5 text-xs font-medium text-slate-500">Choose a subject — the whole card opens chapters.</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {extraActions}
-          <div className="relative max-w-xs flex-1 sm:min-w-[220px]">
+          <div className="relative w-full sm:w-auto sm:min-w-[220px]">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
@@ -1661,7 +1670,7 @@ function SubjectBrowseView({
       {filtered.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-400">No subjects match your search.</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map(s => {
             const c = covMap.get(s.id);
             const nCh = c?.chapters.length ?? 0;
@@ -1674,7 +1683,7 @@ function SubjectBrowseView({
                 type="button"
                 onClick={() => onManageSubject(s)}
                 className={cn(
-                  "group relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 text-left shadow-sm transition-all duration-200",
+                  "group relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 text-left shadow-sm transition-all duration-200 sm:p-5",
                   "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 focus-visible:ring-offset-2",
                 )}
               >
@@ -1702,9 +1711,17 @@ function SubjectBrowseView({
                   </div>
                 </div>
                 <h3 className="mt-4 line-clamp-2 pl-3 text-lg font-black leading-snug tracking-tight text-slate-900">{s.name}</h3>
-                <p className="mt-1 pl-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  {nCh} chapters · {nTop} topics · {nFiles} content items
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                    <Layers className="h-3 w-3" /> {nCh} Chapters
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                    <Hash className="h-3 w-3" /> {nTop} Topics
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                    <FileText className="h-3 w-3" /> {nFiles} Content
+                  </span>
+                </div>
               </button>
             );
           })}
@@ -1738,7 +1755,7 @@ function ChapterWorkspaceSidePanel({
   return (
     <aside
       className={cn(
-        "rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-6",
+        "rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-6",
         className,
       )}
     >
@@ -1781,7 +1798,8 @@ function ChapterWorkspaceSidePanel({
         <button
           type="button"
           onClick={onAddChapter}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-black text-white shadow-sm transition hover:opacity-90"
+          style={ADMIN_PRIMARY_GRADIENT}
         >
           <Plus className="h-4 w-4" /> Add chapter
         </button>
@@ -1838,14 +1856,17 @@ function ChapterBrowseView({
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl font-black tracking-tight text-slate-900">Chapters</h2>
+          <h2 className="inline-flex items-center gap-2 text-xl font-black tracking-tight text-slate-900">
+            <BookOpen className="h-5 w-5 text-amber-600" />
+            Chapters
+          </h2>
           <p className="mt-0.5 text-xs font-medium text-slate-500">
             In <span className="font-bold text-slate-700">{subject.name}</span> — tap a card to open topics.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {extraActions}
-          <div className="relative max-w-xs flex-1 sm:min-w-[220px]">
+          <div className="relative w-full sm:w-auto sm:min-w-[220px]">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
@@ -1863,7 +1884,7 @@ function ChapterBrowseView({
       ) : filtered.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-400">No chapters match your search.</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           {filtered.map(ch => {
             const cc = chCov.get(ch.id);
             const topics = cc?.topics ?? [];
@@ -1876,7 +1897,7 @@ function ChapterBrowseView({
                 type="button"
                 onClick={() => onOpenChapter(ch)}
                 className={cn(
-                  "group relative flex w-full items-stretch gap-0 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 text-left shadow-sm transition-all duration-200 sm:p-6",
+                  "group relative flex w-full items-stretch gap-0 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 text-left shadow-sm transition-all duration-200 sm:p-6",
                   "hover:-translate-y-0.5 hover:border-amber-300/80 hover:shadow-md hover:shadow-amber-900/5",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80 focus-visible:ring-offset-2",
                 )}
@@ -1895,9 +1916,16 @@ function ChapterBrowseView({
                     </div>
                     <div className="min-w-0 flex-1 pr-2">
                       <h3 className="line-clamp-2 text-lg font-black leading-snug tracking-tight text-slate-900">{ch.name}</h3>
-                      <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                        {topics.length} topic{topics.length === 1 ? "" : "s"} · {nItems} content item{nItems === 1 ? "" : "s"}
-                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                          <Hash className="h-3 w-3" />
+                          {topics.length} Topic{topics.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                          <FileText className="h-3 w-3" />
+                          {nItems} Item{nItems === 1 ? "" : "s"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -1971,7 +1999,10 @@ function TopicBrowseView({
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl font-black tracking-tight text-slate-900">Topics</h2>
+          <h2 className="inline-flex items-center gap-2 text-xl font-black tracking-tight text-slate-900">
+            <ClipboardList className="h-5 w-5 text-violet-600" />
+            Topics
+          </h2>
           <p className="mt-0.5 text-xs font-medium text-slate-500">
             <span className="font-bold text-slate-600">{subject.name}</span>
             <span className="text-slate-300"> → </span>
@@ -1980,7 +2011,7 @@ function TopicBrowseView({
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {extraActions}
-          <div className="relative max-w-xs flex-1 sm:min-w-[200px]">
+          <div className="relative w-full sm:w-auto sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
@@ -1992,7 +2023,7 @@ function TopicBrowseView({
           <select
             value={statusFilter}
             onChange={e => onStatusFilter(e.target.value as any)}
-            className="h-10 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 sm:w-auto"
           >
             <option value="all">All statuses</option>
             <option value="empty">Empty</option>
@@ -2011,13 +2042,14 @@ function TopicBrowseView({
         <ul className="space-y-3">
           {rows.map(({ topic, coverage, st }) => {
             const statusUi = topicStatusLabel(st);
+            const completionScore = Math.min(100, coverage.totalCount * 25);
             return (
               <li key={topic.id}>
                 <button
                   type="button"
                   onClick={() => onSelectTopic(topic)}
                   className={cn(
-                    "group relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white py-4 pl-5 pr-4 text-left shadow-sm transition-all duration-200 sm:py-5 sm:pl-6",
+                    "group relative flex w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200/90 bg-white py-3.5 pl-4 pr-3 text-left shadow-sm transition-all duration-200 sm:gap-4 sm:py-5 sm:pl-6 sm:pr-4",
                     "hover:-translate-y-0.5 hover:border-violet-300/70 hover:shadow-md hover:shadow-violet-900/5",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/80 focus-visible:ring-offset-2",
                   )}
@@ -2026,13 +2058,41 @@ function TopicBrowseView({
                     className="pointer-events-none absolute bottom-4 left-0 top-4 w-1 rounded-full bg-gradient-to-b from-violet-500 to-indigo-600"
                     aria-hidden
                   />
-                  <div className="min-w-0 flex-1 pl-3">
-                    <p className="text-base font-black leading-snug tracking-tight text-slate-900">{topic.name}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                      {coverage.totalCount} content item{coverage.totalCount === 1 ? "" : "s"} attached
-                    </p>
+                  <div className="flex min-w-0 flex-1 gap-3 pl-3">
+                    <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 ring-1 ring-violet-100/80">
+                      <BookMarked className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-black leading-snug tracking-tight text-slate-900">{topic.name}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                          <FileText className="h-3 w-3" />
+                          {coverage.totalCount} Item{coverage.totalCount === 1 ? "" : "s"}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                          <BookOpen className="h-3 w-3" />
+                          {coverage.studyMaterialCount} Study
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                          <ClipboardList className="h-3 w-3" />
+                          {coverage.dppCount} DPP
+                        </span>
+                      </div>
+                      <div className="mt-3">
+                        <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-wide">
+                          <span className="text-slate-400">Readiness</span>
+                          <span className="text-violet-600">{completionScore}%</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-violet-400 via-indigo-500 to-blue-500 transition-all duration-300"
+                            style={{ width: `${completionScore}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2.5">
+                  <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end sm:justify-between">
                     <span className={cn("rounded-full border px-2.5 py-0.5 text-[10px] font-black", statusUi.className)}>
                       {statusUi.label}
                     </span>
@@ -3467,38 +3527,38 @@ function ContentBatchLayout() {
   const ctx: ContentBatchOutletCtx = { batch, setShowAddSubject, setShowBulkImport };
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col bg-[#f8f9fb]">
-      <header className="sticky top-0 z-20 border-b border-slate-200/90 bg-white/95 px-5 py-3.5 backdrop-blur sm:px-8 lg:px-10">
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-3">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col bg-white">
+      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="mx-auto flex w-full min-w-0 flex-wrap items-center gap-3 px-3 py-3 sm:max-w-[1200px] sm:px-6 sm:py-3.5 lg:px-8">
           <Link
             to="/admin/content"
-            className="group flex shrink-0 items-center gap-1 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
+            className="group flex shrink-0 items-center gap-1.5 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
           >
             <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
             All courses
           </Link>
           <span className="text-slate-200">/</span>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50">
               <BookOpen className="h-4 w-4 text-slate-600" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-base font-bold text-slate-900">{batch.name}</h1>
+                <h1 className="truncate text-lg font-black tracking-tight text-slate-900 sm:text-xl">{batch.name}</h1>
                 {batch.status != null && (
                   <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", statusBg)}>{batch.status}</span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-400">
                 {[batch.examTarget, batch.class ? `Class ${batch.class}` : null].filter(Boolean).join(" · ")}
               </p>
             </div>
           </div>
-          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+          <div className="ml-auto grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={() => setTreeOpen(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:px-3"
               title="Open curriculum tree"
             >
               <ListTree className="h-3.5 w-3.5" />
@@ -3507,14 +3567,15 @@ function ContentBatchLayout() {
             <button
               type="button"
               onClick={() => setShowBulkImport(true)}
-              className="hidden h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 sm:inline-flex"
+              className="hidden h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-sm sm:inline-flex"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" /> Import
             </button>
             <button
               type="button"
               onClick={() => setShowAddSubject(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl px-2.5 text-xs font-black text-white shadow-sm transition hover:opacity-90 sm:px-3.5"
+              style={ADMIN_PRIMARY_GRADIENT}
             >
               <Plus className="h-3.5 w-3.5" /> Add subject
             </button>
@@ -3522,18 +3583,18 @@ function ContentBatchLayout() {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto pb-28 md:pb-10">
-        <div className="w-full min-w-0 px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-9">
+      <main className="min-h-0 w-full min-w-0 flex-1 overflow-y-auto bg-white pb-28 md:pb-12">
+        <div className="mx-auto w-full min-w-0 max-w-[1200px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           <Outlet context={ctx} />
         </div>
       </main>
 
       {/* Mobile bottom bar (PW-style quick actions) */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200/90 bg-white/95 px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] backdrop-blur-md md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-100 bg-white/95 px-2 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.04)] backdrop-blur-md md:hidden"
         aria-label="Course shortcuts"
       >
-        <div className="flex w-full min-w-0 items-stretch justify-around gap-1 sm:gap-2">
+        <div className="mx-auto flex w-full min-w-0 max-w-[1200px] items-stretch justify-around gap-0.5 px-2 sm:gap-1">
           <Link
             to={subjectsIndexPath}
             className={cn(
@@ -3635,12 +3696,12 @@ function ContentSubjectsRoute() {
   const { data: courseSubjects = [], isLoading: subLoading } = useSubjects(batch.id);
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-1 shadow-sm">
+    <div className="space-y-6">
+      <div className="rounded-3xl border border-slate-100 bg-white p-1 shadow-sm">
         <ContentCoverageOverview batchId={batch.id} selectedEntry={null} />
       </div>
       <ContentStepIndicator view="subjects" courseName={batch.name} />
-      <p className="text-xs font-medium text-slate-500">
+      <p className="text-sm text-slate-400">
         Pick a subject to open its chapters. Cards are fully clickable.
       </p>
       <SubjectBrowseView
@@ -3654,7 +3715,8 @@ function ContentSubjectsRoute() {
           <button
             type="button"
             onClick={() => setShowAddSubject(true)}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+            style={ADMIN_PRIMARY_GRADIENT}
           >
             <Plus className="h-4 w-4" /> Add subject
           </button>
@@ -3699,14 +3761,15 @@ function ContentChaptersRoute() {
     <button
       type="button"
       onClick={() => setShowChapterInput(v => !v)}
-      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+      className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+      style={ADMIN_PRIMARY_GRADIENT}
     >
       <Plus className="h-4 w-4" /> Add chapter
     </button>
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           to={`/admin/content/${batchId}`}
@@ -3746,8 +3809,8 @@ function ContentChaptersRoute() {
       )}
 
       <ContentStepIndicator view="chapters" courseName={batch.name} />
-      <p className="text-xs font-medium text-slate-500">
-        <span className="font-bold text-slate-800">{subject.name}</span>
+      <p className="text-sm text-slate-400">
+        <span className="font-bold text-slate-700">{subject.name}</span>
         {" — "}
         Open a chapter card to manage topics and content.
       </p>
@@ -3830,14 +3893,15 @@ function ContentTopicsRoute() {
     <button
       type="button"
       onClick={() => setShowTopicInput(v => !v)}
-      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+      className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+      style={ADMIN_PRIMARY_GRADIENT}
     >
       <Plus className="h-4 w-4" /> Add topic
     </button>
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-wrap gap-2 text-sm">
         <Link to={`/admin/content/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
         <span className="text-slate-300">/</span>
@@ -4046,12 +4110,22 @@ function ContentCoursePickerRoute() {
   });
 
   return (
-    <div className="w-full min-w-0 ">
-      <div className="space-y-6 rounded-2xl ">
-      <div>
-        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Content Manager</p>
-        <h1 className="text-2xl font-black text-slate-900">Your courses</h1>
-        <p className="mt-1 text-sm text-slate-500">Choose a course — then manage subjects, chapters, and topics one screen at a time.</p>
+    <div className="mx-auto w-full min-w-0 max-w-[1200px] space-y-5 p-4 pb-24 sm:space-y-6 sm:p-6 md:pb-20 lg:p-8">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
+          <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Content manager</p>
+          <h1 className="text-2xl font-black text-slate-900">Your courses</h1>
+          <p className="mt-0.5 text-sm text-slate-400">Choose a course to edit curriculum — same flow as the rest of admin.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate("/admin/batches")}
+          className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+          style={ADMIN_PRIMARY_GRADIENT}
+        >
+          <Layout className="h-4 w-4 opacity-90" />
+          Manage courses
+        </button>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
@@ -4146,7 +4220,6 @@ function ContentCoursePickerRoute() {
           </AnimatePresence>
         </div>
       )}
-      </div>
     </div>
   );
 }
