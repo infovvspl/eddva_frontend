@@ -515,7 +515,7 @@ export default function BatchDetailPage() {
               <CheckCircle2 className="w-5 h-5" />
             </button>
           )}
-          <button onClick={() => navigate(`/admin/content?batchId=${batch.id}`)}
+          <button onClick={() => navigate(`/admin/content/${batch.id}`)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
             <BookOpen className="w-4 h-4" /> Content
           </button>

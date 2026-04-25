@@ -1,9 +1,12 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  useNavigate, useSearchParams, useParams, useLocation, useOutletContext,
+  Routes, Route, Navigate, Outlet, Link,
+} from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Loader2, BookOpen, FileText, X,
   Layers, Upload, Trash2, ExternalLink, Link2,
@@ -14,7 +17,7 @@ import {
   Sparkles, Brain, FlaskConical, StickyNote, ListChecks,
   Lightbulb, BookText, Wand2, ChevronUp, Zap, Lock,
   FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList, Clock,
-  Pencil, AlertTriangle, Filter,
+  Pencil, AlertTriangle, Filter, Home, ListTree, BarChart3,
 } from "lucide-react";
 import {
   useBatches,
@@ -28,6 +31,7 @@ import {
 import * as adminApi from "@/lib/api/admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { MAX_MATERIAL_FILE_SIZE_MB } from "@/lib/upload-limits";
@@ -55,6 +59,15 @@ function fmtSize(kb?: number) {
   if (!kb) return "";
   if (kb < 1024) return `${kb} KB`;
   return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+function formatCoverageRefreshed(ts: number | undefined) {
+  if (!ts) return "—";
+  try {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(ts));
+  } catch {
+    return "—";
+  }
 }
 
 // ─── Resource type config ──────────────────────────────────────────────────────
@@ -618,6 +631,15 @@ function ResourceWorkspace({
           onClose={() => { setShowAddModal(false); setAddModalType(undefined); }}
         />
       )}
+
+      <button
+        type="button"
+        onClick={() => openAdd()}
+        className="fixed bottom-5 right-5 z-30 flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-slate-900 px-4 text-sm font-bold text-white shadow-md sm:bottom-8 sm:right-8"
+      >
+        <Plus className="h-4 w-4" />
+        Add content
+      </button>
     </div>
   );
 }
@@ -625,43 +647,68 @@ function ResourceWorkspace({
 // ─── Tree Navigator ────────────────────────────────────────────────────────────
 // Shows Subjects → Chapters → Topics in a single scroll pane
 
-type TreeState = {
-  subjectId: string | null;
-  chapterId: string | null;
-};
-
 function TreeNav({
   batchId, examTarget, selectedTopic, onSelectTopic, onAddSubject,
+  expandSubjectId, expandChapterId, coverageSummary,
 }: {
   batchId: string;
   examTarget: string;
   selectedTopic: { topic: Topic; chapter: Chapter; subject: Subject } | null;
   onSelectTopic: (topic: Topic, chapter: Chapter, subject: Subject) => void;
   onAddSubject: () => void;
+  expandSubjectId?: string | null;
+  expandChapterId?: string | null;
+  coverageSummary?: CoverageSummary | null;
 }) {
   const { data: subjects = [], isLoading: sLoading } = useSubjects(batchId);
   const createChapter = useCreateChapter();
   const createTopic = useCreateTopic();
   const [search, setSearch] = useState("");
-  const [openSubjects, setOpenSubjects] = useState<Set<string>>(new Set());
-  const [openChapters, setOpenChapters] = useState<Set<string>>(new Set());
+  const [treeFilter, setTreeFilter] = useState<"all" | "with_chapters">("all");
+  const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
+  const [openChapterId, setOpenChapterId] = useState<string | null>(null);
   const [addingChapter, setAddingChapter] = useState<string | null>(null); // subjectId
   const [addingTopic, setAddingTopic] = useState<string | null>(null);     // chapterId
 
-  const toggleSubject = (id: string) =>
-    setOpenSubjects(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  useEffect(() => {
+    if (expandSubjectId) {
+      setOpenSubjectId(expandSubjectId);
+      if (expandChapterId) setOpenChapterId(expandChapterId);
+      else if (!expandChapterId) setOpenChapterId(null);
+    }
+  }, [expandSubjectId, expandChapterId]);
 
-  const toggleChapter = (id: string) =>
-    setOpenChapters(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSubject = (id: string) => {
+    setOpenSubjectId(prev => {
+      if (prev === id) {
+        setOpenChapterId(null);
+        return null;
+      }
+      setOpenChapterId(null);
+      return id;
+    });
+  };
+
+  const toggleChapter = (id: string) => {
+    setOpenChapterId(prev => (prev === id ? null : id));
+  };
 
   const matchSearch = (name: string) => name.toLowerCase().includes(search.toLowerCase());
+
+  const displaySubjects = useMemo(() => {
+    if (treeFilter !== "with_chapters" || !coverageSummary) return subjects;
+    const withCh = new Set(
+      coverageSummary.subjects.filter(s => s.chapters.length > 0).map(s => s.id),
+    );
+    return subjects.filter(s => withCh.has(s.id));
+  }, [subjects, treeFilter, coverageSummary]);
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-4 border-b border-slate-100 shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-black text-slate-700">Subjects &amp; Topics</p>
+          <p className="text-sm font-black text-slate-700">Curriculum</p>
           <button
             onClick={onAddSubject}
             className="flex items-center gap-1 h-7 px-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-black transition-colors"
@@ -669,14 +716,25 @@ function TreeNav({
             <Plus className="w-3.5 h-3.5" /> Subject
           </button>
         </div>
-        <div className="relative">
+        <div className="relative mb-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           <input
-            placeholder="Search topics…"
+            placeholder="Search subjects, chapters, topics…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full h-8 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+          <select
+            value={treeFilter}
+            onChange={e => setTreeFilter(e.target.value as "all" | "with_chapters")}
+            className="h-7 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600"
+          >
+            <option value="all">All subjects</option>
+            <option value="with_chapters">With chapters</option>
+          </select>
         </div>
       </div>
 
@@ -690,30 +748,29 @@ function TreeNav({
             <p className="text-xs text-slate-400 font-semibold">No subjects yet</p>
             <button onClick={onAddSubject} className="text-xs text-blue-500 font-bold mt-2 hover:underline">+ Add first subject</button>
           </div>
+        ) : displaySubjects.length === 0 ? (
+          <div className="text-center py-8 px-4 text-xs text-slate-400 font-semibold">No subjects match this filter.</div>
         ) : (
-          subjects.map(subject => {
-            const subOpen = openSubjects.has(subject.id);
-            return (
-              <SubjectTree
-                key={subject.id}
-                subject={subject}
-                open={subOpen}
-                onToggle={() => toggleSubject(subject.id)}
-                search={search}
-                openChapters={openChapters}
-                onToggleChapter={toggleChapter}
-                addingChapter={addingChapter}
-                setAddingChapter={setAddingChapter}
-                addingTopic={addingTopic}
-                setAddingTopic={setAddingTopic}
-                createChapter={createChapter}
-                createTopic={createTopic}
-                selectedTopicId={selectedTopic?.topic.id ?? null}
-                onSelectTopic={onSelectTopic}
-                matchSearch={matchSearch}
-              />
-            );
-          })
+          displaySubjects.map(subject => (
+            <SubjectTree
+              key={subject.id}
+              subject={subject}
+              open={openSubjectId === subject.id}
+              onToggle={() => toggleSubject(subject.id)}
+              search={search}
+              openChapterId={openChapterId}
+              onToggleChapter={toggleChapter}
+              addingChapter={addingChapter}
+              setAddingChapter={setAddingChapter}
+              addingTopic={addingTopic}
+              setAddingTopic={setAddingTopic}
+              createChapter={createChapter}
+              createTopic={createTopic}
+              selectedTopicId={selectedTopic?.topic.id ?? null}
+              onSelectTopic={onSelectTopic}
+              matchSearch={matchSearch}
+            />
+          ))
         )}
       </div>
     </div>
@@ -721,7 +778,7 @@ function TreeNav({
 }
 
 function SubjectTree({
-  subject, open, onToggle, search, openChapters, onToggleChapter,
+  subject, open, onToggle, search, openChapterId, onToggleChapter,
   addingChapter, setAddingChapter, addingTopic, setAddingTopic,
   createChapter, createTopic, selectedTopicId, onSelectTopic, matchSearch,
 }: any) {
@@ -853,7 +910,7 @@ function SubjectTree({
                     key={chapter.id}
                     chapter={chapter}
                     subjectId={subject.id}
-                    open={openChapters.has(chapter.id)}
+                    open={openChapterId === chapter.id}
                     onToggle={() => onToggleChapter(chapter.id)}
                     search={search}
                     addingTopic={addingTopic}
@@ -1152,6 +1209,87 @@ function isStudyMaterial(type?: string | null) {
   return t === "pdf" || t === "notes" || t === "video" || t === "link" || t === "pyq" || t === "quiz";
 }
 
+async function fetchContentCoverageSummary(batchId: string): Promise<CoverageSummary> {
+  const subjects = (await adminApi.listSubjects(batchId)) ?? [];
+  const subjectRows = await Promise.all(
+    subjects.map(async (subject) => {
+      const chapters = (await adminApi.listChapters(subject.id)) ?? [];
+      const chapterRows = await Promise.all(
+        chapters.map(async (chapter) => {
+          const topics = (await adminApi.listTopics(chapter.id)) ?? [];
+          const topicRows = await Promise.all(
+            topics.map(async (topic) => {
+              const resources = (await adminApi.listTopicResources(topic.id)) ?? [];
+              const dppCount = resources.filter((r) => String(r.type ?? "").toLowerCase() === "dpp").length;
+              const studyMaterialCount = resources.filter((r) => isStudyMaterial(r.type)).length;
+              return {
+                id: topic.id,
+                name: topic.name,
+                dppCount,
+                studyMaterialCount,
+                totalCount: resources.length,
+              } as TopicCoverage;
+            }),
+          );
+          return {
+            id: chapter.id,
+            name: chapter.name,
+            dppCount: topicRows.reduce((s, t) => s + t.dppCount, 0),
+            studyMaterialCount: topicRows.reduce((s, t) => s + t.studyMaterialCount, 0),
+            totalCount: topicRows.reduce((s, t) => s + t.totalCount, 0),
+            topics: topicRows,
+          } as ChapterCoverage;
+        }),
+      );
+      return {
+        id: subject.id,
+        name: subject.name,
+        dppCount: chapterRows.reduce((s, c) => s + c.dppCount, 0),
+        studyMaterialCount: chapterRows.reduce((s, c) => s + c.studyMaterialCount, 0),
+        totalCount: chapterRows.reduce((s, c) => s + c.totalCount, 0),
+        chapters: chapterRows,
+      } as SubjectCoverage;
+    }),
+  );
+
+  const chapterCount = subjectRows.reduce((s, sub) => s + sub.chapters.length, 0);
+  const topicCount = subjectRows.reduce(
+    (s, sub) => s + sub.chapters.reduce((inner, ch) => inner + ch.topics.length, 0),
+    0,
+  );
+
+  return {
+    subjectCount: subjectRows.length,
+    chapterCount,
+    topicCount,
+    studyMaterialCount: subjectRows.reduce((s, sub) => s + sub.studyMaterialCount, 0),
+    dppCount: subjectRows.reduce((s, sub) => s + sub.dppCount, 0),
+    totalContentCount: subjectRows.reduce((s, sub) => s + sub.totalCount, 0),
+    subjects: subjectRows,
+  };
+}
+
+function useContentCoverageSummary(batchId: string | null) {
+  return useQuery({
+    queryKey: ["admin", "content-coverage", batchId],
+    enabled: !!batchId,
+    queryFn: () => fetchContentCoverageSummary(batchId!),
+    staleTime: 20_000,
+  });
+}
+
+function getTopicStatus(tc: TopicCoverage): "empty" | "in_progress" | "completed" {
+  if (tc.totalCount === 0) return "empty";
+  if (tc.totalCount >= 4) return "completed";
+  return "in_progress";
+}
+
+function topicStatusLabel(s: "empty" | "in_progress" | "completed") {
+  if (s === "empty") return { label: "Empty", className: "bg-slate-100 text-slate-600 border-slate-200" };
+  if (s === "completed") return { label: "Completed", className: "bg-emerald-50 text-emerald-800 border-emerald-200" };
+  return { label: "In progress", className: "bg-amber-50 text-amber-900 border-amber-200" };
+}
+
 function ContentCoverageOverview({
   batchId,
   selectedEntry,
@@ -1160,70 +1298,7 @@ function ContentCoverageOverview({
   selectedEntry: { topic: Topic; chapter: Chapter; subject: Subject } | null;
 }) {
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "content-coverage", batchId],
-    enabled: !!batchId,
-    queryFn: async (): Promise<CoverageSummary> => {
-      const subjects = (await adminApi.listSubjects(batchId)) ?? [];
-      const subjectRows = await Promise.all(
-        subjects.map(async (subject) => {
-          const chapters = (await adminApi.listChapters(subject.id)) ?? [];
-          const chapterRows = await Promise.all(
-            chapters.map(async (chapter) => {
-              const topics = (await adminApi.listTopics(chapter.id)) ?? [];
-              const topicRows = await Promise.all(
-                topics.map(async (topic) => {
-                  const resources = (await adminApi.listTopicResources(topic.id)) ?? [];
-                  const dppCount = resources.filter((r) => String(r.type ?? "").toLowerCase() === "dpp").length;
-                  const studyMaterialCount = resources.filter((r) => isStudyMaterial(r.type)).length;
-                  return {
-                    id: topic.id,
-                    name: topic.name,
-                    dppCount,
-                    studyMaterialCount,
-                    totalCount: resources.length,
-                  } as TopicCoverage;
-                }),
-              );
-              return {
-                id: chapter.id,
-                name: chapter.name,
-                dppCount: topicRows.reduce((s, t) => s + t.dppCount, 0),
-                studyMaterialCount: topicRows.reduce((s, t) => s + t.studyMaterialCount, 0),
-                totalCount: topicRows.reduce((s, t) => s + t.totalCount, 0),
-                topics: topicRows,
-              } as ChapterCoverage;
-            }),
-          );
-          return {
-            id: subject.id,
-            name: subject.name,
-            dppCount: chapterRows.reduce((s, c) => s + c.dppCount, 0),
-            studyMaterialCount: chapterRows.reduce((s, c) => s + c.studyMaterialCount, 0),
-            totalCount: chapterRows.reduce((s, c) => s + c.totalCount, 0),
-            chapters: chapterRows,
-          } as SubjectCoverage;
-        }),
-      );
-
-      const chapterCount = subjectRows.reduce((s, sub) => s + sub.chapters.length, 0);
-      const topicCount = subjectRows.reduce(
-        (s, sub) => s + sub.chapters.reduce((inner, ch) => inner + ch.topics.length, 0),
-        0,
-      );
-
-      return {
-        subjectCount: subjectRows.length,
-        chapterCount,
-        topicCount,
-        studyMaterialCount: subjectRows.reduce((s, sub) => s + sub.studyMaterialCount, 0),
-        dppCount: subjectRows.reduce((s, sub) => s + sub.dppCount, 0),
-        totalContentCount: subjectRows.reduce((s, sub) => s + sub.totalCount, 0),
-        subjects: subjectRows,
-      };
-    },
-    staleTime: 20_000,
-  });
+  const { data, isLoading } = useContentCoverageSummary(batchId);
 
   const activePath = useMemo(() => {
     if (!selectedEntry) return "";
@@ -1342,6 +1417,749 @@ function ContentCoverageOverview({
         )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Content browse UI (Subject → Chapter → Topic → Content) ─────────────────
+
+type RightBrowseView = "subjects" | "chapters" | "topics" | "content";
+
+function ContentStepIndicator({ view, courseName }: { view: RightBrowseView; courseName: string }) {
+  const steps: { id: RightBrowseView; label: string }[] = [
+    { id: "subjects", label: "Subject" },
+    { id: "chapters", label: "Chapter" },
+    { id: "topics", label: "Topic" },
+    { id: "content", label: "Content" },
+  ];
+  const order: RightBrowseView[] = ["subjects", "chapters", "topics", "content"];
+  const activeIdx = order.indexOf(view);
+  const stepNum = activeIdx >= 0 ? activeIdx + 1 : 1;
+
+  return (
+    <div className="mb-4 rounded-2xl border-2 border-slate-200/90 bg-gradient-to-br from-white via-white to-slate-50/90 p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Course</p>
+          <p className="truncate text-sm font-black text-slate-900">{courseName}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-black tracking-wide text-white shadow-sm">
+          Step {stepNum} of 4
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-y-2" role="list">
+        {steps.map((s, i) => {
+          const stepIdx = order.indexOf(s.id);
+          const isDone = activeIdx > stepIdx;
+          const isCurrent = activeIdx === stepIdx;
+          return (
+            <div key={s.id} className="flex items-center" role="listitem">
+              {i > 0 && (
+                <ChevronRight className="mx-1 h-4 w-4 shrink-0 text-slate-300 sm:mx-2" aria-hidden />
+              )}
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <span
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-black transition-colors",
+                    isCurrent && "border-slate-900 bg-slate-900 text-white shadow-md",
+                    isDone && !isCurrent && "border-emerald-500 bg-emerald-500 text-white",
+                    !isDone && !isCurrent && "border-slate-200 bg-white text-slate-300",
+                  )}
+                  aria-current={isCurrent ? "step" : undefined}
+                >
+                  {isDone && !isCurrent ? <Check className="h-4 w-4" strokeWidth={2.5} /> : stepIdx + 1}
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-black tracking-tight sm:text-[15px]",
+                    isCurrent && "text-slate-900",
+                    isDone && !isCurrent && "text-emerald-700",
+                    !isDone && !isCurrent && "text-slate-400",
+                  )}
+                >
+                  {s.label}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** PW-style loading tiles — staggered pulse, not a single gray block */
+function BrowseSkeletonGrid({ variant }: { variant: "subjects" | "chapters" | "topics" }) {
+  const count = variant === "subjects" ? 6 : variant === "chapters" ? 4 : 5;
+  const grid =
+    variant === "subjects"
+      ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      : variant === "chapters"
+        ? "grid gap-4 sm:grid-cols-2"
+        : "space-y-3";
+  return (
+    <div className={grid} aria-hidden>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5"
+        >
+          {variant === "topics" ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-4 w-[min(220px,70%)] animate-pulse rounded-md bg-slate-100" />
+                <div className="h-3 w-32 animate-pulse rounded bg-slate-50" />
+              </div>
+              <div className="h-7 w-20 shrink-0 animate-pulse rounded-full bg-slate-100" />
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <div className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-slate-100" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-3.5 w-[min(200px,85%)] animate-pulse rounded-md bg-slate-100" />
+                <div className="h-2.5 w-24 animate-pulse rounded bg-slate-50" />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="h-6 w-16 animate-pulse rounded-lg bg-slate-50" />
+                  <div className="h-6 w-14 animate-pulse rounded-lg bg-slate-50" />
+                  <div className="h-6 w-12 animate-pulse rounded-lg bg-slate-50" />
+                </div>
+                {variant === "subjects" && (
+                  <div className="mt-4 h-9 w-full animate-pulse rounded-xl bg-slate-100" />
+                )}
+                {variant === "chapters" && (
+                  <div className="mt-4 space-y-1.5">
+                    <div className="h-2 w-full max-w-[220px] animate-pulse rounded-full bg-slate-100" />
+                    <div className="h-2 w-24 animate-pulse rounded bg-slate-50" />
+                  </div>
+                )}
+              </div>
+              {variant === "chapters" && (
+                <div className="flex shrink-0 flex-col justify-center self-stretch pl-1">
+                  <div className="h-11 w-11 shrink-0 animate-pulse rounded-2xl bg-slate-100" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ContentBrowseBreadcrumb({
+  courseName, browseSubject, browseChapter, selectedTopicName, view,
+  onGoSubjects, onGoChapters, onGoTopics,
+}: {
+  courseName: string;
+  browseSubject: Subject | null;
+  browseChapter: Chapter | null;
+  selectedTopicName: string | null;
+  view: RightBrowseView;
+  onGoSubjects: () => void;
+  onGoChapters: () => void;
+  onGoTopics: () => void;
+}) {
+  return (
+    <nav className="mb-1 flex flex-wrap items-center gap-1 text-[13px] text-slate-500" aria-label="Breadcrumb">
+      <span className="font-semibold text-slate-800">{courseName}</span>
+      {browseSubject && (
+        <>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+          <button
+            type="button"
+            onClick={onGoChapters}
+            className={cn("font-medium hover:text-slate-900", view === "chapters" && !selectedTopicName ? "text-slate-900" : "text-slate-600")}
+            style={view !== "chapters" || selectedTopicName ? { color: browseSubject.colorCode } : undefined}
+          >
+            {browseSubject.name}
+          </button>
+        </>
+      )}
+      {browseSubject && browseChapter && (
+        <>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+          <button
+            type="button"
+            onClick={onGoTopics}
+            className={cn("font-medium text-amber-700 hover:text-amber-900", view === "topics" && "underline-offset-2")}
+          >
+            {browseChapter.name}
+          </button>
+        </>
+      )}
+      {selectedTopicName && (
+        <>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+          <span className="font-semibold text-slate-900">{selectedTopicName}</span>
+        </>
+      )}
+      <span className="ml-auto text-[10px] font-bold uppercase tracking-wide text-slate-300">
+        <button type="button" onClick={onGoSubjects} className="text-slate-400 hover:text-slate-700">
+          All subjects
+        </button>
+      </span>
+    </nav>
+  );
+}
+
+function SubjectBrowseView({
+  subjects, coverage, search, onSearch, onManageSubject, loading, extraActions,
+}: {
+  subjects: Subject[];
+  coverage: CoverageSummary | undefined;
+  search: string;
+  onSearch: (v: string) => void;
+  onManageSubject: (s: Subject) => void;
+  loading: boolean;
+  extraActions?: React.ReactNode;
+}) {
+  const covMap = useMemo(() => {
+    const m = new Map<string, SubjectCoverage>();
+    (coverage?.subjects ?? []).forEach(s => m.set(s.id, s));
+    return m;
+  }, [coverage]);
+
+  const filtered = useMemo(
+    () => subjects.filter(s => s.name.toLowerCase().includes(search.toLowerCase())),
+    [subjects, search],
+  );
+
+  if (loading) {
+    return <BrowseSkeletonGrid variant="subjects" />;
+  }
+
+  if (subjects.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 py-20 text-center">
+        <BookOpen className="mb-3 h-10 w-10 text-slate-300" />
+        <p className="text-sm font-bold text-slate-600">No subjects yet</p>
+        <p className="mt-1 max-w-sm text-xs text-slate-400">Add a subject from the toolbar or the left panel.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-xl font-black tracking-tight text-slate-900">Subjects</h2>
+          <p className="mt-0.5 text-xs font-medium text-slate-500">Choose a subject — the whole card opens chapters.</p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {extraActions}
+          <div className="relative max-w-xs flex-1 sm:min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => onSearch(e.target.value)}
+              placeholder="Search subjects…"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium outline-none transition-shadow focus:border-slate-300 focus:ring-2 focus:ring-slate-900/10"
+            />
+          </div>
+        </div>
+      </div>
+      {filtered.length === 0 ? (
+        <p className="py-8 text-center text-sm text-slate-400">No subjects match your search.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map(s => {
+            const c = covMap.get(s.id);
+            const nCh = c?.chapters.length ?? 0;
+            const nTop = c?.chapters.reduce((acc, ch) => acc + ch.topics.length, 0) ?? 0;
+            const nFiles = c?.totalCount ?? 0;
+            const accent = s.colorCode ?? "#0F172A";
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onManageSubject(s)}
+                className={cn(
+                  "group relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 text-left shadow-sm transition-all duration-200",
+                  "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 focus-visible:ring-offset-2",
+                )}
+              >
+                <span
+                  className="pointer-events-none absolute bottom-3 left-0 top-3 w-1 rounded-full"
+                  style={{ background: `linear-gradient(180deg, ${accent}, ${accent}99)` }}
+                  aria-hidden
+                />
+                <div className="flex items-start justify-between gap-3 pl-3">
+                  <div
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-inner"
+                    style={{ background: `${accent}14`, color: accent }}
+                  >
+                    <GraduationCap className="h-6 w-6" />
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {s.examTarget && (
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                        {s.examTarget}
+                      </span>
+                    )}
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-300 transition-colors group-hover:border-slate-200 group-hover:bg-white group-hover:text-slate-900">
+                      <ChevronRight className="h-5 w-5" />
+                    </span>
+                  </div>
+                </div>
+                <h3 className="mt-4 line-clamp-2 pl-3 text-lg font-black leading-snug tracking-tight text-slate-900">{s.name}</h3>
+                <p className="mt-1 pl-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  {nCh} chapters · {nTop} topics · {nFiles} content items
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChapterWorkspaceSidePanel({
+  subjectName,
+  chapterCount,
+  topicCount,
+  contentCount,
+  lastUpdatedLabel,
+  onAddChapter,
+  onAddTopic,
+  onUploadContent,
+  className,
+}: {
+  subjectName: string;
+  chapterCount: number;
+  topicCount: number;
+  contentCount: number;
+  lastUpdatedLabel: string;
+  onAddChapter: () => void;
+  onAddTopic: () => void;
+  onUploadContent: () => void;
+  className?: string;
+}) {
+  return (
+    <aside
+      className={cn(
+        "rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-6",
+        className,
+      )}
+    >
+      <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+          <BarChart3 className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Insights</p>
+          <p className="truncate text-sm font-black text-slate-900">{subjectName}</p>
+        </div>
+      </div>
+
+      <div className="mb-5 grid grid-cols-3 gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+        <div className="text-center">
+          <p className="text-lg font-black text-slate-900">{chapterCount}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Chapters</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-black text-slate-900">{topicCount}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Topics</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-black text-slate-900">{contentCount}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Content</p>
+        </div>
+      </div>
+
+      <div className="mb-5 flex gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2.5">
+        <Clock className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Last updated</p>
+          <p className="text-xs font-bold text-slate-700">{lastUpdatedLabel}</p>
+          <p className="mt-0.5 text-[10px] font-medium text-slate-400">Coverage summary refresh</p>
+        </div>
+      </div>
+
+      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Quick actions</p>
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={onAddChapter}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+        >
+          <Plus className="h-4 w-4" /> Add chapter
+        </button>
+        <button
+          type="button"
+          onClick={onAddTopic}
+          disabled={chapterCount === 0}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-black text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <Hash className="h-4 w-4" /> Add topic
+        </button>
+        <button
+          type="button"
+          onClick={onUploadContent}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-black text-slate-800 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/60"
+        >
+          <Upload className="h-4 w-4" /> Upload content
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function ChapterBrowseView({
+  subject, chapters, coverageChapters, search, onSearch, onOpenChapter, loading, accentColor, extraActions,
+}: {
+  subject: Subject;
+  chapters: Chapter[];
+  coverageChapters: ChapterCoverage[];
+  search: string;
+  onSearch: (v: string) => void;
+  onOpenChapter: (c: Chapter) => void;
+  loading: boolean;
+  accentColor?: string;
+  extraActions?: React.ReactNode;
+}) {
+  const barColor = accentColor ?? "#D97706";
+  const chCov = useMemo(() => {
+    const m = new Map<string, ChapterCoverage>();
+    coverageChapters.forEach(c => m.set(c.id, c));
+    return m;
+  }, [coverageChapters]);
+
+  const filtered = useMemo(
+    () => chapters.filter(c => c.name.toLowerCase().includes(search.toLowerCase())),
+    [chapters, search],
+  );
+
+  if (loading) {
+    return <BrowseSkeletonGrid variant="chapters" />;
+  }
+
+  return (
+    <div>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-xl font-black tracking-tight text-slate-900">Chapters</h2>
+          <p className="mt-0.5 text-xs font-medium text-slate-500">
+            In <span className="font-bold text-slate-700">{subject.name}</span> — tap a card to open topics.
+          </p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {extraActions}
+          <div className="relative max-w-xs flex-1 sm:min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => onSearch(e.target.value)}
+              placeholder="Search chapters…"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium outline-none transition-shadow focus:border-slate-300 focus:ring-2 focus:ring-amber-500/15"
+            />
+          </div>
+        </div>
+      </div>
+      {chapters.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-14 text-center text-sm font-medium text-slate-400">
+          No chapters in this subject yet. Use <span className="font-black text-slate-600">Add chapter</span> in the panel or toolbar.
+        </p>
+      ) : filtered.length === 0 ? (
+        <p className="py-8 text-center text-sm text-slate-400">No chapters match your search.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {filtered.map(ch => {
+            const cc = chCov.get(ch.id);
+            const topics = cc?.topics ?? [];
+            const done = topics.filter(t => getTopicStatus(t) === "completed").length;
+            const pct = topics.length ? Math.round((done / topics.length) * 100) : 0;
+            const nItems = cc?.totalCount ?? 0;
+            return (
+              <button
+                key={ch.id}
+                type="button"
+                onClick={() => onOpenChapter(ch)}
+                className={cn(
+                  "group relative flex w-full items-stretch gap-0 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 text-left shadow-sm transition-all duration-200 sm:p-6",
+                  "hover:-translate-y-0.5 hover:border-amber-300/80 hover:shadow-md hover:shadow-amber-900/5",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80 focus-visible:ring-offset-2",
+                )}
+              >
+                <span
+                  className="pointer-events-none absolute bottom-4 left-0 top-4 w-1 rounded-full"
+                  style={{ background: `linear-gradient(180deg, ${barColor}, ${barColor}99)` }}
+                  aria-hidden
+                />
+                <div className="flex min-w-0 flex-1 flex-col pl-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 shadow-inner ring-1 ring-amber-100/80"
+                    >
+                      <BookOpen className="h-6 w-6" />
+                    </div>
+                    <div className="min-w-0 flex-1 pr-2">
+                      <h3 className="line-clamp-2 text-lg font-black leading-snug tracking-tight text-slate-900">{ch.name}</h3>
+                      <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                        {topics.length} topic{topics.length === 1 ? "" : "s"} · {nItems} content item{nItems === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">Progress</span>
+                      <span className="text-[11px] font-black text-slate-600">{pct}%</span>
+                    </div>
+                    <div className="h-2 w-full max-w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-300"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 text-[10px] font-bold text-slate-400">Topics marked complete in coverage</p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col items-center justify-center self-stretch pl-1">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-300 transition-all group-hover:border-amber-200 group-hover:bg-amber-50 group-hover:text-amber-700">
+                    <ChevronRight className="h-5 w-5" />
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopicBrowseView({
+  subject, chapter, topics, coverageTopics, search, onSearch, onSelectTopic, statusFilter, onStatusFilter, loading, extraActions,
+}: {
+  subject: Subject;
+  chapter: Chapter;
+  topics: Topic[];
+  coverageTopics: TopicCoverage[];
+  search: string;
+  onSearch: (v: string) => void;
+  onSelectTopic: (t: Topic) => void;
+  statusFilter: "all" | "empty" | "in_progress" | "completed";
+  onStatusFilter: (f: "all" | "empty" | "in_progress" | "completed") => void;
+  loading: boolean;
+  extraActions?: React.ReactNode;
+}) {
+  const tCov = useMemo(() => {
+    const m = new Map<string, TopicCoverage>();
+    coverageTopics.forEach(t => m.set(t.id, t));
+    return m;
+  }, [coverageTopics]);
+
+  const rows = useMemo(() => {
+    return topics
+      .map(t => {
+        const tc = tCov.get(t.id) ?? { id: t.id, name: t.name, dppCount: 0, studyMaterialCount: 0, totalCount: 0 };
+        const st = getTopicStatus(tc);
+        return { topic: t, coverage: tc, st };
+      })
+      .filter(r => {
+        if (!r.topic.name.toLowerCase().includes(search.toLowerCase())) return false;
+        if (statusFilter === "all") return true;
+        return r.st === statusFilter;
+      });
+  }, [topics, tCov, search, statusFilter]);
+
+  if (loading) {
+    return <BrowseSkeletonGrid variant="topics" />;
+  }
+
+  return (
+    <div>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-xl font-black tracking-tight text-slate-900">Topics</h2>
+          <p className="mt-0.5 text-xs font-medium text-slate-500">
+            <span className="font-bold text-slate-600">{subject.name}</span>
+            <span className="text-slate-300"> → </span>
+            <span className="font-bold text-slate-700">{chapter.name}</span>
+          </p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {extraActions}
+          <div className="relative max-w-xs flex-1 sm:min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => onSearch(e.target.value)}
+              placeholder="Search topics…"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium outline-none transition-shadow focus:border-slate-300 focus:ring-2 focus:ring-violet-500/15"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={e => onStatusFilter(e.target.value as any)}
+            className="h-10 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600"
+          >
+            <option value="all">All statuses</option>
+            <option value="empty">Empty</option>
+            <option value="in_progress">In progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      {topics.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-14 text-center text-sm font-medium text-slate-400">
+          No topics in this chapter yet. Use <span className="font-black text-slate-600">Add topic</span> above.
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="py-8 text-center text-sm text-slate-400">No topics match filters.</p>
+      ) : (
+        <ul className="space-y-3">
+          {rows.map(({ topic, coverage, st }) => {
+            const statusUi = topicStatusLabel(st);
+            return (
+              <li key={topic.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelectTopic(topic)}
+                  className={cn(
+                    "group relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white py-4 pl-5 pr-4 text-left shadow-sm transition-all duration-200 sm:py-5 sm:pl-6",
+                    "hover:-translate-y-0.5 hover:border-violet-300/70 hover:shadow-md hover:shadow-violet-900/5",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/80 focus-visible:ring-offset-2",
+                  )}
+                >
+                  <span
+                    className="pointer-events-none absolute bottom-4 left-0 top-4 w-1 rounded-full bg-gradient-to-b from-violet-500 to-indigo-600"
+                    aria-hidden
+                  />
+                  <div className="min-w-0 flex-1 pl-3">
+                    <p className="text-base font-black leading-snug tracking-tight text-slate-900">{topic.name}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                      {coverage.totalCount} content item{coverage.totalCount === 1 ? "" : "s"} attached
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2.5">
+                    <span className={cn("rounded-full border px-2.5 py-0.5 text-[10px] font-black", statusUi.className)}>
+                      {statusUi.label}
+                    </span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-300 transition-all group-hover:border-violet-200 group-hover:bg-violet-50 group-hover:text-violet-700">
+                      <ChevronRight className="h-5 w-5" />
+                    </span>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function QuickAddTopicModal({
+  open,
+  chapters,
+  batchId,
+  onClose,
+}: {
+  open: boolean;
+  chapters: Chapter[];
+  batchId: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const createTopic = useCreateTopic();
+  const [chapterId, setChapterId] = useState("");
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setChapterId(chapters[0]?.id ?? "");
+    setName("");
+  }, [open, chapters]);
+
+  if (!open) return null;
+
+  const submit = async () => {
+    if (!chapterId || !name.trim()) {
+      toast.error("Pick a chapter and enter a topic name.");
+      return;
+    }
+    try {
+      await createTopic.mutateAsync({
+        chapterId,
+        name: name.trim(),
+        estimatedStudyMinutes: 60,
+      });
+      toast.success("Topic added");
+      await qc.invalidateQueries({ queryKey: ["admin", "content-coverage", batchId] });
+      onClose();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || "Could not add topic");
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[85] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quick-add-topic-title"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 id="quick-add-topic-title" className="text-lg font-black text-slate-900">Add topic</h2>
+            <p className="mt-1 text-xs font-medium text-slate-500">Choose a chapter, then name the new topic.</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-slate-400">Chapter</label>
+            {chapters.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-500">
+                Add a chapter first, then you can attach topics here.
+              </p>
+            ) : (
+              <select
+                value={chapterId}
+                onChange={e => setChapterId(e.target.value)}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-sm font-bold text-slate-800 outline-none focus:border-violet-400"
+              >
+                {chapters.map(ch => (
+                  <option key={ch.id} value={ch.id}>{ch.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-slate-400">Topic name</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Newton's laws"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none focus:border-violet-400"
+              onKeyDown={e => { if (e.key === "Enter") void submit(); }}
+            />
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void submit()}
+            disabled={createTopic.isPending || chapters.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+          >
+            {createTopic.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Create topic
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2589,43 +3407,637 @@ function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+type ContentBatchOutletCtx = {
+  batch: {
+    id: string; name: string; status?: string; examTarget?: string; class?: string;
+    enrolledCount?: number; studentCount?: number; description?: string;
+  };
+  setShowAddSubject: (v: boolean) => void;
+  setShowBulkImport: (v: boolean) => void;
+};
 
-const ContentPage = () => {
+// ─── Multi-page flow (Course → Subject → Chapter → Topic → Content) ──────────
+
+function ContentBatchLayout() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { data: batches = [], isLoading: batchesLoading } = useBatches();
+  const location = useLocation();
+  const params = useParams<{
+    batchId: string;
+    subjectId?: string;
+    chapterId?: string;
+    topicId?: string;
+  }>();
+  const { batchId, subjectId, chapterId, topicId } = params;
+  const { data: batches = [] } = useBatches();
   const batchList = Array.isArray(batches) ? batches : [];
-
-  const initialBatchId = searchParams.get("batchId");
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(initialBatchId);
-  const [selectedEntry, setSelectedEntry] = useState<{
-    topic: Topic; chapter: Chapter; subject: Subject;
-  } | null>(null);
+  const batch = batchList.find(b => b.id === batchId);
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [treeOpen, setTreeOpen] = useState(false);
+  const { data: coverage } = useContentCoverageSummary(batch?.id ?? null);
+
+  const subjectsIndexPath = `/admin/content/${batchId}`;
+  const isSubjectsHome =
+    !!batchId && (location.pathname === subjectsIndexPath || location.pathname === `${subjectsIndexPath}/`);
+
+  const treeSelectedTopic =
+    topicId && chapterId && subjectId && batchId
+      ? {
+        topic: { id: topicId, name: "", chapterId, sortOrder: 0, isActive: true } as Topic,
+        chapter: { id: chapterId, name: "", subjectId, sortOrder: 0, isActive: true } as Chapter,
+        subject: { id: subjectId, name: "", examTarget: "", sortOrder: 0, isActive: true } as Subject,
+      }
+      : null;
+
+  if (!batchId) return <Navigate to="/admin/content" replace />;
+  if (!batch) {
+    return (
+      <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center gap-3 bg-slate-50 p-6">
+        <p className="text-sm font-semibold text-slate-600">Course not found.</p>
+        <Link to="/admin/content" className="text-sm font-bold text-blue-600 hover:underline">Back to courses</Link>
+      </div>
+    );
+  }
+
+  const statusBg =
+    batch.status === "active" ? "bg-emerald-100 text-emerald-700" :
+      batch.status === "completed" ? "bg-blue-100 text-blue-700" :
+        "bg-slate-100 text-slate-500";
+
+  const ctx: ContentBatchOutletCtx = { batch, setShowAddSubject, setShowBulkImport };
+
+  return (
+    <div className="flex min-h-[calc(100vh-80px)] flex-col bg-[#f8f9fb]">
+      <header className="sticky top-0 z-20 border-b border-slate-200/90 bg-white/95 px-5 py-3.5 backdrop-blur sm:px-8 lg:px-10">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-3">
+          <Link
+            to="/admin/content"
+            className="group flex shrink-0 items-center gap-1 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
+          >
+            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            All courses
+          </Link>
+          <span className="text-slate-200">/</span>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+              <BookOpen className="h-4 w-4 text-slate-600" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-base font-bold text-slate-900">{batch.name}</h1>
+                {batch.status != null && (
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", statusBg)}>{batch.status}</span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                {[batch.examTarget, batch.class ? `Class ${batch.class}` : null].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+          </div>
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTreeOpen(true)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              title="Open curriculum tree"
+            >
+              <ListTree className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Tree</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBulkImport(true)}
+              className="hidden h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 sm:inline-flex"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" /> Import
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddSubject(true)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add subject
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="min-h-0 flex-1 overflow-y-auto pb-28 md:pb-10">
+        <div className="w-full min-w-0 px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-9">
+          <Outlet context={ctx} />
+        </div>
+      </main>
+
+      {/* Mobile bottom bar (PW-style quick actions) */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200/90 bg-white/95 px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.06)] backdrop-blur-md md:hidden"
+        aria-label="Course shortcuts"
+      >
+        <div className="flex w-full min-w-0 items-stretch justify-around gap-1 sm:gap-2">
+          <Link
+            to={subjectsIndexPath}
+            className={cn(
+              "flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors",
+              isSubjectsHome ? "text-blue-600" : "text-slate-500",
+            )}
+          >
+            <Home className="h-5 w-5 shrink-0" />
+            <span>Subjects</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setTreeOpen(true)}
+            className="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold text-slate-500 transition-colors hover:text-slate-800"
+          >
+            <ListTree className="h-5 w-5 shrink-0" />
+            <span>Tree</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowBulkImport(true)}
+            className="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold text-slate-500 transition-colors hover:text-slate-800"
+          >
+            <FileSpreadsheet className="h-5 w-5 shrink-0" />
+            <span>Import</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAddSubject(true)}
+            className="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold text-slate-500 transition-colors hover:text-slate-800"
+          >
+            <Plus className="h-5 w-5 shrink-0" />
+            <span>Add</span>
+          </button>
+        </div>
+      </nav>
+
+      <Sheet open={treeOpen} onOpenChange={setTreeOpen}>
+        <SheetContent
+          side="left"
+          className="flex h-full w-[min(100vw,22rem)] max-w-full flex-col border-slate-200 p-0 sm:max-w-md [&>button]:top-3.5"
+        >
+          <SheetHeader className="border-b border-slate-100 px-4 pb-3 pt-4 text-left sm:px-5">
+            <SheetTitle className="text-base font-bold text-slate-900">Curriculum tree</SheetTitle>
+            <SheetDescription className="text-xs text-slate-500">
+              Expand subjects and chapters, then tap a topic to jump to its content page.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-hidden px-1 pb-4">
+            <TreeNav
+              batchId={batch.id}
+              examTarget={String(batch.examTarget ?? "")}
+              selectedTopic={treeSelectedTopic}
+              onSelectTopic={(topic, chapter, subject) => {
+                navigate(
+                  `/admin/content/${batch.id}/subjects/${subject.id}/chapters/${chapter.id}/topics/${topic.id}`,
+                );
+                setTreeOpen(false);
+              }}
+              onAddSubject={() => {
+                setShowAddSubject(true);
+                setTreeOpen(false);
+              }}
+              expandSubjectId={subjectId ?? null}
+              expandChapterId={chapterId ?? null}
+              coverageSummary={coverage ?? null}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <AnimatePresence>
+        {showAddSubject && (
+          <AddSubjectModal
+            batchId={batch.id}
+            examTarget={String(batch.examTarget ?? "")}
+            onClose={() => setShowAddSubject(false)}
+          />
+        )}
+        {showBulkImport && (
+          <BulkImportModal
+            batchId={batch.id}
+            batchName={batch.name}
+            examTarget={String(batch.examTarget ?? "")}
+            onClose={() => setShowBulkImport(false)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ContentSubjectsRoute() {
+  const { batch, setShowAddSubject } = useOutletContext<ContentBatchOutletCtx>();
+  const { batchId } = useParams();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const { data: coverage, isLoading: covLoading } = useContentCoverageSummary(batch.id);
+  const { data: courseSubjects = [], isLoading: subLoading } = useSubjects(batch.id);
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-1 shadow-sm">
+        <ContentCoverageOverview batchId={batch.id} selectedEntry={null} />
+      </div>
+      <ContentStepIndicator view="subjects" courseName={batch.name} />
+      <p className="text-xs font-medium text-slate-500">
+        Pick a subject to open its chapters. Cards are fully clickable.
+      </p>
+      <SubjectBrowseView
+        subjects={courseSubjects as Subject[]}
+        coverage={coverage}
+        search={search}
+        onSearch={setSearch}
+        onManageSubject={s => navigate(`/admin/content/${batchId}/subjects/${s.id}`)}
+        loading={subLoading || covLoading}
+        extraActions={(
+          <button
+            type="button"
+            onClick={() => setShowAddSubject(true)}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+          >
+            <Plus className="h-4 w-4" /> Add subject
+          </button>
+        )}
+      />
+    </div>
+  );
+}
+
+function ContentChaptersRoute() {
+  const { batch, setShowBulkImport } = useOutletContext<ContentBatchOutletCtx>();
+  const { batchId, subjectId } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [showChapterInput, setShowChapterInput] = useState(false);
+  const [topicModalOpen, setTopicModalOpen] = useState(false);
+  const { data: subjects = [] } = useSubjects(batch.id);
+  const subject = (subjects as Subject[]).find(s => s.id === subjectId);
+  const { data: chList = [], isLoading: chLoading } = useChapters(subjectId ?? "");
+  const { data: coverage, isLoading: covLoading, dataUpdatedAt } = useContentCoverageSummary(batch.id);
+  const coverageChapters = coverage?.subjects.find(s => s.id === subjectId)?.chapters ?? [];
+  const createChapter = useCreateChapter();
+
+  const subjCov = coverage?.subjects.find(s => s.id === subjectId);
+  const topicCount =
+    subjCov?.chapters.reduce((acc, ch) => acc + (ch.topics?.length ?? 0), 0) ?? 0;
+  const contentCount = subjCov?.totalCount ?? 0;
+  const lastUpdatedLabel = formatCoverageRefreshed(dataUpdatedAt);
+
+  if (!subjectId) return <Navigate to={`/admin/content/${batch.id}`} replace />;
+  if (!subject) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-sm text-slate-500">Subject not found.</p>
+        <Link to={`/admin/content/${batchId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Subjects</Link>
+      </div>
+    );
+  }
+
+  const addChapterCta = (
+    <button
+      type="button"
+      onClick={() => setShowChapterInput(v => !v)}
+      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+    >
+      <Plus className="h-4 w-4" /> Add chapter
+    </button>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link
+          to={`/admin/content/${batchId}`}
+          className="inline-flex w-fit items-center gap-1 text-sm font-bold text-slate-600 hover:text-slate-900"
+        >
+          <ChevronLeft className="h-4 w-4" /> Subjects
+        </Link>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {addChapterCta}
+        </div>
+      </div>
+
+      {showChapterInput && (
+        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4">
+          <p className="mb-2 text-xs font-bold text-amber-900">New chapter in {subject.name}</p>
+          <InlineAdd
+            placeholder="Chapter name"
+            loading={createChapter.isPending}
+            onCancel={() => setShowChapterInput(false)}
+            onSave={async (name) => {
+              try {
+                await createChapter.mutateAsync({
+                  subjectId: subject.id,
+                  name,
+                  sortOrder: (chList as Chapter[]).length,
+                });
+                toast.success("Chapter created");
+                await queryClient.invalidateQueries({ queryKey: ["admin", "content-coverage", batch.id] });
+                setShowChapterInput(false);
+              } catch (e: unknown) {
+                const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                toast.error(msg || "Could not create chapter");
+              }
+            }}
+          />
+        </div>
+      )}
+
+      <ContentStepIndicator view="chapters" courseName={batch.name} />
+      <p className="text-xs font-medium text-slate-500">
+        <span className="font-bold text-slate-800">{subject.name}</span>
+        {" — "}
+        Open a chapter card to manage topics and content.
+      </p>
+
+      <ChapterWorkspaceSidePanel
+        className="lg:hidden"
+        subjectName={subject.name}
+        chapterCount={(chList as Chapter[]).length}
+        topicCount={topicCount}
+        contentCount={contentCount}
+        lastUpdatedLabel={lastUpdatedLabel}
+        onAddChapter={() => setShowChapterInput(true)}
+        onAddTopic={() => setTopicModalOpen(true)}
+        onUploadContent={() => setShowBulkImport(true)}
+      />
+
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_min(320px,36%)]">
+        <ChapterBrowseView
+          subject={subject}
+          chapters={chList as Chapter[]}
+          coverageChapters={coverageChapters}
+          search={search}
+          onSearch={setSearch}
+          onOpenChapter={c => navigate(`/admin/content/${batchId}/subjects/${subjectId}/chapters/${c.id}`)}
+          loading={chLoading || covLoading}
+          accentColor={subject.colorCode ?? undefined}
+        />
+        <ChapterWorkspaceSidePanel
+          className="sticky top-4 hidden lg:block"
+          subjectName={subject.name}
+          chapterCount={(chList as Chapter[]).length}
+          topicCount={topicCount}
+          contentCount={contentCount}
+          lastUpdatedLabel={lastUpdatedLabel}
+          onAddChapter={() => setShowChapterInput(true)}
+          onAddTopic={() => setTopicModalOpen(true)}
+          onUploadContent={() => setShowBulkImport(true)}
+        />
+      </div>
+
+      <QuickAddTopicModal
+        open={topicModalOpen}
+        chapters={chList as Chapter[]}
+        batchId={batch.id}
+        onClose={() => setTopicModalOpen(false)}
+      />
+    </div>
+  );
+}
+
+function ContentTopicsRoute() {
+  const { batch } = useOutletContext<ContentBatchOutletCtx>();
+  const { batchId, subjectId, chapterId } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [showTopicInput, setShowTopicInput] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "empty" | "in_progress" | "completed">("all");
+  const { data: subjects = [] } = useSubjects(batch.id);
+  const subject = (subjects as Subject[]).find(s => s.id === subjectId);
+  const { data: chapters = [] } = useChapters(subjectId ?? "");
+  const chapter = (chapters as Chapter[]).find(c => c.id === chapterId);
+  const { data: topList = [], isLoading: topLoading } = useTopics(chapterId ?? "");
+  const { data: coverage } = useContentCoverageSummary(batch.id);
+  const coverageTopics =
+    coverage?.subjects.find(s => s.id === subjectId)?.chapters.find(c => c.id === chapterId)?.topics ?? [];
+  const createTopic = useCreateTopic();
+
+  if (!subjectId || !chapterId) return <Navigate to={`/admin/content/${batch.id}`} replace />;
+  if (!subject || !chapter) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-sm text-slate-500">Chapter not found.</p>
+        <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Chapters</Link>
+      </div>
+    );
+  }
+
+  const addTopicBtn = (
+    <button
+      type="button"
+      onClick={() => setShowTopicInput(v => !v)}
+      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
+    >
+      <Plus className="h-4 w-4" /> Add topic
+    </button>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2 text-sm">
+        <Link to={`/admin/content/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
+        <span className="text-slate-300">/</span>
+        <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
+        <span className="text-slate-300">/</span>
+        <span className="font-semibold text-slate-800">{chapter.name}</span>
+      </div>
+
+      {showTopicInput && (
+        <div className="rounded-2xl border border-violet-200/80 bg-violet-50/40 p-4">
+          <p className="mb-2 text-xs font-bold text-violet-900">New topic in {chapter.name}</p>
+          <InlineAdd
+            placeholder="Topic name"
+            loading={createTopic.isPending}
+            onCancel={() => setShowTopicInput(false)}
+            onSave={async (name) => {
+              if (!chapterId) return;
+              try {
+                await createTopic.mutateAsync({
+                  chapterId,
+                  name,
+                  estimatedStudyMinutes: 60,
+                });
+                toast.success("Topic created");
+                await queryClient.invalidateQueries({ queryKey: ["admin", "content-coverage", batch.id] });
+                setShowTopicInput(false);
+              } catch (e: unknown) {
+                const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                toast.error(msg || "Could not create topic");
+              }
+            }}
+          />
+        </div>
+      )}
+
+      <ContentStepIndicator view="topics" courseName={batch.name} />
+      <TopicBrowseView
+        subject={subject}
+        chapter={chapter}
+        topics={topList as Topic[]}
+        coverageTopics={coverageTopics}
+        search={search}
+        onSearch={setSearch}
+        onSelectTopic={t =>
+          navigate(`/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}/topics/${t.id}`)
+        }
+        statusFilter={statusFilter}
+        onStatusFilter={setStatusFilter}
+        loading={topLoading}
+        extraActions={addTopicBtn}
+      />
+    </div>
+  );
+}
+
+function ContentTopicWorkspaceRoute() {
+  const { batch } = useOutletContext<ContentBatchOutletCtx>();
+  const { batchId, subjectId, chapterId, topicId } = useParams();
+  const navigate = useNavigate();
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const { data: subjects = [] } = useSubjects(batch.id);
+  const subject = (subjects as Subject[]).find(s => s.id === subjectId);
+  const { data: chapters = [] } = useChapters(subjectId ?? "");
+  const chapter = (chapters as Chapter[]).find(c => c.id === chapterId);
+  const { data: topList = [], isLoading } = useTopics(chapterId ?? "");
+  const topic = (topList as Topic[]).find(t => t.id === topicId);
+
+  if (!subjectId || !chapterId || !topicId) {
+    return <Navigate to={`/admin/content/${batch.id}`} replace />;
+  }
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+  if (!subject || !chapter || !topic) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-sm text-slate-500">Topic not found.</p>
+        <Link
+          to={`/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}`}
+          className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline"
+        >
+          ← Topics
+        </Link>
+      </div>
+    );
+  }
+
+  const topicsUrl = `/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}`;
+
+  return (
+    <div className="relative flex min-h-[calc(100vh-200px)] flex-col">
+      <div className="mb-4 space-y-3">
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Link to={`/admin/content/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
+          <span className="text-slate-300">/</span>
+          <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
+          <span className="text-slate-300">/</span>
+          <Link to={topicsUrl} className="font-semibold text-slate-500 hover:text-slate-800">Topics</Link>
+          <span className="text-slate-300">/</span>
+          <span className="font-semibold text-slate-900">{topic.name}</span>
+        </div>
+        <ContentStepIndicator view="content" courseName={batch.name} />
+        <Link
+          to={topicsUrl}
+          className="inline-flex items-center gap-1 text-sm font-bold text-slate-600 hover:text-slate-900"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back to topics
+        </Link>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <ResourceWorkspace
+          key={topic.id}
+          topicId={topic.id}
+          topicName={topic.name}
+          batchId={batch.id}
+          subject={subject}
+          chapter={chapter}
+          onNavigateToLectures={() => {
+            const q = new URLSearchParams({
+              batchId: batch.id,
+              subjectId: subject.id,
+              chapterId: chapter.id,
+              topicId: topic.id,
+            });
+            navigate(`/teacher/lectures?${q.toString()}`);
+          }}
+          onOpenAi={() => setShowAiPanel(true)}
+        />
+      </div>
+
+      <AnimatePresence>
+        {showAiPanel && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/20"
+              onClick={() => setShowAiPanel(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed right-0 top-0 z-50 flex h-full w-full max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl sm:w-[520px]"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-violet-50 to-indigo-50 px-5 py-4">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600">
+                    <Sparkles className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800">AI Content Generator</p>
+                    <p className="truncate text-[11px] font-semibold text-violet-600">{topic.name}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAiPanel(false)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <AiContentPanel
+                  topicId={topic.id}
+                  topicName={topic.name}
+                  subjectName={subject.name}
+                  chapterName={chapter.name}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ContentCoursePickerRoute() {
+  const navigate = useNavigate();
+  const { data: batches = [], isLoading: batchesLoading } = useBatches();
+  const batchList = Array.isArray(batches) ? batches : [];
   const [batchSearch, setBatchSearch] = useState("");
   const [batchStatusFilter, setBatchStatusFilter] = useState<"active" | "all" | "upcoming" | "completed">("active");
-  const [showAiPanel, setShowAiPanel] = useState(false);
   const [recentBatchId, setRecentBatchId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const bId = searchParams.get("batchId");
-    setSelectedBatchId(bId);
-    if (!bId) {
-      setSelectedEntry(null);
-    }
-  }, [searchParams]);
-
 
   useEffect(() => {
     const saved = localStorage.getItem("admin_content_recent_batch_id");
     if (saved) setRecentBatchId(saved);
   }, []);
 
-  const selectedBatch = batchList.find(b => b.id === selectedBatchId);
   const recentBatch = batchList.find(b => b.id === recentBatchId);
-
   const filteredBatches = batchList.filter((b) => {
     const matchesSearch = b.name.toLowerCase().includes(batchSearch.toLowerCase());
     const status = String(b.status ?? "").toLowerCase();
@@ -2633,365 +4045,136 @@ const ContentPage = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleSelectBatch = (id: string) => {
-    if (id !== selectedBatchId) {
-      setSelectedBatchId(id);
-      setSelectedEntry(null);
-    }
-    setRecentBatchId(id);
-    localStorage.setItem("admin_content_recent_batch_id", id);
-  };
+  return (
+    <div className="w-full min-w-0 ">
+      <div className="space-y-6 rounded-2xl ">
+      <div>
+        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Content Manager</p>
+        <h1 className="text-2xl font-black text-slate-900">Your courses</h1>
+        <p className="mt-1 text-sm text-slate-500">Choose a course — then manage subjects, chapters, and topics one screen at a time.</p>
+      </div>
 
-  const handleBack = () => {
-    setSelectedBatchId(null);
-    setSelectedEntry(null);
-    setBatchSearch("");
-    setBatchStatusFilter("active");
-  };
-
-  // ── Phase 1: No course selected — full-width course grid ──────────────────
-  if (!selectedBatch) {
-    return (
-      <div className="min-h-[calc(100vh-80px)] bg-slate-50 p-6">
-        {/* Page header */}
-        <div className="mb-5">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Content Manager</p>
-          <h1 className="text-2xl font-black text-slate-900">Your Courses</h1>
-          <p className="text-sm text-slate-500 mt-1">Select a course to manage its subjects, chapters, topics and resources.</p>
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">
+            Ongoing: {batchList.filter((b) => String(b.status ?? "").toLowerCase() === "active").length}
+          </span>
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
+            Total: {batchList.length}
+          </span>
         </div>
-
-        {/* Quick stats + continue card */}
-        <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto]">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">
-              Ongoing: {batchList.filter((b) => String(b.status ?? "").toLowerCase() === "active").length}
-            </span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
-              Total: {batchList.length}
-            </span>
-            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-700">
-              Showing: {filteredBatches.length}
-            </span>
-          </div>
-          {recentBatch && (
-            <button
-              type="button"
-              onClick={() => handleSelectBatch(recentBatch.id)}
-              className="group flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-left hover:bg-indigo-100 transition-colors"
-            >
-              <Clock className="h-4 w-4 text-indigo-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-wide text-indigo-500">Continue where you left off</p>
-                <p className="text-xs font-bold text-indigo-900 truncate">{recentBatch.name}</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-indigo-400 group-hover:text-indigo-600" />
-            </button>
-          )}
-        </div>
-
-        {/* Search & Filters Row */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          {/* Search */}
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <input
-              placeholder="Search courses…"
-              value={batchSearch}
-              onChange={e => setBatchSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-400 shadow-sm transition-colors"
-            />
-          </div>
-
-          {/* Status filter dropdown */}
-          <div className="relative shrink-0 sm:w-44">
-            <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
-              <Filter className="h-3.5 w-3.5 text-slate-400" />
+        {recentBatch && (
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem("admin_content_recent_batch_id", recentBatch.id);
+              navigate(`/admin/content/${recentBatch.id}`);
+            }}
+            className="group flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-left hover:bg-indigo-100"
+          >
+            <Clock className="h-4 w-4 shrink-0 text-indigo-500" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-500">Continue</p>
+              <p className="truncate text-xs font-bold text-indigo-900">{recentBatch.name}</p>
             </div>
-            <select
-              value={batchStatusFilter}
-              onChange={e => setBatchStatusFilter(e.target.value as any)}
-              className="h-10 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-9 pr-10 text-xs font-black text-slate-600 shadow-sm outline-none transition focus:border-blue-400"
-            >
-              <option value="active">Ongoing</option>
-              <option value="all">All Status</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="completed">Completed</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-          </div>
-
-          {batchSearch && (
-            <button
-              onClick={() => setBatchSearch("")}
-              className="text-xs font-bold text-red-500 hover:underline transition-all"
-            >
-              Clear search
-            </button>
-          )}
-        </div>
-
-        {/* Course cards grid */}
-        {batchesLoading ? (
-          <div className="flex justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-          </div>
-        ) : filteredBatches.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-28 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center mb-4">
-              <BookOpen className="w-10 h-10 text-slate-300" />
-            </div>
-            <p className="text-lg font-black text-slate-500">
-              {batchSearch || batchStatusFilter !== "all" ? "No courses match current filters" : "No courses yet"}
-            </p>
-            {!batchSearch && batchStatusFilter === "all" && (
-              <p className="text-sm text-slate-400 mt-1">Create a course from the Batches page first.</p>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <AnimatePresence>
-              {filteredBatches.map(b => (
-                <motion.div
-                  key={b.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <CourseCard batch={b} onClick={() => handleSelectBatch(b.id)} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-indigo-400" />
+          </button>
         )}
       </div>
-    );
-  }
 
-  // ── Phase 2: Course selected — header + tree + content ───────────────────
-  const statusBg =
-    selectedBatch.status === "active" ? "bg-emerald-100 text-emerald-700" :
-      selectedBatch.status === "completed" ? "bg-blue-100 text-blue-700" :
-        "bg-slate-100 text-slate-500";
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative max-w-sm flex-1">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            placeholder="Search courses…"
+            value={batchSearch}
+            onChange={e => setBatchSearch(e.target.value)}
+            className="h-10 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-sm shadow-sm outline-none focus:border-blue-400"
+          />
+        </div>
+        <div className="relative shrink-0 sm:w-44">
+          <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <select
+            value={batchStatusFilter}
+            onChange={e => setBatchStatusFilter(e.target.value as "active" | "all" | "upcoming" | "completed")}
+            className="h-10 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-9 pr-10 text-xs font-black text-slate-600 shadow-sm outline-none"
+          >
+            <option value="active">Ongoing</option>
+            <option value="all">All Status</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="completed">Completed</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+        </div>
+        {batchSearch && (
+          <button type="button" onClick={() => setBatchSearch("")} className="text-xs font-bold text-red-500 hover:underline">
+            Clear search
+          </button>
+        )}
+      </div>
+
+      {batchesLoading ? (
+        <div className="flex justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+        </div>
+      ) : filteredBatches.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-28 text-center">
+          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-100">
+            <BookOpen className="h-10 w-10 text-slate-300" />
+          </div>
+          <p className="text-lg font-black text-slate-500">
+            {batchSearch || batchStatusFilter !== "all" ? "No courses match current filters" : "No courses yet"}
+          </p>
+          {!batchSearch && batchStatusFilter === "all" && (
+            <p className="mt-1 text-sm text-slate-400">Create a course from the Batches page first.</p>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <AnimatePresence>
+            {filteredBatches.map(b => (
+              <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                <CourseCard
+                  batch={b}
+                  onClick={() => {
+                    localStorage.setItem("admin_content_recent_batch_id", b.id);
+                    navigate(`/admin/content/${b.id}`);
+                  }}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+const ContentPage = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const q = searchParams.get("batchId");
+    if (q && location.pathname === "/admin/content") {
+      navigate(`/admin/content/${q}`, { replace: true });
+    }
+  }, [searchParams, navigate, location.pathname]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-50 overflow-hidden">
-
-      {/* ── Course Header Bar ── */}
-      <div className="shrink-0 bg-white border-b border-slate-200 px-5 py-3">
-        <div className="flex items-center gap-3">
-          {/* Back */}
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 font-bold transition-colors shrink-0 group"
-          >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            Courses
-          </button>
-
-          <span className="text-slate-200 text-lg shrink-0">/</span>
-
-          {/* Course identity */}
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4 text-blue-500" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm font-black text-slate-900 truncate">{selectedBatch.name}</h1>
-                <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0", statusBg)}>
-                  {selectedBatch.status}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-medium leading-none mt-0.5">
-                {[selectedBatch.examTarget, selectedBatch.class ? `Class ${selectedBatch.class}` : null, `${selectedBatch.enrolledCount ?? selectedBatch.studentCount ?? 0} students`].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-          </div>
-
-          {/* Breadcrumb trail — shows when topic is selected */}
-          {selectedEntry && (
-            <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-2xl px-3 py-1.5 flex-wrap max-w-md">
-              <span className="font-semibold" style={{ color: selectedEntry.subject.colorCode ?? "#6B7280" }}>
-                {selectedEntry.subject.name}
-              </span>
-              <ChevronRight className="w-3 h-3 shrink-0 text-slate-300" />
-              <span className="font-semibold text-amber-600">{selectedEntry.chapter.name}</span>
-              <ChevronRight className="w-3 h-3 shrink-0 text-slate-300" />
-              <span className="font-bold text-slate-700">{selectedEntry.topic.name}</span>
-            </div>
-          )}
-
-          {/* Bulk Import */}
-          <button
-            onClick={() => setShowBulkImport(true)}
-            className="flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-indigo-700 text-xs font-black shrink-0 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Bulk Import
-          </button>
-
-          {/* Add Subject */}
-          <button
-            onClick={() => setShowAddSubject(true)}
-            className="flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-white text-xs font-black shrink-0 hover:opacity-90 transition-opacity"
-            style={{ background: "linear-gradient(135deg,#013889,#0257c8)" }}
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Subject
-          </button>
-        </div>
-      </div>
-
-      {/* ── Body: Tree + Content ── */}
-      <div className="flex flex-1 overflow-hidden relative">
-
-        {/* Left: Tree Navigator */}
-        <div className="w-80 shrink-0 flex flex-col bg-white border-r border-slate-200 overflow-hidden">
-          <TreeNav
-            batchId={selectedBatch.id}
-            examTarget={selectedBatch.examTarget}
-            selectedTopic={selectedEntry}
-            onSelectTopic={(topic, chapter, subject) => {
-              setSelectedEntry({ topic, chapter, subject });
-              setShowAiPanel(false);
-            }}
-            onAddSubject={() => setShowAddSubject(true)}
-          />
-        </div>
-
-        {/* Right: Resource workspace */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 min-w-0">
-          {!selectedEntry ? (
-            /* ── No topic selected: welcome state ── */
-            <div className="flex-1 flex flex-col overflow-y-auto">
-              {/* Coverage overview at top */}
-              <div className="p-6 pb-0">
-                <ContentCoverageOverview batchId={selectedBatch.id} selectedEntry={null} />
-              </div>
-              {/* Select a topic prompt */}
-              <div className="flex-1 flex flex-col items-center justify-center p-10 text-center gap-6">
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-50 to-violet-50 flex items-center justify-center border border-blue-100 shadow-sm">
-                  <Layers className="w-10 h-10 text-blue-300" />
-                </div>
-                <div className="max-w-sm">
-                  <p className="text-lg font-black text-slate-700">Select a Topic to Begin</p>
-                  <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-                    Expand a subject in the tree on the left, open a chapter, then click any topic to manage its resources.
-                  </p>
-                </div>
-                {/* Resource type guide */}
-                <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
-                  {RES_TYPES.map(rt => {
-                    const Icon = rt.icon;
-                    return (
-                      <div key={rt.value} className={cn("flex items-center gap-2 px-3 py-2 rounded-2xl border bg-white shadow-sm", rt.border)}>
-                        <Icon className={cn("w-3.5 h-3.5 shrink-0", rt.color)} />
-                        <span className={cn("text-xs font-bold", rt.color)}>{rt.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* ── Topic selected: workspace ── */
-            <div className="flex-1 overflow-hidden flex">
-              <ResourceWorkspace
-                key={selectedEntry.topic.id}
-                topicId={selectedEntry.topic.id}
-                topicName={selectedEntry.topic.name}
-                batchId={selectedBatch.id}
-                subject={selectedEntry.subject}
-                chapter={selectedEntry.chapter}
-                onNavigateToLectures={() => {
-                  const q = new URLSearchParams({
-                    batchId: selectedBatch.id,
-                    subjectId: selectedEntry.subject.id,
-                    chapterId: selectedEntry.chapter.id,
-                    topicId: selectedEntry.topic.id,
-                  });
-                  navigate(`/teacher/lectures?${q.toString()}`);
-                }}
-                onOpenAi={() => setShowAiPanel(true)}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* ── AI Slide-over panel ── */}
-        <AnimatePresence>
-          {showAiPanel && selectedEntry && (
-            <>
-              {/* backdrop */}
-              <motion.div
-                key="ai-backdrop"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/20 z-20"
-                onClick={() => setShowAiPanel(false)}
-              />
-              {/* panel */}
-              <motion.div
-                key="ai-panel"
-                initial={{ x: "100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 28, stiffness: 280 }}
-                className="absolute right-0 top-0 bottom-0 w-[520px] max-w-full bg-white shadow-2xl z-30 flex flex-col overflow-hidden border-l border-slate-200"
-              >
-                {/* Panel header */}
-                <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-indigo-50">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-800">AI Content Generator</p>
-                      <p className="text-[11px] text-violet-600 font-semibold truncate max-w-[260px]">{selectedEntry.topic.name}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowAiPanel(false)}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                {/* Panel body */}
-                <div className="flex-1 overflow-hidden">
-                  <AiContentPanel
-                    topicId={selectedEntry.topic.id}
-                    topicName={selectedEntry.topic.name}
-                    subjectName={selectedEntry.subject.name}
-                    chapterName={selectedEntry.chapter.name}
-                  />
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Add Subject Modal */}
-      <AnimatePresence>
-        {showAddSubject && selectedBatch && (
-          <AddSubjectModal
-            key="add-subject"
-            batchId={selectedBatch.id}
-            examTarget={selectedBatch.examTarget}
-            onClose={() => setShowAddSubject(false)}
-          />
-        )}
-        {showBulkImport && selectedBatch && (
-          <BulkImportModal
-            key="bulk-import"
-            batchId={selectedBatch.id}
-            batchName={selectedBatch.name}
-            examTarget={selectedBatch.examTarget}
-            onClose={() => setShowBulkImport(false)}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+    <Routes>
+      <Route index element={<ContentCoursePickerRoute />} />
+      <Route path=":batchId" element={<ContentBatchLayout />}>
+        <Route index element={<ContentSubjectsRoute />} />
+        <Route path="subjects/:subjectId" element={<ContentChaptersRoute />} />
+        <Route path="subjects/:subjectId/chapters/:chapterId" element={<ContentTopicsRoute />} />
+        <Route path="subjects/:subjectId/chapters/:chapterId/topics/:topicId" element={<ContentTopicWorkspaceRoute />} />
+      </Route>
+    </Routes>
   );
 };
 
