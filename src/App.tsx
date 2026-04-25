@@ -87,7 +87,20 @@ const PrivacyPolicyPage = lazy(() => import("./pages/landing/PrivacyPolicyPage")
 const TermsOfServicePage = lazy(() => import("./pages/landing/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("./pages/landing/CookiePolicyPage"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,           // 1 min base — individual queries override upward
+      gcTime: 10 * 60_000,         // keep unused data 10 min before garbage-collecting
+      retry: 1,                    // one retry on failure, not the default 3
+      refetchOnWindowFocus: false, // tab-switching must not hammer the API
+      refetchOnReconnect: "always",
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 function RouteLoading() {
   return (

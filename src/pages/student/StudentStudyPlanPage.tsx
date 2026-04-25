@@ -280,78 +280,182 @@ function CircleProgress({ pct, color, size = 56 }: { pct: number; color: string;
   );
 }
 
-// ─── Curriculum Roadmap ────────────────────────────────────────────────────────
+// ─── Curriculum Roadmap Tree ──────────────────────────────────────────────────
 
-function TopicPill({ topic }: { topic: any }) {
-  const color =
-    topic.status === "completed"   ? "bg-emerald-50 border-emerald-300 text-emerald-700" :
-    topic.status === "in_progress" ? "bg-amber-50 border-amber-300 text-amber-700" :
-    topic.status === "locked"      ? "bg-gray-50 border-gray-200 text-gray-400" :
-                                     "bg-blue-50 border-blue-200 text-blue-700";
-  const dot =
-    topic.status === "completed"   ? "bg-emerald-500" :
-    topic.status === "in_progress" ? "bg-amber-400" :
-    topic.status === "locked"      ? "bg-gray-300" : "bg-blue-400";
+const TOPIC_STATUS = {
+  completed:   { dot: "bg-emerald-500 border-emerald-500", text: "text-emerald-700", badge: "bg-emerald-50 border-emerald-200 text-emerald-700", icon: "✓" },
+  in_progress: { dot: "bg-amber-400 border-amber-400",     text: "text-amber-700",   badge: "bg-amber-50 border-amber-200 text-amber-700",       icon: "…" },
+  locked:      { dot: "bg-slate-300 border-slate-300",     text: "text-slate-400",   badge: "bg-slate-50 border-slate-200 text-slate-400",        icon: "🔒" },
+  default:     { dot: "bg-blue-400 border-blue-400",       text: "text-blue-700",    badge: "bg-blue-50 border-blue-200 text-blue-700",           icon: "○" },
+};
+function topicStatus(s: string) { return TOPIC_STATUS[s as keyof typeof TOPIC_STATUS] ?? TOPIC_STATUS.default; }
+
+// Single topic leaf — shows inside an expanded chapter
+function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; lineColor: string }) {
+  const st = topicStatus(topic.status);
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border ${color}`}>
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-      <span className="truncate max-w-[120px]">{topic.topicName}</span>
+    <div className="flex items-start">
+      {/* vertical + elbow lines */}
+      <div className="relative flex flex-col items-center" style={{ width: 24, minWidth: 24 }}>
+        {/* vertical line from parent — stops halfway for last item */}
+        {!isLast && (
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: lineColor, opacity: 0.35 }} />
+        )}
+        {isLast && (
+          <div className="absolute left-1/2 top-0 w-px -translate-x-1/2" style={{ height: "50%", background: lineColor, opacity: 0.35 }} />
+        )}
+        {/* horizontal elbow */}
+        <div className="absolute top-1/2 left-1/2 -translate-y-1/2 h-px" style={{ width: 12, background: lineColor, opacity: 0.35 }} />
+      </div>
+      {/* dot + label */}
+      <div className="flex items-center gap-1.5 py-1.5 pl-1 flex-1 min-w-0">
+        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
+          {topic.status === "completed" && <span className="text-[8px] text-white font-black leading-none">✓</span>}
+        </div>
+        <span className={`text-xs font-medium truncate leading-tight ${st.text}`}>{topic.topicName}</span>
+        {topic.status === "in_progress" && (
+          <span className="shrink-0 text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">In Progress</span>
+        )}
+      </div>
     </div>
   );
 }
 
-function ChapterRow({ chapter, cfg }: { chapter: any; cfg: typeof SUBJECT_CFG[string] }) {
+// Chapter node — second level; expands to show topics
+function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
+  chapter: any;
+  cfg: typeof SUBJECT_CFG[string];
+  isLast: boolean;
+  parentLineColor: string;
+}) {
   const [open, setOpen] = useState(false);
-  const done  = chapter.topics?.filter((t: any) => t.status === "completed").length ?? 0;
-  const total = chapter.topicsTotal ?? chapter.topics?.length ?? 0;
+  const topics: any[] = chapter.topics ?? [];
+  const done  = topics.filter((t: any) => t.status === "completed").length;
+  const total = chapter.topicsTotal ?? topics.length;
   const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+  const allDone = done === total && total > 0;
+
   return (
-    <div>
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
-        <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-        <span className="flex-1 text-sm font-medium text-gray-800 truncate">{chapter.chapterName}</span>
-        <span className="text-xs text-gray-400 shrink-0">{done}/{total}</span>
-        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden shrink-0">
-          <div className={`h-full rounded-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
-        </div>
-        {open ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
-      </button>
-      {open && (
-        <div className="px-6 pb-3 flex flex-wrap gap-2">
-          {(chapter.topics ?? []).map((t: any) => <TopicPill key={t.topicId} topic={t} />)}
-        </div>
-      )}
+    <div className="flex items-start">
+      {/* vertical line from subject */}
+      <div className="relative flex flex-col items-center" style={{ width: 28, minWidth: 28 }}>
+        {!isLast && (
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: parentLineColor, opacity: 0.3 }} />
+        )}
+        {isLast && (
+          <div className="absolute left-1/2 top-0 w-px -translate-x-1/2" style={{ height: "50%", background: parentLineColor, opacity: 0.3 }} />
+        )}
+        <div className="absolute top-[18px] left-1/2 h-px -translate-y-1/2" style={{ width: 14, background: parentLineColor, opacity: 0.3 }} />
+      </div>
+
+      {/* Chapter card */}
+      <div className="flex-1 min-w-0 mb-2">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all
+            ${open ? `${cfg.bg} ${cfg.border}` : "bg-white border-slate-200 hover:border-slate-300"}`}
+        >
+          {/* chapter dot */}
+          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${allDone ? "bg-emerald-500" : cfg.dot}`} />
+          <span className="flex-1 text-sm font-semibold text-slate-800 truncate">{chapter.chapterName}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[10px] text-slate-400 font-medium">{done}/{total}</span>
+            {total > 0 && (
+              <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${allDone ? "bg-emerald-500" : cfg.dot}`} style={{ width: `${pct}%` }} />
+              </div>
+            )}
+            {open
+              ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+          </div>
+        </button>
+
+        {/* Topics subtree */}
+        {open && topics.length > 0 && (
+          <div className="mt-1 ml-5 pl-1 relative">
+            {/* Vertical spine for topics */}
+            <div className="absolute left-0 top-0 bottom-3 w-px" style={{ background: cfg.ring, opacity: 0.25 }} />
+            {topics.map((t, idx) => (
+              <TopicLeaf key={t.topicId} topic={t} isLast={idx === topics.length - 1} lineColor={cfg.ring} />
+            ))}
+          </div>
+        )}
+        {open && topics.length === 0 && (
+          <p className="text-xs text-slate-400 pl-8 py-2">No topics available</p>
+        )}
+      </div>
     </div>
   );
 }
 
-function SubjectCard({ subject }: { subject: any }) {
-  const [open, setOpen] = useState(false);
+// Subject root node — top level; expands to show chapters
+function SubjectNode({ subject, index }: { subject: any; index: number }) {
+  const [open, setOpen] = useState(index === 0); // first subject open by default
   const cfg = subjectCfg(subject.subjectName);
   const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
+  const chapters: any[] = subject.chapters ?? [];
+
+  const subjectEmoji: Record<string, string> = {
+    physics: "⚛️", chemistry: "🧪", mathematics: "📐", math: "📐", biology: "🌱",
+  };
+  const emoji = Object.entries(subjectEmoji).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? "📚";
+
   return (
-    <div className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
-      <button onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center gap-4 p-4 text-left transition-all ${cfg.bg} hover:brightness-95`}>
+    <div className="mb-4">
+      {/* Subject header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-left transition-all shadow-sm
+          ${open ? `${cfg.bg} ${cfg.border} shadow-md` : `bg-white ${cfg.border} hover:${cfg.bg}`}`}
+      >
+        {/* circle progress */}
         <div className="relative shrink-0">
-          <CircleProgress pct={pct} color={cfg.ring} size={52} />
+          <CircleProgress pct={pct} color={cfg.ring} size={48} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-bold text-gray-700">{pct}%</span>
+            <span className="text-[11px] font-black text-slate-700">{pct}%</span>
           </div>
         </div>
+
         <div className="flex-1 min-w-0">
-          <div className={`font-bold text-lg ${cfg.color}`}>{subject.subjectName}</div>
-          <div className="text-sm text-gray-500">{subject.topicsCompleted}/{subject.topicsTotal} topics · {Math.round(subject.overallAccuracy ?? 0)}% accuracy</div>
-          <div className="mt-2 h-1.5 bg-white/60 rounded-full overflow-hidden">
-            <div className={`h-full ${cfg.dot} rounded-full`} style={{ width: `${pct}%` }} />
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{emoji}</span>
+            <span className={`text-base font-black ${cfg.color}`}>{subject.subjectName}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1 h-1.5 bg-white/60 rounded-full overflow-hidden max-w-[120px]">
+              <div className={`h-full ${cfg.dot} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-xs text-slate-500">{subject.topicsCompleted}/{subject.topicsTotal} topics</span>
+            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs text-slate-500">{chapters.length} chapters</span>
           </div>
         </div>
-        {open ? <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" /> : <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />}
+
+        <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${cfg.bg}`}>
+          {open
+            ? <ChevronDown className={`w-4 h-4 ${cfg.color}`} />
+            : <ChevronRight className={`w-4 h-4 ${cfg.color}`} />}
+        </div>
       </button>
+
+      {/* Chapters subtree */}
       {open && (
-        <div className="border-t border-white/40 bg-white/70 divide-y divide-gray-100">
-          {(subject.chapters ?? []).map((ch: any) => <ChapterRow key={ch.chapterId} chapter={ch} cfg={cfg} />)}
+        <div className="mt-2 ml-6 pl-2 relative">
+          {/* Spine line from subject down through all chapters */}
+          <div className="absolute left-0 top-0 bottom-4 w-px" style={{ background: cfg.ring, opacity: 0.25 }} />
+          {chapters.map((ch, idx) => (
+            <ChapterNode
+              key={ch.chapterId}
+              chapter={ch}
+              cfg={cfg}
+              isLast={idx === chapters.length - 1}
+              parentLineColor={cfg.ring}
+            />
+          ))}
+          {chapters.length === 0 && (
+            <p className="text-xs text-slate-400 py-3 pl-4">No chapters available</p>
+          )}
         </div>
       )}
     </div>
@@ -374,7 +478,8 @@ function CurriculumRoadmap() {
   const { summary } = report;
   const overallPct = summary.totalTopics > 0 ? Math.round((summary.completedTopics / summary.totalTopics) * 100) : 0;
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Summary banner */}
       <div className="bg-gradient-to-r from-indigo-600 to-violet-700 rounded-2xl p-5 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -403,21 +508,27 @@ function CurriculumRoadmap() {
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-4 text-xs text-gray-500 px-1">
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 text-xs text-slate-500 px-1 flex-wrap">
         {[
           { dot: "bg-emerald-500", label: "Completed" },
-          { dot: "bg-amber-400",  label: "In Progress" },
-          { dot: "bg-blue-400",   label: "Unlocked" },
-          { dot: "bg-gray-300",   label: "Locked" },
+          { dot: "bg-amber-400",   label: "In Progress" },
+          { dot: "bg-blue-400",    label: "Unlocked" },
+          { dot: "bg-slate-300",   label: "Locked" },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${l.dot}`} />
+            <div className={`w-2.5 h-2.5 rounded-full ${l.dot}`} />
             {l.label}
           </div>
         ))}
       </div>
-      <div className="space-y-3">
-        {report.subjects.map(s => <SubjectCard key={s.subjectId} subject={s} />)}
+
+      {/* Tree */}
+      <div>
+        {report.subjects.map((s, i) => (
+          <SubjectNode key={s.subjectId} subject={s} index={i} />
+        ))}
       </div>
     </div>
   );
