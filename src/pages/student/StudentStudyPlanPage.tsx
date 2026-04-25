@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, addDays, startOfWeek, differenceInDays } from "date-fns";
+import { format, addDays, startOfWeek, differenceInDays, subYears } from "date-fns";
 import { toast } from "sonner";
 import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
-  RotateCcw, Map, ListTodo, Star, CheckCheck, Rocket,
+  RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
   ArrowRight, Sparkles, Activity,
 } from "lucide-react";
 import {
@@ -15,6 +15,7 @@ import {
   useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
+import type { ProgressReport, TopicReportEntry } from "@/lib/api/student";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -290,6 +291,202 @@ const TOPIC_STATUS = {
 };
 function topicStatus(s: string) { return TOPIC_STATUS[s as keyof typeof TOPIC_STATUS] ?? TOPIC_STATUS.default; }
 
+function normalizeText(value?: string | null): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function tokenize(value?: string | null): string[] {
+  return normalizeText(value)
+    .split(" ")
+    .filter((token) => token.length > 2);
+}
+
+function isLikelySubtopicMatch(taskTopicName: string, roadmapTopicName: string): boolean {
+  const task = normalizeText(taskTopicName);
+  const roadmap = normalizeText(roadmapTopicName);
+  if (!task || !roadmap || task === roadmap) return false;
+  if (task.includes(roadmap) || roadmap.includes(task)) return true;
+
+  const taskTokens = tokenize(taskTopicName);
+  const roadmapTokens = tokenize(roadmapTopicName);
+  if (!taskTokens.length || !roadmapTokens.length) return false;
+
+  const taskSet = new Set(taskTokens);
+  const overlap = roadmapTokens.filter((token) => taskSet.has(token)).length;
+  const minTokenLen = Math.min(taskTokens.length, roadmapTokens.length);
+  return overlap >= 2 || (minTokenLen > 0 && overlap / minTokenLen >= 0.6);
+}
+
+function isNotesTask(item: StudyPlanItem): boolean {
+  const kind = item.content?.taskKind;
+  if (kind === "ai_notes") return true;
+  if (item.type === "revision") return true;
+  if (item.content?.notesUrl) return true;
+  const title = normalizeText(item.title);
+  return /\bnotes?\b/.test(title);
+}
+
+function isPracticeTask(item: StudyPlanItem): boolean {
+  const kind = item.content?.taskKind;
+  if (kind === "practice") return true;
+  if (item.type === "practice") return true;
+  const title = normalizeText(item.title);
+  return /\bpractice\b|\bpaper\b|\bpyq\b|\bquiz\b|\bdpp\b/.test(title);
+}
+
+const STATUS_RANK: Record<TopicReportEntry["status"], number> = {
+  locked: 0,
+  unlocked: 1,
+  in_progress: 2,
+  completed: 3,
+};
+
+function maxStatus(
+  a: TopicReportEntry["status"],
+  b: TopicReportEntry["status"],
+): TopicReportEntry["status"] {
+  return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
+}
+
+function deriveStatusForTopic(topic: TopicReportEntry, todayItems: StudyPlanItem[]): TopicReportEntry["status"] {
+  const topicName = normalizeText(topic.topicName);
+  if (!topicName) return topic.status;
+
+  const relatedItems = todayItems.filter((item) => {
+    const contentTopic = normalizeText(item.content?.topicName);
+    const title = normalizeText(item.title);
+    return (
+      !!contentTopic && (
+        contentTopic === topicName ||
+        contentTopic.includes(topicName) ||
+        topicName.includes(contentTopic) ||
+        isLikelySubtopicMatch(item.content?.topicName ?? "", topic.topicName)
+      )
+    ) || (!!title && title.includes(topicName));
+  });
+
+  if (relatedItems.length === 0) return topic.status;
+
+  const directItems = relatedItems.filter((item) => normalizeText(item.content?.topicName) === topicName);
+  if (directItems.length > 0) {
+    const notesDone = directItems.some((item) => isNotesTask(item) && item.status === "completed");
+    const practiceDone = directItems.some((item) => isPracticeTask(item) && item.status === "completed");
+    const hasAnyDone = directItems.some((item) => item.status === "completed");
+    const derived: TopicReportEntry["status"] =
+      notesDone && practiceDone ? "completed" :
+      hasAnyDone ? "in_progress" :
+      "unlocked";
+    // Never downgrade backend-computed topic status based on pending plan items.
+    return maxStatus(topic.status, derived);
+  }
+
+  const subtopicItems = relatedItems.filter((item) => {
+    const contentTopic = normalizeText(item.content?.topicName);
+    return !!contentTopic && contentTopic !== topicName;
+  });
+
+  if (subtopicItems.length > 0) {
+    const bySubtopic = new Map<string, StudyPlanItem[]>();
+    for (const item of subtopicItems) {
+      const key = normalizeText(item.content?.topicName);
+      if (!key) continue;
+      if (!bySubtopic.has(key)) bySubtopic.set(key, []);
+      bySubtopic.get(key)!.push(item);
+    }
+
+    const hasAnyDone = subtopicItems.some((item) => item.status === "completed");
+    const distinctSubtopics = bySubtopic.size;
+    const allSubtopicsCompleted =
+      distinctSubtopics > 1 &&
+      Array.from(bySubtopic.values()).every((items) => {
+        const notesDone = items.some((item) => isNotesTask(item) && item.status === "completed");
+        const practiceDone = items.some((item) => isPracticeTask(item) && item.status === "completed");
+        return notesDone && practiceDone;
+      });
+
+    const derived: TopicReportEntry["status"] =
+      allSubtopicsCompleted ? "completed" :
+      hasAnyDone ? "in_progress" :
+      "unlocked";
+    return maxStatus(topic.status, derived);
+  }
+
+  const hasAnyDone = relatedItems.some((item) => item.status === "completed");
+  return maxStatus(topic.status, hasAnyDone ? "in_progress" : "unlocked");
+}
+
+function mergeRoadmapWithTodayPlan(report: ProgressReport, todayItems: StudyPlanItem[]): ProgressReport {
+  const subjects = report.subjects.map((subject) => {
+    const chapters = subject.chapters.map((chapter) => {
+      const topics = chapter.topics.map((topic) => ({
+        ...topic,
+        status: deriveStatusForTopic(topic, todayItems),
+      }));
+      const topicsCompleted = topics.filter((topic) => topic.status === "completed").length;
+      const topicsInProgress = topics.filter((topic) => topic.status === "in_progress").length;
+      const lockedTopics = topics.filter((topic) => topic.status === "locked").length;
+      const overallAccuracy = topics.length
+        ? Math.round(topics.reduce((sum, topic) => sum + (topic.bestAccuracy ?? 0), 0) / topics.length)
+        : 0;
+      return {
+        ...chapter,
+        topics,
+        topicsTotal: topics.length,
+        topicsCompleted,
+        overallAccuracy,
+        _derivedInProgressTopics: topicsInProgress,
+        _derivedLockedTopics: lockedTopics,
+      };
+    });
+
+    const topicsTotal = chapters.reduce((sum, chapter) => sum + chapter.topicsTotal, 0);
+    const topicsCompleted = chapters.reduce((sum, chapter) => sum + chapter.topicsCompleted, 0);
+    const weightedAccuracySum = chapters.reduce((sum, chapter) => sum + chapter.overallAccuracy * chapter.topicsTotal, 0);
+    const overallAccuracy = topicsTotal ? Math.round(weightedAccuracySum / topicsTotal) : 0;
+    return {
+      ...subject,
+      chapters,
+      topicsTotal,
+      topicsCompleted,
+      overallAccuracy,
+    };
+  });
+
+  const totalTopics = subjects.reduce((sum, subject) => sum + subject.topicsTotal, 0);
+  const completedTopics = subjects.reduce((sum, subject) => sum + subject.topicsCompleted, 0);
+  const inProgressTopics = subjects.reduce(
+    (sum, subject) =>
+      sum + subject.chapters.reduce((chapterSum, chapter: any) => chapterSum + (chapter._derivedInProgressTopics ?? 0), 0),
+    0,
+  );
+  const lockedTopics = subjects.reduce(
+    (sum, subject) =>
+      sum + subject.chapters.reduce((chapterSum, chapter: any) => chapterSum + (chapter._derivedLockedTopics ?? 0), 0),
+    0,
+  );
+
+  return {
+    ...report,
+    subjects: subjects.map((subject) => ({
+      ...subject,
+      chapters: subject.chapters.map((chapter: any) => {
+        const { _derivedInProgressTopics, _derivedLockedTopics, ...rest } = chapter;
+        return rest;
+      }),
+    })),
+    summary: {
+      ...report.summary,
+      totalTopics,
+      completedTopics,
+      inProgressTopics,
+      lockedTopics,
+    },
+  };
+}
+
 // Single topic leaf — shows inside an expanded chapter
 function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; lineColor: string }) {
   const st = topicStatus(topic.status);
@@ -463,6 +660,9 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
 }
 
 function CurriculumRoadmap() {
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const historyStart = format(subYears(new Date(), 5), "yyyy-MM-dd");
+  const { data: groupedHistory = {} } = useWeeklyPlanGrouped(historyStart, todayKey);
   const { data: report, isLoading } = useProgressReport();
   if (isLoading) return (
     <div className="flex items-center justify-center h-48">
@@ -471,12 +671,32 @@ function CurriculumRoadmap() {
   );
   if (!report?.subjects?.length) return (
     <div className="text-center py-16 text-gray-400">
-      <Map className="w-12 h-12 mx-auto mb-3 opacity-30" />
+      <MapIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
       <p className="text-sm">AI syllabus is being prepared for your target exam. Please refresh in a few seconds.</p>
     </div>
   );
-  const { summary } = report;
+  const datedEntries = Object.entries(groupedHistory)
+    .filter(([, items]) => Array.isArray(items) && items.length > 0)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  const firstPlanDate = datedEntries[0]?.[0] ?? todayKey;
+
+  const planHistory = Object.entries(groupedHistory)
+    .filter(([date]) => date >= firstPlanDate)
+    .filter(([date]) => date <= todayKey)
+    .flatMap(([, items]) => items ?? []);
+
+  const effectiveReport = mergeRoadmapWithTodayPlan(report, planHistory);
+  const { summary } = effectiveReport;
   const overallPct = summary.totalTopics > 0 ? Math.round((summary.completedTopics / summary.totalTopics) * 100) : 0;
+  const completedLectureCount = summary.lecturesCompleted ?? 0;
+  const practiceItems = planHistory.filter(isPracticeTask);
+  const completedPracticeCount = practiceItems.filter((item) => item.status === "completed").length;
+  const derivedAccuracy =
+    summary.overallAccuracy && summary.overallAccuracy > 0
+      ? Math.round(summary.overallAccuracy)
+      : practiceItems.length > 0
+        ? Math.round((completedPracticeCount / practiceItems.length) * 100)
+        : 0;
   return (
     <div className="space-y-5">
       {/* Summary banner */}
@@ -493,18 +713,14 @@ function CurriculumRoadmap() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-center text-sm">
+        <div className="grid grid-cols-2 gap-3 text-center text-sm">
           <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{summary.lecturesCompleted}</div>
+            <div className="font-bold text-lg">{completedLectureCount}</div>
             <div className="text-indigo-200 text-xs">Lectures Done</div>
           </div>
           <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{Math.round(summary.overallAccuracy ?? 0)}%</div>
+            <div className="font-bold text-lg">{derivedAccuracy}%</div>
             <div className="text-indigo-200 text-xs">Accuracy</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{summary.totalPYQAttempted}</div>
-            <div className="text-indigo-200 text-xs">PYQs Done</div>
           </div>
         </div>
       </div>
@@ -526,7 +742,7 @@ function CurriculumRoadmap() {
 
       {/* Tree */}
       <div>
-        {report.subjects.map((s, i) => (
+        {effectiveReport.subjects.map((s, i) => (
           <SubjectNode key={s.subjectId} subject={s} index={i} />
         ))}
       </div>
@@ -805,7 +1021,7 @@ export default function StudentStudyPlanPage() {
           <div className="flex gap-1 border-b border-white/20">
             {[
               { key: "plan"    as const, label: "Study Plan",  icon: <ListTodo className="w-4 h-4" /> },
-              { key: "roadmap" as const, label: "My Roadmap",  icon: <Map      className="w-4 h-4" /> },
+              { key: "roadmap" as const, label: "My Roadmap",  icon: <MapIcon className="w-4 h-4" /> },
             ].map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 transition-all
@@ -943,7 +1159,7 @@ export default function StudentStudyPlanPage() {
 
               <button onClick={() => setActiveTab("roadmap")}
                 className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-semibold text-sm hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                <Map className="w-4 h-4" /> View My Curriculum Roadmap
+                <MapIcon className="w-4 h-4" /> View My Curriculum Roadmap
               </button>
             </div>
           </div>
