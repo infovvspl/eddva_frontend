@@ -2545,8 +2545,6 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
             <ChevronRight className="w-3 h-3" /> Click to view details
           </p>
         </div>
-      </button>
-
       </div>
       {/* Action bar */}
       <div className="flex items-center gap-2 px-4 pb-3 flex-wrap border-t border-border/50 pt-3">
