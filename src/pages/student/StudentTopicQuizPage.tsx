@@ -6,7 +6,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, BarChart3,
   Target, ArrowLeft, Flame, BookOpen, Sparkles,
   Brain, Trophy, Search, Play, Monitor, Zap, Layers,
-  ArrowRight, ShieldCheck, BrainCircuit, Activity, Info, Check,
+  ArrowRight, ShieldCheck, BrainCircuit, Activity, Info, Check, X,
 } from "lucide-react";
 import {
   getMockTests, startSession, submitAnswer, submitSession,
@@ -232,7 +232,7 @@ function ErrorAnalysis({ eb, totalWrong }: { eb: any; totalWrong: number }) {
 function QuizRunner({
   title, isAi, questions, seconds, timerDanger,
   answers, currentQ, setCurrentQ,
-  onSelect, onNext, onSubmit,
+  onSelect, onNext, onSubmit, onClose,
 }: {
   title: string; isAi: boolean;
   questions: (QuizQuestion | AiQuizQuestion)[];
@@ -240,6 +240,8 @@ function QuizRunner({
   answers: Record<string, string[]>;
   currentQ: number; setCurrentQ: (i: number) => void;
   onSelect: (v: string) => void; onNext: () => void; onSubmit: () => void;
+  /** Exit quiz without finishing (e.g. during retake). */
+  onClose: () => void;
 }) {
   const q = questions[currentQ];
   const isLast = currentQ === questions.length - 1;
@@ -258,7 +260,16 @@ function QuizRunner({
               </div>
            </div>
 
-           <div className="flex items-center gap-8">
+           <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                title="Close quiz"
+                aria-label="Close quiz and leave"
+              >
+                <X className="h-4 w-4" />
+              </button>
               <div className={cn(
                  "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
                  timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
@@ -554,12 +565,20 @@ export default function StudentTopicQuizPage() {
     );
   }
 
+  const handleCloseQuiz = () => {
+    const ok = window.confirm(
+      "Close this quiz? Your last saved answers are kept; you can open the topic again to continue or start over.",
+    );
+    if (ok) navigate(-1);
+  };
+
   if (stage === "quiz" || stage === "ai_quiz") {
     return <QuizRunner title={stage === "ai_quiz" ? aiQuizData?.topicName ?? "" : mockTest?.title ?? ""}
       isAi={stage === "ai_quiz"} questions={questions} seconds={seconds} timerDanger={timerDanger} answers={answers}
       currentQ={currentQ} setCurrentQ={setCurrentQ} onSelect={stage === "quiz" ? handleTeacherSelect : handleAiSelect}
       onNext={() => { if (currentQ < questions.length - 1) setCurrentQ(currentQ + 1); else stage === "quiz" ? handleTeacherSubmit(false) : handleAiSubmit(false); }}
-      onSubmit={() => stage === "quiz" ? handleTeacherSubmit(false) : handleAiSubmit(false)} />;
+      onSubmit={() => stage === "quiz" ? handleTeacherSubmit(false) : handleAiSubmit(false)}
+      onClose={handleCloseQuiz} />;
   }
 
   if (stage === "results" && teacherResult && mockTest) {

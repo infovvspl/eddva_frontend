@@ -12,11 +12,11 @@ import { cn } from "@/lib/utils";
 import {
   useMockTests, useCreateMockTest, useDeleteMockTest, usePublishMockTest,
   useMockTestDetail, useUpdateMockTest, useRemoveQuestionFromMockTest, useBatches,
-  useSubjects, useChapters, useTopics,
+  useBatch, useSubjects, useChapters, useTopics,
 } from "@/hooks/use-admin";
 import { createQuestion, aiGenerateMockTestQuestions } from "@/lib/api/admin";
 import type {
-  CreateMockTestQuestionPayload, AiGeneratedQuestion, Batch, MockAiGenerateType,
+  CreateMockTestQuestionPayload, AiGeneratedQuestion, Batch, MockAiGenerateType, MockTestQuestion,
 } from "@/lib/api/admin";
 import { getApiOrigin } from "@/lib/api-config";
 
@@ -105,8 +105,7 @@ const EXAM_CONFIGS: Record<string, { subjects: string[]; topics: string[]; descr
 };
 
 // ─── Question format preset (Test details → manual + AI) ────────────────────
-// CBSE: official sample papers use ~50% competency-based, ~20% objective, ~30% short/long
-// (constructed response) — we mirror that in labels and in "full paper" split.
+// CBSE: full-mock "cbse_all" uses three **distinct** lanes: conceptual, objective, short+long (no duplicate MCQ+objective streams).
 
 type QuestionMixId =
   | "comp_mcq"
@@ -126,7 +125,7 @@ const QUESTION_MIX_CHOICES: { id: QuestionMixId; group: string; label: string; h
   { id: "cbse_competency", group: "CBSE (Class 10 & 12 board style)", label: "Competency-based (~50% of paper)", hint: "Case study, source- or data-based, application, HOTS — typical board emphasis." },
   { id: "cbse_objective", group: "CBSE (Class 10 & 12 board style)", label: "Objective & selection (~20% of paper)", hint: "MCQ, assertion–reason, VSA; objective weightage in sample papers." },
   { id: "cbse_descriptive", group: "CBSE (Class 10 & 12 board style)", label: "Short + long answer (~30% of paper)", hint: "Descriptive / constructed response using CBSE 2/3/4/5-mark structure." },
-  { id: "cbse_all", group: "CBSE (Class 10 & 12 board style)", label: "Full CBSE-style paper (all sections)", hint: "Competency + objective + descriptive in ~50% / 20% / 30% counts." },
+  { id: "cbse_all", group: "CBSE (Class 10 & 12 board style)", label: "Full CBSE-style paper (all sections)", hint: "Conceptual + objective + short/long answers (~25% / 25% / 50%) — one objective lane only, so MCQs do not outnumber subjectives." },
 ];
 
 type DraftQKind = "mcq_single" | "mcq_multi" | "integer" | "descriptive";
@@ -144,6 +143,7 @@ function nextDraftKindForMix(mix: QuestionMixId, index: number): DraftQKind {
     case "cbse_competency":
     case "cbse_objective": return "mcq_single";
     case "cbse_descriptive": return "descriptive";
+    // Conceptual and objective are both generated as `mcq_single` server-side, but with different topicAppend (full CBSE).
     case "cbse_all": return (["mcq_single", "mcq_single", "descriptive"] as const)[index % 3];
     default: return "mcq_single";
   }
@@ -157,14 +157,18 @@ function splitInt3(n: number, a: number, b: number, c: number): [number, number,
   return [x, y, z];
 }
 
-const CBSE_COMP_APPEND =
-  " CBSE competency-style ONLY: case study/source-based/data-based/application/HOTS. Avoid plain direct-recall one-liners. Include real-life context in stem and reasoning in model answer. Align to ~50% competency share.";
+const CBSE_CONCEPTUAL_APPEND =
+  " CBSE CONCEPTUAL only: case study, source- or data-based, application, HOTS, reasoning. Do NOT use this segment for VSA, assertion–reason-only, or plain recall one-liner MCQs; keep those in the objective segment.";
 
-const CBSE_OBJ_APPEND =
-  " CBSE objective section: MCQ + assertion-reason + very-short objective prompts. Keep objective nature explicit, align to ~20% share, and avoid case-study style here.";
+const CBSE_COMP_APPEND = CBSE_CONCEPTUAL_APPEND;
+
+const CBSE_OBJECTIVE_APPEND =
+  " CBSE OBJECTIVE section only: very short answer, assertion–reason, and selection-style items (incl. single-correct MCQ). No long case-study or competency-style passages; do not mirror the conceptual-segment style.";
+
+const CBSE_OBJ_APPEND = CBSE_OBJECTIVE_APPEND;
 
 const CBSE_DESC_APPEND =
-  ` CBSE short and long answer: constructed response, steps or reasoning expected; align with the descriptive share in board blueprints (about ~30%). ${CBSE_THEORY_PATTERN_NOTE} ` +
+  ` CBSE short and long answer: constructed response, steps or reasoning expected; in full-mock this lane is the largest block (~50%). ${CBSE_THEORY_PATTERN_NOTE} ` +
   `For every descriptive question, generate a model answer that follows CBSE mark split exactly: ` +
   `2m -> (1 mark definition/statement + 1 mark second point/example), ` +
   `3m -> (1 mark definition/principle + 2 marks explanation in two clear points), ` +
@@ -242,13 +246,21 @@ function applyMarksPolicyToDraft(
   };
 }
 
-type AiSeg = { questionType: MockAiGenerateType; count: number; topicAppend: string; asDraft: DraftQKind };
-
 type CbseBucket = "comp" | "obj" | "desc";
 
+type AiSeg = {
+  questionType: MockAiGenerateType;
+  count: number;
+  topicAppend: string;
+  asDraft: DraftQKind;
+  /** When set (full CBSE), avoids mistaking two `mcq_single` segments for the same bucket. */
+  cbseBucket?: CbseBucket;
+};
+
 function bucketFromSeg(seg: AiSeg): CbseBucket {
+  if (seg.cbseBucket) return seg.cbseBucket;
   if (seg.asDraft === "descriptive") return "desc";
-  if (seg.topicAppend === CBSE_COMP_APPEND) return "comp";
+  if (seg.topicAppend === CBSE_CONCEPTUAL_APPEND) return "comp";
   return "obj";
 }
 
@@ -286,18 +298,52 @@ function buildAiPlan(mix: QuestionMixId, n: number): AiSeg[] {
     case "cbse_descriptive":
       return [{ questionType: "descriptive", count: n, topicAppend: CBSE_DESC_APPEND, asDraft: "descriptive" }];
     case "cbse_all": {
-      const [c50, c20, c30] = splitInt3(n, 50, 20, 30);
-      const rem = n - c50 - c20 - c30;
+      // Conceptual + objective + short/long — ~25% / 25% / 50% (remainder → conceptual).
+      const [a, b, c] = splitInt3(n, 25, 25, 50);
+      const rem = n - a - b - c;
       return [
-        { questionType: "mcq_single", count: c50 + rem, topicAppend: CBSE_COMP_APPEND, asDraft: "mcq_single" },
-        { questionType: "mcq_single", count: c20, topicAppend: CBSE_OBJ_APPEND, asDraft: "mcq_single" },
-        { questionType: "descriptive", count: c30, topicAppend: CBSE_DESC_APPEND, asDraft: "descriptive" },
+        { questionType: "mcq_single", count: a + rem, topicAppend: CBSE_CONCEPTUAL_APPEND, asDraft: "mcq_single", cbseBucket: "comp" },
+        { questionType: "mcq_single", count: b, topicAppend: CBSE_OBJECTIVE_APPEND, asDraft: "mcq_single", cbseBucket: "obj" },
+        { questionType: "descriptive", count: c, topicAppend: CBSE_DESC_APPEND, asDraft: "descriptive", cbseBucket: "desc" },
       ];
     }
     default:
       return [{ questionType: "mcq_single", count: n, topicAppend: "", asDraft: "mcq_single" }];
   }
 }
+
+function getCbseBucketLabel(b: CbseBucket): string {
+  if (b === "comp") return "Conceptual (case / HOTS)";
+  if (b === "obj") return "Objective (VSA / selection)";
+  return "Short & long (descriptive)";
+}
+
+const DRAFT_KIND_LABEL: Record<DraftQKind, string> = {
+  mcq_single: "MCQ (single-correct)",
+  mcq_multi: "MSQ (multi-correct)",
+  integer: "Integer / numerical",
+  descriptive: "Descriptive",
+};
+
+/**
+ * Shown in the generate loader: which slice of the plan is running.
+ */
+function getSegmentLabel(mix: QuestionMixId, seg: AiSeg, i: number, n: number): string {
+  if (mix === "cbse_all" && seg.cbseBucket) {
+    return n <= 1
+      ? getCbseBucketLabel(seg.cbseBucket)
+      : `Segment ${i + 1} of ${n}: ${getCbseBucketLabel(seg.cbseBucket)}`;
+  }
+  const t = DRAFT_KIND_LABEL[seg.asDraft];
+  return n <= 1 ? t : `Segment ${i + 1} of ${n}: ${t}`;
+}
+
+type AiGenLoader = {
+  title: string;
+  detail: string;
+  /** 0–100, primarily driven by how many questions are collected vs requested */
+  percent: number;
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -740,6 +786,8 @@ function AIGeneratePanel({
   batchId,
   testCategory,
   questionMixId,
+  batchExamTarget,
+  batchClass,
   initSubjectId = "", initSubjectName = "",
   initChapterId = "", initChapterName = "",
   initTopicId = "",  initTopicName = "",
@@ -748,6 +796,9 @@ function AIGeneratePanel({
   batchId?: string;
   testCategory?: TestCategory | null;
   questionMixId: QuestionMixId;
+  /** From institute batch: steers phrasing, difficulty feel, and model-answer style. */
+  batchExamTarget?: string;
+  batchClass?: string;
   initSubjectId?: string; initSubjectName?: string;
   initChapterId?: string; initChapterName?: string;
   initTopicId?: string;   initTopicName?: string;
@@ -759,7 +810,7 @@ function AIGeneratePanel({
   const [customInstructions, setCustomInstructions] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
-  const [progress, setProgress] = useState("");
+  const [loader, setLoader] = useState<AiGenLoader | null>(null);
   const [qualityReport, setQualityReport] = useState<string>("");
   const [cacheMode, setCacheMode] = useState<"hybrid" | "cache_only" | "ai_only">("hybrid");
   const [difficultyMode, setDifficultyMode] = useState<AiDifficultyMode>("mixed");
@@ -780,6 +831,7 @@ function AIGeneratePanel({
   const topicList = Array.isArray(topics) ? topics : [];
 
   const cfg = EXAM_CONFIGS[exam] ?? EXAM_CONFIGS.JEE;
+  const isCbseMix = questionMixId.startsWith("cbse_");
   const topicSelected = !!aiTopicId;
   const requestedCount = countMode === "custom"
     ? Math.max(1, Math.min(300, Number(customCount) || 0))
@@ -806,7 +858,11 @@ function AIGeneratePanel({
       return;
     }
     setGenerating(true);
-    setProgress("Calling topic-based AI (questions/generate)…");
+    setLoader({
+      title: "Preparing",
+      detail: "Building the question plan and looking for reusable cached questions…",
+      percent: 0,
+    });
 
     const { easy: easyCount, medium: mediumCount, hard: hardCount } = splitByDifficulty(
       requestedCount,
@@ -814,7 +870,7 @@ function AIGeneratePanel({
     );
 
     const extra = customInstructions.trim() ? ` Extra focus: ${customInstructions.trim()}` : "";
-    const isCbse = questionMixId.startsWith("cbse_");
+    const isCbse = isCbseMix;
     const difficultyPrompt =
       difficultyMode === "mixed"
         ? " Difficulty mix required: roughly 30% easy, 45% medium, 25% hard."
@@ -841,8 +897,18 @@ function AIGeneratePanel({
         : `${exam} multi-subject diagnostic (${cfg.description}). Subjects: ${cfg.subjects.join(", ")}. Syllabus hints: ${cfg.topics.join(" | ")}. Balanced coverage; match the Test details question type mix.${difficultyPrompt}${extra}`.trim();
     }
 
+    if (batchExamTarget?.trim() || batchClass?.trim()) {
+      const cohort = `Institute batch cohort: target exam "${(batchExamTarget || "").trim() || "as configured"}"; class/grade: ${(batchClass || "").trim() || "—"}.`;
+      const styleHint = isCbse
+        ? " Merge with the board-style mix and CBSE mark-step guidance already in this request: do not drop NCERT-appropriate 2/3/4/5-mark-style stems and model answers; use the cohort to sharpen which class/board exam and phrasing, while keeping stepwise working and mark-weighting that prepare students for boards."
+        : " Align phrasing, traps, and model solutions with the stated competitive entrance; balance speed and rigour; model answers can be compact but must be methodologically correct for that exam.";
+      topicName = `${topicName} ${cohort}${styleHint}`.trim();
+    }
+
     try {
-      setProgress("AI is generating questions (batched by type and difficulty)…");
+      const pct = (d: number) =>
+        Math.min(100, Math.max(0, Math.round((d / Math.max(1, requestedCount)) * 100)));
+
       const plan = buildAiPlan(questionMixId, requestedCount);
       const drafts: DraftQuestion[] = [];
       const subj = aiSubjectName || "";
@@ -868,49 +934,88 @@ function AIGeneratePanel({
         .sort((a, b) => b.updatedAt - a.updatedAt)
         .flatMap((e) => e.questions);
 
-      const typeNeed = plan.reduce<Record<DraftQKind, number>>((acc, s) => {
-        acc[s.asDraft] = (acc[s.asDraft] || 0) + s.count;
-        return acc;
-      }, { mcq_single: 0, mcq_multi: 0, integer: 0, descriptive: 0 });
-
+      /** Remaining slots per plan segment (needed so multiple segments of the same draft kind e.g. CBSE conceptual + objective both MCQ) stay correct and can run in parallel). */
+      const rem = plan.map((s) => s.count);
       for (const cq of candidates) {
+        const t = (cq.type as DraftQKind);
+        const segIdx = rem.findIndex((r, i) => r > 0 && plan[i].asDraft === t);
+        if (segIdx < 0) continue;
         const k = norm(cq.content || "");
         if (!k || seenQuestions.has(k)) continue;
-        const t = (cq.type as DraftQKind);
-        if (!typeNeed[t] || typeNeed[t] <= 0) continue;
         seenQuestions.add(k);
         drafts.push(applyMarksPolicyToDraft({ _key: ++_keyCounter, ...cq }, questionMixId));
-        typeNeed[t] -= 1;
+        rem[segIdx] -= 1;
         if (drafts.length >= requestedCount) break;
       }
-      for (const seg of plan) {
-        if (cacheMode === "cache_only") break;
-        const already = drafts.filter((d) => d.type === seg.asDraft).length;
-        const segNeed = Math.max(0, seg.count - already);
-        if (segNeed <= 0) continue;
-        setProgress(`Generating ${segNeed} item(s) (${seg.asDraft})…`);
-        const sEasy = Math.max(0, Math.round(segNeed * (easyCount / Math.max(1, requestedCount))));
-        const sHard = Math.max(0, Math.round(segNeed * (hardCount / Math.max(1, requestedCount))));
-        const sMed = Math.max(0, segNeed - sEasy - sHard);
-        const raw = await aiGenerateMockTestQuestions({
-          topicId: aiTopicId || undefined,
-          topicName: `${topicName} ${seg.topicAppend}`.trim(),
-          totalCount: segNeed,
-          easyCount: sEasy,
-          mediumCount: sMed,
-          hardCount: sHard,
-          questionType: seg.questionType,
-        });
-        const bucket = bucketFromSeg(seg);
-        for (const q of raw) {
-          const key = norm(q.questionText || "");
-          if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
-          if (questionMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
-          seenQuestions.add(key);
-          drafts.push(
-            aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket),
+      if (drafts.length >= requestedCount) rem.fill(0);
+      setLoader({
+        title: "Question cache",
+        detail:
+          cacheMode === "ai_only"
+            ? "Cache skipped (AI only mode) — all questions will be generated fresh."
+            : drafts.length > 0
+              ? `Reused ${drafts.length} of ${requestedCount} from your local question cache.`
+              : "No cache hits for this scope — calling AI for new questions.",
+        percent: pct(drafts.length),
+      });
+      // Main AI pass — all plan segments with remaining work run in parallel, then merge in plan order.
+      if (cacheMode !== "cache_only") {
+        const toFetch = rem
+          .map((n, i) => ({ segIndex: i, remNeed: n, seg: plan[i]! }))
+          .filter((x) => x.remNeed > 0);
+        if (toFetch.length > 0) {
+          setLoader(
+            toFetch.length > 1
+              ? {
+                  title: "Main — calling AI in parallel",
+                  detail: `Running ${toFetch.length} segment batches at once: ${toFetch
+                    .map(({ seg, segIndex }) => getSegmentLabel(questionMixId, seg, segIndex, plan.length))
+                    .join(" · ")}. ${drafts.length}/${requestedCount} from cache so far.`,
+                  percent: pct(drafts.length),
+                }
+              : (() => {
+                  const { seg, segIndex, remNeed: rn } = toFetch[0]!;
+                  const sE = Math.max(0, Math.round(rn * (easyCount / Math.max(1, requestedCount))));
+                  const sH = Math.max(0, Math.round(rn * (hardCount / Math.max(1, requestedCount))));
+                  const sM = Math.max(0, rn - sE - sH);
+                  return {
+                    title: "Main — calling AI",
+                    detail: `${getSegmentLabel(questionMixId, seg, segIndex, plan.length)} — up to ${rn} new (easy ${sE} · medium ${sM} · hard ${sH}) · ${drafts.length}/${requestedCount} collected`,
+                    percent: pct(drafts.length),
+                  };
+                })(),
           );
-          if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
+          const parallelRes = await Promise.all(
+            toFetch.map(async ({ segIndex, remNeed, seg }) => {
+              const sEasy = Math.max(0, Math.round(remNeed * (easyCount / Math.max(1, requestedCount))));
+              const sHard = Math.max(0, Math.round(remNeed * (hardCount / Math.max(1, requestedCount))));
+              const sMed = Math.max(0, remNeed - sEasy - sHard);
+              const raw: AiGeneratedQuestion[] = await aiGenerateMockTestQuestions({
+                topicId: aiTopicId || undefined,
+                topicName: `${topicName} ${seg.topicAppend}`.trim(),
+                totalCount: remNeed,
+                easyCount: sEasy,
+                mediumCount: sMed,
+                hardCount: sHard,
+                questionType: seg.questionType,
+              });
+              return { segIndex, seg, raw };
+            }),
+          );
+          parallelRes.sort((a, b) => a.segIndex - b.segIndex);
+          for (const { seg, raw } of parallelRes) {
+            const bucket = bucketFromSeg(seg);
+            for (const q of raw) {
+              const key = norm(q.questionText || "");
+              if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
+              if (questionMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
+              seenQuestions.add(key);
+              drafts.push(
+                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket),
+              );
+              if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
+            }
+          }
         }
       }
 
@@ -921,13 +1026,17 @@ function AIGeneratePanel({
           let retry = 0;
           while (need > 0 && retry < 3) {
             retry += 1;
-            setProgress(`Refining CBSE coverage: ${bucket} (${need} more)…`);
+            setLoader({
+              title: "Refining — CBSE balance",
+              detail: `${getCbseBucketLabel(bucket)} — attempt ${retry}/3, up to ${need} more this call · ${drafts.length}/${requestedCount} total`,
+              percent: pct(drafts.length),
+            });
             const sEasy = Math.max(0, Math.round(need * (easyCount / Math.max(1, requestedCount))));
             const sHard = Math.max(0, Math.round(need * (hardCount / Math.max(1, requestedCount))));
             const sMed = Math.max(0, need - sEasy - sHard);
             const raw = await aiGenerateMockTestQuestions({
               topicId: aiTopicId || undefined,
-              topicName: `${topicName} ${seg.topicAppend} STRICTLY produce ${bucket === "comp" ? "competency/case/source/data/application" : bucket === "obj" ? "objective/assertion-reason/MCQ" : "descriptive"} style only. Avoid repeating previous questions.`.trim(),
+              topicName: `${topicName} ${seg.topicAppend} STRICTLY produce ${bucket === "comp" ? "conceptual/case/source/data/application/HOTS only" : bucket === "obj" ? "objective/VSA/assertion–reason/selection only" : "short and long descriptive answers only"}. Avoid repeating previous questions.`.trim(),
               totalCount: need,
               easyCount: sEasy,
               mediumCount: sMed,
@@ -965,7 +1074,11 @@ function AIGeneratePanel({
           const found = plan.find((p) => bucketFromSeg(p) === targetBucket);
           if (found) seg = found;
         }
-        setProgress(`Top-up pass ${topupGuard}: generating ${chunk} more…`);
+        setLoader({
+          title: "Top-up",
+          detail: `Pass ${topupGuard}/16 · ${getSegmentLabel(questionMixId, seg, 0, plan.length)} — up to ${chunk} new, ${need} still short · have ${drafts.length}/${requestedCount}`,
+          percent: pct(drafts.length),
+        });
         const sEasy = Math.max(0, Math.round(chunk * (easyCount / Math.max(1, requestedCount))));
         const sHard = Math.max(0, Math.round(chunk * (hardCount / Math.max(1, requestedCount))));
         const sMed = Math.max(0, chunk - sEasy - sHard);
@@ -1002,11 +1115,15 @@ function AIGeneratePanel({
         );
       }
 
-      setProgress(`Prepared ${Math.min(drafts.length, requestedCount)} questions…`);
+      setLoader({
+        title: "Finishing",
+        detail: `Ready ${Math.min(drafts.length, requestedCount)} of ${requestedCount} questions. Sending to the editor…`,
+        percent: 100,
+      });
       const duplicateFiltered = Math.max(0, duplicateFilteredCount);
       if (questionMixId === "cbse_all") {
         setQualityReport(
-          `Coverage: Competency ${cbseGot.comp}/${cbseTarget.comp} · Objective ${cbseGot.obj}/${cbseTarget.obj} · Descriptive ${cbseGot.desc}/${cbseTarget.desc}${duplicateFiltered > 0 ? ` · Duplicates filtered: ${duplicateFiltered}` : ""}`,
+          `Coverage: Conceptual ${cbseGot.comp}/${cbseTarget.comp} · Objective ${cbseGot.obj}/${cbseTarget.obj} · Short/long ${cbseGot.desc}/${cbseTarget.desc}${duplicateFiltered > 0 ? ` · Duplicates filtered: ${duplicateFiltered}` : ""}`,
         );
       } else {
         setQualityReport(
@@ -1043,7 +1160,7 @@ function AIGeneratePanel({
       setError(msg);
     } finally {
       setGenerating(false);
-      setProgress("");
+      setLoader(null);
     }
   };
 
@@ -1255,6 +1372,18 @@ function AIGeneratePanel({
         </p>
       </div>
 
+      {(batchExamTarget || batchClass) && (
+        <p className="text-xs text-slate-600 rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-2 leading-relaxed">
+          <span className="font-semibold text-slate-700">Cohort: </span>
+          {batchExamTarget ? <span>{batchExamTarget}</span> : null}
+          {batchExamTarget && batchClass ? " · " : null}
+          {batchClass ? <span>Class {batchClass}</span> : null}
+          {isCbseMix
+            ? " — adds to the CBSE mix: board-style mark steps, NCERT-appropriate model answers, and class/exam phrasing (not a replacement for the board test pattern)."
+            : " — phrasing and solutions align with the batch's target entrance exam."}
+        </p>
+      )}
+
       {!topicSelected && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-xs font-semibold text-slate-500 mb-2">Subjects covered:</p>
@@ -1289,9 +1418,38 @@ function AIGeneratePanel({
         </div>
       )}
       {generating && (
-        <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 border border-slate-200">
-          <Loader2 className="w-4 h-4 animate-spin text-[#013889] shrink-0" />
-          <p className="text-sm text-slate-600">{progress}</p>
+        <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <Loader2 className="w-5 h-5 animate-spin text-[#013889] shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800">
+                  {loader?.title ?? "Working…"}
+                </p>
+                {loader?.detail && (
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    {loader.detail}
+                  </p>
+                )}
+              </div>
+            </div>
+            <span className="text-sm font-mono font-bold text-[#013889] tabular-nums shrink-0">
+              {loader?.percent ?? 0}%
+            </span>
+          </div>
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200/90">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#013889] to-[#0257c8] transition-all duration-300 ease-out"
+              style={{ width: `${Math.min(100, Math.max(0, loader?.percent ?? 0))}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-slate-500">
+            Goal: {requestedCount} questions in this run
+            {difficultyMode === "mixed"
+              ? " — requested mix: ~30% easy · ~45% medium · ~25% hard (per segment)"
+              : ` — all questions: ${difficultyMode}`}
+            .
+          </p>
         </div>
       )}
       {!generating && qualityReport && (
@@ -1540,6 +1698,7 @@ function CreateTestModal({
   const { data: subjects } = useSubjects(batchId);
   const { data: chapters } = useChapters(scope.subjectId);
   const { data: topics } = useTopics(scope.chapterId);
+  const { data: createModalBatch } = useBatch(batchId);
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
   const topicList = Array.isArray(topics) ? topics : [];
@@ -1946,6 +2105,8 @@ function CreateTestModal({
                     batchId={batchId}
                     testCategory={testCategory}
                     questionMixId={questionMixId}
+                    batchExamTarget={createModalBatch?.examTarget}
+                    batchClass={createModalBatch?.class}
                     initSubjectId={scope.subjectId}
                     initSubjectName={scope.subjectName}
                     initChapterId={scope.chapterId}
@@ -2064,6 +2225,12 @@ function AddQuestionModal({ mockTestId, existingIds, batchId, onClose }: {
 
 // ─── Mock Test Detail ─────────────────────────────────────────────────────────
 
+/** Model / exemplar text (API may send camelCase or snake_case from Postgres). */
+function getQuestionModelAnswer(q: MockTestQuestion & { solution_text?: string | null }): string {
+  const s = q.solutionText ?? q.solution_text;
+  return typeof s === "string" && s.trim() ? s.trim() : "";
+}
+
 function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void }) {
   const { data: test, isLoading } = useMockTestDetail(testId);
   const publishMockTest = usePublishMockTest();
@@ -2153,7 +2320,9 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
         </div>
       ) : (
         <div className="space-y-3">
-          {questions.map((q, i) => (
+          {questions.map((q, i) => {
+            const modelAnswer = getQuestionModelAnswer(q);
+            return (
             <div key={q.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
@@ -2166,6 +2335,12 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                       <span className="text-xs text-emerald-600 font-semibold">+{q.marksCorrect}</span>
                       {q.marksWrong !== 0 && <span className="text-xs text-red-500 font-semibold">{q.marksWrong}</span>}
                     </div>
+                    {q.type === "descriptive" && modelAnswer && (
+                      <div className="mt-3 rounded-lg border border-[#013889]/20 bg-[#E6EEF8]/50 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#013889]/80 mb-1.5">Model answer (review before publish)</p>
+                        <p className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">{modelAnswer}</p>
+                      </div>
+                    )}
                     {q.options && q.options.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {q.options.map(o => (
@@ -2178,6 +2353,18 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                         ))}
                       </div>
                     )}
+                    {q.type === "integer" && (() => {
+                      const intq = q as MockTestQuestion & { integer_answer?: string | null };
+                      const ival = intq.integerAnswer ?? intq.integer_answer;
+                      return ival
+                        ? (
+                          <p className="mt-2 text-xs text-slate-600">
+                            <span className="font-semibold text-slate-500">Expected answer: </span>
+                            {ival}
+                          </p>
+                        )
+                        : null;
+                    })()}
                   </div>
                 </div>
                 <button onClick={() => handleRemove(q.id)}
@@ -2187,7 +2374,8 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

@@ -73,6 +73,8 @@ function normalizeAiMessage(message: unknown): string {
       }
     };
 
+    //jbfjfb
+
     const trimmed = message.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const directParsed = tryParseJsonPayload(trimmed);
     if (directParsed) return directParsed;

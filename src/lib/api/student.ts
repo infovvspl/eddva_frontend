@@ -574,6 +574,18 @@ export interface TestSession {
   skippedCount?: number;
   mockTest?: { title: string; durationMinutes: number; totalMarks?: number };
   questions?: QuizQuestion[];
+  /** Present on GET /sessions/:id — used to restore auto-saved answers & uploads when resuming. */
+  attempts?: InProgressSessionAttempt[];
+}
+
+/** Partial attempt row returned while a session is in progress (from GET /assessments/sessions/:id). */
+export interface InProgressSessionAttempt {
+  questionId: string;
+  selectedOptionIds?: string[];
+  /** MCQ/MSQ, integer, or descriptive free text (shared column). */
+  integerAnswer?: string | null;
+  answerImageUrls?: string[];
+  timeSpentSeconds?: number;
 }
 
 export function isSessionCompleted(s: TestSession) {
@@ -678,6 +690,12 @@ export async function submitSession(sessionId: string): Promise<SessionResult> {
 export async function getSessionResult(sessionId: string): Promise<SessionResult> {
   const res = await apiClient.get(`/assessments/sessions/${sessionId}/result`);
   return extractData<SessionResult>(res);
+}
+
+/** Full session with attempts (restore typed answers & handwritten image URLs for in-progress tests). */
+export async function getSessionById(sessionId: string): Promise<TestSession> {
+  const res = await apiClient.get(`/assessments/sessions/${sessionId}`);
+  return extractData<TestSession>(res);
 }
 
 export async function getActiveSessions(mockTestId?: string): Promise<TestSession[]> {

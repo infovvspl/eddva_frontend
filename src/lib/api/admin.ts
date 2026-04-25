@@ -839,6 +839,9 @@ export interface MockTestQuestion {
   marksCorrect: number;
   marksWrong: number;
   options?: { id: string; optionLabel: string; content: string; isCorrect: boolean }[];
+  /** Marking / exemplar (descriptive); also accept snake_case from API. */
+  solutionText?: string | null;
+  integerAnswer?: string | null;
 }
 
 export interface CreateMockTestQuestionPayload {
@@ -964,9 +967,19 @@ export type MockAiGenerateType =
   | "board_mix"
   | "mix";
 
+/** Per-request size for /ai/questions/generate. */
+const AI_GENERATE_BATCH_SIZE = 5;
+
+type GenDiff = "easy" | "medium" | "hard";
+
+function withRequestedDifficulty(q: AiGeneratedQuestion, d: GenDiff): AiGeneratedQuestion {
+  return { ...q, difficulty: d };
+}
+
 /**
  * Admin mock tests: topic-based MCQs via Nest → Django `/test/generate/`.
- * Batches by difficulty and caps at 10 questions per AI call (Django limit).
+ * Fires all difficulty chunks in a single `Promise.all` (not easy→med→hard serial).
+ * Stamps `difficulty` from the *request* — the model often omits it or always returns "medium".
  */
 export async function aiGenerateMockTestQuestions(params: {
   topicId?: string;
@@ -979,26 +992,29 @@ export async function aiGenerateMockTestQuestions(params: {
 }): Promise<AiGeneratedQuestion[]> {
   const topicId = (params.topicId && params.topicId.trim()) || MOCK_AI_TOPIC_PLACEHOLDER_ID;
   const type = (params.questionType ?? "mcq_single") as string;
-  const buckets: { difficulty: "easy" | "medium" | "hard"; n: number }[] = [
+  const totalCount = params.totalCount;
+
+  const queue: { difficulty: GenDiff; n: number }[] = [
     { difficulty: "easy", n: params.easyCount },
     { difficulty: "medium", n: params.mediumCount },
     { difficulty: "hard", n: params.hardCount },
   ].filter((b) => b.n > 0);
 
-  const queue =
-    buckets.length > 0 ? buckets : [{ difficulty: "medium" as const, n: params.totalCount }];
+  const useQueue = queue.length > 0 ? queue : [{ difficulty: "medium" as GenDiff, n: totalCount }];
+
+  const target: Record<GenDiff, number> = { easy: 0, medium: 0, hard: 0 };
+  for (const { difficulty, n } of useQueue) {
+    target[difficulty] = n;
+  }
 
   const out: AiGeneratedQuestion[] = [];
+  const got: Record<GenDiff, number> = { easy: 0, medium: 0, hard: 0 };
   const seen = new Set<string>();
   const norm = (s: string) =>
     s.toLowerCase().replace(/\s+/g, " ").replace(/[^\w\s]/g, "").trim();
 
-  const pushChunk = async (
-    difficulty: "easy" | "medium" | "hard",
-    requestCount: number,
-    topicLine = params.topicName,
-  ) => {
-    const chunk = Math.min(Math.max(1, requestCount), 10);
+  const fetchChunk = async (difficulty: GenDiff, requestCount: number, topicLine: string) => {
+    const chunk = Math.min(Math.max(1, requestCount), AI_GENERATE_BATCH_SIZE);
     const res = await apiClient.post(
       "/ai/questions/generate",
       {
@@ -1012,45 +1028,93 @@ export async function aiGenerateMockTestQuestions(params: {
     );
     const data = extractData<any>(res);
     const list = extractAiQuestionList(data);
-    const mapped = list
+    return list
       .map(mapRawToAiGeneratedQuestion)
       .filter((q) => q.questionText.trim().length > 0)
-      .filter((q) => {
-        const k = norm(q.questionText);
-        if (!k || seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
-    return mapped;
+      .map((q) => withRequestedDifficulty(q, difficulty));
   };
 
-  for (const { difficulty, n } of queue) {
-    let left = n;
-    while (left > 0) {
-      const mapped = await pushChunk(difficulty, Math.min(left, 10));
-      if (!mapped.length) break;
-      const take = Math.min(mapped.length, left);
-      out.push(...mapped.slice(0, take));
-      left -= take;
+  // Initial wave: all chunk requests across all difficulties, one Promise.all
+  const tasks: { difficulty: GenDiff; size: number }[] = [];
+  for (const { difficulty, n } of useQueue) {
+    let rem = n;
+    while (rem > 0) {
+      const s = Math.min(AI_GENERATE_BATCH_SIZE, rem);
+      tasks.push({ difficulty, size: s });
+      rem -= s;
+    }
+  }
+  if (tasks.length) {
+    const rawLists = await Promise.all(
+      tasks.map((t) => fetchChunk(t.difficulty, t.size, params.topicName)),
+    );
+    for (let i = 0; i < tasks.length; i++) {
+      const d = tasks[i].difficulty;
+      for (const q of rawLists[i]) {
+        if (got[d] >= target[d]) break;
+        const k = norm(q.questionText);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        out.push(q);
+        got[d]++;
+      }
     }
   }
 
-  // LLM/parser often returns fewer than requested; top up until we hit totalCount or AI stops returning.
+  const topupLine = `${params.topicName} (Generate only additional distinct questions; avoid repeating earlier ideas.)`;
   let guard = 0;
-  while (out.length < params.totalCount && guard < 8) {
+  while (out.length < totalCount && guard < 8) {
     guard += 1;
-    const need = params.totalCount - out.length;
-    const mapped = await pushChunk(
-      "medium",
-      Math.min(need, 10),
-      `${params.topicName} (Generate only additional distinct questions; avoid repeating earlier ideas.)`,
+    const defE = Math.max(0, target.easy - got.easy);
+    const defM = Math.max(0, target.medium - got.medium);
+    const defH = Math.max(0, target.hard - got.hard);
+    const shortfall = totalCount - out.length;
+    const needGap = defE + defM + defH === 0 && shortfall > 0;
+    // Top-up: fill per-difficulty deficits; if the mix is already satisfied but we are short
+    // (e.g. heavy deduplication), request extra "medium" like the old single-lane top-up.
+    const waves: { difficulty: GenDiff; n: number }[] = needGap
+      ? [{ difficulty: "medium", n: shortfall }]
+      : [
+          { difficulty: "easy", n: defE },
+          { difficulty: "medium", n: defM },
+          { difficulty: "hard", n: defH },
+        ].filter((w) => w.n > 0);
+    if (!waves.length) break;
+
+    const topTasks: { difficulty: GenDiff; size: number }[] = [];
+    for (const w of waves) {
+      let rem = w.n;
+      while (rem > 0) {
+        const s = Math.min(AI_GENERATE_BATCH_SIZE, rem);
+        topTasks.push({ difficulty: w.difficulty, size: s });
+        rem -= s;
+      }
+    }
+    const topRaws = await Promise.all(
+      topTasks.map((t) => fetchChunk(t.difficulty, t.size, topupLine)),
     );
-    if (!mapped.length) break;
-    const take = Math.min(mapped.length, need);
-    out.push(...mapped.slice(0, take));
+    let addedAny = false;
+    for (let j = 0; j < topTasks.length; j++) {
+      const d = topTasks[j].difficulty;
+      for (const q of topRaws[j]) {
+        if (out.length >= totalCount) break;
+        if (!needGap) {
+          if (d === "easy" && got.easy >= target.easy) continue;
+          if (d === "medium" && got.medium >= target.medium) continue;
+          if (d === "hard" && got.hard >= target.hard) continue;
+        }
+        const k = norm(q.questionText);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        out.push(q);
+        got[d]++;
+        addedAny = true;
+      }
+    }
+    if (!addedAny) break;
   }
 
-  return out.slice(0, params.totalCount);
+  return out.slice(0, totalCount);
 }
 
 /**
