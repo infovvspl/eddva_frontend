@@ -464,29 +464,32 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
   };
 
   const handleGenerateQuiz = async () => {
-    if (!lecture.transcript) {
+    const sourceText = lecture.transcript || lecture.aiNotesMarkdown || "";
+    if (!sourceText.trim()) {
       toast({
-        title: "No transcript",
+        title: "No content to generate from",
         description: youtubeSource
-          ? YOUTUBE_LECTURE_CAPTIONS_HINT
-          : "Transcript is required to generate quiz questions.",
+          ? "Upload notes or a transcript first using the 'Upload Notes' option on the lecture card."
+          : "A transcript is required to generate quiz questions. Wait for processing to complete.",
         variant: "destructive",
       });
       return;
     }
+    const usingNotes = !lecture.transcript && !!lecture.aiNotesMarkdown;
     setIsGeneratingQuiz(true);
     try {
       const result = await generateQuizForLecture({
-        transcript: lecture.transcript,
+        transcript: sourceText,
         lectureTitle: lecture.title,
         topicId: lecture.topic?.id,
       });
+      const usingNotesHint = usingNotes ? " (generated from uploaded notes)" : "";
       const qs: QuizCheckpoint[] = (result as any).questions ?? [];
       setQuizQuestions(qs);
       setQuizLoaded(true);
       // Auto-save generated questions to DB immediately
       await saveQuizCheckpoints(lecture.id, qs);
-      toast({ title: `${qs.length} quiz questions generated & saved!`, description: "Edit any question below, changes save automatically." });
+      toast({ title: `${qs.length} quiz questions generated & saved!${usingNotesHint}`, description: "Edit any question below, changes save automatically." });
     } catch (err: any) {
       toast({ title: "Quiz generation failed", description: err?.message, variant: "destructive" });
     } finally { setIsGeneratingQuiz(false); }
@@ -796,19 +799,26 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                       Save Quiz
                     </Button>
                   )}
-                  <Button size="sm" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || !lecture.transcript} className="gap-1.5 h-8 text-xs">
+                  <Button size="sm" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || (!lecture.transcript && !lecture.aiNotesMarkdown)} className="gap-1.5 h-8 text-xs">
                     {isGeneratingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     {isGeneratingQuiz ? "Generating…" : quizQuestions.length > 0 ? "Regenerate" : "Generate Quiz"}
                   </Button>
                 </div>
               </div>
 
-              {!lecture.transcript && (
+              {/* Source indicator — what will be used to generate */}
+              {!lecture.transcript && lecture.aiNotesMarkdown && (
+                <div className="flex items-center gap-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-700 dark:text-violet-400">
+                  <BookOpen className="w-4 h-4 shrink-0" />
+                  <span>Quiz will be generated from your uploaded notes since no transcript is available.</span>
+                </div>
+              )}
+              {!lecture.transcript && !lecture.aiNotesMarkdown && (
                 <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
                   <Mic className="w-4 h-4 shrink-0" />
                   <span>
-                    {!lecture.transcript && youtubeSource
-                      ? YOUTUBE_LECTURE_CAPTIONS_HINT
+                    {youtubeSource
+                      ? "Upload notes first using 'Upload Notes' on the lecture card — quiz can then be generated from them."
                       : "A transcript is needed to generate quiz questions. Wait for processing or upload a captioned video."}
                   </span>
                 </div>
@@ -818,7 +828,11 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                 <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
                   <HelpCircle className="w-12 h-12 opacity-20" />
                   <p className="text-sm">No quiz questions yet.</p>
-                  <p className="text-xs">Click "Generate Quiz" to create questions from the transcript.</p>
+                  <p className="text-xs">
+                    {lecture.transcript || lecture.aiNotesMarkdown
+                      ? `Click "Generate Quiz" to create questions from the ${lecture.transcript ? "transcript" : "uploaded notes"}.`
+                      : 'Upload notes or wait for transcript processing, then click "Generate Quiz".'}
+                  </p>
                 </div>
               )}
 
@@ -1283,13 +1297,7 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
                 </div>
               )}
               {isYouTube && lecture.transcriptStatus === "failed" && (
-                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">Captions or AI processing failed</p>
-                    <p className="text-xs mt-1 leading-relaxed">{YOUTUBE_LECTURE_CAPTIONS_HINT}</p>
-                  </div>
-                </div>
+                <YoutubeManualNotesPanel lecture={lecture} />
               )}
 
               {/* Video preview */}
@@ -2327,6 +2335,104 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
   );
 }
 
+/** Inline edit for lecture title on list cards (recorded + live). */
+function LectureTitleWithEdit({ lecture, compact }: { lecture: Lecture; compact?: boolean }) {
+  const updateLecture = useUpdateLecture();
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(lecture.title);
+
+  useEffect(() => {
+    if (!editing) setDraft(lecture.title);
+  }, [lecture.title, editing]);
+
+  const cancel = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDraft(lecture.title);
+    setEditing(false);
+  };
+
+  const save = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const t = draft.trim();
+    if (!t) {
+      toast({ title: "Title required", description: "Please enter a lecture name.", variant: "destructive" });
+      return;
+    }
+    if (t === lecture.title) {
+      setEditing(false);
+      return;
+    }
+    try {
+      await updateLecture.mutateAsync({ id: lecture.id, title: t });
+      toast({ title: "Lecture name updated" });
+      setEditing(false);
+    } catch {
+      toast({ title: "Could not update name", variant: "destructive" });
+    }
+  };
+
+  if (editing) {
+    return (
+      <div
+        className="flex items-center gap-1.5 min-w-0 w-full"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+      >
+        <Input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          className="h-8 text-sm min-w-0 flex-1"
+          maxLength={200}
+          autoFocus
+          onClick={e => e.stopPropagation()}
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void save();
+            }
+            if (e.key === "Escape") {
+              e.preventDefault();
+              cancel();
+            }
+          }}
+        />
+        <Button type="button" size="sm" className="h-8 shrink-0 px-2" onClick={e => void save(e)} disabled={updateLecture.isPending}>
+          {updateLecture.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" className="h-8 shrink-0 px-2" onClick={cancel} disabled={updateLecture.isPending}>
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex items-center gap-1 min-w-0", compact && "max-w-full")}>
+      <h3
+        className={cn(
+          "font-semibold text-foreground text-sm min-w-0 flex-1",
+          compact && "truncate group-hover:text-primary transition-colors",
+        )}
+      >
+        {lecture.title}
+      </h3>
+      <button
+        type="button"
+        className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+        onClick={e => {
+          e.stopPropagation();
+          setEditing(true);
+        }}
+        aria-label="Edit lecture name"
+        title="Edit name"
+      >
+        <Edit3 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 // ─── Recorded Lecture Card ────────────────────────────────────────────────────
 
 const transcriptStatusBadge: Record<string, { cls: string; label: string }> = {
@@ -2346,11 +2452,56 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
   processingStep?: number;
 }) {
   const tsBadge = lecture.transcriptStatus ? transcriptStatusBadge[lecture.transcriptStatus] : null;
+  const isYouTube = /youtube\.com|youtu\.be/i.test(lecture.videoUrl ?? "");
+  const transcriptFailed = lecture.transcriptStatus === "failed";
+
+  const [panel, setPanel] = useState<null | "notes" | "transcript">(null);
+  const [panelText, setPanelText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const updateLecture = useUpdateLecture();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const openPanel = (type: "notes" | "transcript") => {
+    if (panel === type) { setPanel(null); return; }
+    setPanel(type);
+    setPanelText("");
+  };
+
+  const savePanel = async () => {
+    if (!panelText.trim() || !panel) return;
+    setSaving(true);
+    try {
+      const payload: Record<string, string> = { transcriptStatus: "done" };
+      if (panel === "notes") payload.aiNotesMarkdown = panelText.trim();
+      else payload.transcript = panelText.trim();
+      await updateLecture.mutateAsync({ id: lecture.id, ...payload as any });
+      queryClient.invalidateQueries({ queryKey: ["lectures"] });
+      toast({ title: panel === "notes" ? "Notes saved" : "Transcript saved", description: "Saved successfully." });
+      setPanel(null);
+      setPanelText("");
+    } catch {
+      toast({ title: "Failed to save", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-sm hover:border-primary/20 transition-all">
-      {/* Clickable top section */}
-      <button type="button" onClick={onView} className="w-full flex gap-4 p-4 text-left hover:bg-secondary/20 transition-colors">
+      {/* Clickable top section (div, not button — avoids nested buttons with title edit control) */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onView}
+        onKeyDown={e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onView();
+          }
+        }}
+        className="w-full flex gap-4 p-4 text-left hover:bg-secondary/20 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
         {/* Thumbnail */}
         <div className="w-28 h-18 rounded-xl bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center relative group/thumb">
           {lecture.thumbnailUrl
@@ -2363,8 +2514,8 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">{lecture.title}</h3>
+            <div className="min-w-0 flex-1 group">
+              <LectureTitleWithEdit lecture={lecture} compact />
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className="text-xs text-muted-foreground">{lecture.batch?.name}</span>
                 {lecture.topic && <span className="text-xs text-muted-foreground">· {lecture.topic.name}</span>}
@@ -2394,7 +2545,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
             <ChevronRight className="w-3 h-3" /> Click to view details
           </p>
         </div>
-      </button>
+      </div>
       {/* Action bar */}
       <div className="flex items-center gap-2 px-4 pb-3 flex-wrap border-t border-border/50 pt-3">
         {lecture.status === "draft" && (
@@ -2407,15 +2558,153 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
             <BarChart2 className="w-3.5 h-3.5" /> Live Stats
           </Button>
         )}
-        {lecture.transcriptStatus === "failed" && (
+        {transcriptFailed && !isYouTube && (
           <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRetranscribe(); }} className="gap-1.5 h-8 text-xs text-red-600 border-red-500/30 hover:bg-red-500/10">
             <RefreshCw className="w-3 h-3" /> Retry Transcription
           </Button>
+        )}
+        {transcriptFailed && isYouTube && (
+          <>
+            <Button
+              variant="outline" size="sm"
+              onClick={e => { e.stopPropagation(); openPanel("notes"); }}
+              className={cn("gap-1.5 h-8 text-xs", panel === "notes" ? "bg-violet-50 border-violet-300 text-violet-700" : "text-violet-600 border-violet-300/60 hover:bg-violet-50")}
+            >
+              <FileText className="w-3 h-3" />
+              {panel === "notes" ? "Cancel" : "Upload Notes"}
+            </Button>
+            <Button
+              variant="outline" size="sm"
+              onClick={e => { e.stopPropagation(); openPanel("transcript"); }}
+              className={cn("gap-1.5 h-8 text-xs", panel === "transcript" ? "bg-blue-50 border-blue-300 text-blue-700" : "text-blue-600 border-blue-300/60 hover:bg-blue-50")}
+            >
+              <Mic className="w-3 h-3" />
+              {panel === "transcript" ? "Cancel" : "Upload Transcript"}
+            </Button>
+          </>
         )}
         <button onClick={e => { e.stopPropagation(); onDelete(); }} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Inline paste panel — expands below action bar */}
+      {panel && (
+        <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-2 bg-secondary/20">
+          <p className="text-xs font-semibold text-foreground">
+            {panel === "notes"
+              ? "Paste notes (markdown supported) — students will see these as AI notes"
+              : "Paste the lecture transcript — plain text, one sentence per line"}
+          </p>
+          <textarea
+            value={panelText}
+            onChange={e => setPanelText(e.target.value)}
+            rows={6}
+            placeholder={panel === "notes"
+              ? "# Henry's Law\n\n## Key Concepts\n- At constant temperature, the amount of dissolved gas...\n\n## Formula\n p = K_H · c"
+              : "In this lecture we will study Henry's Law. Henry's Law states that at constant temperature..."}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/40"
+          />
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={e => { e.stopPropagation(); savePanel(); }}
+              disabled={saving || !panelText.trim()}
+              className="gap-1.5 h-8 text-xs"
+            >
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+              Save {panel === "notes" ? "Notes" : "Transcript"}
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground"
+              onClick={e => { e.stopPropagation(); setPanel(null); setPanelText(""); }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── YouTube Manual Notes Panel ───────────────────────────────────────────────
+// Shown when YouTube caption fetch fails. Teacher can paste notes directly.
+
+function YoutubeManualNotesPanel({ lecture }: { lecture: Lecture }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const updateLecture = useUpdateLecture();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const save = async () => {
+    if (!text.trim()) return;
+    setSaving(true);
+    try {
+      await updateLecture.mutateAsync({
+        id: lecture.id,
+        aiNotesMarkdown: text.trim(),
+        transcriptStatus: "done" as any,
+      });
+      queryClient.invalidateQueries({ queryKey: ["lectures"] });
+      toast({ title: "Notes saved", description: "Your notes are now visible to students." });
+      setOpen(false);
+      setText("");
+    } catch {
+      toast({ title: "Failed to save notes", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-amber-800">AI notes could not be generated</p>
+          <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+            YouTube captions are unavailable for this video. You can write notes manually — students will see them just like AI-generated notes.
+          </p>
+        </div>
+      </div>
+
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-100 border border-amber-300 text-xs font-bold text-amber-800 hover:bg-amber-200 transition-colors"
+        >
+          <Edit3 className="w-3.5 h-3.5" /> Write Notes Manually
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-amber-800">Paste or type notes (markdown supported):</p>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={10}
+            placeholder={"# Topic Title\n\n## Key Points\n- Point 1\n- Point 2\n\n## Summary\n..."}
+            className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-300"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={save}
+              disabled={saving || !text.trim()}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 disabled:opacity-50 transition-colors"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+              Save Notes
+            </button>
+            <button
+              onClick={() => { setOpen(false); setText(""); }}
+              className="px-4 py-2 rounded-xl border border-amber-300 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2423,7 +2712,6 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
 // ─── Live Class Card ──────────────────────────────────────────────────────────
 
 function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => void }) {
-  const updateLecture = useUpdateLecture();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -2468,8 +2756,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
     <div className={cn("bg-card border rounded-2xl overflow-hidden", lecture.status === "live" ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border")}>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="font-semibold text-foreground text-sm">{lecture.title}</h3>
+          <div className="min-w-0 flex-1 pr-2">
+            <LectureTitleWithEdit lecture={lecture} compact />
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className="text-xs text-muted-foreground">{lecture.batch?.name}</span>
               {lecture.scheduledAt && (
