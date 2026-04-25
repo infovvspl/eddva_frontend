@@ -99,6 +99,30 @@ function cleanAiMarkdown(md: string) {
     .trim();
 }
 
+function toTranscriptParagraphs(transcript?: string | null): string[] {
+  const raw = String(transcript || "").trim();
+  if (!raw) return [];
+
+  const byBlocks = raw.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  if (byBlocks.length > 1) return byBlocks;
+
+  const normalized = raw.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+
+  const sentences = normalized
+    .split(/(?<=[.!?।])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (sentences.length <= 3) return [normalized];
+
+  const grouped: string[] = [];
+  for (let i = 0; i < sentences.length; i += 3) {
+    grouped.push(sentences.slice(i, i + 3).join(" "));
+  }
+  return grouped;
+}
+
 // ─── Processing Animation ─────────────────────────────────────────────────────
 
 const AI_STEPS_EN = [
@@ -743,8 +767,14 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                           : "English"}
                       </span>
                     </div>
-                    <div className="bg-secondary/40 rounded-xl p-5 text-sm text-foreground leading-7 whitespace-pre-wrap font-mono">
-                      {lecture.transcript}
+                    <div className="bg-secondary/30 rounded-xl p-4 sm:p-5">
+                      <div className="space-y-3">
+                        {toTranscriptParagraphs(lecture.transcript).map((para, idx) => (
+                          <p key={idx} className="text-sm text-foreground leading-7">
+                            {para}
+                          </p>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -1435,7 +1465,7 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5" /> Auto-generated Transcript
               </p>
-              {lecture.transcript.split(/\n{2,}/).filter(Boolean).map((para, i) => (
+              {toTranscriptParagraphs(lecture.transcript).map((para, i) => (
                 <p key={i} className="text-sm text-foreground/80 leading-7">{para}</p>
               ))}
             </div>
