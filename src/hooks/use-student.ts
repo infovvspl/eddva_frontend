@@ -30,6 +30,8 @@ export const studentKeys = {
   battleElo: ["student", "battle", "elo"] as const,
   studyStatus: (topicId: string) => ["student", "study-status", topicId] as const,
   aiSession: (topicId: string) => ["student", "ai-session", topicId] as const,
+  // Progress report key — inside "student" namespace so plan-level invalidations reach it
+  progressReport: (id?: string) => ["student", "progress-report", id ?? "self"] as const,
 };
 
 // ─── Auth / Me ────────────────────────────────────────────────────────────────
@@ -38,7 +40,9 @@ export function useStudentMe() {
   return useQuery({
     queryKey: studentKeys.me,
     queryFn: studentApi.getMe,
-    staleTime: 60_000,
+    // XP, streak, profile — only changes via explicit mutations that invalidate this key.
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
   });
 }
 
@@ -249,6 +253,8 @@ export function useSubmitSession() {
       qc.invalidateQueries({ queryKey: studentKeys.progressOverview });
       qc.invalidateQueries({ queryKey: studentKeys.performance });
       qc.invalidateQueries({ queryKey: studentKeys.me });
+      // Quiz completion changes topic status in the roadmap tree.
+      qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
   });
 }
@@ -268,7 +274,10 @@ export function useTodaysPlan() {
   return useQuery({
     queryKey: studentKeys.plan,
     queryFn: studentApi.getTodaysPlan,
-    staleTime: 60_000,
+    // Plan for a given day is stable — only mutations (complete/skip/regenerate) change it.
+    // 5 min stale: navigating away and back within a study session won't re-fetch.
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
     retry: false,
   });
 }
@@ -278,7 +287,8 @@ export function useWeeklyPlan(startDate: string, endDate: string) {
     queryKey: studentKeys.weeklyPlan(startDate, endDate),
     queryFn: () => studentApi.getWeeklyPlan(startDate, endDate),
     enabled: !!startDate && !!endDate,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
   });
 }
 
@@ -287,7 +297,8 @@ export function useWeeklyPlanGrouped(startDate: string, endDate: string) {
     queryKey: [...studentKeys.weeklyPlan(startDate, endDate), "grouped"],
     queryFn: () => studentApi.getWeeklyPlanGrouped(startDate, endDate),
     enabled: !!startDate && !!endDate,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
     retry: false,
   });
 }
@@ -297,7 +308,11 @@ export function useGeneratePlan() {
   return useMutation({
     mutationFn: studentApi.generatePlan,
     onSuccess: () => {
+      // Wipe the whole plan subtree + progress report — a fresh plan invalidates syllabus state.
+      qc.removeQueries({ queryKey: ["student", "plan"] });
       qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      qc.invalidateQueries({ queryKey: studentKeys.me });
+      qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
   });
 }
@@ -306,13 +321,12 @@ export function useRegeneratePlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: studentApi.regeneratePlan,
-    onSuccess: async () => {
-      // Clear stale cached plan slices first, then force active refetch.
+    onSuccess: () => {
+      // Remove first so subsequent invalidates always trigger a real fetch.
       qc.removeQueries({ queryKey: ["student", "plan"] });
-      await qc.invalidateQueries({ queryKey: ["student", "plan"] });
-      await qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
-      await qc.invalidateQueries({ queryKey: [...studentKeys.plan, "next-action"] });
-      await qc.refetchQueries({ queryKey: ["student", "plan"], type: "active" });
+      qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      qc.invalidateQueries({ queryKey: studentKeys.me });
+      qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
   });
 }
@@ -321,9 +335,25 @@ export function useCompletePlanItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (itemId: string) => studentApi.completePlanItem(itemId),
-    onSuccess: () => {
+    // Optimistic update: mark item done instantly so the UI responds in 0ms, not ~300ms.
+    onMutate: async (itemId) => {
+      await qc.cancelQueries({ queryKey: studentKeys.plan });
+      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan);
+      qc.setQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan, (old = []) =>
+        old.map(item => item.id === itemId ? { ...item, status: "completed" as const } : item)
+      );
+      return { prev };
+    },
+    onError: (_err, _itemId, ctx) => {
+      // Revert optimistic change on failure.
+      if (ctx?.prev !== undefined) qc.setQueryData(studentKeys.plan, ctx.prev);
+    },
+    onSettled: () => {
+      // Always sync with server after mutation settles (success or error).
       qc.invalidateQueries({ queryKey: studentKeys.plan });
+      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
       qc.invalidateQueries({ queryKey: studentKeys.me });
+      qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
   });
 }
@@ -332,8 +362,20 @@ export function useSkipPlanItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (itemId: string) => studentApi.skipPlanItem(itemId),
-    onSuccess: () => {
+    onMutate: async (itemId) => {
+      await qc.cancelQueries({ queryKey: studentKeys.plan });
+      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan);
+      qc.setQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan, (old = []) =>
+        old.map(item => item.id === itemId ? { ...item, status: "skipped" as const } : item)
+      );
+      return { prev };
+    },
+    onError: (_err, _itemId, ctx) => {
+      if (ctx?.prev !== undefined) qc.setQueryData(studentKeys.plan, ctx.prev);
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: studentKeys.plan });
+      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
     },
   });
 }
@@ -553,6 +595,8 @@ export function useCompleteAiStudy() {
       qc.invalidateQueries({ queryKey: studentKeys.studyStatus(topicId) });
       qc.invalidateQueries({ queryKey: studentKeys.aiSession(topicId) });
       qc.invalidateQueries({ queryKey: studentKeys.me });
+      // AI session completion can advance topic status in the roadmap tree.
+      qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
   });
 }
@@ -643,9 +687,12 @@ export function useStartPYQSession() {
 
 export function useProgressReport(studentId?: string) {
   return useQuery({
-    queryKey: ['progress-report', studentId ?? 'self'],
+    queryKey: studentKeys.progressReport(studentId),
     queryFn: () => studentApi.getProgressReport(studentId),
-    staleTime: 60_000,
+    // Heavy tree query (subject→chapter→topic). Progress only changes on quiz, lecture,
+    // or AI session completion — each of those mutations explicitly invalidates this key.
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
     retry: false,
     throwOnError: false,
   });

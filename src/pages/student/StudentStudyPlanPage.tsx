@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, addDays, startOfWeek, differenceInDays } from "date-fns";
+import { format, addDays, startOfWeek, differenceInDays, subYears } from "date-fns";
 import { toast } from "sonner";
 import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
-  RotateCcw, Map, ListTodo, Star, CheckCheck, Rocket,
+  RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
   ArrowRight, Sparkles, Activity,
 } from "lucide-react";
 import {
@@ -15,6 +15,7 @@ import {
   useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
+import type { ProgressReport, TopicReportEntry } from "@/lib/api/student";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -280,78 +281,378 @@ function CircleProgress({ pct, color, size = 56 }: { pct: number; color: string;
   );
 }
 
-// ─── Curriculum Roadmap ────────────────────────────────────────────────────────
+// ─── Curriculum Roadmap Tree ──────────────────────────────────────────────────
 
-function TopicPill({ topic }: { topic: any }) {
-  const color =
-    topic.status === "completed"   ? "bg-emerald-50 border-emerald-300 text-emerald-700" :
-    topic.status === "in_progress" ? "bg-amber-50 border-amber-300 text-amber-700" :
-    topic.status === "locked"      ? "bg-gray-50 border-gray-200 text-gray-400" :
-                                     "bg-blue-50 border-blue-200 text-blue-700";
-  const dot =
-    topic.status === "completed"   ? "bg-emerald-500" :
-    topic.status === "in_progress" ? "bg-amber-400" :
-    topic.status === "locked"      ? "bg-gray-300" : "bg-blue-400";
+const TOPIC_STATUS = {
+  completed:   { dot: "bg-emerald-500 border-emerald-500", text: "text-emerald-700", badge: "bg-emerald-50 border-emerald-200 text-emerald-700", icon: "✓" },
+  in_progress: { dot: "bg-amber-400 border-amber-400",     text: "text-amber-700",   badge: "bg-amber-50 border-amber-200 text-amber-700",       icon: "…" },
+  locked:      { dot: "bg-slate-300 border-slate-300",     text: "text-slate-400",   badge: "bg-slate-50 border-slate-200 text-slate-400",        icon: "🔒" },
+  default:     { dot: "bg-blue-400 border-blue-400",       text: "text-blue-700",    badge: "bg-blue-50 border-blue-200 text-blue-700",           icon: "○" },
+};
+function topicStatus(s: string) { return TOPIC_STATUS[s as keyof typeof TOPIC_STATUS] ?? TOPIC_STATUS.default; }
+
+function normalizeText(value?: string | null): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function tokenize(value?: string | null): string[] {
+  return normalizeText(value)
+    .split(" ")
+    .filter((token) => token.length > 2);
+}
+
+function isLikelySubtopicMatch(taskTopicName: string, roadmapTopicName: string): boolean {
+  const task = normalizeText(taskTopicName);
+  const roadmap = normalizeText(roadmapTopicName);
+  if (!task || !roadmap || task === roadmap) return false;
+  if (task.includes(roadmap) || roadmap.includes(task)) return true;
+
+  const taskTokens = tokenize(taskTopicName);
+  const roadmapTokens = tokenize(roadmapTopicName);
+  if (!taskTokens.length || !roadmapTokens.length) return false;
+
+  const taskSet = new Set(taskTokens);
+  const overlap = roadmapTokens.filter((token) => taskSet.has(token)).length;
+  const minTokenLen = Math.min(taskTokens.length, roadmapTokens.length);
+  return overlap >= 2 || (minTokenLen > 0 && overlap / minTokenLen >= 0.6);
+}
+
+function isNotesTask(item: StudyPlanItem): boolean {
+  const kind = item.content?.taskKind;
+  if (kind === "ai_notes") return true;
+  if (item.type === "revision") return true;
+  if (item.content?.notesUrl) return true;
+  const title = normalizeText(item.title);
+  return /\bnotes?\b/.test(title);
+}
+
+function isPracticeTask(item: StudyPlanItem): boolean {
+  const kind = item.content?.taskKind;
+  if (kind === "practice") return true;
+  if (item.type === "practice") return true;
+  const title = normalizeText(item.title);
+  return /\bpractice\b|\bpaper\b|\bpyq\b|\bquiz\b|\bdpp\b/.test(title);
+}
+
+const STATUS_RANK: Record<TopicReportEntry["status"], number> = {
+  locked: 0,
+  unlocked: 1,
+  in_progress: 2,
+  completed: 3,
+};
+
+function maxStatus(
+  a: TopicReportEntry["status"],
+  b: TopicReportEntry["status"],
+): TopicReportEntry["status"] {
+  return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
+}
+
+function deriveStatusForTopic(topic: TopicReportEntry, todayItems: StudyPlanItem[]): TopicReportEntry["status"] {
+  const topicName = normalizeText(topic.topicName);
+  if (!topicName) return topic.status;
+
+  const relatedItems = todayItems.filter((item) => {
+    const contentTopic = normalizeText(item.content?.topicName);
+    const title = normalizeText(item.title);
+    return (
+      !!contentTopic && (
+        contentTopic === topicName ||
+        contentTopic.includes(topicName) ||
+        topicName.includes(contentTopic) ||
+        isLikelySubtopicMatch(item.content?.topicName ?? "", topic.topicName)
+      )
+    ) || (!!title && title.includes(topicName));
+  });
+
+  if (relatedItems.length === 0) return topic.status;
+
+  const directItems = relatedItems.filter((item) => normalizeText(item.content?.topicName) === topicName);
+  if (directItems.length > 0) {
+    const notesDone = directItems.some((item) => isNotesTask(item) && item.status === "completed");
+    const practiceDone = directItems.some((item) => isPracticeTask(item) && item.status === "completed");
+    const hasAnyDone = directItems.some((item) => item.status === "completed");
+    const derived: TopicReportEntry["status"] =
+      notesDone && practiceDone ? "completed" :
+      hasAnyDone ? "in_progress" :
+      "unlocked";
+    // Never downgrade backend-computed topic status based on pending plan items.
+    return maxStatus(topic.status, derived);
+  }
+
+  const subtopicItems = relatedItems.filter((item) => {
+    const contentTopic = normalizeText(item.content?.topicName);
+    return !!contentTopic && contentTopic !== topicName;
+  });
+
+  if (subtopicItems.length > 0) {
+    const bySubtopic = new Map<string, StudyPlanItem[]>();
+    for (const item of subtopicItems) {
+      const key = normalizeText(item.content?.topicName);
+      if (!key) continue;
+      if (!bySubtopic.has(key)) bySubtopic.set(key, []);
+      bySubtopic.get(key)!.push(item);
+    }
+
+    const hasAnyDone = subtopicItems.some((item) => item.status === "completed");
+    const distinctSubtopics = bySubtopic.size;
+    const allSubtopicsCompleted =
+      distinctSubtopics > 1 &&
+      Array.from(bySubtopic.values()).every((items) => {
+        const notesDone = items.some((item) => isNotesTask(item) && item.status === "completed");
+        const practiceDone = items.some((item) => isPracticeTask(item) && item.status === "completed");
+        return notesDone && practiceDone;
+      });
+
+    const derived: TopicReportEntry["status"] =
+      allSubtopicsCompleted ? "completed" :
+      hasAnyDone ? "in_progress" :
+      "unlocked";
+    return maxStatus(topic.status, derived);
+  }
+
+  const hasAnyDone = relatedItems.some((item) => item.status === "completed");
+  return maxStatus(topic.status, hasAnyDone ? "in_progress" : "unlocked");
+}
+
+function mergeRoadmapWithTodayPlan(report: ProgressReport, todayItems: StudyPlanItem[]): ProgressReport {
+  const subjects = report.subjects.map((subject) => {
+    const chapters = subject.chapters.map((chapter) => {
+      const topics = chapter.topics.map((topic) => ({
+        ...topic,
+        status: deriveStatusForTopic(topic, todayItems),
+      }));
+      const topicsCompleted = topics.filter((topic) => topic.status === "completed").length;
+      const topicsInProgress = topics.filter((topic) => topic.status === "in_progress").length;
+      const lockedTopics = topics.filter((topic) => topic.status === "locked").length;
+      const overallAccuracy = topics.length
+        ? Math.round(topics.reduce((sum, topic) => sum + (topic.bestAccuracy ?? 0), 0) / topics.length)
+        : 0;
+      return {
+        ...chapter,
+        topics,
+        topicsTotal: topics.length,
+        topicsCompleted,
+        overallAccuracy,
+        _derivedInProgressTopics: topicsInProgress,
+        _derivedLockedTopics: lockedTopics,
+      };
+    });
+
+    const topicsTotal = chapters.reduce((sum, chapter) => sum + chapter.topicsTotal, 0);
+    const topicsCompleted = chapters.reduce((sum, chapter) => sum + chapter.topicsCompleted, 0);
+    const weightedAccuracySum = chapters.reduce((sum, chapter) => sum + chapter.overallAccuracy * chapter.topicsTotal, 0);
+    const overallAccuracy = topicsTotal ? Math.round(weightedAccuracySum / topicsTotal) : 0;
+    return {
+      ...subject,
+      chapters,
+      topicsTotal,
+      topicsCompleted,
+      overallAccuracy,
+    };
+  });
+
+  const totalTopics = subjects.reduce((sum, subject) => sum + subject.topicsTotal, 0);
+  const completedTopics = subjects.reduce((sum, subject) => sum + subject.topicsCompleted, 0);
+  const inProgressTopics = subjects.reduce(
+    (sum, subject) =>
+      sum + subject.chapters.reduce((chapterSum, chapter: any) => chapterSum + (chapter._derivedInProgressTopics ?? 0), 0),
+    0,
+  );
+  const lockedTopics = subjects.reduce(
+    (sum, subject) =>
+      sum + subject.chapters.reduce((chapterSum, chapter: any) => chapterSum + (chapter._derivedLockedTopics ?? 0), 0),
+    0,
+  );
+
+  return {
+    ...report,
+    subjects: subjects.map((subject) => ({
+      ...subject,
+      chapters: subject.chapters.map((chapter: any) => {
+        const { _derivedInProgressTopics, _derivedLockedTopics, ...rest } = chapter;
+        return rest;
+      }),
+    })),
+    summary: {
+      ...report.summary,
+      totalTopics,
+      completedTopics,
+      inProgressTopics,
+      lockedTopics,
+    },
+  };
+}
+
+// Single topic leaf — shows inside an expanded chapter
+function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; lineColor: string }) {
+  const st = topicStatus(topic.status);
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border ${color}`}>
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-      <span className="truncate max-w-[120px]">{topic.topicName}</span>
+    <div className="flex items-start">
+      {/* vertical + elbow lines */}
+      <div className="relative flex flex-col items-center" style={{ width: 24, minWidth: 24 }}>
+        {/* vertical line from parent — stops halfway for last item */}
+        {!isLast && (
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: lineColor, opacity: 0.35 }} />
+        )}
+        {isLast && (
+          <div className="absolute left-1/2 top-0 w-px -translate-x-1/2" style={{ height: "50%", background: lineColor, opacity: 0.35 }} />
+        )}
+        {/* horizontal elbow */}
+        <div className="absolute top-1/2 left-1/2 -translate-y-1/2 h-px" style={{ width: 12, background: lineColor, opacity: 0.35 }} />
+      </div>
+      {/* dot + label */}
+      <div className="flex items-center gap-1.5 py-1.5 pl-1 flex-1 min-w-0">
+        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
+          {topic.status === "completed" && <span className="text-[8px] text-white font-black leading-none">✓</span>}
+        </div>
+        <span className={`text-xs font-medium truncate leading-tight ${st.text}`}>{topic.topicName}</span>
+        {topic.status === "in_progress" && (
+          <span className="shrink-0 text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">In Progress</span>
+        )}
+      </div>
     </div>
   );
 }
 
-function ChapterRow({ chapter, cfg }: { chapter: any; cfg: typeof SUBJECT_CFG[string] }) {
+// Chapter node — second level; expands to show topics
+function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
+  chapter: any;
+  cfg: typeof SUBJECT_CFG[string];
+  isLast: boolean;
+  parentLineColor: string;
+}) {
   const [open, setOpen] = useState(false);
-  const done  = chapter.topics?.filter((t: any) => t.status === "completed").length ?? 0;
-  const total = chapter.topicsTotal ?? chapter.topics?.length ?? 0;
+  const topics: any[] = chapter.topics ?? [];
+  const done  = topics.filter((t: any) => t.status === "completed").length;
+  const total = chapter.topicsTotal ?? topics.length;
   const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+  const allDone = done === total && total > 0;
+
   return (
-    <div>
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
-        <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-        <span className="flex-1 text-sm font-medium text-gray-800 truncate">{chapter.chapterName}</span>
-        <span className="text-xs text-gray-400 shrink-0">{done}/{total}</span>
-        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden shrink-0">
-          <div className={`h-full rounded-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
-        </div>
-        {open ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
-      </button>
-      {open && (
-        <div className="px-6 pb-3 flex flex-wrap gap-2">
-          {(chapter.topics ?? []).map((t: any) => <TopicPill key={t.topicId} topic={t} />)}
-        </div>
-      )}
+    <div className="flex items-start">
+      {/* vertical line from subject */}
+      <div className="relative flex flex-col items-center" style={{ width: 28, minWidth: 28 }}>
+        {!isLast && (
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: parentLineColor, opacity: 0.3 }} />
+        )}
+        {isLast && (
+          <div className="absolute left-1/2 top-0 w-px -translate-x-1/2" style={{ height: "50%", background: parentLineColor, opacity: 0.3 }} />
+        )}
+        <div className="absolute top-[18px] left-1/2 h-px -translate-y-1/2" style={{ width: 14, background: parentLineColor, opacity: 0.3 }} />
+      </div>
+
+      {/* Chapter card */}
+      <div className="flex-1 min-w-0 mb-2">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all
+            ${open ? `${cfg.bg} ${cfg.border}` : "bg-white border-slate-200 hover:border-slate-300"}`}
+        >
+          {/* chapter dot */}
+          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${allDone ? "bg-emerald-500" : cfg.dot}`} />
+          <span className="flex-1 text-sm font-semibold text-slate-800 truncate">{chapter.chapterName}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[10px] text-slate-400 font-medium">{done}/{total}</span>
+            {total > 0 && (
+              <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${allDone ? "bg-emerald-500" : cfg.dot}`} style={{ width: `${pct}%` }} />
+              </div>
+            )}
+            {open
+              ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+          </div>
+        </button>
+
+        {/* Topics subtree */}
+        {open && topics.length > 0 && (
+          <div className="mt-1 ml-5 pl-1 relative">
+            {/* Vertical spine for topics */}
+            <div className="absolute left-0 top-0 bottom-3 w-px" style={{ background: cfg.ring, opacity: 0.25 }} />
+            {topics.map((t, idx) => (
+              <TopicLeaf key={t.topicId} topic={t} isLast={idx === topics.length - 1} lineColor={cfg.ring} />
+            ))}
+          </div>
+        )}
+        {open && topics.length === 0 && (
+          <p className="text-xs text-slate-400 pl-8 py-2">No topics available</p>
+        )}
+      </div>
     </div>
   );
 }
 
-function SubjectCard({ subject }: { subject: any }) {
-  const [open, setOpen] = useState(false);
+// Subject root node — top level; expands to show chapters
+function SubjectNode({ subject, index }: { subject: any; index: number }) {
+  const [open, setOpen] = useState(index === 0); // first subject open by default
   const cfg = subjectCfg(subject.subjectName);
   const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
+  const chapters: any[] = subject.chapters ?? [];
+
+  const subjectEmoji: Record<string, string> = {
+    physics: "⚛️", chemistry: "🧪", mathematics: "📐", math: "📐", biology: "🌱",
+  };
+  const emoji = Object.entries(subjectEmoji).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? "📚";
+
   return (
-    <div className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
-      <button onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center gap-4 p-4 text-left transition-all ${cfg.bg} hover:brightness-95`}>
+    <div className="mb-4">
+      {/* Subject header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-left transition-all shadow-sm
+          ${open ? `${cfg.bg} ${cfg.border} shadow-md` : `bg-white ${cfg.border} hover:${cfg.bg}`}`}
+      >
+        {/* circle progress */}
         <div className="relative shrink-0">
-          <CircleProgress pct={pct} color={cfg.ring} size={52} />
+          <CircleProgress pct={pct} color={cfg.ring} size={48} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-bold text-gray-700">{pct}%</span>
+            <span className="text-[11px] font-black text-slate-700">{pct}%</span>
           </div>
         </div>
+
         <div className="flex-1 min-w-0">
-          <div className={`font-bold text-lg ${cfg.color}`}>{subject.subjectName}</div>
-          <div className="text-sm text-gray-500">{subject.topicsCompleted}/{subject.topicsTotal} topics · {Math.round(subject.overallAccuracy ?? 0)}% accuracy</div>
-          <div className="mt-2 h-1.5 bg-white/60 rounded-full overflow-hidden">
-            <div className={`h-full ${cfg.dot} rounded-full`} style={{ width: `${pct}%` }} />
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{emoji}</span>
+            <span className={`text-base font-black ${cfg.color}`}>{subject.subjectName}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1 h-1.5 bg-white/60 rounded-full overflow-hidden max-w-[120px]">
+              <div className={`h-full ${cfg.dot} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-xs text-slate-500">{subject.topicsCompleted}/{subject.topicsTotal} topics</span>
+            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs text-slate-500">{chapters.length} chapters</span>
           </div>
         </div>
-        {open ? <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" /> : <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />}
+
+        <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${cfg.bg}`}>
+          {open
+            ? <ChevronDown className={`w-4 h-4 ${cfg.color}`} />
+            : <ChevronRight className={`w-4 h-4 ${cfg.color}`} />}
+        </div>
       </button>
+
+      {/* Chapters subtree */}
       {open && (
-        <div className="border-t border-white/40 bg-white/70 divide-y divide-gray-100">
-          {(subject.chapters ?? []).map((ch: any) => <ChapterRow key={ch.chapterId} chapter={ch} cfg={cfg} />)}
+        <div className="mt-2 ml-6 pl-2 relative">
+          {/* Spine line from subject down through all chapters */}
+          <div className="absolute left-0 top-0 bottom-4 w-px" style={{ background: cfg.ring, opacity: 0.25 }} />
+          {chapters.map((ch, idx) => (
+            <ChapterNode
+              key={ch.chapterId}
+              chapter={ch}
+              cfg={cfg}
+              isLast={idx === chapters.length - 1}
+              parentLineColor={cfg.ring}
+            />
+          ))}
+          {chapters.length === 0 && (
+            <p className="text-xs text-slate-400 py-3 pl-4">No chapters available</p>
+          )}
         </div>
       )}
     </div>
@@ -359,6 +660,9 @@ function SubjectCard({ subject }: { subject: any }) {
 }
 
 function CurriculumRoadmap() {
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const historyStart = format(subYears(new Date(), 5), "yyyy-MM-dd");
+  const { data: groupedHistory = {} } = useWeeklyPlanGrouped(historyStart, todayKey);
   const { data: report, isLoading } = useProgressReport();
   if (isLoading) return (
     <div className="flex items-center justify-center h-48">
@@ -367,14 +671,35 @@ function CurriculumRoadmap() {
   );
   if (!report?.subjects?.length) return (
     <div className="text-center py-16 text-gray-400">
-      <Map className="w-12 h-12 mx-auto mb-3 opacity-30" />
+      <MapIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
       <p className="text-sm">AI syllabus is being prepared for your target exam. Please refresh in a few seconds.</p>
     </div>
   );
-  const { summary } = report;
+  const datedEntries = Object.entries(groupedHistory)
+    .filter(([, items]) => Array.isArray(items) && items.length > 0)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  const firstPlanDate = datedEntries[0]?.[0] ?? todayKey;
+
+  const planHistory = Object.entries(groupedHistory)
+    .filter(([date]) => date >= firstPlanDate)
+    .filter(([date]) => date <= todayKey)
+    .flatMap(([, items]) => items ?? []);
+
+  const effectiveReport = mergeRoadmapWithTodayPlan(report, planHistory);
+  const { summary } = effectiveReport;
   const overallPct = summary.totalTopics > 0 ? Math.round((summary.completedTopics / summary.totalTopics) * 100) : 0;
+  const completedLectureCount = summary.lecturesCompleted ?? 0;
+  const practiceItems = planHistory.filter(isPracticeTask);
+  const completedPracticeCount = practiceItems.filter((item) => item.status === "completed").length;
+  const derivedAccuracy =
+    summary.overallAccuracy && summary.overallAccuracy > 0
+      ? Math.round(summary.overallAccuracy)
+      : practiceItems.length > 0
+        ? Math.round((completedPracticeCount / practiceItems.length) * 100)
+        : 0;
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Summary banner */}
       <div className="bg-gradient-to-r from-indigo-600 to-violet-700 rounded-2xl p-5 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -388,36 +713,38 @@ function CurriculumRoadmap() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-center text-sm">
+        <div className="grid grid-cols-2 gap-3 text-center text-sm">
           <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{summary.lecturesCompleted}</div>
+            <div className="font-bold text-lg">{completedLectureCount}</div>
             <div className="text-indigo-200 text-xs">Lectures Done</div>
           </div>
           <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{Math.round(summary.overallAccuracy ?? 0)}%</div>
+            <div className="font-bold text-lg">{derivedAccuracy}%</div>
             <div className="text-indigo-200 text-xs">Accuracy</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{summary.totalPYQAttempted}</div>
-            <div className="text-indigo-200 text-xs">PYQs Done</div>
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-4 text-xs text-gray-500 px-1">
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 text-xs text-slate-500 px-1 flex-wrap">
         {[
           { dot: "bg-emerald-500", label: "Completed" },
-          { dot: "bg-amber-400",  label: "In Progress" },
-          { dot: "bg-blue-400",   label: "Unlocked" },
-          { dot: "bg-gray-300",   label: "Locked" },
+          { dot: "bg-amber-400",   label: "In Progress" },
+          { dot: "bg-blue-400",    label: "Unlocked" },
+          { dot: "bg-slate-300",   label: "Locked" },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${l.dot}`} />
+            <div className={`w-2.5 h-2.5 rounded-full ${l.dot}`} />
             {l.label}
           </div>
         ))}
       </div>
-      <div className="space-y-3">
-        {report.subjects.map(s => <SubjectCard key={s.subjectId} subject={s} />)}
+
+      {/* Tree */}
+      <div>
+        {effectiveReport.subjects.map((s, i) => (
+          <SubjectNode key={s.subjectId} subject={s} index={i} />
+        ))}
       </div>
     </div>
   );
@@ -694,7 +1021,7 @@ export default function StudentStudyPlanPage() {
           <div className="flex gap-1 border-b border-white/20">
             {[
               { key: "plan"    as const, label: "Study Plan",  icon: <ListTodo className="w-4 h-4" /> },
-              { key: "roadmap" as const, label: "My Roadmap",  icon: <Map      className="w-4 h-4" /> },
+              { key: "roadmap" as const, label: "My Roadmap",  icon: <MapIcon className="w-4 h-4" /> },
             ].map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 transition-all
@@ -832,7 +1159,7 @@ export default function StudentStudyPlanPage() {
 
               <button onClick={() => setActiveTab("roadmap")}
                 className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-semibold text-sm hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                <Map className="w-4 h-4" /> View My Curriculum Roadmap
+                <MapIcon className="w-4 h-4" /> View My Curriculum Roadmap
               </button>
             </div>
           </div>

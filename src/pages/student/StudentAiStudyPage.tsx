@@ -132,6 +132,14 @@ function normalizeLessonMarkdown(md: string): string {
     .replace(/\n##\s*.*Core Concepts[\s\S]*?(?=\n##\s+|$)/gi, "\n");
 }
 
+/** Optional readability for step lists in plain text; keeps lesson markdown small. */
+function formatSolutionSteps(text: string): string {
+  return String(text || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/([^\n])\s*(Step\s*[:#.)-]?\s*\d+\b)/gi, "$1\n\n$2")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
 function normalizeReadableText(text: string): string {
   return String(text || "")
     .replace(/\u00A0/g, " ")
@@ -226,8 +234,10 @@ function NotesFlashcard({
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-3">Answer</p>
-          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{answer}</p>
-          {explanation && <p className="text-xs text-slate-600 mt-3 leading-relaxed">{explanation}</p>}
+          <p className="text-sm font-semibold text-slate-800 leading-relaxed whitespace-pre-line">{formatSolutionSteps(answer)}</p>
+          {explanation && (
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed whitespace-pre-line">{formatSolutionSteps(explanation)}</p>
+          )}
           <p className="text-[11px] text-slate-500 mt-3">Click to flip back</p>
         </div>
       </div>
@@ -352,14 +362,18 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                 <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
                    <CheckCircle className="w-4 h-4" /> Solution Core
                 </p>
-                <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">{q.answer}</div>
+                <div className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  {formatSolutionSteps(q.answer)}
+                </div>
               </div>
               {q.explanation && (
                 <div>
                   <p className="text-[11px] font-semibold text-amber-600 mb-2 flex items-center gap-2">
                      <Lightbulb className="w-4 h-4" /> Logic Synthesis
                   </p>
-                  <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">{q.explanation}</div>
+                  <div className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    {formatSolutionSteps(q.explanation)}
+                  </div>
                 </div>
               )}
               <motion.button
@@ -414,7 +428,7 @@ export default function StudentAiStudyPage() {
   const timerRunning = !!sessionId && !completed;
   const elapsed = useElapsedTimer(timerRunning, sessionData?.timeSpentSeconds ?? 0);
   const normalizedLessonMarkdown = useMemo(
-    () => normalizeLessonMarkdown(sessionData?.lessonMarkdown ?? ""),
+    () => formatSolutionSteps(normalizeLessonMarkdown(sessionData?.lessonMarkdown ?? "")),
     [sessionData?.lessonMarkdown],
   );
   const mdZoomClass = useMemo(() => {

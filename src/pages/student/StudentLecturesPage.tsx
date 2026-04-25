@@ -19,7 +19,32 @@ import { useIsCompactLayout } from "@/hooks/use-mobile";
 const _API_ORIGIN = getApiOrigin();
 function resolveUrl(url?: string | null) {
   if (!url) return undefined;
-  return url.startsWith("http") ? url : `${_API_ORIGIN}${url}`;
+  if (url.startsWith("http")) return url;
+  // Relative path — prefix with API origin (strips double-slash)
+  return `${_API_ORIGIN.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
+}
+
+const CARD_GRADIENTS = [
+  ["#6366f1", "#8b5cf6"], // indigo → violet
+  ["#0ea5e9", "#6366f1"], // sky → indigo
+  ["#10b981", "#0ea5e9"], // emerald → sky
+  ["#f59e0b", "#ef4444"], // amber → red
+  ["#ec4899", "#8b5cf6"], // pink → violet
+  ["#14b8a6", "#6366f1"], // teal → indigo
+];
+
+function seedGradient(seed?: string) {
+  if (!seed) return CARD_GRADIENTS[0]!;
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return CARD_GRADIENTS[Math.abs(h) % CARD_GRADIENTS.length]!;
+}
+
+function getInitials(title?: string) {
+  if (!title) return "?";
+  const words = title.trim().split(/\s+/);
+  if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase();
+  return (words[0]![0]! + words[1]![0]!).toUpperCase();
 }
 function fmtDuration(s: number) {
   const m = Math.floor(s / 60);
@@ -368,11 +393,31 @@ function LectureCard({
               "w-full h-full object-cover transition-transform duration-700",
               lightMotion ? "" : "group-hover:scale-105"
             )}
-            onError={() => setImgErr(true)} />
+            onError={() => {
+              console.warn("[Lecture thumbnail] failed to load:", thumb);
+              setImgErr(true);
+            }} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100">
-            <Video className="w-10 h-10 text-indigo-200" />
-          </div>
+          // Rich placeholder — topic-seeded gradient + initials
+          (() => {
+            const [c1, c2] = seedGradient(lecture.topic?.name ?? lecture.title);
+            const initials = getInitials(lecture.topic?.name ?? lecture.title);
+            return (
+              <div
+                className="w-full h-full flex flex-col items-center justify-center gap-3 transition-transform duration-700 group-hover:scale-105"
+                style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}
+              >
+                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                  <span className="text-2xl font-black text-white">{initials}</span>
+                </div>
+                {lecture.topic?.name && (
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest px-3 text-center line-clamp-1">
+                    {lecture.topic.name}
+                  </span>
+                )}
+              </div>
+            );
+          })()
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
 
