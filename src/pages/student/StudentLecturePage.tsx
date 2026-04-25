@@ -958,6 +958,30 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
 
 // ─── Transcript Panel ─────────────────────────────────────────────────────────
 
+function toTranscriptParagraphs(transcript?: string | null): string[] {
+  const raw = String(transcript || "").trim();
+  if (!raw) return [];
+
+  const byBlocks = raw.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  if (byBlocks.length > 1) return byBlocks;
+
+  const normalized = raw.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+
+  const sentences = normalized
+    .split(/(?<=[.!?।])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (sentences.length <= 3) return [normalized];
+
+  const grouped: string[] = [];
+  for (let i = 0; i < sentences.length; i += 3) {
+    grouped.push(sentences.slice(i, i + 3).join(" "));
+  }
+  return grouped;
+}
+
 function TranscriptPanel({ lecture }: { lecture: Lecture }) {
   const [hiMode, setHiMode] = useState(false);
   const [transcriptHi, setTranscriptHi] = useState<string | null>(lecture.transcriptHi ?? null);
@@ -993,7 +1017,11 @@ function TranscriptPanel({ lecture }: { lecture: Lecture }) {
       </div>
       {translateError && <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{translateError}</p>}
       <div className="bg-white border border-slate-100 rounded-2xl p-4">
-        <p className="text-xs leading-relaxed text-slate-600 whitespace-pre-wrap">{displayText}</p>
+        <div className="space-y-2.5">
+          {toTranscriptParagraphs(displayText).map((para, idx) => (
+            <p key={idx} className="text-xs leading-relaxed text-slate-600">{para}</p>
+          ))}
+        </div>
       </div>
     </div>
   );
