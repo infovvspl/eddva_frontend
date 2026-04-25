@@ -2327,6 +2327,104 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
   );
 }
 
+/** Inline edit for lecture title on list cards (recorded + live). */
+function LectureTitleWithEdit({ lecture, compact }: { lecture: Lecture; compact?: boolean }) {
+  const updateLecture = useUpdateLecture();
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(lecture.title);
+
+  useEffect(() => {
+    if (!editing) setDraft(lecture.title);
+  }, [lecture.title, editing]);
+
+  const cancel = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDraft(lecture.title);
+    setEditing(false);
+  };
+
+  const save = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const t = draft.trim();
+    if (!t) {
+      toast({ title: "Title required", description: "Please enter a lecture name.", variant: "destructive" });
+      return;
+    }
+    if (t === lecture.title) {
+      setEditing(false);
+      return;
+    }
+    try {
+      await updateLecture.mutateAsync({ id: lecture.id, title: t });
+      toast({ title: "Lecture name updated" });
+      setEditing(false);
+    } catch {
+      toast({ title: "Could not update name", variant: "destructive" });
+    }
+  };
+
+  if (editing) {
+    return (
+      <div
+        className="flex items-center gap-1.5 min-w-0 w-full"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+      >
+        <Input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          className="h-8 text-sm min-w-0 flex-1"
+          maxLength={200}
+          autoFocus
+          onClick={e => e.stopPropagation()}
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void save();
+            }
+            if (e.key === "Escape") {
+              e.preventDefault();
+              cancel();
+            }
+          }}
+        />
+        <Button type="button" size="sm" className="h-8 shrink-0 px-2" onClick={e => void save(e)} disabled={updateLecture.isPending}>
+          {updateLecture.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" className="h-8 shrink-0 px-2" onClick={cancel} disabled={updateLecture.isPending}>
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex items-center gap-1 min-w-0", compact && "max-w-full")}>
+      <h3
+        className={cn(
+          "font-semibold text-foreground text-sm min-w-0 flex-1",
+          compact && "truncate group-hover:text-primary transition-colors",
+        )}
+      >
+        {lecture.title}
+      </h3>
+      <button
+        type="button"
+        className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+        onClick={e => {
+          e.stopPropagation();
+          setEditing(true);
+        }}
+        aria-label="Edit lecture name"
+        title="Edit name"
+      >
+        <Edit3 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 // ─── Recorded Lecture Card ────────────────────────────────────────────────────
 
 const transcriptStatusBadge: Record<string, { cls: string; label: string }> = {
@@ -2349,8 +2447,19 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-sm hover:border-primary/20 transition-all">
-      {/* Clickable top section */}
-      <button type="button" onClick={onView} className="w-full flex gap-4 p-4 text-left hover:bg-secondary/20 transition-colors">
+      {/* Clickable top section (div, not button — avoids nested buttons with title edit control) */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onView}
+        onKeyDown={e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onView();
+          }
+        }}
+        className="w-full flex gap-4 p-4 text-left hover:bg-secondary/20 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
         {/* Thumbnail */}
         <div className="w-28 h-18 rounded-xl bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center relative group/thumb">
           {lecture.thumbnailUrl
@@ -2363,8 +2472,8 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">{lecture.title}</h3>
+            <div className="min-w-0 flex-1 group">
+              <LectureTitleWithEdit lecture={lecture} compact />
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className="text-xs text-muted-foreground">{lecture.batch?.name}</span>
                 {lecture.topic && <span className="text-xs text-muted-foreground">· {lecture.topic.name}</span>}
@@ -2394,7 +2503,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
             <ChevronRight className="w-3 h-3" /> Click to view details
           </p>
         </div>
-      </button>
+      </div>
       {/* Action bar */}
       <div className="flex items-center gap-2 px-4 pb-3 flex-wrap border-t border-border/50 pt-3">
         {lecture.status === "draft" && (
@@ -2423,7 +2532,6 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
 // ─── Live Class Card ──────────────────────────────────────────────────────────
 
 function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => void }) {
-  const updateLecture = useUpdateLecture();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -2468,8 +2576,8 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
     <div className={cn("bg-card border rounded-2xl overflow-hidden", lecture.status === "live" ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border")}>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="font-semibold text-foreground text-sm">{lecture.title}</h3>
+          <div className="min-w-0 flex-1 pr-2">
+            <LectureTitleWithEdit lecture={lecture} compact />
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className="text-xs text-muted-foreground">{lecture.batch?.name}</span>
               {lecture.scheduledAt && (
