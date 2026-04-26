@@ -1268,6 +1268,12 @@ function JoinRoomScreen({
 type ScopeType = "topic" | "chapter" | "subject";
 type BattleDifficulty = "easy" | "medium" | "hard";
 
+const BATTLE_DIFFICULTY_PICK: { key: BattleDifficulty; label: string; desc: string }[] = [
+  { key: "easy", label: "Easy", desc: "Warm-up level questions" },
+  { key: "medium", label: "Medium", desc: "Balanced exam practice" },
+  { key: "hard", label: "Hard", desc: "Advanced challenge mode" },
+];
+
 function ChallengeScopePicker({
   onBack,
   onStart,
@@ -1326,11 +1332,6 @@ function ChallengeScopePicker({
     { key: "subject", label: "Subject", desc: "Mixed questions from a subject" },
     { key: "chapter", label: "Chapter", desc: "Questions from one chapter" },
     { key: "topic",   label: "Topic",   desc: "Deep dive into one topic" },
-  ];
-  const DIFFICULTY_TABS: { key: BattleDifficulty; label: string; desc: string }[] = [
-    { key: "easy", label: "Easy", desc: "Warm-up level questions" },
-    { key: "medium", label: "Medium", desc: "Balanced exam practice" },
-    { key: "hard", label: "Hard", desc: "Advanced challenge mode" },
   ];
 
   const resetSelections = () => {
@@ -1463,7 +1464,7 @@ function ChallengeScopePicker({
           Select Difficulty
         </p>
         <div className="grid grid-cols-3 gap-3">
-          {DIFFICULTY_TABS.map((d) => (
+          {BATTLE_DIFFICULTY_PICK.map((d) => (
             <button
               key={d.key}
               onClick={() => setDifficulty(d.key)}
@@ -1985,6 +1986,7 @@ function BotPickerScreen({
   const [chapterName, setChapterName] = useState("");
   const [topicName, setTopicName]     = useState("");
   const [count, setCount]         = useState(10);
+  const [botDifficulty, setBotDifficulty] = useState<BattleDifficulty>("medium");
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState("");
 
@@ -2011,9 +2013,9 @@ function BotPickerScreen({
     setError("");
     setLoading(true);
     try {
-      const raw = await getBotPracticeQuestions(testType, scopeId, count);
+      const raw = await getBotPracticeQuestions(testType, scopeId, count, botDifficulty);
       if (!raw.length) {
-        setError("No questions found for this selection. Try a different subject, chapter, or topic.");
+        setError("No questions at this difficulty for this selection. Try a different level, subject, chapter, or topic.");
         return;
       }
       const qs: QuizQuestion[] = raw.map(q => ({
@@ -2152,6 +2154,27 @@ function BotPickerScreen({
                     )}
                   >
                     {n} UNITS
+                  </button>
+                ))}
+              </div>
+           </CardGlass>
+           <CardGlass className="p-8 border-slate-100 bg-white/60">
+              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-3 block">Difficulty</label>
+              <div className="grid grid-cols-1 gap-2">
+                {BATTLE_DIFFICULTY_PICK.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    onClick={() => setBotDifficulty(d.key)}
+                    className={cn(
+                      "rounded-xl border px-3 py-2.5 text-left transition-all",
+                      botDifficulty === d.key
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-slate-100 bg-white hover:border-indigo-200",
+                    )}
+                  >
+                    <p className={cn("text-[10px] font-bold uppercase", botDifficulty === d.key ? "text-slate-800" : "text-slate-400")}>{d.label}</p>
+                    <p className="text-[8px] font-medium text-slate-400 mt-0.5 leading-snug">{d.desc}</p>
                   </button>
                 ))}
               </div>

@@ -1033,10 +1033,12 @@ export async function createBattle(
   topicName?: string,
   difficulty?: "easy" | "medium" | "hard",
 ): Promise<BattleRoom> {
-  const payload: Record<string, string> = { mode };
+  const payload: Record<string, string> = {
+    mode,
+    difficulty: difficulty ?? "medium",
+  };
   if (topicId) payload.topicId = topicId;
   if (topicName) payload.topicName = topicName;
-  if (difficulty) payload.difficulty = difficulty;
   const res = await apiClient.post("/battles/create", payload);
   return extractData<BattleRoom>(res);
 }
@@ -1095,10 +1097,11 @@ export async function getBotPracticeQuestions(
   scope: 'subject' | 'chapter' | 'topic',
   scopeId: string,
   count = 10,
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium',
 ): Promise<BotPracticeQuestion[]> {
   try {
     const res = await apiClient.get('/battles/bot-questions', {
-      params: { scope, scopeId, count },
+      params: { scope, scopeId, count, difficulty },
     });
     return extractData<BotPracticeQuestion[]>(res) ?? [];
   } catch {
