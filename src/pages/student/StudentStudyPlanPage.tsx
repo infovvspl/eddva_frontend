@@ -8,11 +8,11 @@ import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
   RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
-  ArrowRight, Sparkles, Activity,
+  ArrowRight, Sparkles, Activity, Trash2,
 } from "lucide-react";
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
-  useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
+  useClearPlan, useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
 } from "@/hooks/use-student";
 import type { StudyPlanItem } from "@/lib/api/student";
 import type { ProgressReport, TopicReportEntry } from "@/lib/api/student";
@@ -869,14 +869,16 @@ export default function StudentStudyPlanPage() {
   const [activeTab,   setActiveTab]   = useState<ActiveTab>("plan");
   const [planTab,     setPlanTab]     = useState<PlanTab>("today");
   const [selectedDay, setSelectedDay] = useState(today);
-  const [wizardDone,  setWizardDone]  = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
+  const [wizardDone,   setWizardDone]   = useState(false);
+  const [showWizard,   setShowWizard]   = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan();
   const { data: weekData   = {} }                         = useWeeklyPlanGrouped(ws, we);
 
   const generate      = useGeneratePlan();
   const regenerate    = useRegeneratePlan();
+  const clearPlan     = useClearPlan();
   const complete      = useCompletePlanItem();
   const skip          = useSkipPlanItem();
 
@@ -924,6 +926,16 @@ export default function StudentStudyPlanPage() {
       onError:   () => toast.error("Could not regenerate. Please try again."),
     });
 
+  const handleResetConfirmed = () =>
+    clearPlan.mutate(undefined, {
+      onSuccess: () => {
+        setConfirmReset(false);
+        setShowWizard(true);
+        toast.success("Plan cleared! Set your preferences to generate a new one.");
+      },
+      onError: () => toast.error("Could not reset plan. Please try again."),
+    });
+
   const handleOpenPlanItem = (item: StudyPlanItem) => {
     const notesUrl = item.content?.notesUrl?.trim();
     const videoUrl = item.content?.videoUrl?.trim();
@@ -955,10 +967,38 @@ export default function StudentStudyPlanPage() {
     </div>
   );
 
-  if (wizardDone || generate.isPending || regenerate.isPending) return <GeneratingView />;
+  if (wizardDone || generate.isPending || regenerate.isPending || clearPlan.isPending) return <GeneratingView />;
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* ── Reset confirmation dialog ─────────────────────────────────────── */}
+      {confirmReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-base font-bold text-gray-900 mb-1">Reset Study Plan?</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Your current plan and all progress will be deleted. You'll answer a few questions to generate a fresh plan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmReset(false)}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetConfirmed}
+                disabled={clearPlan.isPending}
+                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {clearPlan.isPending ? "Resetting..." : "Yes, Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showWizard && (
         <PreferenceWizard
           initial={{
@@ -1154,6 +1194,11 @@ export default function StudentStudyPlanPage() {
                   className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
                   <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
                   {regenerate.isPending ? "Creating..." : "Regenerate Plan"}
+                </button>
+                <button onClick={() => setConfirmReset(true)}
+                  className="w-full mt-2 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Reset &amp; Start Fresh
                 </button>
               </div>
 

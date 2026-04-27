@@ -150,6 +150,14 @@ export function useMarkDoubtReviewed() {
   });
 }
 
+export function useDeleteDoubt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => teacherApi.deleteDoubt(id),
+    onSuccess: () => invalidateDoubts(qc),
+  });
+}
+
 export function useResolveDoubtWithAiAsTeacher() {
   const qc = useQueryClient();
   return useMutation({

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+﻿import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -35,7 +35,7 @@ import { getBatchSubjectTeachers } from "@/lib/api/teacher";
 import {
   generateLectureNotes, updateLecture as updateLectureApi,
   generateQuizForLecture, saveQuizCheckpoints, getQuizCheckpoints,
-  getWatchAnalytics, retranscribeLecture,
+  getWatchAnalytics, retranscribeLecture, regenerateNotes,
   type QuizCheckpoint, type WatchAnalytics,
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
@@ -125,6 +125,42 @@ function toTranscriptParagraphs(transcript?: string | null): string[] {
 
 // ─── Processing Animation ─────────────────────────────────────────────────────
 
+const NOTES_GEN_STEPS = [
+  { label: "Cleaning transcript…" },
+  { label: "Generating chunk notes…" },
+  { label: "Merging & structuring…" },
+  { label: "Finalising notes…" },
+];
+
+// % boundaries for each notes-gen step
+const NOTES_BOUNDARIES = [0, 15, 60, 88, 100];
+
+function useNotesGenerationProgress(isActive: boolean) {
+  const startRef = useRef(Date.now());
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!isActive) { startRef.current = Date.now(); setElapsed(0); return; }
+    startRef.current = Date.now();
+    const id = setInterval(() =>
+      setElapsed(Math.floor((Date.now() - startRef.current) / 1000))
+    , 1000);
+    return () => clearInterval(id);
+  }, [isActive]);
+
+  const currentStep = elapsed < 5 ? 0 : elapsed < 25 ? 1 : elapsed < 55 ? 2 : 3;
+  const stepStart  = NOTES_BOUNDARIES[currentStep];
+  const stepEnd    = NOTES_BOUNDARIES[Math.min(currentStep + 1, 4)];
+  const withinStep =
+    currentStep === 0 ? Math.min(elapsed / 5, 1) :
+    currentStep === 1 ? Math.min((elapsed - 5) / 20, 1) :
+    currentStep === 2 ? Math.min((elapsed - 25) / 30, 1) :
+                        Math.min((elapsed - 55) / 90, 1);
+  const progressPct = Math.min(Math.round(stepStart + (stepEnd - stepStart) * withinStep), 99);
+
+  return { elapsed, currentStep, progressPct };
+}
+
 const AI_STEPS_EN = [
   { icon: Mic,        label: "Transcribing audio" },
   { icon: Brain,      label: "Analysing content" },
@@ -158,16 +194,14 @@ function fmtElapsed(secs: number) {
   return `${Math.floor(secs / 60)}m ${secs % 60}s`;
 }
 
-function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeStep?: number }) {
-  const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
-  const steps = isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
-  const subSteps = isHinglish ? TRANSCRIBE_SUB_HINGLISH : TRANSCRIBE_SUB_EN;
+// Shared progress calculation — used by both AiProcessingCard and RecordedCard
+const AI_STEP_BOUNDARIES = [0, 52, 68, 84, 100]; // % at start of each step + end
 
+function useAiProgress(lecture: Lecture, activeStep?: number) {
   const isActive = lecture.status === "processing"
     || lecture.transcriptStatus === "processing"
     || lecture.transcriptStatus === "pending";
 
-  // Live elapsed-seconds counter while processing
   const [elapsed, setElapsed] = useState(() =>
     Math.max(0, Math.floor((Date.now() - new Date(lecture.createdAt).getTime()) / 1000))
   );
@@ -179,32 +213,24 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
     return () => clearInterval(id);
   }, [isActive, lecture.createdAt]);
 
-  // Derive current step from elapsed time when not explicitly provided.
-  // Timing based on observed logs: transcription ~100s, translation ~30s, notes ~50s.
   const timeBasedStep =
-    elapsed < 100 ? 0 :   // transcribing
-    elapsed < 130 ? 1 :   // analysing / translating
-    elapsed < 190 ? 2 :   // generating notes
-    3;                     // extracting concepts
+    elapsed < 100 ? 0 :
+    elapsed < 130 ? 1 :
+    elapsed < 190 ? 2 :
+    3;
 
   const currentStep = activeStep !== undefined ? activeStep : (
-    lecture.status === "draft" || lecture.status === "published" ? steps.length :
-    lecture.status === "processing" && lecture.transcriptStatus === "done" ? 2 :
-    lecture.transcriptStatus === "processing" ? timeBasedStep : 1
+    (lecture.status === "draft" || lecture.status === "published") && lecture.transcriptStatus !== "processing" && lecture.transcriptStatus !== "pending"
+      ? 4
+      : lecture.status === "processing" && lecture.transcriptStatus === "done"
+      ? 2
+      : (lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending")
+      ? timeBasedStep
+      : 1
   );
 
-  // Sub-step hint shown while transcription is the active step
-  const subStepIdx =
-    elapsed < 15  ? 0 :
-    elapsed < 35  ? 1 :
-    elapsed < 95  ? 2 :
-    3;
-  const showSubStep = currentStep === 0 && isActive;
-
-  // Smooth progress: within a step, advance from step-start % to step-end %
-  const STEP_BOUNDARIES = [0, 52, 68, 84, 100]; // % at start of each step + end
-  const stepStart = STEP_BOUNDARIES[currentStep] ?? 0;
-  const stepEnd   = STEP_BOUNDARIES[Math.min(currentStep + 1, STEP_BOUNDARIES.length - 1)];
+  const stepStart = AI_STEP_BOUNDARIES[Math.min(currentStep, 4)] ?? 0;
+  const stepEnd   = AI_STEP_BOUNDARIES[Math.min(currentStep + 1, 4)];
   const withinStep = currentStep === 0
     ? Math.min(elapsed / 100, 1)
     : currentStep === 1
@@ -213,6 +239,23 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
     ? Math.min((elapsed - 130) / 60, 1)
     : Math.min((elapsed - 190) / 30, 1);
   const progressPct = Math.round(stepStart + (stepEnd - stepStart) * withinStep);
+
+  const subStepIdx =
+    elapsed < 15 ? 0 :
+    elapsed < 35 ? 1 :
+    elapsed < 95 ? 2 : 3;
+
+  return { isActive, elapsed, currentStep, progressPct, subStepIdx };
+}
+
+function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeStep?: number }) {
+  const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
+  const steps = isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
+  const subSteps = isHinglish ? TRANSCRIBE_SUB_HINGLISH : TRANSCRIBE_SUB_EN;
+
+  const { isActive, elapsed, currentStep, progressPct, subStepIdx } = useAiProgress(lecture, activeStep);
+
+  const showSubStep = currentStep === 0 && isActive;
 
   const estTotal = isHinglish ? "3–5 min" : "2–4 min";
 
@@ -431,7 +474,7 @@ function WysiwygEditor({ content, onChange }: { content: string; onChange: (html
 
 type NotesPanelTab = "preview" | "edit" | "transcript" | "quiz" | "analytics";
 
-function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () => void }) {
+function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Lecture; onClose: () => void; isGeneratingNotes?: boolean }) {
   const updateLecture = useUpdateLecture();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -697,6 +740,14 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                           : "Transcribing audio and generating notes."}
                       </p>
                     </>
+                  ) : isGeneratingNotes ? (
+                    <>
+                      <Loader2 className="w-12 h-12 opacity-60 text-violet-500 animate-spin" />
+                      <p className="text-sm text-foreground">Generating notes from transcript…</p>
+                      <p className="text-xs text-center max-w-sm text-muted-foreground">
+                        AI is reading the transcript and building structured notes. This takes 30–60 seconds — the panel will update automatically.
+                      </p>
+                    </>
                   ) : lecture.transcriptStatus === "failed" ? (
                     <>
                       <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
@@ -791,7 +842,15 @@ function NotesReviewPanel({ lecture, onClose }: { lecture: Lecture; onClose: () 
                             : "Transcribing uploaded video."}
                         </p>
                       </>
-                    ) : lecture.transcriptStatus === "failed" ? (
+                    ) : isGeneratingNotes ? (
+                    <>
+                      <Loader2 className="w-12 h-12 opacity-60 text-violet-500 animate-spin" />
+                      <p className="text-sm text-foreground">Generating notes from transcript…</p>
+                      <p className="text-xs text-center max-w-sm text-muted-foreground">
+                        AI is reading the transcript and building structured notes. This takes 30–60 seconds — the panel will update automatically.
+                      </p>
+                    </>
+                  ) : lecture.transcriptStatus === "failed" ? (
                       <>
                         <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
                         <p className="text-sm text-foreground">Transcript unavailable</p>
@@ -2472,18 +2531,30 @@ const transcriptStatusBadge: Record<string, { cls: string; label: string }> = {
   failed:     { cls: "bg-red-500/10 text-red-600 border-red-500/20",         label: "Transcript Failed" },
 };
 
-function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, processingStep }: {
+function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, onRegenerateNotes, processingStep, isGeneratingNotes }: {
   lecture: Lecture;
   onView: () => void;
   onReview: () => void;
   onStats: () => void;
   onDelete: () => void;
   onRetranscribe: () => void;
+  onRegenerateNotes: () => void;
   processingStep?: number;
+  isGeneratingNotes?: boolean;
 }) {
   const tsBadge = lecture.transcriptStatus ? transcriptStatusBadge[lecture.transcriptStatus] : null;
   const isYouTube = /youtube\.com|youtu\.be/i.test(lecture.videoUrl ?? "");
-  const transcriptFailed = lecture.transcriptStatus === "failed";
+  // Suppress "failed" UI when notes are actively generating — transcript clearly exists
+  const transcriptFailed = lecture.transcriptStatus === "failed" && !isGeneratingNotes;
+  const isTranscribing = lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending";
+  const notesGenerable = lecture.transcriptStatus === "done" && !lecture.aiNotesMarkdown && !isTranscribing && !isGeneratingNotes;
+
+  const { progressPct, elapsed, currentStep } = useAiProgress(lecture, processingStep);
+  const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
+  const AI_STEPS = isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
+  const currentStepLabel = AI_STEPS[Math.min(currentStep, AI_STEPS.length - 1)]?.label ?? "Processing…";
+
+  const { progressPct: notesPct, currentStep: notesStep } = useNotesGenerationProgress(isGeneratingNotes ?? false);
 
   const [panel, setPanel] = useState<null | "notes" | "transcript">(null);
   const [panelText, setPanelText] = useState("");
@@ -2557,15 +2628,64 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
                 {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
                 {statusLabel[lecture.status] ?? lecture.status}
               </span>
-              {tsBadge && lecture.status !== "processing" && (
-                <span className={cn("inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border", tsBadge.cls)}>
-                  {lecture.transcriptStatus === "processing" && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
-                  {lecture.transcriptStatus === "done" && <Mic className="w-2.5 h-2.5" />}
-                  {tsBadge.label}
+              {isGeneratingNotes && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-violet-500/10 text-violet-600 border-violet-500/20">
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  {notesPct}%
                 </span>
+              )}
+              {tsBadge && lecture.status !== "processing" && !isGeneratingNotes && (
+                <span className={cn("inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border", tsBadge.cls)}>
+                  {isTranscribing && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                  {lecture.transcriptStatus === "done" && <Mic className="w-2.5 h-2.5" />}
+                  {isTranscribing ? `${progressPct}%` : tsBadge.label}
+                </span>
+              )}
+              {/* Elapsed timer shown while transcribing */}
+              {isTranscribing && (
+                <span className="text-[10px] font-mono text-blue-500/70">{fmtElapsed(elapsed)}</span>
               )}
             </div>
           </div>
+
+          {/* Compact progress bar — always visible while AI is working, regardless of lecture status */}
+          {isTranscribing && (
+            <div className="mt-2.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-blue-500 font-medium flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 animate-pulse" />
+                  {currentStepLabel}
+                </span>
+                <span className="text-[11px] font-semibold text-blue-600">{progressPct}% complete</span>
+              </div>
+              <div className="w-full h-1.5 bg-blue-500/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Notes generation progress bar — violet, shown when teacher clicks "Generate Notes" */}
+          {isGeneratingNotes && (
+            <div className="mt-2.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-violet-600 font-medium flex items-center gap-1">
+                  <Brain className="w-3 h-3 animate-pulse" />
+                  {NOTES_GEN_STEPS[Math.min(notesStep, NOTES_GEN_STEPS.length - 1)].label}
+                </span>
+                <span className="text-[11px] font-semibold text-violet-600">{notesPct}% complete</span>
+              </div>
+              <div className="w-full h-1.5 bg-violet-500/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-violet-500 rounded-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${notesPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {(processingStep !== undefined || lecture.status === "processing") && lecture.status !== "draft" && lecture.status !== "published" && (
             <div className="mt-3">
               <AiProcessingCard lecture={lecture} activeStep={processingStep} />
@@ -2591,6 +2711,11 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         {transcriptFailed && !isYouTube && (
           <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRetranscribe(); }} className="gap-1.5 h-8 text-xs text-red-600 border-red-500/30 hover:bg-red-500/10">
             <RefreshCw className="w-3 h-3" /> Retry Transcription
+          </Button>
+        )}
+        {notesGenerable && (
+          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRegenerateNotes(); }} className="gap-1.5 h-8 text-xs text-violet-600 border-violet-300/60 hover:bg-violet-50">
+            <Sparkles className="w-3 h-3" /> Generate Notes
           </Button>
         )}
         {transcriptFailed && isYouTube && (
@@ -3081,13 +3206,74 @@ const TeacherLecturesPage = () => {
     return () => observer.disconnect();
   }, [canLoadMore, isLoading, isCompactLayout, loadMoreBatchSize, recorded.length, sortedLive.length, tab]);
 
+  // Track which lecture IDs have notes generation in progress (client-side only)
+  const [notesGeneratingIds, setNotesGeneratingIds] = useState<Set<string>>(new Set());
+
+  // Remember previous transcriptStatus per lecture so we can detect transitions
+  const prevTranscriptStatusRef = useRef<Record<string, string>>({});
+
+  // When a lecture's transcriptStatus transitions to "done" but has no notes yet,
+  // the backend is still running notes generation in the background (~30s).
+  // Catches: processing→done, pending→done, AND failed→done (retry succeeded while polling was off).
+  // Auto-add to notesGeneratingIds so polling continues until notes appear.
+  useEffect(() => {
+    const prev = prevTranscriptStatusRef.current;
+    const toAdd: string[] = [];
+    (lectures ?? []).forEach(l => {
+      const wasNotDone = prev[l.id] !== undefined && prev[l.id] !== "done";
+      const isNowDone = l.transcriptStatus === "done";
+      if (wasNotDone && isNowDone && !l.aiNotesMarkdown) {
+        toAdd.push(l.id);
+      }
+    });
+    if (toAdd.length > 0) {
+      setNotesGeneratingIds(prev => {
+        const next = new Set(prev);
+        toAdd.forEach(id => next.add(id));
+        return next;
+      });
+    }
+    // Update snapshot
+    const snap: Record<string, string> = {};
+    (lectures ?? []).forEach(l => { if (l.transcriptStatus) snap[l.id] = l.transcriptStatus; });
+    prevTranscriptStatusRef.current = snap;
+  }, [lectures]);
+
+  // Remove from notesGeneratingIds once aiNotesMarkdown appears on the lecture
+  useEffect(() => {
+    if (notesGeneratingIds.size === 0) return;
+    const done = (lectures ?? []).filter(l => notesGeneratingIds.has(l.id) && !!l.aiNotesMarkdown);
+    if (done.length === 0) return;
+    setNotesGeneratingIds(prev => {
+      const next = new Set(prev);
+      done.forEach(l => next.delete(l.id));
+      return next;
+    });
+    done.forEach(l => {
+      toast({ title: "Notes ready! ✨", description: `Notes for "${l.title}" are ready to review.` });
+    });
+  }, [lectures, notesGeneratingIds, toast]);
+
+  // Keep polling for any lecture that has a transcript but no notes and was updated
+  // within the last 10 minutes — catches the case where the frontend missed a status
+  // transition (e.g., polling was off when a retry succeeded while notes were generating).
+  const _TEN_MIN_MS = 10 * 60 * 1000;
+  const hasRecentTranscriptWithoutNotes = recorded.some(l =>
+    l.transcriptStatus === "done" &&
+    !l.aiNotesMarkdown &&
+    (Date.now() - new Date((l as any).updatedAt ?? (l as any).createdAt).getTime()) < _TEN_MIN_MS
+  );
+
   // Auto-poll every 5s when any recorded lecture is still processing
   // (handles the case where the user refreshes mid-processing)
-  const hasProcessing = Object.keys(processingSteps).length > 0 || recorded.some(l =>
-    l.status === "processing" ||
-    l.transcriptStatus === "processing" ||
-    l.transcriptStatus === "pending"
-  );
+  const hasProcessing = Object.keys(processingSteps).length > 0
+    || notesGeneratingIds.size > 0
+    || hasRecentTranscriptWithoutNotes
+    || recorded.some(l =>
+      l.status === "processing" ||
+      l.transcriptStatus === "processing" ||
+      l.transcriptStatus === "pending"
+    );
   useEffect(() => {
     if (!hasProcessing) return;
     const id = setInterval(() => {
@@ -3111,27 +3297,61 @@ const TeacherLecturesPage = () => {
     queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
   }, [queryClient]);
 
-  // Auto-open the review panel when the backend finishes AI processing
+  // Auto-open the review panel — only once notes are actually ready.
+  // Three cases handled:
+  //   1. aiNotesMarkdown arrived → open panel + success toast
+  //   2. transcriptStatus === "failed" → error toast only, do NOT open panel
+  //   3. transcriptStatus === "done" but no notes yet (Phase 2 still running) → keep waiting
+  //   4. Stuck safety valve: transcript done but no notes for >5 min → open panel without notes
   useEffect(() => {
     if (pendingReviewIds.size === 0) return;
-    const readyLecture = (lectures ?? []).find(
-      l => pendingReviewIds.has(l.id) 
-        && (l.status === "draft" || l.status === "published")
-        && (l.transcriptStatus === "done" || l.transcriptStatus === "failed")
-    );
-    if (!readyLecture) return;
 
-    setPendingReviewIds(prev => { const n = new Set(prev); n.delete(readyLecture.id); return n; });
-    // Store only the ID — the panel derives fresh data from the live lectures list
-    setReviewLectureId(readyLecture.id);
-    toast({
-      title: readyLecture.aiNotesMarkdown ? "AI notes ready! ✨" : "AI processing complete",
-      description: readyLecture.aiNotesMarkdown
-        ? "Review and publish when you're satisfied."
-        : isYouTubeUrl(readyLecture.videoUrl)
-          ? `YouTube lecture: ${readyLecture.transcriptStatus === "failed" ? YOUTUBE_LECTURE_CAPTIONS_HINT : "If notes are missing, check captions on the video or try re-transcribe."}`
-          : "AI could not generate notes — add them manually then publish.",
-    });
+    // Case 1: notes ready — open panel
+    const withNotes = (lectures ?? []).find(
+      l => pendingReviewIds.has(l.id) && !!l.aiNotesMarkdown,
+    );
+    if (withNotes) {
+      setPendingReviewIds(prev => { const n = new Set(prev); n.delete(withNotes.id); return n; });
+      setReviewLectureId(withNotes.id);
+      toast({ title: "AI notes ready! ✨", description: "Review and publish when you're satisfied." });
+      return;
+    }
+
+    // Case 2: transcription failed — toast only, remove from pending
+    const failed = (lectures ?? []).find(
+      l => pendingReviewIds.has(l.id)
+        && (l.status === "draft" || l.status === "published")
+        && l.transcriptStatus === "failed",
+    );
+    if (failed) {
+      setPendingReviewIds(prev => { const n = new Set(prev); n.delete(failed.id); return n; });
+      toast({
+        title: "Transcription failed",
+        description: isYouTubeUrl(failed.videoUrl)
+          ? YOUTUBE_LECTURE_CAPTIONS_HINT
+          : "Could not transcribe audio. Use \"Retry Transcription\" on the lecture card.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Case 4: transcript done but notes never arrived after 5 min (Phase 2 failed silently)
+    const _FIVE_MIN = 5 * 60 * 1000;
+    const stuckWithoutNotes = (lectures ?? []).find(
+      l => pendingReviewIds.has(l.id)
+        && l.transcriptStatus === "done"
+        && !l.aiNotesMarkdown
+        && (Date.now() - new Date((l as any).updatedAt ?? (l as any).createdAt).getTime()) > _FIVE_MIN,
+    );
+    if (stuckWithoutNotes) {
+      setPendingReviewIds(prev => { const n = new Set(prev); n.delete(stuckWithoutNotes.id); return n; });
+      setReviewLectureId(stuckWithoutNotes.id);
+      toast({
+        title: "Transcript ready",
+        description: "Notes generation took longer than expected. You can add notes manually or click \"Generate Notes\".",
+      });
+    }
+    // Case 3: transcript done but notes still generating — keep waiting (no-op)
   }, [lectures, pendingReviewIds, toast]);
 
   const handleDelete = async (id: string) => {
@@ -3152,6 +3372,17 @@ const TeacherLecturesPage = () => {
     }
   };
 
+  const handleRegenerateNotes = async (id: string) => {
+    try {
+      await regenerateNotes(id);
+      setNotesGeneratingIds(prev => new Set(prev).add(id));
+      toast({ title: "Notes generation started", description: "AI is generating notes from the saved transcript. This takes 2–4 minutes." });
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+    } catch {
+      toast({ title: "Failed to start notes generation", variant: "destructive" });
+    }
+  };
+
   return (
     <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
     <>
@@ -3166,7 +3397,7 @@ const TeacherLecturesPage = () => {
           onReview={() => { setViewLecture(null); setReviewLectureId(viewLecture.id); }}
         />
       )}
-      {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLectureId(null)} />}
+      {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLectureId(null)} isGeneratingNotes={reviewLecture ? notesGeneratingIds.has(reviewLecture.id) : false} />}
       {statsLecture && <StatsPanel key="stats" lecture={statsLecture} onClose={() => setStatsLecture(null)} />}
       {showUpload && (
         <UploadModal
@@ -3324,11 +3555,13 @@ const TeacherLecturesPage = () => {
                 key={l.id}
                 lecture={l}
                 processingStep={processingSteps[l.id]}
+                isGeneratingNotes={notesGeneratingIds.has(l.id)}
                 onView={() => setViewLecture(l)}
                 onReview={() => setReviewLectureId(l.id)}
                 onStats={() => setStatsLecture(l)}
                 onDelete={() => handleDelete(l.id)}
                 onRetranscribe={() => handleRetranscribe(l.id)}
+                onRegenerateNotes={() => handleRegenerateNotes(l.id)}
               />
             ))}
             <p className="text-xs text-slate-500 px-1">

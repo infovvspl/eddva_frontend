@@ -111,6 +111,7 @@ function normalizeAiMessage(message: unknown): string {
 }
 
 
+
 function normalizeLessonMarkdown(md: string): string {
   return String(md || "")
     // Unescape double-escaped backslashes from JSON payloads

@@ -253,6 +253,11 @@ export async function retranscribeLecture(id: string): Promise<{ message: string
   return extractData<{ message: string }>(res);
 }
 
+export async function regenerateNotes(id: string): Promise<{ message: string }> {
+  const res = await apiClient.post(`/content/lectures/${id}/regenerate-notes`, {});
+  return extractData<{ message: string }>(res);
+}
+
 export async function translateTranscriptToHindi(id: string): Promise<{ transcriptHi: string }> {
   const res = await apiClient.post(`/content/lectures/${id}/translate-transcript`, {});
   return extractData<{ transcriptHi: string }>(res);
@@ -315,6 +320,10 @@ export async function respondToDoubt(id: string, payload: TeacherResponsePayload
 export async function markDoubtReviewed(id: string, aiQualityRating = "correct"): Promise<Doubt> {
   const res = await apiClient.patch(`/doubts/${id}/mark-reviewed`, { aiQualityRating });
   return extractData<Doubt>(res);
+}
+
+export async function deleteDoubt(id: string): Promise<void> {
+  await apiClient.delete(`/doubts/${id}`);
 }
 
 /** Teacher runs full AI resolution for an escalated (or open) doubt — same outcome as student-side AI answer. */
