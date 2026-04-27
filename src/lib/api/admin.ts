@@ -838,6 +838,7 @@ export interface MockTestQuestion {
   difficulty: "easy" | "medium" | "hard";
   marksCorrect: number;
   marksWrong: number;
+  tags?: string[];
   options?: { id: string; optionLabel: string; content: string; isCorrect: boolean }[];
   /** Marking / exemplar (descriptive); also accept snake_case from API. */
   solutionText?: string | null;
@@ -869,6 +870,7 @@ export interface AiGeneratedQuestion {
   difficulty?: string;
   subject?: string;
   explanation?: string;
+  solutionText?: string;
 }
 
 /** Placeholder topic id when generating exam-wide mocks (Django only uses topic name string). */
@@ -954,6 +956,7 @@ function mapRawToAiGeneratedQuestion(q: any): AiGeneratedQuestion {
     difficulty: q.difficulty ?? "medium",
     subject: q.subject ?? "",
     explanation: q.explanation ?? "",
+    solutionText: q.solutionText || q.solution_text || q.answer || q.modelAnswer || "",
   };
 }
 
@@ -974,6 +977,49 @@ type GenDiff = "easy" | "medium" | "hard";
 
 function withRequestedDifficulty(q: AiGeneratedQuestion, d: GenDiff): AiGeneratedQuestion {
   return { ...q, difficulty: d };
+}
+
+function allocateDifficultyForSegment(
+  count: number,
+  weights: { easy: number; medium: number; hard: number },
+  needsMixed: boolean,
+): { easy: number; medium: number; hard: number } {
+  if (count <= 0) return { easy: 0, medium: 0, hard: 0 };
+
+  const exact = {
+    easy: count * weights.easy,
+    medium: count * weights.medium,
+    hard: count * weights.hard,
+  };
+  const out = {
+    easy: Math.floor(exact.easy),
+    medium: Math.floor(exact.medium),
+    hard: Math.floor(exact.hard),
+  };
+
+  let rem = count - out.easy - out.medium - out.hard;
+  const fracOrder = (["easy", "medium", "hard"] as const)
+    .map((k) => ({ k, f: exact[k] - out[k] }))
+    .sort((a, b) => b.f - a.f);
+  for (let i = 0; i < rem; i++) {
+    out[fracOrder[i % fracOrder.length].k] += 1;
+  }
+
+  // In mixed mode, avoid collapsing tiny segments to all-medium.
+  if (needsMixed && count >= 3) {
+    if (weights.easy > 0 && out.easy === 0) {
+      if (out.medium > 1) out.medium -= 1;
+      else if (out.hard > 1) out.hard -= 1;
+      out.easy += 1;
+    }
+    if (weights.hard > 0 && out.hard === 0) {
+      if (out.medium > 1) out.medium -= 1;
+      else if (out.easy > 1) out.easy -= 1;
+      out.hard += 1;
+    }
+  }
+
+  return out;
 }
 
 /**
@@ -1024,7 +1070,7 @@ export async function aiGenerateMockTestQuestions(params: {
         difficulty,
         type,
       },
-      { timeout: 120_000 },
+      { timeout: 240_000 },
     );
     const data = extractData<any>(res);
     const list = extractAiQuestionList(data);
@@ -1045,18 +1091,20 @@ export async function aiGenerateMockTestQuestions(params: {
     }
   }
   if (tasks.length) {
-    const rawLists = await Promise.all(
-      tasks.map((t) => fetchChunk(t.difficulty, t.size, params.topicName)),
-    );
-    for (let i = 0; i < tasks.length; i++) {
-      const d = tasks[i].difficulty;
-      for (const q of rawLists[i]) {
-        if (got[d] >= target[d]) break;
-        const k = norm(q.questionText);
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        out.push(q);
-        got[d]++;
+    for (const t of tasks) {
+      try {
+        const list = await fetchChunk(t.difficulty, t.size, params.topicName);
+        const d = t.difficulty;
+        for (const q of list) {
+          if (got[d] >= target[d]) break;
+          const k = norm(q.questionText);
+          if (!k || seen.has(k)) continue;
+          seen.add(k);
+          out.push(q);
+          got[d]++;
+        }
+      } catch (e) {
+        console.error("Chunk fetch failed:", e);
       }
     }
   }
@@ -1090,25 +1138,28 @@ export async function aiGenerateMockTestQuestions(params: {
         rem -= s;
       }
     }
-    const topRaws = await Promise.all(
-      topTasks.map((t) => fetchChunk(t.difficulty, t.size, topupLine)),
-    );
+
     let addedAny = false;
-    for (let j = 0; j < topTasks.length; j++) {
-      const d = topTasks[j].difficulty;
-      for (const q of topRaws[j]) {
-        if (out.length >= totalCount) break;
-        if (!needGap) {
-          if (d === "easy" && got.easy >= target.easy) continue;
-          if (d === "medium" && got.medium >= target.medium) continue;
-          if (d === "hard" && got.hard >= target.hard) continue;
+    for (const t of topTasks) {
+      try {
+        const list = await fetchChunk(t.difficulty, t.size, topupLine);
+        const d = t.difficulty;
+        for (const q of list) {
+          if (out.length >= totalCount) break;
+          if (!needGap) {
+            if (d === "easy" && got.easy >= target.easy) continue;
+            if (d === "medium" && got.medium >= target.medium) continue;
+            if (d === "hard" && got.hard >= target.hard) continue;
+          }
+          const k = norm(q.questionText);
+          if (!k || seen.has(k)) continue;
+          seen.add(k);
+          out.push(q);
+          got[d]++;
+          addedAny = true;
         }
-        const k = norm(q.questionText);
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        out.push(q);
-        got[d]++;
-        addedAny = true;
+      } catch (e) {
+        console.error("Top-up chunk fetch failed:", e);
       }
     }
     if (!addedAny) break;
@@ -1134,19 +1185,22 @@ export async function aiGenerateMockTestQuestionMix(params: {
   const wE = totalCount > 0 ? easyCount / totalCount : 0;
   const wM = totalCount > 0 ? mediumCount / totalCount : 0;
   const wH = totalCount > 0 ? hardCount / totalCount : 0;
+  const mixedMode = easyCount > 0 && mediumCount > 0 && hardCount > 0;
   const out: AiGeneratedQuestion[] = [];
   for (const seg of segments) {
     if (seg.count <= 0) continue;
-    const se = Math.max(0, Math.round(seg.count * wE));
-    const sh = Math.max(0, Math.round(seg.count * wH));
-    const sm = Math.max(0, seg.count - se - sh);
+    const alloc = allocateDifficultyForSegment(
+      seg.count,
+      { easy: wE, medium: wM, hard: wH },
+      mixedMode,
+    );
     const sub = await aiGenerateMockTestQuestions({
       topicId,
       topicName: `${topicName}${seg.topicAppend ?? ""}`.trim(),
       totalCount: seg.count,
-      easyCount: se,
-      mediumCount: sm,
-      hardCount: sh,
+      easyCount: alloc.easy,
+      mediumCount: alloc.medium,
+      hardCount: alloc.hard,
       questionType: seg.questionType,
     });
     out.push(...sub);
@@ -1159,7 +1213,7 @@ export async function aiGenerateQuestions(payload: {
   transcript: string;
   lectureTitle?: string;
 }): Promise<AiGeneratedQuestion[]> {
-  const res = await apiClient.post("/ai/quiz/generate", payload, { timeout: 120_000 });
+  const res = await apiClient.post("/ai/quiz/generate", payload, { timeout: 240_000 });
   const data = extractData<any>(res);
   const list: any[] = Array.isArray(data)
     ? data

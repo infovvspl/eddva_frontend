@@ -20,6 +20,24 @@ import { formatDistanceToNow } from "date-fns";
 import { uploadToS3 } from "@/lib/api/upload";
 import { CardGlass } from "@/components/shared/CardGlass";
 
+const GENERATED_TYPE_TAG_PREFIX = "gen_type:";
+
+function prettifyGeneratedTypeTag(tagValue: string): string {
+  return tagValue
+    .replace(/^gen_type:/, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function getQuestionTypeBadgeLabel(question: QuizQuestion): string {
+  const tag = (question.tags ?? []).find((t) => String(t).startsWith(GENERATED_TYPE_TAG_PREFIX));
+  if (tag) return prettifyGeneratedTypeTag(tag);
+  if (question.type === "descriptive") return "Written";
+  if (question.type === "integer") return "Integer";
+  if (question.type === "mcq_multi") return "MSQ";
+  return "MCQ";
+}
+
 // ─── Timer hook ───────────────────────────────────────────────────────────────
 function useCountdown(total: number, running: boolean, onExpire: () => void) {
   const [secs, setSecs] = useState(total);
@@ -146,7 +164,7 @@ function QuestionView({
             Question {index + 1} / {total}
           </span>
           <span className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 sm:text-[11px]">
-            {isDescriptive ? "Written" : isInteger ? "Integer" : isMulti ? "MSQ" : "MCQ"}
+            {getQuestionTypeBadgeLabel(question)}
           </span>
           <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-500 sm:text-[11px]">Difficulty: {question.difficulty}</span>
           <div className="ml-auto flex items-center gap-2">
@@ -351,6 +369,43 @@ function solutionVideoFromQuestion(q: unknown): string | undefined {
   return typeof t === "string" && t.trim() ? t.trim() : undefined;
 }
 
+function deductionReasonText(attempt: SessionResultAttempt, q: QuizQuestion): string | null {
+  const et = (attempt.errorType || "").toLowerCase();
+  const awarded = attempt.marksAwarded ?? 0;
+  const partial = awarded > 0 && awarded < (q.marksCorrect ?? 0);
+  if (et === "skip") return "Marks deducted because the question was skipped.";
+  if (et === "conceptual") return partial
+    ? "Partial marks awarded, but key concept(s) in the final response were incorrect."
+    : "Marks deducted due to a conceptual error in the final response.";
+  if (et === "silly") return partial
+    ? "Partial marks awarded, but a calculation/selection mistake reduced the score."
+    : "Marks deducted due to a calculation/selection mistake.";
+  if (et === "time") return partial
+    ? "Partial marks awarded, but the response appears incomplete/time-pressured."
+    : "Marks deducted because the response appears incomplete/time-pressured.";
+  if (et === "guess") return partial
+    ? "Partial marks awarded, but the selected response was not fully correct."
+    : "Marks deducted because the selected response was incorrect (guess/low-confidence pattern).";
+
+  if (q.type === "descriptive") {
+    if (awarded <= 0) return "Marks deducted because key points from the model answer/rubric were missing.";
+    if (awarded < q.marksCorrect) return "Partial marks awarded; some rubric points were missing.";
+    return null;
+  }
+  if (q.type === "integer") {
+    if (awarded < q.marksCorrect) return partial
+      ? "Partial marks awarded, but the numeric answer did not fully match the expected value."
+      : "Marks deducted because the numeric answer does not match the expected value.";
+    return null;
+  }
+  if (awarded < q.marksCorrect) {
+    return partial
+      ? "Partial marks awarded, but the selected option(s) were not fully correct."
+      : "Marks deducted because the selected option(s) were not fully correct.";
+  }
+  return null;
+}
+
 function ExplanationBlock({ text, videoUrl }: { text?: string | null; videoUrl?: string | null }) {
   if (!text?.trim() && !videoUrl) return null;
   return (
@@ -457,6 +512,7 @@ function ResultsScreen({
             const opts = q.options ?? [];
             const skipped = attempt.errorType === "skip";
             const isDesc = q.type === "descriptive";
+            const deductionReason = deductionReasonText(attempt, q);
             return (
               <div key={attempt.questionId} className={cn(
                 "rounded-2xl border p-4 space-y-3",
@@ -471,6 +527,9 @@ function ResultsScreen({
                     Q{i + 1}
                   </span>
                   <p className="text-sm font-medium text-slate-800 leading-snug flex-1">{q.content}</p>
+                  <span className="shrink-0 rounded-lg border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                    {getQuestionTypeBadgeLabel(q)}
+                  </span>
                   {isDesc ? (
                     <BookOpen className="w-5 h-5 text-slate-500 shrink-0" aria-hidden />
                   ) : attempt.isCorrect
@@ -573,6 +632,11 @@ function ResultsScreen({
                 )}>
                   {(attempt.marksAwarded ?? 0) > 0 ? `+${attempt.marksAwarded}` : attempt.marksAwarded} marks
                 </span>
+                {deductionReason && (
+                  <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
+                    {deductionReason}
+                  </p>
+                )}
               </div>
             );
           })}

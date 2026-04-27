@@ -50,7 +50,9 @@ const BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 30_000,
+  // AI-heavy flows (mock generation/review) frequently exceed 30s.
+  // Keep a safer default; specific calls can still override per request.
+  timeout: 240_000,
   headers: { "Content-Type": "application/json" },
 });
 

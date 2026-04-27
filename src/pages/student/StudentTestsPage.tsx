@@ -10,6 +10,7 @@ export default function StudentTestsPage() {
   const { data: courses = [], isLoading: loadingCourses } = useMyCourses();
   const { data: mockTests = [], isLoading: loadingTests } = useMockTests({ isPublished: true });
   const { data: sessions = [], isLoading: loadingSessions } = useStudentSessions();
+  const [examFilter, setExamFilter] = useState<"all" | "competitive" | "academic">("all");
 
   const isLoading = loadingCourses || loadingTests || loadingSessions;
 
@@ -26,8 +27,18 @@ export default function StudentTestsPage() {
       .map(s => s.mockTestId)
   );
 
-  const unattemptedTests = filteredTests.filter(t => !attemptedTestIds.has(t.id));
-  const attemptedTests = filteredTests.filter(t => attemptedTestIds.has(t.id));
+  const inferExamLane = (t: { examMode?: string; title?: string; type?: string }) => {
+    const mode = String(t.examMode || "").toLowerCase();
+    const hint = `${t.title || ""} ${t.type || ""} ${mode}`.toLowerCase();
+    if (hint.includes("compet") || hint.includes("jee") || hint.includes("neet") || hint.includes("olympiad")) return "competitive";
+    if (hint.includes("acad") || hint.includes("cbse") || hint.includes("board") || hint.includes("school") || hint.includes("class") || hint.includes("ncert")) return "academic";
+    return "competitive";
+  };
+  const examFilteredTests =
+    examFilter === "all" ? filteredTests : filteredTests.filter((t) => inferExamLane(t) === examFilter);
+
+  const unattemptedTests = examFilteredTests.filter(t => !attemptedTestIds.has(t.id));
+  const attemptedTests = examFilteredTests.filter(t => attemptedTestIds.has(t.id));
 
   // Top priority to unattempted tests
   const sortedTests = [
@@ -60,6 +71,25 @@ export default function StudentTestsPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Take a Test</h1>
         <p className="text-slate-500 text-sm mt-0.5">Attempt practice tests available for your enrolled courses.</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {([
+          ["all", "All"],
+          ["competitive", "Competitive"],
+          ["academic", "Academic (CBSE)"],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setExamFilter(id)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+              examFilter === id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {sortedTests.length === 0 ? (

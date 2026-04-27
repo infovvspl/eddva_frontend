@@ -548,6 +548,7 @@ export interface QuizQuestion {
   id: string;
   content: string;
   type: "mcq_single" | "mcq_multi" | "integer" | "descriptive";
+  tags?: string[];
   difficulty: "easy" | "medium" | "hard";
   marksCorrect: number;
   marksWrong: number;

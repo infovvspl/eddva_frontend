@@ -1465,6 +1465,7 @@ function MockTestTabContent({
   sessionsByTestId: Map<string, TestSession[]>;
 }) {
   const [activeScope, setActiveScope] = useState<"all" | "subject" | "chapter" | "topic">("all");
+  const [examFilter, setExamFilter] = useState<"all" | "competitive" | "academic">("all");
 
   if (mockTestsLoading) {
     return (
@@ -1491,7 +1492,15 @@ function MockTestTabContent({
     { key: "topic",   label: "Topic" },
   ] as const;
 
-  const visibleTests = grouped[activeScope] ?? mockTests;
+  const inferExamLane = (t: { examMode?: string; title?: string; type?: string }) => {
+    const mode = String(t.examMode || "").toLowerCase();
+    const hint = `${t.title || ""} ${t.type || ""} ${mode}`.toLowerCase();
+    if (hint.includes("compet") || hint.includes("jee") || hint.includes("neet") || hint.includes("olympiad")) return "competitive";
+    if (hint.includes("acad") || hint.includes("cbse") || hint.includes("board") || hint.includes("school") || hint.includes("class") || hint.includes("ncert")) return "academic";
+    return "competitive";
+  };
+  const scopeTests = grouped[activeScope] ?? mockTests;
+  const visibleTests = examFilter === "all" ? scopeTests : scopeTests.filter((mt) => inferExamLane(mt) === examFilter);
 
   return (
     <div className="space-y-4">
@@ -1534,9 +1543,28 @@ function MockTestTabContent({
         </div>
       )}
 
+      <div className="flex flex-wrap gap-1.5">
+        {([
+          ["all", "All"],
+          ["competitive", "Competitive"],
+          ["academic", "Academic (CBSE)"],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setExamFilter(id)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+              examFilter === id ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Test list */}
       {visibleTests.length === 0 ? (
-        <p className="text-center text-sm text-slate-400 py-8">No {activeScope} tests yet.</p>
+        <p className="text-center text-sm text-slate-400 py-8">No {activeScope} tests found for selected exam filter.</p>
       ) : (
         <div className="space-y-3">
           {visibleTests.map((mt, i) => {

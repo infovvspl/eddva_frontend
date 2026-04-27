@@ -109,23 +109,45 @@ const EXAM_CONFIGS: Record<string, { subjects: string[]; topics: string[]; descr
 
 type QuestionMixId =
   | "comp_mcq"
+  | "comp_assertion_reason"
+  | "comp_statement"
+  | "comp_match"
+  | "comp_diagram"
   | "comp_msq"
   | "comp_int"
   | "comp_all"
+  | "acad_mcq"
+  | "acad_assertion_reason"
+  | "acad_short_answer"
+  | "acad_detailed_answer"
+  | "acad_case_study"
+  | "acad_diagram"
+  | "acad_all"
   | "cbse_competency"
   | "cbse_objective"
   | "cbse_descriptive"
   | "cbse_all";
 
 const QUESTION_MIX_CHOICES: { id: QuestionMixId; group: string; label: string; hint: string }[] = [
-  { id: "comp_mcq", group: "Competitive (JEE / NEET / similar)", label: "MCQ (single-correct)", hint: "Competitive marking: right answer adds marks, wrong answer deducts marks." },
-  { id: "comp_msq", group: "Competitive (JEE / NEET / similar)", label: "MSQ (multi-correct)", hint: "Two or more options may be correct; competitive positive + negative marking applied." },
-  { id: "comp_int", group: "Competitive (JEE / NEET / similar)", label: "Integer / numerical", hint: "Single integer answer in 0–999 range with competitive positive + negative marking." },
-  { id: "comp_all", group: "Competitive (JEE / NEET / similar)", label: "Mixed: MCQ + MSQ + Integer", hint: "All three with competitive-style marking (correct marks added, wrong marks deducted)." },
-  { id: "cbse_competency", group: "CBSE (Class 10 & 12 board style)", label: "Competency-based (~50% of paper)", hint: "Case study, source- or data-based, application, HOTS — typical board emphasis." },
-  { id: "cbse_objective", group: "CBSE (Class 10 & 12 board style)", label: "Objective & selection (~20% of paper)", hint: "MCQ, assertion–reason, VSA; objective weightage in sample papers." },
-  { id: "cbse_descriptive", group: "CBSE (Class 10 & 12 board style)", label: "Short + long answer (~30% of paper)", hint: "Descriptive / constructed response using CBSE 2/3/4/5-mark structure." },
-  { id: "cbse_all", group: "CBSE (Class 10 & 12 board style)", label: "Full CBSE-style paper (all sections)", hint: "Conceptual + objective + short/long answers (~25% / 25% / 50%) — one objective lane only, so MCQs do not outnumber subjectives." },
+  { id: "comp_assertion_reason", group: "Competitive (JEE / NEET / similar)", label: "Assertion reason based", hint: "Assertion-reason style with explicit evaluation of both statements and final conclusion." },
+  { id: "comp_statement", group: "Competitive (JEE / NEET / similar)", label: "Statement based", hint: "Statement truth/evaluation style with direct conceptual verification." },
+  { id: "comp_mcq", group: "Competitive (JEE / NEET / similar)", label: "MCQ based", hint: "Single-correct objective pattern with competitive marking." },
+  { id: "comp_match", group: "Competitive (JEE / NEET / similar)", label: "Match the following based", hint: "Column matching style with clear mapping answer." },
+  { id: "comp_int", group: "Competitive (JEE / NEET / similar)", label: "Integer based", hint: "Single integer/numerical answer pattern." },
+  { id: "comp_diagram", group: "Competitive (JEE / NEET / similar)", label: "Diagram based", hint: "Diagram/label/identification style for any subject." },
+  { id: "comp_msq", group: "Competitive (JEE / NEET / similar)", label: "MSQ", hint: "Multi-correct objective style." },
+  { id: "comp_all", group: "Competitive (JEE / NEET / similar)", label: "Mix of all", hint: "Balanced mix across assertion, statement, MCQ, match, integer, diagram, and MSQ." },
+  { id: "acad_mcq", group: "Academics (Board / School style)", label: "MCQ based", hint: "Academic objective MCQ format." },
+  { id: "acad_assertion_reason", group: "Academics (Board / School style)", label: "Assertion reason based", hint: "Board-style assertion-reason pattern." },
+  { id: "acad_short_answer", group: "Academics (Board / School style)", label: "Short answer type", hint: "Short, structured typed answers aligned to marks split." },
+  { id: "acad_detailed_answer", group: "Academics (Board / School style)", label: "Detailed answers type", hint: "Detailed descriptive responses with stepwise structure." },
+  { id: "acad_case_study", group: "Academics (Board / School style)", label: "Case study based", hint: "Case/data/source based board-style questions." },
+  { id: "acad_diagram", group: "Academics (Board / School style)", label: "Diagram based", hint: "Diagram/label explanation style." },
+  { id: "acad_all", group: "Academics (Board / School style)", label: "Mix of all", hint: "Balanced academic mix: objective + short + detailed + case + diagram." },
+  { id: "cbse_competency", group: "Legacy (CBSE)", label: "Competency-based (~50% of paper)", hint: "Legacy preset retained for backward compatibility." },
+  { id: "cbse_objective", group: "Legacy (CBSE)", label: "Objective & selection (~20% of paper)", hint: "Legacy preset retained for backward compatibility." },
+  { id: "cbse_descriptive", group: "Legacy (CBSE)", label: "Short + long answer (~30% of paper)", hint: "Legacy preset retained for backward compatibility." },
+  { id: "cbse_all", group: "Legacy (CBSE)", label: "Full CBSE-style paper (all sections)", hint: "Legacy preset retained for backward compatibility." },
 ];
 
 type DraftQKind = "mcq_single" | "mcq_multi" | "integer" | "descriptive";
@@ -135,11 +157,23 @@ const CBSE_THEORY_PATTERN_NOTE =
 
 function nextDraftKindForMix(mix: QuestionMixId, index: number): DraftQKind {
   switch (mix) {
+    case "comp_assertion_reason":
+    case "comp_statement":
     case "comp_mcq": return "mcq_single";
+    case "comp_match":
+    case "comp_diagram": return "descriptive";
     case "comp_msq": return "mcq_multi";
     case "comp_int": return "integer";
     case "comp_all":
-      return (["mcq_single", "mcq_multi", "integer"] as const)[index % 3];
+      return (["mcq_single", "mcq_single", "mcq_single", "descriptive", "integer", "descriptive", "mcq_multi"] as const)[index % 7];
+    case "acad_mcq":
+    case "acad_assertion_reason": return "mcq_single";
+    case "acad_short_answer":
+    case "acad_detailed_answer":
+    case "acad_case_study":
+    case "acad_diagram": return "descriptive";
+    case "acad_all":
+      return (["mcq_single", "mcq_single", "descriptive", "descriptive", "descriptive", "descriptive"] as const)[index % 6];
     case "cbse_competency":
     case "cbse_objective": return "mcq_single";
     case "cbse_descriptive": return "descriptive";
@@ -178,16 +212,27 @@ const CBSE_DESC_APPEND =
 
 type AiDifficultyMode = "mixed" | "easy" | "medium" | "hard";
 
-function splitByDifficulty(total: number, mode: AiDifficultyMode): { easy: number; medium: number; hard: number } {
+function splitByDifficulty(
+  total: number,
+  mode: AiDifficultyMode,
+  rotateSeed = 0,
+): { easy: number; medium: number; hard: number } {
   const n = Math.max(1, total);
   if (mode === "easy") return { easy: n, medium: 0, hard: 0 };
   if (mode === "medium") return { easy: 0, medium: n, hard: 0 };
   if (mode === "hard") return { easy: 0, medium: 0, hard: n };
-  // mixed
-  const easy = Math.round(n * 0.3);
-  const hard = Math.round(n * 0.25);
-  const medium = Math.max(0, n - easy - hard);
-  return { easy, medium, hard };
+  // mixed (equal split; remainder distributed in rotating order)
+  const base = Math.floor(n / 3);
+  const rem = n % 3;
+  const out = { easy: base, medium: base, hard: base } as const;
+  const keys: Array<keyof typeof out> = ["easy", "medium", "hard"];
+  const start = ((rotateSeed % 3) + 3) % 3;
+  const mutable = { ...out };
+  for (let i = 0; i < rem; i++) {
+    const k = keys[(start + i) % 3];
+    mutable[k] += 1;
+  }
+  return mutable;
 }
 
 function isCompetitiveMix(mix: QuestionMixId): boolean {
@@ -199,15 +244,18 @@ function defaultMarksFor(kind: DraftQKind, mix: QuestionMixId, difficulty: "easy
     return { marksCorrect: 4, marksWrong: -1 };
   }
 
+  const byDiff = difficulty === "easy" ? 2 : difficulty === "medium" ? 3 : 4;
+
   if (kind === "descriptive") {
     // CBSE theory questions are commonly framed as 2/3/4/5 marks.
     const cbseMark = difficulty === "easy" ? 2 : difficulty === "medium" ? 3 : 5;
     return { marksCorrect: cbseMark, marksWrong: 0 };
   }
 
-  if (kind === "integer") return { marksCorrect: 3, marksWrong: -1 };
-  if (kind === "mcq_multi") return { marksCorrect: 3, marksWrong: -1 };
-  return { marksCorrect: 3, marksWrong: -1 };
+  // Academic/board objective items: no negative marking.
+  if (kind === "integer") return { marksCorrect: byDiff, marksWrong: 0 };
+  if (kind === "mcq_multi") return { marksCorrect: byDiff, marksWrong: 0 };
+  return { marksCorrect: byDiff, marksWrong: 0 };
 }
 
 function inferDescriptiveMarksFromQuestion(
@@ -224,6 +272,87 @@ function inferDescriptiveMarksFromQuestion(
   return Math.max(2, Math.min(5, fallback));
 }
 
+function laneQualityPass(q: AiGeneratedQuestion, seg: AiSeg): boolean {
+  const text = `${q.questionText || ""} ${q.explanation || ""}`.toLowerCase();
+  const label = (seg.laneLabel || "").toLowerCase();
+  const has = (arr: string[]) => arr.some((k) => text.includes(k));
+  const qWords = (q.questionText || "").trim().split(/\s+/).filter(Boolean).length;
+  const exWords = (q.explanation || "").trim().split(/\s+/).filter(Boolean).length;
+  const level = (q.difficulty || "medium").toLowerCase();
+  const minEx = level === "hard" ? 28 : level === "medium" ? 18 : 10;
+
+  if (label.includes("assertion reason")) {
+    return has(["assertion", "reason"]) && exWords >= minEx;
+  }
+  if (label.includes("statement based")) {
+    return has(["statement"]) && has(["which of the following", "correct", "incorrect"]) && exWords >= minEx;
+  }
+  if (label.includes("match the following")) {
+    const qText = (q.questionText || "").toLowerCase();
+    const hasColumns = qText.includes("column i") && qText.includes("column ii");
+    const hasPairStyle = /(a[\).]|b[\).]|c[\).]|d[\).])/.test(qText) || /\b(1[\).]|2[\).]|3[\).]|4[\).])/.test(qText);
+    return (has(["match the following"]) || hasColumns) && hasPairStyle && qWords >= 14 && exWords >= Math.max(minEx, 16);
+  }
+  if (label.includes("diagram")) {
+    const qText = (q.questionText || "").toLowerCase();
+    const hasDiagramCueInQuestion = ["diagram", "figure", "label", "identify", "draw"].some((k) => qText.includes(k));
+    const hasLabeledStructure =
+      /\b[a-z]\)\s*/i.test(q.questionText || "") ||
+      /\b(label|labels?)\b/i.test(q.questionText || "") ||
+      /[:\n]\s*(a|b|c)\s*[-:]/i.test(q.questionText || "");
+    return hasDiagramCueInQuestion && hasLabeledStructure && qWords >= 14 && exWords >= (level === "hard" ? 34 : 22);
+  }
+  if (label.includes("case study")) {
+    return has(["case", "scenario", "passage", "data", "source"]) && qWords >= 16 && exWords >= (level === "hard" ? 40 : 28);
+  }
+  if (label.includes("short answer")) {
+    return has(["define", "state", "write short", "briefly", "short note"]) && exWords >= 12 && exWords <= 45;
+  }
+  if (label.includes("detailed answers")) {
+    const hasPromptCue = has(["explain in detail", "discuss", "derive", "justify", "elaborate", "with steps"]);
+    const structuredAnswer = (q.explanation || "").includes("\n") || /(^|\s)(1[\).]|2[\).]|first|second|third)\b/i.test(q.explanation || "");
+    return hasPromptCue && structuredAnswer && qWords >= 14 && exWords >= (level === "hard" ? 42 : 30);
+  }
+  if (label.includes("msq")) {
+    const optionCount = Array.isArray(q.options) ? q.options.length : 0;
+    const explicitCorrect = (q.options || []).filter((o) => Boolean(o.isCorrect)).length;
+    const fromAnswerKey = (() => {
+      const arr = (q.correctOptions || []).filter(Boolean);
+      if (arr.length > 0) return arr.length;
+      const raw = String(q.correctOption || "").toUpperCase();
+      if (!raw) return 0;
+      const picks = raw
+        .split(/[,;/|]|\s+AND\s+|\s+&\s+/i)
+        .map((s) => s.trim().match(/^([A-E])\b/)?.[1] || "")
+        .filter(Boolean);
+      return new Set(picks).size;
+    })();
+    const correctCount = Math.max(explicitCorrect, fromAnswerKey);
+    return optionCount >= 4 && correctCount >= 2 && exWords >= minEx;
+  }
+  if (label.includes("mcq based")) {
+    return exWords >= minEx;
+  }
+  // Keep default permissive for generic MCQ/MSQ/Integer lanes.
+  return exWords >= minEx;
+}
+
+function draftLaneQualityPass(
+  q: Pick<DraftQuestion, "content" | "explanation" | "solutionText" | "difficulty">,
+  seg: AiSeg,
+): boolean {
+  return laneQualityPass(
+    {
+      questionText: q.content || "",
+      explanation: (q.solutionText || q.explanation || ""),
+      options: [],
+      correctOption: "A",
+      difficulty: q.difficulty || "medium",
+    } as AiGeneratedQuestion,
+    seg,
+  );
+}
+
 function applyMarksPolicyToDraft(
   q: DraftQuestion,
   mix: QuestionMixId,
@@ -232,17 +361,49 @@ function applyMarksPolicyToDraft(
   const kind = q.type as DraftQKind;
   const marks = defaultMarksFor(kind, mix, difficulty);
   let marksCorrect = marks.marksCorrect;
+  const lane = (q.generatedTypeLabel || "").toLowerCase();
+
+  // Strict academic fixed-mark mapping requested by user.
+  if (mix.startsWith("acad_")) {
+    if (lane.includes("short answer")) marksCorrect = 2;
+    else if (lane.includes("detailed answers")) marksCorrect = 5;
+    else if (lane.includes("diagram") || lane.includes("case study")) marksCorrect = 4;
+    else marksCorrect = 1; // MCQ + assertion-reason (+ objective fallback)
+  }
   if (kind === "descriptive") {
     marksCorrect = inferDescriptiveMarksFromQuestion(
       q.content || "",
       q.solutionText || q.explanation || "",
       marksCorrect,
     );
+    if (!mix.startsWith("acad_")) {
+      const minByDifficulty: Record<"easy" | "medium" | "hard", number> = {
+        easy: 2,
+        medium: 3,
+        hard: 4,
+      };
+      marksCorrect = Math.max(minByDifficulty[difficulty], marksCorrect);
+      if (lane.includes("case study") || lane.includes("detailed answers") || lane.includes("diagram")) {
+        marksCorrect = Math.max(4, marksCorrect);
+      }
+      if (lane.includes("short answer")) {
+        marksCorrect = Math.min(3, Math.max(2, marksCorrect));
+      }
+    }
   }
+
+  // Re-assert strict academic fixed-mark mapping after any inference.
+  if (mix.startsWith("acad_")) {
+    if (lane.includes("short answer")) marksCorrect = 2;
+    else if (lane.includes("detailed answers")) marksCorrect = 5;
+    else if (lane.includes("diagram") || lane.includes("case study")) marksCorrect = 4;
+    else marksCorrect = 1;
+  }
+
   return {
     ...q,
     marksCorrect,
-    marksWrong: kind === "descriptive" ? 0 : marks.marksWrong,
+    marksWrong: mix.startsWith("acad_") ? 0 : (kind === "descriptive" ? 0 : marks.marksWrong),
   };
 }
 
@@ -253,6 +414,7 @@ type AiSeg = {
   count: number;
   topicAppend: string;
   asDraft: DraftQKind;
+  laneLabel?: string;
   /** When set (full CBSE), avoids mistaking two `mcq_single` segments for the same bucket. */
   cbseBucket?: CbseBucket;
 };
@@ -277,19 +439,66 @@ function looksCompetencyStyle(q: AiGeneratedQuestion): boolean {
 function buildAiPlan(mix: QuestionMixId, n: number): AiSeg[] {
   if (n < 1) return [];
   switch (mix) {
+    case "comp_assertion_reason":
+      return [{ questionType: "mcq_single", count: n, topicAppend: " (competitive assertion-reason based only; evaluate assertion and reason explicitly before final option)", asDraft: "mcq_single", laneLabel: "Assertion reason based" }];
+    case "comp_statement":
+      return [{ questionType: "mcq_single", count: n, topicAppend: " (competitive statement-based only; true/false/correct combination logic. Use statement-1/statement-2 or multiple statements and ask correct/incorrect combination)", asDraft: "mcq_single", laneLabel: "Statement based" }];
     case "comp_mcq":
-      return [{ questionType: "mcq_single", count: n, topicAppend: "", asDraft: "mcq_single" }];
+      return [{ questionType: "mcq_single", count: n, topicAppend: "", asDraft: "mcq_single", laneLabel: "MCQ based" }];
+    case "comp_match":
+      return [{ questionType: "descriptive", count: n, topicAppend: " (match-the-following based only; include Column I and Column II with at least 4 items each, and exact mapping pairs in model answer)", asDraft: "descriptive", laneLabel: "Match the following based" }];
+    case "comp_diagram":
+      return [{ questionType: "descriptive", count: n, topicAppend: " (diagram-based questions for any subject; labeling/identification/inference pattern. MUST include a text diagram block or labeled structure in the question stem and reference those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" }];
     case "comp_msq":
-      return [{ questionType: "mcq_multi", count: n, topicAppend: "", asDraft: "mcq_multi" }];
+      return [{ questionType: "mcq_multi", count: n, topicAppend: "", asDraft: "mcq_multi", laneLabel: "MSQ" }];
     case "comp_int":
-      return [{ questionType: "integer", count: n, topicAppend: "", asDraft: "integer" }];
+      return [{ questionType: "integer", count: n, topicAppend: "", asDraft: "integer", laneLabel: "Integer based" }];
     case "comp_all": {
-      const [a, b, c] = splitInt3(n, 1, 1, 1);
-      return [
-        { questionType: "mcq_single", count: a, topicAppend: " (competitive: single-correct only)", asDraft: "mcq_single" },
-        { questionType: "mcq_multi", count: b, topicAppend: " (competitive: multi-correct; several options may be true)", asDraft: "mcq_multi" },
-        { questionType: "integer", count: c, topicAppend: " (competitive: integer 0–999 only)", asDraft: "integer" },
+      const [a, b, c] = splitInt3(n, 3, 2, 2);
+      const assertionCount = Math.min(1, a);
+      const statementCount = Math.min(1, Math.max(0, a - assertionCount));
+      const mcqCount = Math.max(0, a - assertionCount - statementCount);
+      const matchCount = Math.min(1, n >= 5 ? 1 : 0);
+      const diagramCount = Math.min(1, n >= 6 ? 1 : 0);
+      const plan: AiSeg[] = [
+        { questionType: "mcq_single", count: assertionCount, topicAppend: " (competitive assertion-reason based only)", asDraft: "mcq_single", laneLabel: "Assertion reason based" },
+        { questionType: "mcq_single", count: statementCount, topicAppend: " (competitive statement-based only. Use statement-1/statement-2 or multiple statements and ask correct/incorrect combination)", asDraft: "mcq_single", laneLabel: "Statement based" },
+        { questionType: "mcq_single", count: mcqCount, topicAppend: " (competitive single-correct MCQ only)", asDraft: "mcq_single", laneLabel: "MCQ based" },
+        { questionType: "descriptive", count: matchCount, topicAppend: " (match-the-following based only. MUST include Column I and Column II with at least 4 items each, and exact mapping pairs in model answer)", asDraft: "descriptive", laneLabel: "Match the following based" },
+        { questionType: "descriptive", count: diagramCount, topicAppend: " (diagram-based questions for any subject. MUST include a text diagram block or labeled structure in the question stem and reference those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" },
+        { questionType: "mcq_multi", count: b, topicAppend: " (competitive MSQ / multi-correct. MUST have at least two correct options)", asDraft: "mcq_multi", laneLabel: "MSQ" },
+        { questionType: "integer", count: c, topicAppend: " (competitive integer 0–999 only)", asDraft: "integer", laneLabel: "Integer based" },
       ];
+      return plan.filter((seg) => seg.count > 0);
+    }
+    case "acad_mcq":
+      return [{ questionType: "mcq_single", count: n, topicAppend: " (academic MCQ based only; STRICTLY 1-mark question with concise answer/explanation)", asDraft: "mcq_single", laneLabel: "MCQ based" }];
+    case "acad_assertion_reason":
+      return [{ questionType: "mcq_single", count: n, topicAppend: " (academic assertion-reason based only; STRICTLY 1-mark objective style with concise justification)", asDraft: "mcq_single", laneLabel: "Assertion reason based" }];
+    case "acad_short_answer":
+      return [{ questionType: "descriptive", count: n, topicAppend: " (academic short-answer type only; STRICTLY 2-mark pattern: 1 point/definition + 1 point/example/explanation)", asDraft: "descriptive", laneLabel: "Short answer type" }];
+    case "acad_detailed_answer":
+      return [{ questionType: "descriptive", count: n, topicAppend: " (academic detailed-answer type only; STRICTLY 5-mark pattern: intro + 3 core points/steps + support/conclusion. Question must demand multi-step reasoning, and model answer must contain at least 4 structured points)", asDraft: "descriptive", laneLabel: "Detailed answers type" }];
+    case "acad_case_study":
+      return [{ questionType: "descriptive", count: n, topicAppend: " (academic case-study based only; STRICTLY 4-mark pattern with passage/data analysis and structured reasoning)", asDraft: "descriptive", laneLabel: "Case study based" }];
+    case "acad_diagram":
+      return [{ questionType: "descriptive", count: n, topicAppend: " (academic diagram based only; STRICTLY 4-mark pattern: labeling + explanation + conclusion. MUST include a text diagram block or labeled structure in the question stem and use those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" }];
+    case "acad_all": {
+      const [a, b, c] = splitInt3(n, 2, 1, 3);
+      const diagramShare = c >= 3 ? 1 : 0;
+      const descriptiveCore = Math.max(0, c - diagramShare);
+      const shortShare = descriptiveCore > 0 ? Math.max(1, Math.floor(descriptiveCore / 3)) : 0;
+      const detailShare = descriptiveCore > 1 ? Math.max(1, Math.floor(descriptiveCore / 3)) : 0;
+      const caseShare = Math.max(0, descriptiveCore - shortShare - detailShare);
+      const plan: AiSeg[] = [
+        { questionType: "mcq_single", count: a, topicAppend: " (academic MCQ based; STRICTLY 1 mark)", asDraft: "mcq_single", laneLabel: "MCQ based" },
+        { questionType: "mcq_single", count: b, topicAppend: " (academic assertion-reason based; STRICTLY 1 mark)", asDraft: "mcq_single", laneLabel: "Assertion reason based" },
+        { questionType: "descriptive", count: shortShare, topicAppend: " (academic short-answer type; STRICTLY 2 marks)", asDraft: "descriptive", laneLabel: "Short answer type" },
+        { questionType: "descriptive", count: detailShare, topicAppend: " (academic detailed-answer type; STRICTLY 5 marks. Question must demand multi-step reasoning, and model answer must contain at least 4 structured points)", asDraft: "descriptive", laneLabel: "Detailed answers type" },
+        { questionType: "descriptive", count: caseShare, topicAppend: " (academic case-study based; STRICTLY 4 marks)", asDraft: "descriptive", laneLabel: "Case study based" },
+        { questionType: "descriptive", count: diagramShare, topicAppend: " (academic diagram based; STRICTLY 4 marks. MUST include a text diagram block or labeled structure in the question stem and use those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" },
+      ];
+      return plan.filter((seg) => seg.count > 0);
     }
     case "cbse_competency":
       return [{ questionType: "mcq_single", count: n, topicAppend: CBSE_COMP_APPEND, asDraft: "mcq_single" }];
@@ -329,6 +538,9 @@ const DRAFT_KIND_LABEL: Record<DraftQKind, string> = {
  * Shown in the generate loader: which slice of the plan is running.
  */
 function getSegmentLabel(mix: QuestionMixId, seg: AiSeg, i: number, n: number): string {
+  if (seg.laneLabel) {
+    return n <= 1 ? seg.laneLabel : `Segment ${i + 1} of ${n}: ${seg.laneLabel}`;
+  }
   if (mix === "cbse_all" && seg.cbseBucket) {
     return n <= 1
       ? getCbseBucketLabel(seg.cbseBucket)
@@ -365,11 +577,66 @@ type DraftQuestion = CreateMockTestQuestionPayload & {
   _key: number;
   subject?: string;
   explanation?: string;
+  generatedTypeLabel?: string;
   /** Model answer (descriptive) */
   solutionText?: string;
   /** Optional generation bucket metadata for cache reuse */
   cacheBucket?: CbseBucket;
 };
+
+const GENERATED_TYPE_TAG_PREFIX = "gen_type:";
+
+function buildGeneratedTypeTags(existing: string[] | undefined, label: string | undefined): string[] | undefined {
+  const base = (existing ?? []).filter((t) => !String(t).startsWith(GENERATED_TYPE_TAG_PREFIX));
+  if (!label || !label.trim()) return base.length ? base : undefined;
+  const normalised = label.trim().toLowerCase().replace(/\s+/g, "_");
+  return [...base, `${GENERATED_TYPE_TAG_PREFIX}${normalised}`];
+}
+
+function prettifyGeneratedTypeTag(tagValue: string): string {
+  return tagValue
+    .replace(/^gen_type:/, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function getQuestionTypeBadgeLabel(q: Partial<DraftQuestion> & { type?: string; tags?: string[]; generatedTypeLabel?: string }): string {
+  const explicit = q.generatedTypeLabel?.trim();
+  if (explicit) return explicit;
+  const tag = (q.tags ?? []).find((t) => String(t).startsWith(GENERATED_TYPE_TAG_PREFIX));
+  if (tag) return prettifyGeneratedTypeTag(tag);
+  return q.type || "question";
+}
+
+function inferSubtypeLabelFromText(questionText?: string, explanation?: string): string | undefined {
+  const text = `${questionText || ""}\n${explanation || ""}`.toLowerCase();
+  const has = (parts: string[]) => parts.every((p) => text.includes(p));
+
+  if (
+    has(["assertion", "reason"]) ||
+    has(["assertion (a)", "reason (r)"]) ||
+    text.includes("both a and r")
+  ) {
+    return "ASSERTION_REASON";
+  }
+
+  if (
+    text.includes("match the following") ||
+    has(["column i", "column ii"]) ||
+    text.includes("matrix match")
+  ) {
+    return "MATRIX_MATCH";
+  }
+
+  if (
+    text.includes("read the following passage") ||
+    text.includes("based on the paragraph")
+  ) {
+    return "PARAGRAPH_BASED";
+  }
+
+  return undefined;
+}
 
 type CachedQuestion = Omit<DraftQuestion, "_key">;
 type AiQuestionCacheEntry = {
@@ -382,7 +649,7 @@ type AiQuestionCacheEntry = {
   questions: CachedQuestion[];
 };
 
-const AI_Q_CACHE_KEY = "mock_ai_question_cache_v1";
+const AI_Q_CACHE_KEY = "mock_ai_question_cache_v2";
 const AI_Q_CACHE_MAX_ENTRIES = 30;
 const AI_Q_CACHE_MAX_PER_ENTRY = 400;
 
@@ -452,10 +719,13 @@ function aiToDraft(
   defaultSubject: string,
   mix: QuestionMixId,
   cacheBucket?: CbseBucket,
+  generatedTypeLabel?: string,
 ): DraftQuestion {
   const diff = (q.difficulty?.toLowerCase() ?? "medium") as "easy" | "medium" | "hard";
   const safeDiff = ["easy", "medium", "hard"].includes(diff) ? diff : "medium";
   const marks = defaultMarksFor(as, mix, safeDiff);
+  const inferredSubtype = inferSubtypeLabelFromText(q.questionText, q.explanation);
+  const effectiveGeneratedTypeLabel = inferredSubtype || generatedTypeLabel;
 
   if (as === "descriptive") {
     const ex = (q.explanation || "").trim();
@@ -463,7 +733,8 @@ function aiToDraft(
       .replace(/\bModel answer:\s*[A-E]\b\.?/gi, "")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
-    const model = cleanedEx.replace(/^\s*Model answer:\s*/i, "").trim() || cleanedEx;
+    const modelSpec = (q.solutionText || "").trim();
+    const model = modelSpec || cleanedEx.replace(/^\s*Model answer:\s*/i, "").trim() || cleanedEx;
     const inferredMarks = inferDescriptiveMarksFromQuestion(q.questionText, model, marks.marksCorrect);
     return {
       _key: ++_keyCounter,
@@ -474,6 +745,7 @@ function aiToDraft(
       marksWrong: marks.marksWrong,
       subject: q.subject || defaultSubject,
       explanation: q.explanation,
+      generatedTypeLabel: effectiveGeneratedTypeLabel,
       solutionText: model,
       cacheBucket,
     };
@@ -498,6 +770,7 @@ function aiToDraft(
       integerAnswer: intVal,
       subject: q.subject || defaultSubject,
       explanation: q.explanation,
+      generatedTypeLabel: effectiveGeneratedTypeLabel,
       cacheBucket,
     };
   }
@@ -522,6 +795,7 @@ function aiToDraft(
       marksWrong: marks.marksWrong,
       subject: q.subject || defaultSubject,
       explanation: q.explanation,
+      generatedTypeLabel: effectiveGeneratedTypeLabel,
       cacheBucket,
       options: [
         { optionLabel: "A", content: "—", isCorrect: isMulti ? false : true },
@@ -542,6 +816,7 @@ function aiToDraft(
     options: opts,
     subject: q.subject || defaultSubject,
     explanation: q.explanation,
+    generatedTypeLabel: effectiveGeneratedTypeLabel,
     cacheBucket,
   };
 }
@@ -662,6 +937,11 @@ function QuestionRow({
         <p className="text-sm text-slate-700 flex-1 truncate">{q.content || <span className="text-slate-400 italic">Empty question…</span>}</p>
         <div className="flex items-center gap-2 shrink-0">
           {q.subject && <span className="text-xs text-slate-400 hidden sm:block">{q.subject}</span>}
+          {q.generatedTypeLabel && (
+            <span className="text-xs text-[#013889] bg-[#E6EEF8] px-2 py-0.5 rounded-full hidden sm:block">
+              {q.generatedTypeLabel}
+            </span>
+          )}
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${DIFFICULTY_COLORS[q.difficulty] ?? ""}`}>
             {q.difficulty}
           </span>
@@ -831,7 +1111,7 @@ function AIGeneratePanel({
   const topicList = Array.isArray(topics) ? topics : [];
 
   const cfg = EXAM_CONFIGS[exam] ?? EXAM_CONFIGS.JEE;
-  const isCbseMix = questionMixId.startsWith("cbse_");
+  const isCbseMix = questionMixId.startsWith("cbse_") || questionMixId.startsWith("acad_");
   const topicSelected = !!aiTopicId;
   const requestedCount = countMode === "custom"
     ? Math.max(1, Math.min(300, Number(customCount) || 0))
@@ -850,6 +1130,93 @@ function AIGeneratePanel({
     cacheScope.topicId || "-",
   ].join("|");
 
+  const countDraftDifficulties = (items: DraftQuestion[]) => {
+    let easy = 0, medium = 0, hard = 0;
+    for (const q of items) {
+      if (q.difficulty === "easy") easy += 1;
+      else if (q.difficulty === "hard") hard += 1;
+      else medium += 1;
+    }
+    return { easy, medium, hard };
+  };
+
+  const enforceMixedDifficultyBalance = (
+    items: DraftQuestion[],
+    target: { easy: number; medium: number; hard: number },
+  ): DraftQuestion[] => {
+    if (difficultyMode !== "mixed" || items.length === 0) return items;
+    const out = [...items];
+    const current = countDraftDifficulties(out);
+    const need = {
+      easy: Math.max(0, target.easy - current.easy),
+      medium: Math.max(0, target.medium - current.medium),
+      hard: Math.max(0, target.hard - current.hard),
+    };
+    const excess = {
+      easy: Math.max(0, current.easy - target.easy),
+      medium: Math.max(0, current.medium - target.medium),
+      hard: Math.max(0, current.hard - target.hard),
+    };
+
+    const relabel = (from: "easy" | "medium" | "hard", to: "easy" | "medium" | "hard") => {
+      if (from === to || excess[from] <= 0 || need[to] <= 0) return;
+      for (let i = 0; i < out.length && excess[from] > 0 && need[to] > 0; i++) {
+        if (out[i].difficulty !== from) continue;
+        out[i] = applyMarksPolicyToDraft(
+          { ...out[i], difficulty: to as any },
+          questionMixId,
+        );
+        excess[from] -= 1;
+        need[to] -= 1;
+      }
+    };
+
+    // Common failure pattern is medium-heavy; move medium to deficits first.
+    relabel("medium", "easy");
+    relabel("medium", "hard");
+    relabel("easy", "hard");
+    relabel("hard", "easy");
+
+    return out;
+  };
+
+  const getRemainingDifficultyNeed = (items: DraftQuestion[], target: { easy: number; medium: number; hard: number }) => {
+    const got = countDraftDifficulties(items);
+    return {
+      easy: Math.max(0, target.easy - got.easy),
+      medium: Math.max(0, target.medium - got.medium),
+      hard: Math.max(0, target.hard - got.hard),
+    };
+  };
+
+  const allocateDifficultyCounts = (
+    chunk: number,
+    remainingNeed: { easy: number; medium: number; hard: number },
+    seed = 0,
+  ) => {
+    if (chunk <= 0) return { easy: 0, medium: 0, hard: 0 };
+    const totalNeed = remainingNeed.easy + remainingNeed.medium + remainingNeed.hard;
+    if (difficultyMode !== "mixed" || totalNeed <= 0) {
+      return splitByDifficulty(chunk, difficultyMode, seed);
+    }
+    const exact = {
+      easy: (chunk * remainingNeed.easy) / Math.max(1, totalNeed),
+      medium: (chunk * remainingNeed.medium) / Math.max(1, totalNeed),
+      hard: (chunk * remainingNeed.hard) / Math.max(1, totalNeed),
+    };
+    const out = {
+      easy: Math.floor(exact.easy),
+      medium: Math.floor(exact.medium),
+      hard: Math.floor(exact.hard),
+    };
+    let rem = chunk - out.easy - out.medium - out.hard;
+    const fracs = (["easy", "medium", "hard"] as const)
+      .map((k) => ({ k, f: exact[k] - out[k] }))
+      .sort((a, b) => b.f - a.f);
+    for (let i = 0; i < rem; i++) out[fracs[i % fracs.length].k] += 1;
+    return out;
+  };
+
   const handleGenerate = async () => {
     setError("");
     setQualityReport("");
@@ -864,16 +1231,18 @@ function AIGeneratePanel({
       percent: 0,
     });
 
+    const rotationSeed = Date.now() % 3;
     const { easy: easyCount, medium: mediumCount, hard: hardCount } = splitByDifficulty(
       requestedCount,
       difficultyMode,
+      rotationSeed,
     );
 
     const extra = customInstructions.trim() ? ` Extra focus: ${customInstructions.trim()}` : "";
     const isCbse = isCbseMix;
     const difficultyPrompt =
       difficultyMode === "mixed"
-        ? " Difficulty mix required: roughly 30% easy, 45% medium, 25% hard."
+        ? " Difficulty mix required: equal easy, medium, and hard distribution."
         : ` Generate ALL questions at ${difficultyMode.toUpperCase()} difficulty only.`;
 
     let topicName: string;
@@ -940,10 +1309,16 @@ function AIGeneratePanel({
         const t = (cq.type as DraftQKind);
         const segIdx = rem.findIndex((r, i) => r > 0 && plan[i].asDraft === t);
         if (segIdx < 0) continue;
+        const seg = plan[segIdx];
+        if (!draftLaneQualityPass(cq as DraftQuestion, seg)) continue;
+        const enriched = {
+          ...cq,
+          generatedTypeLabel: cq.generatedTypeLabel || seg.laneLabel,
+        } as DraftQuestion;
         const k = norm(cq.content || "");
         if (!k || seenQuestions.has(k)) continue;
         seenQuestions.add(k);
-        drafts.push(applyMarksPolicyToDraft({ _key: ++_keyCounter, ...cq }, questionMixId));
+        drafts.push(applyMarksPolicyToDraft({ _key: ++_keyCounter, ...enriched }, questionMixId));
         rem[segIdx] -= 1;
         if (drafts.length >= requestedCount) break;
       }
@@ -964,6 +1339,14 @@ function AIGeneratePanel({
           .map((n, i) => ({ segIndex: i, remNeed: n, seg: plan[i]! }))
           .filter((x) => x.remNeed > 0);
         if (toFetch.length > 0) {
+          const needBeforeMain = getRemainingDifficultyNeed(drafts, {
+            easy: easyCount,
+            medium: mediumCount,
+            hard: hardCount,
+          });
+          const mainAlloc = toFetch.map(({ remNeed }, idx) =>
+            allocateDifficultyCounts(remNeed, needBeforeMain, rotationSeed + idx),
+          );
           setLoader(
             toFetch.length > 1
               ? {
@@ -975,33 +1358,38 @@ function AIGeneratePanel({
                 }
               : (() => {
                   const { seg, segIndex, remNeed: rn } = toFetch[0]!;
-                  const sE = Math.max(0, Math.round(rn * (easyCount / Math.max(1, requestedCount))));
-                  const sH = Math.max(0, Math.round(rn * (hardCount / Math.max(1, requestedCount))));
-                  const sM = Math.max(0, rn - sE - sH);
+                  const alloc = mainAlloc[0] || { easy: 0, medium: rn, hard: 0 };
                   return {
                     title: "Main — calling AI",
-                    detail: `${getSegmentLabel(questionMixId, seg, segIndex, plan.length)} — up to ${rn} new (easy ${sE} · medium ${sM} · hard ${sH}) · ${drafts.length}/${requestedCount} collected`,
+                    detail: `${getSegmentLabel(questionMixId, seg, segIndex, plan.length)} — up to ${rn} new (easy ${alloc.easy} · medium ${alloc.medium} · hard ${alloc.hard}) · ${drafts.length}/${requestedCount} collected`,
                     percent: pct(drafts.length),
                   };
                 })(),
           );
-          const parallelRes = await Promise.all(
-            toFetch.map(async ({ segIndex, remNeed, seg }) => {
-              const sEasy = Math.max(0, Math.round(remNeed * (easyCount / Math.max(1, requestedCount))));
-              const sHard = Math.max(0, Math.round(remNeed * (hardCount / Math.max(1, requestedCount))));
-              const sMed = Math.max(0, remNeed - sEasy - sHard);
-              const raw: AiGeneratedQuestion[] = await aiGenerateMockTestQuestions({
-                topicId: aiTopicId || undefined,
-                topicName: `${topicName} ${seg.topicAppend}`.trim(),
-                totalCount: remNeed,
-                easyCount: sEasy,
-                mediumCount: sMed,
-                hardCount: sHard,
-                questionType: seg.questionType,
-              });
-              return { segIndex, seg, raw };
-            }),
-          );
+          const parallelRes: Array<{ segIndex: number; seg: AiSeg; raw: AiGeneratedQuestion[] }> = [];
+          const chunkSize = 3; // keep pressure lower on AI bridge; avoids burst 502s with 6-7 lanes
+          for (let start = 0; start < toFetch.length; start += chunkSize) {
+            const batch = toFetch.slice(start, start + chunkSize);
+            const settled = await Promise.allSettled(
+              batch.map(async ({ segIndex, remNeed, seg }, localIdx) => {
+                const globalIdx = start + localIdx;
+                const alloc = mainAlloc[globalIdx] || splitByDifficulty(remNeed, difficultyMode, rotationSeed + globalIdx);
+                const raw: AiGeneratedQuestion[] = await aiGenerateMockTestQuestions({
+                  topicId: aiTopicId || undefined,
+                  topicName: `${topicName} ${seg.topicAppend}`.trim(),
+                  totalCount: remNeed,
+                  easyCount: alloc.easy,
+                  mediumCount: alloc.medium,
+                  hardCount: alloc.hard,
+                  questionType: seg.questionType,
+                });
+                return { segIndex, seg, raw };
+              }),
+            );
+            for (const s of settled) {
+              if (s.status === "fulfilled") parallelRes.push(s.value);
+            }
+          }
           parallelRes.sort((a, b) => a.segIndex - b.segIndex);
           for (const { seg, raw } of parallelRes) {
             const bucket = bucketFromSeg(seg);
@@ -1009,9 +1397,10 @@ function AIGeneratePanel({
               const key = norm(q.questionText || "");
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
               if (questionMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
+              if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
               drafts.push(
-                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket),
+                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel),
               );
               if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
             }
@@ -1026,29 +1415,33 @@ function AIGeneratePanel({
           let retry = 0;
           while (need > 0 && retry < 3) {
             retry += 1;
+            const remainingNeed = getRemainingDifficultyNeed(drafts, {
+              easy: easyCount,
+              medium: mediumCount,
+              hard: hardCount,
+            });
+            const alloc = allocateDifficultyCounts(need, remainingNeed, rotationSeed + retry);
             setLoader({
               title: "Refining — CBSE balance",
               detail: `${getCbseBucketLabel(bucket)} — attempt ${retry}/3, up to ${need} more this call · ${drafts.length}/${requestedCount} total`,
               percent: pct(drafts.length),
             });
-            const sEasy = Math.max(0, Math.round(need * (easyCount / Math.max(1, requestedCount))));
-            const sHard = Math.max(0, Math.round(need * (hardCount / Math.max(1, requestedCount))));
-            const sMed = Math.max(0, need - sEasy - sHard);
             const raw = await aiGenerateMockTestQuestions({
               topicId: aiTopicId || undefined,
               topicName: `${topicName} ${seg.topicAppend} STRICTLY produce ${bucket === "comp" ? "conceptual/case/source/data/application/HOTS only" : bucket === "obj" ? "objective/VSA/assertion–reason/selection only" : "short and long descriptive answers only"}. Avoid repeating previous questions.`.trim(),
               totalCount: need,
-              easyCount: sEasy,
-              mediumCount: sMed,
-              hardCount: sHard,
+              easyCount: alloc.easy,
+              mediumCount: alloc.medium,
+              hardCount: alloc.hard,
               questionType: seg.questionType,
-            });
+            }).catch(() => [] as AiGeneratedQuestion[]);
             for (const q of raw) {
               const key = norm(q.questionText || "");
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
               if (bucket === "comp" && !looksCompetencyStyle(q)) continue;
+              if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
-              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket));
+              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
               cbseGot[bucket] += 1;
               need -= 1;
               if (need <= 0) break;
@@ -1057,9 +1450,66 @@ function AIGeneratePanel({
         }
       }
 
+      // Required lane coverage for "mix of all":
+      // if count is large enough, force at least one from each lane.
+      if (cacheMode !== "cache_only" && (questionMixId === "comp_all" || questionMixId === "acad_all")) {
+        const minPerLane = new Map<string, number>();
+        const activeSegs = plan.filter((s) => s.count > 0 && s.laneLabel);
+        const requiredLaneCount = activeSegs.length;
+        const shouldRequireAll = requestedCount >= requiredLaneCount;
+        for (const seg of activeSegs) {
+          minPerLane.set(seg.laneLabel!, shouldRequireAll ? 1 : 0);
+        }
+
+        const countLane = (label: string) =>
+          drafts.filter((d) => (d.generatedTypeLabel || "").toLowerCase() === label.toLowerCase()).length;
+
+        for (const seg of activeSegs) {
+          const lane = seg.laneLabel!;
+          const req = minPerLane.get(lane) || 0;
+          if (req <= 0) continue;
+          let have = countLane(lane);
+          let tries = 0;
+          while (have < req && drafts.length < requestedCount && tries < 4) {
+            tries += 1;
+            const remainingNeed = getRemainingDifficultyNeed(drafts, {
+              easy: easyCount,
+              medium: mediumCount,
+              hard: hardCount,
+            });
+            const alloc = allocateDifficultyCounts(Math.min(2, req - have), remainingNeed, rotationSeed + 200 + tries);
+            setLoader({
+              title: "Refining — lane coverage",
+              detail: `${lane} — ensuring minimum coverage (${have}/${req})`,
+              percent: pct(drafts.length),
+            });
+            const raw = await aiGenerateMockTestQuestions({
+              topicId: aiTopicId || undefined,
+              topicName: `${topicName} ${seg.topicAppend} STRICTLY generate only ${lane} questions. Avoid all other patterns.`.trim(),
+              totalCount: Math.min(2, req - have),
+              easyCount: alloc.easy,
+              mediumCount: alloc.medium,
+              hardCount: alloc.hard,
+              questionType: seg.questionType,
+            }).catch(() => [] as AiGeneratedQuestion[]);
+            const bucket = bucketFromSeg(seg);
+            for (const q of raw) {
+              const key = norm(q.questionText || "");
+              if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
+              if (!laneQualityPass(q, seg)) continue;
+              seenQuestions.add(key);
+              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
+              have = countLane(lane);
+              if (have >= req || drafts.length >= requestedCount) break;
+            }
+            if (!raw.length) break;
+          }
+        }
+      }
+
       // Final exact-count top-up in chunks (merge until exact requested count).
       let topupGuard = 0;
-      while (cacheMode !== "cache_only" && drafts.length < requestedCount && topupGuard < 16) {
+      while (cacheMode !== "cache_only" && drafts.length < requestedCount && topupGuard < 40) {
         topupGuard += 1;
         const need = requestedCount - drafts.length;
         const chunk = Math.min(10, need);
@@ -1079,27 +1529,73 @@ function AIGeneratePanel({
           detail: `Pass ${topupGuard}/16 · ${getSegmentLabel(questionMixId, seg, 0, plan.length)} — up to ${chunk} new, ${need} still short · have ${drafts.length}/${requestedCount}`,
           percent: pct(drafts.length),
         });
-        const sEasy = Math.max(0, Math.round(chunk * (easyCount / Math.max(1, requestedCount))));
-        const sHard = Math.max(0, Math.round(chunk * (hardCount / Math.max(1, requestedCount))));
-        const sMed = Math.max(0, chunk - sEasy - sHard);
+        const remainingNeed = getRemainingDifficultyNeed(drafts, {
+          easy: easyCount,
+          medium: mediumCount,
+          hard: hardCount,
+        });
+        const alloc = allocateDifficultyCounts(chunk, remainingNeed, rotationSeed + topupGuard);
         const raw = await aiGenerateMockTestQuestions({
           topicId: aiTopicId || undefined,
           topicName: `${topicName} ${seg.topicAppend} Generate distinct, non-repeating questions only.`.trim(),
           totalCount: chunk,
-          easyCount: sEasy,
-          mediumCount: sMed,
-          hardCount: sHard,
+          easyCount: alloc.easy,
+          mediumCount: alloc.medium,
+          hardCount: alloc.hard,
           questionType: seg.questionType,
-        });
+        }).catch(() => [] as AiGeneratedQuestion[]);
         const bucket = bucketFromSeg(seg);
         for (const q of raw) {
           const key = norm(q.questionText || "");
           if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
           if (questionMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
+          if (!laneQualityPass(q, seg)) continue;
           seenQuestions.add(key);
-          drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket));
+          drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
           if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
           if (drafts.length >= requestedCount) break;
+        }
+      }
+
+      // Final fill pass (still quality-guarded): tries harder for count completion
+      // without accepting low-quality lane-mismatched content.
+      if (cacheMode !== "cache_only" && drafts.length < requestedCount) {
+        let rescueGuard = 0;
+        while (drafts.length < requestedCount && rescueGuard < 12) {
+          rescueGuard += 1;
+          const need = requestedCount - drafts.length;
+          const seg = plan[rescueGuard % Math.max(1, plan.length)];
+          const remainingNeed = getRemainingDifficultyNeed(drafts, {
+            easy: easyCount,
+            medium: mediumCount,
+            hard: hardCount,
+          });
+          const alloc = allocateDifficultyCounts(Math.min(6, need), remainingNeed, rotationSeed + 100 + rescueGuard);
+          setLoader({
+            title: "Final fill",
+            detail: `${getSegmentLabel(questionMixId, seg, 0, plan.length)} — filling remaining ${need} question(s)`,
+            percent: pct(drafts.length),
+          });
+          const raw = await aiGenerateMockTestQuestions({
+            topicId: aiTopicId || undefined,
+            topicName: `${topicName} ${seg.topicAppend} Ensure distinct fresh questions; prioritize completion of requested count.`.trim(),
+            totalCount: Math.min(6, need),
+            easyCount: alloc.easy,
+            mediumCount: alloc.medium,
+            hardCount: alloc.hard,
+            questionType: seg.questionType,
+          }).catch(() => [] as AiGeneratedQuestion[]);
+          const bucket = bucketFromSeg(seg);
+          for (const q of raw) {
+            const key = norm(q.questionText || "");
+            if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
+            if (!laneQualityPass(q, seg)) continue;
+            seenQuestions.add(key);
+            drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
+            if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
+            if (drafts.length >= requestedCount) break;
+          }
+          if (!raw.length) break;
         }
       }
 
@@ -1115,15 +1611,39 @@ function AIGeneratePanel({
         );
       }
 
+      // Final strict balance pass (mixed mode): if cache/model skewed difficulties,
+      // relabel surplus buckets to meet equal E/M/H target as closely as possible.
+      const balancedDrafts = enforceMixedDifficultyBalance(
+        drafts.slice(0, requestedCount),
+        { easy: easyCount, medium: mediumCount, hard: hardCount },
+      );
+
       setLoader({
         title: "Finishing",
-        detail: `Ready ${Math.min(drafts.length, requestedCount)} of ${requestedCount} questions. Sending to the editor…`,
+        detail: `Ready ${Math.min(balancedDrafts.length, requestedCount)} of ${requestedCount} questions. Sending to the editor…`,
         percent: 100,
       });
       const duplicateFiltered = Math.max(0, duplicateFilteredCount);
       if (questionMixId === "cbse_all") {
         setQualityReport(
           `Coverage: Conceptual ${cbseGot.comp}/${cbseTarget.comp} · Objective ${cbseGot.obj}/${cbseTarget.obj} · Short/long ${cbseGot.desc}/${cbseTarget.desc}${duplicateFiltered > 0 ? ` · Duplicates filtered: ${duplicateFiltered}` : ""}`,
+        );
+      } else if (questionMixId === "comp_all" || questionMixId === "acad_all") {
+        const activeLanes = plan
+          .filter((s) => s.count > 0 && s.laneLabel)
+          .map((s) => s.laneLabel as string);
+        const targetPerLane = requestedCount >= activeLanes.length ? 1 : 0;
+        const coverageRows = activeLanes.map((lane) => {
+          const got = balancedDrafts.filter(
+            (d) => (d.generatedTypeLabel || "").toLowerCase() === lane.toLowerCase(),
+          ).length;
+          return { lane, got, target: targetPerLane };
+        });
+        const laneCoverage = coverageRows.map((r) => `${r.lane} ${r.got}/${r.target}`).join(" · ");
+        const missing = coverageRows.filter((r) => r.target > 0 && r.got < r.target).map((r) => r.lane);
+        const missingText = missing.length > 0 ? ` · Missing: ${missing.join(", ")}` : "";
+        setQualityReport(
+          `Coverage: ${laneCoverage}${missingText}${duplicateFiltered > 0 ? ` · Duplicates filtered: ${duplicateFiltered}` : ""}`,
         );
       } else {
         setQualityReport(
@@ -1132,7 +1652,7 @@ function AIGeneratePanel({
       }
 
       // Save/refresh cache entry with newest unique pool.
-      const cacheOut: CachedQuestion[] = drafts.slice(0, requestedCount).map(stripKey);
+      const cacheOut: CachedQuestion[] = balancedDrafts.map(stripKey);
       const merged = [...cacheOut];
       const seenOut = new Set(merged.map((q) => norm(q.content || "")));
       for (const c of candidates) {
@@ -1154,7 +1674,7 @@ function AIGeneratePanel({
       });
       saveAiQuestionCache(nextEntries);
 
-      onQuestionsGenerated(drafts.slice(0, requestedCount), aiTopicId || undefined);
+      onQuestionsGenerated(balancedDrafts, aiTopicId || undefined);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "AI generation failed.";
       setError(msg);
@@ -1367,7 +1887,7 @@ function AIGeneratePanel({
         </select>
         <p className="text-[11px] text-slate-400 mt-1">
           {difficultyMode === "mixed"
-            ? "Target split: ~30% easy, ~45% medium, ~25% hard."
+            ? "Target split: equal easy, medium, and hard."
             : `AI will generate ${difficultyMode}-level questions only.`}
         </p>
       </div>
@@ -1394,7 +1914,7 @@ function AIGeneratePanel({
           </div>
           <p className="text-xs text-slate-400 mt-2">
             {difficultyMode === "mixed"
-              ? "Difficulty: ~30% easy · ~45% medium · ~25% hard"
+              ? "Difficulty: equal easy · medium · hard"
               : `Difficulty: ${difficultyMode} only`}
           </p>
         </div>
@@ -1446,7 +1966,7 @@ function AIGeneratePanel({
           <p className="text-[11px] text-slate-500">
             Goal: {requestedCount} questions in this run
             {difficultyMode === "mixed"
-              ? " — requested mix: ~30% easy · ~45% medium · ~25% hard (per segment)"
+              ? " — requested mix: equal easy · medium · hard (per segment)"
               : ` — all questions: ${difficultyMode}`}
             .
           </p>
@@ -1772,6 +2292,8 @@ function CreateTestModal({
           difficulty: q.difficulty,
           marksCorrect: q.marksCorrect,
           marksWrong: q.marksWrong,
+          tags: buildGeneratedTypeTags(undefined, q.generatedTypeLabel),
+          solutionText: (q as DraftQuestion).solutionText || q.explanation || undefined,
         };
         if (scope.topicId) payload.topicId = scope.topicId;
         if (q.type === "integer") payload.integerAnswer = q.integerAnswer;
@@ -2017,8 +2539,8 @@ function CreateTestModal({
                       <option key={c.id} value={c.id}>{c.label}</option>
                     ))}
                   </optgroup>
-                  <optgroup label="CBSE (Class 10 & 12 board style)">
-                    {QUESTION_MIX_CHOICES.filter(c => c.id.startsWith("cbse_")).map(c => (
+                  <optgroup label="Academics (Board / School style)">
+                    {QUESTION_MIX_CHOICES.filter(c => c.id.startsWith("acad_")).map(c => (
                       <option key={c.id} value={c.id}>{c.label}</option>
                     ))}
                   </optgroup>
@@ -2028,9 +2550,9 @@ function CreateTestModal({
                 </p>
                 {isCompetitiveMix(questionMixId) ? (
                   <p className="text-[11px] text-amber-700 mt-1">Competitive marking active: correct adds marks, wrong deducts marks.</p>
-                ) : questionMixId === "cbse_descriptive" || questionMixId === "cbse_all" ? (
+                ) : (
                   <p className="text-[11px] text-slate-500 mt-1">{CBSE_THEORY_PATTERN_NOTE}</p>
-                ) : null}
+                )}
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 space-y-1">
@@ -2177,6 +2699,8 @@ function AddQuestionModal({ mockTestId, existingIds, batchId, onClose }: {
       const payload: any = {
         content: q.content, type: q.type, difficulty: q.difficulty,
         marksCorrect: q.marksCorrect, marksWrong: q.marksWrong,
+        tags: buildGeneratedTypeTags(undefined, q.generatedTypeLabel),
+        solutionText: (q as DraftQuestion).solutionText || q.explanation || undefined,
       };
       if (topicId) payload.topicId = topicId;
       if (q.type === "integer") payload.integerAnswer = q.integerAnswer;
@@ -2331,13 +2855,17 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                     <p className="text-sm text-slate-700 leading-relaxed">{q.content}</p>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${DIFFICULTY_COLORS[q.difficulty] ?? ""}`}>{q.difficulty}</span>
-                      <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{q.type}</span>
+                      <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {getQuestionTypeBadgeLabel(q as any)}
+                      </span>
                       <span className="text-xs text-emerald-600 font-semibold">+{q.marksCorrect}</span>
                       {q.marksWrong !== 0 && <span className="text-xs text-red-500 font-semibold">{q.marksWrong}</span>}
                     </div>
-                    {q.type === "descriptive" && modelAnswer && (
+                    {modelAnswer && (
                       <div className="mt-3 rounded-lg border border-[#013889]/20 bg-[#E6EEF8]/50 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#013889]/80 mb-1.5">Model answer (review before publish)</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#013889]/80 mb-1.5">
+                          {q.type === "descriptive" ? "Model answer (review before publish)" : "Explanation (review before publish)"}
+                        </p>
                         <p className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">{modelAnswer}</p>
                       </div>
                     )}

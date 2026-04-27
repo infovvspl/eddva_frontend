@@ -239,19 +239,32 @@ const DashboardLayout = () => {
 
     const socket = ensureBattleSocket(backendUrl, token);
 
-    socket.on("connect", () => {
+    const handleConnect = () => {
       socket.emit("lobby:join", {
         studentId: myStudentId,
         tenantId: user?.tenantId,
       });
-    });
+    };
 
-    socket.on("battle:incoming_request", (payload: IncomingBattleChallenge) => {
+    const handleIncomingRequest = (payload: IncomingBattleChallenge) => {
       if (latestPathRef.current.startsWith("/student/battle")) return;
       navigate("/student/battle", { state: { incomingChallenge: payload } });
-    });
+    };
+
+    // Prevent duplicate listeners when this effect re-runs.
+    socket.off("connect", handleConnect);
+    socket.off("battle:incoming_request", handleIncomingRequest);
+    socket.on("connect", handleConnect);
+    socket.on("battle:incoming_request", handleIncomingRequest);
+
+    // If socket is already connected, `connect` won't fire again; join immediately.
+    if (socket.connected) {
+      handleConnect();
+    }
 
     return () => {
+      socket.off("connect", handleConnect);
+      socket.off("battle:incoming_request", handleIncomingRequest);
       disconnectBattleSocket();
     };
   }, [isStudent, me?.student?.id, navigate, user?.tenantId]);

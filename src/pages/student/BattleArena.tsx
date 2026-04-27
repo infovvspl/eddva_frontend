@@ -2226,15 +2226,16 @@ function ChallengeTargetPickerScreen({
   targetUser: LobbyUser;
   myCourses: any[];
   onBack: () => void;
-  onSendChallenge: (batchId: string, batchName: string) => void;
+  onSendChallenge: (batchId: string, batchName: string, difficulty: BattleDifficulty) => void;
 }) {
   const commonCourses = myCourses.filter(c => targetUser.batchIds?.includes(c.id));
   const [selected, setSelected] = useState(commonCourses[0]?.id || "");
+  const [difficulty, setDifficulty] = useState<BattleDifficulty>("medium");
 
   const handleSend = () => {
     const course = commonCourses.find(c => c.id === selected);
     if (!course) return;
-    onSendChallenge(course.id, course.name);
+    onSendChallenge(course.id, course.name, difficulty);
   };
 
   return (
@@ -2257,6 +2258,27 @@ function ChallengeTargetPickerScreen({
             </select>
           </div>
         )}
+        <div className="text-left space-y-3">
+            <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Select Difficulty</label>
+            <div className="grid grid-cols-3 gap-3">
+              {BATTLE_DIFFICULTY_PICK.map((d) => (
+                <button
+                  key={d.key}
+                  onClick={() => setDifficulty(d.key)}
+                  className={cn(
+                    "p-3 rounded-2xl border text-left transition-all",
+                    difficulty === d.key
+                      ? "border-indigo-400 bg-indigo-50/40"
+                      : "border-slate-100 bg-white hover:border-indigo-200",
+                  )}
+                >
+                  <p className={cn("text-[11px] font-bold uppercase tracking-tight", difficulty === d.key ? "text-slate-800" : "text-slate-400")}>
+                    {d.label}
+                  </p>
+                </button>
+              ))}
+            </div>
+        </div>
         <div className="flex justify-center gap-3">
           {commonCourses.length > 0 && (
             <Button className="rounded-xl bg-indigo-600 px-6 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500" onClick={handleSend}>
@@ -2927,10 +2949,12 @@ const BattleArena = () => {
     };
     socket.on("battle:challenge_sent", onChallengeSent);
 
-    const onChallengeRejected = () => {
+    const onChallengeRejected = (payload?: { reason?: string }) => {
       setPendingChallengeId(null);
+      setIncomingChallenge(null);
+      setChallengeTargetId(null);
       setStage("lobby");
-      toast.error("Challenge rejected.");
+      toast.error(payload?.reason || "Challenge rejected by opponent.");
     };
     socket.on("battle:challenge_rejected", onChallengeRejected);
 
@@ -3023,7 +3047,7 @@ const BattleArena = () => {
     setStage("challenge_target_pick");
   };
 
-  const sendChallenge = (targetStudentId: string, batchId?: string, batchName?: string) => {
+  const sendChallenge = (targetStudentId: string, batchId?: string, batchName?: string, difficulty?: BattleDifficulty) => {
     if (!lobbySocketRef.current || !myStudentId) return;
     lobbySocketRef.current.emit("battle:challenge", {
       targetStudentId,
@@ -3031,6 +3055,7 @@ const BattleArena = () => {
       tenantId: me?.tenantId,
       batchId,
       batchName,
+      difficulty,
     });
   };
 
@@ -3191,8 +3216,8 @@ const BattleArena = () => {
                 targetUser={onlineUsers.find(u => u.studentId === challengeTargetId)!}
                 myCourses={myCourses}
                 onBack={() => setStage("lobby")}
-                onSendChallenge={(batchId, batchName) => {
-                  sendChallenge(challengeTargetId, batchId, batchName);
+                onSendChallenge={(batchId, batchName, difficulty) => {
+                  sendChallenge(challengeTargetId, batchId, batchName, difficulty);
                 }}
               />
             </motion.div>
