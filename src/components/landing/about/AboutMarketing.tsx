@@ -85,16 +85,16 @@ export function AboutMarketing() {
       {/* 1. About copy + hero image side by side */}
       <section className="relative overflow-hidden border-b border-slate-200/80">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-100" aria-hidden />
-        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-2 md:items-start md:gap-12 md:py-24">
-          <div className="space-y-6">
+        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 py-16 lg:grid-cols-2 lg:items-start lg:gap-12 lg:py-24">
+          <div className="mx-auto max-w-2xl space-y-6 text-center lg:mx-0 lg:max-w-none lg:text-left">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" /> About Eddva
             </span>
-            <h1 className="text-4xl font-extrabold leading-[1.05] sm:text-5xl md:text-6xl">
+            <h1 className="text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">
               A new standard in{" "}
               <span className="text-gradient-brand">learning</span>
             </h1>
-            <div className="space-y-4 text-base leading-relaxed text-foreground/85 sm:text-lg">
+            <div className="mx-auto max-w-[60ch] space-y-4 text-base leading-relaxed text-foreground/85 sm:text-lg lg:mx-0 lg:max-w-none">
               {aboutParagraphs.map((p, i) => (
                 <p key={i} className={i === 0 ? "font-medium text-foreground/90" : undefined}>
                   {p}
@@ -103,7 +103,7 @@ export function AboutMarketing() {
             </div>
        
           </div>
-          <div className="relative md:sticky md:top-28">
+          <div className="relative mx-auto w-full max-w-2xl lg:mx-0 lg:max-w-none lg:sticky lg:top-28">
             <div
               className="absolute -inset-6 rounded-[2rem] opacity-25 blur-2xl"
               style={{ background: gradHero }}
@@ -122,22 +122,22 @@ export function AboutMarketing() {
 
       {/* 2. Founder&apos;s Story */}
       <section className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <div className="grid gap-12 md:grid-cols-[minmax(0,1fr)_280px] md:items-start md:gap-16 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div>
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-16">
+          <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
               <Award className="h-3.5 w-3.5" /> Founder&apos;s Story
             </span>
             <h2 className="mt-6 text-3xl font-bold sm:text-4xl">Built on discipline. Driven by vision.</h2>
-            <p className="mt-2 text-xl font-medium text-muted-foreground">
+            <p className="mx-auto mt-2 max-w-[52ch] text-xl font-medium text-muted-foreground lg:mx-0 lg:max-w-none">
               Lt. Col. Anil Tripathi (Retd.), Sena Medal Awardee
             </p>
-            <div className="mt-8 space-y-4 text-base leading-relaxed text-foreground/85 sm:text-lg">
+            <div className="mx-auto mt-8 max-w-[60ch] space-y-4 text-base leading-relaxed text-foreground/85 sm:text-lg lg:mx-0 lg:max-w-none">
               {founderParagraphs.map((p, i) => (
                 <p key={i}>{p}</p>
               ))}
             </div>
           </div>
-          <figure className="mx-auto w-full max-w-sm shrink-0 md:mx-0 relative group">
+          <figure className="relative mx-auto w-full max-w-sm shrink-0 lg:mx-0 group">
             {/* Decorative soft glow */}
             <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-blue-500/10 to-purple-500/10 blur-xl transition-all duration-500 group-hover:from-blue-500/20 group-hover:to-purple-500/20" aria-hidden="true" />
             
@@ -157,7 +157,7 @@ export function AboutMarketing() {
               </div>
             </div>
             
-            <figcaption className="mt-5 text-center text-[14px] font-bold text-slate-500 transition-colors duration-300 group-hover:text-blue-600 md:text-left">
+            <figcaption className="mt-5 text-center text-[14px] font-bold text-slate-500 transition-colors duration-300 group-hover:text-blue-600 lg:text-left">
               Lt. Col. Anil Tripathi (Retd.), Sena Medal Awardee
             </figcaption>
           </figure>
