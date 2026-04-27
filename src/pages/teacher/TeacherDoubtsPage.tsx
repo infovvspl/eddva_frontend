@@ -9,6 +9,7 @@ import {
   useRespondToDoubt,
   useMarkDoubtReviewed,
   useResolveDoubtWithAiAsTeacher,
+  useDeleteDoubt,
   useMyBatches,
   teacherKeys,
 } from "@/hooks/use-teacher";
@@ -17,7 +18,7 @@ import {
   MessageSquare, Clock, AlertCircle, CheckCircle2, Send,
   Loader2, Search, RefreshCw, ChevronRight, Image as ImageIcon,
   BookOpen, Sparkles, ThumbsUp, ThumbsDown, Link2, Eye, EyeOff,
-  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload,
+  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload, Trash2,
 } from "lucide-react";
 import { apiClient, extractData } from "@/lib/api/client";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
@@ -312,11 +313,13 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
 
 // ─── Doubt Detail Panel ────────────────────────────────────────────────────────
 
-function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () => void }) {
+function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefresh: () => void; onDelete: () => void }) {
   const [aiQuality, setAiQuality] = useState<"correct" | "partial" | "wrong" | null>(null);
   const [showResponseEditor, setShowResponseEditor] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const markReviewedM = useMarkDoubtReviewed();
   const resolveWithAiM = useResolveDoubtWithAiAsTeacher();
+  const deleteM = useDeleteDoubt();
 
   const mins = doubt.timeSinceAskedMinutes ?? doubt.minutesSinceAsked;
   const name = doubt.student?.fullName ?? doubt.studentName ?? "Student";
@@ -347,6 +350,20 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
         : undefined;
       toast.error(msg || "Could not run AI resolution. Try again or write a manual response.");
     }
+  };
+
+  const handleDeleteConfirmed = () => {
+    deleteM.mutate(doubt.id, {
+      onSuccess: () => {
+        toast.success("Doubt deleted.");
+        setConfirmDelete(false);
+        onDelete();
+      },
+      onError: () => {
+        toast.error("Failed to delete doubt.");
+        setConfirmDelete(false);
+      },
+    });
   };
 
   const needsResponse = isEscalated || (aiQuality === "partial") || (aiQuality === "wrong");
@@ -386,9 +403,53 @@ function DoubtDetailPanel({ doubt, onRefresh }: { doubt: Doubt; onRefresh: () =>
                 {doubt.source}
               </span>
             )}
+            <button
+              onClick={() => setConfirmDelete(true)}
+              title="Delete doubt"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
+
+      {/* ── Delete Confirmation Dialog ── */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-background border border-border rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Delete this doubt?</p>
+                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-5">
+              The doubt from <span className="font-medium text-foreground">{name}</span> will be permanently removed.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleteM.isPending}
+                className="flex-1 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                disabled={deleteM.isPending}
+                className="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {deleteM.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {deleteM.isPending ? "Deleting…" : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 px-6 py-5 space-y-5">
 
@@ -836,6 +897,7 @@ export default function TeacherDoubtsPage() {
                 key={selectedDoubt.id}
                 doubt={selectedDoubt}
                 onRefresh={handleRefresh}
+                onDelete={() => { setSelectedId(null); handleRefresh(); }}
               />
             </div>
           </div>

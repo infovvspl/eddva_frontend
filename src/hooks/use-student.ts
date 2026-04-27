@@ -331,6 +331,19 @@ export function useRegeneratePlan() {
   });
 }
 
+export function useClearPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: studentApi.clearPlan,
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ["student", "plan"] });
+      qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      qc.invalidateQueries({ queryKey: studentKeys.me });
+      qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
+    },
+  });
+}
+
 export function useCompletePlanItem() {
   const qc = useQueryClient();
   return useMutation({

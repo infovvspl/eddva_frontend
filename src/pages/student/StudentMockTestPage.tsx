@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Clock, ClipboardList, CheckCircle,
-  XCircle, Minus, Trophy, Target, Zap, BarChart3, Loader2,
-  AlertTriangle, ChevronRight, BookOpen, Flag, RotateCcw,
+  XCircle, Minus, Trophy, Target, Zap, Loader2,
+  AlertTriangle, ChevronRight, BookOpen, RotateCcw,
   TrendingUp, Calendar, Award, Check, X,
 } from "lucide-react";
 import {
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { uploadToS3 } from "@/lib/api/upload";
+import { CardGlass } from "@/components/shared/CardGlass";
 
 // ─── Timer hook ───────────────────────────────────────────────────────────────
 function useCountdown(total: number, running: boolean, onExpire: () => void) {
@@ -84,32 +85,7 @@ function hydrateFromAttempts(
   return { answers, answerImages };
 }
 
-// ─── Palette dot ─────────────────────────────────────────────────────────────
-type QStatus = "unanswered" | "answered" | "current";
-function PaletteDot({ status, idx, onClick }: { status: QStatus; idx: number; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-9 h-9 rounded-lg text-xs font-bold transition-all border",
-        status === "current"    && "bg-indigo-600 text-white border-indigo-600 scale-110 shadow-md",
-        status === "answered"   && "bg-emerald-500 text-white border-emerald-500",
-        status === "unanswered" && "bg-white text-slate-500 border-slate-200 hover:border-indigo-300",
-      )}
-    >
-      {idx + 1}
-    </button>
-  );
-}
-
-// ─── Question view ────────────────────────────────────────────────────────────
-const TYPE_PILL: Record<QuizQuestion["type"], { label: string; className: string }> = {
-  mcq_single: { label: "MCQ", className: "bg-sky-100 text-sky-800" },
-  mcq_multi: { label: "MSQ (multi)", className: "bg-violet-100 text-violet-800" },
-  integer: { label: "Integer", className: "bg-amber-100 text-amber-800" },
-  descriptive: { label: "Written", className: "bg-rose-100 text-rose-800" },
-};
-
+// ─── Question view (aligned with study plan practice — StudentTopicQuizPage QuestionCard) ──
 function QuestionView({
   question, index, total, selected, imageUrls, onSelect, onImageUrlsChange, onDescriptiveInput,
 }: {
@@ -158,140 +134,134 @@ function QuestionView({
     }
   };
 
-  const typePill = TYPE_PILL[question.type] ?? TYPE_PILL.mcq_single;
-
   return (
     <motion.div
       key={question.id}
-      initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
-      className="space-y-5"
+      initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+      className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden"
     >
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700">
-          Q{index + 1} / {total}
-        </span>
-        <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", typePill.className)}>{typePill.label}</span>
-        <span className={cn(
-          "text-xs font-semibold px-2.5 py-1 rounded-full",
-          question.difficulty === "easy"   && "bg-emerald-100 text-emerald-700",
-          question.difficulty === "medium" && "bg-amber-100 text-amber-700",
-          question.difficulty === "hard"   && "bg-red-100 text-red-700",
-        )}>
-          {question.difficulty}
-        </span>
-        <span className="ml-auto text-xs font-semibold text-slate-500">
-          +{question.marksCorrect} pts
-          {question.marksWrong > 0 && <span className="text-red-500"> / -{question.marksWrong}</span>}
-        </span>
-      </div>
-
-      <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-        <p className="text-base font-semibold text-slate-800 leading-relaxed whitespace-pre-wrap">
-          {question.content}
-        </p>
-      </div>
-
-      {isDescriptive ? (
-        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
-          <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Your answer</p>
-          <textarea
-            value={textVal}
-            onChange={(e) => {
-              const raw = e.target.value;
-              setTextVal(raw);
-              onDescriptiveInput?.(raw);
-            }}
-            rows={6}
-            placeholder="Write your answer here. It is saved automatically as you type."
-            className="w-full p-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y min-h-[140px]"
-          />
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <label className="text-[11px] text-slate-500 font-medium">Upload handwritten pages (for diagrams/stepwork)</label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                disabled={uploading}
-                onChange={(e) => handlePickImages(e.target.files)}
-                className="text-[11px]"
-              />
-            </div>
-            {!!imageUrls?.length && (
-              <ul className="space-y-2 mt-2">
-                {imageUrls.map((url, idx) => (
-                  <li
-                    key={`${url}-${idx}`}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 pr-1"
-                  >
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-100">
-                      <img
-                        src={url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-medium text-slate-700">Page {idx + 1}</p>
-                      <p className="text-[10px] text-slate-400 truncate" title={url}>
-                        {url.length > 48 ? `${url.slice(0, 24)}…${url.slice(-12)}` : url}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onImageUrlsChange?.((imageUrls || []).filter((_, i) => i !== idx))}
-                      className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600"
-                      title="Remove this page"
-                      aria-label={`Remove page ${idx + 1}`}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {uploading && <p className="text-[11px] text-indigo-600">Uploading pages…</p>}
-            <p className="text-[10px] text-slate-500 leading-relaxed max-w-lg">
-              Handwritten images are stored securely. Your work is read from them (using vision AI) and combined with anything you typed for grading.
-            </p>
+      <CardGlass className="shrink-0 border-slate-200/80 relative overflow-hidden bg-white p-4 shadow-sm sm:p-5">
+        <div className="mb-3 flex flex-wrap items-center gap-2 sm:gap-3">
+          <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white sm:text-[11px]">
+            Question {index + 1} / {total}
+          </span>
+          <span className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 sm:text-[11px]">
+            {isDescriptive ? "Written" : isInteger ? "Integer" : isMulti ? "MSQ" : "MCQ"}
+          </span>
+          <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-500 sm:text-[11px]">Difficulty: {question.difficulty}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 sm:text-[11px]">+{question.marksCorrect}</span>
+            {question.marksWrong > 0 && <span className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[10px] font-semibold text-red-600 sm:text-[11px]">-{question.marksWrong}</span>}
           </div>
         </div>
+        <p className="text-base font-semibold leading-snug text-slate-900 select-none sm:text-lg whitespace-pre-wrap">
+          {question.content}
+        </p>
+      </CardGlass>
+
+      {isDescriptive ? (
+        <>
+          <CardGlass className="min-h-0 shrink-0 border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+            <label className="text-[11px] font-semibold text-slate-500 mb-3 block">Your answer</label>
+            <textarea
+              value={textVal}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setTextVal(raw);
+                onDescriptiveInput?.(raw);
+              }}
+              rows={4}
+              placeholder="Type your response…"
+              className="min-h-[100px] w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-100 sm:px-6 sm:text-base"
+            />
+          </CardGlass>
+          <CardGlass className="shrink-0 border-slate-200/80 bg-slate-50/80 p-4 shadow-sm sm:p-5">
+            <p className="text-[11px] font-semibold text-slate-500 mb-2">Handwritten pages (optional)</p>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={uploading}
+                  onChange={(e) => handlePickImages(e.target.files)}
+                  className="text-[11px]"
+                />
+              </div>
+              {!!imageUrls?.length && (
+                <ul className="space-y-2">
+                  {imageUrls.map((url, idx) => (
+                    <li
+                      key={`${url}-${idx}`}
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 pr-1"
+                    >
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-100">
+                        <img src={url} alt="" className="h-full w-full object-cover" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-medium text-slate-700">Page {idx + 1}</p>
+                        <p className="text-[10px] text-slate-400 truncate" title={url}>
+                          {url.length > 48 ? `${url.slice(0, 24)}…${url.slice(-12)}` : url}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onImageUrlsChange?.((imageUrls || []).filter((_, i) => i !== idx))}
+                        className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600"
+                        title="Remove this page"
+                        aria-label={`Remove page ${idx + 1}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {uploading && <p className="text-[11px] text-blue-600">Uploading pages…</p>}
+              <p className="text-[10px] text-slate-500 leading-relaxed max-w-lg">
+                Images are read with vision AI and combined with your typed answer for grading.
+              </p>
+            </div>
+          </CardGlass>
+        </>
       ) : isInteger ? (
-        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
-          <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Enter integer answer</p>
+        <CardGlass className="shrink-0 border-indigo-200 bg-indigo-50/40 p-4 shadow-sm sm:p-6">
+          <label className="mb-4 block text-center text-[11px] font-semibold text-slate-500">Numerical answer</label>
           <input
             type="number"
             value={intVal}
             onChange={e => { setIntVal(e.target.value); onSelect(e.target.value); }}
-            placeholder="Type your answer..."
-            className="w-full p-3 rounded-xl border border-slate-200 text-base font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            placeholder="0"
+            className="mx-auto block w-full max-w-sm rounded-2xl border border-slate-200 bg-white px-6 py-4 text-center text-2xl font-bold text-slate-900 shadow-sm transition-all placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-blue-100 sm:py-5 sm:text-3xl"
           />
-        </div>
+        </CardGlass>
       ) : (
-        <div className="space-y-2.5">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto overscroll-contain sm:gap-3">
           {isMulti && (
-            <p className="text-xs text-slate-500 font-medium">Select all correct options.</p>
+            <p className="shrink-0 px-1 text-xs font-semibold text-slate-500">Select all that apply</p>
           )}
-          {(question.options ?? []).map((opt) => {
-            const isSel = selected.includes(opt.id);
+          {(question.options ?? []).map((opt, i) => {
+            const isSelected = selected.includes(opt.id);
             return (
-              <button key={opt.id} type="button" onClick={() => onSelect(opt.id)}
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.01, x: 6 }} whileTap={{ scale: 0.99 }}
+                key={opt.id} onClick={() => onSelect(opt.id)}
                 className={cn(
-                  "w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all",
-                  isSel ? "bg-indigo-50 border-indigo-400 shadow-sm" : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30",
+                  "flex w-full items-center gap-3 rounded-2xl border px-4 py-2.5 text-left transition-all sm:gap-4 sm:py-3",
+                  isSelected ? "scale-[1.01] border-blue-600 bg-blue-600 text-white shadow-md" : "border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 <div className={cn(
-                  "w-5 h-5 border-2 shrink-0 flex items-center justify-center",
-                  isMulti ? "rounded-md" : "rounded-full",
-                  isSel ? "border-indigo-500 bg-indigo-500" : "border-slate-300",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold transition-colors sm:h-10 sm:w-10",
+                  isSelected ? "border-white bg-white text-blue-700" : "border-slate-200 bg-slate-50 text-slate-500"
                 )}>
-                  {isSel && (isMulti ? <Check className="w-3 h-3 text-white" strokeWidth={3} /> : <div className="w-2 h-2 rounded-full bg-white" />)}
+                  {isMulti
+                    ? (isSelected ? <Check className="w-5 h-5 sm:w-6 sm:h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>)
+                    : String.fromCharCode(65 + i)}
                 </div>
-                <span className={cn("text-sm font-medium leading-snug", isSel ? "text-indigo-800" : "text-slate-700")}>
-                  {opt.content}
-                </span>
-              </button>
+                <span className="flex-1 text-sm font-medium tracking-tight sm:text-base">{opt.content}</span>
+              </motion.button>
             );
           })}
         </div>
@@ -943,162 +913,208 @@ export default function StudentMockTestPage() {
     );
   }
 
-  // ── Running ───────────────────────────────────────────────────────────────
+  // ── Running (layout aligned with study plan practice — StudentTopicQuizPage QuizRunner) ──
   if (stage === "running" && questions.length > 0) {
     const q = questions[currentQ];
+    const isLast = currentQ === questions.length - 1;
     const answeredCount = questions.filter((qItem) =>
       isAttemptComplete(qItem, answers[qItem.id], answerImages[qItem.id]),
     ).length;
 
+    const goToQuestion = async (i: number) => {
+      if (i === currentQ) return;
+      await flushDescriptiveIfNeeded();
+      setCurrentQ(i);
+    };
+
+    const handleNextOrSubmit = async () => {
+      if (isLast) {
+        await handleSubmit(false);
+        return;
+      }
+      await flushDescriptiveIfNeeded();
+      setCurrentQ((idx) => idx + 1);
+    };
+
+    const handleCloseTest = () => {
+      if (
+        window.confirm(
+          "Close this test? Your last answers are saved; you can resume this mock test from the list when you come back.",
+        )
+      ) {
+        navigate(-1);
+      }
+    };
+
     return (
-      <div className="max-w-3xl mx-auto px-4 pb-24">
-        {/* Sticky header */}
-        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 py-3 mb-6 flex items-center justify-between gap-2 sm:gap-4 -mx-4 px-4">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="shrink-0 w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
-              title="Back"
-              aria-label="Back"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <p className="text-sm font-bold text-slate-800 truncate">{mockTest?.title}</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Close this test? Your last answers are saved; you can resume this mock test from the list when you come back.",
-                  )
-                ) {
-                  navigate(-1);
-                }
-              }}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-              title="Close test"
-              aria-label="Close test and leave"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div
-              className={cn(
-                "flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-bold text-sm",
-                timerDanger ? "bg-red-500 text-white animate-pulse" : "bg-slate-100 text-slate-800",
-              )}
-            >
-              <Clock className="w-4 h-4" /> {fmt(secs)}
-            </div>
-          </div>
-        </div>
-
-        {/* Progress */}
-        <div className="h-1.5 bg-slate-100 rounded-full mb-6 overflow-hidden">
-          <motion.div animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
-            className="h-full bg-indigo-500 rounded-full" />
-        </div>
-
-        {/* Question */}
-        <AnimatePresence mode="wait">
-          <QuestionView
-            key={q.id} question={q} index={currentQ} total={questions.length}
-            selected={answers[q.id] ?? []}
-            imageUrls={answerImages[q.id] ?? []}
-            onDescriptiveInput={(text) => handleDescriptiveInput(q, text)}
-            onImageUrlsChange={(urls) => {
-              setAnswerImages((m) => ({ ...m, [q.id]: urls }));
-              const t = desSaveTimers.current[q.id];
-              if (t) {
-                clearTimeout(t);
-                desSaveTimers.current[q.id] = null;
-              }
-              if (session && q.type === "descriptive") {
-                const text = (answersRef.current[q.id] ?? [])[0] ?? "";
-                submitAnswer(session.id, {
-                  questionId: q.id,
-                  integerResponse: text,
-                  answerImageUrls: urls,
-                  timeTakenSeconds: totalSecs - secs,
-                }).catch(() => {});
-              }
-            }}
-            onSelect={handleSelect}
-          />
-        </AnimatePresence>
-
-        {/* Nav */}
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            onClick={async () => {
-              await flushDescriptiveIfNeeded();
-              setCurrentQ((i) => Math.max(i - 1, 0));
-            }} disabled={currentQ === 0}
-            className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 shadow-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={async () => {
-              if (currentQ < questions.length - 1) {
-                await flushDescriptiveIfNeeded();
-                setCurrentQ((i) => i + 1);
-              }
-            }}
-            disabled={currentQ === questions.length - 1}
-            className="flex-1 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-indigo-100 disabled:opacity-30"
-          >
-            Next <ArrowRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleSubmit(false)}
-            className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-sm hover:bg-emerald-600" title="Submit"
-          >
-            <Flag className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Palette */}
-        <div className="mt-6 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Question Palette</p>
-            <p className="text-xs font-medium text-slate-500">{answeredCount}/{questions.length} answered</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {questions.map((qItem, i) => (
-              <PaletteDot
-                key={qItem.id}
-                idx={i}
-                onClick={async () => {
-                  if (i !== currentQ) await flushDescriptiveIfNeeded();
-                  setCurrentQ(i);
-                }}
-                status={i === currentQ ? "current" : isAttemptComplete(qItem, answers[qItem.id], answerImages[qItem.id]) ? "answered" : "unanswered"}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-50">
-            {[
-              { cls: "bg-indigo-600", label: "Current" },
-              { cls: "bg-emerald-500", label: "Answered" },
-              { cls: "bg-white border border-slate-200", label: "Not attempted" },
-            ].map(({ cls, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className={cn("w-3 h-3 rounded", cls)} />
-                <span className="text-[10px] text-slate-500">{label}</span>
+      <div className="flex h-[calc(100dvh-5rem)] max-h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden px-2 pb-2 sm:px-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
+          <CardGlass className="flex shrink-0 items-center justify-between border-slate-200 bg-white px-3 py-2.5 shadow-sm sm:px-5 sm:py-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                title="Back"
+                aria-label="Back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <div className="w-10 h-10 rounded-lg flex shrink-0 items-center justify-center bg-slate-900 text-white shadow-sm">
+                <ClipboardList className="h-5 w-5" />
               </div>
-            ))}
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold leading-none text-slate-500 sm:mb-1">Mock Test</p>
+                <h3 className="max-w-[200px] truncate text-base font-bold leading-none text-slate-900 sm:max-w-none sm:text-lg">
+                  {mockTest?.title}
+                </h3>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+              <button
+                type="button"
+                onClick={handleCloseTest}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                title="Close test"
+                aria-label="Close test and leave"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3 py-2 transition-all",
+                  timerDanger
+                    ? "border-red-600 bg-red-500 text-white animate-pulse"
+                    : "border-slate-100 bg-white text-slate-900",
+                )}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span className="text-xs font-semibold tabular-nums leading-none sm:text-sm">{fmt(secs)}</span>
+              </div>
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => void handleSubmit(false)}
+                className="hidden sm:inline-flex rounded-lg bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm"
+              >
+                Submit
+              </motion.button>
+            </div>
+          </CardGlass>
+
+          <div className="relative h-1 shrink-0 overflow-hidden rounded-full bg-slate-200/50">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+              className="h-full bg-blue-600 shadow-lg shadow-blue-500/20"
+            />
+          </div>
+
+          <div className="mx-auto grid min-h-0 w-full max-w-6xl flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="flex min-h-0 flex-col gap-3">
+              <div className="min-h-0 flex-1">
+                <AnimatePresence mode="wait">
+                  <QuestionView
+                    key={q.id} question={q} index={currentQ} total={questions.length}
+                    selected={answers[q.id] ?? []}
+                    imageUrls={answerImages[q.id] ?? []}
+                    onDescriptiveInput={(text) => handleDescriptiveInput(q, text)}
+                    onImageUrlsChange={(urls) => {
+                      setAnswerImages((m) => ({ ...m, [q.id]: urls }));
+                      const t = desSaveTimers.current[q.id];
+                      if (t) {
+                        clearTimeout(t);
+                        desSaveTimers.current[q.id] = null;
+                      }
+                      if (session && q.type === "descriptive") {
+                        const text = (answersRef.current[q.id] ?? [])[0] ?? "";
+                        submitAnswer(session.id, {
+                          questionId: q.id,
+                          integerResponse: text,
+                          answerImageUrls: urls,
+                          timeTakenSeconds: totalSecs - secs,
+                        }).catch(() => {});
+                      }
+                    }}
+                    onSelect={handleSelect}
+                  />
+                </AnimatePresence>
+              </div>
+              <CardGlass className="shrink-0 border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await flushDescriptiveIfNeeded();
+                      setCurrentQ((i) => Math.max(i - 1, 0));
+                    }}
+                    disabled={currentQ === 0}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleNextOrSubmit()}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors",
+                      isLast ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500",
+                    )}
+                  >
+                    {isLast ? "Submit test" : "Next Question"}
+                    {isLast ? <CheckCircle className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleSubmit(false)}
+                  className="mt-3 w-full rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 sm:hidden"
+                >
+                  Submit test
+                </button>
+              </CardGlass>
+            </div>
+
+            <CardGlass className="hidden min-h-0 border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-col">
+              <div className="mb-3 flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">Question Grid</h4>
+                <span className="text-[11px] text-slate-500">
+                  {answeredCount}/{questions.length} answered
+                </span>
+              </div>
+              <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-emerald-700">Answered</div>
+                <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-red-700">Not answered</div>
+              </div>
+              <div className="grid max-h-[min(50vh,28rem)] grid-cols-5 gap-2 overflow-y-auto pr-1">
+                {questions.map((qItem, i) => {
+                  const answered = isAttemptComplete(qItem, answers[qItem.id], answerImages[qItem.id]);
+                  const active = i === currentQ;
+                  return (
+                    <button
+                      key={qItem.id}
+                      type="button"
+                      onClick={() => void goToQuestion(i)}
+                      className={cn(
+                        "h-9 rounded-lg border text-xs font-semibold transition-all",
+                        active
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : answered
+                            ? "border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                            : "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
+                      )}
+                      title={`Question ${i + 1}`}
+                    >
+                      {i + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardGlass>
           </div>
         </div>
-
-        <button
-          onClick={() => handleSubmit(false)}
-          className="mt-4 w-full py-4 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center gap-2 shadow-md hover:bg-emerald-700"
-        >
-          <BarChart3 className="w-5 h-5" /> Submit Test
-        </button>
       </div>
     );
   }
