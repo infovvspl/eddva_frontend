@@ -695,9 +695,9 @@ const Index = () => {
         />
 
         {/* CONTENT */}
-        <div className="relative z-10 mx-auto max-w-7xl px-6 py-24">
-          <div className="grid items-center gap-12 md:grid-cols-2 md:gap-14 lg:gap-16">
-            <div className="max-w-xl md:max-w-none">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-18 lg:px-8 lg:py-24">
+          <div className="grid items-center gap-10 md:gap-12 lg:grid-cols-2 lg:gap-16">
+            <div className="max-w-xl md:max-w-2xl lg:max-w-none">
               {/* Badge */}
               <div className={cn(
                 "mb-4 inline-flex items-center gap-2 border border-gray-200 px-4 py-1 rounded-full",
@@ -710,7 +710,7 @@ const Index = () => {
               </div>
 
               {/* Heading */}
-              <h2 className="text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+              <h2 className="mb-5 text-3xl font-extrabold leading-tight text-gray-900 sm:mb-6 sm:text-4xl lg:text-5xl">
                 Build Your{" "}
                 <span className="bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
                   Future
@@ -720,13 +720,13 @@ const Index = () => {
               </h2>
 
               {/* Description */}
-              <p className="text-gray-600 max-w-lg mb-10 text-lg leading-relaxed">
+              <p className="mb-8 max-w-lg text-base leading-relaxed text-gray-600 sm:mb-10 sm:text-lg">
                 From cracking your dream exam to building real-world skills —
                 EDDVA guides you at every step of your journey.
               </p>
 
               {/* ✨ FEATURE CARDS */}
-              <div className="grid grid-cols-2 gap-6 mb-10">
+              <div className="mb-8 grid grid-cols-2 gap-3 sm:mb-10 sm:gap-5 lg:gap-6">
                 {features.map((item, i) => (
                   <motion.div
                     key={item.title}
@@ -765,17 +765,17 @@ const Index = () => {
               </div>
 
               {/* CTA */}
-              <div className="flex gap-4">
+              <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <Link
                   to="/register"
-                  className="px-7 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:scale-105 transition shadow-md"
+                  className="rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 px-6 py-3 text-center font-bold text-white shadow-md transition hover:scale-105 sm:px-7"
                 >
                   Start Your Journey →
                 </Link>
 
                 <a
                   href="/about-us"
-                  className="px-7 py-3 rounded-xl border border-gray-300 text-gray-800 bg-white hover:bg-gray-100 transition"
+                  className="rounded-xl border border-gray-300 bg-white px-6 py-3 text-center text-gray-800 transition hover:bg-gray-100 sm:px-7"
                 >
                   Learn More
                 </a>
@@ -783,7 +783,7 @@ const Index = () => {
             </div>
 
             {/* Right: visual + highlight cards */}
-            <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-none">
+            <div className="relative mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-none">
               <div
                 className="pointer-events-none absolute -inset-6 rounded-[2.5rem] opacity-30 blur-2xl"
                 style={{ background: `linear-gradient(135deg, ${B}22, #fbbf2433, ${P}22)` }}
@@ -1196,18 +1196,18 @@ const Index = () => {
           {/* ── Main grid: left text + right phone ── */}
           <div className="grid items-center gap-12 lg:grid-cols-2">
             {/* LEFT */}
-            <FadeUp>
+            <FadeUp className="mx-auto w-full max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
               <h2 className="landing-title-feature mb-4 text-gray-900">
                 Join a{" "}
                 <em className="not-italic font-black" style={gText()}>fast-growing </em>
                 <br />learning community!
               </h2>
-              <p className="mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-600">
+              <p className="mx-auto mb-8 max-w-md text-[16px] font-medium leading-relaxed text-gray-600 lg:mx-0">
                 The EDDVA mobile app is launching shortly! Get ready to access live classes, notes, assignments, and videos anywhere — even without internet.
               </p>
 
               {/* Dark store buttons */}
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
                 <motion.button whileHover={{ scale: 1.05, boxShadow: "0 16px 40px rgba(0,0,0,0.3)" }} whileTap={{ scale: 0.97 }}
                   className="flex items-center gap-3 rounded-2xl bg-gray-950 px-6 py-3.5 text-white shadow-lg">
                   {/* Google Play SVG */}

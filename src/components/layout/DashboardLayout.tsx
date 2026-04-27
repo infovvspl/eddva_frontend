@@ -128,6 +128,13 @@ const DashboardLayout = () => {
     latestPathRef.current = location.pathname;
   }, [location.pathname]);
 
+  // Ensure mobile/tablet drawer always closes after route changes.
+  useEffect(() => {
+    if (isCompactLayout) {
+      setMobileSidebarOpen(false);
+    }
+  }, [location.pathname, isCompactLayout]);
+
   useEffect(() => {
     if (showUserMenu) {
       document.addEventListener("mousedown", handleOutsideClick, true);
@@ -341,7 +348,11 @@ const DashboardLayout = () => {
               key={item.path}
               to={item.path}
               end={item.path === roleRedirectPath[user.role]}
-              onClick={() => setMobileSidebarOpen(false)}
+              onClick={() => {
+                setMobileSidebarOpen(false);
+                setShowUserMenu(false);
+                setPrefDropdownOpen(false);
+              }}
               className={({ isActive }) =>
                 cn(
                   "group flex items-center rounded-2xl text-[16px] font-bold transition-[background-color,border-color,color,transform] duration-500 relative tracking-wide",
@@ -466,7 +477,14 @@ const DashboardLayout = () => {
       </AnimatePresence>
 
       {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
-      <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
+      <div
+        className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col"
+        onClick={() => {
+          if (isCompactLayout && mobileSidebarOpen) {
+            setMobileSidebarOpen(false);
+          }
+        }}
+      >
         <header
           className={cn(
             "z-[60] flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-3 sm:px-6 md:px-8 lg:px-10",
