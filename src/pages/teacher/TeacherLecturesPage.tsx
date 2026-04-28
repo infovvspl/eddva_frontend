@@ -499,6 +499,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [isSavingQuiz, setIsSavingQuiz] = useState(false);
   const [quizLoaded, setQuizLoaded] = useState(false);
+  const [numQuizQuestions, setNumQuizQuestions] = useState(5);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<QuizCheckpoint | null>(null);
 
@@ -531,8 +532,9 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
   };
 
   const handleGenerateQuiz = async () => {
-    const sourceText = lecture.transcript || lecture.aiNotesMarkdown || "";
-    if (!sourceText.trim()) {
+    const notes = lecture.aiNotesMarkdown || "";
+    const transcript = lecture.transcript || "";
+    if (!notes.trim() && !transcript.trim()) {
       toast({
         title: "No content to generate from",
         description: youtubeSource
@@ -542,21 +544,21 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
       });
       return;
     }
-    const usingNotes = !lecture.transcript && !!lecture.aiNotesMarkdown;
     setIsGeneratingQuiz(true);
     try {
       const result = await generateQuizForLecture({
-        transcript: sourceText,
+        notes,
+        transcript,
         lectureTitle: lecture.title,
         topicId: lecture.topic?.id,
+        numQuestions: numQuizQuestions,
       });
-      const usingNotesHint = usingNotes ? " (generated from uploaded notes)" : "";
       const qs: QuizCheckpoint[] = (result as any).questions ?? [];
       setQuizQuestions(qs);
       setQuizLoaded(true);
-      // Auto-save generated questions to DB immediately
       await saveQuizCheckpoints(lecture.id, qs);
-      toast({ title: `${qs.length} quiz questions generated & saved!${usingNotesHint}`, description: "Edit any question below, changes save automatically." });
+      const src = notes ? "notes" : "transcript";
+      toast({ title: `${qs.length} quiz questions generated & saved!`, description: `Generated from lecture ${src}. Edit any question below.` });
     } catch (err: any) {
       toast({ title: "Quiz generation failed", description: err?.message, variant: "destructive" });
     } finally { setIsGeneratingQuiz(false); }
@@ -888,6 +890,17 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                       Save Quiz
                     </Button>
                   )}
+                  <select
+                    value={numQuizQuestions}
+                    onChange={e => setNumQuizQuestions(Number(e.target.value))}
+                    disabled={isGeneratingQuiz}
+                    className="h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary disabled:opacity-50"
+                    title="Number of quiz questions"
+                  >
+                    {[3, 5, 8, 10, 15].map(n => (
+                      <option key={n} value={n}>{n} questions</option>
+                    ))}
+                  </select>
                   <Button size="sm" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || (!lecture.transcript && !lecture.aiNotesMarkdown)} className="gap-1.5 h-8 text-xs">
                     {isGeneratingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     {isGeneratingQuiz ? "Generating…" : quizQuestions.length > 0 ? "Regenerate" : "Generate Quiz"}
@@ -895,13 +908,18 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                 </div>
               </div>
 
-              {/* Source indicator — what will be used to generate */}
-              {!lecture.transcript && lecture.aiNotesMarkdown && (
+              {/* Source indicator — notes always preferred over transcript */}
+              {lecture.aiNotesMarkdown ? (
                 <div className="flex items-center gap-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-700 dark:text-violet-400">
                   <BookOpen className="w-4 h-4 shrink-0" />
-                  <span>Quiz will be generated from your uploaded notes since no transcript is available.</span>
+                  <span>Quiz will be generated strictly from the AI notes — questions will cover all sections evenly.</span>
                 </div>
-              )}
+              ) : lecture.transcript ? (
+                <div className="flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
+                  <Mic className="w-4 h-4 shrink-0" />
+                  <span>No notes available — quiz will be generated from the transcript. Generate AI notes first for better quality questions.</span>
+                </div>
+              ) : null}
               {!lecture.transcript && !lecture.aiNotesMarkdown && (
                 <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
                   <Mic className="w-4 h-4 shrink-0" />
@@ -2531,7 +2549,7 @@ const transcriptStatusBadge: Record<string, { cls: string; label: string }> = {
   failed:     { cls: "bg-red-500/10 text-red-600 border-red-500/20",         label: "Transcript Failed" },
 };
 
-function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, onRegenerateNotes, processingStep, isGeneratingNotes }: {
+function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, onRegenerateNotes, processingStep, isGeneratingNotes, queuePosition }: {
   lecture: Lecture;
   onView: () => void;
   onReview: () => void;
@@ -2541,6 +2559,8 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
   onRegenerateNotes: () => void;
   processingStep?: number;
   isGeneratingNotes?: boolean;
+  /** 0 = not queued, -1 = currently active, 1+ = queue position */
+  queuePosition?: number;
 }) {
   const tsBadge = lecture.transcriptStatus ? transcriptStatusBadge[lecture.transcriptStatus] : null;
   const isYouTube = /youtube\.com|youtu\.be/i.test(lecture.videoUrl ?? "");
@@ -2708,15 +2728,25 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
             <BarChart2 className="w-3.5 h-3.5" /> Live Stats
           </Button>
         )}
-        {transcriptFailed && !isYouTube && (
+        {transcriptFailed && !isYouTube && queuePosition === 0 && (
           <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRetranscribe(); }} className="gap-1.5 h-8 text-xs text-red-600 border-red-500/30 hover:bg-red-500/10">
             <RefreshCw className="w-3 h-3" /> Retry Transcription
           </Button>
         )}
-        {notesGenerable && (
+        {notesGenerable && queuePosition === 0 && (
           <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRegenerateNotes(); }} className="gap-1.5 h-8 text-xs text-violet-600 border-violet-300/60 hover:bg-violet-50">
             <Sparkles className="w-3 h-3" /> Generate Notes
           </Button>
+        )}
+        {(queuePosition ?? 0) > 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200/70 rounded-lg px-3 py-1.5">
+            <Clock className="w-3 h-3 shrink-0" /> In queue #{queuePosition}
+          </div>
+        )}
+        {queuePosition === -1 && (
+          <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-200/70 rounded-lg px-3 py-1.5">
+            <Loader2 className="w-3 h-3 shrink-0 animate-spin" /> Starting…
+          </div>
         )}
         {transcriptFailed && isYouTube && (
           <>
@@ -3209,6 +3239,11 @@ const TeacherLecturesPage = () => {
   // Track which lecture IDs have notes generation in progress (client-side only)
   const [notesGeneratingIds, setNotesGeneratingIds] = useState<Set<string>>(new Set());
 
+  // ── AI job queue: one transcription / notes-generation job at a time ─────────
+  type ProcessingJob = { lectureId: string; action: "retranscribe" | "regenerate" };
+  const [activeJob, setActiveJob] = useState<ProcessingJob | null>(null);
+  const [jobQueue, setJobQueue] = useState<ProcessingJob[]>([]);
+
   // Remember previous transcriptStatus per lecture so we can detect transitions
   const prevTranscriptStatusRef = useRef<Record<string, string>>({});
 
@@ -3281,6 +3316,44 @@ const TeacherLecturesPage = () => {
     }, 5000);
     return () => clearInterval(id);
   }, [hasProcessing, queryClient]);
+
+  // Dequeue and fire the next job whenever the active slot is free.
+  // Uses IIFE inside the effect so React doesn't complain about async effects.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (activeJob !== null || jobQueue.length === 0) return;
+    const next = jobQueue[0];
+    setJobQueue(prev => prev.slice(1));
+    setActiveJob(next);
+    (async () => {
+      try {
+        if (next.action === "retranscribe") {
+          await retranscribeLecture(next.lectureId);
+          toast({ title: "Transcription started", description: "AI is re-transcribing the lecture." });
+        } else {
+          await regenerateNotes(next.lectureId);
+          setNotesGeneratingIds(prev => new Set(prev).add(next.lectureId));
+          toast({ title: "Notes generation started", description: "AI is generating notes from the transcript." });
+        }
+        queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+      } catch {
+        toast({ title: "Failed to start job", variant: "destructive" });
+        setActiveJob(null);
+      }
+    })();
+  }, [activeJob, jobQueue]);
+
+  // Clear activeJob when the backend task finishes (detected via polling).
+  useEffect(() => {
+    if (!activeJob) return;
+    const lecture = (lectures ?? []).find(l => l.id === activeJob.lectureId);
+    if (!lecture) return;
+    if (activeJob.action === "retranscribe") {
+      if (lecture.transcriptStatus === "done" || lecture.transcriptStatus === "failed") setActiveJob(null);
+    } else {
+      if (lecture.aiNotesMarkdown || lecture.transcriptStatus === "failed") setActiveJob(null);
+    }
+  }, [activeJob, lectures]);
 
   // Track which lecture IDs were just uploaded (so we can auto-open review when AI finishes)
   const [pendingReviewIds, setPendingReviewIds] = useState<Set<string>>(new Set());
@@ -3362,26 +3435,18 @@ const TeacherLecturesPage = () => {
     } catch { toast({ title: "Delete failed", variant: "destructive" }); }
   };
 
-  const handleRetranscribe = async (id: string) => {
-    try {
-      await retranscribeLecture(id);
-      toast({ title: "Transcription started", description: "AI is re-transcribing the lecture. This may take a few minutes." });
-      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
-    } catch {
-      toast({ title: "Failed to start transcription", variant: "destructive" });
+  // Enqueue a job — silently deduplicate if already queued/active for this lecture.
+  const submitJob = useCallback((lectureId: string, action: "retranscribe" | "regenerate") => {
+    if (activeJob?.lectureId === lectureId || jobQueue.some(j => j.lectureId === lectureId)) return;
+    const qPos = jobQueue.length + (activeJob ? 1 : 0);
+    setJobQueue(q => [...q, { lectureId, action }]);
+    if (qPos > 0) {
+      toast({ title: "Added to queue", description: `Will start after the current job finishes (position ${qPos + 1}).` });
     }
-  };
+  }, [activeJob, jobQueue, toast]);
 
-  const handleRegenerateNotes = async (id: string) => {
-    try {
-      await regenerateNotes(id);
-      setNotesGeneratingIds(prev => new Set(prev).add(id));
-      toast({ title: "Notes generation started", description: "AI is generating notes from the saved transcript. This takes 2–4 minutes." });
-      queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
-    } catch {
-      toast({ title: "Failed to start notes generation", variant: "destructive" });
-    }
-  };
+  const handleRetranscribe = useCallback((id: string) => submitJob(id, "retranscribe"), [submitJob]);
+  const handleRegenerateNotes = useCallback((id: string) => submitJob(id, "regenerate"), [submitJob]);
 
   return (
     <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
@@ -3556,6 +3621,11 @@ const TeacherLecturesPage = () => {
                 lecture={l}
                 processingStep={processingSteps[l.id]}
                 isGeneratingNotes={notesGeneratingIds.has(l.id)}
+                queuePosition={
+                  activeJob?.lectureId === l.id
+                    ? -1
+                    : (() => { const i = jobQueue.findIndex(j => j.lectureId === l.id); return i >= 0 ? i + 1 : 0; })()
+                }
                 onView={() => setViewLecture(l)}
                 onReview={() => setReviewLectureId(l.id)}
                 onStats={() => setStatsLecture(l)}

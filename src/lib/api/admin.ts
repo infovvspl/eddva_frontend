@@ -1091,20 +1091,24 @@ export async function aiGenerateMockTestQuestions(params: {
     }
   }
   if (tasks.length) {
-    for (const t of tasks) {
-      try {
-        const list = await fetchChunk(t.difficulty, t.size, params.topicName);
-        const d = t.difficulty;
-        for (const q of list) {
-          if (got[d] >= target[d]) break;
-          const k = norm(q.questionText);
-          if (!k || seen.has(k)) continue;
-          seen.add(k);
-          out.push(q);
-          got[d]++;
-        }
-      } catch (e) {
-        console.error("Chunk fetch failed:", e);
+    const results = await Promise.all(
+      tasks.map((t) =>
+        fetchChunk(t.difficulty, t.size, params.topicName)
+          .then((list) => ({ d: t.difficulty, list }))
+          .catch((e) => {
+            console.error("Chunk fetch failed:", e);
+            return { d: t.difficulty, list: [] as AiGeneratedQuestion[] };
+          }),
+      ),
+    );
+    for (const { d, list } of results) {
+      for (const q of list) {
+        if (got[d] >= target[d]) break;
+        const k = norm(q.questionText);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        out.push(q);
+        got[d]++;
       }
     }
   }
