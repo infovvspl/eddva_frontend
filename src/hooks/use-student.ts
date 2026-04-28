@@ -435,7 +435,7 @@ export function useCreateDoubt() {
 export function useRequestAiForDoubt() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => studentApi.requestAiForDoubt(id),
+    mutationFn: ({ id, explanationMode }: { id: string; explanationMode?: studentApi.ExplanationMode }) => studentApi.requestAiForDoubt(id, explanationMode),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["student", "doubts"] });
     },

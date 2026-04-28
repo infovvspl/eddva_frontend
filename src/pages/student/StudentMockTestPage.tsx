@@ -19,6 +19,15 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { uploadToS3 } from "@/lib/api/upload";
 import { CardGlass } from "@/components/shared/CardGlass";
+import { getApiOrigin } from "@/lib/api-config";
+
+// ─── URL resolver (relative paths → absolute backend URL) ────────────────────
+const API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
+function resolveMediaUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_ORIGIN}${url}`;
+}
 
 const GENERATED_TYPE_TAG_PREFIX = "gen_type:";
 
@@ -175,6 +184,16 @@ function QuestionView({
         <p className="text-base font-semibold leading-snug text-slate-900 select-none sm:text-lg whitespace-pre-wrap">
           {question.content}
         </p>
+        
+        {question.contentImageUrl && (
+          <div className="mt-4 rounded-xl border border-slate-100 overflow-hidden bg-slate-50">
+            <img 
+              src={resolveMediaUrl(question.contentImageUrl)} 
+              alt="Question Visual" 
+              className="max-w-full h-auto mx-auto object-contain max-h-[400px]"
+            />
+          </div>
+        )}
       </CardGlass>
 
       {isDescriptive ? (
@@ -526,7 +545,14 @@ function ResultsScreen({
                   <span className="shrink-0 text-xs font-bold px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600">
                     Q{i + 1}
                   </span>
-                  <p className="text-sm font-medium text-slate-800 leading-snug flex-1">{q.content}</p>
+                  <div className="flex-1 space-y-3">
+                    <p className="text-sm font-medium text-slate-800 leading-snug">{q.content}</p>
+                    {q.contentImageUrl && (
+                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white max-w-sm">
+                        <img src={resolveMediaUrl(q.contentImageUrl)} alt="" className="w-full h-auto" />
+                      </div>
+                    )}
+                  </div>
                   <span className="shrink-0 rounded-lg border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
                     {getQuestionTypeBadgeLabel(q)}
                   </span>

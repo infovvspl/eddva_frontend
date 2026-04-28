@@ -843,6 +843,8 @@ export interface MockTestQuestion {
   /** Marking / exemplar (descriptive); also accept snake_case from API. */
   solutionText?: string | null;
   integerAnswer?: string | null;
+  contentImageUrl?: string | null;
+  content_image_url?: string | null;
 }
 
 export interface CreateMockTestQuestionPayload {
@@ -855,6 +857,7 @@ export interface CreateMockTestQuestionPayload {
   integerAnswer?: string;
   /** Model / rubric text for descriptive questions */
   solutionText?: string;
+  contentImageUrl?: string;
 }
 
 // ─── AI Question Generation ──────────────────────────────────────────────────

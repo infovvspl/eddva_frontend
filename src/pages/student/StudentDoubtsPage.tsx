@@ -1,4 +1,9 @@
 import { useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Plus, ThumbsUp, ThumbsDown, ChevronDown,
@@ -35,6 +40,7 @@ const TABS = [
 
 function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
   const [expanded, setExpanded] = useState(false);
+  const [askAiMode, setAskAiMode] = useState<"short" | "detailed">("detailed");
   const markHelpful = useMarkDoubtHelpful();
   const requestAi   = useRequestAiForDoubt();
 
@@ -123,7 +129,11 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                     </div>
                     <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">AI Explanation</p>
                   </div>
-                  <p className="text-sm text-blue-900 font-medium leading-relaxed whitespace-pre-line">{doubt.aiExplanation}</p>
+                  <div className="text-sm text-blue-900 font-medium leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {doubt.aiExplanation}
+                    </ReactMarkdown>
+                  </div>
                   {doubt.aiConceptLinks && doubt.aiConceptLinks.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
                       {doubt.aiConceptLinks.map((c, i) => (
@@ -143,11 +153,36 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                   <p className="text-xs text-indigo-700 font-medium flex-1">
                     Teacher hasn't answered yet. Get an instant AI explanation while you wait.
                   </p>
+                  
+                  <div className="flex gap-1.5 mr-2 bg-indigo-100/50 p-1 rounded-xl shrink-0">
+                    <button
+                      onClick={() => setAskAiMode("short")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        askAiMode === "short" ? "bg-white text-indigo-700 shadow-sm" : "text-indigo-400 hover:text-indigo-600"
+                      )}
+                    >
+                      ⚡ Brief
+                    </button>
+                    <button
+                      onClick={() => setAskAiMode("detailed")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        askAiMode === "detailed" ? "bg-white text-indigo-700 shadow-sm" : "text-indigo-400 hover:text-indigo-600"
+                      )}
+                    >
+                      📖 Detailed
+                    </button>
+                  </div>
+
                   <button
-                    onClick={() => requestAi.mutate(doubt.id, {
-                      onSuccess: () => toast.success("AI is answering your doubt!"),
-                      onError:   () => toast.error("AI unavailable right now. Try again later."),
-                    })}
+                    onClick={() => requestAi.mutate(
+                      { id: doubt.id, explanationMode: askAiMode }, 
+                      {
+                        onSuccess: () => toast.success("AI is answering your doubt!"),
+                        onError:   () => toast.error("AI unavailable right now. Try again later."),
+                      }
+                    )}
                     disabled={requestAi.isPending}
                     className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
                   >
@@ -225,6 +260,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
   const [selectedTopicId,   setSelectedTopicId]   = useState("");
   const [question, setQuestion] = useState("");
   const [questionImageUrl, setQuestionImageUrl] = useState("");
+  const [explanationMode, setExplanationMode] = useState<"short" | "detailed">("short");
   const [imageUploading, setImageUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -295,7 +331,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
         questionText: question.trim(),
         questionImageUrl: questionImageUrl.trim() || undefined,
         source: "manual",
-        explanationMode: "short",
+        explanationMode,
         skipAI,
       },
       {
@@ -436,11 +472,42 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
                 {imageUploading ? "Uploading..." : "Upload image"}
               </button>
             </div>
-            {questionImageUrl && (
+              {questionImageUrl && (
               <div className="flex items-center gap-2 text-[11px] text-emerald-600 font-medium">
                 <ImageIcon className="w-3.5 h-3.5" /> Image attached
               </div>
             )}
+          </div>
+
+          {/* Explanation Mode */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">AI Explanation Mode</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setExplanationMode("short")}
+                className={cn(
+                  "flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all",
+                  explanationMode === "short"
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                )}
+              >
+                ⚡ Brief
+              </button>
+              <button
+                type="button"
+                onClick={() => setExplanationMode("detailed")}
+                className={cn(
+                  "flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all",
+                  explanationMode === "detailed"
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                )}
+              >
+                📖 Detailed
+              </button>
+            </div>
           </div>
 
           {/* Info */}

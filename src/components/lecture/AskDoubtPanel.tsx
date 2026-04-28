@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, GraduationCap, Send, ThumbsUp, ThumbsDown,
@@ -208,7 +211,7 @@ export function AskDoubtPanel({
                     : "bg-white text-slate-500 border-slate-200 hover:border-violet-300 hover:text-violet-600",
                 )}
               >
-                {m === "short" ? "⚡ Quick Answer" : "📖 Detailed Explanation"}
+                {m === "short" ? "⚡ Brief" : "📖 Detailed"}
               </button>
             ))}
           </motion.div>
@@ -289,7 +292,7 @@ export function AskDoubtPanel({
                   {/* Response body */}
                   <div className="px-4 py-4">
                     <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-800 prose-headings:font-bold prose-strong:text-indigo-700 prose-code:bg-slate-100 prose-code:text-violet-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{response.aiExplanation}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{response.aiExplanation}</ReactMarkdown>
                     </div>
 
                     {/* Concept links */}

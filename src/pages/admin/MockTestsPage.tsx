@@ -5,7 +5,7 @@ import {
   Eye, EyeOff, ClipboardList, Clock, CheckCircle2,
   AlertCircle, Pencil, ArrowLeft, Sparkles, Wand2,
   RefreshCw, Check, Upload, Download, Users, Search,
-  BookOpen, Layers, Target,
+  BookOpen, Layers, Target, ImagePlus, ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ import {
   useMockTestDetail, useUpdateMockTest, useRemoveQuestionFromMockTest, useBatches,
   useBatch, useSubjects, useChapters, useTopics,
 } from "@/hooks/use-admin";
+import { useUpload } from "@/hooks/use-upload";
 import { createQuestion, aiGenerateMockTestQuestions } from "@/lib/api/admin";
 import type {
   CreateMockTestQuestionPayload, AiGeneratedQuestion, Batch, MockAiGenerateType, MockTestQuestion,
@@ -678,15 +679,16 @@ function stripKey(q: DraftQuestion): CachedQuestion {
 }
 
 let _keyCounter = 0;
-const blankQuestion = (kind: DraftQKind = "mcq_single", mix: QuestionMixId = "comp_mcq"): DraftQuestion => {
+const blankQuestion = (kind: DraftQKind = "mcq_single", mix: QuestionMixId = "comp_mcq", label?: string): DraftQuestion => {
   const marks = defaultMarksFor(kind, mix);
-  const base: Pick<DraftQuestion, "marksCorrect" | "marksWrong" | "content" | "difficulty" | "explanation" | "subject"> = {
+  const base: Pick<DraftQuestion, "marksCorrect" | "marksWrong" | "content" | "difficulty" | "explanation" | "subject" | "generatedTypeLabel"> = {
     content: "",
     difficulty: "medium",
     marksCorrect: marks.marksCorrect,
     marksWrong: marks.marksWrong,
     explanation: undefined,
     subject: undefined,
+    generatedTypeLabel: label,
   };
   if (kind === "integer")
     return { _key: ++_keyCounter, ...base, type: "integer", integerAnswer: "" };
@@ -911,15 +913,25 @@ function TopicPicker({ value, onChange, batchId }: { value: string; onChange: (i
 // ─── Question Builder Row ─────────────────────────────────────────────────────
 
 function QuestionRow({
-  q, index, onChange, onRemove, canRemove,
+  q, index, onChange, onRemove, canRemove, allowedMixes,
 }: {
   q: DraftQuestion; index: number;
   onChange: (u: DraftQuestion) => void;
   onRemove: () => void; canRemove: boolean;
+  allowedMixes: { type: DraftQKind; label: string }[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const isInteger = q.type === "integer";
   const isDescriptive = q.type === "descriptive";
+  
+  const { upload, uploading } = useUpload({ type: "doubt-response-image" });
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await upload(file);
+    if (url) onChange({ ...q, contentImageUrl: url });
+  };
 
   const setOpt = (i: number, key: "content" | "isCorrect", val: string | boolean) => {
     const opts = [...(q.options ?? [])];
@@ -956,29 +968,51 @@ function QuestionRow({
       </div>
 
       {expanded && (
-        <div className="border-t border-slate-100 p-4 space-y-3 bg-slate-50/50">
-          <textarea required rows={2} value={q.content}
-            onChange={e => onChange({ ...q, content: e.target.value })}
-            placeholder="Question text…"
-            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-[#013889] resize-none" />
+        <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50/50">
+          <div className="space-y-2.5">
+            <textarea required={!q.contentImageUrl} rows={2} value={q.content}
+              onChange={e => onChange({ ...q, content: e.target.value })}
+              placeholder={q.contentImageUrl ? "Question text (optional with attachment)…" : "Question text…"}
+              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-[#013889] resize-none" />
+            
+            {q.contentImageUrl ? (
+              <div className="relative inline-block border border-slate-200 rounded-md overflow-hidden bg-white">
+                <img src={resolveMediaUrl(q.contentImageUrl)} alt="Question Attachment" className="max-h-32 object-contain" />
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...q, contentImageUrl: undefined })}
+                  className="absolute top-1 right-1 bg-white/80 hover:bg-red-50 text-red-500 rounded p-1 backdrop-blur-sm transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <input type="file" id={`upload-img-${q._key}`} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                <label htmlFor={`upload-img-${q._key}`} className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${uploading ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#013889]'}`}>
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
+                  {uploading ? "Uploading..." : "Attach Image"}
+                </label>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="text-xs text-slate-500 font-semibold">Type</label>
               <select
-                value={q.type}
+                value={`${q.type}|${q.generatedTypeLabel || ""}`}
                 onChange={e => {
-                  const v = e.target.value;
+                  const [v, label] = e.target.value.split("|");
                   if (v === "mcq_single" || v === "mcq_multi" || v === "integer" || v === "descriptive") {
-                    const fresh = blankQuestion(v);
-                    onChange({ ...fresh, _key: q._key, content: q.content, difficulty: q.difficulty, marksCorrect: q.marksCorrect });
-                  } else onChange({ ...q, type: v as any });
+                    const fresh = blankQuestion(v as DraftQKind, "comp_mcq", label || undefined);
+                    onChange({ ...fresh, _key: q._key, content: q.content, contentImageUrl: q.contentImageUrl, difficulty: q.difficulty, marksCorrect: q.marksCorrect });
+                  }
                 }}
                 className="mt-1 h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]">
-                <option value="mcq_single">MCQ (single-correct)</option>
-                <option value="mcq_multi">MSQ (multi-correct)</option>
-                <option value="integer">Integer / numerical</option>
-                <option value="descriptive">Descriptive (short / long answer)</option>
+                {allowedMixes.map((m, i) => (
+                  <option key={i} value={`${m.type}|${m.label}`}>{m.label}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -1003,7 +1037,7 @@ function QuestionRow({
             </div>
           </div>
 
-          {!isInteger && !isDescriptive && (
+          {!isInteger && !isDescriptive && q.options && q.options.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-xs text-slate-500 font-semibold">Options (tick correct)</label>
               {(q.options ?? []).map((opt, i) => (
@@ -1062,20 +1096,22 @@ function QuestionRow({
 // ─── AI Generate Panel ────────────────────────────────────────────────────────
 
 function AIGeneratePanel({
+  exam,
   onQuestionsGenerated,
   batchId,
   testCategory,
-  questionMixId,
+  questionMixIds,
   batchExamTarget,
   batchClass,
   initSubjectId = "", initSubjectName = "",
   initChapterId = "", initChapterName = "",
   initTopicId = "",  initTopicName = "",
 }: {
+  exam: string;
   onQuestionsGenerated: (questions: DraftQuestion[], topicId?: string) => void;
   batchId?: string;
   testCategory?: TestCategory | null;
-  questionMixId: QuestionMixId;
+  questionMixIds: QuestionMixId[];
   /** From institute batch: steers phrasing, difficulty feel, and model-answer style. */
   batchExamTarget?: string;
   batchClass?: string;
@@ -1083,7 +1119,7 @@ function AIGeneratePanel({
   initChapterId?: string; initChapterName?: string;
   initTopicId?: string;   initTopicName?: string;
 }) {
-  const [exam, setExam] = useState("JEE");
+
   const [count, setCount] = useState(20);
   const [countMode, setCountMode] = useState<"preset" | "custom">("preset");
   const [customCount, setCustomCount] = useState("20");
@@ -1111,7 +1147,7 @@ function AIGeneratePanel({
   const topicList = Array.isArray(topics) ? topics : [];
 
   const cfg = EXAM_CONFIGS[exam] ?? EXAM_CONFIGS.JEE;
-  const isCbseMix = questionMixId.startsWith("cbse_") || questionMixId.startsWith("acad_");
+  const isCbseMix = questionMixIds.some(id => id.startsWith("cbse_") || id.startsWith("acad_"));
   const topicSelected = !!aiTopicId;
   const requestedCount = countMode === "custom"
     ? Math.max(1, Math.min(300, Number(customCount) || 0))
@@ -1123,7 +1159,7 @@ function AIGeneratePanel({
   };
   const cacheKey = [
     batchId || "no-batch",
-    questionMixId,
+    questionMixIds.slice().sort().join(","),
     exam,
     cacheScope.subjectId || "-",
     cacheScope.chapterId || "-",
@@ -1164,7 +1200,7 @@ function AIGeneratePanel({
         if (out[i].difficulty !== from) continue;
         out[i] = applyMarksPolicyToDraft(
           { ...out[i], difficulty: to as any },
-          questionMixId,
+          questionMixIds[0] || "comp_mcq",
         );
         excess[from] -= 1;
         need[to] -= 1;
@@ -1278,7 +1314,16 @@ function AIGeneratePanel({
       const pct = (d: number) =>
         Math.min(100, Math.max(0, Math.round((d / Math.max(1, requestedCount)) * 100)));
 
-      const plan = buildAiPlan(questionMixId, requestedCount);
+      let plan: AiSeg[] = [];
+      const perType = Math.floor(requestedCount / Math.max(1, questionMixIds.length));
+      const remainderCount = requestedCount % Math.max(1, questionMixIds.length);
+      questionMixIds.forEach((mixId, i) => {
+        const alloc = perType + (i < remainderCount ? 1 : 0);
+        if (alloc > 0) {
+          plan = plan.concat(buildAiPlan(mixId, alloc));
+        }
+      });
+      const mainMixId = questionMixIds[0] || "comp_mcq";
       const drafts: DraftQuestion[] = [];
       const subj = aiSubjectName || "";
       const seenQuestions = new Set<string>();
@@ -1286,7 +1331,7 @@ function AIGeneratePanel({
       const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/[^\w\s]/g, "").trim();
       const cbseTarget: Record<CbseBucket, number> = { comp: 0, obj: 0, desc: 0 };
       const cbseGot: Record<CbseBucket, number> = { comp: 0, obj: 0, desc: 0 };
-      if (questionMixId === "cbse_all") {
+      if (mainMixId === "cbse_all") {
         for (const seg of plan) cbseTarget[bucketFromSeg(seg)] += seg.count;
       }
 
@@ -1318,7 +1363,7 @@ function AIGeneratePanel({
         const k = norm(cq.content || "");
         if (!k || seenQuestions.has(k)) continue;
         seenQuestions.add(k);
-        drafts.push(applyMarksPolicyToDraft({ _key: ++_keyCounter, ...enriched }, questionMixId));
+        drafts.push(applyMarksPolicyToDraft({ _key: ++_keyCounter, ...enriched }, mainMixId));
         rem[segIdx] -= 1;
         if (drafts.length >= requestedCount) break;
       }
@@ -1352,7 +1397,7 @@ function AIGeneratePanel({
               ? {
                   title: "Main — calling AI in parallel",
                   detail: `Running ${toFetch.length} segment batches at once: ${toFetch
-                    .map(({ seg, segIndex }) => getSegmentLabel(questionMixId, seg, segIndex, plan.length))
+                    .map(({ seg, segIndex }) => getSegmentLabel(mainMixId, seg, segIndex, plan.length))
                     .join(" · ")}. ${drafts.length}/${requestedCount} from cache so far.`,
                   percent: pct(drafts.length),
                 }
@@ -1361,7 +1406,7 @@ function AIGeneratePanel({
                   const alloc = mainAlloc[0] || { easy: 0, medium: rn, hard: 0 };
                   return {
                     title: "Main — calling AI",
-                    detail: `${getSegmentLabel(questionMixId, seg, segIndex, plan.length)} — up to ${rn} new (easy ${alloc.easy} · medium ${alloc.medium} · hard ${alloc.hard}) · ${drafts.length}/${requestedCount} collected`,
+                    detail: `${getSegmentLabel(mainMixId, seg, segIndex, plan.length)} — up to ${rn} new (easy ${alloc.easy} · medium ${alloc.medium} · hard ${alloc.hard}) · ${drafts.length}/${requestedCount} collected`,
                     percent: pct(drafts.length),
                   };
                 })(),
@@ -1396,19 +1441,19 @@ function AIGeneratePanel({
             for (const q of raw) {
               const key = norm(q.questionText || "");
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
-              if (questionMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
+              if (mainMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
               if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
               drafts.push(
-                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel),
+                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel),
               );
-              if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
+              if (mainMixId === "cbse_all") cbseGot[bucket] += 1;
             }
           }
         }
       }
 
-      if (questionMixId === "cbse_all" && cacheMode !== "cache_only") {
+      if (mainMixId === "cbse_all" && cacheMode !== "cache_only") {
         for (const seg of plan) {
           const bucket = bucketFromSeg(seg);
           let need = Math.max(0, cbseTarget[bucket] - cbseGot[bucket]);
@@ -1441,7 +1486,7 @@ function AIGeneratePanel({
               if (bucket === "comp" && !looksCompetencyStyle(q)) continue;
               if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
-              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
+              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
               cbseGot[bucket] += 1;
               need -= 1;
               if (need <= 0) break;
@@ -1452,7 +1497,7 @@ function AIGeneratePanel({
 
       // Required lane coverage for "mix of all":
       // if count is large enough, force at least one from each lane.
-      if (cacheMode !== "cache_only" && (questionMixId === "comp_all" || questionMixId === "acad_all")) {
+      if (cacheMode !== "cache_only" && (mainMixId === "comp_all" || mainMixId === "acad_all")) {
         const minPerLane = new Map<string, number>();
         const activeSegs = plan.filter((s) => s.count > 0 && s.laneLabel);
         const requiredLaneCount = activeSegs.length;
@@ -1498,7 +1543,7 @@ function AIGeneratePanel({
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
               if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
-              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
+              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
               have = countLane(lane);
               if (have >= req || drafts.length >= requestedCount) break;
             }
@@ -1514,7 +1559,7 @@ function AIGeneratePanel({
         const need = requestedCount - drafts.length;
         const chunk = Math.min(10, need);
         let seg = plan[topupGuard % Math.max(1, plan.length)];
-        if (questionMixId === "cbse_all") {
+        if (mainMixId === "cbse_all") {
           const deficits: Array<{ bucket: CbseBucket; need: number }> = [
             { bucket: "comp", need: Math.max(0, cbseTarget.comp - cbseGot.comp) },
             { bucket: "obj", need: Math.max(0, cbseTarget.obj - cbseGot.obj) },
@@ -1526,7 +1571,7 @@ function AIGeneratePanel({
         }
         setLoader({
           title: "Top-up",
-          detail: `Pass ${topupGuard}/16 · ${getSegmentLabel(questionMixId, seg, 0, plan.length)} — up to ${chunk} new, ${need} still short · have ${drafts.length}/${requestedCount}`,
+          detail: `Pass ${topupGuard}/16 · ${getSegmentLabel(mainMixId, seg, 0, plan.length)} — up to ${chunk} new, ${need} still short · have ${drafts.length}/${requestedCount}`,
           percent: pct(drafts.length),
         });
         const remainingNeed = getRemainingDifficultyNeed(drafts, {
@@ -1548,11 +1593,11 @@ function AIGeneratePanel({
         for (const q of raw) {
           const key = norm(q.questionText || "");
           if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
-          if (questionMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
+          if (mainMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
           if (!laneQualityPass(q, seg)) continue;
           seenQuestions.add(key);
-          drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
-          if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
+          drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
+          if (mainMixId === "cbse_all") cbseGot[bucket] += 1;
           if (drafts.length >= requestedCount) break;
         }
       }
@@ -1573,7 +1618,7 @@ function AIGeneratePanel({
           const alloc = allocateDifficultyCounts(Math.min(6, need), remainingNeed, rotationSeed + 100 + rescueGuard);
           setLoader({
             title: "Final fill",
-            detail: `${getSegmentLabel(questionMixId, seg, 0, plan.length)} — filling remaining ${need} question(s)`,
+            detail: `${getSegmentLabel(mainMixId, seg, 0, plan.length)} — filling remaining ${need} question(s)`,
             percent: pct(drafts.length),
           });
           const raw = await aiGenerateMockTestQuestions({
@@ -1591,8 +1636,8 @@ function AIGeneratePanel({
             if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
             if (!laneQualityPass(q, seg)) continue;
             seenQuestions.add(key);
-            drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, questionMixId, bucket, seg.laneLabel));
-            if (questionMixId === "cbse_all") cbseGot[bucket] += 1;
+            drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
+            if (mainMixId === "cbse_all") cbseGot[bucket] += 1;
             if (drafts.length >= requestedCount) break;
           }
           if (!raw.length) break;
@@ -1624,11 +1669,11 @@ function AIGeneratePanel({
         percent: 100,
       });
       const duplicateFiltered = Math.max(0, duplicateFilteredCount);
-      if (questionMixId === "cbse_all") {
+      if (mainMixId === "cbse_all") {
         setQualityReport(
           `Coverage: Conceptual ${cbseGot.comp}/${cbseTarget.comp} · Objective ${cbseGot.obj}/${cbseTarget.obj} · Short/long ${cbseGot.desc}/${cbseTarget.desc}${duplicateFiltered > 0 ? ` · Duplicates filtered: ${duplicateFiltered}` : ""}`,
         );
-      } else if (questionMixId === "comp_all" || questionMixId === "acad_all") {
+      } else if (mainMixId === "comp_all" || mainMixId === "acad_all") {
         const activeLanes = plan
           .filter((s) => s.count > 0 && s.laneLabel)
           .map((s) => s.laneLabel as string);
@@ -1665,7 +1710,7 @@ function AIGeneratePanel({
       const nextEntries = loadAiQuestionCache().filter((e) => e.key !== cacheKey);
       nextEntries.unshift({
         key: cacheKey,
-        mix: questionMixId,
+        mix: mainMixId,
         exam,
         batchId,
         scope: cacheScope,
@@ -1689,7 +1734,7 @@ function AIGeneratePanel({
       <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-50 border border-violet-200">
         <Sparkles className="w-4 h-4 text-violet-500 shrink-0" />
         <p className="text-xs text-violet-700 font-medium">
-          {`AI will generate ${requestedCount} questions in the “${QUESTION_MIX_CHOICES.find(c => c.id === questionMixId)?.label ?? "selected mix"}” style. `}
+          {`AI will generate ${requestedCount} questions in the selected mix styles (${QUESTION_MIX_CHOICES.filter(c => questionMixIds.includes(c.id)).map(c => c.label).join(", ")}). `}
           {topicSelected
             ? `Topic: “${aiTopicName}” (anchored to your curriculum tree).`
             : aiChapterName
@@ -2207,7 +2252,8 @@ function CreateTestModal({
   const [title, setTitle] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [passingMarks, setPassingMarks] = useState<number | "">("");
-  const [questionMixId, setQuestionMixId] = useState<QuestionMixId>("comp_mcq");
+  const [targetExam, setTargetExam] = useState<string>("JEE");
+  const [questionMixIds, setQuestionMixIds] = useState<QuestionMixId[]>(["comp_mcq"]);
   const [questions, setQuestions] = useState<DraftQuestion[]>([blankQuestion("mcq_single", "comp_mcq")]);
   const [activeTab, setActiveTab] = useState<"manual" | "ai" | "csv">("manual");
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -2222,6 +2268,54 @@ function CreateTestModal({
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
   const topicList = Array.isArray(topics) ? topics : [];
+
+  const manualMixOptions = (() => {
+    const options: { type: DraftQKind; label: string }[] = [];
+    const seen = new Set<string>();
+
+    const add = (type: DraftQKind, label: string) => {
+      const key = `${type}|${label}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      options.push({ type, label });
+    };
+
+    for (const mixId of questionMixIds) {
+      if (mixId === "comp_all") {
+        add("mcq_single", "Assertion reason based");
+        add("mcq_single", "Statement based");
+        add("mcq_single", "MCQ based");
+        add("descriptive", "Match the following based");
+        add("descriptive", "Diagram based");
+        add("mcq_multi", "MSQ");
+        add("integer", "Integer based");
+      } else if (mixId === "acad_all") {
+        add("mcq_single", "MCQ based");
+        add("mcq_single", "Assertion reason based");
+        add("descriptive", "Short answer type");
+        add("descriptive", "Detailed answers type");
+        add("descriptive", "Case study based");
+        add("descriptive", "Diagram based");
+      } else if (mixId === "cbse_all") {
+        add("mcq_single", "Conceptual/Competency");
+        add("mcq_single", "Objective");
+        add("descriptive", "Short/Long answer");
+      } else {
+        const choice = QUESTION_MIX_CHOICES.find(c => c.id === mixId);
+        if (choice) {
+          add(nextDraftKindForMix(mixId, 0), choice.label);
+        }
+      }
+    }
+
+    if (options.length === 0) {
+      options.push({ type: "mcq_single", label: "MCQ (single-correct)" });
+      options.push({ type: "mcq_multi", label: "MSQ (multi-correct)" });
+      options.push({ type: "integer", label: "Integer / numerical" });
+      options.push({ type: "descriptive", label: "Descriptive (short / long answer)" });
+    }
+    return options;
+  })();
 
   const computedMarks = questions.reduce((sum, q) => sum + q.marksCorrect, 0);
   const computedDuration = Math.max(30, Math.ceil(questions.length * 1.5));
@@ -2246,7 +2340,7 @@ function CreateTestModal({
   const canProceedStep2 = title.trim().length > 0 && durationMinutes > 0;
 
   const canSubmit = questions.length > 0 && questions.every((q) => {
-    if (!q.content.trim().length) return false;
+    if (!q.content.trim().length && !q.contentImageUrl) return false;
     if (q.type === "integer")
       return (q.integerAnswer ?? "").toString().trim().length > 0;
     if (q.type === "descriptive") return true;
@@ -2263,7 +2357,8 @@ function CreateTestModal({
     } else if (step === 2 && canProceedStep2) {
       setQuestions((prev) => {
         if (prev.length === 1 && !prev[0].content?.trim() && !prev[0].integerAnswer && !(prev[0] as DraftQuestion).solutionText) {
-          return [blankQuestion(nextDraftKindForMix(questionMixId, 0), questionMixId)];
+          const firstMixId = questionMixIds[0] || "comp_mcq";
+          return [blankQuestion(nextDraftKindForMix(firstMixId, 0), firstMixId)];
         }
         return prev;
       });
@@ -2294,6 +2389,7 @@ function CreateTestModal({
           marksWrong: q.marksWrong,
           tags: buildGeneratedTypeTags(undefined, q.generatedTypeLabel),
           solutionText: (q as DraftQuestion).solutionText || q.explanation || undefined,
+          contentImageUrl: q.contentImageUrl || undefined,
         };
         if (scope.topicId) payload.topicId = scope.topicId;
         if (q.type === "integer") payload.integerAnswer = q.integerAnswer;
@@ -2528,27 +2624,54 @@ function CreateTestModal({
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Question types *</label>
-                <p className="text-[11px] text-slate-400 mb-1.5">Drives both manual “Add question” rotation and AI generation style.</p>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Target Exam *</label>
                 <select
-                  value={questionMixId}
-                  onChange={e => setQuestionMixId(e.target.value as QuestionMixId)}
+                  value={targetExam}
+                  onChange={e => {
+                    const newExam = e.target.value;
+                    setTargetExam(newExam);
+                    const isCompetitive = ["JEE", "NEET"].includes(newExam);
+                    if (isCompetitive && !questionMixIds.some(id => id.startsWith("comp_"))) {
+                      setQuestionMixIds(["comp_mcq"]);
+                    } else if (!isCompetitive && !questionMixIds.some(id => id.startsWith("acad_"))) {
+                      setQuestionMixIds(["acad_mcq"]);
+                    }
+                  }}
                   className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]">
-                  <optgroup label="Competitive (JEE / NEET / similar)">
-                    {QUESTION_MIX_CHOICES.filter(c => c.id.startsWith("comp_")).map(c => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Academics (Board / School style)">
-                    {QUESTION_MIX_CHOICES.filter(c => c.id.startsWith("acad_")).map(c => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
-                    ))}
-                  </optgroup>
+                  {Object.keys(EXAM_CONFIGS).map(k => (
+                    <option key={k} value={k}>{k.replace("_", " ")} — {EXAM_CONFIGS[k].description}</option>
+                  ))}
                 </select>
-                <p className="text-[11px] text-slate-400 mt-1.5">
-                  {QUESTION_MIX_CHOICES.find(c => c.id === questionMixId)?.hint}
-                </p>
-                {isCompetitiveMix(questionMixId) ? (
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Question types *</label>
+                <p className="text-[11px] text-slate-400 mb-2">Select one or more templates. The AI will distribute questions proportionally.</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-[220px] overflow-y-auto space-y-3">
+                  {QUESTION_MIX_CHOICES.filter(c => 
+                    ["JEE", "NEET"].includes(targetExam) ? c.id.startsWith("comp_") : c.id.startsWith("acad_")
+                  ).map(c => (
+                    <label key={c.id} className="flex items-start gap-2.5 cursor-pointer group">
+                      <input type="checkbox"
+                        checked={questionMixIds.includes(c.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setQuestionMixIds(prev => [...prev, c.id]);
+                          } else {
+                            if (questionMixIds.length > 1) {
+                              setQuestionMixIds(prev => prev.filter(id => id !== c.id));
+                            }
+                          }
+                        }}
+                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#013889] focus:ring-[#013889] cursor-pointer" />
+                      <div>
+                         <span className="text-sm font-semibold text-slate-700 group-hover:text-[#013889] transition-colors">{c.label}</span>
+                         <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{c.hint}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {isCompetitiveMix(questionMixIds[0] || "comp_mcq") ? (
                   <p className="text-[11px] text-amber-700 mt-1">Competitive marking active: correct adds marks, wrong deducts marks.</p>
                 ) : (
                   <p className="text-[11px] text-slate-500 mt-1">{CBSE_THEORY_PATTERN_NOTE}</p>
@@ -2559,7 +2682,7 @@ function CreateTestModal({
                 <p className="font-semibold text-slate-600">Test Summary</p>
                 <p>Scope: <span className="text-slate-700 font-medium">{[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ") || "—"}</span></p>
                 <p>Type: <span className="text-slate-700 font-medium">{testCategory ? TEST_CATEGORY_CONFIG[testCategory].label : "—"}</span></p>
-                <p>Questions: <span className="text-slate-700 font-medium">{QUESTION_MIX_CHOICES.find(c => c.id === questionMixId)?.label ?? "—"}</span></p>
+                <p>Questions: <span className="text-slate-700 font-medium">{QUESTION_MIX_CHOICES.filter(c => questionMixIds.includes(c.id)).map(c => c.label).join(", ") || "—"}</span></p>
                 <p className="text-amber-600">Total Marks: computed from questions added in next step</p>
               </div>
 
@@ -2578,7 +2701,7 @@ function CreateTestModal({
               <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
                 <div className="flex-1">
                   <p className="font-bold text-slate-700 truncate">{title}</p>
-                  <p className="text-slate-400 mt-0.5">{[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ") || "—"} · {durationMinutes} min · {QUESTION_MIX_CHOICES.find(c => c.id === questionMixId)?.label ?? ""}</p>
+                  <p className="text-slate-400 mt-0.5">{[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ") || "—"} · {durationMinutes} min · {QUESTION_MIX_CHOICES.filter(c => questionMixIds.includes(c.id)).map(c => c.label).join(", ")}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-bold text-[#013889]">{questions.length}Q</p>
@@ -2604,7 +2727,10 @@ function CreateTestModal({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-slate-500">{questions.length} question{questions.length !== 1 ? "s" : ""}</p>
-                    <button onClick={() => setQuestions([...questions, blankQuestion(nextDraftKindForMix(questionMixId, questions.length), questionMixId)])}
+                    <button onClick={() => {
+                      const opt = manualMixOptions[0];
+                      setQuestions([...questions, blankQuestion(opt.type, questionMixIds[0] || "comp_mcq", opt.label)]);
+                    }}
                       className="flex items-center gap-1 text-xs font-bold text-[#013889] hover:text-[#0257c8]">
                       <Plus className="w-3.5 h-3.5" /> Add Question
                     </button>
@@ -2614,7 +2740,8 @@ function CreateTestModal({
                       <QuestionRow key={q._key} q={q} index={i}
                         onChange={u => { const next = [...questions]; next[i] = u; setQuestions(next); }}
                         onRemove={() => setQuestions(questions.filter((_, j) => j !== i))}
-                        canRemove={questions.length > 1} />
+                        canRemove={questions.length > 1}
+                        allowedMixes={manualMixOptions} />
                     ))}
                   </div>
                 </div>
@@ -2624,9 +2751,10 @@ function CreateTestModal({
               {activeTab === "ai" && (
                 <div className="max-h-[400px] overflow-y-auto pr-1">
                   <AIGeneratePanel
+                    exam={targetExam}
                     batchId={batchId}
                     testCategory={testCategory}
-                    questionMixId={questionMixId}
+                    questionMixIds={questionMixIds}
                     batchExamTarget={createModalBatch?.examTarget}
                     batchClass={createModalBatch?.class}
                     initSubjectId={scope.subjectId}
@@ -2701,6 +2829,7 @@ function AddQuestionModal({ mockTestId, existingIds, batchId, onClose }: {
         marksCorrect: q.marksCorrect, marksWrong: q.marksWrong,
         tags: buildGeneratedTypeTags(undefined, q.generatedTypeLabel),
         solutionText: (q as DraftQuestion).solutionText || q.explanation || undefined,
+        contentImageUrl: q.contentImageUrl || undefined,
       };
       if (topicId) payload.topicId = topicId;
       if (q.type === "integer") payload.integerAnswer = q.integerAnswer;
@@ -2853,6 +2982,11 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                   <span className="text-xs font-bold text-slate-400 mt-0.5 w-6 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                   <div className="min-w-0">
                     <p className="text-sm text-slate-700 leading-relaxed">{q.content}</p>
+                    {(q.contentImageUrl || q.content_image_url) && (
+                      <div className="mt-3 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 max-w-sm">
+                        <img src={resolveMediaUrl(q.contentImageUrl || q.content_image_url)} alt="Question visual" className="w-full h-auto" />
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${DIFFICULTY_COLORS[q.difficulty] ?? ""}`}>{q.difficulty}</span>
                       <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
