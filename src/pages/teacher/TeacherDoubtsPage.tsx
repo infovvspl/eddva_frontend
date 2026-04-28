@@ -1,4 +1,9 @@
-﻿import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
@@ -53,6 +58,68 @@ function urgencyColor(minutes?: number): string {
   if (minutes > 60) return "text-amber-500";
   return "text-muted-foreground";
 }
+
+// ─── AI answer parser ─────────────────────────────────────────────────────────
+
+interface AiAnswerStructured {
+  brief?: { answer?: string };
+  detailed?: { solution?: string; final_answer?: string; verification?: string; key_concept?: string };
+  subject?: string;
+  type?: string;
+}
+
+function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | null {
+  if (!raw) return null;
+  let str = raw.trim();
+  
+  // Handle potential double-stringification
+  if (str.startsWith('"') && str.endsWith('"') && str.length > 2) {
+    try {
+      const unquoted = JSON.parse(str);
+      if (typeof unquoted === "string") str = unquoted.trim();
+    } catch { /* Not double-stringified */ }
+  }
+
+  // Strip markdown code blocks
+  if (str.includes("```")) {
+    const match = str.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (match) str = match[1].trim();
+  }
+
+  const check = (obj: any): AiAnswerStructured | null => {
+    if (obj && typeof obj === "object" && (obj.brief || obj.detailed)) return obj as AiAnswerStructured;
+    return null;
+  };
+
+  try {
+    const parsed = JSON.parse(str);
+    const result = check(parsed);
+    if (result) return result;
+  } catch {
+    const jsonMatch = str.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const extracted = JSON.parse(jsonMatch[0]);
+        const result = check(extracted);
+        if (result) return result;
+      } catch { /* Fail silently */ }
+    }
+  }
+  return null;
+}
+
+const formatMarkdown = (text?: string) => {
+  if (!text) return "";
+  return text
+    .replace(/\\n/g, "\n")              // Handle escaped newlines
+    .replace(/\r?\n/g, "\n\n")          // Convert all single newlines to paragraphs
+    // Aggressive Step detection: "Step 1", "Step 1:", "Step 1 -", etc.
+    .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    // Aggressive Label detection: Reason, Explanation, etc.
+    .replace(/(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    .replace(/\n{3,}/g, "\n\n")         // Collapse triple+ newlines back to double
+    .trim();
+};
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 
@@ -222,7 +289,12 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
       {showPreview ? (
         <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-50/20 rounded-xl p-4 min-h-[120px]">
           <p className="text-xs font-semibold text-emerald-600 mb-2">Preview — Student will see:</p>
-          <p className="text-sm whitespace-pre-wrap text-foreground">{response || <span className="text-muted-foreground italic">Nothing written yet…</span>}</p>
+          <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {formatMarkdown(response)}
+            </ReactMarkdown>
+            {!response && <span className="text-muted-foreground italic">Nothing written yet…</span>}
+          </div>
           {lectureRef && (
             <div className="mt-3 flex items-center gap-2 text-xs text-blue-600 border border-blue-200 bg-blue-50 dark:bg-blue-50/20 rounded-lg px-3 py-2">
               <Link2 className="w-3.5 h-3.5 shrink-0" /> {lectureRef}
@@ -316,6 +388,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
 function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefresh: () => void; onDelete: () => void }) {
   const [aiQuality, setAiQuality] = useState<"correct" | "partial" | "wrong" | null>(null);
   const [showResponseEditor, setShowResponseEditor] = useState(false);
+  const [viewMode, setViewMode] = useState<"brief" | "detailed">("detailed");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const markReviewedM = useMarkDoubtReviewed();
   const resolveWithAiM = useResolveDoubtWithAiAsTeacher();
@@ -458,7 +531,11 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Student's Question</p>
           <div className="border border-border rounded-xl p-4 bg-muted/20">
             {doubt.questionText && (
-              <p className="text-sm text-foreground whitespace-pre-wrap">{doubt.questionText}</p>
+              <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {formatMarkdown(doubt.questionText)}
+                </ReactMarkdown>
+              </div>
             )}
             {doubt.ocrExtractedText && doubt.ocrExtractedText !== doubt.questionText && (
               <p className="text-sm text-muted-foreground mt-2 italic">(Extracted from image: {doubt.ocrExtractedText})</p>
@@ -481,15 +558,82 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
         {/* ── What AI Tried ── */}
         {hasAI && (
           <section>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-500" /> What AI Tried
-            </p>
-            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-50/20 rounded-xl p-4 space-y-2">
-              <p className="text-sm text-foreground whitespace-pre-wrap">{doubt.aiExplanation}</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" /> What AI Tried
+              </p>
+              
+              {/* Brief / Detailed toggle — only when structured data available */}
+              {parseAiAnswer(doubt.aiExplanation) && (
+                <div className="flex gap-0.5 bg-blue-100/70 dark:bg-blue-900/30 p-0.5 rounded-lg shrink-0">
+                  <button
+                    onClick={() => setViewMode("brief")}
+                    className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-bold transition-all",
+                      viewMode === "brief" ? "bg-white dark:bg-blue-800 text-blue-700 dark:text-white shadow-sm" : "text-blue-400 hover:text-blue-600"
+                    )}
+                  >
+                    Brief
+                  </button>
+                  <button
+                    onClick={() => setViewMode("detailed")}
+                    className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-bold transition-all",
+                      viewMode === "detailed" ? "bg-white dark:bg-blue-800 text-blue-700 dark:text-white shadow-sm" : "text-blue-400 hover:text-blue-600"
+                    )}
+                  >
+                    Detailed
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-50/20 rounded-xl p-4 space-y-3">
+              {(() => {
+                const parsed = parseAiAnswer(doubt.aiExplanation);
+                if (!parsed) {
+                  return (
+                    <div className="text-sm text-foreground prose prose-sm prose-blue dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {formatMarkdown(doubt.aiExplanation)}
+                      </ReactMarkdown>
+                    </div>
+                  );
+                }
+
+                return viewMode === "brief" ? (
+                  <div className="text-sm text-foreground prose prose-sm prose-blue dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {formatMarkdown(parsed.brief?.answer || parsed.detailed?.final_answer || parsed.detailed?.solution || doubt.aiExplanation)}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-sm text-foreground prose prose-sm prose-blue dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {formatMarkdown(parsed.detailed?.solution || parsed.detailed?.explanation || parsed.brief?.answer || doubt.aiExplanation)}
+                      </ReactMarkdown>
+                    </div>
+                    {parsed.detailed?.verification && (
+                      <div className="p-3 bg-blue-100/40 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                        <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">✓ Verification</p>
+                        <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">{parsed.detailed.verification}</p>
+                      </div>
+                    )}
+                    {parsed.detailed?.key_concept && (
+                      <div className="p-3 bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-lg">
+                        <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">💡 Key Concept</p>
+                        <p className="text-xs text-indigo-800 dark:text-indigo-300 leading-relaxed">{parsed.detailed.key_concept}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {doubt.aiConceptLinks && doubt.aiConceptLinks.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {doubt.aiConceptLinks.map((c) => (
-                    <span key={c} className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                    <span key={c} className="text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
                       {c}
                     </span>
                   ))}
@@ -649,7 +793,11 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
                   </div>
                   <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Your Response (sent to student)</p>
                 </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">{doubt.teacherResponse}</p>
+                <div className="text-sm text-foreground prose prose-sm prose-emerald dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {formatMarkdown(doubt.teacherResponse)}
+                  </ReactMarkdown>
+                </div>
                 {doubt.teacherLectureRef && (
                   <div className="flex items-center gap-2 text-xs text-blue-600 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-50/20 rounded-lg px-3 py-2">
                     <Link2 className="w-3.5 h-3.5 shrink-0" /> {doubt.teacherLectureRef}

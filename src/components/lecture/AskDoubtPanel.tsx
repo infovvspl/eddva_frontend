@@ -34,6 +34,55 @@ function fmtTime(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
+function parseAiAnswer(raw: string | null | undefined) {
+  if (!raw) return null;
+  let str = raw.trim();
+  
+  if (str.startsWith('"') && str.endsWith('"') && str.length > 2) {
+    try {
+      const unquoted = JSON.parse(str);
+      if (typeof unquoted === "string") str = unquoted.trim();
+    } catch { /* ... */ }
+  }
+
+  if (str.includes("```")) {
+    const match = str.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (match) str = match[1].trim();
+  }
+
+  const check = (obj: any): any => {
+    if (obj && typeof obj === "object" && (obj.brief || obj.detailed)) return obj;
+    return null;
+  };
+
+  try {
+    const parsed = JSON.parse(str);
+    const result = check(parsed);
+    if (result) return result;
+  } catch {
+    const jsonMatch = str.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const extracted = JSON.parse(jsonMatch[0]);
+        const result = check(extracted);
+        if (result) return result;
+      } catch { /* Fail silently */ }
+    }
+  }
+  return null;
+}
+
+const formatMarkdown = (text?: string) => {
+  if (!text) return "";
+  return text
+    .replace(/\\n/g, "\n")
+    .replace(/\r?\n/g, "\n\n")
+    .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    .replace(/(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+};
+
 export function AskDoubtPanel({
   lectureId, topicId, topicName, lectureTitle, timestampSeconds, onClose,
 }: Props) {
@@ -292,7 +341,49 @@ export function AskDoubtPanel({
                   {/* Response body */}
                   <div className="px-4 py-4">
                     <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-800 prose-headings:font-bold prose-strong:text-indigo-700 prose-code:bg-slate-100 prose-code:text-violet-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600">
-                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{response.aiExplanation}</ReactMarkdown>
+                      {(() => {
+                        const parsed = parseAiAnswer(response.aiExplanation);
+                        if (!parsed) {
+                          return (
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {formatMarkdown(response.aiExplanation)}
+                            </ReactMarkdown>
+                          );
+                        }
+
+                        // Use the 'mode' state which can be 'short' or 'detailed'
+                        const viewMode = mode === "short" ? "brief" : "detailed";
+                        
+                        if (viewMode === "brief") {
+                          return (
+                            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+                              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                {formatMarkdown(parsed.brief?.answer || parsed.detailed?.final_answer || parsed.detailed?.solution || response.aiExplanation)}
+                              </ReactMarkdown>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-3 prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {formatMarkdown(parsed.detailed?.solution || parsed.detailed?.explanation || parsed.brief?.answer || response.aiExplanation)}
+                            </ReactMarkdown>
+                            {parsed.detailed?.verification && (
+                              <div className="p-3 bg-violet-50/50 border border-violet-100 rounded-lg not-prose">
+                                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wide mb-1">✓ Verification</p>
+                                <p className="text-xs text-slate-600 leading-relaxed">{parsed.detailed.verification}</p>
+                              </div>
+                            )}
+                            {parsed.detailed?.key_concept && (
+                              <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg not-prose">
+                                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
+                                <p className="text-xs text-slate-600 leading-relaxed">{parsed.detailed.key_concept}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Concept links */}
