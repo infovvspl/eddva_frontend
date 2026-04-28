@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Users, BarChart3, ChevronDown, ChevronRight,
   Layout, Flame, BookOpen, Target, Eye, WifiOff,
-  Bell, AlertTriangle, CheckCircle,
+  Bell, AlertTriangle, CheckCircle, BarChart3,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -249,10 +249,10 @@ const BatchDetail = ({ batchId }: { batchId: string }) => {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-xs h-7 px-2.5"
+                        className="text-xs h-7 px-2.5 gap-1.5"
                         onClick={() => navigate(`/teacher/students/${s.studentId}?batchId=${batchId}`)}
                       >
-                        <Eye className="w-3 h-3 mr-1" /> View
+                        <BarChart3 className="w-3 h-3" /> Progress
                       </Button>
                     </td>
                   </tr>

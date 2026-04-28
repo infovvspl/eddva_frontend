@@ -211,6 +211,15 @@ export default function StudentDashboard() {
           >
             Take a Test
           </button>
+
+          <button
+            onClick={() => navigate("/student/progress")}
+            className="px-5 py-2.5 bg-indigo-400 text-white font-bold rounded-xl text-sm 
+              hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all duration-200 flex items-center gap-2"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Detailed Progress
+          </button>
         </div>
       </div>
 

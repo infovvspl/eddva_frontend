@@ -277,7 +277,6 @@ const AdminDashboard = () => {
                 { label: "Build Content", icon: BookOpen, path: "/admin/content", color: "bg-indigo-500" },
                 { label: "Schedule Class", icon: Radio, path: "/teacher/lectures", color: "bg-red-500" },
                 { label: "View Analytics", icon: BarChart2, path: "/teacher/analytics", color: "bg-violet-500" },
-                { label: "AI Tools", icon: Sparkles, path: "/teacher/ai-tools", color: "bg-amber-500" },
               ].map((a) => (
                 <button key={a.label} onClick={() => navigate(a.path)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-gray-200 hover:bg-white/10 transition-colors group text-left">
