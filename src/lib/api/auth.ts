@@ -116,6 +116,12 @@ export async function updateProfile(payload: ProfileUpdatePayload) {
   return extractData(res);
 }
 
+/** Dismiss first login flag */
+export async function dismissFirstLogin() {
+  const res = await apiClient.patch("/auth/profile", {});
+  return extractData(res);
+}
+
 /** Login with email + password */
 export async function loginWithPassword(payload: { email?: string; phoneNumber?: string; password: string }): Promise<OtpVerifyResponse> {
   tokenStorage.clear();

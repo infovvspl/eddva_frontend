@@ -388,9 +388,9 @@ function BattleInProgress({
     if (data.roundNumber >= totalRounds) {
       setTimeout(() => {
         if (isBot) finalizeBattle(effectiveWinnerId, newScores);
-      }, 2500);
+      }, 1500);
     } else {
-      // Next question after 2.5s
+      // Next question after 1.5s
       setTimeout(() => {
         const nextRound = data.roundNumber + 1;
         setRoundNumber(nextRound);
@@ -411,7 +411,7 @@ function BattleInProgress({
           }
         }
         // For socket mode, next question comes from server event
-      }, 2500);
+      }, 1500);
     }
   }, [isBot, myStudentId, totalRounds, startTimer, triggerBotAnswer]);
   // Always keep the ref pointing at the latest version so triggerBotAnswer (stable, [] deps) can call it

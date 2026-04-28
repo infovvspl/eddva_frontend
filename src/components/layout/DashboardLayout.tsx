@@ -1,6 +1,6 @@
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
-import { useLogout } from "@/hooks/use-auth";
+import { useLogout, useDismissFirstLogin } from "@/hooks/use-auth";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import type { UserRole } from "@/lib/types";
 import {
@@ -162,33 +162,42 @@ const DashboardLayout = () => {
   // ── Admin profile setup modal (shown once on first login) ────────────────
   const { data: instProfile } = useInstituteProfile(isInstAdmin);
   const updateInstProfile = useUpdateInstituteProfile();
+  const dismissFirstLogin = useDismissFirstLogin();
 
   const [showAdminProfileModal, setShowAdminProfileModal] = useState(false);
   const [adminForm, setAdminForm] = useState({ instituteName: "", adminName: "", email: "" });
   const adminProfileKey = user ? `admin_profile_done_${user.id}` : null;
 
   useEffect(() => {
-    if (!isInstAdmin || !adminProfileKey || instProfile === undefined) return;
-    if (localStorage.getItem(adminProfileKey)) return;
+    if (!isInstAdmin || instProfile === undefined) return;
+    if (!user?.isFirstLogin) return;
+    if (adminProfileKey && localStorage.getItem(adminProfileKey)) return;
+
     setAdminForm({
       instituteName: instProfile.instituteName ?? "",
       adminName:     instProfile.adminName     ?? "",
       email:         instProfile.email         ?? "",
     });
     setShowAdminProfileModal(true);
-  }, [isInstAdmin, adminProfileKey, instProfile]);
+  }, [isInstAdmin, user?.isFirstLogin, adminProfileKey, instProfile]);
 
   function handleSaveAdminProfile() {
-    if (!adminProfileKey) return;
     updateInstProfile.mutate(
       { instituteName: adminForm.instituteName || undefined, adminName: adminForm.adminName || undefined, email: adminForm.email || undefined },
-      { onSettled: () => { localStorage.setItem(adminProfileKey, "1"); setShowAdminProfileModal(false); } }
+      { onSettled: () => { 
+        if (adminProfileKey) localStorage.setItem(adminProfileKey, "1"); 
+        setShowAdminProfileModal(false); 
+      } }
     );
   }
 
   function handleSkipAdminProfile() {
-    if (adminProfileKey) localStorage.setItem(adminProfileKey, "1");
-    setShowAdminProfileModal(false);
+    dismissFirstLogin.mutate(undefined, {
+      onSettled: () => {
+        if (adminProfileKey) localStorage.setItem(adminProfileKey, "1");
+        setShowAdminProfileModal(false);
+      }
+    });
   }
 
   // ── Student preference (exam target) ─────────────────────────────────────

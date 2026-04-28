@@ -1492,15 +1492,40 @@ function MockTestTabContent({
     { key: "topic",   label: "Topic" },
   ] as const;
 
-  const inferExamLane = (t: { examMode?: string; title?: string; type?: string }) => {
-    const mode = String(t.examMode || "").toLowerCase();
-    const hint = `${t.title || ""} ${t.type || ""} ${mode}`.toLowerCase();
-    if (hint.includes("compet") || hint.includes("jee") || hint.includes("neet") || hint.includes("olympiad")) return "competitive";
-    if (hint.includes("acad") || hint.includes("cbse") || hint.includes("board") || hint.includes("school") || hint.includes("class") || hint.includes("ncert")) return "academic";
+  const inferExamLane = (t: MockTestListItem) => {
+    // 1. Check explicit examMode set during creation
+    const rawMode = t.examMode || (t as any).exam_mode;
+    if (rawMode) {
+      const mode = String(rawMode).toLowerCase();
+      if (mode.includes("jee") || mode.includes("neet")) return "competitive";
+      if (mode.includes("cbse") || mode.includes("acad") || mode.includes("class") || mode.includes("school") || mode.includes("board")) return "academic";
+    }
+
+    // 2. Fallback to title/type hints
+    const hint = `${t.title || ""} ${t.type || ""}`.toLowerCase();
+    if (hint.includes("compet") || hint.includes("jee") || hint.includes("neet") || hint.includes("olympiad"))
+      return "competitive";
+    if (
+      hint.includes("acad") ||
+      hint.includes("cbse") ||
+      hint.includes("board") ||
+      hint.includes("school") ||
+      hint.includes("class") ||
+      hint.includes("ncert") ||
+      hint.includes("exam")
+    )
+      return "academic";
+
     return "competitive";
   };
+
   const scopeTests = grouped[activeScope] ?? mockTests;
   const visibleTests = examFilter === "all" ? scopeTests : scopeTests.filter((mt) => inferExamLane(mt) === examFilter);
+
+  const getCount = (lane: "competitive" | "academic" | "all") => {
+    if (lane === "all") return scopeTests.length;
+    return scopeTests.filter(t => inferExamLane(t) === lane).length;
+  };
 
   return (
     <div className="space-y-4">
@@ -1515,6 +1540,32 @@ function MockTestTabContent({
         </span>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {(["all", "competitive", "academic"] as const).map((lane) => {
+          const count = getCount(lane);
+          return (
+            <button
+              key={lane}
+              onClick={() => setExamFilter(lane)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2",
+                examFilter === lane
+                  ? "bg-indigo-600 text-white border-transparent shadow-sm shadow-indigo-200"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+              )}
+            >
+              <span className="capitalize">{lane === "academic" ? "Academic (CBSE)" : lane}</span>
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-md text-[10px] font-black",
+                examFilter === lane ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
+              )}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Scope filter tabs (only shown when there are scoped tests) */}
       {hasFilters && (
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
@@ -1525,12 +1576,12 @@ function MockTestTabContent({
               className={cn(
                 "shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
                 activeScope === tab.key
-                  ? "bg-indigo-600 text-white shadow-sm"
+                  ? "bg-slate-800 text-white shadow-sm"
                   : "bg-slate-100 text-slate-500 hover:bg-slate-200"
               )}
             >
               {tab.label}
-              {tab.key !== "all" && grouped[tab.key]?.length > 0 && (
+              {tab.key !== "all" && (grouped[tab.key]?.length ?? 0) > 0 && (
                 <span className={cn(
                   "ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold",
                   activeScope === tab.key ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
@@ -1543,28 +1594,11 @@ function MockTestTabContent({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1.5">
-        {([
-          ["all", "All"],
-          ["competitive", "Competitive"],
-          ["academic", "Academic (CBSE)"],
-        ] as const).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setExamFilter(id)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-              examFilter === id ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {/* Test list */}
       {visibleTests.length === 0 ? (
-        <p className="text-center text-sm text-slate-400 py-8">No {activeScope} tests found for selected exam filter.</p>
+        <div className="py-12 text-center bg-white rounded-2xl border border-slate-100">
+          <p className="text-slate-400 font-medium">No {activeScope === "all" ? "" : activeScope} tests found in this category.</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {visibleTests.map((mt, i) => {

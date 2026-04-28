@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, FileText, Trash2, X, ChevronRight,
   Eye, EyeOff, ClipboardList, Clock, CheckCircle2,
   AlertCircle, Pencil, ArrowLeft, Sparkles, Wand2,
-  RefreshCw, Check, Upload, Download, Users, Search,
+  Check, Upload, Download, Users, Search,
   BookOpen, Layers, Target, ImagePlus, ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1128,7 +1128,7 @@ function AIGeneratePanel({
   const [error, setError] = useState("");
   const [loader, setLoader] = useState<AiGenLoader | null>(null);
   const [qualityReport, setQualityReport] = useState<string>("");
-  const [cacheMode, setCacheMode] = useState<"hybrid" | "cache_only" | "ai_only">("hybrid");
+  const [cacheMode, setCacheMode] = useState<"cache_only" | "ai_only">("ai_only");
   const [difficultyMode, setDifficultyMode] = useState<AiDifficultyMode>("mixed");
 
   const [subjectId, setSubjectId] = useState(initSubjectId);
@@ -1651,8 +1651,8 @@ function AIGeneratePanel({
       if (drafts.length < requestedCount) {
         setError(
           cacheMode === "cache_only"
-            ? `Cache-only mode found ${drafts.length}/${requestedCount} questions. Switch to "Refresh with AI" to fill the remainder.`
-            : `Could only generate ${drafts.length}/${requestedCount} unique questions this run. Try regenerate for the remaining.`,
+            ? `Cache-only mode found ${drafts.length}/${requestedCount} questions. Switch to "Only AI generate" to fill the remainder.`
+            : `Could only generate ${drafts.length}/${requestedCount} unique questions this run. Try again for the remaining.`,
         );
       }
 
@@ -1746,7 +1746,7 @@ function AIGeneratePanel({
       </div>
       <div className="rounded-xl border border-slate-200 bg-white p-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Question source</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setCacheMode("cache_only")}
@@ -1758,18 +1758,6 @@ function AIGeneratePanel({
             )}
           >
             Use cache only
-          </button>
-          <button
-            type="button"
-            onClick={() => setCacheMode("hybrid")}
-            className={cn(
-              "h-9 rounded-lg text-xs font-semibold border transition-colors",
-              cacheMode === "hybrid"
-                ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50",
-            )}
-          >
-            Refresh with AI
           </button>
           <button
             type="button"
@@ -1787,9 +1775,7 @@ function AIGeneratePanel({
         <p className="text-[11px] text-slate-400 mt-2">
           {cacheMode === "cache_only"
             ? "No AI calls. Uses cached questions for this scope only."
-            : cacheMode === "ai_only"
-              ? "Skips cache completely. Generates all requested questions from AI."
-              : "Uses cache first, then generates only missing questions via AI."}
+            : "Skips cache completely. Generates all requested questions from AI."}
         </p>
       </div>
 
@@ -1873,16 +1859,7 @@ function AIGeneratePanel({
           )}
       </div>
 
-      <div className={`grid gap-3 ${!topicSelected ? "grid-cols-2" : "grid-cols-1"}`}>
-        {!topicSelected && (
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">Exam Target</label>
-            <select value={exam} onChange={e => setExam(e.target.value)}
-              className="h-10 w-full px-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]">
-              {Object.keys(EXAM_CONFIGS).map(k => <option key={k} value={k}>{k.replace("_", " ")}</option>)}
-            </select>
-          </div>
-        )}
+      <div className="grid gap-3 grid-cols-1">
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">Number of Questions</label>
           <select
@@ -2268,6 +2245,18 @@ function CreateTestModal({
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
   const topicList = Array.isArray(topics) ? topics : [];
+  
+  useEffect(() => {
+    if (createModalBatch?.examTarget && targetExam !== createModalBatch.examTarget) {
+      setTargetExam(createModalBatch.examTarget);
+      const isCompetitive = ["JEE", "NEET"].includes(createModalBatch.examTarget);
+      if (isCompetitive && !questionMixIds.some(id => id.startsWith("comp_"))) {
+        setQuestionMixIds(["comp_mcq"]);
+      } else if (!isCompetitive && !questionMixIds.some(id => id.startsWith("acad_"))) {
+        setQuestionMixIds(["acad_mcq"]);
+      }
+    }
+  }, [createModalBatch?.examTarget, targetExam, questionMixIds]);
 
   const manualMixOptions = (() => {
     const options: { type: DraftQKind; label: string }[] = [];
@@ -2411,6 +2400,7 @@ function CreateTestModal({
         chapterId: scope.chapterId || undefined,
         topicId: scope.topicId || undefined,
         questionIds: ids,
+        examMode: targetExam,
       });
 
       onCreated(test.id);
@@ -2623,25 +2613,14 @@ function CreateTestModal({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Target Exam *</label>
-                <select
-                  value={targetExam}
-                  onChange={e => {
-                    const newExam = e.target.value;
-                    setTargetExam(newExam);
-                    const isCompetitive = ["JEE", "NEET"].includes(newExam);
-                    if (isCompetitive && !questionMixIds.some(id => id.startsWith("comp_"))) {
-                      setQuestionMixIds(["comp_mcq"]);
-                    } else if (!isCompetitive && !questionMixIds.some(id => id.startsWith("acad_"))) {
-                      setQuestionMixIds(["acad_mcq"]);
-                    }
-                  }}
-                  className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]">
-                  {Object.keys(EXAM_CONFIGS).map(k => (
-                    <option key={k} value={k}>{k.replace("_", " ")} — {EXAM_CONFIGS[k].description}</option>
-                  ))}
-                </select>
+              {/* Target Exam info block instead of selector */}
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+                <label className="block text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 mb-1">Target Exam</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#013889]" />
+                  <span className="text-sm font-bold text-slate-800">{targetExam.replace("_", " ")}</span>
+                  <span className="text-xs text-slate-400">— {EXAM_CONFIGS[targetExam]?.description}</span>
+                </div>
               </div>
 
               <div>
@@ -3147,6 +3126,42 @@ const MockTestsPage = () => {
     else if (view === "tests") { setView("batches"); setSelectedBatch(null); }
   };
 
+  const [examFilter, setExamFilter] = useState<"all" | "competitive" | "academic">("all");
+
+  const inferExamLane = (t: any) => {
+    // 1. Check explicit examMode set during creation
+    const rawMode = t.examMode || t.exam_mode;
+    if (rawMode) {
+      const mode = String(rawMode).toLowerCase();
+      if (mode.includes("jee") || mode.includes("neet")) return "competitive";
+      if (mode.includes("cbse") || mode.includes("acad") || mode.includes("class") || mode.includes("school") || mode.includes("board")) return "academic";
+    }
+
+    // 2. Fallback to title/type hints
+    const hint = `${t.title || ""} ${t.type || ""}`.toLowerCase();
+    if (hint.includes("compet") || hint.includes("jee") || hint.includes("neet") || hint.includes("olympiad"))
+      return "competitive";
+    if (
+      hint.includes("acad") ||
+      hint.includes("cbse") ||
+      hint.includes("board") ||
+      hint.includes("school") ||
+      hint.includes("class") ||
+      hint.includes("ncert") ||
+      hint.includes("exam")
+    )
+      return "academic";
+
+    return "competitive";
+  };
+
+  const visibleTests = examFilter === "all" ? testList : testList.filter(t => inferExamLane(t) === examFilter);
+
+  const getCount = (lane: "competitive" | "academic" | "all") => {
+    if (lane === "all") return testList.length;
+    return testList.filter(t => inferExamLane(t) === lane).length;
+  };
+
   // ── Detail view ──
   if (view === "detail" && selectedTestId) {
     return (
@@ -3228,31 +3243,60 @@ const MockTestsPage = () => {
         </Button>
       </div>
 
+      {/* Filter pills */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {(["all", "competitive", "academic"] as const).map((lane) => {
+          const count = getCount(lane);
+          return (
+            <button
+              key={lane}
+              onClick={() => setExamFilter(lane)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 shadow-sm",
+                examFilter === lane
+                  ? "bg-[#013889] text-white border-transparent"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-[#013889]/30 hover:text-[#013889]"
+              )}
+            >
+              <span className="capitalize">{lane === "academic" ? "Academic (CBSE)" : lane}</span>
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-md text-[10px] font-black",
+                examFilter === lane ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
+              )}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Tests list */}
       {testsLoading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin" style={{ color: BLUE }} />
         </div>
-      ) : testList.length === 0 ? (
+      ) : visibleTests.length === 0 ? (
         <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-2xl bg-white">
           <ClipboardList className="w-14 h-14 mx-auto mb-4 text-slate-300" />
-          <p className="text-lg font-bold text-slate-500">No tests yet</p>
+          <p className="text-lg font-bold text-slate-500">No tests found</p>
           <p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">
-            Create a Subject Test, Chapter Test, or Topic Test for this course
+            {examFilter !== "all" ? `No tests matching the "${examFilter}" filter.` : "Create a Subject Test, Chapter Test, or Topic Test for this course"}
           </p>
-          <div className="flex gap-2 justify-center mt-5">
-            <Button className="gap-1.5" onClick={() => setShowCreate(true)}
-              style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-              <Sparkles className="w-3.5 h-3.5" /> Create with AI
-            </Button>
-            <Button variant="outline" className="gap-1.5" onClick={() => setShowCreate(true)}>
-              <Plus className="w-3.5 h-3.5" /> Add Manually
-            </Button>
-          </div>
+          {examFilter === "all" && (
+            <div className="flex gap-2 justify-center mt-5">
+              <Button className="gap-1.5" onClick={() => setShowCreate(true)}
+                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                <Sparkles className="w-3.5 h-3.5" /> Create with AI
+              </Button>
+              <Button variant="outline" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                <Plus className="w-3.5 h-3.5" /> Add Manually
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
-          {testList.map(test => (
+          {visibleTests.map(test => (
             <motion.div key={test.id} layout
               className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-[#013889]/30 hover:shadow-sm transition-all">
               <div className="flex items-center justify-between gap-3 flex-wrap">

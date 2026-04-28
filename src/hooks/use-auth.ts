@@ -157,6 +157,15 @@ export function useUploadAvatar() {
   return useMutation({ mutationFn: (file: File) => authApi.uploadAvatar(file) });
 }
 
+/** Dismiss first login flag mutation */
+export function useDismissFirstLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => authApi.dismissFirstLogin(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: authKeys.me }),
+  });
+}
+
 /** Logout — clear everything */
 export function useLogout() {
   const { clearAuth } = useAuthStore();
