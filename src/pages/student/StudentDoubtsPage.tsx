@@ -36,13 +36,34 @@ const TABS = [
   { key: "teacher_resolved", label: "Resolved" },
 ] as const;
 
+// ─── AI answer parser ─────────────────────────────────────────────────────────
+
+interface AiAnswerStructured {
+  brief?: { answer?: string };
+  detailed?: { solution?: string; final_answer?: string; verification?: string; key_concept?: string };
+  subject?: string;
+  type?: string;
+}
+
+function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && (parsed.brief || parsed.detailed)) return parsed as AiAnswerStructured;
+  } catch { /* plain-text response — handled as fallback */ }
+  return null;
+}
+
 // ─── Doubt Card ───────────────────────────────────────────────────────────────
 
 function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
   const [expanded, setExpanded] = useState(false);
   const [askAiMode, setAskAiMode] = useState<"short" | "detailed">("detailed");
+  const [viewMode, setViewMode]   = useState<"brief" | "detailed">("brief");
   const markHelpful = useMarkDoubtHelpful();
   const requestAi   = useRequestAiForDoubt();
+
+  const parsedAi = parseAiAnswer(doubt.aiExplanation);
 
   const s = STATUS[doubt.status];
   const canAskAi = doubt.status === "open" || doubt.status === "escalated";
@@ -122,27 +143,95 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
 
               {/* AI Response */}
               {doubt.aiExplanation && (
-                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-lg bg-blue-500 text-white flex items-center justify-center">
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </div>
-                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">AI Explanation</p>
-                  </div>
-                  <div className="text-sm text-blue-900 font-medium leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {doubt.aiExplanation}
-                    </ReactMarkdown>
-                  </div>
-                  {doubt.aiConceptLinks && doubt.aiConceptLinks.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {doubt.aiConceptLinks.map((c, i) => (
-                        <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-100 text-blue-600">
-                          {c}
+                <div className="bg-blue-50 rounded-xl border border-blue-100 overflow-hidden">
+                  {/* Answer header */}
+                  <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-500 text-white flex items-center justify-center shrink-0">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">AI Answer</p>
+                      {parsedAi?.subject && (
+                        <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold capitalize">
+                          {parsedAi.subject} · {parsedAi.type}
                         </span>
-                      ))}
+                      )}
                     </div>
-                  )}
+                    {/* Brief / Detailed toggle — only when structured data available */}
+                    {parsedAi && (
+                      <div className="flex gap-0.5 bg-blue-100/70 p-0.5 rounded-lg shrink-0">
+                        <button
+                          onClick={() => setViewMode("brief")}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
+                            viewMode === "brief" ? "bg-white text-blue-700 shadow-sm" : "text-blue-400 hover:text-blue-600"
+                          )}
+                        >
+                          ⚡ Brief
+                        </button>
+                        <button
+                          onClick={() => setViewMode("detailed")}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
+                            viewMode === "detailed" ? "bg-white text-blue-700 shadow-sm" : "text-blue-400 hover:text-blue-600"
+                          )}
+                        >
+                          📖 Detailed
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Answer body */}
+                  <div className="px-4 pb-4">
+                    {parsedAi ? (
+                      viewMode === "brief" ? (
+                        <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
+                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                            {parsedAi.brief?.answer || parsedAi.detailed?.final_answer || doubt.aiExplanation}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {parsedAi.detailed?.solution || parsedAi.brief?.answer || doubt.aiExplanation}
+                            </ReactMarkdown>
+                          </div>
+                          {parsedAi.detailed?.verification && (
+                            <div className="p-3 bg-blue-100/60 rounded-lg border border-blue-200/50">
+                              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1">✓ Verification</p>
+                              <p className="text-xs text-blue-800 leading-relaxed">{parsedAi.detailed.verification}</p>
+                            </div>
+                          )}
+                          {parsedAi.detailed?.key_concept && (
+                            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
+                              <p className="text-xs text-indigo-800 leading-relaxed">{parsedAi.detailed.key_concept}</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    ) : (
+                      // Fallback for plain-text responses
+                      <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {doubt.aiExplanation}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+
+                    {/* Concept link tags */}
+                    {doubt.aiConceptLinks && doubt.aiConceptLinks.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {doubt.aiConceptLinks.map((c, i) => (
+                          <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-100 text-blue-600">
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
