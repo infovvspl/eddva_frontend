@@ -72,6 +72,7 @@ const StudentCourseTopicPage = lazy(() => import("./pages/student/StudentCourseT
 const StudentNotificationsPage = lazy(() => import("./pages/student/StudentNotificationsPage"));
 const StudentMockTestPage = lazy(() => import("./pages/student/StudentMockTestPage"));
 const StudentTestsPage = lazy(() => import("./pages/student/StudentTestsPage"));
+const StudentProgressPage = lazy(() => import("./pages/student/StudentProgressPage"));
 const PYQManagementPage = lazy(() => import("./pages/admin/PYQManagementPage"));
 const ReportsPage = lazy(() => import("./pages/admin/ReportsPage"));
 const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificationsPage"));
@@ -191,6 +192,7 @@ const StudentRoutes = () => (
       <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
       <Route path="/student/study-plan" element={<StudentStudyPlanPage />} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
+      <Route path="/student/progress" element={<StudentProgressPage />} />
       <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
       <Route path="/student/courses" element={<StudentCoursesPage />} />
       <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
