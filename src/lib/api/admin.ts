@@ -812,6 +812,7 @@ export interface MockTest {
   topicId?: string;
   batchId?: string;
   isPublished: boolean;
+  examMode?: string;
   scheduledAt?: string;
   createdAt: string;
   questionIds?: string[];
@@ -829,6 +830,7 @@ export interface CreateMockTestPayload {
   topicId?: string;
   scheduledAt?: string;
   questionIds: string[];
+  examMode?: string;
 }
 
 export interface MockTestQuestion {
