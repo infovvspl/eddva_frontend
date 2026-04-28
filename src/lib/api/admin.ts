@@ -812,6 +812,7 @@ export interface MockTest {
   topicId?: string;
   batchId?: string;
   isPublished: boolean;
+  examMode?: string;
   scheduledAt?: string;
   createdAt: string;
   questionIds?: string[];
@@ -829,6 +830,7 @@ export interface CreateMockTestPayload {
   topicId?: string;
   scheduledAt?: string;
   questionIds: string[];
+  examMode?: string;
 }
 
 export interface MockTestQuestion {
@@ -843,6 +845,8 @@ export interface MockTestQuestion {
   /** Marking / exemplar (descriptive); also accept snake_case from API. */
   solutionText?: string | null;
   integerAnswer?: string | null;
+  contentImageUrl?: string | null;
+  content_image_url?: string | null;
 }
 
 export interface CreateMockTestQuestionPayload {
@@ -855,6 +859,7 @@ export interface CreateMockTestQuestionPayload {
   integerAnswer?: string;
   /** Model / rubric text for descriptive questions */
   solutionText?: string;
+  contentImageUrl?: string;
 }
 
 // ─── AI Question Generation ──────────────────────────────────────────────────

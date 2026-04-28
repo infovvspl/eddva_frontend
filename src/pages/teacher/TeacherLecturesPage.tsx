@@ -194,6 +194,36 @@ function fmtElapsed(secs: number) {
   return `${Math.floor(secs / 60)}m ${secs % 60}s`;
 }
 
+// ─── Estimated processing time based on video duration ───────────────────────
+function estimateProcessingTime(durationSeconds?: number, isHinglish?: boolean): {
+  transcription: string;
+  notes: string;
+  total: string;
+  totalMinLow: number;
+  totalMinHigh: number;
+} {
+  // Server-side Groq Whisper on chunked audio; these are conservative (slow-server) estimates
+  const d = durationSeconds ?? 0;
+  let tLow: number, tHigh: number;
+  if (d === 0)          { tLow = 4;  tHigh = 8;  }   // unknown length
+  else if (d <= 900)    { tLow = 3;  tHigh = 6;  }   // ≤ 15 min
+  else if (d <= 1800)   { tLow = 5;  tHigh = 9;  }   // 15–30 min
+  else if (d <= 3600)   { tLow = 8;  tHigh = 15; }   // 30–60 min
+  else if (d <= 7200)   { tLow = 14; tHigh = 25; }   // 1–2 hr
+  else                  { tLow = 22; tHigh = 45; }   // > 2 hr (3hr video)
+
+  if (isHinglish) { tLow += 2; tHigh += 4; }  // extra translation step
+
+  const nLow = 2; const nHigh = 4;
+  return {
+    transcription: `~${tLow}–${tHigh} min`,
+    notes: `~${nLow}–${nHigh} min`,
+    total: `~${tLow + nLow}–${tHigh + nHigh} min`,
+    totalMinLow: tLow + nLow,
+    totalMinHigh: tHigh + nHigh,
+  };
+}
+
 // Shared progress calculation — used by both AiProcessingCard and RecordedCard
 const AI_STEP_BOUNDARIES = [0, 52, 68, 84, 100]; // % at start of each step + end
 
@@ -213,10 +243,11 @@ function useAiProgress(lecture: Lecture, activeStep?: number) {
     return () => clearInterval(id);
   }, [isActive, lecture.createdAt]);
 
+  // Slow-server friendly: step 0 (transcribing) lasts until 5 min, then briefly step 1 before backend status arrives
   const timeBasedStep =
-    elapsed < 100 ? 0 :
-    elapsed < 130 ? 1 :
-    elapsed < 190 ? 2 :
+    elapsed < 300 ? 0 :
+    elapsed < 360 ? 1 :
+    elapsed < 420 ? 2 :
     3;
 
   const currentStep = activeStep !== undefined ? activeStep : (
@@ -232,18 +263,18 @@ function useAiProgress(lecture: Lecture, activeStep?: number) {
   const stepStart = AI_STEP_BOUNDARIES[Math.min(currentStep, 4)] ?? 0;
   const stepEnd   = AI_STEP_BOUNDARIES[Math.min(currentStep + 1, 4)];
   const withinStep = currentStep === 0
-    ? Math.min(elapsed / 100, 1)
+    ? Math.min(elapsed / 300, 1)
     : currentStep === 1
-    ? Math.min((elapsed - 100) / 30, 1)
+    ? Math.min((elapsed - 300) / 60, 1)
     : currentStep === 2
-    ? Math.min((elapsed - 130) / 60, 1)
-    : Math.min((elapsed - 190) / 30, 1);
+    ? Math.min((elapsed - 360) / 120, 1)
+    : Math.min((elapsed - 480) / 60, 1);
   const progressPct = Math.round(stepStart + (stepEnd - stepStart) * withinStep);
 
   const subStepIdx =
-    elapsed < 15 ? 0 :
-    elapsed < 35 ? 1 :
-    elapsed < 95 ? 2 : 3;
+    elapsed < 20 ? 0 :
+    elapsed < 60 ? 1 :
+    elapsed < 240 ? 2 : 3;
 
   return { isActive, elapsed, currentStep, progressPct, subStepIdx };
 }
@@ -254,13 +285,18 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
   const subSteps = isHinglish ? TRANSCRIBE_SUB_HINGLISH : TRANSCRIBE_SUB_EN;
 
   const { isActive, elapsed, currentStep, progressPct, subStepIdx } = useAiProgress(lecture, activeStep);
+  const est = estimateProcessingTime(lecture.videoDurationSeconds, isHinglish);
 
   const showSubStep = currentStep === 0 && isActive;
+  const isNotesPhase = lecture.transcriptStatus === "done" && lecture.status === "processing";
 
-  const estTotal = isHinglish ? "3–5 min" : "2–4 min";
+  // Phase label shown in the time estimator
+  const phaseLabel = isNotesPhase ? "Generating notes" : "Transcribing audio";
+  const phaseEst   = isNotesPhase ? est.notes : est.transcription;
 
   return (
     <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3">
+      {/* Header */}
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
           <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
@@ -272,16 +308,18 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
           <p className="text-xs text-muted-foreground">
             {isHinglish
               ? "Hinglish → English → Notes. No action needed."
-              : "No action needed — we'll notify you when ready"}
+              : "No action needed — notes will be ready soon"}
           </p>
         </div>
         {isActive && (
           <div className="shrink-0 text-right">
             <p className="text-xs font-mono font-semibold text-blue-600">{fmtElapsed(elapsed)}</p>
-            <p className="text-[10px] text-muted-foreground">est. {estTotal}</p>
+            <p className="text-[10px] text-muted-foreground">elapsed</p>
           </div>
         )}
       </div>
+
+      {/* Steps list */}
       <div className="space-y-2">
         {steps.map((s, i) => {
           const done    = i < currentStep;
@@ -303,7 +341,6 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
                   {s.label}
                 </span>
               </div>
-              {/* Sub-step hint — only under the active transcription step */}
               {current && showSubStep && i === 0 && (
                 <p className="ml-[26px] text-[11px] text-blue-500/70 mt-0.5 animate-pulse">
                   {subSteps[subStepIdx]}
@@ -313,7 +350,37 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
           );
         })}
       </div>
-      {/* Smooth progress bar */}
+
+      {/* Estimated time breakdown */}
+      <div className="bg-blue-500/8 rounded-xl p-3 space-y-1.5 border border-blue-500/10">
+        <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide">Estimated time</p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+          <div className="flex items-center gap-1.5">
+            <Mic className="w-3 h-3 text-blue-500/70 shrink-0" />
+            <span className="text-[11px] text-muted-foreground">Transcription</span>
+            <span className="text-[11px] font-semibold text-foreground ml-auto">{est.transcription}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <FileText className="w-3 h-3 text-blue-500/70 shrink-0" />
+            <span className="text-[11px] text-muted-foreground">Notes gen</span>
+            <span className="text-[11px] font-semibold text-foreground ml-auto">{est.notes}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-0.5 border-t border-blue-500/10">
+          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <AlarmClock className="w-3 h-3" />
+            Total est.
+          </span>
+          <span className="text-[11px] font-bold text-blue-600">{est.total}</span>
+        </div>
+        {isActive && (
+          <p className="text-[10px] text-blue-500/70 text-center animate-pulse">
+            Currently: {phaseLabel} ({phaseEst})
+          </p>
+        )}
+      </div>
+
+      {/* Progress bar */}
       <div className="space-y-1">
         <div className="w-full h-1.5 bg-blue-500/10 rounded-full overflow-hidden">
           <div

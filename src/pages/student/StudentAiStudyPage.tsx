@@ -400,6 +400,7 @@ export default function StudentAiStudyPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("lesson");
   const [chatInput, setChatInput] = useState("");
+  const [aiMode, setAiMode] = useState<"short" | "detailed">("short");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -558,17 +559,17 @@ export default function StudentAiStudyPage() {
     const q = chatInput.trim();
     if (!q || !sessionId || askMut.isPending) return;
     setChatInput("");
-    askMut.mutate({ topicId, sessionId, question: q });
-  }, [chatInput, sessionId, topicId, askMut]);
+    askMut.mutate({ topicId, sessionId, question: `[Mode: ${aiMode}] ${q}` });
+  }, [chatInput, sessionId, topicId, askMut, aiMode]);
 
   const handleFlashcardDoubtAsk = useCallback(() => {
     const q = flashcardDoubtInput.trim();
     if (!q || !sessionId || askMut.isPending) return;
     askMut.mutate(
-      { topicId, sessionId, question: q },
+      { topicId, sessionId, question: `[Mode: ${aiMode}] ${q}` },
       { onSuccess: () => setFlashcardDoubtInput("") },
     );
-  }, [flashcardDoubtInput, sessionId, askMut, topicId]);
+  }, [flashcardDoubtInput, sessionId, askMut, topicId, aiMode]);
 
   const handleAskAboutQuestion = useCallback((question: string) => {
     const prompt = question.trim();
@@ -577,10 +578,10 @@ export default function StudentAiStudyPage() {
     setTimeout(() => {
       if (sessionId) {
         setChatInput("");
-        askMut.mutate({ topicId, sessionId, question: prompt });
+        askMut.mutate({ topicId, sessionId, question: `[Mode: ${aiMode}] ${prompt}` });
       }
     }, 100);
-  }, [sessionId, topicId, askMut]);
+  }, [askMut, sessionId, topicId, aiMode]);
 
   const handleComplete = useCallback(() => {
     if (!sessionId) return;
@@ -1273,7 +1274,7 @@ export default function StudentAiStudyPage() {
                                       </ReactMarkdown>
                                     </div>
                                   ) : (
-                                    <p className="text-sm leading-6">{msg.message}</p>
+                                    <p className="text-sm leading-6">{msg.message.replace(/^\[Mode:\s*(?:short|detailed|brief)\]\s*/i, "")}</p>
                                   )}
                                 </div>
                               </div>
@@ -1304,6 +1305,32 @@ export default function StudentAiStudyPage() {
                   </div>
 
                   <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/95 p-4 backdrop-blur sm:p-6">
+                    <div className="flex gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setAiMode("short")}
+                        className={cn(
+                          "flex-1 py-2 rounded-xl text-xs font-semibold border transition-all",
+                          aiMode === "short"
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600",
+                        )}
+                      >
+                        ⚡ Brief
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAiMode("detailed")}
+                        className={cn(
+                          "flex-1 py-2 rounded-xl text-xs font-semibold border transition-all",
+                          aiMode === "detailed"
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600",
+                        )}
+                      >
+                        📖 Detailed
+                      </button>
+                    </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                       <textarea
                         value={chatInput}
@@ -1549,7 +1576,7 @@ export default function StudentAiStudyPage() {
                                     msg.role === "student" ? "bg-white text-slate-700" : "bg-blue-100 text-blue-900",
                                   )}
                                 >
-                                  {normalizeAiMessage(msg.message)}
+                                  {msg.role === "student" ? msg.message.replace(/^\[Mode:\s*(?:short|detailed|brief)\]\s*/i, "") : normalizeAiMessage(msg.message)}
                                 </div>
                               ))
                             ) : (

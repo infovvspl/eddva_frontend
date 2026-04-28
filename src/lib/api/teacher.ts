@@ -181,6 +181,20 @@ export async function backfillStudyMaterialsFromTopicResources(): Promise<{
   return extractData<{ tenantId: string; scanned: number; inserted: number; skipped: number }>(res);
 }
 
+// ─── AI Engine Health ─────────────────────────────────────────────────────────
+
+export interface AiEngineHealth {
+  overall: "operational" | "degraded" | "critical";
+  summary: { total: number; ok: number; rate_limited: number; dead: number; error: number; usable: number };
+  keys: { index: number; hint: string; status: "ok" | "dead" }[];
+  cached: boolean;
+}
+
+export async function getAiEngineHealth(refresh = false): Promise<AiEngineHealth> {
+  const res = await apiClient.get(`/ai/engine/health${refresh ? "?refresh=true" : ""}`);
+  return extractData<AiEngineHealth>(res);
+}
+
 // ─── Batches ──────────────────────────────────────────────────────────────────
 
 /** Returns subject-teacher assignments for a batch (used to filter subject dropdown) */

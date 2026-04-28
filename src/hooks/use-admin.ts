@@ -558,7 +558,10 @@ export function useUpdateInstituteProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: adminApi.updateInstituteProfile,
-    onSuccess: () => qc.invalidateQueries({ queryKey: settingsKeys.profile }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: settingsKeys.profile });
+      qc.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
   });
 }
 

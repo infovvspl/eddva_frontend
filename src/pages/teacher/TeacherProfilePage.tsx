@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCompleteTeacherOnboarding, useUploadAvatar } from "@/hooks/use-auth";
 import { getMe } from "@/lib/api/auth";
-import { backfillStudyMaterialsFromTopicResources } from "@/lib/api/teacher";
+import { backfillStudyMaterialsFromTopicResources, getAiEngineHealth, type AiEngineHealth } from "@/lib/api/teacher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   Camera, Pencil, X, Plus, Check, Loader2,
   GraduationCap, BookOpen, Users, MapPin,
-  Briefcase, Zap, Clock, Building2,
+  Briefcase, Zap, Clock, Building2, Activity, RefreshCw,
 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -109,6 +110,126 @@ function TagInput({ tags, onChange, suggestions, placeholder }: {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── AI Engine Health Card ────────────────────────────────────────────────────
+
+function AiHealthSection() {
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const { data, isLoading, error } = useQuery<AiEngineHealth>({
+    queryKey: ["ai-engine-health", refreshKey],
+    queryFn: () => getAiEngineHealth(refreshKey > 0),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setRefreshKey(k => k + 1);
+    setTimeout(() => setRefreshing(false), 3000);
+  };
+
+  const overallColor = {
+    operational: "text-emerald-600 bg-emerald-50 border-emerald-200",
+    degraded:    "text-amber-600  bg-amber-50  border-amber-200",
+    critical:    "text-red-600    bg-red-50    border-red-200",
+  }[data?.overall ?? "operational"] ?? "text-muted-foreground bg-muted border-border";
+
+  const overallDot = {
+    operational: "bg-emerald-500",
+    degraded:    "bg-amber-500",
+    critical:    "bg-red-500",
+  }[data?.overall ?? "operational"] ?? "bg-muted-foreground";
+
+  const statusLabel = {
+    operational: "All Systems Operational",
+    degraded:    "Degraded — Some Keys Inactive",
+    critical:    "Critical — No Active Keys",
+  }[data?.overall ?? "operational"] ?? "Unknown";
+
+  return (
+    <SectionCard
+      title="AI Engine Status"
+      icon={Activity}
+      action={
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing || isLoading}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={cn("w-3.5 h-3.5", (refreshing || isLoading) && "animate-spin")} />
+          {data?.cached !== false ? "Refresh" : "Live"}
+        </button>
+      }
+    >
+      {isLoading && !data && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Checking status…
+        </div>
+      )}
+
+      {error && !data && (
+        <p className="text-sm text-destructive">Could not reach AI service. Check that the AI backend is running.</p>
+      )}
+
+      {data && (
+        <div className="space-y-4">
+          {/* Overall status badge */}
+          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium w-fit", overallColor)}>
+            <span className={cn("w-2 h-2 rounded-full shrink-0", overallDot)} />
+            {statusLabel}
+          </div>
+
+          {/* Summary row */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Total Keys", value: data.summary.total, color: "text-foreground" },
+              { label: "Active",     value: data.summary.usable, color: "text-emerald-600" },
+              { label: "Dead",       value: data.summary.dead,   color: data.summary.dead > 0 ? "text-red-500" : "text-muted-foreground" },
+            ].map(s => (
+              <div key={s.label} className="bg-muted/50 rounded-xl p-3 text-center">
+                <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-key grid */}
+          {data.keys.length > 0 && (
+            <div>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Key Status</p>
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {data.keys.map(k => (
+                  <div
+                    key={k.index}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-xl border py-2 px-1",
+                      k.status === "ok"
+                        ? "border-emerald-200 bg-emerald-50/60"
+                        : "border-red-200 bg-red-50/60",
+                    )}
+                  >
+                    <span className={cn("w-2 h-2 rounded-full", k.status === "ok" ? "bg-emerald-500" : "bg-red-500")} />
+                    <span className="text-[10px] font-semibold text-foreground">#{k.index}</span>
+                    <span className="text-[9px] text-muted-foreground font-mono truncate w-full text-center px-0.5">{k.hint}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.cached && (
+            <p className="text-[11px] text-muted-foreground">
+              Showing cached status from last server start. Click Refresh for a live probe.
+            </p>
+          )}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -562,6 +683,9 @@ export default function TeacherProfilePage() {
           </div>
         ))}
       </div>
+
+      {/* ── AI Engine Health ────────────────────────────────────────────────── */}
+      <AiHealthSection />
 
     </motion.div>
   );

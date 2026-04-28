@@ -875,8 +875,9 @@ export async function markDoubtHelpful(id: string, isHelpful: boolean): Promise<
   return extractData<StudentDoubt>(res);
 }
 
-export async function requestAiForDoubt(id: string): Promise<StudentDoubt> {
-  const res = await apiClient.patch(`/doubts/${id}/request-ai`, {});
+export async function requestAiForDoubt(id: string, explanationMode?: string): Promise<StudentDoubt> {
+  const payload = explanationMode ? { explanationMode } : {};
+  const res = await apiClient.patch(`/doubts/${id}/request-ai`, payload);
   return extractData<StudentDoubt>(res);
 }
 
