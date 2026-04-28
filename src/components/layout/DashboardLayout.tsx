@@ -92,6 +92,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Doubts",       path: "/student/doubts",        icon: Headphones      },
     { label: "Leaderboard",  path: "/student/leaderboard",   icon: Trophy          },
     { label: "Battle Arena", path: "/student/battle",        icon: Swords          },
+    { label: "My Progress",  path: "/student/progress",      icon: BarChart        },
     { label: "Profile",      path: "/student/profile",       icon: User            },
   ],
 };

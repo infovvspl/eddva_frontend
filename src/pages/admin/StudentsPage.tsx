@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  Loader2, Users, Search, ChevronRight, ChevronDown,
+  Loader2, Users, Search, ChevronRight, ChevronDown, BarChart3,
 } from "lucide-react";
 import { useBatches, useBatchRoster } from "@/hooks/use-admin";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -251,7 +251,7 @@ const StudentsPage = () => {
                   return (
                     <tr
                       key={sid ?? i}
-                      onClick={() => typeof sid === "string" && navigate(`/admin/students/${sid}`)}
+                      onClick={() => typeof sid === "string" && navigate(`/teacher/students/${sid}`)}
                       className={cn(
                         "border-b border-slate-50 last:border-0 transition-colors group",
                         typeof sid === "string" ? "cursor-pointer hover:bg-blue-50/40" : ""
@@ -296,7 +296,17 @@ const StudentsPage = () => {
                           ? new Date(s.lastLoginAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
                           : "Never"}
                       </td>
-                      <td className="p-4">
+                      <td className="p-4 flex justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/teacher/students/${sid}`);
+                          }}
+                          className="p-2 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+                          title="View Advanced Progress"
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                        </button>
                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
                       </td>
                     </tr>
