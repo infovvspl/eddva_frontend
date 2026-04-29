@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, FileText, Trash2, X, ChevronRight,
@@ -2251,7 +2252,7 @@ function CreateTestModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className={cn(
           "w-full rounded-2xl bg-white shadow-2xl p-6 my-8 transition-all duration-300 ease-in-out",
-          step === 3 ? "max-w-[85%]" : "max-w-xl"
+          step === 3 ? "max-w-5xl" : "max-w-xl"
         )}
       >
         {/* Header */}
@@ -2860,13 +2861,14 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
         </div>
       )}
 
-      {showAddQuestion && (
+      {showAddQuestion && createPortal(
         <AddQuestionModal 
           mockTestId={testId} 
           existingIds={existingIds} 
           batchId={test.batchId} 
           onClose={() => setShowAddQuestion(false)} 
-        />
+        />,
+        document.body
       )}
     </motion.div>
   );
@@ -3185,15 +3187,18 @@ const MockTestsPage = () => {
         </div>
       )}
 
-      <AnimatePresence>
-        {showCreate && selectedBatch && (
-          <CreateTestModal
-            batchId={selectedBatch.id}
-            onClose={() => setShowCreate(false)}
-            onCreated={id => { setShowCreate(false); setSelectedTestId(id); setView("detail"); }}
-          />
-        )}
-      </AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {showCreate && selectedBatch && (
+            <CreateTestModal
+              batchId={selectedBatch.id}
+              onClose={() => setShowCreate(false)}
+              onCreated={id => { setShowCreate(false); setSelectedTestId(id); setView("detail"); }}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

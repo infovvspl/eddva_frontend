@@ -11,6 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { interveneStudent } from "@/lib/api/teacher";
+import { Loader2 } from "lucide-react";
 
 interface StudentQuickActionsProps {
   studentId: string;
@@ -28,9 +30,27 @@ export function StudentQuickActions({
   studentName,
   insights 
 }: StudentQuickActionsProps) {
+  const [loading, setLoading] = React.useState<string | null>(null);
   
-  const handleAction = (label: string) => {
-    toast.success(`${label} initiated for ${studentName || "Student"}`);
+  const handleAction = async (type: "assign_practice" | "send_reminder" | "schedule_doubt" | "regenerate_plan", label: string) => {
+    try {
+      setLoading(type);
+      const res = await interveneStudent({
+        studentId,
+        batchId,
+        type,
+      });
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        toast.error("Action failed to initiate");
+      }
+    } catch (error) {
+      console.error("Intervention failed", error);
+      toast.error("Connection error while sending intervention");
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -48,11 +68,12 @@ export function StudentQuickActions({
       <div className="grid grid-cols-1 gap-3 relative z-10">
         <Button 
           variant="outline" 
+          disabled={!!loading}
           className="justify-start gap-4 h-16 rounded-[1.25rem] border-primary/10 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 group shadow-sm"
-          onClick={() => handleAction("Assign Practice")}
+          onClick={() => handleAction("assign_practice", "Assign Practice")}
         >
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <BookPlus className="w-5 h-5" />
+            {loading === "assign_practice" ? <Loader2 className="w-5 h-5 animate-spin" /> : <BookPlus className="w-5 h-5" />}
           </div>
           <div className="text-left min-w-0">
             <p className="text-[13px] font-black leading-tight text-slate-900">Assign Practice</p>
@@ -62,11 +83,12 @@ export function StudentQuickActions({
 
         <Button 
           variant="outline" 
+          disabled={!!loading}
           className="justify-start gap-4 h-16 rounded-[1.25rem] border-emerald-500/10 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all duration-300 group shadow-sm"
-          onClick={() => handleAction("Send Reminder")}
+          onClick={() => handleAction("send_reminder", "Send Reminder")}
         >
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <Send className="w-5 h-5" />
+            {loading === "send_reminder" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </div>
           <div className="text-left min-w-0">
             <p className="text-[13px] font-black leading-tight text-slate-900">Send Reminder</p>
@@ -76,11 +98,12 @@ export function StudentQuickActions({
 
         <Button 
           variant="outline" 
+          disabled={!!loading}
           className="justify-start gap-4 h-16 rounded-[1.25rem] border-purple-500/10 hover:border-purple-500/40 hover:bg-purple-500/5 transition-all duration-300 group shadow-sm"
-          onClick={() => handleAction("Schedule Session")}
+          onClick={() => handleAction("schedule_doubt", "Schedule Doubt")}
         >
           <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <CalendarClock className="w-5 h-5" />
+            {loading === "schedule_doubt" ? <Loader2 className="w-5 h-5 animate-spin" /> : <CalendarClock className="w-5 h-5" />}
           </div>
           <div className="text-left min-w-0">
             <p className="text-[13px] font-black leading-tight text-slate-900">Schedule Doubt</p>
@@ -90,11 +113,12 @@ export function StudentQuickActions({
 
         <Button 
           variant="outline" 
+          disabled={!!loading}
           className="justify-start gap-4 h-16 rounded-[1.25rem] border-orange-500/10 hover:border-orange-500/40 hover:bg-orange-500/5 transition-all duration-300 group shadow-sm"
-          onClick={() => handleAction("Regenerate Plan")}
+          onClick={() => handleAction("regenerate_plan", "Regenerate Plan")}
         >
           <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <RefreshCcw className="w-5 h-5" />
+            {loading === "regenerate_plan" ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCcw className="w-5 h-5" />}
           </div>
           <div className="text-left min-w-0">
             <p className="text-[13px] font-black leading-tight text-slate-900">Regenerate Plan</p>
