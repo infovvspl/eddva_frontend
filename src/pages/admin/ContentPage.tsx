@@ -27,6 +27,7 @@ import {
   useTopicResources, useUploadTopicResource, useDeleteTopicResource, useAddTopicResourceLink,
   useBulkImportCurriculum,
   useBatchContentLectures,
+  useSaveAiGeneratedResource,
 } from "@/hooks/use-admin";
 import * as adminApi from "@/lib/api/admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
@@ -204,46 +205,108 @@ function isYoutubeLikeUrl(url?: string | null) {
 
 // ─── Resource Row ──────────────────────────────────────────────────────────────
 
+// ─── Resource Viewer Modal ───────────────────────────────────────────────────
+
+function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+      >
+        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="flex items-center gap-4">
+            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", rCfg(resource.type).bg)}>
+              {React.createElement(rCfg(resource.type).icon, { className: cn("w-6 h-6", rCfg(resource.type).color) })}
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-900">{resource.title}</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{resource.type} Resource</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 prose prose-slate max-w-none">
+          {resource.description ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {resource.description}
+            </ReactMarkdown>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <FileText className="w-12 h-12 mb-4 opacity-20" />
+              <p className="font-bold">No preview available for this resource.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+          <button onClick={onClose} className="px-6 py-2.5 rounded-2xl bg-white border border-slate-200 text-sm font-black text-slate-600 hover:bg-slate-100 transition-all">
+            Close Viewer
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Resource Row ──────────────────────────────────────────────────────────────
+
 function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
   const cfg = rCfg(String(r.type ?? "").toLowerCase() as TopicResourceType);
   const Icon = cfg.icon;
   const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
   const rawYtUrl = r.externalUrl || (isYoutubeLikeUrl(r.fileUrl ?? undefined) ? r.fileUrl! : null);
   const ytId = rawYtUrl ? getYouTubeId(rawYtUrl) : null;
+  const [showViewer, setShowViewer] = useState(false);
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all"
-    >
-      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", cfg.bg)}>
-        <Icon className={cn("w-4 h-4", cfg.color)} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-800 truncate">{r.title}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          {r.fileSizeKb && <span className="text-[10px] text-slate-400">{fmtSize(r.fileSizeKb)}</span>}
-          {ytId && <span className="text-[10px] text-red-500 font-semibold flex items-center gap-0.5"><Youtube className="w-2.5 h-2.5" /> YouTube</span>}
-          {r.externalUrl && !ytId && <span className="text-[10px] text-slate-400 truncate max-w-[200px]">{r.externalUrl}</span>}
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all"
+      >
+        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", cfg.bg)}>
+          <Icon className={cn("w-4 h-4", cfg.color)} />
         </div>
-      </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        {href && (
-          <a href={href} target="_blank" rel="noopener noreferrer"
-            className="h-7 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center gap-1 transition-all">
-            <ExternalLink className="w-3 h-3" />
-            {ytId ? "Watch" : "Open"}
-          </a>
-        )}
-        <button onClick={onDelete}
-          className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </motion.div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-800 truncate">{r.title}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            {r.fileSizeKb && <span className="text-[10px] text-slate-400">{fmtSize(r.fileSizeKb)}</span>}
+            {ytId && <span className="text-[10px] text-red-500 font-semibold flex items-center gap-0.5"><Youtube className="w-2.5 h-2.5" /> YouTube</span>}
+            {r.description && !r.fileUrl && !r.externalUrl && <span className="text-[10px] text-violet-500 font-black uppercase tracking-wider flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI Generated</span>}
+            {r.externalUrl && !ytId && <span className="text-[10px] text-slate-400 truncate max-w-[200px]">{r.externalUrl}</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {r.description && !r.fileUrl && !r.externalUrl && (
+            <button onClick={() => setShowViewer(true)}
+              className="h-7 px-3 rounded-xl bg-violet-50 border border-violet-100 text-[10px] font-black text-violet-600 hover:bg-violet-600 hover:text-white transition-all flex items-center gap-1.5">
+              <Eye className="w-3 h-3" /> View
+            </button>
+          )}
+          {href && (
+            <a href={href} target="_blank" rel="noopener noreferrer"
+              className="h-7 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center gap-1 transition-all">
+              <ExternalLink className="w-3 h-3" />
+              {ytId ? "Watch" : "Open"}
+            </a>
+          )}
+          <button onClick={onDelete}
+            className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </motion.div>
+      {showViewer && <ResourceViewerModal resource={r} onClose={() => setShowViewer(false)} />}
+    </>
   );
 }
 
@@ -1176,6 +1239,7 @@ type TopicCoverage = {
   name: string;
   studyMaterialCount: number;
   dppCount: number;
+  pyqCount: number;
   totalCount: number;
 };
 
@@ -1184,6 +1248,7 @@ type ChapterCoverage = {
   name: string;
   studyMaterialCount: number;
   dppCount: number;
+  pyqCount: number;
   totalCount: number;
   topics: TopicCoverage[];
 };
@@ -1193,6 +1258,7 @@ type SubjectCoverage = {
   name: string;
   studyMaterialCount: number;
   dppCount: number;
+  pyqCount: number;
   totalCount: number;
   chapters: ChapterCoverage[];
 };
@@ -1203,13 +1269,14 @@ type CoverageSummary = {
   topicCount: number;
   studyMaterialCount: number;
   dppCount: number;
+  pyqCount: number;
   totalContentCount: number;
   subjects: SubjectCoverage[];
 };
 
 function isStudyMaterial(type?: string | null) {
   const t = String(type ?? "").toLowerCase();
-  return t === "pdf" || t === "notes" || t === "video" || t === "link" || t === "pyq" || t === "quiz";
+  return t === "pdf" || t === "notes" || t === "video" || t === "link" || t === "quiz";
 }
 
 async function fetchContentCoverageSummary(batchId: string): Promise<CoverageSummary> {
@@ -1224,11 +1291,13 @@ async function fetchContentCoverageSummary(batchId: string): Promise<CoverageSum
             topics.map(async (topic) => {
               const resources = (await adminApi.listTopicResources(topic.id)) ?? [];
               const dppCount = resources.filter((r) => String(r.type ?? "").toLowerCase() === "dpp").length;
+              const pyqCount = resources.filter((r) => String(r.type ?? "").toLowerCase() === "pyq").length;
               const studyMaterialCount = resources.filter((r) => isStudyMaterial(r.type)).length;
               return {
                 id: topic.id,
                 name: topic.name,
                 dppCount,
+                pyqCount,
                 studyMaterialCount,
                 totalCount: resources.length,
               } as TopicCoverage;
@@ -1238,6 +1307,7 @@ async function fetchContentCoverageSummary(batchId: string): Promise<CoverageSum
             id: chapter.id,
             name: chapter.name,
             dppCount: topicRows.reduce((s, t) => s + t.dppCount, 0),
+            pyqCount: topicRows.reduce((s, t) => s + t.pyqCount, 0),
             studyMaterialCount: topicRows.reduce((s, t) => s + t.studyMaterialCount, 0),
             totalCount: topicRows.reduce((s, t) => s + t.totalCount, 0),
             topics: topicRows,
@@ -1248,6 +1318,7 @@ async function fetchContentCoverageSummary(batchId: string): Promise<CoverageSum
         id: subject.id,
         name: subject.name,
         dppCount: chapterRows.reduce((s, c) => s + c.dppCount, 0),
+        pyqCount: chapterRows.reduce((s, c) => s + c.pyqCount, 0),
         studyMaterialCount: chapterRows.reduce((s, c) => s + c.studyMaterialCount, 0),
         totalCount: chapterRows.reduce((s, c) => s + c.totalCount, 0),
         chapters: chapterRows,
@@ -1267,6 +1338,7 @@ async function fetchContentCoverageSummary(batchId: string): Promise<CoverageSum
     topicCount,
     studyMaterialCount: subjectRows.reduce((s, sub) => s + sub.studyMaterialCount, 0),
     dppCount: subjectRows.reduce((s, sub) => s + sub.dppCount, 0),
+    pyqCount: subjectRows.reduce((s, sub) => s + sub.pyqCount, 0),
     totalContentCount: subjectRows.reduce((s, sub) => s + sub.totalCount, 0),
     subjects: subjectRows,
   };
@@ -1340,7 +1412,7 @@ function ContentCoverageOverview({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-7">
         <div className="rounded-xl bg-slate-50 p-3">
           <p className="text-[10px] font-black uppercase text-slate-400">Subjects</p>
           <p className="mt-1 text-lg font-black text-slate-800">{data.subjectCount}</p>
@@ -1361,6 +1433,10 @@ function ContentCoverageOverview({
           <p className="text-[10px] font-black uppercase text-amber-500">DPP</p>
           <p className="mt-1 text-lg font-black text-amber-700">{data.dppCount}</p>
         </div>
+        <div className="rounded-xl bg-violet-50 p-3">
+          <p className="text-[10px] font-black uppercase text-violet-500">PYQ</p>
+          <p className="mt-1 text-lg font-black text-violet-700">{data.pyqCount}</p>
+        </div>
         <div className="rounded-xl bg-emerald-50 p-3">
           <p className="text-[10px] font-black uppercase text-emerald-500">Total Files</p>
           <p className="mt-1 text-lg font-black text-emerald-700">{data.totalContentCount}</p>
@@ -1376,9 +1452,10 @@ function ContentCoverageOverview({
             <details key={subject.id} className="rounded-xl border border-slate-100 bg-slate-50/60" open>
               <summary className="flex cursor-pointer items-center justify-between gap-2 p-3">
                 <span className="text-sm font-black text-slate-800">{subject.name}</span>
-                <span className="flex items-center gap-2 text-[10px] font-black">
+                 <span className="flex items-center gap-2 text-[10px] font-black">
                   <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">SM {subject.studyMaterialCount}</span>
                   <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">DPP {subject.dppCount}</span>
+                  <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700">PYQ {subject.pyqCount}</span>
                 </span>
               </summary>
               <div className="space-y-1 px-2 pb-2">
@@ -1386,9 +1463,10 @@ function ContentCoverageOverview({
                   <details key={chapter.id} className="rounded-lg border border-slate-100 bg-white" open={false}>
                     <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2">
                       <span className="text-xs font-bold text-slate-700">{chapter.name}</span>
-                      <span className="flex items-center gap-2 text-[10px] font-black">
+                       <span className="flex items-center gap-2 text-[10px] font-black">
                         <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">SM {chapter.studyMaterialCount}</span>
                         <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">DPP {chapter.dppCount}</span>
+                        <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">PYQ {chapter.pyqCount}</span>
                       </span>
                     </summary>
                     <div className="space-y-1 px-2 pb-2">
@@ -1404,9 +1482,10 @@ function ContentCoverageOverview({
                             )}
                           >
                             <span className="truncate font-semibold">{topic.name}</span>
-                            <span className="ml-3 flex items-center gap-1.5 font-black">
+                             <span className="ml-3 flex items-center gap-1.5 font-black">
                               <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700">SM {topic.studyMaterialCount}</span>
                               <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">DPP {topic.dppCount}</span>
+                              <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-violet-700">PYQ {topic.pyqCount}</span>
                             </span>
                           </div>
                         );
@@ -2076,6 +2155,10 @@ function TopicBrowseView({
                         <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
                           <ClipboardList className="h-3 w-3" />
                           {coverage.dppCount} DPP
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                          <FileQuestion className="h-3 w-3" />
+                          {coverage.pyqCount} PYQ
                         </span>
                       </div>
                       <div className="mt-3">
@@ -2835,18 +2918,6 @@ const AI_CONTENT_TYPES = [
     saveAs: "notes",
   },
   {
-    id: "practice_questions",
-    label: "Practice Questions",
-    desc: "MCQs, short answers & numericals with detailed solutions",
-    icon: FlaskConical,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    accent: "#059669",
-    badge: null,
-    saveAs: "notes",
-  },
-  {
     id: "checklist",
     label: "Revision Checklist",
     desc: "Topic checklist with subtopics students can tick off as they study",
@@ -2880,22 +2951,33 @@ const LENGTH_OPTIONS = [
   { id: "detailed", label: "Detailed", desc: "~1500 words" },
 ];
 
-function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
+function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarget: batchExamTarget, courseName }: {
   topicId: string;
   topicName: string;
   subjectName: string;
   chapterName: string;
+  examTarget?: string;
+  courseName?: string;
 }) {
   const [selectedType, setSelectedType] = useState("dpp");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [length, setLength] = useState("standard");
-  const [examTarget, setExamTarget] = useState("JEE");
+  const examTarget = (() => {
+    const t = (batchExamTarget || "").toUpperCase();
+    if (t.includes("NEET")) return "NEET";
+    if (t.includes("JEE")) return "JEE";
+    if (t.includes("12")) return "Class 12";
+    if (t.includes("11")) return "Class 11";
+    if (t.includes("10")) return "Class 10";
+    return "JEE";
+  })();
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [savedOk, setSavedOk] = useState(false);
+  const saveAiRes = useSaveAiGeneratedResource(topicId);
 
   const isDppOrPyq = selectedType === "dpp" || selectedType === "pyq";
 
@@ -2913,7 +2995,6 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
     setSavedOk(false);
     try {
       const extraCtx = [
-        isDppOrPyq ? `Exam target: ${examTarget}` : "",
         isDppOrPyq ? `Generate exactly ${questionCount} questions` : "",
         extraContext.trim(),
       ].filter(Boolean).join(". ") || undefined;
@@ -2923,6 +3004,8 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
           contentType: selectedType as any,
           difficulty: isDppOrPyq ? "intermediate" : difficulty as any,
           length: isDppOrPyq ? "detailed" : length as any,
+          examTarget: examTarget,
+          courseName: courseName,
           extraContext: extraCtx,
         })
       );
@@ -2937,21 +3020,16 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
 
   const handleSave = async () => {
     if (!generatedContent) return;
-    setSaving(true);
     try {
-      await import("@/lib/api/admin").then(m =>
-        m.saveAiGeneratedResource(topicId, {
-          title: `${selectedTypeCfg.label} — ${topicName}`,
-          content: generatedContent,
-          resourceType: selectedTypeCfg.saveAs,
-        })
-      );
+      await saveAiRes.mutateAsync({
+        title: `${selectedTypeCfg.label} — ${topicName}`,
+        content: generatedContent,
+        resourceType: selectedTypeCfg.saveAs,
+      });
       setSavedOk(true);
       toast.success(`Saved as ${selectedTypeCfg.label} — students can now access it!`);
     } catch {
       toast.error("Save failed — please try again");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -3039,27 +3117,15 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
 
           {isDppOrPyq ? (
             <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              {/* Exam Target */}
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Exam Target</p>
-                <div className="flex gap-2">
-                  {["JEE", "NEET", "Both"].map(t => (
-                    <button
-                      key={t}
-                      onClick={() => setExamTarget(t)}
-                      className={cn(
-                        "flex-1 py-2.5 px-3 rounded-xl text-center text-[12px] font-black border-2 transition-all",
-                        examTarget === t
-                          ? selectedType === "dpp"
-                            ? "bg-orange-600 border-orange-600 text-white shadow-sm"
-                            : "bg-violet-600 border-violet-600 text-white shadow-sm"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+              {/* Exam Target — auto-set from course, read-only */}
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Exam Target</p>
+                <span className="text-[11px] font-black uppercase tracking-wide bg-violet-100 text-violet-700 px-2.5 py-1 rounded-xl border border-violet-200">
+                  {examTarget}
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-wide bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                  From course
+                </span>
               </div>
 
               {/* Question Count */}
@@ -3245,7 +3311,7 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleSave}
-            disabled={saving || savedOk}
+            disabled={saveAiRes.isPending || savedOk}
             className={cn(
               "w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 border-2 transition-all",
               savedOk
@@ -3253,7 +3319,7 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
                 : "bg-white border-violet-300 text-violet-700 hover:bg-violet-50 hover:border-violet-400"
             )}
           >
-            {saving ? (
+            {saveAiRes.isPending ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
             ) : savedOk ? (
               <><CheckCircle2 className="w-4 h-4" /> Saved — Students Can Now Access This!</>
@@ -4078,6 +4144,8 @@ function ContentTopicWorkspaceRoute() {
                   topicName={topic.name}
                   subjectName={subject.name}
                   chapterName={chapter.name}
+                  examTarget={batch.examTarget}
+                  courseName={batch.name}
                 />
               </div>
             </motion.div>

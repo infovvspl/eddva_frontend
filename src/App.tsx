@@ -161,7 +161,7 @@ const TeacherRoutes = () => (
     </Route>
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
-      <Route path="/teacher/content" element={<TeacherContentPage />} />
+      <Route path="/teacher/content/*" element={<TeacherContentPage />} />
       <Route path="/teacher/lectures" element={<TeacherLecturesPage />} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />

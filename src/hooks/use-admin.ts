@@ -316,7 +316,10 @@ export function useUploadTopicResource(topicId: string, courseId: string) {
       description?: string;
       sortOrder?: number;
     }) => adminApi.uploadTopicResource({ topicId, courseId, ...payload }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
   });
 }
 
@@ -325,7 +328,10 @@ export function useDeleteTopicResource(topicId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (resourceId: string) => adminApi.deleteTopicResource(resourceId, topicId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
   });
 }
 
@@ -334,7 +340,22 @@ export function useAddTopicResourceLink(topicId: string) {
   return useMutation({
     mutationFn: (payload: { title: string; type: adminApi.TopicResourceType; externalUrl: string; description?: string }) =>
       adminApi.addTopicResourceLink({ topicId, ...payload }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
+  });
+}
+
+export function useSaveAiGeneratedResource(topicId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { title: string; content: string; resourceType: string }) =>
+      adminApi.saveAiGeneratedResource(topicId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
   });
 }
 
@@ -509,6 +530,78 @@ export function useRemoveQuestionFromMockTest(mockTestId: string) {
   return useMutation({
     mutationFn: (questionId: string) => adminApi.removeQuestionFromMockTest(mockTestId, questionId),
     onSuccess: () => qc.invalidateQueries({ queryKey: mockTestKeys.detail(mockTestId) }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Content Coverage Summary
+// ---------------------------------------------------------------------------
+
+type TopicCoverage = { id: string; name: string; studyMaterialCount: number; dppCount: number; pyqCount: number; totalCount: number };
+type ChapterCoverage = { id: string; name: string; studyMaterialCount: number; dppCount: number; pyqCount: number; totalCount: number; topics: TopicCoverage[] };
+type SubjectCoverage = { id: string; name: string; studyMaterialCount: number; dppCount: number; pyqCount: number; totalCount: number; chapters: ChapterCoverage[] };
+export type CoverageSummary = { subjectCount: number; chapterCount: number; topicCount: number; studyMaterialCount: number; dppCount: number; pyqCount: number; totalContentCount: number; subjects: SubjectCoverage[] };
+
+function _isStudyMaterial(type?: string | null) {
+  const t = String(type ?? "").toLowerCase();
+  return t === "pdf" || t === "notes" || t === "video" || t === "link" || t === "quiz";
+}
+
+async function fetchContentCoverageSummary(batchId: string): Promise<CoverageSummary> {
+  const subjects = (await adminApi.listSubjects(batchId)) ?? [];
+  const subjectRows = await Promise.all(
+    subjects.map(async (subject) => {
+      const chapters = (await adminApi.listChapters(subject.id)) ?? [];
+      const chapterRows = await Promise.all(
+        chapters.map(async (chapter) => {
+          const topics = (await adminApi.listTopics(chapter.id)) ?? [];
+          const topicRows = await Promise.all(
+            topics.map(async (topic) => {
+              const resources = (await adminApi.listTopicResources(topic.id)) ?? [];
+              const dppCount = resources.filter((r) => String(r.type ?? "").toLowerCase() === "dpp").length;
+              const pyqCount = resources.filter((r) => String(r.type ?? "").toLowerCase() === "pyq").length;
+              const studyMaterialCount = resources.filter((r) => _isStudyMaterial(r.type)).length;
+              return { id: topic.id, name: topic.name, dppCount, pyqCount, studyMaterialCount, totalCount: resources.length } as TopicCoverage;
+            }),
+          );
+          return {
+            id: chapter.id, name: chapter.name,
+            dppCount: topicRows.reduce((s, t) => s + t.dppCount, 0),
+            pyqCount: topicRows.reduce((s, t) => s + t.pyqCount, 0),
+            studyMaterialCount: topicRows.reduce((s, t) => s + t.studyMaterialCount, 0),
+            totalCount: topicRows.reduce((s, t) => s + t.totalCount, 0),
+            topics: topicRows,
+          } as ChapterCoverage;
+        }),
+      );
+      return {
+        id: subject.id, name: subject.name,
+        dppCount: chapterRows.reduce((s, c) => s + c.dppCount, 0),
+        pyqCount: chapterRows.reduce((s, c) => s + c.pyqCount, 0),
+        studyMaterialCount: chapterRows.reduce((s, c) => s + c.studyMaterialCount, 0),
+        totalCount: chapterRows.reduce((s, c) => s + c.totalCount, 0),
+        chapters: chapterRows,
+      } as SubjectCoverage;
+    }),
+  );
+  const chapterCount = subjectRows.reduce((s, sub) => s + sub.chapters.length, 0);
+  const topicCount = subjectRows.reduce((s, sub) => s + sub.chapters.reduce((inner, ch) => inner + ch.topics.length, 0), 0);
+  return {
+    subjectCount: subjectRows.length, chapterCount, topicCount,
+    studyMaterialCount: subjectRows.reduce((s, sub) => s + sub.studyMaterialCount, 0),
+    dppCount: subjectRows.reduce((s, sub) => s + sub.dppCount, 0),
+    pyqCount: subjectRows.reduce((s, sub) => s + sub.pyqCount, 0),
+    totalContentCount: subjectRows.reduce((s, sub) => s + sub.totalCount, 0),
+    subjects: subjectRows,
+  };
+}
+
+export function useContentCoverageSummary(batchId: string | null) {
+  return useQuery({
+    queryKey: ["admin", "content-coverage", batchId],
+    enabled: !!batchId,
+    queryFn: () => fetchContentCoverageSummary(batchId!),
+    staleTime: 20_000,
   });
 }
 
