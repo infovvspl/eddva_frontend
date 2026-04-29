@@ -1034,6 +1034,7 @@ export async function createBattle(
   topicId?: string,
   topicName?: string,
   difficulty?: "easy" | "medium" | "hard",
+  batchId?: string,
 ): Promise<BattleRoom> {
   const payload: Record<string, string> = {
     mode,
@@ -1041,6 +1042,7 @@ export async function createBattle(
   };
   if (topicId) payload.topicId = topicId;
   if (topicName) payload.topicName = topicName;
+  if (batchId) payload.batchId = batchId;
   const res = await apiClient.post("/battles/create", payload);
   return extractData<BattleRoom>(res);
 }
