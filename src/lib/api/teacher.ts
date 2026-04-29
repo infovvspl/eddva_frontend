@@ -1346,3 +1346,13 @@ function bridgeStudyPlan(d: StudentDeepDive): AdvancedStudyPlan {
     adherence: { completed: d.performance.lecturesWatched, skipped: 0, pending: 0 },
   };
 }
+
+export async function interveneStudent(payload: {
+  studentId: string;
+  batchId: string;
+  type: 'assign_practice' | 'send_reminder' | 'schedule_doubt' | 'regenerate_plan';
+  message?: string;
+}): Promise<{ success: boolean; message: string }> {
+  const res = await apiClient.post('/analytics/teacher/student/intervene', payload);
+  return extractData<{ success: boolean; message: string }>(res);
+}
