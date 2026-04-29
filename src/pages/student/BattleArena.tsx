@@ -232,11 +232,14 @@ function MathText({ text }: { text: string }) {
     .replace(/\x07/g, "\\a")
     .replace(/\x08/g, "\\b")
     .replace(/(^|[^A-Za-z\\])(rac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\{/g, "$1\\$2{")
-    .replace(/(^|[^A-Za-z\\])(int_|sum_|lim_)/g, "$1\\$2");
+    .replace(/(^|[^A-Za-z\\])(int_|sum_|lim_)/g, "$1\\$2")
+    .replace(/x\s*o\s*(\d+|[a-z])/gi, "x \\to $1")
+    .replace(/x\s*->\s*(\d+|[a-z])/gi, "x \\to $1");
 
   // Heuristic: if it looks like it has LaTeX commands but no $ delimiters, wrap it
+  // We use \text{ } to preserve spaces in KaTeX math mode
   if (!normalized.includes("$") && /[\\^_]/.test(normalized)) {
-    normalized = `$$${normalized}$$`;
+    normalized = `$$${normalized.replace(/ /g, "\\text{ ")}$$`;
   }
 
   const displayRe = /\$\$([\s\S]+?)\$\$/g;

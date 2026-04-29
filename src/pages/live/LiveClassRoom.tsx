@@ -24,6 +24,7 @@ import {
   attachRecording,
   type LiveSessionInfo, type LiveChatMessage, type LivePoll,
 } from "@/lib/api/live-class";
+import Hls from "hls.js";
 import { uploadLiveRecordingToBackend } from "@/lib/api/upload";
 import { cn } from "@/lib/utils";
 import { getApiOrigin } from "@/lib/api-config";
@@ -826,6 +827,18 @@ export default function LiveClassRoom() {
   const recordingChunksRef = useRef<Blob[]>([]);
   const localAudioTrackRef = useRef<ILocalAudioTrack | null>(null);
 
+  // ── Bunny broadcast mode (in-app one-way streaming) ───────────────────────
+  const streamMode = "bunny" as const;
+  const [isBunnyBroadcasting, setIsBunnyBroadcasting] = useState(false);
+  const [isBunnyJoined, setIsBunnyJoined] = useState(false); // student watching HLS
+  const [bunnyHlsUrl, setBunnyHlsUrl] = useState<string | null>(null);
+  const bunnyPreviewVideoRef = useRef<HTMLVideoElement>(null);
+  const bunnyBroadcastStreamRef = useRef<MediaStream | null>(null);
+  const bunnyBroadcastRecorderRef = useRef<MediaRecorder | null>(null);
+  const broadcastSocketRef = useRef<ReturnType<typeof io> | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const hlsVideoRef = useRef<HTMLVideoElement>(null);
+
   const myId = user?.id ?? "";
 
   // ── Tick duration every second while live
@@ -987,6 +1000,125 @@ export default function LiveClassRoom() {
     setRemoteUsers([]);
     setIsScreenSharing(false);
   }, [screenTrack, localVideoTrack, localAudioTrack]);
+
+  // ── Bunny: teacher broadcast from browser camera via WebSocket → ffmpeg relay ──
+  const startBunnyBroadcast = useCallback(async (opts: {
+    rtmpUrl: string; streamKey: string; sessionId: string;
+  }) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+      });
+      bunnyBroadcastStreamRef.current = stream;
+
+      // Show local preview
+      if (bunnyPreviewVideoRef.current) {
+        bunnyPreviewVideoRef.current.srcObject = stream;
+        bunnyPreviewVideoRef.current.muted = true;
+        bunnyPreviewVideoRef.current.play().catch(() => {});
+      }
+
+      // Connect to the broadcast relay gateway
+      const broadcastSock = io(`${SOCKET_URL}/broadcast`, {
+        path: "/socket.io",
+        transports: ["websocket", "polling"],
+        auth: { token: localStorage.getItem("eddva_access_token") },
+      });
+      broadcastSocketRef.current = broadcastSock;
+
+      broadcastSock.on("connect", () => {
+        broadcastSock.emit("broadcast:start", {
+          sessionId: opts.sessionId,
+          rtmpUrl: opts.rtmpUrl,
+          streamKey: opts.streamKey,
+        });
+      });
+
+      broadcastSock.on("broadcast:started", () => {
+        const mimeType =
+          ["video/webm;codecs=vp8,opus", "video/webm;codecs=vp9,opus", "video/webm"].find(
+            (t) => MediaRecorder.isTypeSupported(t),
+          ) ?? "";
+
+        const recorder = new MediaRecorder(stream, {
+          mimeType: mimeType || undefined,
+          videoBitsPerSecond: 1_200_000,
+        });
+
+        recorder.ondataavailable = async (e) => {
+          if (e.data.size > 0 && broadcastSock.connected) {
+            const ab = await e.data.arrayBuffer();
+            broadcastSock.emit("broadcast:chunk", ab);
+          }
+        };
+
+        recorder.start(1000); // 1-second chunks
+        bunnyBroadcastRecorderRef.current = recorder;
+        setIsBunnyBroadcasting(true);
+        setIsMicOn(true);
+        setIsCamOn(true);
+        toast.success("You're live! Students can watch on Bunny CDN.");
+      });
+
+      broadcastSock.on("broadcast:relay-error", (d: { message: string }) => {
+        toast.error(`Broadcast relay error: ${d.message}`);
+        setIsBunnyBroadcasting(false);
+      });
+
+      broadcastSock.on("broadcast:relay-ended", () => {
+        setIsBunnyBroadcasting(false);
+      });
+
+      broadcastSock.on("disconnect", () => {
+        setIsBunnyBroadcasting(false);
+      });
+    } catch (err: any) {
+      toast.error("Camera/mic access failed: " + (err?.message ?? String(err)));
+    }
+  }, []);
+
+  const stopBunnyBroadcast = useCallback(() => {
+    try { bunnyBroadcastRecorderRef.current?.stop(); } catch {}
+    try { bunnyBroadcastStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
+    try {
+      broadcastSocketRef.current?.emit("broadcast:stop", {});
+      broadcastSocketRef.current?.disconnect();
+    } catch {}
+    if (bunnyPreviewVideoRef.current) bunnyPreviewVideoRef.current.srcObject = null;
+    bunnyBroadcastRecorderRef.current = null;
+    bunnyBroadcastStreamRef.current = null;
+    broadcastSocketRef.current = null;
+    setIsBunnyBroadcasting(false);
+  }, []);
+
+  // ── Bunny: student HLS player setup ───────────────────────────────────────
+  const initHlsPlayer = useCallback((hlsUrl: string) => {
+    const video = hlsVideoRef.current;
+    if (!video || !hlsUrl) return;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ liveSyncDurationCount: 3, enableWorker: true });
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.ERROR, (_e, data) => {
+        if (data.fatal) {
+          toast.error("Stream playback error — retrying…");
+          hls.startLoad();
+        }
+      });
+      hlsRef.current = hls;
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS (Safari / iOS)
+      video.src = hlsUrl;
+      video.play().catch(() => {});
+    } else {
+      toast.error("Your browser does not support HLS playback.");
+    }
+  }, []);
 
   // ── Agora join
   const joinAgora = useCallback(async (
@@ -1181,40 +1313,68 @@ export default function LiveClassRoom() {
 
   // ── Student auto-connect when session goes live
   useEffect(() => {
-    if (!session || isTeacher || isJoined || ended) return;
+    if (!session || isTeacher || isJoined || isBunnyJoined || ended) return;
     if (session.status !== "live") return;
     (async () => {
       setIsJoining(true);
       try {
         const r = await getLiveClassToken(lectureId!, "audience");
-        await joinAgora(r.token, r.channelName, r.uid, "audience");
-        connectSocket(r.sessionId, r.uid);
+        if (r.streamType === "bunny") {
+          // ── Bunny: watch HLS, no Agora needed
+          const hlsUrl = (r as any).hlsUrl ?? session.hlsUrl ?? null;
+          setBunnyHlsUrl(hlsUrl);
+          setIsBunnyJoined(true);
+          connectSocket(r.sessionId, 0);
+        } else {
+          // ── Agora interactive (existing path — unchanged)
+          await joinAgora((r as any).token, (r as any).channelName, (r as any).uid, "audience");
+          connectSocket(r.sessionId, (r as any).uid);
+        }
       } catch {
         toast.error("Could not join class");
       } finally {
         setIsJoining(false);
       }
     })();
-  }, [session, isTeacher, isJoined, ended, lectureId, joinAgora, connectSocket]);
+  }, [session, isTeacher, isJoined, isBunnyJoined, ended, lectureId, joinAgora, connectSocket]);
+
+  // ── HLS init when student joins Bunny session
+  useEffect(() => {
+    if (!isBunnyJoined || !bunnyHlsUrl) return;
+    // Give the video element time to mount
+    const timer = setTimeout(() => initHlsPlayer(bunnyHlsUrl), 300);
+    return () => clearTimeout(timer);
+  }, [isBunnyJoined, bunnyHlsUrl, initHlsPlayer]);
 
   // ── Cleanup
   useEffect(() => {
     return () => {
       leaveAgora();
+      stopBunnyBroadcast();
+      try { hlsRef.current?.destroy(); } catch {}
       socketRef.current?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Teacher: start class (session is waiting → creates Agora channel)
+  // ── Teacher: start class
   const handleStart = async () => {
     setIsStarting(true);
     try {
-      const r = await startLiveClass(lectureId!);
-      setSession((prev) => (prev ? { ...prev, status: "live", startedAt: new Date().toISOString() } : prev));
-      await joinAgora(r.token, r.channelName, r.uid, "host");
-      connectSocket(r.sessionId, r.uid);
-      await startBrowserRecording();
+      const r = await startLiveClass(lectureId!, streamMode);
+      setSession((prev) => (prev ? { ...prev, status: "live", startedAt: new Date().toISOString(), streamType: r.streamType } : prev));
+
+      if (r.streamType === "bunny") {
+        // ── Bunny broadcast: camera → WebSocket relay → ffmpeg → Bunny RTMP
+        setBunnyHlsUrl(r.hlsUrl);
+        connectSocket(r.sessionId, 0);
+        await startBunnyBroadcast({ rtmpUrl: r.rtmpUrl, streamKey: r.streamKey, sessionId: r.sessionId });
+      } else {
+        // ── Agora interactive (existing path — unchanged)
+        await joinAgora(r.token, r.channelName, r.uid, "host");
+        connectSocket(r.sessionId, r.uid);
+        await startBrowserRecording();
+      }
     } catch (err: any) {
       const msg = err?.message ?? String(err);
       toast.error(msg.startsWith("Failed to connect") ? msg : "Failed to start class — check console");
@@ -1248,26 +1408,29 @@ export default function LiveClassRoom() {
     try {
       const r = await endLiveClass(lectureId!);
 
-      let finalRecordingUrl = r.recordingUrl;
-
-      if (!finalRecordingUrl) {
-        // Agora cloud recording didn't produce a URL — use browser recording fallback.
-        // Must run BEFORE leaveAgora so Agora tracks are still alive.
-        finalRecordingUrl = await stopBrowserRecordingAndUpload(lectureId!);
+      if (isBunnyBroadcasting) {
+        // ── Bunny mode: stop broadcast, Bunny auto-saves recording
+        stopBunnyBroadcast();
+        setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount, recordingUrl: r.recordingUrl });
       } else {
-        // Cloud recording succeeded — discard browser recording chunks
-        const rec = mediaRecorderRef.current;
-        if (rec && rec.state !== "inactive") {
-          rec.ondataavailable = null;
-          rec.stop();
+        // ── Agora mode: existing recording logic unchanged
+        let finalRecordingUrl = r.recordingUrl;
+        if (!finalRecordingUrl) {
+          finalRecordingUrl = await stopBrowserRecordingAndUpload(lectureId!);
+        } else {
+          const rec = mediaRecorderRef.current;
+          if (rec && rec.state !== "inactive") {
+            rec.ondataavailable = null;
+            rec.stop();
+          }
+          recordingChunksRef.current = [];
+          mediaRecorderRef.current = null;
         }
-        recordingChunksRef.current = [];
-        mediaRecorderRef.current = null;
+        setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount, recordingUrl: finalRecordingUrl });
+        leaveAgora();
       }
 
-      setEndStats({ duration: r.duration, attendanceCount: r.attendanceCount, recordingUrl: finalRecordingUrl });
       setEnded(true);
-      leaveAgora();
       socketRef.current?.disconnect();
     } catch {
       toast.error("Failed to end class");
@@ -1278,6 +1441,11 @@ export default function LiveClassRoom() {
 
   // ── Toggle mic
   const toggleMic = async () => {
+    if (isBunnyBroadcasting && bunnyBroadcastStreamRef.current) {
+      bunnyBroadcastStreamRef.current.getAudioTracks().forEach((t) => { t.enabled = !isMicOn; });
+      setIsMicOn(!isMicOn);
+      return;
+    }
     if (!localAudioTrack) return;
     await localAudioTrack.setEnabled(!isMicOn);
     setIsMicOn(!isMicOn);
@@ -1285,6 +1453,11 @@ export default function LiveClassRoom() {
 
   // ── Toggle camera
   const toggleCam = async () => {
+    if (isBunnyBroadcasting && bunnyBroadcastStreamRef.current) {
+      bunnyBroadcastStreamRef.current.getVideoTracks().forEach((t) => { t.enabled = !isCamOn; });
+      setIsCamOn(!isCamOn);
+      return;
+    }
     if (!localVideoTrack || isScreenSharing) return;
     await localVideoTrack.setEnabled(!isCamOn);
     setIsCamOn(!isCamOn);
@@ -1502,8 +1675,7 @@ export default function LiveClassRoom() {
   }
 
   // ─── Render: waiting (teacher hasn't started/joined, student is waiting) ─────
-  // Show pre-join screen whenever the user hasn't entered Agora yet
-  const isWaiting = !isJoined && !isJoining;
+  const isWaiting = !isJoined && !isBunnyBroadcasting && !isBunnyJoined && !isJoining;
 
   if (isWaiting) {
     return (
@@ -1565,7 +1737,7 @@ export default function LiveClassRoom() {
                 <button
                   onClick={handleStart}
                   disabled={isStarting}
-                  className="w-full h-12 rounded-2xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
+                  className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-black disabled:opacity-50 transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
                 >
                   {isStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Go Live</>}
                 </button>
@@ -1581,8 +1753,15 @@ export default function LiveClassRoom() {
                     setIsJoining(true);
                     try {
                       const r = await getLiveClassToken(lectureId!, "audience");
-                      await joinAgora(r.token, r.channelName, r.uid, "audience");
-                      connectSocket(r.sessionId, r.uid);
+                      if (r.streamType === "bunny") {
+                        const hlsUrl = (r as any).hlsUrl ?? session?.hlsUrl ?? null;
+                        setBunnyHlsUrl(hlsUrl);
+                        setIsBunnyJoined(true);
+                        connectSocket(r.sessionId, 0);
+                      } else {
+                        await joinAgora((r as any).token, (r as any).channelName, (r as any).uid, "audience");
+                        connectSocket(r.sessionId, (r as any).uid);
+                      }
                     } catch {
                       toast.error("Could not join — please try again");
                     } finally {
@@ -1687,7 +1866,65 @@ export default function LiveClassRoom() {
         {/* Stage */}
         <div className="flex-1 relative min-w-0 flex flex-col">
           <div className="flex-1 p-4 min-h-0 relative">
-            {isJoining && !isJoined ? (
+            {isBunnyBroadcasting ? (
+              /* ── Teacher Bunny broadcast: local camera preview ── */
+              <div className="w-full h-full relative rounded-2xl overflow-hidden bg-slate-900 border border-white/5">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                </div>
+                <video
+                  ref={bunnyPreviewVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute top-3 left-3">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600/90 backdrop-blur-md">
+                    <span className="relative flex w-2 h-2">
+                      <span className="absolute inline-flex w-full h-full rounded-full bg-white animate-ping opacity-75" />
+                      <span className="relative inline-flex w-2 h-2 rounded-full bg-white" />
+                    </span>
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Live on Bunny CDN</span>
+                  </div>
+                </div>
+                <div className="absolute bottom-3 left-3">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md">
+                    <Crown className="w-3 h-3 text-amber-400" />
+                    <span className="text-xs font-semibold text-white">{user?.name ?? "You"} (You)</span>
+                  </div>
+                </div>
+              </div>
+            ) : isBunnyJoined ? (
+              /* ── Student HLS viewer ── */
+              <div className="w-full h-full relative rounded-2xl overflow-hidden bg-slate-900 border border-white/5">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                  <p className="text-sm text-white/60 font-semibold">Connecting to stream...</p>
+                </div>
+                <video
+                  ref={hlsVideoRef}
+                  autoPlay
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-contain z-10"
+                />
+                <div className="absolute top-3 left-3 z-20">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/80 backdrop-blur-md">
+                    <span className="relative flex w-2 h-2">
+                      <span className="absolute inline-flex w-full h-full rounded-full bg-white animate-ping opacity-75" />
+                      <span className="relative inline-flex w-2 h-2 rounded-full bg-white" />
+                    </span>
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Live</span>
+                  </div>
+                </div>
+                <div className="absolute bottom-3 left-3 z-20">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md">
+                    <Crown className="w-3 h-3 text-amber-400" />
+                    <span className="text-xs font-semibold text-white">{session?.teacherName ?? "Host"}</span>
+                  </div>
+                </div>
+              </div>
+            ) : isJoining && !isJoined ? (
               <div className="w-full h-full rounded-2xl bg-slate-900 border border-white/5 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                 <p className="text-sm text-white/60 font-semibold">Joining class...</p>
@@ -1797,7 +2034,7 @@ export default function LiveClassRoom() {
                 onClick={toggleMic}
                 active={isMicOn}
                 danger={!isMicOn}
-                disabled={!isJoined || !localAudioTrack}
+                disabled={!isJoined && !isBunnyBroadcasting}
               />
               {isTeacher && (
                 <CtrlBtn
@@ -1806,10 +2043,10 @@ export default function LiveClassRoom() {
                   onClick={toggleCam}
                   active={isCamOn}
                   danger={!isCamOn}
-                  disabled={!isJoined || !localVideoTrack || isScreenSharing}
+                  disabled={(!isJoined && !isBunnyBroadcasting) || (!isBunnyBroadcasting && isScreenSharing)}
                 />
               )}
-              {isTeacher && (
+              {isTeacher && !isBunnyBroadcasting && (
                 <CtrlBtn
                   icon={isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <MonitorUp className="w-5 h-5" />}
                   label={isScreenSharing ? "Stop Share" : "Share"}
@@ -1824,7 +2061,7 @@ export default function LiveClassRoom() {
                   label={handRaised ? "Lower" : "Raise"}
                   onClick={toggleHand}
                   active={handRaised}
-                  disabled={!isJoined}
+                  disabled={!isJoined && !isBunnyJoined}
                 />
               )}
               <div className="relative">
@@ -1833,7 +2070,7 @@ export default function LiveClassRoom() {
                   label="React"
                   onClick={() => setShowReactionPicker((s) => !s)}
                   active={showReactionPicker}
-                  disabled={!isJoined}
+                  disabled={!isJoined && !isBunnyJoined && !isBunnyBroadcasting}
                 />
                 <AnimatePresence>
                   {showReactionPicker && (
@@ -1888,7 +2125,13 @@ export default function LiveClassRoom() {
                 />
               )}
               <div className="w-px h-8 bg-white/10" />
-              {isTeacher && isBrowserRecording && (
+              {isTeacher && isBunnyBroadcasting && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/20">
+                  <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                  <span className="text-[10px] font-bold text-violet-300 uppercase tracking-wider">LIVE</span>
+                </div>
+              )}
+              {isTeacher && !isBunnyBroadcasting && isBrowserRecording && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/20">
                   <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
                   <span className="text-[10px] font-bold text-red-300 uppercase tracking-wider">REC</span>
@@ -1907,7 +2150,12 @@ export default function LiveClassRoom() {
                   icon={<PhoneOff className="w-5 h-5" />}
                   label="Leave"
                   onClick={() => {
-                    leaveAgora();
+                    if (isBunnyJoined) {
+                      try { hlsRef.current?.destroy(); } catch {}
+                      setIsBunnyJoined(false);
+                    } else {
+                      leaveAgora();
+                    }
                     socketRef.current?.disconnect();
                     navigate(-1);
                   }}

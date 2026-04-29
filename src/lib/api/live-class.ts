@@ -3,7 +3,9 @@ import type { ApiResponse } from "./client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface LiveTokenResponse {
+/** Agora token response (interactive mode) */
+export interface AgoraTokenResponse {
+  streamType: "agora";
   token: string | null;
   channelName: string;
   uid: number;
@@ -12,10 +14,58 @@ export interface LiveTokenResponse {
   status: "waiting" | "live" | "ended";
 }
 
+/** Bunny token response — audience (HLS viewer) */
+export interface BunnyAudienceTokenResponse {
+  streamType: "bunny";
+  hlsUrl: string;
+  sessionId: string;
+  status: "waiting" | "live" | "ended";
+}
+
+/** Bunny token response — host (OBS / in-app broadcast) */
+export interface BunnyHostTokenResponse {
+  streamType: "bunny";
+  rtmpUrl: string;
+  streamKey: string;
+  sessionId: string;
+  status: "waiting" | "live" | "ended";
+}
+
+export type LiveTokenResponse = AgoraTokenResponse | BunnyAudienceTokenResponse | BunnyHostTokenResponse;
+
+/** startClass response — Agora */
+export interface AgoraStartResponse {
+  streamType: "agora";
+  token: string | null;
+  channelName: string;
+  uid: number;
+  appId: string;
+  sessionId: string;
+  status: "live";
+  startedAt: string;
+  teacherName: string | null;
+}
+
+/** startClass response — Bunny broadcast */
+export interface BunnyStartResponse {
+  streamType: "bunny";
+  rtmpUrl: string;
+  streamKey: string;
+  hlsUrl: string;
+  sessionId: string;
+  status: "live";
+  startedAt: string;
+  teacherName: string | null;
+}
+
+export type StartClassResponse = AgoraStartResponse | BunnyStartResponse;
+
 export interface LiveSessionInfo {
   id: string;
   lectureId: string;
+  streamType: "agora" | "bunny";
   agoraChannelName: string;
+  hlsUrl: string | null;
   status: "waiting" | "live" | "ended";
   startedAt: string | null;
   endedAt: string | null;
@@ -74,12 +124,21 @@ export const getLiveClassToken = async (
 };
 
 export const startLiveClass = async (
-  lectureId: string
-): Promise<LiveTokenResponse> => {
-  const { data } = await apiClient.post<ApiResponse<LiveTokenResponse>>(
-    `/live-class/${lectureId}/start`
+  lectureId: string,
+  streamType: "agora" | "bunny" = "agora"
+): Promise<StartClassResponse> => {
+  const { data } = await apiClient.post<ApiResponse<StartClassResponse>>(
+    `/live-class/${lectureId}/start`,
+    { streamType }
   );
   return extractData({ data });
+};
+
+export const getStreamStatus = async (
+  lectureId: string
+): Promise<{ isLive: boolean; hlsUrl: string | null; viewerCount: number }> => {
+  const { data } = await apiClient.get(`/live-class/${lectureId}/stream-status`);
+  return extractData({ data }) as { isLive: boolean; hlsUrl: string | null; viewerCount: number };
 };
 
 export const endLiveClass = async (
