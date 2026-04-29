@@ -39,8 +39,8 @@ const TABS = [
 // ─── AI answer parser ─────────────────────────────────────────────────────────
 
 interface AiAnswerStructured {
-  brief?: { answer?: string };
-  detailed?: { solution?: string; final_answer?: string; verification?: string; key_concept?: string };
+  brief?: { answer?: string; question_nature?: string };
+  detailed?: { solution?: string; final_answer?: string; verification?: string; key_concept?: string; explanation?: string };
   subject?: string;
   type?: string;
 }
@@ -83,9 +83,10 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
   return null;
 }
 
-const formatMarkdown = (text?: string) => {
+const formatMarkdown = (text?: string | string[] | any) => {
   if (!text) return "";
-  return text
+  const str = Array.isArray(text) ? text.join("\n\n") : String(text);
+  return str
     .replace(/\\n/g, "\n")
     .replace(/\r?\n/g, "\n\n")
     .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
@@ -233,33 +234,73 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                   {/* Answer body */}
                   <div className="px-4 pb-4">
                     {parsedAi ? (
-                      viewMode === "brief" ? (
-                        <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
-                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                            {formatMarkdown(parsedAi.brief?.answer || parsedAi.detailed?.final_answer || parsedAi.detailed?.solution || doubt.aiExplanation)}
-                          </ReactMarkdown>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
-                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {formatMarkdown(parsedAi.detailed?.solution || parsedAi.detailed?.explanation || parsedAi.brief?.answer || doubt.aiExplanation)}
-                            </ReactMarkdown>
+                      (() => {
+                        const isNumerical = parsedAi.brief?.question_nature === "numerical" ||
+                          parsedAi.type === "numerical" || parsedAi.type === "derivation";
+
+                        if (viewMode === "brief") {
+                          return (
+                            <div>
+                              {isNumerical && (
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 uppercase tracking-wide">⚡ Quick Steps</span>
+                                </div>
+                              )}
+                              <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
+                                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                  {formatMarkdown(
+                                    (parsedAi.brief?.answer && !parsedAi.brief.answer.toLowerCase().includes("see full solution"))
+                                      ? parsedAi.brief.answer
+                                      : (parsedAi.detailed?.final_answer || parsedAi.detailed?.solution || doubt.aiExplanation)
+                                  )}
+                                </ReactMarkdown>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Detailed mode
+                        return (
+                          <div className="space-y-3">
+                            {/* Main solution */}
+                            <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
+                              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                {formatMarkdown(parsedAi.detailed?.solution || parsedAi.detailed?.explanation || parsedAi.brief?.answer || doubt.aiExplanation)}
+                              </ReactMarkdown>
+                            </div>
+
+                            {/* Final Answer box — prominent for numericals */}
+                            {isNumerical && parsedAi.detailed?.final_answer && (
+                              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">✅ Final Answer</p>
+                                <p className="text-sm font-bold text-green-800">{parsedAi.detailed.final_answer}</p>
+                              </div>
+                            )}
+
+                            {/* Verification */}
+                            {parsedAi.detailed?.verification && (
+                              <div className="p-3 bg-blue-100/60 rounded-lg border border-blue-200/50">
+                                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1">
+                                  {isNumerical ? "✓ Verification" : "⚠️ Common Misconceptions"}
+                                </p>
+                                <div className="text-xs text-blue-800 leading-relaxed prose prose-xs prose-blue max-w-none">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {formatMarkdown(parsedAi.detailed.verification)}
+                                  </ReactMarkdown>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Key Concept */}
+                            {parsedAi.detailed?.key_concept && (
+                              <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
+                                <p className="text-xs text-indigo-800 leading-relaxed">{parsedAi.detailed.key_concept}</p>
+                              </div>
+                            )}
                           </div>
-                          {parsedAi.detailed?.verification && (
-                            <div className="p-3 bg-blue-100/60 rounded-lg border border-blue-200/50">
-                              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1">✓ Verification</p>
-                              <p className="text-xs text-blue-800 leading-relaxed">{parsedAi.detailed.verification}</p>
-                            </div>
-                          )}
-                          {parsedAi.detailed?.key_concept && (
-                            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-                              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
-                              <p className="text-xs text-indigo-800 leading-relaxed">{parsedAi.detailed.key_concept}</p>
-                            </div>
-                          )}
-                        </div>
-                      )
+                        );
+                      })()
                     ) : (
                       // Fallback for plain-text responses
                       <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
@@ -645,6 +686,11 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
                 📖 Detailed
               </button>
             </div>
+            <p className="text-[10px] text-slate-400 leading-relaxed">
+              {explanationMode === "short"
+                ? "Numerical: step-by-step with final answer · Theory: short direct answer"
+                : "Numerical: full solution with verification · Theory: complete explanation with examples"}
+            </p>
           </div>
 
           {/* Info */}

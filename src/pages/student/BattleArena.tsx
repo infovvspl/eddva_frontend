@@ -40,6 +40,8 @@ import { tokenStorage } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import {
   ResponsiveContainer,
   BarChart,
@@ -215,7 +217,57 @@ interface BattleResult {
   newElo: number;
 }
 
-// ─── In-Battle Quiz UI ────────────────────────────────────────────────────────
+// ─── Math / KaTeX renderer ───────────────────────────────────────────────────
+// Renders inline $...$ and display $$...$$ LaTeX in question text.
+function MathText({ text }: { text: string }) {
+  const parts: React.ReactNode[] = [];
+  
+  // Normalize mangled LaTeX from AI
+  let normalized = String(text || "")
+    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
+    .replace(/\\\\/g, "\\")
+    .replace(/\x0C/g, "\\f")
+    .replace(/\x0B/g, "\\v")
+    .replace(/\x07/g, "\\a")
+    .replace(/\x08/g, "\\b")
+    .replace(/(^|[^A-Za-z\\])(rac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\{/g, "$1\\$2{")
+    .replace(/(^|[^A-Za-z\\])(int_|sum_|lim_)/g, "$1\\$2");
+
+  // Heuristic: if it looks like it has LaTeX commands but no $ delimiters, wrap it
+  if (!normalized.includes("$") && /[\\^_]/.test(normalized)) {
+    normalized = `$$${normalized}$$`;
+  }
+
+  const displayRe = /\$\$([\s\S]+?)\$\$/g;
+  const inlineRe  = /\$([^$\n]+?)\$/g;
+
+  let remaining = normalized;
+  let key = 0;
+
+  remaining = remaining.replace(displayRe, (_, expr) => `%%DISPLAY:${expr}%%`);
+  remaining = remaining.replace(inlineRe, (_, expr) => `%%INLINE:${expr}%%`);
+
+  const tokens = remaining.split(/(%%(?:DISPLAY|INLINE):[\s\S]+?%%)/g);
+  for (const token of tokens) {
+    const dm = token.match(/^%%DISPLAY:([\s\S]+)%%$/);
+    const im = token.match(/^%%INLINE:([\s\S]+)%%$/);
+    if (dm) {
+      try {
+        const html = katex.renderToString(dm[1], { displayMode: true, throwOnError: false });
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: html }} />);
+      } catch { parts.push(<span key={key++}>{dm[1]}</span>); }
+    } else if (im) {
+      try {
+        const html = katex.renderToString(im[1], { displayMode: false, throwOnError: false });
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: html }} />);
+      } catch { parts.push(<span key={key++}>{im[1]}</span>); }
+    } else if (token) {
+      parts.push(<span key={key++}>{token}</span>);
+    }
+  }
+  return <>{parts}</>;
+}
 
 interface QuizQuestion {
   id: string;
@@ -805,7 +857,7 @@ function BattleInProgress({
             <CardGlass className="p-12 border-white/80 text-center bg-white/40">
                <div className="max-w-3xl mx-auto">
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-800 leading-tight tracking-tight">
-                    {currentQuestion.text}
+                    <MathText text={currentQuestion.text} />
                   </h2>
                </div>
             </CardGlass>
@@ -843,7 +895,7 @@ function BattleInProgress({
                           {label}
                        </div>
                        <span className={cn("text-sm font-bold tracking-tight", (revealed || isSelected) ? "text-slate-800" : "text-slate-500")}>
-                         {opt.text}
+                         <MathText text={opt.text} />
                        </span>
                     </div>
                     {isCorrect && <CheckCircle2 className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />}
@@ -1265,7 +1317,7 @@ function JoinRoomScreen({
 
 // ─── Challenge Scope Picker (for Create Code flow) ───────────────────────────
 
-type ScopeType = "topic" | "chapter" | "subject";
+type ScopeType = "full" | "topic" | "chapter" | "subject";
 type BattleDifficulty = "easy" | "medium" | "hard";
 
 const BATTLE_DIFFICULTY_PICK: { key: BattleDifficulty; label: string; desc: string }[] = [
@@ -1281,7 +1333,7 @@ function ChallengeScopePicker({
   selectedBatchId,
 }: {
   onBack: () => void;
-  onStart: (topicId: string | undefined, label: string, difficulty: BattleDifficulty) => void;
+  onStart: (topicId: string | undefined, label: string, difficulty: BattleDifficulty, batchId?: string) => void;
   loading: boolean;
   selectedBatchId: string;
 }) {
@@ -1295,6 +1347,7 @@ function ChallengeScopePicker({
   const [difficulty, setDifficulty]   = useState<BattleDifficulty>("medium");
 
   const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(selectedBatchId);
+  const { data: myCourses = [] } = useMyCourses();
 
   const isLoading = currLoading;
 
@@ -1308,27 +1361,33 @@ function ChallengeScopePicker({
     : [];
 
   const canStart =
+    scopeType === "full"    ? !!selectedBatchId :
     scopeType === "topic"   ? !!topicId :
     scopeType === "chapter" ? !!chapterId :
                               !!subjectId;
 
+  const selectedCourseName = myCourses.find(c => c.id === selectedBatchId)?.name || "Full Syllabus";
+
   const handleStart = () => {
     if (!canStart) return;
-    if (scopeType === "topic") {
-      onStart(topicId, topicName, difficulty);
+    if (scopeType === "full") {
+      onStart(undefined, selectedCourseName, difficulty, selectedBatchId);
+    } else if (scopeType === "topic") {
+      onStart(topicId, topicName, difficulty, selectedBatchId);
     } else if (scopeType === "chapter") {
       // Pick first topic of that chapter as the AI question anchor
       const firstTopic = topList[0];
-      onStart(firstTopic?.id, chapterName, difficulty);
+      onStart(firstTopic?.id, chapterName, difficulty, selectedBatchId);
     } else {
       // Subject — let backend pick a topic from that subject
       const firstChapter = chapList[0];
       const firstTopic = firstChapter?.topics?.[0];
-      onStart(firstTopic?.id, subjectName, difficulty);
+      onStart(firstTopic?.id, subjectName, difficulty, selectedBatchId);
     }
   };
 
   const SCOPE_TABS: { key: ScopeType; label: string; desc: string }[] = [
+    { key: "full",    label: "Full Syllabus", desc: "Questions from entire course" },
     { key: "subject", label: "Subject", desc: "Mixed questions from a subject" },
     { key: "chapter", label: "Chapter", desc: "Questions from one chapter" },
     { key: "topic",   label: "Topic",   desc: "Deep dive into one topic" },
@@ -1361,7 +1420,7 @@ function ChallengeScopePicker({
       </div>
 
       {/* Scope Type Tabs */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {SCOPE_TABS.map(t => (
           <button
             key={t.key}
@@ -1396,64 +1455,69 @@ function ChallengeScopePicker({
           </div>
         ) : (
           <>
-            {/* Subject */}
-            <div className="space-y-2">
-              <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-              <select
-                value={subjectId}
-                onChange={e => {
-                  const id = e.target.value;
-                  setSubjectId(id);
-                  setSubjectName(subList.find(s => s.id === id)?.name ?? "");
-                  setChapterId(""); setChapterName("");
-                  setTopicId("");   setTopicName("");
-                }}
-                className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
-              >
-                <option value="">Select subject…</option>
-                {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
+            {/* Course Scope Logic */}
+            {scopeType !== "full" && (
+              <>
+                {/* Subject */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
+                  <select
+                    value={subjectId}
+                    onChange={e => {
+                      const id = e.target.value;
+                      setSubjectId(id);
+                      setSubjectName(subList.find(s => s.id === id)?.name ?? "");
+                      setChapterId(""); setChapterName("");
+                      setTopicId("");   setTopicName("");
+                    }}
+                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
+                  >
+                    <option value="">Select subject…</option>
+                    {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
 
-            {/* Chapter (when scope = chapter or topic) */}
-            {(scopeType === "chapter" || scopeType === "topic") && (
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                <select
-                  value={chapterId}
-                  onChange={e => {
-                    const id = e.target.value;
-                    setChapterId(id);
-                    setChapterName(chapList.find(c => c.id === id)?.name ?? "");
-                    setTopicId(""); setTopicName("");
-                  }}
-                  disabled={!subjectId}
-                  className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                >
-                  <option value="">Select chapter…</option>
-                  {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-            )}
+                {/* Chapter (when scope = chapter or topic) */}
+                {(scopeType === "chapter" || scopeType === "topic") && (
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
+                    <select
+                      value={chapterId}
+                      onChange={e => {
+                        const id = e.target.value;
+                        setChapterId(id);
+                        setChapterName(chapList.find(c => c.id === id)?.name ?? "");
+                        setTopicId(""); setTopicName("");
+                      }}
+                      disabled={!subjectId}
+                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
+                    >
+                      <option value="">Select chapter…</option>
+                      {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                )}
 
-            {/* Topic (when scope = topic) */}
-            {scopeType === "topic" && (
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                <select
-                  value={topicId}
-                  onChange={e => {
-                    const id = e.target.value;
-                    setTopicId(id);
-                    setTopicName(topList.find(t => t.id === id)?.name ?? "");
-                  }}
-                  disabled={!chapterId}
-                  className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                >
-                  <option value="">Select topic…</option>
-                  {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
+                {/* Topic (when scope = topic) */}
+                {scopeType === "topic" && (
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
+                    <select
+                      value={topicId}
+                      onChange={e => {
+                        const id = e.target.value;
+                        setTopicId(id);
+                        setTopicName(topList.find(t => t.id === id)?.name ?? "");
+                      }}
+                      disabled={!chapterId}
+                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
+                    >
+                      <option value="">Select topic…</option>
+                      {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -2215,6 +2279,8 @@ interface IncomingChallenge {
   expiresInSeconds: number;
   batchId?: string;
   batchName?: string;
+  topicId?: string;
+  topicName?: string;
 }
 
 function ChallengeTargetPickerScreen({
@@ -2222,73 +2288,257 @@ function ChallengeTargetPickerScreen({
   myCourses,
   onBack,
   onSendChallenge,
+  initialBatchId,
 }: {
   targetUser: LobbyUser;
   myCourses: any[];
   onBack: () => void;
-  onSendChallenge: (batchId: string, batchName: string, difficulty: BattleDifficulty) => void;
+  onSendChallenge: (
+    batchId: string, 
+    batchName: string, 
+    difficulty: BattleDifficulty, 
+    topicId?: string, 
+    topicName?: string,
+    subjectId?: string,
+    subjectName?: string,
+    chapterId?: string,
+    chapterName?: string,
+  ) => void;
+  initialBatchId: string;
 }) {
-  const commonCourses = myCourses.filter(c => targetUser.batchIds?.includes(c.id));
-  const [selected, setSelected] = useState(commonCourses[0]?.id || "");
+  const selectedCourse = myCourses.find(c => c.id === initialBatchId);
+  const isTargetInCourse = targetUser.batchIds?.includes(initialBatchId);
+  
+  const [scopeType, setScopeType] = useState<ScopeType>("full");
+  const [subjectId, setSubjectId] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [topicId, setTopicId]     = useState("");
+  const [subjectName, setSubjectName] = useState("");
+  const [chapterName, setChapterName] = useState("");
+  const [topicName, setTopicName]     = useState("");
   const [difficulty, setDifficulty] = useState<BattleDifficulty>("medium");
 
+  const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(initialBatchId);
+
+  const subList = curriculum?.subjects ?? [];
+  const chapList = subjectId ? (subList.find((s: any) => s.id === subjectId)?.chapters ?? []) : [];
+  const topList = chapterId ? (chapList.find((c: any) => c.id === chapterId)?.topics ?? []) : [];
+
+  const canStart = 
+    !isTargetInCourse ? false :
+    scopeType === "full" ? !!initialBatchId :
+    scopeType === "subject" ? !!subjectId :
+    scopeType === "chapter" ? !!chapterId :
+    !!topicId;
+
   const handleSend = () => {
-    const course = commonCourses.find(c => c.id === selected);
-    if (!course) return;
-    onSendChallenge(course.id, course.name, difficulty);
+    if (!selectedCourse || !canStart) return;
+
+    let finalTopicId: string | undefined;
+    let finalTopicName: string | undefined;
+    let finalSubjectId: string | undefined;
+    let finalSubjectName: string | undefined;
+    let finalChapterId: string | undefined;
+    let finalChapterName: string | undefined;
+
+    if (scopeType === "topic") {
+      finalTopicId = topicId;
+      finalTopicName = topicName;
+      finalSubjectId = subjectId;
+      finalSubjectName = subjectName;
+      finalChapterId = chapterId;
+      finalChapterName = chapterName;
+    } else if (scopeType === "chapter") {
+      finalChapterId = chapterId;
+      finalChapterName = chapterName;
+      finalSubjectId = subjectId;
+      finalSubjectName = subjectName;
+      // No topicId = broad chapter scope
+    } else if (scopeType === "subject") {
+      finalSubjectId = subjectId;
+      finalSubjectName = subjectName;
+      // No topicId/chapterId = broad subject scope
+    }
+
+    onSendChallenge(
+      selectedCourse.id, 
+      selectedCourse.name, 
+      difficulty, 
+      finalTopicId, 
+      finalTopicName || (scopeType === "chapter" ? chapterName : scopeType === "subject" ? subjectName : undefined),
+      finalSubjectId,
+      finalSubjectName,
+      finalChapterId,
+      finalChapterName
+    );
   };
 
+  const SCOPE_TABS: { key: ScopeType; label: string; desc: string }[] = [
+    { key: "full",    label: "Full Syllabus", desc: "Mixed course questions" },
+    { key: "subject", label: "Subject",      desc: "Based on a subject" },
+    { key: "chapter", label: "Chapter",      desc: "Based on a chapter" },
+    { key: "topic",   label: "Topic",        desc: "Based on a topic" },
+  ];
+
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
-      <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
-        <h3 className="text-2xl font-bold">Challenge {targetUser.name}</h3>
-        {commonCourses.length === 0 ? (
-          <p className="text-sm text-slate-500">You don't share any courses with {targetUser.name}.</p>
-        ) : (
-          <div className="text-left space-y-3">
-            <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Select Common Course</label>
-            <select
-              value={selected}
-              onChange={e => setSelected(e.target.value)}
-              className="h-14 w-full px-5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all shadow-sm"
-            >
-              {commonCourses.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 overflow-y-auto">
+      <CardGlass className="w-full max-w-2xl space-y-8 border-slate-200 bg-white/95 p-8 text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.3)] my-auto">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 shadow-sm">
+              <Swords className="h-6 w-6" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-xl font-bold text-slate-800">Challenge {targetUser.name}</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Configure your duel</p>
+            </div>
           </div>
-        )}
-        <div className="text-left space-y-3">
-            <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Select Difficulty</label>
-            <div className="grid grid-cols-3 gap-3">
-              {BATTLE_DIFFICULTY_PICK.map((d) => (
+          <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+            <X className="h-5 w-5 text-slate-400" />
+          </button>
+        </div>
+
+        {!isTargetInCourse ? (
+          <div className="rounded-2xl bg-amber-50 border border-amber-100 p-6 text-center">
+            <p className="text-sm font-medium text-amber-700">
+              {targetUser.name} is not enrolled in {selectedCourse?.name || "this course"}.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+             {/* Read-only Course Display */}
+             <div className="space-y-3 text-left">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Battle Course</label>
+              <div className="h-14 w-full px-5 flex items-center bg-indigo-50/50 border border-indigo-100/50 rounded-2xl shadow-sm">
+                <span className="text-xs font-bold text-indigo-700">{selectedCourse?.name}</span>
+                <span className="ml-auto text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Selected in Lobby</span>
+              </div>
+            </div>
+
+            {/* Scope Tabs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {SCOPE_TABS.map(t => (
                 <button
-                  key={d.key}
-                  onClick={() => setDifficulty(d.key)}
+                  key={t.key}
+                  onClick={() => {
+                    setScopeType(t.key);
+                    setSubjectId(""); setChapterId(""); setTopicId("");
+                    setSubjectName(""); setChapterName(""); setTopicName("");
+                  }}
                   className={cn(
-                    "p-3 rounded-2xl border text-left transition-all",
-                    difficulty === d.key
-                      ? "border-indigo-400 bg-indigo-50/40"
-                      : "border-slate-100 bg-white hover:border-indigo-200",
+                    "p-4 rounded-2xl border text-left transition-all",
+                    scopeType === t.key
+                      ? "border-indigo-500 bg-indigo-50/50 shadow-sm"
+                      : "border-slate-100 bg-white hover:border-indigo-200"
                   )}
                 >
-                  <p className={cn("text-[11px] font-bold uppercase tracking-tight", difficulty === d.key ? "text-slate-800" : "text-slate-400")}>
-                    {d.label}
+                  <p className={cn("text-[10px] font-bold uppercase tracking-tight", scopeType === t.key ? "text-slate-800" : "text-slate-400")}>
+                    {t.label}
                   </p>
+                  <p className="text-[8px] font-bold text-slate-300 mt-1 uppercase tracking-widest">{t.key === "full" ? "ALL CONTENT" : "SELECTIVE"}</p>
                 </button>
               ))}
             </div>
-        </div>
-        <div className="flex justify-center gap-3">
-          {commonCourses.length > 0 && (
-            <Button className="rounded-xl bg-indigo-600 px-6 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500" onClick={handleSend}>
-              Send Request
-            </Button>
-          )}
-          <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={onBack}>
-            Cancel
-          </Button>
-        </div>
+
+            {/* Dynamic Selects */}
+            {scopeType !== "full" && (
+              <CardGlass className="p-6 border-slate-100 space-y-4 bg-slate-50/50">
+                {currLoading ? (
+                  <div className="h-14 rounded-2xl bg-white animate-pulse" />
+                ) : (
+                  <>
+                    <div className="space-y-2 text-left">
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject</label>
+                      <select
+                        value={subjectId}
+                        onChange={e => {
+                          const id = e.target.value;
+                          setSubjectId(id);
+                          setSubjectName(subList.find((s: any) => s.id === id)?.name ?? "");
+                          setChapterId(""); setTopicId("");
+                        }}
+                        className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none"
+                      >
+                        <option value="">Select subject…</option>
+                        {subList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+
+                    {(scopeType === "chapter" || scopeType === "topic") && (
+                      <div className="space-y-2 text-left">
+                        <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Chapter</label>
+                        <select
+                          value={chapterId}
+                          onChange={e => {
+                            const id = e.target.value;
+                            setChapterId(id);
+                            setChapterName(chapList.find((c: any) => c.id === id)?.name ?? "");
+                            setTopicId("");
+                          }}
+                          disabled={!subjectId}
+                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
+                        >
+                          <option value="">Select chapter…</option>
+                          {chapList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+
+                    {scopeType === "topic" && (
+                      <div className="space-y-2 text-left">
+                        <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Topic</label>
+                        <select
+                          value={topicId}
+                          onChange={e => {
+                            const id = e.target.value;
+                            setTopicId(id);
+                            setTopicName(topList.find((t: any) => t.id === id)?.name ?? "");
+                          }}
+                          disabled={!chapterId}
+                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
+                        >
+                          <option value="">Select topic…</option>
+                          {topList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardGlass>
+            )}
+
+            {/* Difficulty Selection */}
+            <div className="text-left space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Select Difficulty</label>
+              <div className="grid grid-cols-3 gap-3">
+                {BATTLE_DIFFICULTY_PICK.map((d) => (
+                  <button
+                    key={d.key}
+                    onClick={() => setDifficulty(d.key)}
+                    className={cn(
+                      "p-3 rounded-2xl border text-center transition-all",
+                      difficulty === d.key
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm"
+                        : "border-slate-100 bg-white hover:border-indigo-200 text-slate-400",
+                    )}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-tight">{d.label}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-4 pt-4">
+              <Button 
+                className="h-14 rounded-2xl bg-indigo-600 px-10 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-indigo-700 shadow-lg shadow-indigo-200 disabled:bg-slate-200" 
+                onClick={handleSend}
+                disabled={!canStart}
+              >
+                Send Battle Invitation
+              </Button>
+            </div>
+          </div>
+        )}
       </CardGlass>
     </div>
   );
@@ -2968,37 +3218,25 @@ const BattleArena = () => {
     };
     socket.on("battle:challenge_accepted", onChallengeAccepted);
 
-    const onChallengeTimeout = () => {
+    const onChallengeTimeout = (payload?: { message?: string }) => {
       setPendingChallengeId(null);
-      setActiveMode({
-        mode: "bot",
-        title: "Bot Practice",
-        desc: "Auto fallback",
-        detail: "Fallback duel",
-        icon: Sparkles,
-        iconBg: "bg-indigo-50",
-        iconText: "text-indigo-600",
-        accent: "hover:border-indigo-100",
-        questions: 10,
-        seconds: 45,
-      });
-      setBattleRoom({
-        battleId: `bot-${Date.now()}`,
-        roomCode: "BOT",
-        status: "in_progress",
-        mode: "bot",
-      });
-      setBotQuestions(undefined);
-      setStage("in_battle");
-      toast("No response in 30s. Starting bot battle.");
+      setIncomingChallenge(null);
+      setStage("lobby");
+      toast(payload?.message || "Challenge request expired - student didn't reply");
     };
     socket.on("battle:challenge_timeout", onChallengeTimeout);
 
     const onChallengeError = (payload: { message?: string }) => {
       const msg = payload?.message ?? "Challenge failed";
       setPendingChallengeId(null);
-      setStage("lobby");
-      toast.error(msg);
+      // If the battle already started (stage transitioned to in_battle via
+      // battle:challenge_accepted), ignore this late error — it is a gateway
+      // race between the accept flow and the 30 s timeout cleanup.
+      setStage(prev => {
+        if (prev === "in_battle" || prev === "result") return prev;
+        toast.error(msg);
+        return "lobby";
+      });
     };
     socket.on("battle:challenge_error", onChallengeError);
 
@@ -3047,7 +3285,18 @@ const BattleArena = () => {
     setStage("challenge_target_pick");
   };
 
-  const sendChallenge = (targetStudentId: string, batchId?: string, batchName?: string, difficulty?: BattleDifficulty) => {
+  const sendChallenge = (
+    targetStudentId: string, 
+    batchId?: string, 
+    batchName?: string, 
+    difficulty?: BattleDifficulty, 
+    topicId?: string, 
+    topicName?: string,
+    subjectId?: string,
+    subjectName?: string,
+    chapterId?: string,
+    chapterName?: string,
+  ) => {
     if (!lobbySocketRef.current || !myStudentId) return;
     lobbySocketRef.current.emit("battle:challenge", {
       targetStudentId,
@@ -3056,6 +3305,12 @@ const BattleArena = () => {
       batchId,
       batchName,
       difficulty,
+      topicId,
+      topicName,
+      subjectId,
+      subjectName,
+      chapterId,
+      chapterName,
     });
   };
 
@@ -3066,8 +3321,10 @@ const BattleArena = () => {
       accepted,
       studentId: myStudentId,
     });
+    // Clear immediately regardless of accepted/rejected so stale state
+    // can't cause a duplicate emit or late challenge_error to re-trigger
+    setIncomingChallenge(null);
     if (!accepted) {
-      setIncomingChallenge(null);
       setStage("lobby");
     }
   };
@@ -3077,10 +3334,11 @@ const BattleArena = () => {
     topId?: string,
     topName?: string,
     difficulty?: BattleDifficulty,
+    batchId?: string,
   ) => {
     setTopicName(topName ?? "");
     createBattle.mutate(
-      { mode: mode.mode, topicId: topId, topicName: topName, difficulty },
+      { mode: mode.mode, topicId: topId, topicName: topName, difficulty, batchId },
       {
         onSuccess: (room) => {
           setBattleRoom(room);
@@ -3216,9 +3474,11 @@ const BattleArena = () => {
                 targetUser={onlineUsers.find(u => u.studentId === challengeTargetId)!}
                 myCourses={myCourses}
                 onBack={() => setStage("lobby")}
-                onSendChallenge={(batchId, batchName, difficulty) => {
-                  sendChallenge(challengeTargetId, batchId, batchName, difficulty);
+                onSendChallenge={(batchId, batchName, difficulty, topicId, topicName, subId, subName, chapId, chapName) => {
+                  sendChallenge(challengeTargetId, batchId, batchName, difficulty, topicId, topicName, subId, subName, chapId, chapName);
+                  setStage("challenge_sent");
                 }}
+                initialBatchId={selectedBatchId}
               />
             </motion.div>
           )}
@@ -3237,10 +3497,10 @@ const BattleArena = () => {
             <motion.div key="challenge-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <ChallengeScopePicker
                 onBack={() => setStage("challenge_pick")}
-                onStart={(topicId, label, difficulty) => {
+                onStart={(topicId, label, difficulty, batchId) => {
                   const cfMode = MODES.find(m => m.mode === "challenge_friend")!;
                   setActiveMode(cfMode);
-                  startBattle(cfMode, topicId, label, difficulty);
+                  startBattle(cfMode, topicId, label, difficulty, batchId);
                 }}
                 loading={createBattle.isPending}
                 selectedBatchId={selectedBatchId}
@@ -3286,6 +3546,7 @@ const BattleArena = () => {
                   <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                     Course: {incomingChallenge.batchName || "Direct Duel"}
+                    {incomingChallenge.topicName && ` • Scope: ${incomingChallenge.topicName}`}
                   </p>
                 </div>
                 <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.18)]">

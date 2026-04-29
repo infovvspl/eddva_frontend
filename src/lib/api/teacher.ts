@@ -704,6 +704,7 @@ export async function generateQuizForLecture(payload: {
   lectureTitle?: string;
   topicId?: string;
   numQuestions?: number;
+  courseLevel?: string;
 }): Promise<AiQuizResult> {
   const res = await apiClient.post("/ai/quiz/generate", payload, { timeout: 180_000 });
   return extractData<AiQuizResult>(res);

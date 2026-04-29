@@ -699,6 +699,8 @@ export interface AiGeneratePayload {
   contentType: 'lesson' | 'dpp' | 'pyq' | 'study_guide' | 'key_concepts' | 'flashcard' | 'practice_questions' | 'checklist';
   difficulty: 'basic' | 'intermediate' | 'advanced';
   length: 'brief' | 'standard' | 'detailed';
+  examTarget?: string;
+  courseName?: string;
   extraContext?: string;
 }
 

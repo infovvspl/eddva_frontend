@@ -27,6 +27,7 @@ import {
   useTopicResources, useUploadTopicResource, useDeleteTopicResource, useAddTopicResourceLink,
   useBulkImportCurriculum,
   useBatchContentLectures,
+  useSaveAiGeneratedResource,
 } from "@/hooks/use-admin";
 import * as adminApi from "@/lib/api/admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
@@ -2950,16 +2951,26 @@ const LENGTH_OPTIONS = [
   { id: "detailed", label: "Detailed", desc: "~1500 words" },
 ];
 
-function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarget }: {
+function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarget: batchExamTarget, courseName }: {
   topicId: string;
   topicName: string;
   subjectName: string;
   chapterName: string;
-  examTarget: string;
+  examTarget?: string;
+  courseName?: string;
 }) {
   const [selectedType, setSelectedType] = useState("dpp");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [length, setLength] = useState("standard");
+  const examTarget = (() => {
+    const t = (batchExamTarget || "").toUpperCase();
+    if (t.includes("NEET")) return "NEET";
+    if (t.includes("JEE")) return "JEE";
+    if (t.includes("12")) return "Class 12";
+    if (t.includes("11")) return "Class 11";
+    if (t.includes("10")) return "Class 10";
+    return "JEE";
+  })();
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -2984,7 +2995,6 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarg
     setSavedOk(false);
     try {
       const extraCtx = [
-        isDppOrPyq ? `Exam target: ${examTarget}` : "",
         isDppOrPyq ? `Generate exactly ${questionCount} questions` : "",
         extraContext.trim(),
       ].filter(Boolean).join(". ") || undefined;
@@ -2994,6 +3004,8 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarg
           contentType: selectedType as any,
           difficulty: isDppOrPyq ? "intermediate" : difficulty as any,
           length: isDppOrPyq ? "detailed" : length as any,
+          examTarget: examTarget,
+          courseName: courseName,
           extraContext: extraCtx,
         })
       );
@@ -3105,6 +3117,17 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarg
 
           {isDppOrPyq ? (
             <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              {/* Exam Target — auto-set from course, read-only */}
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Exam Target</p>
+                <span className="text-[11px] font-black uppercase tracking-wide bg-violet-100 text-violet-700 px-2.5 py-1 rounded-xl border border-violet-200">
+                  {examTarget}
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-wide bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                  From course
+                </span>
+              </div>
+
               {/* Question Count */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
@@ -4121,7 +4144,8 @@ function ContentTopicWorkspaceRoute() {
                   topicName={topic.name}
                   subjectName={subject.name}
                   chapterName={chapter.name}
-                  examTarget={batch.examTarget ?? "JEE"}
+                  examTarget={batch.examTarget}
+                  courseName={batch.name}
                 />
               </div>
             </motion.div>
