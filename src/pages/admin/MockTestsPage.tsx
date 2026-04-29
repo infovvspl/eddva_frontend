@@ -146,6 +146,15 @@ const QUESTION_MIX_CHOICES: { id: QuestionMixId; group: string; label: string; h
 
 type DraftQKind = "mcq_single" | "mcq_multi" | "integer" | "descriptive";
 
+type AiSeg = {
+  questionType: MockAiGenerateType;
+  style?: string;
+  count: number;
+  topicAppend: string;
+  asDraft: DraftQKind;
+  laneLabel?: string;
+};
+
 const CBSE_THEORY_PATTERN_NOTE =
   "CBSE theory pattern: 2-mark = definition + one point/example; 3-mark = definition + two explained points; 4-mark = statement/formula + 2-3 steps + diagram/example/conclusion; 5-mark = intro + 3 core points + supporting diagram/example/conclusion.";
 
@@ -400,15 +409,15 @@ function buildAiPlan(mix: QuestionMixId, n: number): AiSeg[] {
   if (n < 1) return [];
   switch (mix) {
     case "comp_assertion_reason":
-      return [{ questionType: "mcq_single", count: n, topicAppend: " (competitive assertion-reason based only; evaluate assertion and reason explicitly before final option)", asDraft: "mcq_single", laneLabel: "Assertion reason based" }];
+      return [{ questionType: "mcq_single", style: "assertion_reason", count: n, topicAppend: "", asDraft: "mcq_single", laneLabel: "Assertion reason based" }];
     case "comp_statement":
-      return [{ questionType: "mcq_single", count: n, topicAppend: " (competitive statement-based only; true/false/correct combination logic. Use statement-1/statement-2 or multiple statements and ask correct/incorrect combination)", asDraft: "mcq_single", laneLabel: "Statement based" }];
+      return [{ questionType: "mcq_single", style: "statement", count: n, topicAppend: "", asDraft: "mcq_single", laneLabel: "Statement based" }];
     case "comp_mcq":
       return [{ questionType: "mcq_single", count: n, topicAppend: "", asDraft: "mcq_single", laneLabel: "MCQ based" }];
     case "comp_match":
-      return [{ questionType: "descriptive", count: n, topicAppend: " (match-the-following based only; include Column I and Column II with at least 4 items each, and exact mapping pairs in model answer)", asDraft: "descriptive", laneLabel: "Match the following based" }];
+      return [{ questionType: "descriptive", style: "match", count: n, topicAppend: "", asDraft: "descriptive", laneLabel: "Match the following based" }];
     case "comp_diagram":
-      return [{ questionType: "descriptive", count: n, topicAppend: " (diagram-based questions for any subject; labeling/identification/inference pattern. MUST include a text diagram block or labeled structure in the question stem and reference those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" }];
+      return [{ questionType: "descriptive", style: "diagram", count: n, topicAppend: "", asDraft: "descriptive", laneLabel: "Diagram based" }];
     case "comp_msq":
       return [{ questionType: "mcq_multi", count: n, topicAppend: "", asDraft: "mcq_multi", laneLabel: "MSQ" }];
     case "comp_int":
@@ -421,28 +430,28 @@ function buildAiPlan(mix: QuestionMixId, n: number): AiSeg[] {
       const matchCount = Math.min(1, n >= 5 ? 1 : 0);
       const diagramCount = Math.min(1, n >= 6 ? 1 : 0);
       const plan: AiSeg[] = [
-        { questionType: "mcq_single", count: assertionCount, topicAppend: " (competitive assertion-reason based only)", asDraft: "mcq_single", laneLabel: "Assertion reason based" },
-        { questionType: "mcq_single", count: statementCount, topicAppend: " (competitive statement-based only. Use statement-1/statement-2 or multiple statements and ask correct/incorrect combination)", asDraft: "mcq_single", laneLabel: "Statement based" },
-        { questionType: "mcq_single", count: mcqCount, topicAppend: " (competitive single-correct MCQ only)", asDraft: "mcq_single", laneLabel: "MCQ based" },
-        { questionType: "descriptive", count: matchCount, topicAppend: " (match-the-following based only. MUST include Column I and Column II with at least 4 items each, and exact mapping pairs in model answer)", asDraft: "descriptive", laneLabel: "Match the following based" },
-        { questionType: "descriptive", count: diagramCount, topicAppend: " (diagram-based questions for any subject. MUST include a text diagram block or labeled structure in the question stem and reference those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" },
-        { questionType: "mcq_multi", count: b, topicAppend: " (competitive MSQ / multi-correct. MUST have at least two correct options)", asDraft: "mcq_multi", laneLabel: "MSQ" },
-        { questionType: "integer", count: c, topicAppend: " (competitive integer 0–999 only)", asDraft: "integer", laneLabel: "Integer based" },
+        { questionType: "mcq_single", style: "assertion_reason", count: assertionCount, topicAppend: "", asDraft: "mcq_single", laneLabel: "Assertion reason based" },
+        { questionType: "mcq_single", style: "statement", count: statementCount, topicAppend: "", asDraft: "mcq_single", laneLabel: "Statement based" },
+        { questionType: "mcq_single", count: mcqCount, topicAppend: "", asDraft: "mcq_single", laneLabel: "MCQ based" },
+        { questionType: "descriptive", style: "match", count: matchCount, topicAppend: "", asDraft: "descriptive", laneLabel: "Match the following based" },
+        { questionType: "descriptive", style: "diagram", count: diagramCount, topicAppend: "", asDraft: "descriptive", laneLabel: "Diagram based" },
+        { questionType: "mcq_multi", count: b, topicAppend: "", asDraft: "mcq_multi", laneLabel: "MSQ" },
+        { questionType: "integer", count: c, topicAppend: "", asDraft: "integer", laneLabel: "Integer based" },
       ];
       return plan.filter((seg) => seg.count > 0);
     }
     case "acad_mcq":
-      return [{ questionType: "mcq_single", count: n, topicAppend: " (academic MCQ based only; STRICTLY 1-mark question with concise answer/explanation)", asDraft: "mcq_single", laneLabel: "MCQ based" }];
+      return [{ questionType: "mcq_single", count: n, topicAppend: "", asDraft: "mcq_single", laneLabel: "MCQ based" }];
     case "acad_assertion_reason":
-      return [{ questionType: "mcq_single", count: n, topicAppend: " (academic assertion-reason based only; STRICTLY 1-mark objective style with concise justification)", asDraft: "mcq_single", laneLabel: "Assertion reason based" }];
+      return [{ questionType: "mcq_single", style: "assertion_reason", count: n, topicAppend: "", asDraft: "mcq_single", laneLabel: "Assertion reason based" }];
     case "acad_short_answer":
-      return [{ questionType: "descriptive", count: n, topicAppend: " (academic short-answer type only; STRICTLY 2-mark pattern: 1 point/definition + 1 point/example/explanation)", asDraft: "descriptive", laneLabel: "Short answer type" }];
+      return [{ questionType: "descriptive", style: "short_answer", count: n, topicAppend: "", asDraft: "descriptive", laneLabel: "Short answer type" }];
     case "acad_detailed_answer":
-      return [{ questionType: "descriptive", count: n, topicAppend: " (academic detailed-answer type only; STRICTLY 5-mark pattern: intro + 3 core points/steps + support/conclusion. Question must demand multi-step reasoning, and model answer must contain at least 4 structured points)", asDraft: "descriptive", laneLabel: "Detailed answers type" }];
+      return [{ questionType: "descriptive", style: "detailed_answer", count: n, topicAppend: "", asDraft: "descriptive", laneLabel: "Detailed answers type" }];
     case "acad_case_study":
-      return [{ questionType: "descriptive", count: n, topicAppend: " (academic case-study based only; STRICTLY 4-mark pattern with passage/data analysis and structured reasoning)", asDraft: "descriptive", laneLabel: "Case study based" }];
+      return [{ questionType: "descriptive", style: "case_study", count: n, topicAppend: "", asDraft: "descriptive", laneLabel: "Case study based" }];
     case "acad_diagram":
-      return [{ questionType: "descriptive", count: n, topicAppend: " (academic diagram based only; STRICTLY 4-mark pattern: labeling + explanation + conclusion. MUST include a text diagram block or labeled structure in the question stem and use those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" }];
+      return [{ questionType: "descriptive", style: "diagram", count: n, topicAppend: "", asDraft: "descriptive", laneLabel: "Diagram based" }];
     case "acad_all": {
       const [a, b, c] = splitInt3(n, 2, 1, 3);
       const diagramShare = c >= 3 ? 1 : 0;
@@ -451,12 +460,12 @@ function buildAiPlan(mix: QuestionMixId, n: number): AiSeg[] {
       const detailShare = descriptiveCore > 1 ? Math.max(1, Math.floor(descriptiveCore / 3)) : 0;
       const caseShare = Math.max(0, descriptiveCore - shortShare - detailShare);
       const plan: AiSeg[] = [
-        { questionType: "mcq_single", count: a, topicAppend: " (academic MCQ based; STRICTLY 1 mark)", asDraft: "mcq_single", laneLabel: "MCQ based" },
-        { questionType: "mcq_single", count: b, topicAppend: " (academic assertion-reason based; STRICTLY 1 mark)", asDraft: "mcq_single", laneLabel: "Assertion reason based" },
-        { questionType: "descriptive", count: shortShare, topicAppend: " (academic short-answer type; STRICTLY 2 marks)", asDraft: "descriptive", laneLabel: "Short answer type" },
-        { questionType: "descriptive", count: detailShare, topicAppend: " (academic detailed-answer type; STRICTLY 5 marks. Question must demand multi-step reasoning, and model answer must contain at least 4 structured points)", asDraft: "descriptive", laneLabel: "Detailed answers type" },
-        { questionType: "descriptive", count: caseShare, topicAppend: " (academic case-study based; STRICTLY 4 marks)", asDraft: "descriptive", laneLabel: "Case study based" },
-        { questionType: "descriptive", count: diagramShare, topicAppend: " (academic diagram based; STRICTLY 4 marks. MUST include a text diagram block or labeled structure in the question stem and use those labels in model answer)", asDraft: "descriptive", laneLabel: "Diagram based" },
+        { questionType: "mcq_single", count: a, topicAppend: "", asDraft: "mcq_single", laneLabel: "MCQ based" },
+        { questionType: "mcq_single", style: "assertion_reason", count: b, topicAppend: "", asDraft: "mcq_single", laneLabel: "Assertion reason based" },
+        { questionType: "descriptive", style: "short_answer", count: shortShare, topicAppend: "", asDraft: "descriptive", laneLabel: "Short answer type" },
+        { questionType: "descriptive", style: "detailed_answer", count: detailShare, topicAppend: "", asDraft: "descriptive", laneLabel: "Detailed answers type" },
+        { questionType: "descriptive", style: "case_study", count: caseShare, topicAppend: "", asDraft: "descriptive", laneLabel: "Case study based" },
+        { questionType: "descriptive", style: "diagram", count: diagramShare, topicAppend: "", asDraft: "descriptive", laneLabel: "Diagram based" },
       ];
       return plan.filter((seg) => seg.count > 0);
     }
@@ -1346,12 +1355,13 @@ function AIGeneratePanel({
                 const alloc = mainAlloc[globalIdx] || splitByDifficulty(remNeed, difficultyMode, rotationSeed + globalIdx);
                 const raw: AiGeneratedQuestion[] = await aiGenerateMockTestQuestions({
                   topicId: aiTopicId || undefined,
-                  topicName: `${topicName} ${seg.topicAppend}`.trim(),
+                  topicName: topicName,
                   totalCount: remNeed,
                   easyCount: alloc.easy,
                   mediumCount: alloc.medium,
                   hardCount: alloc.hard,
                   questionType: seg.questionType,
+                  questionStyle: seg.style,
                 });
                 return { segIndex, seg, raw };
               }),
@@ -1409,12 +1419,13 @@ function AIGeneratePanel({
             });
             const raw = await aiGenerateMockTestQuestions({
               topicId: aiTopicId || undefined,
-              topicName: `${topicName} ${seg.topicAppend} STRICTLY generate only ${lane} questions. Avoid all other patterns.`.trim(),
+              topicName: topicName,
               totalCount: Math.min(2, req - have),
               easyCount: alloc.easy,
               mediumCount: alloc.medium,
               hardCount: alloc.hard,
               questionType: seg.questionType,
+              questionStyle: seg.style,
             }).catch(() => [] as AiGeneratedQuestion[]);
             for (const q of raw) {
               const key = norm(q.questionText || "");
@@ -1451,12 +1462,13 @@ function AIGeneratePanel({
           });
           const raw = await aiGenerateMockTestQuestions({
             topicId: aiTopicId || undefined,
-            topicName: `${topicName} ${seg.topicAppend} Ensure distinct fresh questions; prioritize completion of requested count.`.trim(),
+            topicName: topicName,
             totalCount: Math.min(6, need),
             easyCount: alloc.easy,
             mediumCount: alloc.medium,
             hardCount: alloc.hard,
             questionType: seg.questionType,
+            questionStyle: seg.style,
           }).catch(() => [] as AiGeneratedQuestion[]);
           for (const q of raw) {
             const key = norm(q.questionText || "");

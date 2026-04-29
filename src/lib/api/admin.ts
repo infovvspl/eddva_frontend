@@ -1042,9 +1042,11 @@ export async function aiGenerateMockTestQuestions(params: {
   mediumCount: number;
   hardCount: number;
   questionType?: MockAiGenerateType;
+  questionStyle?: string;
 }): Promise<AiGeneratedQuestion[]> {
   const topicId = (params.topicId && params.topicId.trim()) || MOCK_AI_TOPIC_PLACEHOLDER_ID;
   const type = (params.questionType ?? "mcq_single") as string;
+  const style = params.questionStyle ?? "";
   const totalCount = params.totalCount;
 
   const queue: { difficulty: GenDiff; n: number }[] = [
@@ -1068,15 +1070,17 @@ export async function aiGenerateMockTestQuestions(params: {
 
   const fetchChunk = async (difficulty: GenDiff, requestCount: number, topicLine: string) => {
     const chunk = Math.min(Math.max(1, requestCount), AI_GENERATE_BATCH_SIZE);
+    const body: Record<string, unknown> = {
+      topicId,
+      topicName: topicLine,
+      count: chunk,
+      difficulty,
+      type,
+    };
+    if (style) body.style = style;
     const res = await apiClient.post(
       "/ai/questions/generate",
-      {
-        topicId,
-        topicName: topicLine,
-        count: chunk,
-        difficulty,
-        type,
-      },
+      body,
       { timeout: 240_000 },
     );
     const data = extractData<any>(res);
@@ -1190,7 +1194,7 @@ export async function aiGenerateMockTestQuestionMix(params: {
   easyCount: number;
   mediumCount: number;
   hardCount: number;
-  segments: { questionType: MockAiGenerateType; count: number; topicAppend?: string }[];
+  segments: { questionType: MockAiGenerateType; count: number; topicAppend?: string; style?: string }[];
 }): Promise<AiGeneratedQuestion[]> {
   const { totalCount, easyCount, mediumCount, hardCount, segments, topicName, topicId } = params;
   const wE = totalCount > 0 ? easyCount / totalCount : 0;
@@ -1213,6 +1217,7 @@ export async function aiGenerateMockTestQuestionMix(params: {
       mediumCount: alloc.medium,
       hardCount: alloc.hard,
       questionType: seg.questionType,
+      questionStyle: seg.style,
     });
     out.push(...sub);
   }
