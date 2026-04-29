@@ -3,11 +3,12 @@ import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion";
 import DppContentRenderer from "@/components/DppContentRenderer";
 import {
-  ChevronDown, ChevronRight, BookOpen, Video, CheckCircle2, Lock,
+  ChevronDown, ChevronRight, ChevronLeft, BookOpen, Video, CheckCircle2, Lock,
   Clock, ArrowLeft, Download, ExternalLink, Play, FileText,
   Users, BarChart3, Trophy, Loader2, Search, Filter,
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
   Youtube, File, ClipboardList, FlaskConical, X, Printer,
+  RotateCcw, ListChecks, Check,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
 import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture, MockTestListItem, TestSession } from "@/lib/api/student";
@@ -91,6 +92,266 @@ function collectResources(subjects: CourseSubject[], types?: string[]): CourseRe
   return out;
 }
 
+// ─── Flashcard Viewer ─────────────────────────────────────────────────────────
+
+function FlashcardViewer({ content }: { content: string }) {
+  const [index, setIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  const cards = useMemo(() => {
+    const lines = content.split("\n");
+    const result: { q: string; a: string }[] = [];
+    let currentQ = "";
+    let currentA = "";
+
+    for (const raw of lines) {
+      const line = raw.trim().replace(/\*\*/g, ""); // Remove bold markers for parsing
+      if (!line) continue;
+
+      if (/^[Qq][\s\d]*[:.]/.test(line)) {
+        if (currentQ && currentA) {
+          result.push({ q: currentQ, a: currentA });
+          currentA = "";
+        }
+        currentQ = line.replace(/^[Qq][\s\d]*[:.]\s*/, "").trim();
+      } else if (/^[Aa][\s\d]*[:.]/.test(line)) {
+        currentA = line.replace(/^[Aa][\s\d]*[:.]\s*/, "").trim();
+      } else if (currentQ) {
+        // Append to current A if it exists, otherwise ignore or treat as part of Q (usually A follows Q)
+        if (currentA) currentA += "\n" + line;
+        else currentQ += "\n" + line;
+      }
+    }
+    if (currentQ && currentA) result.push({ q: currentQ, a: currentA });
+    return result;
+  }, [content]);
+
+  if (cards.length === 0) return <DppContentRenderer content={content} />;
+
+  const card = cards[index];
+
+  return (
+    <div className="flex flex-col items-center py-4 sm:py-8">
+      {/* Progress */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="h-1.5 w-48 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+            style={{ width: `${((index + 1) / cards.length) * 100}%` }}
+          />
+        </div>
+        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+          {index + 1} / {cards.length}
+        </span>
+      </div>
+
+      {/* Card Container */}
+      <div className="w-full max-w-lg perspective-1000 h-[280px] sm:h-[320px] relative">
+        <motion.div
+          className="w-full h-full relative cursor-pointer"
+          animate={{ rotateY: flipped ? 180 : 0 }}
+          transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
+          onClick={() => setFlipped(!flipped)}
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {/* Front */}
+          <div
+            className="absolute inset-0 w-full h-full bg-white border border-slate-200 rounded-[2.5rem] p-6 sm:p-10 shadow-xl flex flex-col items-center justify-center text-center backface-hidden"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 mb-6 shrink-0">
+              <Zap className="w-5 h-5" />
+            </div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 shrink-0">Question</p>
+            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800 leading-relaxed">
+                {card.q}
+              </h3>
+            </div>
+            <div className="mt-6 flex items-center gap-2 text-indigo-500 font-bold text-[10px] uppercase tracking-widest animate-pulse shrink-0">
+              <RotateCcw className="w-3.5 h-3.5" /> Tap to reveal answer
+            </div>
+          </div>
+
+          {/* Back */}
+          <div
+            className="absolute inset-0 w-full h-full bg-indigo-600 border border-indigo-500 rounded-[2.5rem] p-6 sm:p-10 shadow-xl flex flex-col items-center justify-center text-center backface-hidden"
+            style={{ transform: "rotateY(180deg)" }}
+          >
+            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-white mb-6 shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.3em] mb-4 shrink-0">Correct Answer</p>
+            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2">
+              <h3 className="text-base sm:text-lg font-bold text-white leading-relaxed whitespace-pre-wrap">
+                {card.a}
+              </h3>
+            </div>
+            <div className="mt-6 flex items-center gap-2 text-white/60 font-bold text-[10px] uppercase tracking-widest shrink-0">
+              <RotateCcw className="w-3.5 h-3.5" /> Tap to flip back
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center gap-4 mt-10">
+        <button
+          disabled={index === 0}
+          onClick={() => { setIndex(index - 1); setFlipped(false); }}
+          className="w-12 h-12 rounded-2xl border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <button
+          disabled={index === cards.length - 1}
+          onClick={() => { setIndex(index + 1); setFlipped(false); }}
+          className="px-8 h-12 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-30 disabled:hover:bg-indigo-600"
+        >
+          Next Card
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Checklist Viewer ─────────────────────────────────────────────────────────
+
+function ChecklistViewer({ content, title }: { content: string; title: string }) {
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(`checklist_state_${title}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`checklist_state_${title}`, JSON.stringify(checkedItems));
+  }, [checkedItems, title]);
+
+  const sections = useMemo(() => {
+    const lines = content.split("\n");
+    const result: { title: string; items: string[] }[] = [];
+    let currentSection = { title: "General", items: [] as string[] };
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+
+      if (/^#+\s+/.test(line)) {
+        if (currentSection.items.length > 0 || currentSection.title !== "General") {
+          result.push(currentSection);
+        }
+        currentSection = { title: line.replace(/^#+\s+/, "").trim(), items: [] };
+      } else if (/^[*+-]\s+\[\s*\]\s+/.test(line) || /^[*+-]\s+/.test(line)) {
+        currentSection.items.push(line.replace(/^[*+-]\s+\[\s*\]\s+/, "").replace(/^[*+-]\s+/, "").trim());
+      } else if (currentSection.items.length > 0) {
+        // Append to last item if it's not a bullet (multi-line)
+        const lastIdx = currentSection.items.length - 1;
+        currentSection.items[lastIdx] += " " + line;
+      }
+    }
+    if (currentSection.items.length > 0 || currentSection.title !== "General") {
+      result.push(currentSection);
+    }
+    return result;
+  }, [content]);
+
+  const totalItems = sections.reduce((acc, s) => acc + s.items.length, 0);
+  const completedCount = Object.values(checkedItems).filter(Boolean).length;
+  const progress = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
+
+  if (sections.length === 0) return <DppContentRenderer content={content} />;
+
+  const toggleItem = (itemText: string) => {
+    setCheckedItems(prev => ({ ...prev, [itemText]: !prev[itemText] }));
+  };
+
+  return (
+    <div className="py-4">
+      {/* Progress Header */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md pb-6 pt-2 border-b border-slate-100 mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+              <ListChecks className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-900">Your Progress</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {completedCount} of {totalItems} items completed
+              </p>
+            </div>
+          </div>
+          <span className="text-xl font-black text-indigo-600">{Math.round(progress)}%</span>
+        </div>
+        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-indigo-500 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          />
+        </div>
+      </div>
+
+      {/* Sections */}
+      <div className="space-y-10">
+        {sections.map((section, si) => (
+          <div key={si} className="space-y-4">
+            <h4 className="text-xs font-black text-indigo-500 uppercase tracking-[0.2em] px-1 border-l-4 border-indigo-500 pl-3 py-1">
+              {section.title}
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {section.items.map((item, ii) => {
+                const isChecked = !!checkedItems[item];
+                return (
+                  <button
+                    key={ii}
+                    onClick={() => toggleItem(item)}
+                    className={cn(
+                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all group",
+                      isChecked
+                        ? "bg-emerald-50 border-emerald-100 text-emerald-800"
+                        : "bg-white border-slate-50 hover:border-slate-200 hover:shadow-sm"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border-2 transition-all mt-0.5",
+                      isChecked ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 group-hover:border-indigo-300"
+                    )}>
+                      {isChecked && <Check className="w-3.5 h-3.5" />}
+                    </div>
+                    <span className={cn(
+                      "text-[13px] font-medium leading-relaxed transition-all",
+                      isChecked ? "line-through opacity-60" : "text-slate-700"
+                    )}>
+                      {item}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {progress === 100 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-12 p-8 rounded-[2.5rem] bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-center shadow-xl shadow-emerald-500/20"
+        >
+          <Trophy className="w-12 h-12 mx-auto mb-4" />
+          <h3 className="text-xl font-black mb-2">Topic Mastered!</h3>
+          <p className="text-sm font-medium text-white/80">You've completed all items in this checklist. Great job!</p>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 // ─── AI Content Viewer Modal ──────────────────────────────────────────────────
 
 function AiContentModal({ title, content, type, onClose }: {
@@ -121,7 +382,13 @@ function AiContentModal({ title, content, type, onClose }: {
           </button>
         </div>
         <div className="p-6 overflow-y-auto max-h-[75vh]">
-          <DppContentRenderer content={content} />
+          {(title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
+            <FlashcardViewer content={content} />
+          ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
+            <ChecklistViewer content={content} title={title} />
+          ) : (
+            <DppContentRenderer content={content} />
+          )}
         </div>
       </motion.div>
     </div>
@@ -203,16 +470,36 @@ function ResourceCard({ res, isLocked }: { res: CourseResource; isLocked: boolea
 // ─── Flat Resource List (DPP / PYQ / Material tabs) ──────────────────────────
 
 function ResourceTab({
-  resources, isLocked, emptyLabel,
-}: { resources: CourseResource[]; isLocked: boolean; emptyLabel: string }) {
+  resources, isLocked, emptyLabel, showSubFilters = false,
+}: { resources: CourseResource[]; isLocked: boolean; emptyLabel: string; showSubFilters?: boolean }) {
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("all");
+  const [subFilter, setSubFilter] = useState("all");
+
+  const categories = [
+    { id: "all", label: "All Items" },
+    { id: "guide", label: "Study Guides", pattern: "study guide" },
+    { id: "flashcards", label: "Flashcards", pattern: "flashcard" },
+    { id: "concepts", label: "Key Concepts", pattern: "key concept" },
+    { id: "checklist", label: "Revision Checklists", pattern: "checklist" },
+    { id: "others", label: "Other Notes" },
+  ];
 
   const subjects = useMemo(() => [...new Set(resources.map(r => r.subjectName).filter(Boolean))], [resources]);
 
   const filtered = resources.filter(r => {
     if (subjectFilter !== "all" && r.subjectName !== subjectFilter) return false;
     if (search && !r.title.toLowerCase().includes(search.toLowerCase())) return false;
+
+    if (showSubFilters && subFilter !== "all") {
+      const title = r.title.toLowerCase();
+      if (subFilter === "others") {
+        return !categories.some(c => c.pattern && title.includes(c.pattern));
+      }
+      const cat = categories.find(c => c.id === subFilter);
+      if (cat?.pattern && !title.includes(cat.pattern)) return false;
+    }
+
     return true;
   });
 
@@ -272,6 +559,42 @@ function ResourceTab({
           </div>
         )}
       </div>
+
+      {showSubFilters && (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {categories.map(cat => {
+            const count = resources.filter(r => {
+              const title = r.title.toLowerCase();
+              if (cat.id === "all") return true;
+              if (cat.id === "others") return !categories.some(c => c.pattern && title.includes(c.pattern));
+              return cat.pattern && title.includes(cat.pattern);
+            }).length;
+
+            if (count === 0 && cat.id !== "all") return null;
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSubFilter(cat.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all flex items-center gap-2",
+                  subFilter === cat.id
+                    ? "bg-slate-800 text-white border-transparent"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300"
+                )}
+              >
+                {cat.label}
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded-md text-[9px]",
+                  subFilter === cat.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <p className="text-xs text-slate-400 font-medium">
         {filtered.length} resource{filtered.length !== 1 ? "s" : ""}
@@ -2220,7 +2543,7 @@ export default function StudentCourseDetailPage() {
           {activeTab === "pyq" && <ResourceTab resources={pyqList} isLocked={resourcesLocked} emptyLabel="No PYQs available yet" />}
 
           {/* ── MATERIAL TAB ── */}
-          {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" />}
+          {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" showSubFilters />}
 
           {/* ── MOCK TESTS TAB ── */}
           {activeTab === "mock_test" && (() => {

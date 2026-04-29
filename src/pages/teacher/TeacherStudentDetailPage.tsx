@@ -148,7 +148,7 @@ export default function TeacherStudentDetailPage() {
         {/* Profile Section */}
         <div className="flex-1 space-y-6">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full hover:bg-primary/10">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full hover:bg-primary/10 shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -157,58 +157,91 @@ export default function TeacherStudentDetailPage() {
             </div>
           </div>
 
-          <div className="card-surface p-6 relative overflow-hidden group">
-            {/* Background Glow */}
-            <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl opacity-10 transition-colors ${insights?.riskStatus === "critical" ? "bg-red-500" : insights?.riskStatus === "warning" ? "bg-yellow-500" : "bg-primary"}`} />
+          <div className="card-surface p-6 sm:p-8 relative overflow-hidden group border-primary/5">
+            {/* Advanced Decorative Elements */}
+            <div className={`absolute top-0 right-0 w-64 h-64 blur-[120px] opacity-20 transition-colors duration-1000 ${insights?.riskStatus === "critical" ? "bg-red-500" : insights?.riskStatus === "warning" ? "bg-yellow-500" : "bg-primary"}`} />
+            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/5 blur-[80px] rounded-full" />
             
-            <div className="flex flex-col sm:flex-row gap-6 items-start relative z-10">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl font-black text-primary border border-primary/20 shadow-inner">
+            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10">
+              <div className="relative shrink-0">
+                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-3xl font-black text-primary border-2 border-primary/20 shadow-xl shadow-primary/10">
                   {getInitials(profile.name)}
                 </div>
                 {insights?.riskStatus === "critical" && (
-                  <div className="absolute -top-2 -right-2 p-1.5 bg-red-500 rounded-full border-4 border-card animate-bounce">
-                    <AlertCircle className="w-3.5 h-3.5 text-white" />
+                  <div className="absolute -top-3 -right-3 p-2 bg-red-500 rounded-full border-4 border-card animate-pulse shadow-lg shadow-red-500/50">
+                    <AlertCircle className="w-4 h-4 text-white" />
                   </div>
                 )}
               </div>
 
-              <div className="flex-1 space-y-3">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h2 className="text-xl font-black text-foreground">{profile.name}</h2>
+              <div className="flex-1 space-y-4 text-center md:text-left w-full">
+                <div className="space-y-1">
+                  <div className="flex flex-col md:flex-row items-center gap-3 mb-2">
+                    <h2 className="text-2xl font-black text-foreground tracking-tight">{profile.name}</h2>
                     {engagement && (
-                      <Badge variant="outline" className={`gap-1.5 border-current ${engagement.color} bg-current/5`}>
-                        {engagement.icon} {engagement.label}
+                      <Badge variant="outline" className={`gap-1.5 border-none ${engagement.color} bg-current/10 py-1 px-3 rounded-full text-[10px] font-black uppercase tracking-wider`}>
+                        <div className={`w-1.5 h-1.5 rounded-full bg-current animate-pulse`} />
+                        {engagement.label}
                       </Badge>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
-                    <span>Class {profile.class}</span>
-                    <span>•</span>
-                    <span>{profile.examTarget?.toUpperCase()} {profile.examYear}</span>
+                  <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-sm text-muted-foreground font-bold">
+                    <div className="flex items-center gap-1.5 bg-muted/30 px-3 py-1 rounded-full border border-border/50">
+                      <Target className="w-3.5 h-3.5 text-primary/70" />
+                      <span>Class {profile.class}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-muted/30 px-3 py-1 rounded-full border border-border/50">
+                      <Zap className="w-3.5 h-3.5 text-yellow-500/70" />
+                      <span>{profile.examTarget?.toUpperCase()} {profile.examYear}</span>
+                    </div>
                     {profile.targetCollege && (
-                      <>
-                        <span>•</span>
-                        <span className="text-primary/80">🎯 {profile.targetCollege}</span>
-                      </>
+                      <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1 rounded-full border border-primary/10 text-primary/90">
+                        <Trophy className="w-3.5 h-3.5" />
+                        <span>{profile.targetCollege}</span>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="text-[10px] font-bold">STREAK: {profile.streakDays}D</Badge>
-                  <Badge variant="secondary" className="text-[10px] font-bold">XP: {profile.xpTotal.toLocaleString()}</Badge>
-                  <Badge variant="secondary" className="text-[10px] font-bold">LAST ACTIVE: {daysAgo(profile.lastLoginAt)}</Badge>
+                <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                  <div className="flex flex-col items-center md:items-start px-4 py-2 rounded-2xl bg-muted/20 border border-border/40">
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Current Streak</span>
+                    <span className="text-sm font-black text-foreground flex items-center gap-1.5">
+                      <Flame className="w-4 h-4 text-orange-500 fill-orange-500/20" />
+                      {profile.streakDays} Days
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center md:items-start px-4 py-2 rounded-2xl bg-muted/20 border border-border/40">
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Total XP</span>
+                    <span className="text-sm font-black text-foreground flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-yellow-500 fill-yellow-500/20" />
+                      {profile.xpTotal.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center md:items-start px-4 py-2 rounded-2xl bg-muted/20 border border-border/40">
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Presence</span>
+                    <span className="text-sm font-black text-foreground flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-primary/70" />
+                      {daysAgo(profile.lastLoginAt)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-row sm:flex-col gap-2 shrink-0">
-                <Button size="sm" variant="outline" className="border-orange-500/30 text-orange-400 hover:bg-orange-500/10 h-9" onClick={() => setFlagOpen(true)}>
-                  <Flag className="w-3.5 h-3.5 mr-2" /> Flag
+              <div className="flex flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 md:flex-none justify-center rounded-full border-orange-500/20 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/40 h-10 px-6 font-bold transition-all duration-300" 
+                  onClick={() => setFlagOpen(true)}
+                >
+                  <Flag className="w-4 h-4 mr-2" /> Flag
                 </Button>
-                <Button size="sm" variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 h-9" onClick={() => setRemoveOpen(true)}>
-                  <UserMinus className="w-3.5 h-3.5 mr-2" /> Remove
+                <Button 
+                  variant="outline" 
+                  className="flex-1 md:flex-none justify-center rounded-full border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/40 h-10 px-6 font-bold transition-all duration-300" 
+                  onClick={() => setRemoveOpen(true)}
+                >
+                  <UserMinus className="w-4 h-4 mr-2" /> Remove
                 </Button>
               </div>
             </div>
@@ -443,12 +476,6 @@ export default function TeacherStudentDetailPage() {
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Legacy Data / Progress Tree */}
-      <div className="mt-12 pt-8 border-t border-border">
-        <SectionHeader title="Curriculum Mastery" subtitle="Detailed breakdown of subjects and topics" icon={BookOpen} />
-        <ProgressReportTree studentId={studentId} />
-      </div>
 
       {/* Modals */}
       <FlagStudentModal open={flagOpen} onOpenChange={setFlagOpen} batchId={batchId} studentId={studentId!} studentName={profile.name} onSuccess={() => toast.success("Student flagged — notifications sent")} />

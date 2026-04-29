@@ -34,68 +34,81 @@ export function StudentQuickActions({
   };
 
   return (
-    <div className="card-surface p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-foreground">Teacher Interventions</h3>
-        <Badge variant="outline" className="text-[10px] uppercase">Active Batch</Badge>
+    <div className="card-surface p-6 space-y-6 relative overflow-hidden">
+      {/* Decorative background element */}
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 blur-3xl rounded-full" />
+      
+      <div className="flex items-center justify-between relative z-10">
+        <h3 className="text-base font-bold text-foreground tracking-tight">Teacher Interventions</h3>
+        <Badge variant="secondary" className="text-[9px] font-black uppercase tracking-widest bg-muted/50 border-none px-2 py-0.5">
+          Active Batch
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 relative z-10">
         <Button 
           variant="outline" 
-          className="justify-start gap-2 h-11 border-primary/20 hover:border-primary/50 hover:bg-primary/5 group"
+          className="justify-start gap-4 h-16 rounded-[1.25rem] border-primary/10 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 group shadow-sm"
           onClick={() => handleAction("Assign Practice")}
         >
-          <BookPlus className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-          <div className="text-left">
-            <p className="text-xs font-bold leading-tight">Assign Practice</p>
-            <p className="text-[10px] text-muted-foreground">Focus on weak topics</p>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <BookPlus className="w-5 h-5" />
+          </div>
+          <div className="text-left min-w-0">
+            <p className="text-[13px] font-black leading-tight text-slate-900">Assign Practice</p>
+            <p className="text-[10px] text-slate-500 font-bold mt-0.5">Focus on weak topics</p>
           </div>
         </Button>
 
         <Button 
           variant="outline" 
-          className="justify-start gap-2 h-11 border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 group"
+          className="justify-start gap-4 h-16 rounded-[1.25rem] border-emerald-500/10 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all duration-300 group shadow-sm"
           onClick={() => handleAction("Send Reminder")}
         >
-          <Send className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-          <div className="text-left">
-            <p className="text-xs font-bold leading-tight">Send Reminder</p>
-            <p className="text-[10px] text-muted-foreground">Ping via WhatsApp/App</p>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <Send className="w-5 h-5" />
+          </div>
+          <div className="text-left min-w-0">
+            <p className="text-[13px] font-black leading-tight text-slate-900">Send Reminder</p>
+            <p className="text-[10px] text-slate-500 font-bold mt-0.5">Ping via WhatsApp/App</p>
           </div>
         </Button>
 
         <Button 
           variant="outline" 
-          className="justify-start gap-2 h-11 border-purple-500/20 hover:border-purple-500/50 hover:bg-purple-500/5 group"
+          className="justify-start gap-4 h-16 rounded-[1.25rem] border-purple-500/10 hover:border-purple-500/40 hover:bg-purple-500/5 transition-all duration-300 group shadow-sm"
           onClick={() => handleAction("Schedule Session")}
         >
-          <CalendarClock className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
-          <div className="text-left">
-            <p className="text-xs font-bold leading-tight">Schedule Doubt</p>
-            <p className="text-[10px] text-muted-foreground">1-on-1 session</p>
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <CalendarClock className="w-5 h-5" />
+          </div>
+          <div className="text-left min-w-0">
+            <p className="text-[13px] font-black leading-tight text-slate-900">Schedule Doubt</p>
+            <p className="text-[10px] text-slate-500 font-bold mt-0.5">1-on-1 session</p>
           </div>
         </Button>
 
         <Button 
           variant="outline" 
-          className="justify-start gap-2 h-11 border-orange-500/20 hover:border-orange-500/50 hover:bg-orange-500/5 group"
+          className="justify-start gap-4 h-16 rounded-[1.25rem] border-orange-500/10 hover:border-orange-500/40 hover:bg-orange-500/5 transition-all duration-300 group shadow-sm"
           onClick={() => handleAction("Regenerate Plan")}
         >
-          <RefreshCcw className="w-4 h-4 text-orange-500 group-hover:scale-110 transition-transform" />
-          <div className="text-left">
-            <p className="text-xs font-bold leading-tight">Regenerate Plan</p>
-            <p className="text-[10px] text-muted-foreground">Auto-optimize path</p>
+          <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <RefreshCcw className="w-5 h-5" />
+          </div>
+          <div className="text-left min-w-0">
+            <p className="text-[13px] font-black leading-tight text-slate-900">Regenerate Plan</p>
+            <p className="text-[10px] text-slate-500 font-bold mt-0.5">Auto-optimize path</p>
           </div>
         </Button>
       </div>
 
       {insights && insights.topWeakTopics.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Priority Topics to Assign</p>
+        <div className="mt-2 pt-6 border-t border-border/50 relative z-10">
+          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Priority Topics to Assign</p>
           <div className="flex flex-wrap gap-2">
             {insights.topWeakTopics.map((topic, i) => (
-              <Badge key={i} variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] py-1 px-2">
+              <Badge key={i} variant="secondary" className="bg-primary/5 hover:bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold py-1 px-3 rounded-full transition-colors cursor-default">
                 {topic}
               </Badge>
             ))}
