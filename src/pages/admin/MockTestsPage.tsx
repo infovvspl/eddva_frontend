@@ -106,7 +106,7 @@ const EXAM_CONFIGS: Record<string, { subjects: string[]; topics: string[]; descr
 };
 
 // ─── Question format preset (Test details → manual + AI) ────────────────────
-// CBSE: full-mock "cbse_all" uses three **distinct** lanes: conceptual, objective, short+long (no duplicate MCQ+objective streams).
+// CBSE exams use the standard academic lanes: MCQ, short answer, detailed answer, case study, and diagram.
 
 type QuestionMixId =
   | "comp_mcq"
@@ -124,10 +124,7 @@ type QuestionMixId =
   | "acad_case_study"
   | "acad_diagram"
   | "acad_all"
-  | "cbse_competency"
-  | "cbse_objective"
-  | "cbse_descriptive"
-  | "cbse_all";
+  | "acad_all";
 
 const QUESTION_MIX_CHOICES: { id: QuestionMixId; group: string; label: string; hint: string }[] = [
   { id: "comp_assertion_reason", group: "Competitive (JEE / NEET / similar)", label: "Assertion reason based", hint: "Assertion-reason style with explicit evaluation of both statements and final conclusion." },
@@ -145,10 +142,6 @@ const QUESTION_MIX_CHOICES: { id: QuestionMixId; group: string; label: string; h
   { id: "acad_case_study", group: "Academics (Board / School style)", label: "Case study based", hint: "Case/data/source based board-style questions." },
   { id: "acad_diagram", group: "Academics (Board / School style)", label: "Diagram based", hint: "Diagram/label explanation style." },
   { id: "acad_all", group: "Academics (Board / School style)", label: "Mix of all", hint: "Balanced academic mix: objective + short + detailed + case + diagram." },
-  { id: "cbse_competency", group: "Legacy (CBSE)", label: "Competency-based (~50% of paper)", hint: "Legacy preset retained for backward compatibility." },
-  { id: "cbse_objective", group: "Legacy (CBSE)", label: "Objective & selection (~20% of paper)", hint: "Legacy preset retained for backward compatibility." },
-  { id: "cbse_descriptive", group: "Legacy (CBSE)", label: "Short + long answer (~30% of paper)", hint: "Legacy preset retained for backward compatibility." },
-  { id: "cbse_all", group: "Legacy (CBSE)", label: "Full CBSE-style paper (all sections)", hint: "Legacy preset retained for backward compatibility." },
 ];
 
 type DraftQKind = "mcq_single" | "mcq_multi" | "integer" | "descriptive";
@@ -175,11 +168,6 @@ function nextDraftKindForMix(mix: QuestionMixId, index: number): DraftQKind {
     case "acad_diagram": return "descriptive";
     case "acad_all":
       return (["mcq_single", "mcq_single", "descriptive", "descriptive", "descriptive", "descriptive"] as const)[index % 6];
-    case "cbse_competency":
-    case "cbse_objective": return "mcq_single";
-    case "cbse_descriptive": return "descriptive";
-    // Conceptual and objective are both generated as `mcq_single` server-side, but with different topicAppend (full CBSE).
-    case "cbse_all": return (["mcq_single", "mcq_single", "descriptive"] as const)[index % 3];
     default: return "mcq_single";
   }
 }
@@ -192,18 +180,8 @@ function splitInt3(n: number, a: number, b: number, c: number): [number, number,
   return [x, y, z];
 }
 
-const CBSE_CONCEPTUAL_APPEND =
-  " CBSE CONCEPTUAL only: case study, source- or data-based, application, HOTS, reasoning. Do NOT use this segment for VSA, assertion–reason-only, or plain recall one-liner MCQs; keep those in the objective segment.";
-
-const CBSE_COMP_APPEND = CBSE_CONCEPTUAL_APPEND;
-
-const CBSE_OBJECTIVE_APPEND =
-  " CBSE OBJECTIVE section only: very short answer, assertion–reason, and selection-style items (incl. single-correct MCQ). No long case-study or competency-style passages; do not mirror the conceptual-segment style.";
-
-const CBSE_OBJ_APPEND = CBSE_OBJECTIVE_APPEND;
-
 const CBSE_DESC_APPEND =
-  ` CBSE short and long answer: constructed response, steps or reasoning expected; in full-mock this lane is the largest block (~50%). ${CBSE_THEORY_PATTERN_NOTE} ` +
+  ` CBSE short and long answer: constructed response, steps or reasoning expected; in board-style tests this lane is vital. ${CBSE_THEORY_PATTERN_NOTE} ` +
   `For every descriptive question, generate a model answer that follows CBSE mark split exactly: ` +
   `2m -> (1 mark definition/statement + 1 mark second point/example), ` +
   `3m -> (1 mark definition/principle + 2 marks explanation in two clear points), ` +
@@ -408,31 +386,12 @@ function applyMarksPolicyToDraft(
   };
 }
 
-type CbseBucket = "comp" | "obj" | "desc";
-
-type AiSeg = {
-  questionType: MockAiGenerateType;
-  count: number;
-  topicAppend: string;
-  asDraft: DraftQKind;
-  laneLabel?: string;
-  /** When set (full CBSE), avoids mistaking two `mcq_single` segments for the same bucket. */
-  cbseBucket?: CbseBucket;
-};
-
-function bucketFromSeg(seg: AiSeg): CbseBucket {
-  if (seg.cbseBucket) return seg.cbseBucket;
-  if (seg.asDraft === "descriptive") return "desc";
-  if (seg.topicAppend === CBSE_CONCEPTUAL_APPEND) return "comp";
-  return "obj";
-}
-
 function looksCompetencyStyle(q: AiGeneratedQuestion): boolean {
   const t = `${q.questionText || ""} ${q.explanation || ""}`.toLowerCase();
   const cues = [
     "case", "scenario", "passage", "source", "data", "graph", "table",
-    "assertion", "reason", "application", "real-life", "consider the following",
-    "read the following", "statement and",
+    "application", "real-life", "consider the following",
+    "read the following",
   ];
   return cues.some((c) => t.includes(c));
 }
@@ -501,31 +460,9 @@ function buildAiPlan(mix: QuestionMixId, n: number): AiSeg[] {
       ];
       return plan.filter((seg) => seg.count > 0);
     }
-    case "cbse_competency":
-      return [{ questionType: "mcq_single", count: n, topicAppend: CBSE_COMP_APPEND, asDraft: "mcq_single" }];
-    case "cbse_objective":
-      return [{ questionType: "mcq_single", count: n, topicAppend: CBSE_OBJ_APPEND, asDraft: "mcq_single" }];
-    case "cbse_descriptive":
-      return [{ questionType: "descriptive", count: n, topicAppend: CBSE_DESC_APPEND, asDraft: "descriptive" }];
-    case "cbse_all": {
-      // Conceptual + objective + short/long — ~25% / 25% / 50% (remainder → conceptual).
-      const [a, b, c] = splitInt3(n, 25, 25, 50);
-      const rem = n - a - b - c;
-      return [
-        { questionType: "mcq_single", count: a + rem, topicAppend: CBSE_CONCEPTUAL_APPEND, asDraft: "mcq_single", cbseBucket: "comp" },
-        { questionType: "mcq_single", count: b, topicAppend: CBSE_OBJECTIVE_APPEND, asDraft: "mcq_single", cbseBucket: "obj" },
-        { questionType: "descriptive", count: c, topicAppend: CBSE_DESC_APPEND, asDraft: "descriptive", cbseBucket: "desc" },
-      ];
-    }
     default:
       return [{ questionType: "mcq_single", count: n, topicAppend: "", asDraft: "mcq_single" }];
   }
-}
-
-function getCbseBucketLabel(b: CbseBucket): string {
-  if (b === "comp") return "Conceptual (case / HOTS)";
-  if (b === "obj") return "Objective (VSA / selection)";
-  return "Short & long (descriptive)";
 }
 
 const DRAFT_KIND_LABEL: Record<DraftQKind, string> = {
@@ -541,11 +478,6 @@ const DRAFT_KIND_LABEL: Record<DraftQKind, string> = {
 function getSegmentLabel(mix: QuestionMixId, seg: AiSeg, i: number, n: number): string {
   if (seg.laneLabel) {
     return n <= 1 ? seg.laneLabel : `Segment ${i + 1} of ${n}: ${seg.laneLabel}`;
-  }
-  if (mix === "cbse_all" && seg.cbseBucket) {
-    return n <= 1
-      ? getCbseBucketLabel(seg.cbseBucket)
-      : `Segment ${i + 1} of ${n}: ${getCbseBucketLabel(seg.cbseBucket)}`;
   }
   const t = DRAFT_KIND_LABEL[seg.asDraft];
   return n <= 1 ? t : `Segment ${i + 1} of ${n}: ${t}`;
@@ -579,10 +511,8 @@ type DraftQuestion = CreateMockTestQuestionPayload & {
   subject?: string;
   explanation?: string;
   generatedTypeLabel?: string;
-  /** Model answer (descriptive) */
-  solutionText?: string;
   /** Optional generation bucket metadata for cache reuse */
-  cacheBucket?: CbseBucket;
+  cacheBucket?: any;
 };
 
 const GENERATED_TYPE_TAG_PREFIX = "gen_type:";
@@ -1329,11 +1259,6 @@ function AIGeneratePanel({
       const seenQuestions = new Set<string>();
       let duplicateFilteredCount = 0;
       const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/[^\w\s]/g, "").trim();
-      const cbseTarget: Record<CbseBucket, number> = { comp: 0, obj: 0, desc: 0 };
-      const cbseGot: Record<CbseBucket, number> = { comp: 0, obj: 0, desc: 0 };
-      if (mainMixId === "cbse_all") {
-        for (const seg of plan) cbseTarget[bucketFromSeg(seg)] += seg.count;
-      }
 
       // 1) Cache-first reuse (topic/chapter/subject aware) to reduce AI timeouts.
       const cacheEntries = loadAiQuestionCache();
@@ -1435,61 +1360,15 @@ function AIGeneratePanel({
               if (s.status === "fulfilled") parallelRes.push(s.value);
             }
           }
-          parallelRes.sort((a, b) => a.segIndex - b.segIndex);
           for (const { seg, raw } of parallelRes) {
-            const bucket = bucketFromSeg(seg);
             for (const q of raw) {
               const key = norm(q.questionText || "");
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
-              if (mainMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
               if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
               drafts.push(
-                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel),
+                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel),
               );
-              if (mainMixId === "cbse_all") cbseGot[bucket] += 1;
-            }
-          }
-        }
-      }
-
-      if (mainMixId === "cbse_all" && cacheMode !== "cache_only") {
-        for (const seg of plan) {
-          const bucket = bucketFromSeg(seg);
-          let need = Math.max(0, cbseTarget[bucket] - cbseGot[bucket]);
-          let retry = 0;
-          while (need > 0 && retry < 3) {
-            retry += 1;
-            const remainingNeed = getRemainingDifficultyNeed(drafts, {
-              easy: easyCount,
-              medium: mediumCount,
-              hard: hardCount,
-            });
-            const alloc = allocateDifficultyCounts(need, remainingNeed, rotationSeed + retry);
-            setLoader({
-              title: "Refining — CBSE balance",
-              detail: `${getCbseBucketLabel(bucket)} — attempt ${retry}/3, up to ${need} more this call · ${drafts.length}/${requestedCount} total`,
-              percent: pct(drafts.length),
-            });
-            const raw = await aiGenerateMockTestQuestions({
-              topicId: aiTopicId || undefined,
-              topicName: `${topicName} ${seg.topicAppend} STRICTLY produce ${bucket === "comp" ? "conceptual/case/source/data/application/HOTS only" : bucket === "obj" ? "objective/VSA/assertion–reason/selection only" : "short and long descriptive answers only"}. Avoid repeating previous questions.`.trim(),
-              totalCount: need,
-              easyCount: alloc.easy,
-              mediumCount: alloc.medium,
-              hardCount: alloc.hard,
-              questionType: seg.questionType,
-            }).catch(() => [] as AiGeneratedQuestion[]);
-            for (const q of raw) {
-              const key = norm(q.questionText || "");
-              if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
-              if (bucket === "comp" && !looksCompetencyStyle(q)) continue;
-              if (!laneQualityPass(q, seg)) continue;
-              seenQuestions.add(key);
-              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
-              cbseGot[bucket] += 1;
-              need -= 1;
-              if (need <= 0) break;
             }
           }
         }
@@ -1537,68 +1416,17 @@ function AIGeneratePanel({
               hardCount: alloc.hard,
               questionType: seg.questionType,
             }).catch(() => [] as AiGeneratedQuestion[]);
-            const bucket = bucketFromSeg(seg);
             for (const q of raw) {
               const key = norm(q.questionText || "");
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
               if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
-              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
+              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel));
               have = countLane(lane);
               if (have >= req || drafts.length >= requestedCount) break;
             }
             if (!raw.length) break;
           }
-        }
-      }
-
-      // Final exact-count top-up in chunks (merge until exact requested count).
-      let topupGuard = 0;
-      while (cacheMode !== "cache_only" && drafts.length < requestedCount && topupGuard < 40) {
-        topupGuard += 1;
-        const need = requestedCount - drafts.length;
-        const chunk = Math.min(10, need);
-        let seg = plan[topupGuard % Math.max(1, plan.length)];
-        if (mainMixId === "cbse_all") {
-          const deficits: Array<{ bucket: CbseBucket; need: number }> = [
-            { bucket: "comp", need: Math.max(0, cbseTarget.comp - cbseGot.comp) },
-            { bucket: "obj", need: Math.max(0, cbseTarget.obj - cbseGot.obj) },
-            { bucket: "desc", need: Math.max(0, cbseTarget.desc - cbseGot.desc) },
-          ];
-          const targetBucket = deficits.sort((a, b) => b.need - a.need)[0]?.bucket ?? "obj";
-          const found = plan.find((p) => bucketFromSeg(p) === targetBucket);
-          if (found) seg = found;
-        }
-        setLoader({
-          title: "Top-up",
-          detail: `Pass ${topupGuard}/16 · ${getSegmentLabel(mainMixId, seg, 0, plan.length)} — up to ${chunk} new, ${need} still short · have ${drafts.length}/${requestedCount}`,
-          percent: pct(drafts.length),
-        });
-        const remainingNeed = getRemainingDifficultyNeed(drafts, {
-          easy: easyCount,
-          medium: mediumCount,
-          hard: hardCount,
-        });
-        const alloc = allocateDifficultyCounts(chunk, remainingNeed, rotationSeed + topupGuard);
-        const raw = await aiGenerateMockTestQuestions({
-          topicId: aiTopicId || undefined,
-          topicName: `${topicName} ${seg.topicAppend} Generate distinct, non-repeating questions only.`.trim(),
-          totalCount: chunk,
-          easyCount: alloc.easy,
-          mediumCount: alloc.medium,
-          hardCount: alloc.hard,
-          questionType: seg.questionType,
-        }).catch(() => [] as AiGeneratedQuestion[]);
-        const bucket = bucketFromSeg(seg);
-        for (const q of raw) {
-          const key = norm(q.questionText || "");
-          if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
-          if (mainMixId === "cbse_all" && bucket === "comp" && !looksCompetencyStyle(q)) continue;
-          if (!laneQualityPass(q, seg)) continue;
-          seenQuestions.add(key);
-          drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
-          if (mainMixId === "cbse_all") cbseGot[bucket] += 1;
-          if (drafts.length >= requestedCount) break;
         }
       }
 
@@ -1630,14 +1458,12 @@ function AIGeneratePanel({
             hardCount: alloc.hard,
             questionType: seg.questionType,
           }).catch(() => [] as AiGeneratedQuestion[]);
-          const bucket = bucketFromSeg(seg);
           for (const q of raw) {
             const key = norm(q.questionText || "");
             if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
             if (!laneQualityPass(q, seg)) continue;
             seenQuestions.add(key);
-            drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, bucket, seg.laneLabel));
-            if (mainMixId === "cbse_all") cbseGot[bucket] += 1;
+            drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel));
             if (drafts.length >= requestedCount) break;
           }
           if (!raw.length) break;
@@ -1669,11 +1495,7 @@ function AIGeneratePanel({
         percent: 100,
       });
       const duplicateFiltered = Math.max(0, duplicateFilteredCount);
-      if (mainMixId === "cbse_all") {
-        setQualityReport(
-          `Coverage: Conceptual ${cbseGot.comp}/${cbseTarget.comp} · Objective ${cbseGot.obj}/${cbseTarget.obj} · Short/long ${cbseGot.desc}/${cbseTarget.desc}${duplicateFiltered > 0 ? ` · Duplicates filtered: ${duplicateFiltered}` : ""}`,
-        );
-      } else if (mainMixId === "comp_all" || mainMixId === "acad_all") {
+      if (mainMixId === "comp_all" || mainMixId === "acad_all") {
         const activeLanes = plan
           .filter((s) => s.count > 0 && s.laneLabel)
           .map((s) => s.laneLabel as string);
@@ -2285,10 +2107,6 @@ function CreateTestModal({
         add("descriptive", "Detailed answers type");
         add("descriptive", "Case study based");
         add("descriptive", "Diagram based");
-      } else if (mixId === "cbse_all") {
-        add("mcq_single", "Conceptual/Competency");
-        add("mcq_single", "Objective");
-        add("descriptive", "Short/Long answer");
       } else {
         const choice = QUESTION_MIX_CHOICES.find(c => c.id === mixId);
         if (choice) {
@@ -2431,7 +2249,10 @@ function CreateTestModal({
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6 my-8"
+        className={cn(
+          "w-full rounded-2xl bg-white shadow-2xl p-6 my-8 transition-all duration-300 ease-in-out",
+          step === 3 ? "max-w-[85%]" : "max-w-xl"
+        )}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
@@ -2626,29 +2447,48 @@ function CreateTestModal({
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Question types *</label>
                 <p className="text-[11px] text-slate-400 mb-2">Select one or more templates. The AI will distribute questions proportionally.</p>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-[220px] overflow-y-auto space-y-3">
-                  {QUESTION_MIX_CHOICES.filter(c => 
-                    ["JEE", "NEET"].includes(targetExam) ? c.id.startsWith("comp_") : c.id.startsWith("acad_")
-                  ).map(c => (
-                    <label key={c.id} className="flex items-start gap-2.5 cursor-pointer group">
-                      <input type="checkbox"
-                        checked={questionMixIds.includes(c.id)}
-                        onChange={e => {
-                          if (e.target.checked) {
-                            setQuestionMixIds(prev => [...prev, c.id]);
-                          } else {
-                            if (questionMixIds.length > 1) {
-                              setQuestionMixIds(prev => prev.filter(id => id !== c.id));
-                            }
-                          }
-                        }}
-                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#013889] focus:ring-[#013889] cursor-pointer" />
-                      <div>
-                         <span className="text-sm font-semibold text-slate-700 group-hover:text-[#013889] transition-colors">{c.label}</span>
-                         <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{c.hint}</p>
-                      </div>
-                    </label>
-                  ))}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-[300px] overflow-y-auto space-y-4">
+                  {(() => {
+                    const isCompetitive = targetExam.toUpperCase().includes("JEE") || targetExam.toUpperCase().includes("NEET");
+                    const filtered = QUESTION_MIX_CHOICES.filter(c =>
+                      isCompetitive
+                        ? c.id.startsWith("comp_")
+                        : c.id.startsWith("acad_")
+                    );
+                    
+                    let lastGroup = "";
+                    return filtered.map((c, idx) => {
+                      const showGroup = c.group !== lastGroup;
+                      lastGroup = c.group;
+                      return (
+                        <div key={c.id} className={cn("space-y-2", showGroup && idx > 0 && "pt-2 border-t border-slate-200/60")}>
+                          {showGroup && (
+                            <p className="text-[10px] font-black uppercase tracking-wider text-[#013889] mb-2 pl-0.5">
+                              {c.group}
+                            </p>
+                          )}
+                          <label className="flex items-start gap-2.5 cursor-pointer group">
+                            <input type="checkbox"
+                              checked={questionMixIds.includes(c.id)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setQuestionMixIds(prev => [...prev, c.id]);
+                                } else {
+                                  if (questionMixIds.length > 1) {
+                                    setQuestionMixIds(prev => prev.filter(id => id !== c.id));
+                                  }
+                                }
+                              }}
+                              className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#013889] focus:ring-[#013889] cursor-pointer" />
+                            <div>
+                               <span className="text-sm font-semibold text-slate-700 group-hover:text-[#013889] transition-colors">{c.label}</span>
+                               <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{c.hint}</p>
+                            </div>
+                          </label>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
                 {isCompetitiveMix(questionMixIds[0] || "comp_mcq") ? (
                   <p className="text-[11px] text-amber-700 mt-1">Competitive marking active: correct adds marks, wrong deducts marks.</p>

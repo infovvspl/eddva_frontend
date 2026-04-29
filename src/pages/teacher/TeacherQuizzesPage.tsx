@@ -957,7 +957,13 @@ function AiReviewPanel({
 
 // ─── AI Generate Panel ─────────────────────────────────────────────────────
 
-function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topicName: string; onAdd: (qs: LocalQuestion[]) => void }) {
+function AiGeneratePanel({ topicId, topicName, subjectName, chapterName, onAdd }: {
+  topicId: string;
+  topicName: string;
+  subjectName?: string;
+  chapterName?: string;
+  onAdd: (qs: LocalQuestion[]) => void;
+}) {
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>("medium");
   const [type, setType] = useState<QuestionType>("mcq_single");
@@ -974,6 +980,8 @@ function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topic
         count,
         difficulty,
         type,
+        subjectName: subjectName || undefined,
+        chapterName: chapterName || undefined,
       }, { timeout: 120_000 });
       const raw = extractData<any>(res);
       const list = extractQuestionList(raw);
@@ -1066,10 +1074,12 @@ function AiGeneratePanel({ topicId, topicName, onAdd }: { topicId: string; topic
 
 // ─── Multi-Topic AI Panel (chapter / subject scope) ───────────────────────
 
-function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
+function MultiTopicAiPanel({ scope, subjectId, subjectName, chapterId, chapterName, scopeLabel, onAdd }: {
   scope: "chapter" | "subject";
   subjectId: string;
+  subjectName: string;
   chapterId: string;
+  chapterName: string;
   scopeLabel: string;
   onAdd: (qs: LocalQuestion[]) => void;
 }) {
@@ -1077,12 +1087,12 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
   const [difficulty, setDifficulty] = useState<DifficultyLevel>("medium");
   const [type, setType] = useState<QuestionType>("mcq_single");
   const [loading, setLoading] = useState(false);
-  const [topics, setTopics] = useState<{ id: string; name: string }[]>([]);
+  const [topics, setTopics] = useState<{ id: string; name: string; chapterName: string; subjectName: string }[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [preview, setPreview] = useState<LocalQuestion[] | null>(null);
 
-  // Load all topics for the scope
+  // Load all topics for the scope, preserving chapter/subject context per topic
   useEffect(() => {
     setTopics([]);
     const fetchTopics = async () => {
@@ -1091,15 +1101,27 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
         if (scope === "chapter" && chapterId) {
           const r = await apiClient.get(`/content/topics?chapterId=${chapterId}`);
           const d = extractData<any[]>(r);
-          setTopics(Array.isArray(d) ? d : (d as any)?.data ?? []);
+          const raw: any[] = Array.isArray(d) ? d : (d as any)?.data ?? [];
+          setTopics(raw.map(t => ({
+            id: t.id,
+            name: t.name,
+            chapterName: chapterName,
+            subjectName: subjectName,
+          })));
         } else if (scope === "subject" && subjectId) {
           const cr = await apiClient.get(`/content/chapters?subjectId=${subjectId}`);
           const chapters: any[] = (() => { const d = extractData<any[]>(cr); return Array.isArray(d) ? d : (d as any)?.data ?? []; })();
-          const all: any[] = [];
+          const all: { id: string; name: string; chapterName: string; subjectName: string }[] = [];
           for (const ch of chapters) {
             const tr = await apiClient.get(`/content/topics?chapterId=${ch.id}`);
             const d = extractData<any[]>(tr);
-            all.push(...(Array.isArray(d) ? d : (d as any)?.data ?? []));
+            const topicsInChapter: any[] = Array.isArray(d) ? d : (d as any)?.data ?? [];
+            all.push(...topicsInChapter.map(t => ({
+              id: t.id,
+              name: t.name,
+              chapterName: ch.name,
+              subjectName: subjectName,
+            })));
           }
           setTopics(all);
         }
@@ -1107,7 +1129,7 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
       finally { setLoadingTopics(false); }
     };
     fetchTopics();
-  }, [scope, subjectId, chapterId]);
+  }, [scope, subjectId, chapterId, subjectName, chapterName]);
 
   const generate = async () => {
     if (!topics.length) { toast.error("No topics found for this scope."); return; }
@@ -1123,6 +1145,8 @@ function MultiTopicAiPanel({ scope, subjectId, chapterId, scopeLabel, onAdd }: {
           count: perTopic,
           difficulty,
           type,
+          subjectName: topic.subjectName || undefined,
+          chapterName: topic.chapterName || undefined,
         }, { timeout: 120_000 });
         const raw = extractData<any>(res);
         const list = extractQuestionList(raw);
@@ -1434,13 +1458,21 @@ function Step2AddQuestions({ state, onAdd, onRemove, onBack, onNext }: Step2Prop
             <MultiTopicAiPanel
               scope={state.testScope}
               subjectId={state.subjectId}
+              subjectName={state.subjectName}
               chapterId={state.chapterId}
+              chapterName={state.chapterName}
               scopeLabel={state.testScope === "chapter" ? (state.chapterName || "Chapter") : (state.subjectName || "Subject")}
               onAdd={onAdd}
             />
           )}
           {tab === "ai" && state.testScope !== "chapter" && state.testScope !== "subject" && (
-            <AiGeneratePanel topicId={activeTopicId} topicName={activeTopicName} onAdd={onAdd} />
+            <AiGeneratePanel
+              topicId={activeTopicId}
+              topicName={activeTopicName}
+              subjectName={state.subjectName}
+              chapterName={state.chapterName}
+              onAdd={onAdd}
+            />
           )}
         </div>
 

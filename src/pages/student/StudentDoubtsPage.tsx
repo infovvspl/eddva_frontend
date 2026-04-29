@@ -47,12 +47,52 @@ interface AiAnswerStructured {
 
 function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | null {
   if (!raw) return null;
+  let str = raw.trim();
+  
+  if (str.startsWith('"') && str.endsWith('"') && str.length > 2) {
+    try {
+      const unquoted = JSON.parse(str);
+      if (typeof unquoted === "string") str = unquoted.trim();
+    } catch { /* ... */ }
+  }
+
+  if (str.includes("```")) {
+    const match = str.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (match) str = match[1].trim();
+  }
+
+  const check = (obj: any): AiAnswerStructured | null => {
+    if (obj && typeof obj === "object" && (obj.brief || obj.detailed)) return obj as AiAnswerStructured;
+    return null;
+  };
+
   try {
-    const parsed = JSON.parse(raw);
-    if (parsed && (parsed.brief || parsed.detailed)) return parsed as AiAnswerStructured;
-  } catch { /* plain-text response — handled as fallback */ }
+    const parsed = JSON.parse(str);
+    const result = check(parsed);
+    if (result) return result;
+  } catch {
+    const jsonMatch = str.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const extracted = JSON.parse(jsonMatch[0]);
+        const result = check(extracted);
+        if (result) return result;
+      } catch { /* Fail silently */ }
+    }
+  }
   return null;
 }
+
+const formatMarkdown = (text?: string) => {
+  if (!text) return "";
+  return text
+    .replace(/\\n/g, "\n")
+    .replace(/\r?\n/g, "\n\n")
+    .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    .replace(/(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+};
 
 // ─── Doubt Card ───────────────────────────────────────────────────────────────
 
@@ -120,7 +160,11 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
               {/* Question */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Your Question</p>
-                <p className="text-sm text-slate-800 font-medium leading-relaxed">{doubt.questionText || "Question shared as image."}</p>
+                <div className="text-sm text-slate-800 prose prose-sm max-w-none prose-p:mb-2 prose-ul:my-2">
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {formatMarkdown(doubt.questionText || "Question shared as image.")}
+                  </ReactMarkdown>
+                </div>
                 {doubt.questionImageUrl && (
                   <div className="mt-3 border border-slate-200 rounded-lg overflow-hidden bg-white">
                     <img src={doubt.questionImageUrl} alt="Question" className="max-h-72 object-contain w-full" />
@@ -137,7 +181,11 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                     </div>
                     <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Teacher's Answer</p>
                   </div>
-                  <p className="text-sm text-emerald-900 font-medium leading-relaxed">{doubt.teacherResponse}</p>
+                  <div className="text-sm text-emerald-900 prose prose-sm prose-emerald max-w-none prose-p:mb-2 prose-ul:my-2">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {formatMarkdown(doubt.teacherResponse)}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               )}
 
@@ -186,16 +234,16 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                   <div className="px-4 pb-4">
                     {parsedAi ? (
                       viewMode === "brief" ? (
-                        <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
+                        <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
                           <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                            {parsedAi.brief?.answer || parsedAi.detailed?.final_answer || doubt.aiExplanation}
+                            {formatMarkdown(parsedAi.brief?.answer || parsedAi.detailed?.final_answer || parsedAi.detailed?.solution || doubt.aiExplanation)}
                           </ReactMarkdown>
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
+                          <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {parsedAi.detailed?.solution || parsedAi.brief?.answer || doubt.aiExplanation}
+                              {formatMarkdown(parsedAi.detailed?.solution || parsedAi.detailed?.explanation || parsedAi.brief?.answer || doubt.aiExplanation)}
                             </ReactMarkdown>
                           </div>
                           {parsedAi.detailed?.verification && (
@@ -214,9 +262,9 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                       )
                     ) : (
                       // Fallback for plain-text responses
-                      <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:my-1 prose-ul:my-1">
+                      <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {doubt.aiExplanation}
+                          {formatMarkdown(doubt.aiExplanation)}
                         </ReactMarkdown>
                       </div>
                     )}
