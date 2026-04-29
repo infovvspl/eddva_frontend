@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { 
   TrendingUp, 
@@ -64,7 +64,9 @@ function ProgressIndicator({ value, label, color = "primary" }: { value: number;
 
 export default function StudentProgressPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const batchId = searchParams.get("batchId") ?? undefined;
+  const [activeTab, setActiveTab] = useState("performance");
 
   const insightsQuery = useQuery({
     queryKey: ["student", "insights", batchId],
@@ -148,7 +150,7 @@ export default function StudentProgressPage() {
       </div>
 
       {/* Detail Tabs */}
-      <Tabs defaultValue="performance" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center border-b border-border">
           <TabsList className="bg-transparent h-auto p-0 gap-8">
             {["performance", "engagement", "study-plan"].map((t) => (
@@ -189,7 +191,7 @@ export default function StudentProgressPage() {
              </div>
           </div>
 
-          <div className="card-surface p-6">
+          <div id="topic-mastery" className="card-surface p-6">
              <SectionHeader title="Topic Mastery" subtitle="Detailed breakdown of topic-wise accuracy" icon={Target} />
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-6">
                 {perfQuery.data?.topicPerformance.map((t, i) => (
@@ -307,10 +309,19 @@ export default function StudentProgressPage() {
                is a bottleneck. We recommend focusing on "Work Power Energy" practice sessions.
             </p>
             <div className="flex gap-4 pt-2">
-               <button className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+               <button 
+                 onClick={() => navigate("/student/learn")}
+                 className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
                  Fix Weak Topics
                </button>
-               <button className="px-6 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
+               <button 
+                 onClick={() => {
+                   setActiveTab("performance");
+                   setTimeout(() => {
+                     document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" });
+                   }, 100);
+                 }}
+                 className="px-6 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
                  View Topic Breakdown
                </button>
             </div>

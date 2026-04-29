@@ -1749,7 +1749,7 @@ function AIGeneratePanel({
         </p>
       )}
 
-      {!topicSelected && (
+      {!aiSubjectName && !aiChapterName && !topicSelected && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-xs font-semibold text-slate-500 mb-2">Subjects covered:</p>
           <div className="flex flex-wrap gap-1.5">
