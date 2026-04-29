@@ -316,7 +316,10 @@ export function useUploadTopicResource(topicId: string, courseId: string) {
       description?: string;
       sortOrder?: number;
     }) => adminApi.uploadTopicResource({ topicId, courseId, ...payload }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
   });
 }
 
@@ -325,7 +328,10 @@ export function useDeleteTopicResource(topicId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (resourceId: string) => adminApi.deleteTopicResource(resourceId, topicId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
   });
 }
 
@@ -334,7 +340,22 @@ export function useAddTopicResourceLink(topicId: string) {
   return useMutation({
     mutationFn: (payload: { title: string; type: adminApi.TopicResourceType; externalUrl: string; description?: string }) =>
       adminApi.addTopicResourceLink({ topicId, ...payload }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
+  });
+}
+
+export function useSaveAiGeneratedResource(topicId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { title: string; content: string; resourceType: string }) =>
+      adminApi.saveAiGeneratedResource(topicId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminKeys.topicResources(topicId) });
+      qc.invalidateQueries({ queryKey: ["admin", "content-coverage"] });
+    },
   });
 }
 
