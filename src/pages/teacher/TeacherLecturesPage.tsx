@@ -613,12 +613,14 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
     }
     setIsGeneratingQuiz(true);
     try {
+      const courseLevel = lecture.batch?.name || lecture.topic?.chapter?.subject?.name || "General";
       const result = await generateQuizForLecture({
         notes,
         transcript,
         lectureTitle: lecture.title,
         topicId: lecture.topic?.id,
         numQuestions: numQuizQuestions,
+        courseLevel,
       });
       const qs: QuizCheckpoint[] = (result as any).questions ?? [];
       setQuizQuestions(qs);
@@ -1974,10 +1976,14 @@ function UploadModal({ onClose, onSuccess, batches }: {
         videoUrl: finalVideoUrl || undefined,
         thumbnailUrl: finalThumbnailUrl,
       });
-      toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
+      if (finalVideoUrl) {
+        toast({ title: "Lecture uploaded!", description: "AI is analysing your lecture in the background." });
+        // Kick off background AI processing — non-blocking
+        onSuccess(lecture.id, lecture.videoUrl ?? finalVideoUrl, topicId);
+      } else {
+        toast({ title: "Lecture created!", description: "No video attached. AI processing skipped." });
+      }
       onClose();
-      // Kick off background AI processing — non-blocking
-      onSuccess(lecture.id, lecture.videoUrl ?? finalVideoUrl, topicId);
     } catch (err: any) {
       toast({ title: err?.response?.data?.message || err?.message || "Upload failed", variant: "destructive" });
     } finally { setIsSubmitting(false); }
@@ -2632,9 +2638,10 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
   const tsBadge = lecture.transcriptStatus ? transcriptStatusBadge[lecture.transcriptStatus] : null;
   const isYouTube = /youtube\.com|youtu\.be/i.test(lecture.videoUrl ?? "");
   // Suppress "failed" UI when notes are actively generating — transcript clearly exists
+  const notesFailed = lecture.aiNotesMarkdown === "__NOTES_FAILED__";
   const transcriptFailed = lecture.transcriptStatus === "failed" && !isGeneratingNotes;
   const isTranscribing = lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending";
-  const notesGenerable = lecture.transcriptStatus === "done" && !lecture.aiNotesMarkdown && !isTranscribing && !isGeneratingNotes;
+  const notesGenerable = lecture.transcriptStatus === "done" && (!lecture.aiNotesMarkdown || notesFailed) && !isTranscribing && !isGeneratingNotes;
 
   const { progressPct, elapsed, currentStep } = useAiProgress(lecture, processingStep);
   const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
@@ -2715,6 +2722,9 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
                 {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
                 {statusLabel[lecture.status] ?? lecture.status}
               </span>
+              {(isTranscribing || isGeneratingNotes) && (
+                <span className="text-[10px] text-muted-foreground font-medium mt-0.5 mb-1">Est. ~5-9 min</span>
+              )}
               {isGeneratingNotes && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-violet-500/10 text-violet-600 border-violet-500/20">
                   <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -2776,6 +2786,12 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
           {(processingStep !== undefined || lecture.status === "processing") && lecture.status !== "draft" && lecture.status !== "published" && (
             <div className="mt-3">
               <AiProcessingCard lecture={lecture} activeStep={processingStep} />
+            </div>
+          )}
+
+          {notesFailed && !isGeneratingNotes && (
+            <div className="mt-3 bg-amber-500/10 text-amber-700 px-3 py-2 rounded-lg text-[11px] border border-amber-500/20 font-medium">
+              Notes generation failed or timed out. Click "Generate Notes" below to retry.
             </div>
           )}
           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
@@ -3314,27 +3330,20 @@ const TeacherLecturesPage = () => {
   // Remember previous transcriptStatus per lecture so we can detect transitions
   const prevTranscriptStatusRef = useRef<Record<string, string>>({});
 
-  // When a lecture's transcriptStatus transitions to "done" but has no notes yet,
-  // the backend is still running notes generation in the background (~30s).
-  // Catches: processing→done, pending→done, AND failed→done (retry succeeded while polling was off).
-  // Auto-add to notesGeneratingIds so polling continues until notes appear.
+  // When a lecture's transcriptStatus transitions to "done", Phase 1 is complete.
+  // We notify the teacher so they can manually trigger notes generation.
   useEffect(() => {
     const prev = prevTranscriptStatusRef.current;
-    const toAdd: string[] = [];
     (lectures ?? []).forEach(l => {
       const wasNotDone = prev[l.id] !== undefined && prev[l.id] !== "done";
       const isNowDone = l.transcriptStatus === "done";
       if (wasNotDone && isNowDone && !l.aiNotesMarkdown) {
-        toAdd.push(l.id);
+        toast({ 
+          title: "Transcription Ready", 
+          description: `Transcription for "${l.title}" is complete. Click 'Generate Notes' to continue.` 
+        });
       }
     });
-    if (toAdd.length > 0) {
-      setNotesGeneratingIds(prev => {
-        const next = new Set(prev);
-        toAdd.forEach(id => next.add(id));
-        return next;
-      });
-    }
     // Update snapshot
     const snap: Record<string, string> = {};
     (lectures ?? []).forEach(l => { if (l.transcriptStatus) snap[l.id] = l.transcriptStatus; });
@@ -3352,7 +3361,11 @@ const TeacherLecturesPage = () => {
       return next;
     });
     done.forEach(l => {
-      toast({ title: "Notes ready! ✨", description: `Notes for "${l.title}" are ready to review.` });
+      if (l.aiNotesMarkdown === "__NOTES_FAILED__") {
+        toast({ title: "Notes generation failed", description: `Could not generate notes for "${l.title}".`, variant: "destructive" });
+      } else {
+        toast({ title: "Notes ready! ✨", description: `Notes for "${l.title}" are ready to review.` });
+      }
     });
   }, [lectures, notesGeneratingIds, toast]);
 
@@ -3448,7 +3461,7 @@ const TeacherLecturesPage = () => {
 
     // Case 1: notes ready — open panel
     const withNotes = (lectures ?? []).find(
-      l => pendingReviewIds.has(l.id) && !!l.aiNotesMarkdown,
+      l => pendingReviewIds.has(l.id) && !!l.aiNotesMarkdown && l.aiNotesMarkdown !== "__NOTES_FAILED__",
     );
     if (withNotes) {
       setPendingReviewIds(prev => { const n = new Set(prev); n.delete(withNotes.id); return n; });
@@ -3475,20 +3488,19 @@ const TeacherLecturesPage = () => {
       return;
     }
 
-    // Case 4: transcript done but notes never arrived after 5 min (Phase 2 failed silently)
-    const _FIVE_MIN = 5 * 60 * 1000;
-    const stuckWithoutNotes = (lectures ?? []).find(
+    // Case 4: transcript done but notes generation explicitly failed
+    const failedNotes = (lectures ?? []).find(
       l => pendingReviewIds.has(l.id)
         && l.transcriptStatus === "done"
-        && !l.aiNotesMarkdown
-        && (Date.now() - new Date((l as any).updatedAt ?? (l as any).createdAt).getTime()) > _FIVE_MIN,
+        && l.aiNotesMarkdown === "__NOTES_FAILED__"
     );
-    if (stuckWithoutNotes) {
-      setPendingReviewIds(prev => { const n = new Set(prev); n.delete(stuckWithoutNotes.id); return n; });
-      setReviewLectureId(stuckWithoutNotes.id);
+    if (failedNotes) {
+      setPendingReviewIds(prev => { const n = new Set(prev); n.delete(failedNotes.id); return n; });
+      setReviewLectureId(failedNotes.id);
       toast({
-        title: "Transcript ready",
-        description: "Notes generation took longer than expected. You can add notes manually or click \"Generate Notes\".",
+        title: "Notes Failed",
+        description: "Notes generation failed. You can add notes manually or click \"Generate Notes\" to retry.",
+        variant: "destructive"
       });
     }
     // Case 3: transcript done but notes still generating — keep waiting (no-op)

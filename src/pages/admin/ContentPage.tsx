@@ -2880,16 +2880,26 @@ const LENGTH_OPTIONS = [
   { id: "detailed", label: "Detailed", desc: "~1500 words" },
 ];
 
-function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
+function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarget: batchExamTarget, courseName }: {
   topicId: string;
   topicName: string;
   subjectName: string;
   chapterName: string;
+  examTarget?: string;
+  courseName?: string;
 }) {
   const [selectedType, setSelectedType] = useState("dpp");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [length, setLength] = useState("standard");
-  const [examTarget, setExamTarget] = useState("JEE");
+  const examTarget = (() => {
+    const t = (batchExamTarget || "").toUpperCase();
+    if (t.includes("NEET")) return "NEET";
+    if (t.includes("JEE")) return "JEE";
+    if (t.includes("12")) return "Class 12";
+    if (t.includes("11")) return "Class 11";
+    if (t.includes("10")) return "Class 10";
+    return "JEE";
+  })();
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -2913,7 +2923,6 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
     setSavedOk(false);
     try {
       const extraCtx = [
-        isDppOrPyq ? `Exam target: ${examTarget}` : "",
         isDppOrPyq ? `Generate exactly ${questionCount} questions` : "",
         extraContext.trim(),
       ].filter(Boolean).join(". ") || undefined;
@@ -2923,6 +2932,8 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
           contentType: selectedType as any,
           difficulty: isDppOrPyq ? "intermediate" : difficulty as any,
           length: isDppOrPyq ? "detailed" : length as any,
+          examTarget: examTarget,
+          courseName: courseName,
           extraContext: extraCtx,
         })
       );
@@ -3039,27 +3050,15 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: {
 
           {isDppOrPyq ? (
             <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              {/* Exam Target */}
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Exam Target</p>
-                <div className="flex gap-2">
-                  {["JEE", "NEET", "Both"].map(t => (
-                    <button
-                      key={t}
-                      onClick={() => setExamTarget(t)}
-                      className={cn(
-                        "flex-1 py-2.5 px-3 rounded-xl text-center text-[12px] font-black border-2 transition-all",
-                        examTarget === t
-                          ? selectedType === "dpp"
-                            ? "bg-orange-600 border-orange-600 text-white shadow-sm"
-                            : "bg-violet-600 border-violet-600 text-white shadow-sm"
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                      )}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+              {/* Exam Target — auto-set from course, read-only */}
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Exam Target</p>
+                <span className="text-[11px] font-black uppercase tracking-wide bg-violet-100 text-violet-700 px-2.5 py-1 rounded-xl border border-violet-200">
+                  {examTarget}
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-wide bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                  From course
+                </span>
               </div>
 
               {/* Question Count */}
@@ -4078,6 +4077,8 @@ function ContentTopicWorkspaceRoute() {
                   topicName={topic.name}
                   subjectName={subject.name}
                   chapterName={chapter.name}
+                  examTarget={batch.examTarget}
+                  courseName={batch.name}
                 />
               </div>
             </motion.div>
