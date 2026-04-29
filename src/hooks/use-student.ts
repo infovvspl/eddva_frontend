@@ -507,12 +507,14 @@ export function useCreateBattle() {
       topicId,
       topicName,
       difficulty,
+      batchId,
     }: {
       mode: studentApi.BattleMode;
       topicId?: string;
       topicName?: string;
       difficulty?: "easy" | "medium" | "hard";
-    }) => studentApi.createBattle(mode, topicId, topicName, difficulty),
+      batchId?: string;
+    }) => studentApi.createBattle(mode, topicId, topicName, difficulty, batchId),
   });
 }
 
