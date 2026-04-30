@@ -72,7 +72,10 @@ export function useCreateLecture() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: teacherApi.createLecture,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher", "lectures"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+      qc.invalidateQueries({ queryKey: ["calendar"] });
+    },
   });
 }
 
@@ -81,7 +84,10 @@ export function useUpdateLecture() {
   return useMutation({
     mutationFn: ({ id, ...payload }: { id: string } & Partial<teacherApi.CreateLecturePayload>) =>
       teacherApi.updateLecture(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher", "lectures"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+      qc.invalidateQueries({ queryKey: ["calendar"] });
+    },
   });
 }
 
@@ -89,7 +95,10 @@ export function useDeleteLecture() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: teacherApi.deleteLecture,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher", "lectures"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+      qc.invalidateQueries({ queryKey: ["calendar"] });
+    },
   });
 }
 
