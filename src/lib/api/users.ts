@@ -58,3 +58,9 @@ export async function activateUser(id: string) {
   const res = await apiClient.patch(`/admin/users/${id}/status`, { status: "ACTIVE" });
   return extractData(res);
 }
+
+/** Delete a user permanently */
+export async function deleteUser(id: string) {
+  const res = await apiClient.delete(`/admin/users/${id}`);
+  return extractData(res);
+}

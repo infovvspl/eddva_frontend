@@ -54,3 +54,14 @@ export function useActivateUser() {
     },
   });
 }
+
+/** Delete user permanently */
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => usersApi.deleteUser(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
