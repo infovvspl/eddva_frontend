@@ -10,6 +10,7 @@ import {
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 import { apiClient } from "@/lib/api/client";
+import { sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp } from "@/lib/api/auth";
 
 /* ─── tokens ─────────────────────────────────────── */
 const INDIGO  = "#3B82F6"; // Softer blue
@@ -167,6 +168,9 @@ const StudentRegisterPage = () => {
   const [loading,  setLoading]  = useState(false);
   const [success,  setSuccess]  = useState(false);
   const [error,    setError]    = useState("");
+  const [userId,   setUserId]   = useState("");
+  const [otp,      setOtp]      = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const set = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -207,6 +211,10 @@ const StudentRegisterPage = () => {
       if (form.password !== form.confirmPassword) return "Passwords do not match.";
       return null;
     }
+    if (s === 4 || s === 5) {
+      if (otp.length < 6) return "Enter the 6-digit code.";
+      return null;
+    }
     return null;
   };
 
@@ -226,7 +234,7 @@ const StudentRegisterPage = () => {
     if (err) { setError(err); return; }
     setError(""); setLoading(true);
     try {
-      await apiClient.post("/auth/register", {
+      const res = await apiClient.post("/auth/register", {
         fullName:               form.name,
         careOf:                 form.careOf,
         phoneNumber:            `+91${form.phone}`,
@@ -240,11 +248,68 @@ const StudentRegisterPage = () => {
         pinCode:                form.pinCode,
         password:               form.password,
       });
+      
+      const newUserId = res.data?.user?.id || res.data?.id;
+      setUserId(newUserId);
+
+      // Trigger Phone OTP
+      await sendPhoneOtp({ phoneNumber: `+91${form.phone}`, userId: newUserId });
+      setStep(4);
+      setOtp("");
+      startResendTimer();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || "Registration failed. Please try again.");
+    } finally { setLoading(false); }
+  };
+
+  const startResendTimer = () => {
+    setResendCooldown(30);
+    const interval = setInterval(() => {
+      setResendCooldown(c => {
+        if (c <= 1) { clearInterval(interval); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+  };
+
+  const handleVerifyPhone = async () => {
+    if (otp.length < 6) return setError("Enter 6-digit OTP");
+    setLoading(true); setError("");
+    try {
+      await verifyPhoneOtp({ phoneNumber: `+91${form.phone}`, otp, userId });
+      
+      // Phone verified, now send Email OTP
+      await sendEmailOtp({ email: form.email, userId });
+      setStep(5);
+      setOtp("");
+      startResendTimer();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally { setLoading(false); }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (otp.length < 6) return setError("Enter 6-digit OTP");
+    setLoading(true); setError("");
+    try {
+      await verifyEmailOtp({ email: form.email, otp, userId });
       setSuccess(true);
       const loginUrl = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login";
       setTimeout(() => navigate(loginUrl), 3000);
     } catch (e: any) {
-      setError(e?.response?.data?.message || "Registration failed. Please try again.");
+      setError(e?.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally { setLoading(false); }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+    setLoading(true);
+    try {
+      if (step === 4) await sendPhoneOtp({ phoneNumber: `+91${form.phone}`, userId });
+      else if (step === 5) await sendEmailOtp({ email: form.email, userId });
+      startResendTimer();
+    } catch (e: any) {
+      setError("Failed to resend OTP.");
     } finally { setLoading(false); }
   };
 
@@ -292,16 +357,16 @@ const StudentRegisterPage = () => {
           {!success && (
             <div className="mb-8">
               <h1 className="text-[36px] font-black tracking-tight text-slate-900 leading-tight mb-2">
-                {step === 1 ? "Get Started" : step === 2 ? "Your Location" : "Secure Account"}
+                {step === 1 ? "Get Started" : step === 2 ? "Your Location" : step === 3 ? "Secure Account" : step === 4 ? "Phone Verify" : "Email Verify"}
               </h1>
               <div className="flex items-center gap-3">
-                <p className="text-[15px] font-semibold text-slate-400">Step {step} of 3</p>
+                <p className="text-[15px] font-semibold text-slate-400">Step {step} of 5</p>
                 <div className="h-1.5 w-32 bg-slate-100 rounded-full overflow-hidden flex">
-                  {[1, 2, 3].map(i => (
+                  {[1, 2, 3, 4, 5].map(i => (
                     <motion.div
                       key={i}
                       animate={{
-                        width: i <= step ? "33.33%" : "0%",
+                        width: i <= step ? "20%" : "0%",
                         backgroundColor: i <= step ? INDIGO : "#E2E8F0"
                       }}
                       className="h-full border-r border-white last:border-0"
@@ -428,10 +493,70 @@ const StudentRegisterPage = () => {
                         )}
                       </div>
                     )}
+
+                    {/* STEP 4: PHONE OTP */}
+                    {step === 4 && (
+                      <div className="space-y-6">
+                        <div className="rounded-2xl bg-blue-50/50 p-6 border border-blue-100">
+                          <p className="text-[14px] font-medium text-slate-600 mb-1">We've sent a code to</p>
+                          <p className="text-[18px] font-black text-slate-900">+91 {form.phone.replace(/.(?=.{4})/g, '*')}</p>
+                        </div>
+                        <Field
+                          icon={<Smartphone className="h-4 w-4" />}
+                          label="Enter 6-Digit Code"
+                          placeholder="000000"
+                          value={otp}
+                          onChange={setOtp}
+                          numeric
+                          maxLength={6}
+                          disabled={loading}
+                        />
+                        <div className="flex items-center justify-between px-1">
+                          <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={loading || resendCooldown > 0}
+                            className={`text-[12px] font-black uppercase tracking-wider ${resendCooldown > 0 ? "text-slate-300" : "text-blue-600 hover:text-blue-700"}`}
+                          >
+                            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 5: EMAIL OTP */}
+                    {step === 5 && (
+                      <div className="space-y-6">
+                        <div className="rounded-2xl bg-purple-50/50 p-6 border border-purple-100">
+                          <p className="text-[14px] font-medium text-slate-600 mb-1">Verification code sent to</p>
+                          <p className="text-[18px] font-black text-slate-900">{form.email.replace(/(.{3})(.*)(?=@)/, (gp1, gp2, gp3) => gp2 + '*'.repeat(gp3.length))}</p>
+                        </div>
+                        <Field
+                          icon={<Mail className="h-4 w-4" />}
+                          label="Enter 6-Digit Code"
+                          placeholder="000000"
+                          value={otp}
+                          onChange={setOtp}
+                          numeric
+                          maxLength={6}
+                          disabled={loading}
+                        />
+                        <div className="flex items-center justify-between px-1">
+                          <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={loading || resendCooldown > 0}
+                            className={`text-[12px] font-black uppercase tracking-wider ${resendCooldown > 0 ? "text-slate-300" : "text-purple-600 hover:text-purple-700"}`}
+                          >
+                            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-10 flex items-center gap-4">
-                    {step > 1 && (
+                    {step > 1 && step < 4 && (
                       <button onClick={prevStep} disabled={loading}
                         className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-slate-100 text-gray-600 hover:text-blue-500 hover:border-blue-100 transition-all">
                         <ChevronLeft className="h-6 w-6" />
@@ -442,9 +567,17 @@ const StudentRegisterPage = () => {
                         <ActionButton onClick={nextStep}>
                           Continue <ArrowRight className="h-5 w-5" />
                         </ActionButton>
-                      ) : (
+                      ) : step === 3 ? (
                         <ActionButton type="submit" onClick={() => handleSubmit(new Event("submit") as any)} disabled={loading || form.password !== form.confirmPassword}>
-                          {loading ? <><Loader2 className="h-5 w-5 animate-spin" /> Finalizing...</> : <><GraduationCap className="h-5 w-5" /> Complete Registration</>}
+                          {loading ? <><Loader2 className="h-5 w-5 animate-spin" /> Finalizing...</> : <><GraduationCap className="h-5 w-5" /> Create Account & Verify</>}
+                        </ActionButton>
+                      ) : step === 4 ? (
+                        <ActionButton onClick={handleVerifyPhone} disabled={loading || otp.length < 6}>
+                          {loading ? <><Loader2 className="h-5 w-5 animate-spin" /> Verifying...</> : <><Smartphone className="h-5 w-5" /> Verify Phone</>}
+                        </ActionButton>
+                      ) : (
+                        <ActionButton onClick={handleVerifyEmail} disabled={loading || otp.length < 6}>
+                          {loading ? <><Loader2 className="h-5 w-5 animate-spin" /> Completing...</> : <><Mail className="h-5 w-5" /> Verify Email</>}
                         </ActionButton>
                       )}
                     </div>

@@ -184,3 +184,27 @@ export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
   return extractData<{ avatarUrl: string }>(res);
 }
 
+// ---------------------------------------------------------------------------
+// OTP & MFA REGISTRATION (New)
+// ---------------------------------------------------------------------------
+
+export async function sendPhoneOtp(payload: { phoneNumber: string; userId?: string }) {
+  const res = await apiClient.post("/auth/otp/send-phone", payload);
+  return extractData(res);
+}
+
+export async function verifyPhoneOtp(payload: { phoneNumber: string; otp: string; userId?: string }) {
+  const res = await apiClient.post("/auth/otp/verify-phone", payload);
+  return extractData(res);
+}
+
+export async function sendEmailOtp(payload: { email: string; userId?: string }) {
+  const res = await apiClient.post("/auth/otp/send-email", payload);
+  return extractData(res);
+}
+
+export async function verifyEmailOtp(payload: { email: string; otp: string; userId?: string }) {
+  const res = await apiClient.post("/auth/otp/verify-email", payload);
+  return extractData(res);
+}
+

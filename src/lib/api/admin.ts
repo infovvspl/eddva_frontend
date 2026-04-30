@@ -206,6 +206,7 @@ export interface DashboardData {
     maxStudents: number;
     startDate: string;
     endDate: string;
+    thumbnailUrl?: string;
   }[];
 }
 

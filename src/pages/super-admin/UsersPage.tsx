@@ -1,11 +1,11 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Users, Shield, GraduationCap, BookOpen,
-  ChevronLeft, ChevronRight, Eye, Ban, Filter, Download, UserPlus, Loader2
+  ChevronLeft, ChevronRight, Eye, Ban, Filter, Download, UserPlus, Loader2, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useUsers, useSuspendUser, useActivateUser } from "@/hooks/use-users";
+import { useUsers, useSuspendUser, useActivateUser, useDeleteUser } from "@/hooks/use-users";
 
 const roleConfig: Record<string, { icon: any; color: string; label: string }> = {
   super_admin: { icon: Shield, color: "text-slate-900 bg-slate-100 border-slate-200 shadow-sm", label: "Core Admin" },
@@ -24,6 +24,7 @@ const UsersPage = () => {
   });
   const suspendUser = useSuspendUser();
   const activateUser = useActivateUser();
+  const deleteUser = useDeleteUser();
 
   const allUsers = (usersData as any)?.items || (Array.isArray(usersData) ? usersData : []);
 
@@ -32,6 +33,16 @@ const UsersPage = () => {
       await activateUser.mutateAsync(userId);
     } else {
       await suspendUser.mutateAsync(userId);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (window.confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
+      try {
+        await deleteUser.mutateAsync(userId);
+      } catch (err: any) {
+        alert(err?.response?.data?.message || "Failed to delete user.");
+      }
     }
   };
 
@@ -157,6 +168,13 @@ const UsersPage = () => {
                                 title={userStatus === "suspended" ? "Reinstate Access" : "Revoke Access"}
                               >
                                 <Ban className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user.id, name)}
+                                className="p-2.5 bg-white border border-slate-100 text-gray-600 hover:text-red-600 hover:shadow-lg rounded-[12px] transition-all"
+                                title="Delete User Permanently"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>

@@ -71,19 +71,9 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
   if (!raw) return null;
   let str = raw.trim();
   
-  // Handle potential double-stringification
-  if (str.startsWith('"') && str.endsWith('"') && str.length > 2) {
-    try {
-      const unquoted = JSON.parse(str);
-      if (typeof unquoted === "string") str = unquoted.trim();
-    } catch { /* Not double-stringified */ }
-  }
-
-  // Strip markdown code blocks
-  if (str.includes("```")) {
-    const match = str.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (match) str = match[1].trim();
-  }
+  // Try to find the outermost { } block first (strips preambles/postscripts)
+  const jsonMatch = str.match(/(\{[\s\S]*\})/);
+  if (jsonMatch) str = jsonMatch[1].trim();
 
   const check = (obj: any): AiAnswerStructured | null => {
     if (obj && typeof obj === "object" && (obj.brief || obj.detailed)) return obj as AiAnswerStructured;
@@ -91,17 +81,22 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
   };
 
   try {
-    const parsed = JSON.parse(str);
-    const result = check(parsed);
-    if (result) return result;
+    return JSON.parse(str) as AiAnswerStructured;
   } catch {
-    const jsonMatch = str.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        const extracted = JSON.parse(jsonMatch[0]);
-        const result = check(extracted);
-        if (result) return result;
-      } catch { /* Fail silently */ }
+    // Aggressive fix: escape raw newlines inside what looks like string values
+    const fixed = str.replace(/"([\s\S]*?)"/g, (match) => 
+      match.replace(/\n/g, "\\n").replace(/\r/g, "\\n")
+    );
+    try {
+      return JSON.parse(fixed) as AiAnswerStructured;
+    } catch {
+      // One last try: if it's the "tightMatch" version
+      const tightMatch = str.match(/\{"brief":[\s\S]*\}/);
+      if (tightMatch) {
+        try {
+          return JSON.parse(tightMatch[0].replace(/"([\s\S]*?)"/g, (m) => m.replace(/\n/g, "\\n"))) as AiAnswerStructured;
+        } catch { /* Final fail */ }
+      }
     }
   }
   return null;
@@ -110,13 +105,17 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
 const formatMarkdown = (text?: string) => {
   if (!text) return "";
   return text
-    .replace(/\\n/g, "\n")              // Handle escaped newlines
-    .replace(/\r?\n/g, "\n\n")          // Convert all single newlines to paragraphs
-    // Aggressive Step detection: "Step 1", "Step 1:", "Step 1 -", etc.
+    .replace(/\\n/g, "\n")
+    .replace(/\r?\n/g, "\n\n")
+    // Step-based and final answer formatting
     .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    // Aggressive Label detection: Reason, Explanation, etc.
+    // Theory-specific 5-part numerical/theory headers
+    .replace(/(\(\d\)\s*[a-zA-Z\s/-]+[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    // Legacy sub-headers
     .replace(/(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    .replace(/\n{3,}/g, "\n\n")         // Collapse triple+ newlines back to double
+    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 };
 

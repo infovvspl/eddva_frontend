@@ -80,6 +80,7 @@ const LiveClassRoom = lazy(() => import("./pages/live/LiveClassRoom"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const JoinBatchPage = lazy(() => import("./pages/JoinBatchPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const RegisterWithOtpPage = lazy(() => import("./pages/RegisterWithOtpPage"));
 const ExamsRegistrationPage = lazy(() => import("./pages/landing/ExamsRegistrationPage"));
 const StudyMaterialPage = lazy(() => import("./pages/landing/StudyMaterialPage"));
 const CareerPage = lazy(() => import("./pages/landing/CareerPage"));
@@ -211,6 +212,25 @@ const StudentRoutes = () => (
   </>
 );
 
+// Super-admin routes — available in BOTH tenant and platform contexts so a
+// super-admin visiting on localhost (with a stored tenant subdomain) doesn't get 404.
+const SuperAdminRoutes = () => (
+  <>
+    <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+    <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
+      <Route path="/super-admin" element={<SuperAdminDashboard />} />
+      <Route path="/super-admin/tenants" element={<InstitutesPage />} />
+      <Route path="/super-admin/tenants/new" element={<NewInstitutePage />} />
+      <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
+      <Route path="/super-admin/users" element={<UsersPage />} />
+      <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
+      <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
+      <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
+      <Route path="/super-admin/settings" element={<SettingsPage />} />
+    </Route>
+  </>
+);
+
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
@@ -228,8 +248,11 @@ const TenantRoutes = () => (
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/register-admin" element={<RegisterWithOtpPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/join" element={<JoinBatchPage />} />
+    {/* Super-admin always accessible even if a tenant subdomain is cached */}
+    {SuperAdminRoutes()}
     {AdminRoutes()}
     {PYQRoute()}
     {TeacherRoutes()}
@@ -255,21 +278,11 @@ const PlatformRoutes = () => (
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
+    <Route path="/register-admin" element={<RegisterWithOtpPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/join" element={<JoinBatchPage />} />
-    <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+    {SuperAdminRoutes()}
 
-    <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
-      <Route path="/super-admin" element={<SuperAdminDashboard />} />
-      <Route path="/super-admin/tenants" element={<InstitutesPage />} />
-      <Route path="/super-admin/tenants/new" element={<NewInstitutePage />} />
-      <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
-      <Route path="/super-admin/users" element={<UsersPage />} />
-      <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
-      <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
-      <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
-      <Route path="/super-admin/settings" element={<SettingsPage />} />
-    </Route>
 
     {AdminRoutes()}
     {PYQRoute()}
