@@ -3,15 +3,25 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Users, BookOpen, HelpCircle, Loader2, ChevronRight,
-  Video, Sparkles, Radio, Plus, BarChart2,
+  Video, Sparkles, Radio, Plus, BarChart2, TrendingUp,
+  Activity, GraduationCap, Target, Calendar,
 } from "lucide-react";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie
+} from 'recharts';
 import { useAuthStore } from "@/lib/auth-store";
 import { useAdminDashboard, useBatches } from "@/hooks/use-admin";
 import { useAdminPresenceStats } from "@/hooks/use-presence";
 import { cn } from "@/lib/utils";
-import { getApiOrigin } from "@/lib/api-config";
 
-// ─── Thumbnail generator ──────────────────────────────────────────────────────
+// ─── Constants & Styles ──────────────────────────────────────────────────────
+
+const INDIGO = "#6366F1";
+const PURPLE = "#A855F7";
+const EMERALD = "#10B981";
+const AMBER = "#F59E0B";
+const BLUE = "#3B82F6";
 
 const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> = {
   jee: { from: "#1D4ED8", to: "#4F46E5", badge: "JEE" },
@@ -20,281 +30,281 @@ const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> =
   default: { from: "#0F172A", to: "#334155", badge: "—" },
 };
 
-const _API_ORIGIN = getApiOrigin() || "http://127.0.0.1:3000";
-function resolveMediaUrl(url?: string) {
-  if (!url) return url;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${_API_ORIGIN}${url}`;
+// ─── Components ──────────────────────────────────────────────────────────────
+
+function GlassCard({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4 }}
+      className={cn(
+        "relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 backdrop-blur-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)]",
+        className
+      )}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none" />
+      <div className="relative z-10">{children}</div>
+    </motion.div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon, color, delay = 0, onClick }: {
+  label: string; value: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string; delay?: number; onClick?: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3 }}
+      onClick={onClick}
+      className={cn(
+        "group relative flex flex-col p-4 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-lg transition-all duration-300",
+        onClick && "cursor-pointer hover:-translate-y-1"
+      )}
+    >
+      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300", color)}>
+        <Icon className="w-5 h-5 text-white" />
+      </div>
+      <div>
+        <h4 className="text-xl font-black text-slate-900 tracking-tight">{value}</h4>
+        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">{label}</p>
+      </div>
+      {onClick && <ChevronRight className="absolute top-4 right-4 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />}
+    </motion.div>
+  );
 }
 
 function CourseThumbnail({ name, examTarget, imageUrl, className = "" }: { name: string; examTarget: string; imageUrl?: string; className?: string }) {
   const [imgError, setImgError] = React.useState(false);
   const style = EXAM_STYLES[examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
   const initials = name.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("");
-  const resolvedUrl = resolveMediaUrl(imageUrl);
-  if (resolvedUrl && !imgError) {
-    return (
-      <div className={cn("rounded-2xl overflow-hidden shrink-0", className)}>
-        <img src={resolvedUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
-      </div>
-    );
-  }
+  
   return (
-    <div
-      className={cn("rounded-2xl flex flex-col items-center justify-center relative overflow-hidden shrink-0", className)}
-      style={{ background: `linear-gradient(135deg, ${style.from}, ${style.to})` }}
-    >
-      <div className="absolute inset-0 opacity-10"
-        style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "12px 12px" }} />
-      <span className="text-white font-black text-xl relative z-10 leading-none">{initials}</span>
-      <span className="text-white/60 text-[9px] font-black uppercase tracking-widest mt-1 relative z-10">{style.badge}</span>
+    <div className={cn("rounded-xl overflow-hidden shrink-0 relative", className)} style={{ background: `linear-gradient(135deg, ${style.from}, ${style.to})` }}>
+      {imageUrl && !imgError ? (
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center">
+           <span className="text-white font-black text-xs leading-none">{initials}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
-
-function StatCard({ label, value, sub, icon: Icon, color, delay = 0, onClick }: {
-  label: string; value: string | number; sub: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string; delay?: number; onClick?: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      onClick={onClick}
-      className={cn(
-        "bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all",
-        onClick && "cursor-pointer hover:-translate-y-0.5"
-      )}
-    >
-      <div className={cn("w-11 h-11 rounded-2xl flex items-center justify-center mb-4", color)}>
-        <Icon className="w-5 h-5 text-white" />
-      </div>
-      <p className="text-2xl font-black text-slate-900 leading-none">{value}</p>
-      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-2">{label}</p>
-      <p className="text-xs text-slate-400 mt-1">{sub}</p>
-    </motion.div>
-  );
-}
-
-// ─── Course card for dashboard ────────────────────────────────────────────────
-
-function CourseCard({ course, index, onClick }: { course: any; index: number; onClick: () => void }) {
-  const enrolled = course.studentCount ?? course.enrolledCount ?? 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07 }}
-      onClick={onClick}
-      className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-white hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all cursor-pointer group"
-    >
-      <CourseThumbnail name={course.name} examTarget={course.examTarget} imageUrl={course.thumbnailUrl} className="w-14 h-14" />
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <p className="text-sm font-bold text-slate-900 truncate group-hover:text-blue-700 transition-colors">{course.name}</p>
-          <span className={cn(
-            "shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border",
-            course.status === "active"
-              ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-              : "bg-slate-50 text-slate-400 border-slate-100"
-          )}>
-            {course.status}
-          </span>
-        </div>
-        <p className="text-[11px] text-slate-400 font-semibold uppercase">
-          {course.examTarget?.toUpperCase()} · Class {course.class}
-        </p>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-[11px] font-black text-slate-500 shrink-0">{enrolled} enrolled</span>
-        </div>
-      </div>
-
-      <ChevronRight className="w-4 h-4 text-gray-800 group-hover:text-blue-500 shrink-0 transition-colors" />
-    </motion.div>
-  );
-}
-
-// ─── Page ────────────────────────────────────────────────────────────────────
-
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { data, isLoading } = useAdminDashboard();
   const { data: batchesRaw } = useBatches();
   const { data: presence } = useAdminPresenceStats();
-  const navigate = useNavigate();
 
-  const courses: any[] = Array.isArray(batchesRaw) ? batchesRaw : [];
+  const courses = Array.isArray(batchesRaw) ? batchesRaw : [];
 
   if (isLoading || !data) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="flex flex-col items-center justify-center min-h-[500px] gap-3">
+        <div className="w-12 h-12 rounded-full border-4 border-blue-50 border-t-blue-600 animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Intelligence...</p>
       </div>
     );
   }
 
-  const { stats, recentDoubts = [] } = data;
-  const today = new Date().toLocaleDateString("en-IN", {
-    weekday: "long", day: "numeric", month: "long",
-  });
+  const { stats, recentDoubts = [], recentBatches = [] } = data;
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
 
-  const firstName = user?.name?.split(" ")[0] ?? "";
+  // ─── Real Data for Analytics ───
+  const enrollmentData = recentBatches.map(b => ({
+    name: b.name.split(" ")[0],
+    students: b.studentCount,
+  }));
+
+  const teacherData = [
+    { name: 'Active', value: stats.activeTeachers, color: EMERALD },
+    { name: 'Pending', value: stats.pendingTeachers, color: AMBER },
+  ];
 
   return (
-    <div className="max-w-[1400px] mx-auto p-6 lg:p-8 space-y-8 pb-20">
-
-      {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div>
-          <p className="text-sm font-semibold text-slate-400">{today}</p>
-          <h1 className="text-2xl font-black text-slate-900 mt-0.5">
-            Welcome back{firstName ? `, ${user?.name}` : ""} 👋
+    <div className="max-w-[1600px] mx-auto p-6 lg:p-8 space-y-8 pb-32">
+      
+      {/* ─── Header Section ─── */}
+      <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-8">
+        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 mb-3">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Real-time Analytics</span>
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">
+            Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{user?.name?.split(" ")[0]}</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-0.5">{user?.tenantName}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-red-50 border border-red-100">
-            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-sm font-bold text-red-600">{presence?.studentsOnline ?? 0} online</span>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-blue-50 border border-blue-100">
-            <Radio className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-bold text-blue-700">{presence?.liveClassesRunning ?? 0} live</span>
-          </div>
-        </div>
-      </motion.div>
+          <p className="text-base font-semibold text-slate-600 mt-2 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-slate-400" /> {today} · <span className="text-slate-900 font-bold">{user?.tenantName}</span>
+          </p>
+        </motion.div>
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard delay={0.0} label="Total Students" value={stats.totalStudents} sub="Enrolled across all courses"
-          icon={Users} color="bg-blue-600" onClick={() => navigate("/admin/students")} />
-        <StatCard delay={0.08} label="Active Courses" value={`${stats.activeBatches}/${stats.totalBatches}`} sub="Courses running now"
-          icon={BookOpen} color="bg-indigo-600" onClick={() => navigate("/admin/batches")} />
-        <StatCard delay={0.16} label="Total Lectures" value={stats.totalLectures} sub="Published & recorded"
-          icon={Video} color="bg-violet-600" onClick={() => navigate("/teacher/lectures")} />
-        <StatCard delay={0.24} label="Pending doubts" value={stats.openDoubts} sub="Open or escalated — needs attention"
-          icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-600"}
-          onClick={() => navigate("/teacher/doubts")} />
-      </div>
-
-      {/* ── Recent doubts (same tenant as /batches/dashboard) ── */}
-      {(stats.openDoubts > 0 || recentDoubts.length > 0) && (
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-3 mb-4">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-4">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm">
+            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <div>
-              <h2 className="text-lg font-black text-slate-900">Doubts needing attention</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 leading-none">Online Students</p>
+              <p className="text-xl font-black text-slate-900 leading-none mt-1.5">{presence?.studentsOnline ?? 0}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => navigate("/teacher/doubts")}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 shrink-0"
-            >
-              Open doubt queue →
-            </button>
           </div>
-          {recentDoubts.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              Count shows {stats.openDoubts} pending — refresh in a moment or open the queue for full details.
-            </p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {recentDoubts.map((d) => (
-                <li key={d.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 line-clamp-2">
-                      {d.questionText || "—"}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      {[d.studentName, d.topicName, d.batchName].filter(Boolean).join(" · ")}
-                      <span className="mx-1.5">·</span>
-                      <span className="uppercase font-bold text-orange-600">{d.status}</span>
-                    </p>
-                  </div>
-                  <span className="text-[11px] text-slate-400 shrink-0">
-                    {d.createdAt ? new Date(d.createdAt).toLocaleString() : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {/* ── Main grid ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-
-        {/* ── Course list (2/3) ── */}
-        <div className="xl:col-span-2 space-y-4 ">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-500/20">
+            <Radio className="w-5 h-5" />
             <div>
-              <h2 className="text-lg font-black text-slate-900">Your Courses</h2>
-              <p className="text-xs text-slate-400 mt-0.5">{courses.length} course{courses.length !== 1 ? "s" : ""} · click to manage</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/70 leading-none">Live Classes</p>
+              <p className="text-xl font-black leading-none mt-1.5">{presence?.liveClassesRunning ?? 0}</p>
             </div>
-            <button
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ─── Top Stats ─── */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="bg-blue-600" delay={0} onClick={() => navigate("/admin/students")} />
+        <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-indigo-600" delay={0.1} onClick={() => navigate("/admin/batches")} />
+        <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" delay={0.2} />
+        <StatCard label="Open Doubts" value={stats.openDoubts} icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-500"} delay={0.3} onClick={() => navigate("/teacher/doubts")} />
+      </section>
+
+      {/* ─── Analytics Section ─── */}
+      <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
+        {/* Batch Distribution Chart */}
+        <GlassCard className="xl:col-span-2 p-8" delay={0.4}>
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-lg font-black text-slate-900">Batch Enrollment</h3>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Real-time student distribution</span>
+          </div>
+          
+          <div className="h-[240px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={enrollmentData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} />
+                <Tooltip 
+                  cursor={{ fill: '#f1f5f9' }}
+                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', fontWeight: 800 }}
+                  itemStyle={{ fontSize: 12 }}
+                />
+                <Bar dataKey="students" fill={BLUE} radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        {/* Teacher Status Chart */}
+        <GlassCard className="p-8" delay={0.5}>
+          <h3 className="text-lg font-black text-slate-900 mb-8">Teacher Network</h3>
+          
+          <div className="h-[180px] w-full flex items-center justify-center relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={teacherData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={85}
+                  paddingAngle={8}
+                  dataKey="value"
+                >
+                  {teacherData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+               <p className="text-xl font-black text-slate-900 leading-none">{stats.totalTeachers}</p>
+               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">Teachers</p>
+            </div>
+          </div>
+
+          <div className="mt-8 space-y-3">
+            {teacherData.map((item) => (
+              <div key={item.name} className="flex items-center justify-between text-xs font-black uppercase tracking-wider">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-slate-600">{item.name}</span>
+                </div>
+                <span className="text-slate-900">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </section>
+
+      {/* ─── Bottom Grid ─── */}
+      <section className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        
+        {/* Course Directory (8/12) */}
+        <div className="xl:col-span-8 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-xl font-black text-slate-900">Recent Batches</h3>
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/admin/batches")}
-              className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+              className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl"
             >
-              <Plus className="w-3.5 h-3.5" /> New Course
-            </button>
+              <Plus className="w-4 h-4" /> New Batch
+            </motion.button>
           </div>
 
-          {courses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200 ">
-              {/* <BookOpen className="w-10 h-10 text-gray-800 mb-3" /> */}
-              <p className="text-sm font-bold text-slate-400">No courses yet</p>
-              <button onClick={() => navigate("/admin/batches")}
-                className="mt-4 text-xs  font-black text-blue-600 hover:underline">
-                Create your first course →
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3 shadow-lg rounded-xl">
-              {courses.map((c, i) => (
-                <CourseCard key={c.id} course={c} index={i} onClick={() => navigate("/admin/batches")} />
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {recentBatches.slice(0, 4).map((course, i) => (
+              <motion.div
+                key={course.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 + (i * 0.05) }}
+                onClick={() => navigate(`/admin/batches/${course.id}`)}
+                className="group flex items-center gap-5 p-5 rounded-3xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all cursor-pointer"
+              >
+                <CourseThumbnail name={course.name} examTarget={course.examTarget} imageUrl={course.thumbnailUrl} className="w-14 h-14" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors">{course.name}</h4>
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-1">{course.examTarget} · {course.studentCount} Students</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-600 transition-colors" />
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-        {/* ── Sidebar (1/3) ── */}
-        <div className="space-y-6">
-
-          {/* Quick actions */}
-          <div className="bg-white rounded-3xl p-6 text-gray-900 shadow-lg">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-800 mb-5">Quick Actions</h3>
-            <div className="space-y-2.5">
-              {[
-                { label: "Build Content", icon: BookOpen, path: "/admin/content", color: "bg-indigo-500" },
-                { label: "Schedule Class", icon: Radio, path: "/teacher/lectures", color: "bg-red-500" },
-                { label: "View Analytics", icon: BarChart2, path: "/teacher/analytics", color: "bg-violet-500" },
-              ].map((a) => (
-                <button key={a.label} onClick={() => navigate(a.path)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-gray-200 hover:bg-white/10 transition-colors group text-left">
-                  <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", a.color)}>
-                    <a.icon className="w-4 h-4 text-white" />
+        {/* Doubts (4/12) */}
+        <div className="xl:col-span-4">
+          <GlassCard className="p-8 h-full">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-lg font-black text-slate-900">Urgent Doubts</h3>
+              <button onClick={() => navigate("/teacher/doubts")} className="text-[10px] font-black uppercase tracking-widest text-blue-600 font-bold">View All</button>
+            </div>
+            
+            <div className="space-y-4">
+              {recentDoubts.slice(0, 4).map((d) => (
+                <div key={d.id} className="p-4 rounded-2xl bg-white border border-slate-100 hover:border-orange-200 transition-colors cursor-pointer group">
+                  <p className="text-sm font-bold text-slate-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                    {d.questionText || d.topicName || "New Doubt Received"}
+                  </p>
+                  <div className="flex items-center justify-between mt-3">
+                     <span className="text-[10px] font-bold text-slate-500 truncate max-w-[120px]">{d.studentName}</span>
+                     <span className="text-[8px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">{d.status}</span>
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-900 transition-colors">{a.label}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white/60 ml-auto transition-colors" />
-                </button>
+                </div>
               ))}
             </div>
-          </div>
-
-
+          </GlassCard>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
 
 export default AdminDashboard;
+

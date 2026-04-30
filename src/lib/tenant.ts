@@ -9,10 +9,16 @@
 const MAIN_DOMAINS = ["localhost", "edva.in", "www"];
 const SUBDOMAIN_STORAGE_KEY = "eddva_tenant_subdomain";
 
-/** Persist the tenant subdomain after login so bare-localhost dev works correctly */
+/** Persist the tenant subdomain after login so bare-localhost dev works correctly.
+ *  If subdomain is falsy (e.g. super-admin has no tenant), clear any stored value
+ *  so the app falls back to PlatformRoutes on the next render. */
 export function storeSubdomain(subdomain: string | null | undefined): void {
   if (subdomain) {
     localStorage.setItem(SUBDOMAIN_STORAGE_KEY, subdomain);
+  } else {
+    // No tenant on this account — remove stale subdomain so super-admin
+    // routes (PlatformRoutes) are rendered correctly on bare localhost.
+    localStorage.removeItem(SUBDOMAIN_STORAGE_KEY);
   }
 }
 

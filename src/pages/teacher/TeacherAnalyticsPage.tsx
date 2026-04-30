@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { isAxiosError } from "axios";
 import {
   Users, BookOpen, MessageCircle, Download,
@@ -14,6 +14,59 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+
+function LoadingSpinner({
+  size = "md",
+  label = "Loading…",
+  fullPage = false,
+}: {
+  size?: "sm" | "md" | "lg";
+  label?: string;
+  fullPage?: boolean;
+}) {
+  const spinnerSizes = { sm: "h-5 w-5", md: "h-8 w-8", lg: "h-14 w-14" };
+  const textSizes = { sm: "text-xs", md: "text-sm", label: "text-base" };
+
+  const spinEl = (
+    <svg
+      className={`animate-spin ${spinnerSizes[size]} text-primary`}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-20"
+        cx="12" cy="12" r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+      />
+      <path
+        className="opacity-90"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
+
+  if (fullPage) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
+        {spinEl}
+        <p className="text-muted-foreground text-sm font-medium animate-pulse">{label}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {spinEl}
+      <span className={`text-muted-foreground ${textSizes[size] ?? textSizes.md}`}>{label}</span>
+    </div>
+  );
+}
 
 import {
   useTeacherOverview,
@@ -99,7 +152,13 @@ function StatCard({
 
 function SmartInsightsPanel({ batchId }: { batchId?: string }) {
   const { data: insights, isLoading, isError, error, refetch } = useSmartInsights(batchId ? { batchId } : undefined);
-  if (isLoading) return <Skeleton className="h-20 w-full" />;
+  if (isLoading)
+    return (
+      <div className="space-y-2">
+        <LoadingSpinner size="sm" label="Fetching smart insights…" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
   if (isError) return <AnalyticsFetchAlert error={error} onRetry={() => refetch()} />;
   if (!insights?.length) return null;
 
@@ -267,7 +326,12 @@ function TopicCoverageTab({ batchId }: { batchId?: string }) {
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+        <div className="space-y-3">
+          <div className="flex justify-center py-4">
+            <LoadingSpinner size="md" label="Loading topic coverage…" />
+          </div>
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+        </div>
       ) : !topics?.length ? (
         <Card className="p-8 text-center text-muted-foreground">No topic data yet.</Card>
       ) : (
@@ -384,7 +448,12 @@ function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
         </Button>
       </div>
       {isLoading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
+        <div className="space-y-4">
+          <div className="flex justify-center py-3">
+            <LoadingSpinner size="md" label="Loading doubt analytics…" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
+        </div>
       ) : isError ? null : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -476,8 +545,21 @@ function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
 
 export default function TeacherAnalyticsPage() {
   const [batchFilter, setBatchFilter] = useState<string>("all");
-  const { data: overview, isError: overviewErr, error: overviewError, refetch: refetchOverview } = useTeacherOverview();
+  const {
+    data: overview,
+    isLoading: overviewLoading,
+    isError: overviewErr,
+    error: overviewError,
+    refetch: refetchOverview,
+  } = useTeacherOverview();
 
+  // Track whether this is the very first load (no cached data yet)
+  const hasLoadedOnce = useRef(false);
+  useEffect(() => {
+    if (!overviewLoading) hasLoadedOnce.current = true;
+  }, [overviewLoading]);
+
+  const isInitialLoad = overviewLoading && !hasLoadedOnce.current;
   const activeBatchId = batchFilter === "all" ? undefined : batchFilter;
 
   return (
@@ -485,6 +567,7 @@ export default function TeacherAnalyticsPage() {
       {overviewErr && (
         <AnalyticsFetchAlert error={overviewError} onRetry={() => refetchOverview()} />
       )}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Analytics</h1>
@@ -492,32 +575,43 @@ export default function TeacherAnalyticsPage() {
             Track student progress, quiz performance, and doubts across your classes.
           </p>
         </div>
-        <Select value={batchFilter} onValueChange={setBatchFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Batches" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Batches</SelectItem>
-            {overview?.batches.map((b) => (
-              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Batch filter — show a skeleton while batches are loading */}
+        {isInitialLoad ? (
+          <Skeleton className="h-9 w-40 rounded-md" />
+        ) : (
+          <Select value={batchFilter} onValueChange={setBatchFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Batches" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Batches</SelectItem>
+              {overview?.batches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="topics">Topic Coverage</TabsTrigger>
-          <TabsTrigger value="doubts">Doubt Analytics</TabsTrigger>
-        </TabsList>
+      {/* Full-page spinner while the very first request resolves */}
+      {isInitialLoad ? (
+        <LoadingSpinner size="lg" label="Loading analytics…" fullPage />
+      ) : (
+        <Tabs defaultValue="overview">
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="topics">Topic Coverage</TabsTrigger>
+            <TabsTrigger value="doubts">Doubt Analytics</TabsTrigger>
+          </TabsList>
 
-        <div className="mt-6">
-          <TabsContent value="overview"><OverviewTab batchId={activeBatchId} /></TabsContent>
-          <TabsContent value="topics"><TopicCoverageTab batchId={activeBatchId} /></TabsContent>
-          <TabsContent value="doubts"><DoubtAnalyticsTab batchId={activeBatchId} /></TabsContent>
-        </div>
-      </Tabs>
+          <div className="mt-6">
+            <TabsContent value="overview"><OverviewTab batchId={activeBatchId} /></TabsContent>
+            <TabsContent value="topics"><TopicCoverageTab batchId={activeBatchId} /></TabsContent>
+            <TabsContent value="doubts"><DoubtAnalyticsTab batchId={activeBatchId} /></TabsContent>
+          </div>
+        </Tabs>
+      )}
     </div>
   );
 }
