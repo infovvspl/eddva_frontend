@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "@/lib/auth-store";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Palette, Calendar, CreditCard, Bell,
+  Calendar, CreditCard, Bell,
   Loader2, CheckCircle2, AlertTriangle, Plus, Trash2,
   ChevronRight, Sparkles, Users, GraduationCap, X,
   Upload, RefreshCw, Globe, Mail, MessageSquare,
@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   useInstituteProfile, useUpdateInstituteProfile, useUploadInstituteOrgImage,
-  useInstituteBranding, useUpdateInstituteBranding,
   useInstituteSubscription, useUpdateBillingEmail,
   useInstituteNotificationPrefs, useUpdateInstituteNotificationPrefs,
   useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent,
@@ -22,11 +21,10 @@ import { getApiOrigin } from "@/lib/api-config";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type SettingsTab = "profile" | "branding" | "calendar" | "subscription" | "notifications";
+type SettingsTab = "profile" | "calendar" | "subscription" | "notifications";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "profile",       label: "Profile",         icon: <User className="w-4 h-4" /> },
-  { id: "branding",      label: "Branding",         icon: <Palette className="w-4 h-4" /> },
   { id: "calendar",      label: "Academic Calendar", icon: <Calendar className="w-4 h-4" /> },
   { id: "subscription",  label: "Subscription",     icon: <CreditCard className="w-4 h-4" /> },
   { id: "notifications", label: "Notifications",    icon: <Bell className="w-4 h-4" /> },
@@ -403,137 +401,6 @@ function ProfileTab() {
 }
 
 // ─── Branding Tab ──────────────────────────────────────────────────────────────
-
-function BrandingTab() {
-  const { data, isLoading } = useInstituteBranding();
-  const update = useUpdateInstituteBranding();
-  const [form, setForm] = useState({ logoUrl: "", brandColor: "#F97316", welcomeMessage: "" });
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (data) setForm({
-      logoUrl: data.logoUrl ?? "",
-      brandColor: data.brandColor ?? "#F97316",
-      welcomeMessage: data.welcomeMessage ?? "",
-    });
-  }, [data]);
-
-  const handleSave = async () => {
-    try {
-      await update.mutateAsync({
-        logoUrl: form.logoUrl || undefined,
-        brandColor: form.brandColor,
-        welcomeMessage: form.welcomeMessage || undefined,
-      });
-      setSaved(true);
-      toast.success("Branding updated successfully");
-      setTimeout(() => setSaved(false), 2500);
-    } catch {
-      toast.error("Failed to save branding");
-    }
-  };
-
-  if (isLoading) return <LoadingState />;
-
-  return (
-    <div className="space-y-8 max-w-2xl">
-      {/* Preview card */}
-      <div className="rounded-2xl border border-border overflow-hidden">
-        <div className="h-2" style={{ backgroundColor: form.brandColor }} />
-        <div className="p-6 bg-card flex items-center gap-4">
-          {form.logoUrl ? (
-            <img src={form.logoUrl} alt="Logo preview" className="w-16 h-16 rounded-2xl object-contain border border-border" />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white"
-              style={{ backgroundColor: form.brandColor }}>
-              {data?.name?.charAt(0)?.toUpperCase() ?? "A"}
-            </div>
-          )}
-          <div>
-            <p className="font-bold text-foreground text-lg">{data?.name ?? "Your Institute"}</p>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {form.welcomeMessage || "Welcome to your institute platform"}
-            </p>
-            {data?.subdomain && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                <Globe className="w-3 h-3" /> {data.subdomain}.eddva.in
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Logo URL */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-foreground">Logo URL</label>
-        <p className="text-xs text-muted-foreground">Direct link to your institute logo (PNG, SVG recommended)</p>
-        <div className="flex gap-3">
-          <input
-            placeholder="https://your-cdn.com/logo.png"
-            value={form.logoUrl}
-            onChange={e => setForm({ ...form, logoUrl: e.target.value })}
-            className="flex-1 h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
-          />
-          {form.logoUrl && (
-            <button onClick={() => setForm({ ...form, logoUrl: "" })}
-              className="h-11 w-11 flex items-center justify-center bg-secondary border border-border rounded-xl text-muted-foreground hover:text-foreground transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Brand colour */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-foreground">Brand Colour</label>
-        <p className="text-xs text-muted-foreground">Primary colour used across buttons, highlights, and accents</p>
-        <div className="flex items-center gap-4">
-          <input
-            type="color"
-            value={form.brandColor}
-            onChange={e => setForm({ ...form, brandColor: e.target.value })}
-            className="w-14 h-14 rounded-xl border border-border cursor-pointer bg-secondary p-1"
-          />
-          <div className="space-y-1 flex-1">
-            <input
-              placeholder="#F97316"
-              value={form.brandColor}
-              onChange={e => setForm({ ...form, brandColor: e.target.value })}
-              className="h-11 w-40 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary font-mono"
-            />
-            <div className="flex gap-2 flex-wrap">
-              {["#F97316","#3B82F6","#10B981","#EF4444","#8B5CF6","#F59E0B","#06B6D4","#EC4899"].map(c => (
-                <button key={c} onClick={() => setForm({ ...form, brandColor: c })}
-                  className="w-7 h-7 rounded-lg border-2 transition-all hover:scale-110"
-                  style={{ backgroundColor: c, borderColor: form.brandColor === c ? c : "transparent" }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Welcome message */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-foreground">Welcome Message</label>
-        <p className="text-xs text-muted-foreground">Shown to students on their first login</p>
-        <textarea
-          rows={3}
-          placeholder="Welcome to our platform — your journey to success starts here!"
-          value={form.welcomeMessage}
-          onChange={e => setForm({ ...form, welcomeMessage: e.target.value })}
-          className="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary resize-none transition-colors"
-        />
-      </div>
-
-      <Button onClick={handleSave} disabled={update.isPending} className="gap-2">
-        {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : null}
-        {saved ? "Saved!" : "Save Branding"}
-      </Button>
-    </div>
-  );
-}
-
 // ─── Calendar Tab ──────────────────────────────────────────────────────────────
 
 function CalendarTab() {
@@ -974,7 +841,7 @@ const AdminSettingsPage = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Institute Settings</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage your profile, branding, calendar, subscription, and notifications</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Manage your profile, calendar, subscription, and notifications</p>
       </div>
 
       {/* Tab bar */}
@@ -1006,7 +873,6 @@ const AdminSettingsPage = () => {
           className="max-w-3xl mx-auto"
         >
           {activeTab === "profile"       && <ProfileTab />}
-          {activeTab === "branding"      && <BrandingTab />}
           {activeTab === "calendar"      && <CalendarTab />}
           {activeTab === "subscription"  && <SubscriptionTab />}
           {activeTab === "notifications" && <NotificationsTab />}
