@@ -138,7 +138,7 @@ const AdminDashboard = () => {
             <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Real-time Analytics</span>
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">
-            Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{user?.name?.split(" ")[0]}</span>
+            Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{user?.name || user?.fullName}</span>
           </h1>
           <p className="text-base font-semibold text-slate-600 mt-2 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-slate-400" /> {today} · <span className="text-slate-900 font-bold">{user?.tenantName}</span>

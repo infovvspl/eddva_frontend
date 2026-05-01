@@ -208,3 +208,7 @@ export async function verifyEmailOtp(payload: { email: string; otp: string; user
   return extractData(res);
 }
 
+export async function updateContactInfo(payload: { userId: string; phoneNumber?: string; email?: string }) {
+  const res = await apiClient.post("/auth/otp/update-contact", payload);
+  return extractData(res);
+}

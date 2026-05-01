@@ -29,6 +29,7 @@ import RemoveStudentDialog from "@/components/teacher/RemoveStudentDialog";
 import { AdvancedMetricCard } from "@/components/teacher/AdvancedMetricCard";
 import { StudentRiskSignals } from "@/components/teacher/StudentRiskSignals";
 import { StudentQuickActions } from "@/components/teacher/StudentQuickActions";
+import { useAuthStore } from "@/lib/auth-store";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ export default function TeacherStudentDetailPage() {
 
   const [flagOpen, setFlagOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const { user } = useAuthStore();
 
   // Parallel Data Fetching
   const studentQuery = useQuery<StudentDetail>({
@@ -249,14 +251,16 @@ export default function TeacherStudentDetailPage() {
         </div>
 
         {/* Action Layer */}
-        <div className="lg:w-80 shrink-0">
-          <StudentQuickActions 
-            studentId={studentId!} 
-            batchId={batchId} 
-            studentName={profile.name ?? ""}
-            insights={insights ?? undefined}
-          />
-        </div>
+        {user?.role !== "institute_admin" && (
+          <div className="lg:w-80 shrink-0">
+            <StudentQuickActions 
+              studentId={studentId!} 
+              batchId={batchId} 
+              studentName={profile.name ?? ""}
+              insights={insights ?? undefined}
+            />
+          </div>
+        )}
       </div>
 
       {/* Top Insights Layer (Above the fold) */}

@@ -10,7 +10,7 @@ import {
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 import { apiClient } from "@/lib/api/client";
-import { sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp } from "@/lib/api/auth";
+import { sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp, updateContactInfo } from "@/lib/api/auth";
 
 /* ─── tokens ─────────────────────────────────────── */
 const INDIGO  = "#3B82F6"; // Softer blue
@@ -171,6 +171,8 @@ const StudentRegisterPage = () => {
   const [userId,   setUserId]   = useState("");
   const [otp,      setOtp]      = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [editContactValue, setEditContactValue] = useState("");
 
   const set = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -310,6 +312,38 @@ const StudentRegisterPage = () => {
       startResendTimer();
     } catch (e: any) {
       setError("Failed to resend OTP.");
+    } finally { setLoading(false); }
+  };
+
+  const handleUpdateContact = async () => {
+    if (!editContactValue.trim()) return;
+    setLoading(true); setError("");
+    try {
+      const payload: any = { userId };
+      if (step === 4) {
+        if (editContactValue.length < 10) throw new Error("Enter a valid phone number.");
+        payload.phoneNumber = `+91${editContactValue}`;
+      } else {
+        if (!editContactValue.includes("@")) throw new Error("Enter a valid email.");
+        payload.email = editContactValue;
+      }
+      
+      await updateContactInfo(payload);
+      
+      // Update local form state
+      if (step === 4) setForm(f => ({ ...f, phone: editContactValue }));
+      else setForm(f => ({ ...f, email: editContactValue }));
+      
+      setIsEditingContact(false);
+      setOtp("");
+      
+      // Resend OTP to new contact
+      if (step === 4) await sendPhoneOtp({ phoneNumber: `+91${editContactValue}`, userId });
+      else await sendEmailOtp({ email: editContactValue, userId });
+      
+      startResendTimer();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e.message || "Failed to update contact info.");
     } finally { setLoading(false); }
   };
 
@@ -498,8 +532,28 @@ const StudentRegisterPage = () => {
                     {step === 4 && (
                       <div className="space-y-6">
                         <div className="rounded-2xl bg-blue-50/50 p-6 border border-blue-100">
-                          <p className="text-[14px] font-medium text-slate-600 mb-1">We've sent a code to</p>
-                          <p className="text-[18px] font-black text-slate-900">+91 {form.phone.replace(/.(?=.{4})/g, '*')}</p>
+                          {isEditingContact ? (
+                            <div className="flex items-center gap-3">
+                              <input 
+                                className="flex-1 bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none" 
+                                value={editContactValue} 
+                                onChange={e => setEditContactValue(e.target.value.replace(/\D/g, ""))} 
+                                placeholder="New phone number"
+                                maxLength={10}
+                                disabled={loading}
+                              />
+                              <button type="button" onClick={handleUpdateContact} disabled={loading} className="text-xs font-bold bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">Save</button>
+                              <button type="button" onClick={() => setIsEditingContact(false)} className="text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-[14px] font-medium text-slate-600 mb-1">We've sent a code to</p>
+                                <p className="text-[18px] font-black text-slate-900">+91 {form.phone.replace(/.(?=.{4})/g, '*')}</p>
+                              </div>
+                              <button type="button" onClick={() => { setIsEditingContact(true); setEditContactValue(form.phone); }} className="text-xs font-bold text-blue-600 bg-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-200">Edit</button>
+                            </div>
+                          )}
                         </div>
                         <Field
                           icon={<Smartphone className="h-4 w-4" />}
@@ -528,8 +582,27 @@ const StudentRegisterPage = () => {
                     {step === 5 && (
                       <div className="space-y-6">
                         <div className="rounded-2xl bg-purple-50/50 p-6 border border-purple-100">
-                          <p className="text-[14px] font-medium text-slate-600 mb-1">Verification code sent to</p>
-                          <p className="text-[18px] font-black text-slate-900">{form.email.replace(/(.{3})(.*)(?=@)/, (gp1, gp2, gp3) => gp2 + '*'.repeat(gp3.length))}</p>
+                          {isEditingContact ? (
+                            <div className="flex items-center gap-3">
+                              <input 
+                                className="flex-1 bg-white border border-purple-200 rounded-lg px-3 py-2 text-sm outline-none" 
+                                value={editContactValue} 
+                                onChange={e => setEditContactValue(e.target.value)} 
+                                placeholder="New email address"
+                                disabled={loading}
+                              />
+                              <button type="button" onClick={handleUpdateContact} disabled={loading} className="text-xs font-bold bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700">Save</button>
+                              <button type="button" onClick={() => setIsEditingContact(false)} className="text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-[14px] font-medium text-slate-600 mb-1">Verification code sent to</p>
+                                <p className="text-[18px] font-black text-slate-900">{form.email.replace(/(.{3})(.*)(?=@)/, (gp1, gp2, gp3) => gp2 + '*'.repeat(gp3.length))}</p>
+                              </div>
+                              <button type="button" onClick={() => { setIsEditingContact(true); setEditContactValue(form.email); }} className="text-xs font-bold text-purple-600 bg-purple-100 px-3 py-1.5 rounded-lg hover:bg-purple-200">Edit</button>
+                            </div>
+                          )}
                         </div>
                         <Field
                           icon={<Mail className="h-4 w-4" />}

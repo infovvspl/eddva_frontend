@@ -8,8 +8,8 @@ import {
   BookOpen, GraduationCap, Calendar,
   Video, Layout, BarChart,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
-  LayoutDashboard, ClipboardList, Headphones, Library, Bell,
-  ChevronDown, Loader2,
+  LayoutDashboard, ClipboardList, Library, Bell,
+  ChevronDown, Loader2, HelpCircle,
 } from "lucide-react";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -39,6 +39,16 @@ interface IncomingBattleChallenge {
   expiresInSeconds: number;
   batchId?: string;
   batchName?: string;
+}
+
+// Custom composite icon: Brain + question mark — represents learning + confusion/doubt
+function BrainQuestion({ className }: { className?: string }) {
+  return (
+    <span className={`relative inline-flex items-center justify-center ${className ?? ""}`}>
+      <Brain className="w-full h-full" />
+      <span className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-indigo-600 text-white" style={{ width: "40%", height: "40%", fontSize: "60%", fontWeight: 900, lineHeight: 1 }}>?</span>
+    </span>
+  );
 }
 
 interface NavItem {
@@ -89,7 +99,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Learn",        path: "/student/learn",         icon: Brain           },
     { label: "Lectures",     path: "/student/lectures",      icon: Video           },
     { label: "Study Plan",   path: "/student/study-plan",    icon: ClipboardList   },
-    { label: "Doubts",       path: "/student/doubts",        icon: Headphones      },
+    { label: "Doubts",       path: "/student/doubts",        icon: BrainQuestion   },
     { label: "Leaderboard",  path: "/student/leaderboard",   icon: Trophy          },
     { label: "Battle Arena", path: "/student/battle",        icon: Swords          },
     { label: "My Progress",  path: "/student/progress",      icon: BarChart        },
