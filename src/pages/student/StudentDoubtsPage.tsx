@@ -89,8 +89,8 @@ const formatMarkdown = (text?: string | string[] | any) => {
     .replace(/\r?\n/g, "\n\n")
     // Step-based and final answer formatting
     .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    // Theory-specific sub-part headers (i), (ii), (iii) or (1), (2)
-    .replace(/(\((?:\d+|[ivx]+)\)\s*[a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    // Theory sub-part headers (added safely)
+    .replace(/^(\((?:\d+|[ivx]+)\)\s*[a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gim, "\n\n$1")
     // Legacy sub-headers
     .replace(/(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
     .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
