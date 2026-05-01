@@ -84,16 +84,18 @@ const formatMarkdown = (text?: string | string[] | any) => {
   if (!text) return "";
   const str = Array.isArray(text) ? text.join("\n\n") : String(text);
   return str
+    .replace(/^\s{4,}/gm, "") // Remove 4+ spaces indentation that triggers code blocks
     .replace(/\\n/g, "\n")
     .replace(/\r?\n/g, "\n\n")
     // Step-based and final answer formatting
     .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    // Theory-specific 5-part numerical/theory headers
-    .replace(/(\(\d\)\s*[a-zA-Z\s/-]+[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    // Theory-specific sub-part headers (i), (ii), (iii) or (1), (2)
+    .replace(/(\((?:\d+|[ivx]+)\)\s*[a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
     // Legacy sub-headers
     .replace(/(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
     .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
     .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
+    .replace(/\\[\s]*(\n|$)/g, "$1") // Strip trailing backslashes used as line breaks
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 };
@@ -238,13 +240,17 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                   <div className="px-4 pb-4">
                     {parsedAi ? (
                       (() => {
+                        console.log("Rendering AI Answer v3", parsedAi.type);
                         const isNumerical = parsedAi.brief?.question_nature === "numerical" ||
-                          parsedAi.type === "numerical" || parsedAi.type === "derivation";
+                          parsedAi.type === "numerical" || parsedAi.type === "derivation" ||
+                          parsedAi.type === "Scientific";
+                        
+                        const isTheory = ["theory", "conceptual", "mcq"].includes(parsedAi.type?.toLowerCase() || "");
 
                         if (viewMode === "brief") {
                           return (
                             <div>
-                              {isNumerical && (
+                              {!isTheory && isNumerical && (
                                 <div className="flex items-center gap-1.5 mb-2">
                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 uppercase tracking-wide">⚡ Quick Steps</span>
                                 </div>
@@ -252,9 +258,11 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                               <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
                                 <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                                   {formatMarkdown(
-                                    (parsedAi.brief?.answer && !parsedAi.brief.answer.toLowerCase().includes("see full solution"))
-                                      ? parsedAi.brief.answer
-                                      : (parsedAi.detailed?.final_answer || parsedAi.detailed?.solution || doubt.aiExplanation)
+                                    String(
+                                      (parsedAi.brief?.answer && typeof parsedAi.brief.answer === 'string' && !parsedAi.brief.answer.toLowerCase().includes("see full solution"))
+                                        ? parsedAi.brief.answer
+                                        : (parsedAi.detailed?.final_answer || parsedAi.detailed?.solution || doubt.aiExplanation)
+                                    )
                                   )}
                                 </ReactMarkdown>
                               </div>
@@ -273,21 +281,25 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             </div>
 
                             {/* Final Answer box — prominent for numericals */}
-                            {isNumerical && parsedAi.detailed?.final_answer && (
+                            {!isTheory && isNumerical && parsedAi.detailed?.final_answer && (
                               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                                 <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">✅ Final Answer</p>
-                                <p className="text-sm font-bold text-green-800">{parsedAi.detailed.final_answer}</p>
+                                <div className="text-sm font-bold text-green-800 prose-sm prose-green max-w-none">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                    {formatMarkdown(parsedAi.detailed.final_answer)}
+                                  </ReactMarkdown>
+                                </div>
                               </div>
                             )}
 
                             {/* Verification */}
-                            {parsedAi.detailed?.verification && (
+                            {!isTheory && parsedAi.detailed?.verification && (
                               <div className="p-3 bg-blue-100/60 rounded-lg border border-blue-200/50">
                                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1">
-                                  {isNumerical ? "✓ Verification" : "⚠️ Common Misconceptions"}
+                                  {isNumerical ? "✓ Verification" : "✓ Academic Reasoning"}
                                 </p>
                                 <div className="text-xs text-blue-800 leading-relaxed prose prose-xs prose-blue max-w-none">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                                     {formatMarkdown(parsedAi.detailed.verification)}
                                   </ReactMarkdown>
                                 </div>
@@ -295,10 +307,14 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             )}
 
                             {/* Key Concept */}
-                            {parsedAi.detailed?.key_concept && (
+                            {!isTheory && parsedAi.detailed?.key_concept && (
                               <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
                                 <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
-                                <p className="text-xs text-indigo-800 leading-relaxed">{parsedAi.detailed.key_concept}</p>
+                                <div className="text-xs text-indigo-800 leading-relaxed prose prose-xs prose-indigo max-w-none">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                    {formatMarkdown(parsedAi.detailed.key_concept)}
+                                  </ReactMarkdown>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -437,8 +453,6 @@ function SelectField({ label, value, onChange, disabled, placeholder, children }
 function AskDoubtModal({ onClose }: { onClose: () => void }) {
   const [selectedBatchId,   setSelectedBatchId]   = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
-  const [selectedChapterId, setSelectedChapterId] = useState("");
-  const [selectedTopicId,   setSelectedTopicId]   = useState("");
   const [question, setQuestion] = useState("");
   const [questionImageUrl, setQuestionImageUrl] = useState("");
   const [explanationMode, setExplanationMode] = useState<"short" | "detailed">("short");
@@ -449,14 +463,12 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
   const { data: curriculum, isLoading: curriculumLoading } = useCourseCurriculum(selectedBatchId);
   const createDoubt = useCreateDoubt();
 
-  // Derive subject/chapter/topic lists from curriculum tree
+  // Derive subjects from curriculum tree
   const subjects = curriculum?.subjects ?? [];
-  const chapters = subjects.find(s => s.id === selectedSubjectId)?.chapters ?? [];
-  const topics   = chapters.find(c => c.id === selectedChapterId)?.topics   ?? [];
 
   const canSubmit =
     Boolean(selectedBatchId) &&
-    selectedTopicId.length > 0 &&
+    Boolean(selectedSubjectId) &&
     (question.trim().length >= 10 || !!questionImageUrl.trim()) &&
     !createDoubt.isPending &&
     !imageUploading;
@@ -490,17 +502,9 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
   function handleBatchChange(id: string) {
     setSelectedBatchId(id);
     setSelectedSubjectId("");
-    setSelectedChapterId("");
-    setSelectedTopicId("");
   }
   function handleSubjectChange(id: string) {
     setSelectedSubjectId(id);
-    setSelectedChapterId("");
-    setSelectedTopicId("");
-  }
-  function handleChapterChange(id: string) {
-    setSelectedChapterId(id);
-    setSelectedTopicId("");
   }
 
   function handleSubmit(skipAI: boolean) {
@@ -508,7 +512,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
     createDoubt.mutate(
       {
         batchId: selectedBatchId,
-        topicId: selectedTopicId,
+        topicId: undefined, // Removed chapter/topic dropdowns
         questionText: question.trim(),
         questionImageUrl: questionImageUrl.trim() || undefined,
         source: "manual",
@@ -587,27 +591,6 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
             {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </SelectField>
 
-          {/* Chapter */}
-          <SelectField
-            label="Chapter *"
-            value={selectedChapterId}
-            onChange={handleChapterChange}
-            disabled={!selectedSubjectId}
-            placeholder={!selectedSubjectId ? "Select subject first" : chapters.length === 0 ? "No chapters found" : "Select chapter"}
-          >
-            {chapters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </SelectField>
-
-          {/* Topic */}
-          <SelectField
-            label="Topic *"
-            value={selectedTopicId}
-            onChange={setSelectedTopicId}
-            disabled={!selectedChapterId}
-            placeholder={!selectedChapterId ? "Select chapter first" : topics.length === 0 ? "No topics found" : "Select topic"}
-          >
-            {topics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </SelectField>
 
           {/* Question textarea */}
           <div>
@@ -707,9 +690,9 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="px-6 pb-6 pt-2 shrink-0">
-          {!selectedTopicId && question.trim().length >= 10 && (
+          {!selectedSubjectId && question.trim().length >= 10 && (
             <p className="text-xs text-red-500 font-medium mb-2 text-center">
-              Please select: {!selectedBatchId ? "Course" : !selectedSubjectId ? "Subject" : !selectedChapterId ? "Chapter" : "Topic"}
+              Please select: {!selectedBatchId ? "Course" : "Subject"}
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
