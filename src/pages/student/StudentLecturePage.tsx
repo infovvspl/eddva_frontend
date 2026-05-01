@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, BookOpen, CheckCircle, XCircle, Clock,
   ChevronRight, Sparkles, Play, Pause, Volume2, VolumeX,
-  Maximize, RotateCcw, Trophy, Tag, FlaskConical,
+  Maximize, RotateCcw, Trophy, Tag,
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
   ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
@@ -29,7 +29,6 @@ import { useWatchPercentage } from "@/hooks/useWatchPercentage";
 import { useLectureProgress, type ExternalLecturePlayback } from "@/hooks/useLectureProgress";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
-import { FormulasTab } from "@/components/lecture/FormulasTab";
 import { isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
 import {
   ensureYouTubeIframeApi,
@@ -1175,7 +1174,7 @@ function LectureInfoCard({ lecture }: { lecture: Lecture }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type AiTabKey  = "notes" | "formulas" | "transcript" | "quiz" | "doubt";
+type AiTabKey  = "notes" | "transcript" | "quiz" | "doubt";
 type MatTabKey = "all"   | "videos"   | "dpp"        | "pyq"  | "pdf"   | "links";
 
 export default function StudentLecturePage() {
@@ -1302,7 +1301,6 @@ export default function StudentLecturePage() {
   // ── AI tabs ──────────────────────────────────────────────────────────────────
   const aiTabs: { key: AiTabKey; label: string; icon: React.ElementType; badge?: number }[] = [
     { key: "notes",    label: "AI Notes",  icon: BookOpen },
-    { key: "formulas", label: "Formulas",  icon: FlaskConical },
     ...(lecture.transcript ? [{ key: "transcript" as const, label: "Transcript", icon: FileText }] : []),
     ...(checkpoints.length > 0 ? [{ key: "quiz" as const, label: "Quiz", icon: Sparkles, badge: checkpoints.length }] : []),
     { key: "doubt",    label: "Ask Doubt", icon: MessageCircle },
@@ -1324,11 +1322,6 @@ export default function StudentLecturePage() {
       {activeAiTab === "notes" && (
         <motion.div key="notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <NotesPanel lecture={lecture} />
-        </motion.div>
-      )}
-      {activeAiTab === "formulas" && (
-        <motion.div key="formulas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <FormulasTab formulas={lecture.aiFormulas?.map(f => ({ name: "N/A", latex: f, description: "" })) ?? []} />
         </motion.div>
       )}
       {activeAiTab === "quiz" && (
