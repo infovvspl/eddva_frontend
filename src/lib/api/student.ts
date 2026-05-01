@@ -840,7 +840,7 @@ export interface StudentDoubt {
 
 export interface CreateDoubtPayload {
   batchId?: string;
-  topicId: string;
+  topicId?: string;
   questionText?: string;
   questionImageUrl?: string;
   source?: DoubtSource;
