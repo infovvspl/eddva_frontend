@@ -368,54 +368,20 @@ function deriveStatusForTopic(topic: TopicReportEntry, todayItems: StudyPlanItem
     ) || (!!title && title.includes(topicName));
   });
 
-  if (relatedItems.length === 0) return topic.status;
-
-  const directItems = relatedItems.filter((item) => normalizeText(item.content?.topicName) === topicName);
-  if (directItems.length > 0) {
-    const notesDone = directItems.some((item) => isNotesTask(item) && item.status === "completed");
-    const practiceDone = directItems.some((item) => isPracticeTask(item) && item.status === "completed");
-    const hasAnyDone = directItems.some((item) => item.status === "completed");
-    const derived: TopicReportEntry["status"] =
-      notesDone && practiceDone ? "completed" :
-      hasAnyDone ? "in_progress" :
-      "unlocked";
-    // Never downgrade backend-computed topic status based on pending plan items.
-    return maxStatus(topic.status, derived);
-  }
-
-  const subtopicItems = relatedItems.filter((item) => {
-    const contentTopic = normalizeText(item.content?.topicName);
-    return !!contentTopic && contentTopic !== topicName;
-  });
-
-  if (subtopicItems.length > 0) {
-    const bySubtopic = new Map<string, StudyPlanItem[]>();
-    for (const item of subtopicItems) {
-      const key = normalizeText(item.content?.topicName);
-      if (!key) continue;
-      if (!bySubtopic.has(key)) bySubtopic.set(key, []);
-      bySubtopic.get(key)!.push(item);
-    }
-
-    const hasAnyDone = subtopicItems.some((item) => item.status === "completed");
-    const distinctSubtopics = bySubtopic.size;
-    const allSubtopicsCompleted =
-      distinctSubtopics > 1 &&
-      Array.from(bySubtopic.values()).every((items) => {
-        const notesDone = items.some((item) => isNotesTask(item) && item.status === "completed");
-        const practiceDone = items.some((item) => isPracticeTask(item) && item.status === "completed");
-        return notesDone && practiceDone;
-      });
-
-    const derived: TopicReportEntry["status"] =
-      allSubtopicsCompleted ? "completed" :
-      hasAnyDone ? "in_progress" :
-      "unlocked";
-    return maxStatus(topic.status, derived);
-  }
-
   const hasAnyDone = relatedItems.some((item) => item.status === "completed");
-  return maxStatus(topic.status, hasAnyDone ? "in_progress" : "unlocked");
+  const hasAnyPending = relatedItems.some((item) => item.status === "pending");
+
+  if (topic.status === "completed") return "completed";
+  
+  // If explicitly in today's plan, it's at least in progress
+  if (hasAnyDone || hasAnyPending) {
+    // If all tasks for this topic in today's plan are done, but backend hasn't updated yet,
+    // we still show it as in_progress to be safe, or completed if we have high confidence.
+    const allDone = relatedItems.every(item => item.status === "completed");
+    return maxStatus(topic.status, allDone ? "completed" : "in_progress");
+  }
+  
+  return topic.status || "unlocked";
 }
 
 function mergeRoadmapWithTodayPlan(report: ProgressReport, todayItems: StudyPlanItem[]): ProgressReport {
@@ -490,28 +456,89 @@ function mergeRoadmapWithTodayPlan(report: ProgressReport, todayItems: StudyPlan
 // Single topic leaf — shows inside an expanded chapter
 function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; lineColor: string }) {
   const st = topicStatus(topic.status);
+  
+  // Indicators for sub-tasks
+  const hasLecture = !!topic.lecture;
+  const lectureDone = topic.lecture?.anyCompleted || (topic.lecture?.avgWatchPct ?? 0) > 80;
+  
+  const hasPractice = !!topic.pyq;
+  const practiceDone = (topic.pyq?.attempted ?? 0) > 0 && (topic.pyq?.accuracy ?? 0) > 50;
+
+  const hasAi = !!topic.aiSession;
+  const aiDone = !!topic.aiSession?.completed;
+
   return (
-    <div className="flex items-start">
+    <div className="flex items-start group">
       {/* vertical + elbow lines */}
       <div className="relative flex flex-col items-center" style={{ width: 24, minWidth: 24 }}>
-        {/* vertical line from parent — stops halfway for last item */}
         {!isLast && (
           <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: lineColor, opacity: 0.35 }} />
         )}
         {isLast && (
           <div className="absolute left-1/2 top-0 w-px -translate-x-1/2" style={{ height: "50%", background: lineColor, opacity: 0.35 }} />
         )}
-        {/* horizontal elbow */}
         <div className="absolute top-1/2 left-1/2 -translate-y-1/2 h-px" style={{ width: 12, background: lineColor, opacity: 0.35 }} />
       </div>
-      {/* dot + label */}
-      <div className="flex items-center gap-1.5 py-1.5 pl-1 flex-1 min-w-0">
-        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
-          {topic.status === "completed" && <span className="text-[8px] text-white font-black leading-none">✓</span>}
+
+      <div className={`flex-1 flex items-center gap-3 py-2 px-3 ml-1 rounded-xl transition-all border border-transparent
+        ${topic.status === "in_progress" ? "bg-amber-50/50 border-amber-100" : "hover:bg-slate-50"}`}>
+        
+        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
+          {topic.status === "completed" && <span className="text-[9px] text-white font-black">✓</span>}
         </div>
-        <span className={`text-xs font-medium truncate leading-tight ${st.text}`}>{topic.topicName}</span>
-        {topic.status === "in_progress" && (
-          <span className="shrink-0 text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">In Progress</span>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`text-sm font-semibold truncate leading-tight ${st.text}`}>{topic.topicName}</span>
+              {topic.status === "in_progress" && (
+                <span className="shrink-0 text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full animate-pulse">Ongoing</span>
+              )}
+            </div>
+            
+            {topic.status === "in_progress" && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab("plan");
+                }}
+                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5 whitespace-nowrap"
+              >
+                Go to Task <ArrowRight className="w-2.5 h-2.5" />
+              </button>
+            )}
+          </div>
+          
+          {/* Sub-task indicators */}
+          <div className="flex items-center gap-3 mt-1.5">
+             <div className="flex items-center gap-1.5" title="Lectures">
+                <PlayCircle className={`w-3 h-3 ${lectureDone ? "text-emerald-500" : "text-slate-300"}`} />
+                <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+                   <div className={`h-full transition-all ${lectureDone ? "bg-emerald-500" : "bg-blue-400"}`} 
+                        style={{ width: `${topic.lecture?.avgWatchPct ?? 0}%` }} />
+                </div>
+             </div>
+             
+             <div className="flex items-center gap-1.5" title="Practice">
+                <Zap className={`w-3 h-3 ${practiceDone ? "text-emerald-500" : "text-slate-300"}`} />
+                <span className="text-[10px] font-medium text-slate-400">
+                  {topic.pyq?.attempted ?? 0} solved
+                </span>
+             </div>
+
+             {hasAi && (
+               <div className="flex items-center gap-1.5" title="AI Session">
+                  <Brain className={`w-3 h-3 ${aiDone ? "text-emerald-500" : "text-slate-300"}`} />
+               </div>
+             )}
+          </div>
+        </div>
+
+        {topic.bestAccuracy > 0 && (
+          <div className="shrink-0 flex flex-col items-end">
+            <span className="text-[10px] text-slate-400 font-medium">Accuracy</span>
+            <span className="text-xs font-bold text-slate-700">{topic.bestAccuracy}%</span>
+          </div>
         )}
       </div>
     </div>
@@ -688,15 +715,6 @@ function CurriculumRoadmap() {
   const effectiveReport = mergeRoadmapWithTodayPlan(report, planHistory);
   const { summary } = effectiveReport;
   const overallPct = summary.totalTopics > 0 ? Math.round((summary.completedTopics / summary.totalTopics) * 100) : 0;
-  const completedLectureCount = summary.lecturesCompleted ?? 0;
-  const practiceItems = planHistory.filter(isPracticeTask);
-  const completedPracticeCount = practiceItems.filter((item) => item.status === "completed").length;
-  const derivedAccuracy =
-    summary.overallAccuracy && summary.overallAccuracy > 0
-      ? Math.round(summary.overallAccuracy)
-      : practiceItems.length > 0
-        ? Math.round((completedPracticeCount / practiceItems.length) * 100)
-        : 0;
   return (
     <div className="space-y-5">
       {/* Summary banner */}
@@ -713,14 +731,22 @@ function CurriculumRoadmap() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 text-center text-sm">
-          <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{completedLectureCount}</div>
-            <div className="text-indigo-200 text-xs">Lectures Done</div>
+        <div className="grid grid-cols-4 gap-3">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10 text-center">
+            <div className="text-white text-lg font-bold">{summary.completedTopics}</div>
+            <div className="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">Completed</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{derivedAccuracy}%</div>
-            <div className="text-indigo-200 text-xs">Accuracy</div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10 text-center">
+            <div className="text-white text-lg font-bold">{summary.inProgressTopics}</div>
+            <div className="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">Ongoing</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10 text-center">
+            <div className="text-white text-lg font-bold">{(summary.unlockedTopics ?? 0) + (summary.lockedTopics ?? 0)}</div>
+            <div className="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">To Do</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10 text-center">
+            <div className="text-white text-lg font-bold">{summary.overallAccuracy}%</div>
+            <div className="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">Accuracy</div>
           </div>
         </div>
       </div>

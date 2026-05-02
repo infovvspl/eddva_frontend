@@ -39,35 +39,8 @@ const TABS = [
 // ─── AI answer parser ─────────────────────────────────────────────────────────
 
 interface AiAnswerStructured {
-  brief?: {
-    answer?: string;
-    question_nature?: string;
-    justification?: string;
-    assertion_status?: string;
-    reason_status?: string;
-    explanation?: string;
-    sequence?: string;
-    key_logic?: string;
-    answers?: string[];
-    reasons?: { option: string; reason: string }[];
-    incorrect_note?: string;
-  };
-  detailed?: {
-    answer?: string;
-    solution?: string;
-    final_answer?: string;
-    verification?: string;
-    key_concept?: string;
-    explanation?: string;
-    justification?: string;
-    assertion_status?: string;
-    reason_status?: string;
-    sequence?: string;
-    key_logic?: string;
-    answers?: string[];
-    reasons?: { option: string; reason: string }[];
-    incorrect_note?: string;
-  };
+  brief?: { answer?: string; question_nature?: string };
+  detailed?: { solution?: string; final_answer?: string; verification?: string; key_concept?: string; explanation?: string };
   subject?: string;
   type?: string;
 }
@@ -267,119 +240,13 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                   <div className="px-4 pb-4">
                     {parsedAi ? (
                       (() => {
-                        const type = parsedAi.type?.toLowerCase() || "";
+                        console.log("Rendering AI Answer v3", parsedAi.type);
                         const isNumerical = parsedAi.brief?.question_nature === "numerical" ||
-                          type === "numerical" || type === "derivation" || type === "scientific";
-                        const isTheory = ["theory", "conceptual", "mcq"].includes(type);
-                        const isSpecialType = ["true_false", "fill_in_blank", "assertion_reason", "sequence_mcq", "multi_correct"].includes(type);
+                          parsedAi.type === "numerical" || parsedAi.type === "derivation" ||
+                          parsedAi.type === "Scientific";
+                        
+                        const isTheory = ["theory", "conceptual", "mcq"].includes(parsedAi.type?.toLowerCase() || "");
 
-                        // ── Special question types ──────────────────────────────
-                        if (isSpecialType) {
-                          const data = viewMode === "brief" ? parsedAi.brief : (parsedAi.detailed ?? parsedAi.brief);
-
-                          if (type === "true_false" || type === "fill_in_blank") {
-                            return (
-                              <div className="space-y-2">
-                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                                  <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">✅ Correct Answer</p>
-                                  <p className="text-sm font-bold text-green-800">{data?.answer}</p>
-                                </div>
-                                {data?.justification && (
-                                  <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                      {formatMarkdown(data.justification)}
-                                    </ReactMarkdown>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-
-                          if (type === "assertion_reason") {
-                            return (
-                              <div className="space-y-2">
-                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                                  <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">✅ Correct Answer</p>
-                                  <p className="text-sm font-bold text-green-800">{data?.answer}</p>
-                                </div>
-                                <div className="flex gap-2 flex-wrap">
-                                  <span className={cn("text-xs font-bold px-2.5 py-1 rounded-lg", data?.assertion_status === "Correct" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                                    Assertion: {data?.assertion_status}
-                                  </span>
-                                  <span className={cn("text-xs font-bold px-2.5 py-1 rounded-lg", data?.reason_status === "Correct" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                                    Reason: {data?.reason_status}
-                                  </span>
-                                </div>
-                                {data?.explanation && (
-                                  <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                      {formatMarkdown(data.explanation)}
-                                    </ReactMarkdown>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-
-                          if (type === "sequence_mcq") {
-                            return (
-                              <div className="space-y-2">
-                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                                  <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">✅ Correct Answer</p>
-                                  <p className="text-sm font-bold text-green-800">{data?.answer}</p>
-                                </div>
-                                {data?.sequence && (
-                                  <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-                                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">🔢 Correct Sequence</p>
-                                    <div className="text-sm text-indigo-800 font-medium leading-relaxed prose prose-sm prose-indigo max-w-none">
-                                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                        {formatMarkdown(data.sequence)}
-                                      </ReactMarkdown>
-                                    </div>
-                                  </div>
-                                )}
-                                {data?.key_logic && (
-                                  <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                      {formatMarkdown(data.key_logic)}
-                                    </ReactMarkdown>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-
-                          if (type === "multi_correct") {
-                            return (
-                              <div className="space-y-2">
-                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                                  <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">✅ Correct Answers</p>
-                                  <p className="text-sm font-bold text-green-800">{(data?.answers ?? []).join(", ")}</p>
-                                </div>
-                                {data?.reasons && data.reasons.length > 0 && (
-                                  <div className="space-y-1.5">
-                                    {data.reasons.map((r, i) => (
-                                      <div key={i} className="text-sm text-blue-900 prose prose-sm prose-blue max-w-none">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                          {formatMarkdown(`• **${r.option}** → ${r.reason}`)}
-                                        </ReactMarkdown>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {data?.incorrect_note && (
-                                  <div className="text-xs text-slate-500 italic prose prose-xs max-w-none">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                      {formatMarkdown(data.incorrect_note)}
-                                    </ReactMarkdown>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-                        }
-
-                        // ── Existing numerical / theory rendering ──────────────
                         if (viewMode === "brief") {
                           return (
                             <div>

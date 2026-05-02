@@ -1523,6 +1523,7 @@ export interface ProgressReportSummary {
   totalTopics: number;
   completedTopics: number;
   inProgressTopics: number;
+  unlockedTopics: number;
   lockedTopics: number;
   overallAccuracy: number;
   totalPYQAttempted: number;
