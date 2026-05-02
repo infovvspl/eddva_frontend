@@ -14,6 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell
+} from "recharts";
 import {
   getStudentDetail,
   getStudentAdvancedPerformance,
@@ -140,6 +144,24 @@ export default function TeacherStudentDetailPage() {
 
   const { profile, attendance, lectures, testScores } = studentQuery.data;
   const engagement = profile.aiEngagementState ? engagementConfig[profile.aiEngagementState] : null;
+
+  // Custom Tooltip for Charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background/95 backdrop-blur-md border border-border p-3 rounded-xl shadow-xl text-xs">
+          <p className="font-bold mb-1 text-foreground">{label}</p>
+          {payload.map((p: any, i: number) => (
+            <p key={i} className="flex items-center gap-2" style={{ color: p.color }}>
+              <span className="w-2 h-2 rounded-full bg-current" />
+              {p.name}: <span className="font-bold">{p.value}{p.unit || ""}</span>
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -352,8 +374,43 @@ export default function TeacherStudentDetailPage() {
             <div className="lg:col-span-2 space-y-6">
               <div className="card-surface p-6">
                 <SectionHeader title="Score Trend" subtitle="Performance over time vs Batch Average" icon={TrendingUp} />
-                <div className="h-64 flex items-center justify-center border-2 border-dashed border-border rounded-2xl">
-                   <p className="text-sm text-muted-foreground">Interactive Chart Integration Pending</p>
+                <div className="h-64 w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={perfQuery.data?.scoreTrend ?? []}>
+                      <defs>
+                        <linearGradient id="scoreColorTeacher" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                        dy={10}
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                        domain={[0, 100]}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="score" 
+                        name="Student Accuracy"
+                        unit="%"
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={3}
+                        fillOpacity={1} 
+                        fill="url(#scoreColorTeacher)" 
+                        dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
               
@@ -403,7 +460,33 @@ export default function TeacherStudentDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
              <div className="card-surface p-6">
                 <SectionHeader title="Daily Active Minutes" icon={Clock} />
-                <div className="h-48 border border-dashed rounded-xl flex items-center justify-center text-xs text-muted-foreground">Chart Content</div>
+                <div className="h-48 w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={engageQuery.data?.dailyActiveMinutes ?? []}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                        dy={10}
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar 
+                        dataKey="minutes" 
+                        name="Active Minutes"
+                        unit="m"
+                        fill="hsl(var(--primary))" 
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
              </div>
              <div className="card-surface p-6">
                 <SectionHeader title="Content Preference" icon={Video} />

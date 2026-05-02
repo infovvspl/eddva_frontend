@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { isAxiosError } from "axios";
 import {
   Users, BookOpen, MessageCircle, Download,
-  AlertTriangle, CheckCircle, Clock, BarChart3, Zap,
+  AlertTriangle, CheckCircle, Clock, BarChart3, Zap, Calendar,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -545,13 +545,14 @@ function DoubtAnalyticsTab({ batchId }: { batchId?: string }) {
 
 export default function TeacherAnalyticsPage() {
   const [batchFilter, setBatchFilter] = useState<string>("all");
+  const [period, setPeriod] = useState<string>("week");
   const {
     data: overview,
     isLoading: overviewLoading,
     isError: overviewErr,
     error: overviewError,
     refetch: refetchOverview,
-  } = useTeacherOverview();
+  } = useTeacherOverview({ batchId: batchFilter === "all" ? undefined : batchFilter });
 
   // Track whether this is the very first load (no cached data yet)
   const hasLoadedOnce = useRef(false);
@@ -576,22 +577,37 @@ export default function TeacherAnalyticsPage() {
           </p>
         </div>
 
-        {/* Batch filter — show a skeleton while batches are loading */}
-        {isInitialLoad ? (
-          <Skeleton className="h-9 w-40 rounded-md" />
-        ) : (
-          <Select value={batchFilter} onValueChange={setBatchFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All Batches" />
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Period Filter */}
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-36 h-9 font-medium">
+              <Calendar className="w-3.5 h-3.5 mr-2 text-primary" />
+              <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Batches</SelectItem>
-              {overview?.batches.map((b) => (
-                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-              ))}
+              <SelectItem value="day">Last 24 Hours</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
             </SelectContent>
           </Select>
-        )}
+
+          {/* Batch filter — show a skeleton while batches are loading */}
+          {isInitialLoad ? (
+            <Skeleton className="h-9 w-40 rounded-md" />
+          ) : (
+            <Select value={batchFilter} onValueChange={setBatchFilter}>
+              <SelectTrigger className="w-40 h-9 font-medium">
+                <SelectValue placeholder="All Batches" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Batches</SelectItem>
+                {overview?.batches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       {/* Full-page spinner while the very first request resolves */}

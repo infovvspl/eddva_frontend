@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import {
   ArrowLeft, ArrowRight, Clock, ClipboardList, CheckCircle,
   XCircle, Minus, Trophy, Target, Zap, Loader2,
@@ -181,9 +182,9 @@ function QuestionView({
             {question.marksWrong > 0 && <span className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[10px] font-semibold text-red-600 sm:text-[11px]">-{question.marksWrong}</span>}
           </div>
         </div>
-        <p className="text-base font-semibold leading-snug text-slate-900 select-none sm:text-lg whitespace-pre-wrap">
-          {question.content}
-        </p>
+        <div className="text-base font-semibold leading-snug text-slate-900 select-none sm:text-lg">
+          <MarkdownRenderer content={question.content} />
+        </div>
         
         {question.contentImageUrl && (
           <div className="mt-4 rounded-xl border border-slate-100 overflow-hidden bg-slate-50">
@@ -297,7 +298,9 @@ function QuestionView({
                     ? (isSelected ? <Check className="w-5 h-5 sm:w-6 sm:h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>)
                     : String.fromCharCode(65 + i)}
                 </div>
-                <span className="flex-1 text-sm font-medium tracking-tight sm:text-base">{opt.content}</span>
+                <div className="flex-1 text-sm font-medium tracking-tight sm:text-base">
+                  <MarkdownRenderer content={opt.content} />
+                </div>
               </motion.button>
             );
           })}
@@ -431,7 +434,7 @@ function ExplanationBlock({ text, videoUrl }: { text?: string | null; videoUrl?:
     <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3 space-y-2">
       <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Explanation</p>
       {text?.trim() ? (
-        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{text}</p>
+        <MarkdownRenderer content={text} className="text-sm text-slate-700" />
       ) : null}
       {videoUrl ? (
         <a
@@ -546,7 +549,9 @@ function ResultsScreen({
                     Q{i + 1}
                   </span>
                   <div className="flex-1 space-y-3">
-                    <p className="text-sm font-medium text-slate-800 leading-snug">{q.content}</p>
+                    <div className="text-sm font-medium text-slate-800 leading-snug">
+                      <MarkdownRenderer content={q.content} />
+                    </div>
                     {q.contentImageUrl && (
                       <div className="rounded-xl border border-slate-200 overflow-hidden bg-white max-w-sm">
                         <img src={resolveMediaUrl(q.contentImageUrl)} alt="" className="w-full h-auto" />
@@ -572,13 +577,14 @@ function ResultsScreen({
                     {q.type === "descriptive" ? (
                       <div className="space-y-2 text-sm rounded-xl border border-slate-200 bg-white/80 p-3">
                         <p className="text-[10px] font-bold uppercase text-slate-500">Your response</p>
-                        <p className="text-slate-800 whitespace-pre-wrap leading-relaxed">
-                          {(attempt as { integerAnswer?: string }).integerAnswer?.trim() || "—"}
-                        </p>
+                        <div className="text-slate-800 leading-relaxed">
+                          <MarkdownRenderer content={(attempt as { integerAnswer?: string }).integerAnswer?.trim() || "—"} />
+                        </div>
                         {solutionTextFromQuestion(q) ? (
                           <div className="pt-2 border-t border-slate-100">
-                            <p className="text-[10px] font-bold uppercase text-emerald-700 mb-1">Model / key points</p>
-                            <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{solutionTextFromQuestion(q)}</p>
+                            <div className="text-slate-700 leading-relaxed">
+                              <MarkdownRenderer content={solutionTextFromQuestion(q) || ""} />
+                            </div>
                           </div>
                         ) : null}
                         {(() => {

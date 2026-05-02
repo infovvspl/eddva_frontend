@@ -19,6 +19,7 @@ import type {
 import { toast } from "sonner";
 import { CardGlass } from "@/components/shared/CardGlass";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 // ─── Timer ────────────────────────────────────────────────────────────────────
 function useTimer(initialSeconds: number, running: boolean, onExpire: () => void) {
@@ -87,9 +88,9 @@ function QuestionCard({
           </div>
         </div>
         
-        <p className="text-base font-semibold leading-snug text-slate-900 select-none sm:text-lg">
-           {question.content}
-        </p>
+        <div className="text-base font-semibold leading-snug text-slate-900 select-none sm:text-lg">
+           <MarkdownRenderer content={question.content} />
+        </div>
       </CardGlass>
 
       {isDesc ? (
@@ -147,7 +148,9 @@ function QuestionCard({
                     ? (isSelected ? <Check className="w-5 h-5 sm:w-6 sm:h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>)
                     : String.fromCharCode(65 + i)}
                 </div>
-                <span className="flex-1 text-sm font-medium tracking-tight sm:text-base">{opt.content}</span>
+                <div className="flex-1 text-sm font-medium tracking-tight sm:text-base">
+                  <MarkdownRenderer content={opt.content} />
+                </div>
               </motion.button>
             );
           })}
@@ -687,7 +690,7 @@ export default function StudentTopicQuizPage() {
                           <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Correct answer</p>
                           <p className="text-sm text-emerald-900 mb-3">{correctText}</p>
                           <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1">Explanation</p>
-                          <p className="text-sm text-slate-700 leading-relaxed">{explanation}</p>
+                          <MarkdownRenderer content={explanation} className="text-sm text-slate-700 leading-relaxed" />
                         </div>
                       );
                     })}
@@ -753,9 +756,10 @@ export default function StudentTopicQuizPage() {
                                    </div>
                                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 mb-2">Explanation</p>
-                                     <p className="text-sm font-medium text-slate-700 leading-relaxed">
-                                       {q.explanation?.trim() || "Explanation not available."}
-                                     </p>
+                                     <MarkdownRenderer
+                                       content={q.explanation?.trim() || "Explanation not available."}
+                                       className="text-sm font-medium text-slate-700 leading-relaxed"
+                                     />
                                    </div>
                                  </div>
                               </div>

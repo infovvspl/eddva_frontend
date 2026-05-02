@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CardGlass } from "@/components/shared/CardGlass";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 const BLUE   = "#2563EB";
@@ -87,7 +88,9 @@ function QuizQuestion({ question, qNumber, total, onNext, isLast }: {
             </span>
           </div>
 
-          <p className="text-xl font-bold text-slate-900 leading-relaxed mb-8 select-all">{question.questionText}</p>
+          <div className="text-xl font-bold text-slate-900 leading-relaxed mb-8 select-all">
+            <MarkdownRenderer content={question.questionText} />
+          </div>
 
           {question.questionImageUrl && (
             <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 mb-8 overflow-hidden">
@@ -136,7 +139,9 @@ function QuizQuestion({ question, qNumber, total, onNext, isLast }: {
                     className={cn("flex items-center gap-6 rounded-2xl border-2 px-6 py-5 transition-all select-none cursor-pointer", cardStyle)}
                   >
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border transition-colors", isAnswered && isCorrectOpt ? "bg-white text-emerald-600" : isAnswered && isSel ? "bg-white text-red-600" : isSel ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400")}>{String.fromCharCode(65 + i)}</div>
-                    <div className="text-base font-black uppercase italic tracking-tight">{opt.text}</div>
+                    <div className="text-base font-black uppercase italic tracking-tight">
+                      <MarkdownRenderer content={opt.text} />
+                    </div>
                     {(isAnswered && isCorrectOpt) && <CheckCircle className="ml-auto w-6 h-6 text-white" />}
                   </motion.div>
                 );
@@ -163,7 +168,9 @@ function QuizQuestion({ question, qNumber, total, onNext, isLast }: {
                    {submitResult.explanation && (
                      <CardGlass className="p-8 border-blue-500/10 bg-white/60">
                         <div className="flex items-center gap-3 mb-6"><Brain className="w-5 h-5 text-blue-500" /><div><p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Synthesis</p><p className="text-base font-black text-slate-900 uppercase italic leading-none">Path Reconstruction</p></div></div>
-                        <p className="text-slate-700 font-bold leading-relaxed whitespace-pre-wrap">{submitResult.explanation}</p>
+                        <div className="text-slate-700 font-bold leading-relaxed">
+                           <MarkdownRenderer content={submitResult.explanation} />
+                         </div>
                      </CardGlass>
                    )}
 
