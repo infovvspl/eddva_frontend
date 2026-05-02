@@ -1010,66 +1010,31 @@ export interface StudentInsights {
 }
 
 export async function getStudentAdvancedPerformance(studentId: string, batchId?: string): Promise<AdvancedPerformance> {
-  try {
-    const res = await apiClient.get(`/analytics/teacher/student/${studentId}/performance`, { 
-      params: batchId ? { batchId } : {} 
-    });
-    return extractData(res);
-  } catch (err: any) {
-    if (err.response?.status === 404 || err.response?.status === 500) {
-      // Legacy Fallback: Try to get data from the monolithic deep-dive endpoint
-      const deepDive = await getStudentDeepDive(studentId, { batchId });
-      if (deepDive) return bridgePerformance(deepDive);
-      return mockAdvancedPerformance();
-    }
-    throw err;
-  }
+  const res = await apiClient.get(`/analytics/teacher/student/${studentId}/performance`, { 
+    params: batchId ? { batchId } : {} 
+  });
+  return extractData(res);
 }
 
 export async function getStudentAdvancedEngagement(studentId: string, batchId?: string): Promise<AdvancedEngagement> {
-  try {
-    const res = await apiClient.get(`/analytics/teacher/student/${studentId}/engagement`, { 
-      params: batchId ? { batchId } : {} 
-    });
-    return extractData(res);
-  } catch (err: any) {
-    if (err.response?.status === 404 || err.response?.status === 500) {
-      const deepDive = await getStudentDeepDive(studentId, { batchId });
-      if (deepDive) return bridgeEngagement(deepDive);
-      return mockAdvancedEngagement();
-    }
-    throw err;
-  }
+  const res = await apiClient.get(`/analytics/teacher/student/${studentId}/engagement`, { 
+    params: batchId ? { batchId } : {} 
+  });
+  return extractData(res);
 }
 
 export async function getStudentAdvancedStudyPlan(studentId: string, batchId?: string): Promise<AdvancedStudyPlan> {
-  try {
-    const res = await apiClient.get(`/analytics/teacher/student/${studentId}/study-plan`, { 
-      params: batchId ? { batchId } : {} 
-    });
-    return extractData(res);
-  } catch (err: any) {
-    if (err.response?.status === 404 || err.response?.status === 500) {
-      const deepDive = await getStudentDeepDive(studentId, { batchId });
-      if (deepDive) return bridgeStudyPlan(deepDive);
-      return mockAdvancedStudyPlan();
-    }
-    throw err;
-  }
+  const res = await apiClient.get(`/analytics/teacher/student/${studentId}/study-plan`, { 
+    params: batchId ? { batchId } : {} 
+  });
+  return extractData(res);
 }
 
 export async function getStudentRiskSignals(studentId: string, batchId?: string): Promise<RiskSignal[]> {
-  try {
-    const res = await apiClient.get(`/analytics/teacher/student/${studentId}/risk-signals`, { 
-      params: batchId ? { batchId } : {} 
-    });
-    return extractData(res) ?? [];
-  } catch (err: any) {
-    if (err.response?.status === 404 || err.response?.status === 500) {
-      return mockRiskSignals(); // Risk signals are usually new, keep mocks for now
-    }
-    throw err;
-  }
+  const res = await apiClient.get(`/analytics/teacher/student/${studentId}/risk-signals`, { 
+    params: batchId ? { batchId } : {} 
+  });
+  return extractData(res) ?? [];
 }
 
 /**
@@ -1230,123 +1195,6 @@ export async function markAllNotificationsRead(): Promise<void> {
   await apiClient.patch("/notifications/read-all");
 }
 
-// ─── Analytics Mocks (Fallback for 404s) ───────────────────────────────────
-
-function mockAdvancedPerformance(): AdvancedPerformance {
-  return {
-    scoreTrend: [
-      { date: "2026-04-20", score: 65 },
-      { date: "2026-04-22", score: 72 },
-      { date: "2026-04-24", score: 68 },
-      { date: "2026-04-26", score: 78 },
-      { date: "2026-04-28", score: 75 },
-    ],
-    subjectAccuracy: { Physics: 68, Chemistry: 75, Biology: 82 },
-    topicPerformance: [
-      { topicId: "1", topicName: "Kinematics", score: 85, accuracy: 82, timeTaken: 45, attempts: 12 },
-      { topicId: "2", topicName: "Atomic Structure", score: 42, accuracy: 45, timeTaken: 120, attempts: 8 },
-      { topicId: "3", topicName: "Genetics", score: 92, accuracy: 90, timeTaken: 30, attempts: 15 },
-    ],
-    mistakePatterns: [
-      { type: "Calculation Error", count: 5, description: "Common in multi-step physics problems." },
-      { type: "Conceptual Gap", count: 3, description: "Focus needed on inorganic chemistry bonding." },
-    ],
-    speedMetrics: { avgTimePerQuestion: 48, trend: "improving" },
-  };
-}
-
-function mockAdvancedEngagement(): AdvancedEngagement {
-  return {
-    dailyActiveMinutes: [
-      { date: "2026-04-22", minutes: 120 },
-      { date: "2026-04-23", minutes: 145 },
-      { date: "2026-04-24", minutes: 90 },
-      { date: "2026-04-25", minutes: 30 },
-      { date: "2026-04-26", minutes: 210 },
-      { date: "2026-04-27", minutes: 180 },
-      { date: "2026-04-28", minutes: 160 },
-    ],
-    sessionDistribution: [
-      { timeOfDay: "Morning", count: 12 },
-      { timeOfDay: "Afternoon", count: 8 },
-      { timeOfDay: "Evening", count: 25 },
-    ],
-    contentPreference: [
-      { type: "Video Lectures", percentage: 45 },
-      { type: "Practice Quizzes", percentage: 35 },
-      { type: "Doubt Clearing", percentage: 20 },
-    ],
-    lectureDropOffs: [
-      { timestamp: 300, count: 2 },
-      { timestamp: 1200, count: 5 },
-    ],
-    deadNotesCount: 12,
-    bounceRate: 0.15,
-  };
-}
-
-function mockAdvancedStudyPlan(): AdvancedStudyPlan {
-  return {
-    adherence: { completed: 24, skipped: 5, pending: 3 },
-    completionRateTrend: [
-      { date: "W1", rate: 85 },
-      { date: "W2", rate: 78 },
-      { date: "W3", rate: 92 },
-    ],
-    currentStreak: 5,
-    startDelayAvgHours: 1.5,
-    skipPatterns: [
-      { type: "Weekend Skips", count: 4 },
-      { type: "Subject Specific (Physics)", count: 2 },
-    ],
-    overdueItemsCount: 2,
-    regenerationFrequency: 1,
-  };
-}
-
-function mockRiskSignals(): RiskSignal[] {
-  return [
-    { id: "1", type: "warning", label: "Inactivity Detected", description: "No activity in the last 48 hours.", detectedAt: new Date().toISOString() },
-    { id: "2", type: "critical", label: "Score Drop", description: "Average score dropped by 15% in Physics.", detectedAt: new Date().toISOString() },
-  ];
-}
-
-// ─── Legacy Bridges (Map old endpoint data to new structures) ─────────────
-
-function bridgePerformance(d: StudentDeepDive): AdvancedPerformance {
-  const m = mockAdvancedPerformance(); // Use mocks for data not in old endpoint
-  return {
-    ...m,
-    subjectAccuracy: { "Overall Accuracy": d.performance.accuracy },
-    topicPerformance: [
-      { 
-        topicId: d.weakTopics.topicId, 
-        topicName: d.weakTopics.topicName, 
-        score: d.weakTopics.accuracy, 
-        accuracy: d.weakTopics.accuracy, 
-        timeTaken: 0, 
-        attempts: d.weakTopics.wrongCount 
-      }
-    ]
-  };
-}
-
-function bridgeEngagement(d: StudentDeepDive): AdvancedEngagement {
-  const m = mockAdvancedEngagement();
-  return {
-    ...m,
-    deadNotesCount: 0,
-    bounceRate: 1 - (d.performance.avgWatchPercentage / 100),
-  };
-}
-
-function bridgeStudyPlan(d: StudentDeepDive): AdvancedStudyPlan {
-  const m = mockAdvancedStudyPlan();
-  return {
-    ...m,
-    adherence: { completed: d.performance.lecturesWatched, skipped: 0, pending: 0 },
-  };
-}
 
 export async function interveneStudent(payload: {
   studentId: string;

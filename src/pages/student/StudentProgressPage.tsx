@@ -13,18 +13,30 @@ import {
   LayoutDashboard,
   ArrowRight,
   TrendingDown,
-  Minus
+  Minus,
+  ChevronRight,
+  Calendar,
+  BarChart2,
+  BookOpen
 } from "lucide-react";
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell, PieChart, Pie
+} from "recharts";
 import { 
   getMyAdvancedPerformance, 
   getMyAdvancedEngagement, 
   getMyAdvancedStudyPlan, 
-  getMyProgressInsights 
+  getMyProgressInsights,
 } from "@/lib/api/student";
+import { useProgressReport } from "@/hooks/use-student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdvancedMetricCard } from "@/components/teacher/AdvancedMetricCard";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ProgressReportTree from "@/components/shared/ProgressReportTree";
+import { Button } from "@/components/ui/button";
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -67,6 +79,25 @@ export default function StudentProgressPage() {
   const navigate = useNavigate();
   const batchId = searchParams.get("batchId") ?? undefined;
   const [activeTab, setActiveTab] = useState("performance");
+  const [timeRange, setTimeRange] = useState("week");
+
+  // Custom Tooltip for Charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background/95 backdrop-blur-md border border-border p-3 rounded-xl shadow-xl text-xs">
+          <p className="font-bold mb-1 text-foreground">{label}</p>
+          {payload.map((p: any, i: number) => (
+            <p key={i} className="flex items-center gap-2" style={{ color: p.color }}>
+              <span className="w-2 h-2 rounded-full bg-current" />
+              {p.name}: <span className="font-bold">{p.value}{p.unit || ""}</span>
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   const insightsQuery = useQuery({
     queryKey: ["student", "insights", batchId],
@@ -88,7 +119,9 @@ export default function StudentProgressPage() {
     queryFn: () => getMyAdvancedStudyPlan(batchId),
   });
 
-  const isLoading = insightsQuery.isLoading || perfQuery.isLoading || engageQuery.isLoading || planQuery.isLoading;
+  const { data: roadmap, isLoading: loadingRoadmap } = useProgressReport();
+
+  const isLoading = insightsQuery.isLoading || perfQuery.isLoading || engageQuery.isLoading || planQuery.isLoading || loadingRoadmap;
 
   if (isLoading) return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-pulse">
@@ -106,15 +139,26 @@ export default function StudentProgressPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-foreground tracking-tight">Performance Deep Dive</h1>
-          <p className="text-sm text-muted-foreground">Detailed analysis of your learning patterns & readiness.</p>
+          <h1 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+            <Activity className="w-8 h-8 text-primary" />
+            Performance Deep-Dive
+          </h1>
+          <p className="text-muted-foreground font-medium">Pin-point analysis of your academic journey</p>
         </div>
-        <div className="flex gap-2">
-           <Badge variant="outline" className="px-3 py-1 bg-primary/5 border-primary/20 text-primary font-bold">
-             STATUS: {insights?.status.replace("_", " ").toUpperCase() ?? "ON TRACK"}
-           </Badge>
+        <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-xl border border-border/50">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[140px] bg-transparent border-none shadow-none font-bold text-xs h-9">
+              <Calendar className="w-3.5 h-3.5 mr-2 text-primary" />
+              <SelectValue placeholder="Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Last 24 Hours</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -153,7 +197,7 @@ export default function StudentProgressPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center border-b border-border">
           <TabsList className="bg-transparent h-auto p-0 gap-8">
-            {["performance", "engagement", "study-plan"].map((t) => (
+            {["performance", "engagement", "study-plan", "syllabus"].map((t) => (
               <TabsTrigger 
                 key={t} 
                 value={t} 
@@ -170,9 +214,45 @@ export default function StudentProgressPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
              <div className="lg:col-span-2 card-surface p-6">
                 <SectionHeader title="Score History" subtitle="Your accuracy trend over time" icon={TrendingUp} />
-                <div className="h-64 border-2 border-dashed border-border rounded-2xl flex items-center justify-center text-xs text-muted-foreground">
-                  Score Chart Integration
-                </div>
+              <div className="h-[280px] w-full mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={perfQuery.data?.scoreTrend ?? []}>
+                    <defs>
+                      <linearGradient id="scoreColor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                      domain={[0, 100]}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area 
+                      type="monotone" 
+                      dataKey="score" 
+                      name="Accuracy"
+                      unit="%"
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#scoreColor)" 
+                      dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                      activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
              </div>
              
              <div className="card-surface p-6">
@@ -207,10 +287,37 @@ export default function StudentProgressPage() {
               <div className="card-surface p-6">
                  <SectionHeader title="Active Learning" icon={Activity} />
                  <div className="space-y-6">
-                    <div className="text-center py-4">
-                       <p className="text-4xl font-black text-primary">{(engageQuery.data?.dailyActiveMinutes ?? []).reduce((a, b) => a + b.minutes, 0)}</p>
-                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Minutes this week</p>
-                    </div>
+              <div className="h-[280px] w-full mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={engageQuery.data?.dailyActiveMinutes ?? []}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar 
+                      dataKey="minutes" 
+                      name="Study Time"
+                      unit="m"
+                      fill="hsl(var(--primary))" 
+                      radius={[6, 6, 0, 0]}
+                    >
+                      {(engageQuery.data?.dailyActiveMinutes ?? []).map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.minutes > 120 ? 'hsl(var(--primary))' : 'rgba(var(--primary-rgb), 0.4)'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
                     <div className="space-y-3">
                        <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Notes Generated</span>
@@ -227,7 +334,7 @@ export default function StudentProgressPage() {
               <div className="card-surface p-6">
                  <SectionHeader title="Content Preference" icon={Video} />
                  <div className="space-y-4">
-                    {(engageQuery.data?.contentPreference ?? []).map((c, i) => (
+                    {(engageQuery.data?.contentPreference ?? []).map((c: any, i: number) => (
                       <div key={i} className="space-y-2">
                         <div className="flex justify-between text-[10px] font-bold uppercase">
                           <span>{c.type}</span>
@@ -258,10 +365,20 @@ export default function StudentProgressPage() {
                  </div>
               </div>
            </div>
-        </TabsContent>
+         </TabsContent>
+
+         {/* 3. Syllabus Tab */}
+         <TabsContent value="syllabus" className="mt-0 space-y-6">
+            <div className="card-surface p-6">
+               <SectionHeader title="Curriculum Roadmap" subtitle="Full breakdown of your course progress" icon={BookOpen} />
+               <div className="bg-muted/10 rounded-2xl border border-border/50 p-6">
+                 <ProgressReportTree report={roadmap} />
+               </div>
+            </div>
+         </TabsContent>
 
         {/* 3. Study Plan Tab */}
-        <TabsContent value="plan" className="mt-0 space-y-6">
+        <TabsContent value="study-plan" className="mt-0 space-y-6">
            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3 card-surface p-6">
                  <SectionHeader title="Plan Adherence" icon={LayoutDashboard} />
