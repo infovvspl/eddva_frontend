@@ -1336,7 +1336,7 @@ function ChallengeScopePicker({
   selectedBatchId,
 }: {
   onBack: () => void;
-  onStart: (topicId: string | undefined, label: string, difficulty: BattleDifficulty, batchId?: string) => void;
+  onStart: (topicId: string | undefined, label: string, difficulty: BattleDifficulty, batchId?: string, subjectId?: string, chapterId?: string) => void;
   loading: boolean;
   selectedBatchId: string;
 }) {
@@ -1376,16 +1376,13 @@ function ChallengeScopePicker({
     if (scopeType === "full") {
       onStart(undefined, selectedCourseName, difficulty, selectedBatchId);
     } else if (scopeType === "topic") {
-      onStart(topicId, topicName, difficulty, selectedBatchId);
+      onStart(topicId, topicName, difficulty, selectedBatchId, subjectId, chapterId);
     } else if (scopeType === "chapter") {
-      // Pick first topic of that chapter as the AI question anchor
-      const firstTopic = topList[0];
-      onStart(firstTopic?.id, chapterName, difficulty, selectedBatchId);
+      // Pass chapterId so the backend generates questions from ALL topics in the chapter
+      onStart(undefined, chapterName, difficulty, selectedBatchId, subjectId, chapterId);
     } else {
-      // Subject — let backend pick a topic from that subject
-      const firstChapter = chapList[0];
-      const firstTopic = firstChapter?.topics?.[0];
-      onStart(firstTopic?.id, subjectName, difficulty, selectedBatchId);
+      // Subject — pass subjectId so the backend generates questions from ALL chapters/topics in the subject
+      onStart(undefined, subjectName, difficulty, selectedBatchId, subjectId);
     }
   };
 
@@ -2282,8 +2279,13 @@ interface IncomingChallenge {
   expiresInSeconds: number;
   batchId?: string;
   batchName?: string;
+  subjectId?: string;
+  subjectName?: string;
+  chapterId?: string;
+  chapterName?: string;
   topicId?: string;
   topicName?: string;
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 function ChallengeTargetPickerScreen({
@@ -3338,10 +3340,12 @@ const BattleArena = () => {
     topName?: string,
     difficulty?: BattleDifficulty,
     batchId?: string,
+    subjectId?: string,
+    chapterId?: string,
   ) => {
     setTopicName(topName ?? "");
     createBattle.mutate(
-      { mode: mode.mode, topicId: topId, topicName: topName, difficulty, batchId },
+      { mode: mode.mode, topicId: topId, topicName: topName, difficulty, batchId, subjectId, chapterId },
       {
         onSuccess: (room) => {
           setBattleRoom(room);
@@ -3500,10 +3504,10 @@ const BattleArena = () => {
             <motion.div key="challenge-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <ChallengeScopePicker
                 onBack={() => setStage("challenge_pick")}
-                onStart={(topicId, label, difficulty, batchId) => {
+                onStart={(topicId, label, difficulty, batchId, subjectId, chapterId) => {
                   const cfMode = MODES.find(m => m.mode === "challenge_friend")!;
                   setActiveMode(cfMode);
-                  startBattle(cfMode, topicId, label, difficulty, batchId);
+                  startBattle(cfMode, topicId, label, difficulty, batchId, subjectId, chapterId);
                 }}
                 loading={createBattle.isPending}
                 selectedBatchId={selectedBatchId}
@@ -3548,8 +3552,13 @@ const BattleArena = () => {
                 <div className="space-y-2">
                   <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                    Course: {incomingChallenge.batchName || "Direct Duel"}
-                    {incomingChallenge.topicName && ` • Scope: ${incomingChallenge.topicName}`}
+                    {incomingChallenge.batchName || "Direct Duel"}
+                    {incomingChallenge.subjectName && ` · ${incomingChallenge.subjectName}`}
+                    {incomingChallenge.chapterName && ` · ${incomingChallenge.chapterName}`}
+                    {incomingChallenge.topicName && ` · ${incomingChallenge.topicName}`}
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                    Difficulty: {incomingChallenge.difficulty ?? "medium"}
                   </p>
                 </div>
                 <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.18)]">
