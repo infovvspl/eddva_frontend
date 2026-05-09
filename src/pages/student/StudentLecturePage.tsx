@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { cleanAiNotesContent } from "@/lib/ai-notes";
 import { apiClient, extractData } from "@/lib/api/client";
 import {
-  getQuizCheckpoints, submitQuizResponse, translateTranscriptToHindi, translateNotesToEnglish,
+  getQuizCheckpoints, submitQuizResponse, translateTranscriptToHindi, translateNotes,
   type QuizCheckpoint, type QuizSubmitResult, type Lecture,
   type LectureCompletionReward,
 } from "@/lib/api/teacher";
@@ -772,22 +772,30 @@ function VideoPlayer({
 // ─── Notes Panel ──────────────────────────────────────────────────────────────
 
 function NotesPanel({ lecture }: { lecture: Lecture }) {
-  const [enMode, setEnMode] = useState(false);
-  const [notesEn, setNotesEn] = useState<string | null>(null);
+  // true = original is Hindi, false = original is English
+  const notesAreHindi = /[ऀ-ॿ]/.test(lecture.aiNotesMarkdown ?? "");
+  // translatedMode: viewing the translated version (opposite of original language)
+  const [translatedMode, setTranslatedMode] = useState(false);
+  const [translatedNotes, setTranslatedNotes] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
   const youtubeSource = isYouTubeUrl(lecture.videoUrl);
   const ts = lecture.transcriptStatus;
 
-  const handleToggleEnglish = async () => {
-    if (enMode) { setEnMode(false); return; }
-    if (notesEn) { setEnMode(true); return; }
+  const targetLang: 'en' | 'hi' = notesAreHindi ? 'en' : 'hi';
+  const toggleLabel = translatedMode
+    ? (notesAreHindi ? "View in Hindi" : "View in English")
+    : (notesAreHindi ? "View in English" : "View in Hindi");
+
+  const handleToggle = async () => {
+    if (translatedMode) { setTranslatedMode(false); return; }
+    if (translatedNotes) { setTranslatedMode(true); return; }
     setIsTranslating(true);
     setTranslateError(null);
     try {
-      const result = await translateNotesToEnglish(lecture.id);
-      setNotesEn(result.notesEn);
-      setEnMode(true);
+      const result = await translateNotes(lecture.id, targetLang);
+      setTranslatedNotes(result.translated);
+      setTranslatedMode(true);
     } catch {
       setTranslateError("Translation failed. Please try again.");
     } finally {
@@ -795,7 +803,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
     }
   };
 
-  const rawNotes = enMode && notesEn ? notesEn : lecture.aiNotesMarkdown;
+  const rawNotes = translatedMode && translatedNotes ? translatedNotes : lecture.aiNotesMarkdown;
   const displayNotes = cleanAiNotesContent(rawNotes ?? "");
 
   return (
@@ -824,20 +832,18 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
                 <BookOpen className="w-3 h-3" /> AI Notes
               </p>
               <button
-                onClick={handleToggleEnglish}
+                onClick={handleToggle}
                 disabled={isTranslating}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
-                  enMode
+                  translatedMode
                     ? "bg-indigo-50 border-indigo-200 text-indigo-600"
                     : "bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
                 )}
               >
                 {isTranslating
                   ? <><Loader2 className="w-3 h-3 animate-spin" /> Translating…</>
-                  : enMode
-                    ? "View in Hindi"
-                    : "View in English"
+                  : toggleLabel
                 }
               </button>
             </div>

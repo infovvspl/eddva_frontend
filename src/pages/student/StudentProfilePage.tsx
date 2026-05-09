@@ -260,7 +260,11 @@ function EditModal({ me, onClose }: { me: any; onClose: () => void }) {
         ))}
         </div>
         <button
-          onClick={() => update.mutate(form, { onSuccess: () => { toast.success("Profile updated"); onClose(); }, onError: () => toast.error("Failed to update") })}
+          onClick={() => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { phone: _phone, ...payload } = form;
+            update.mutate(payload, { onSuccess: () => { toast.success("Profile updated"); onClose(); }, onError: () => toast.error("Failed to update") });
+          }}
           disabled={update.isPending}
           className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
           style={{ background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})` }}>

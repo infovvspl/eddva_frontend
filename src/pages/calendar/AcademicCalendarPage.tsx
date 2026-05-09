@@ -2,25 +2,90 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Loader2, Trash2, X, ChevronRight, CalendarDays, AlertCircle, Radio,
+  Plus, Loader2, Trash2, X, ChevronRight, CalendarDays, AlertCircle, Radio, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useCalendarBatches, useCalendarFeed, useCreateCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-calendar";
 import type { InstituteCalendarEvent, LiveClassCalendarItem } from "@/lib/api/calendar";
 
-const EVENT_TYPES = [
-  { value: "exam", label: "Exam", color: "#ef4444" },
-  { value: "holiday", label: "Holiday", color: "#10b981" },
-  { value: "test", label: "Test", color: "#f59e0b" },
-  { value: "lecture", label: "Lecture", color: "#3b82f6" },
-  { value: "other", label: "Other", color: "#8b5cf6" },
+// Color lookup for all event types (including legacy exam/test for existing data)
+const TYPE_COLOR_MAP: Record<string, string> = {
+  holiday: "#10b981",
+  monthly_planner: "#0ea5e9",
+  mock_test: "#f97316",
+  pt_exam: "#ef4444",
+  half_yearly: "#dc2626",
+  annual_exam: "#9f1239",
+  lecture: "#3b82f6",
+  exam: "#f59e0b",
+  test: "#f59e0b",
+  other: "#6b7280",
+};
+
+// Grouped categories for the "Add Event" form dropdown
+const EVENT_CATEGORIES = [
+  {
+    group: "Holidays",
+    types: [
+      { value: "holiday", label: "School/Institution Holiday", color: "#10b981" },
+    ],
+  },
+  {
+    group: "Monthly Planner",
+    types: [
+      { value: "monthly_planner", label: "Monthly Planner", color: "#0ea5e9" },
+    ],
+  },
+  {
+    group: "Exams",
+    types: [
+      { value: "mock_test", label: "Mock Test", color: "#f97316" },
+      { value: "pt_exam", label: "PT Exam", color: "#ef4444" },
+      { value: "half_yearly", label: "Half Yearly Exam", color: "#dc2626" },
+      { value: "annual_exam", label: "Annual Exam", color: "#9f1239" },
+    ],
+  },
+  {
+    group: "Other",
+    types: [
+      { value: "lecture", label: "Lecture", color: "#3b82f6" },
+      { value: "other", label: "Other", color: "#6b7280" },
+    ],
+  },
 ];
+
+// Flat list used for the legend (non-legacy types only)
+const LEGEND_TYPES = EVENT_CATEGORIES.flatMap((cat) => cat.types);
 
 const LIVE_COLOR = "#dc2626";
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// View filter options for both admin and student
+const VIEW_FILTERS = [
+  { value: "all", label: "All Events" },
+  { value: "holiday", label: "School/Institution Holidays" },
+  { value: "monthly_planner", label: "Monthly Planner" },
+  { value: "exam", label: "Exams (All)" },
+  { value: "live_class", label: "Live Classes" },
+];
+
+const EXAM_TYPES = new Set(["exam", "test", "mock_test", "pt_exam", "half_yearly", "annual_exam"]);
+
 function eventColor(type: string) {
-  return EVENT_TYPES.find((t) => t.value === type)?.color ?? "#8b5cf6";
+  return TYPE_COLOR_MAP[type] ?? "#8b5cf6";
+}
+
+function matchesFilter(viewFilter: string, kind: string, type: string): boolean {
+  if (viewFilter === "all") return true;
+  if (viewFilter === "live_class") return kind === "live";
+  if (kind === "live") return false;
+  if (viewFilter === "exam") return EXAM_TYPES.has(type);
+  return type === viewFilter;
 }
 
 type DayItem =
@@ -30,34 +95,27 @@ type DayItem =
 function buildByDate(
   instituteEvents: InstituteCalendarEvent[],
   liveClasses: LiveClassCalendarItem[],
+  viewFilter: string,
 ): Record<string, DayItem[]> {
   const byDate: Record<string, DayItem[]> = {};
 
   for (const ev of instituteEvents) {
+    if (!matchesFilter(viewFilter, "institute", ev.type)) continue;
     const key = (ev.date || "").split("T")[0];
     if (!key) continue;
-    const item: DayItem = {
-      kind: "institute",
-      id: ev.id,
-      title: ev.title,
-      type: ev.type,
-      color: ev.color || eventColor(ev.type),
-      raw: ev,
-    };
-    byDate[key] = [...(byDate[key] ?? []), item];
+    byDate[key] = [
+      ...(byDate[key] ?? []),
+      { kind: "institute", id: ev.id, title: ev.title, type: ev.type, color: ev.color || eventColor(ev.type), raw: ev },
+    ];
   }
 
   for (const lec of liveClasses) {
+    if (!matchesFilter(viewFilter, "live", "live_class")) continue;
     const key = new Date(lec.scheduledAt).toISOString().split("T")[0];
-    const item: DayItem = {
-      kind: "live",
-      id: lec.id,
-      title: lec.title,
-      type: "live_class",
-      color: LIVE_COLOR,
-      raw: lec,
-    };
-    byDate[key] = [...(byDate[key] ?? []), item];
+    byDate[key] = [
+      ...(byDate[key] ?? []),
+      { kind: "live", id: lec.id, title: lec.title, type: "live_class", color: LIVE_COLOR, raw: lec },
+    ];
   }
 
   return byDate;
@@ -66,19 +124,25 @@ function buildByDate(
 function mergedList(
   instituteEvents: InstituteCalendarEvent[],
   liveClasses: LiveClassCalendarItem[],
+  viewFilter: string,
 ): { sortKey: string; label: string; sub: string; color: string; kind: string; id: string }[] {
   const rows: { sortKey: string; label: string; sub: string; color: string; kind: string; id: string }[] = [];
+
   for (const ev of instituteEvents) {
+    if (!matchesFilter(viewFilter, "institute", ev.type)) continue;
+    const typeLabel = LEGEND_TYPES.find((t) => t.value === ev.type)?.label ?? ev.type;
     rows.push({
       sortKey: ev.date,
       label: ev.title,
       sub: `${(ev.date || "").split("T")[0]}${ev.description ? ` · ${ev.description}` : ""}`,
       color: ev.color || eventColor(ev.type),
-      kind: ev.type,
+      kind: typeLabel,
       id: ev.id,
     });
   }
+
   for (const lec of liveClasses) {
+    if (!matchesFilter(viewFilter, "live", "live_class")) continue;
     const d = new Date(lec.scheduledAt);
     rows.push({
       sortKey: lec.scheduledAt,
@@ -89,13 +153,13 @@ function mergedList(
       id: lec.id,
     });
   }
+
   return rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 }
 
 export interface AcademicCalendarPageProps {
-  /** Teachers and institute admins can add/delete institute calendar events (not live sessions). */
+  /** Teachers and institute admins can add/delete institute calendar events. */
   canManageEvents?: boolean;
-  /** Optional page title override */
   pageTitle?: string;
 }
 
@@ -107,10 +171,11 @@ export default function AcademicCalendarPage({
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
+  const [viewFilter, setViewFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
-    type: "exam",
+    type: "holiday",
     date: "",
     endDate: "",
     description: "",
@@ -127,27 +192,24 @@ export default function AcademicCalendarPage({
   const liveClasses = data?.liveClasses ?? [];
 
   const byDate = useMemo(
-    () => buildByDate(instituteEvents, liveClasses),
-    [instituteEvents, liveClasses],
+    () => buildByDate(instituteEvents, liveClasses, viewFilter),
+    [instituteEvents, liveClasses, viewFilter],
   );
 
-  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
   const firstDay = new Date(year, month - 1, 1);
   const daysInMonth = new Date(year, month, 0).getDate();
   const startPad = firstDay.getDay();
   const todayStr = today.toISOString().split("T")[0];
 
+  const yearOptions = Array.from({ length: 8 }, (_, i) => today.getFullYear() - 2 + i);
+
   const prevMonth = () => {
-    if (month === 1) {
-      setMonth(12);
-      setYear((y) => y - 1);
-    } else setMonth((m) => m - 1);
+    if (month === 1) { setMonth(12); setYear((y) => y - 1); }
+    else setMonth((m) => m - 1);
   };
   const nextMonth = () => {
-    if (month === 12) {
-      setMonth(1);
-      setYear((y) => y + 1);
-    } else setMonth((m) => m + 1);
+    if (month === 12) { setMonth(1); setYear((y) => y + 1); }
+    else setMonth((m) => m + 1);
   };
   const goToday = () => {
     setYear(today.getFullYear());
@@ -167,7 +229,7 @@ export default function AcademicCalendarPage({
         batchIds: form.batchIds,
       });
       toast.success("Event added — students have been notified.");
-      setForm({ title: "", type: "exam", date: "", endDate: "", description: "", batchIds: [] });
+      setForm({ title: "", type: "holiday", date: "", endDate: "", description: "", batchIds: [] });
       setShowForm(false);
     } catch (err: unknown) {
       const msg = err && typeof err === "object" && "response" in err
@@ -188,23 +250,24 @@ export default function AcademicCalendarPage({
   };
 
   const handleChipClick = (item: DayItem) => {
-    if (item.kind === "live") {
-      navigate(`/live/${item.id}`);
-    }
+    if (item.kind === "live") navigate(`/live/${item.id}`);
   };
 
   const listRows = useMemo(
-    () => mergedList(instituteEvents, liveClasses),
-    [instituteEvents, liveClasses],
+    () => mergedList(instituteEvents, liveClasses, viewFilter),
+    [instituteEvents, liveClasses, viewFilter],
   );
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 max-w-5xl mx-auto p-4 sm:p-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{pageTitle}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Exams, holidays, and scheduled live classes. {canManageEvents ? "Students see the same view." : "Events are added by your teachers or institute."}
+            {canManageEvents
+              ? "Manage holidays, exams, study plans, and live classes. Students see the same view."
+              : "Holidays, exams, and study plan events added by your institute."}
           </p>
         </div>
         {canManageEvents && (
@@ -215,6 +278,7 @@ export default function AcademicCalendarPage({
         )}
       </div>
 
+      {/* Add Event Form */}
       <AnimatePresence>
         {canManageEvents && showForm && (
           <motion.form
@@ -235,21 +299,25 @@ export default function AcademicCalendarPage({
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Title *</label>
                 <input
                   required
-                  placeholder="e.g. JEE Main mock"
+                  placeholder="e.g. Diwali Holiday"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
+                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Category</label>
                 <select
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
                   className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary"
                 >
-                  {EVENT_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                  {EVENT_CATEGORIES.map((cat) => (
+                    <optgroup key={cat.group} label={cat.group}>
+                      {cat.types.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -282,17 +350,13 @@ export default function AcademicCalendarPage({
                 />
               </div>
               <div className="sm:col-span-2 lg:col-span-3">
-                <label className="text-xs font-semibold text-muted-foreground mb-2 block">
-                  Courses (optional)
-                </label>
+                <label className="text-xs font-semibold text-muted-foreground mb-2 block">Courses (optional)</label>
                 <div className="rounded-xl border border-border bg-secondary p-3">
                   <label className="mb-2 flex items-center gap-2 text-xs text-foreground">
                     <input
                       type="checkbox"
                       checked={form.batchIds.length === 0}
-                      onChange={(e) => {
-                        if (e.target.checked) setForm({ ...form, batchIds: [] });
-                      }}
+                      onChange={(e) => { if (e.target.checked) setForm({ ...form, batchIds: [] }); }}
                     />
                     Show to all courses
                   </label>
@@ -333,7 +397,26 @@ export default function AcademicCalendarPage({
         )}
       </AnimatePresence>
 
-      <div className="flex items-center justify-between">
+      {/* Controls: View filter + Month/Year navigation */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* View filter */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">View:</span>
+          <div className="relative">
+            <select
+              value={viewFilter}
+              onChange={(e) => setViewFilter(e.target.value)}
+              className="h-9 pl-3 pr-8 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary appearance-none cursor-pointer"
+            >
+              {VIEW_FILTERS.map((f) => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Month & Year navigation */}
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -342,7 +425,35 @@ export default function AcademicCalendarPage({
           >
             <ChevronRight className="w-4 h-4 rotate-180" />
           </button>
-          <h2 className="text-base font-bold text-foreground w-48 text-center">{monthLabel}</h2>
+
+          {/* Month dropdown */}
+          <div className="relative">
+            <select
+              value={month}
+              onChange={(e) => setMonth(Number(e.target.value))}
+              className="h-9 pl-3 pr-7 bg-secondary border border-border rounded-xl text-sm font-semibold text-foreground outline-none focus:border-primary appearance-none cursor-pointer"
+            >
+              {MONTHS.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          {/* Year dropdown */}
+          <div className="relative">
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="h-9 pl-3 pr-7 bg-secondary border border-border rounded-xl text-sm font-semibold text-foreground outline-none focus:border-primary appearance-none cursor-pointer"
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
           <button
             type="button"
             onClick={nextMonth}
@@ -350,16 +461,17 @@ export default function AcademicCalendarPage({
           >
             <ChevronRight className="w-4 h-4" />
           </button>
+          <button
+            type="button"
+            onClick={goToday}
+            className="text-xs font-semibold text-primary border border-primary/30 px-3 py-1.5 rounded-xl hover:bg-primary/5 transition-colors"
+          >
+            Today
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={goToday}
-          className="text-xs font-semibold text-primary border border-primary/30 px-3 py-1.5 rounded-xl hover:bg-primary/5 transition-colors"
-        >
-          Today
-        </button>
       </div>
 
+      {/* Calendar Grid */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <div className="grid grid-cols-7 border-b border-border bg-secondary/30">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
@@ -412,10 +524,7 @@ export default function AcademicCalendarPage({
                         {canManageEvents && ev.kind === "institute" && (
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(ev);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); handleDelete(ev); }}
                             disabled={deleteEvent.isPending}
                             className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                           >
@@ -437,11 +546,12 @@ export default function AcademicCalendarPage({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
-        {EVENT_TYPES.map((t) => (
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {LEGEND_TYPES.map((t) => (
           <div key={t.value} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: t.color }} />
-            <span className="text-xs text-muted-foreground capitalize">{t.label}</span>
+            <span className="text-xs text-muted-foreground">{t.label}</span>
           </div>
         ))}
         <div className="flex items-center gap-1.5">
@@ -450,10 +560,11 @@ export default function AcademicCalendarPage({
         </div>
       </div>
 
+      {/* Event list */}
       {!isLoading && listRows.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-bold text-foreground">
-            This month ({listRows.length})
+            {MONTHS[month - 1]} {year} ({listRows.length})
           </h3>
           <div className="space-y-2">
             {listRows.map((row) => {
@@ -500,9 +611,11 @@ export default function AcademicCalendarPage({
       {!isLoading && listRows.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="font-medium">Nothing scheduled in {monthLabel}</p>
+          <p className="font-medium">Nothing scheduled in {MONTHS[month - 1]} {year}</p>
           <p className="text-sm mt-1">
-            {canManageEvents ? "Add events or schedule a live class from Lectures." : "Your teachers will add dates and live classes here."}
+            {canManageEvents
+              ? "Add events or schedule a live class from Lectures."
+              : "Your teachers will add dates and live classes here."}
           </p>
         </div>
       )}

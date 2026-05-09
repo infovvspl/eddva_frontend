@@ -277,9 +277,15 @@ export async function translateTranscriptToHindi(id: string): Promise<{ transcri
   return extractData<{ transcriptHi: string }>(res);
 }
 
+export async function translateNotes(id: string, targetLanguage: 'en' | 'hi'): Promise<{ translated: string }> {
+  const res = await apiClient.post(`/content/lectures/${id}/translate-notes`, { targetLanguage });
+  return extractData<{ translated: string }>(res);
+}
+
+/** @deprecated Use translateNotes */
 export async function translateNotesToEnglish(id: string): Promise<{ notesEn: string }> {
-  const res = await apiClient.post(`/content/lectures/${id}/translate-notes`, {});
-  return extractData<{ notesEn: string }>(res);
+  const { translated } = await translateNotes(id, 'en');
+  return { notesEn: translated };
 }
 
 export async function getLectureStats(id: string): Promise<LectureStats> {

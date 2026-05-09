@@ -449,6 +449,7 @@ const DashboardLayout = () => {
   const settingsPath =
     user.role === "institute_admin" ? "/admin/settings"
     : user.role === "super_admin"   ? "/super-admin/settings"
+    : user.role === "student"       ? "/student/profile"
     : "/teacher/profile";
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
