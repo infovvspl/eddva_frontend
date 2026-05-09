@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getSubdomain } from "@/lib/tenant";
+import { XPToastProvider } from "@/components/student/XPToast";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 
@@ -298,13 +299,15 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<RouteLoading />}>
-            {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
-          </Suspense>
-        </BrowserRouter>
+        <XPToastProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={<RouteLoading />}>
+              {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+            </Suspense>
+          </BrowserRouter>
+        </XPToastProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

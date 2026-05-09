@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWatchPercentage } from "@/hooks/useWatchPercentage";
 import { useLectureProgress, type ExternalLecturePlayback } from "@/hooks/useLectureProgress";
+import { useVideoXP } from "@/hooks/useVideoXP";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
 import { isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
@@ -602,6 +603,7 @@ function VideoPlayer({
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
   const progressPct = duration ? (localTime / duration) * 100 : 0;
+  useVideoXP(lectureId, playing, Math.floor(localTime));
 
   const resumePlaybackAfterQuiz = () => {
     setActiveQuiz(null);

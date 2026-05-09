@@ -12,6 +12,8 @@ import {
   getMockTests, startSession, submitAnswer, submitSession,
   generateAiQuiz, completeAiQuiz,
 } from "@/lib/api/student";
+import { xpApi } from "@/lib/api/xp";
+import { triggerXPToast } from "@/lib/xp-toast";
 import type {
   QuizQuestion, TestSession, SessionResult, MockTestListItem,
   AiQuizData, AiQuizQuestion, AiQuizResult,
@@ -456,7 +458,16 @@ export default function StudentTopicQuizPage() {
     if (!session) return;
     if (timedOut) toast.warning("Protocol Timeout!");
     setStage("submitting");
-    try { const res = await submitSession(session.id); setTeacherResult(res); setStage("results"); }
+    try {
+      const res = await submitSession(session.id);
+      setTeacherResult(res);
+      setStage("results");
+      if (mockTest) {
+        xpApi.submitTest(mockTest.id, res.totalCorrect, 1, res.totalSkipped === 0)
+          .then((xp) => triggerXPToast(xp.xpEarned, xp.isMockXp))
+          .catch(() => {});
+      }
+    }
     catch (err) { setStage("quiz"); }
   };
 

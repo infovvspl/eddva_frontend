@@ -7,3 +7,4 @@ export * as tenantsApi from "./tenants";
 export * as usersApi from "./users";
 export * as announcementsApi from "./announcements";
 export * as statsApi from "./stats";
+export * as xpApi from "./xp";

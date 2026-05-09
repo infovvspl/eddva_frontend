@@ -375,11 +375,11 @@ const DashboardLayout = () => {
               }}
               className={({ isActive }) =>
                 cn(
-                  "group flex items-center rounded-2xl text-[16px] font-bold transition-[background-color,border-color,color,transform] duration-500 relative tracking-wide",
-                  sidebarOpen ? "gap-4 px-5 py-3" : "justify-center px-0 py-3",
+                  "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
+                  sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
                   isActive
-                    ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.02] z-10", sidebarOpen ? "shadow-sm" : "shadow-none")
-                    : "text-slate-900 hover:text-black hover:bg-slate-50/50"
+                    ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
+                    : "text-slate-600 hover:text-black hover:bg-slate-50/40"
                 )
               }
             >

@@ -12,6 +12,8 @@ import {
   getMockTestById, startSession, submitAnswer, submitSession,
   getMockTestSessions, getSessionResult, getSessionById, isSessionCompleted,
 } from "@/lib/api/student";
+import { xpApi } from "@/lib/api/xp";
+import { triggerXPToast } from "@/lib/xp-toast";
 import type {
   QuizQuestion, TestSession, SessionResult, SessionResultAttempt, InProgressSessionAttempt,
 } from "@/lib/api/student";
@@ -869,6 +871,12 @@ export default function StudentMockTestPage() {
     try {
       const res = await submitSession(session.id);
       setResult(res);
+      const attemptNumber = allSessions.filter(isSessionCompleted).length + 1;
+      if (mockTestId) {
+        xpApi.submitTest(mockTestId, res.totalCorrect, attemptNumber, res.totalSkipped === 0)
+          .then((xp) => triggerXPToast(xp.xpEarned, xp.isMockXp))
+          .catch(() => {});
+      }
       // Refresh sessions list
       getMockTestSessions(mockTestId!).then(setAllSessions).catch(() => {});
       setStage("results");
