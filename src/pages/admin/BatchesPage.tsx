@@ -998,6 +998,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
     startDate: batch.startDate ? batch.startDate.split("T")[0] : "",
     endDate: batch.endDate ? batch.endDate.split("T")[0] : "",
     thumbnailUrl: batch.thumbnailUrl ?? "",
+    deliveryMode: batch.deliveryMode ?? "hybrid",
   });
   const [editThumbPreview, setEditThumbPreview] = useState<string>(resolvedInitialThumb);
   const [editThumbUploading, setEditThumbUploading] = useState(false);
@@ -1048,6 +1049,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
         class: resolved.class,
         isPaid: form.isPaid,
         feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
+        deliveryMode: form.deliveryMode,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         thumbnailUrl: form.thumbnailUrl || undefined,
@@ -1147,6 +1149,15 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">End Date</label>
                   <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
                     className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Delivery Mode *</label>
+                  <select value={form.deliveryMode} onChange={e => setForm({ ...form, deliveryMode: e.target.value })}
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
+                    <option value="hybrid">Hybrid (Live & Recorded)</option>
+                    <option value="live">Live Only</option>
+                    <option value="recorded">Recorded Only</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -1295,7 +1306,7 @@ const BatchesPage = () => {
   const [form, setForm] = useState({
     name: "", description: "", examTarget: "jee", class: "11",
     customExamTarget: "", customClass: "",
-    isPaid: false, feeAmount: "", startDate: "", endDate: "",
+    isPaid: false, feeAmount: "", startDate: "", endDate: "", deliveryMode: "hybrid",
   });
   const [thumbPreview, setThumbPreview] = useState<string>("");
   const [thumbFile, setThumbFile] = useState<File | null>(null);
@@ -1307,7 +1318,7 @@ const BatchesPage = () => {
   const batchList = Array.isArray(batches) ? batches : [];
 
   const resetForm = () => {
-    setForm({ name: "", description: "", examTarget: "jee", class: "11", customExamTarget: "", customClass: "", isPaid: false, feeAmount: "", startDate: "", endDate: "" });
+    setForm({ name: "", description: "", examTarget: "jee", class: "11", customExamTarget: "", customClass: "", isPaid: false, feeAmount: "", startDate: "", endDate: "", deliveryMode: "hybrid" });
     setThumbPreview("");
     setThumbFile(null);
     setFormError("");
@@ -1337,6 +1348,7 @@ const BatchesPage = () => {
         class: resolved.class,
         isPaid: form.isPaid,
         feeAmount: form.isPaid && form.feeAmount ? Number(form.feeAmount) : undefined,
+        deliveryMode: form.deliveryMode,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
       });
@@ -1508,6 +1520,17 @@ const BatchesPage = () => {
                 <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
                   className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400 transition-colors" />
               </div>
+            </div>
+
+            {/* Delivery Mode */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-500 px-1">Delivery Mode *</label>
+              <select value={form.deliveryMode} onChange={e => setForm({ ...form, deliveryMode: e.target.value })}
+                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
+                <option value="hybrid">Hybrid (Live & Recorded)</option>
+                <option value="live">Live Only</option>
+                <option value="recorded">Recorded Only</option>
+              </select>
             </div>
 
             {/* Row 3: Pricing */}
