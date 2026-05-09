@@ -406,43 +406,41 @@ export function AskDoubtPanel({
 
                   {/* Feedback */}
                   <div className="px-4 pb-4">
-                    {!feedbackMsg ? (
-                      <div className="flex items-center gap-2 pt-3 border-t border-violet-100">
-                        <span className="text-[11px] text-slate-400 font-medium mr-1">Was this helpful?</span>
-                        <button
-                          onClick={() => handleFeedback(true)}
-                          disabled={!!feedback}
-                          className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                            feedback === "helpful"
-                              ? "bg-emerald-100 text-emerald-700 border-emerald-300"
-                              : "bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300",
-                          )}
-                        >
-                          <ThumbsUp className="w-3.5 h-3.5" /> Yes
-                        </button>
-                        <button
-                          onClick={() => handleFeedback(false)}
-                          disabled={!!feedback}
-                          className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                            feedback === "not_helpful"
-                              ? "bg-red-100 text-red-600 border-red-300"
-                              : "bg-white text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-300",
-                          )}
-                        >
-                          <ThumbsDown className="w-3.5 h-3.5" /> No
-                        </button>
-                      </div>
-                    ) : (
-                      <div className={cn(
-                        "flex items-center gap-2 pt-3 border-t border-violet-100 text-xs font-semibold",
-                        feedback === "helpful" ? "text-emerald-600" : "text-slate-500",
-                      )}>
-                        <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                        {feedbackMsg}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 pt-3 border-t border-violet-100">
+                      <span className="text-[11px] text-slate-400 font-medium mr-1">Was this helpful?</span>
+                      <button
+                        onClick={() => handleFeedback(true)}
+                        disabled={!!feedback}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                          feedback === "helpful"
+                            ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300",
+                        )}
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" /> Yes
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(false)}
+                        disabled={!!feedback}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                          feedback === "not_helpful"
+                            ? "bg-red-500 text-white border-red-500 shadow-sm"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-300",
+                        )}
+                      >
+                        <ThumbsDown className="w-3.5 h-3.5" /> No
+                      </button>
+                      {feedbackMsg && (
+                        <span className={cn(
+                          "text-[11px] font-semibold ml-1",
+                          feedback === "helpful" ? "text-emerald-600" : "text-slate-500",
+                        )}>
+                          {feedback === "helpful" ? "Thanks!" : "Noted"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               )}

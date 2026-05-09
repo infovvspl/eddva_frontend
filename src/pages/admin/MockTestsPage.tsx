@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -519,6 +519,14 @@ const emptyScope: ScopeState = {
 type DraftQuestion = CreateMockTestQuestionPayload & {
   _key: number;
   subject?: string;
+  /** Chapter the question is scoped to (set from generation scope, used for verification UI) */
+  chapter?: string;
+  /** Topic the question is scoped to (set from generation scope, used for verification UI) */
+  topic?: string;
+  /** AI-returned scope echo: model confirms which chapter/topic it generated for. Used to flag drift. */
+  scopeCheck?: string;
+  /** AI-labeled sub-topic within the chapter (e.g. "Raoult's law") — used to spot variety drift */
+  subtopic?: string;
   explanation?: string;
   generatedTypeLabel?: string;
   /** Optional generation bucket metadata for cache reuse */
@@ -618,6 +626,63 @@ function stripKey(q: DraftQuestion): CachedQuestion {
   return rest;
 }
 
+// ─── Wizard draft persistence (recovers in-progress test creation) ───────────
+const WIZARD_DRAFT_KEY = "mock_test_wizard_draft_v1";
+
+type WizardDraft = {
+  step: number;
+  testCategory: TestCategory | null;
+  scope: ScopeState;
+  title: string;
+  durationMinutes: number;
+  passingMarks: number | "";
+  targetExam: string;
+  examLevel: string;
+  questionMixIds: QuestionMixId[];
+  questions: CachedQuestion[];
+  updatedAt: number;
+};
+
+function loadWizardDraft(batchId: string): WizardDraft | null {
+  if (!batchId) return null;
+  try {
+    const raw = localStorage.getItem(`${WIZARD_DRAFT_KEY}:${batchId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveWizardDraft(batchId: string, draft: WizardDraft): void {
+  if (!batchId) return;
+  try {
+    localStorage.setItem(`${WIZARD_DRAFT_KEY}:${batchId}`, JSON.stringify(draft));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function clearWizardDraft(batchId: string): void {
+  if (!batchId) return;
+  try {
+    localStorage.removeItem(`${WIZARD_DRAFT_KEY}:${batchId}`);
+  } catch {
+    // ignore
+  }
+}
+
+function fmtDraftAge(updatedAt: number): string {
+  const diffMs = Date.now() - updatedAt;
+  const m = Math.floor(diffMs / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 let _keyCounter = 0;
 const blankQuestion = (kind: DraftQKind = "mcq_single", mix: QuestionMixId = "comp_mcq", label?: string): DraftQuestion => {
   const marks = defaultMarksFor(kind, mix);
@@ -660,14 +725,23 @@ function aiToDraft(
   as: DraftQKind,
   defaultSubject: string,
   mix: QuestionMixId,
-  cacheBucket?: CbseBucket,
+  cacheBucket?: any,
   generatedTypeLabel?: string,
+  scope?: { chapter?: string; topic?: string },
 ): DraftQuestion {
   const diff = (q.difficulty?.toLowerCase() ?? "medium") as "easy" | "medium" | "hard";
   const safeDiff = ["easy", "medium", "hard"].includes(diff) ? diff : "medium";
   const marks = defaultMarksFor(as, mix, safeDiff);
   const inferredSubtype = inferSubtypeLabelFromText(q.questionText, q.explanation);
   const effectiveGeneratedTypeLabel = inferredSubtype || generatedTypeLabel;
+  // For subject-wide tests scope?.chapter is empty; fall back to AI-provided chapter per question.
+  // Reject q.chapter if the AI just echoed the subject name (e.g. "Physics") — that's not a chapter.
+  const aiChapter = q.chapter && q.chapter.toLowerCase().trim() !== defaultSubject.toLowerCase().trim()
+    ? q.chapter : undefined;
+  const chapter = scope?.chapter || aiChapter;
+  const topic = scope?.topic;
+  const scopeCheck = (q as any).scope_check || (q as any).scopeCheck;
+  const subtopic = (q as any).subtopic || (q as any).sub_topic;
 
   if (as === "descriptive") {
     const ex = (q.explanation || "").trim();
@@ -686,6 +760,10 @@ function aiToDraft(
       marksCorrect: inferredMarks,
       marksWrong: marks.marksWrong,
       subject: q.subject || defaultSubject,
+      chapter,
+      topic,
+      scopeCheck,
+      subtopic,
       explanation: q.explanation,
       generatedTypeLabel: effectiveGeneratedTypeLabel,
       solutionText: model,
@@ -711,6 +789,10 @@ function aiToDraft(
       marksWrong: marks.marksWrong,
       integerAnswer: intVal,
       subject: q.subject || defaultSubject,
+      chapter,
+      topic,
+      scopeCheck,
+      subtopic,
       explanation: q.explanation,
       generatedTypeLabel: effectiveGeneratedTypeLabel,
       cacheBucket,
@@ -736,6 +818,10 @@ function aiToDraft(
       marksCorrect: marks.marksCorrect,
       marksWrong: marks.marksWrong,
       subject: q.subject || defaultSubject,
+      chapter,
+      topic,
+      scopeCheck,
+      subtopic,
       explanation: q.explanation,
       generatedTypeLabel: effectiveGeneratedTypeLabel,
       cacheBucket,
@@ -757,6 +843,10 @@ function aiToDraft(
     marksWrong: marks.marksWrong,
     options: opts,
     subject: q.subject || defaultSubject,
+    chapter,
+    topic,
+    scopeCheck,
+    subtopic,
     explanation: q.explanation,
     generatedTypeLabel: effectiveGeneratedTypeLabel,
     cacheBucket,
@@ -881,65 +971,195 @@ function QuestionRow({
     onChange({ ...q, options: opts });
   };
 
+  // ── Auto-grow textarea height for the question stem ────────────────────────
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    if (!expanded || !textareaRef.current) return;
+    const el = textareaRef.current;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 480)}px`;
+  }, [q.content, expanded]);
+
+  const correctIndices = (q.options ?? [])
+    .map((o, i) => (o.isCorrect ? i : -1))
+    .filter(i => i >= 0);
+
+  // ── Drift detection: compare what AI echoed back vs what we requested ─────
+  const expectedScope = (q.chapter || q.topic || q.subject || "").toLowerCase();
+  const reportedScope = (q.scopeCheck || "").toLowerCase();
+  const scopeDrift = !!q.scopeCheck && !!expectedScope &&
+    !reportedScope.includes(expectedScope.slice(0, 12)) &&
+    !expectedScope.includes(reportedScope.slice(0, 12));
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors"
-        onClick={() => setExpanded(!expanded)}>
-        <span className="text-xs font-bold text-slate-400 w-6 shrink-0">{String(index + 1).padStart(2, "0")}</span>
-        <p className="text-sm text-slate-700 flex-1 truncate">{q.content || <span className="text-slate-400 italic">Empty question…</span>}</p>
-        <div className="flex items-center gap-2 shrink-0">
-          {q.subject && <span className="text-xs text-slate-400 hidden sm:block">{q.subject}</span>}
-          {q.generatedTypeLabel && (
-            <span className="text-xs text-[#013889] bg-[#E6EEF8] px-2 py-0.5 rounded-full hidden sm:block">
-              {q.generatedTypeLabel}
+    <div className={cn(
+      "rounded-2xl border bg-white overflow-hidden transition-all",
+      expanded ? "border-[#013889]/40 shadow-md" : "border-slate-200 hover:border-slate-300"
+    )}>
+      {/* ── PROMINENT chapter strip — shows BOTH what was requested AND what the AI actually produced ── */}
+      {(q.chapter || q.topic || q.subtopic) && (
+        <div className={cn(
+          "flex items-center gap-2 px-4 py-2 border-b text-[11px] font-semibold flex-wrap",
+          scopeDrift
+            ? "bg-rose-50 border-rose-200 text-rose-800"
+            : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 text-[#013889]"
+        )}
+          title={scopeDrift
+            ? `AI scope_check echoed "${q.scopeCheck}" — does not match requested chapter "${q.chapter || q.topic}". This question is likely off-topic.`
+            : `AI generated this question for: ${[q.subject, q.chapter, q.topic].filter(Boolean).join(" › ")}${q.subtopic ? ` (sub-topic: ${q.subtopic})` : ""}`}>
+          {scopeDrift ? (
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          ) : (
+            <BookOpen className="w-3.5 h-3.5 shrink-0" />
+          )}
+
+          {/* Chapter label — only show when we have a real chapter/topic name (not just the subject) */}
+          {(q.chapter || q.topic) && (
+            <>
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
+                {scopeDrift ? "Asked for" : "Chapter"}:
+              </span>
+              <span className="truncate font-bold">
+                {q.chapter || q.topic}
+              </span>
+              {q.subject && (
+                <span className="text-[10px] opacity-60 truncate hidden md:inline">
+                  ({q.subject})
+                </span>
+              )}
+            </>
+          )}
+          {/* When no chapter yet (AI hasn't provided one) — just show subject badge */}
+          {!q.chapter && !q.topic && q.subject && (
+            <span className="text-[10px] opacity-60">
+              {q.subject} · chapter pending
             </span>
           )}
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${DIFFICULTY_COLORS[q.difficulty] ?? ""}`}>
-            {q.difficulty}
-          </span>
-          {canRemove && (
-            <button onClick={e => { e.stopPropagation(); onRemove(); }}
-              className="text-slate-400 hover:text-red-500 p-1">
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <span className="text-slate-400 text-xs">{expanded ? "▲" : "▼"}</span>
-        </div>
-      </div>
 
-      {expanded && (
-        <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50/50">
-          <div className="space-y-2.5">
-            <textarea required={!q.contentImageUrl} rows={2} value={q.content}
-              onChange={e => onChange({ ...q, content: e.target.value })}
-              placeholder={q.contentImageUrl ? "Question text (optional with attachment)…" : "Question text…"}
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-[#013889] resize-none" />
-            
-            {q.contentImageUrl ? (
-              <div className="relative inline-block border border-slate-200 rounded-md overflow-hidden bg-white">
-                <img src={resolveMediaUrl(q.contentImageUrl)} alt="Question Attachment" className="max-h-32 object-contain" />
-                <button
-                  type="button"
-                  onClick={() => onChange({ ...q, contentImageUrl: undefined })}
-                  className="absolute top-1 right-1 bg-white/80 hover:bg-red-50 text-red-500 rounded p-1 backdrop-blur-sm transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div>
-                <input type="file" id={`upload-img-${q._key}`} className="hidden" accept="image/*" onChange={handleImageUpload} />
-                <label htmlFor={`upload-img-${q._key}`} className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${uploading ? 'bg-slate-50 border-slate-200 text-slate-400' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#013889]'}`}>
-                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
-                  {uploading ? "Uploading..." : "Attach Image"}
-                </label>
-              </div>
+          {/* What the AI ACTUALLY generated — sub-topic from the AI's own labelling */}
+          {q.subtopic && (
+            <>
+              <span className="text-slate-300 mx-0.5">·</span>
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
+                AI Topic:
+              </span>
+              <span className={cn(
+                "truncate font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded-full",
+                scopeDrift
+                  ? "bg-rose-100 text-rose-800"
+                  : "bg-violet-100 text-violet-800"
+              )}>
+                ◉ {q.subtopic}
+              </span>
+            </>
+          )}
+
+          {scopeDrift && q.scopeCheck && (
+            <span className="ml-auto text-[10px] bg-rose-100 px-1.5 py-0.5 rounded font-mono shrink-0">
+              scope_check: "{q.scopeCheck.slice(0, 40)}"
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* ── Collapsed header strip ── */}
+      <button type="button" onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50/50 transition-colors">
+        <span className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black bg-blue-50 text-[#013889]">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <p className={cn(
+            "text-sm leading-relaxed",
+            q.content ? "text-slate-800" : "text-slate-400 italic",
+            !expanded && "line-clamp-2"
+          )}>
+            {q.content || "Empty question…"}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            {q.generatedTypeLabel && (
+              <span className="text-[10px] font-semibold text-[#013889] bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+                {q.generatedTypeLabel}
+              </span>
+            )}
+            <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded uppercase",
+              DIFFICULTY_COLORS[q.difficulty] ?? "")}>
+              {q.difficulty}
+            </span>
+            <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold">
+              +{q.marksCorrect}
+            </span>
+            {q.marksWrong !== 0 && (
+              <span className="text-[10px] text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded font-semibold">
+                {q.marksWrong}
+              </span>
             )}
           </div>
+        </div>
 
-          <div className="grid grid-cols-3 gap-2">
+        <div className="shrink-0 flex items-center gap-1">
+          {canRemove && (
+            <span onClick={e => { e.stopPropagation(); onRemove(); }}
+              role="button"
+              className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors">
+              <Trash2 className="w-3.5 h-3.5" />
+            </span>
+          )}
+          <span className="text-slate-400 p-1">
+            {expanded ? <ChevronRight className="w-4 h-4 -rotate-90" /> : <ChevronRight className="w-4 h-4 rotate-90" />}
+          </span>
+        </div>
+      </button>
+
+      {/* ── Expanded editor ── */}
+      {expanded && (
+        <div className="border-t border-slate-100 bg-slate-50/40">
+          {/* Question stem */}
+          <div className="p-5 bg-white border-b border-slate-100">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+              Question Text
+            </label>
+            <textarea
+              ref={textareaRef}
+              required={!q.contentImageUrl}
+              rows={4}
+              value={q.content}
+              onChange={e => onChange({ ...q, content: e.target.value })}
+              placeholder={q.contentImageUrl ? "Question text (optional with attachment)…" : "Type or paste the question text here…"}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[14px] leading-7 text-slate-800 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10 resize-none transition-all"
+              style={{ minHeight: "112px" }}
+            />
+
+            {/* Image attach */}
+            <div className="mt-3">
+              {q.contentImageUrl ? (
+                <div className="relative inline-block border border-slate-200 rounded-xl overflow-hidden bg-white max-w-xs">
+                  <img src={resolveMediaUrl(q.contentImageUrl)} alt="Question Attachment" className="max-h-40 object-contain" />
+                  <button type="button"
+                    onClick={() => onChange({ ...q, contentImageUrl: undefined })}
+                    className="absolute top-1.5 right-1.5 bg-white/90 hover:bg-red-50 text-red-500 rounded-lg p-1.5 backdrop-blur-sm transition-colors shadow">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input type="file" id={`upload-img-${q._key}`} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                  <label htmlFor={`upload-img-${q._key}`}
+                    className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors cursor-pointer",
+                      uploading ? "bg-slate-50 border-slate-200 text-slate-400" : "bg-white border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-[#013889] hover:border-[#013889]/30")}>
+                    {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
+                    {uploading ? "Uploading…" : "Attach Image"}
+                  </label>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Meta strip — Type / Difficulty / Marks */}
+          <div className="px-5 py-4 bg-slate-50/40 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-slate-500 font-semibold">Type</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Type</label>
               <select
                 value={`${q.type}|${q.generatedTypeLabel || ""}`}
                 onChange={e => {
@@ -949,83 +1169,128 @@ function QuestionRow({
                     onChange({ ...fresh, _key: q._key, content: q.content, contentImageUrl: q.contentImageUrl, difficulty: q.difficulty, marksCorrect: q.marksCorrect });
                   }
                 }}
-                className="mt-1 h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]">
+                className="h-10 w-full px-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10">
                 {allowedMixes.map((m, i) => (
                   <option key={i} value={`${m.type}|${m.label}`}>{m.label}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-500 font-semibold">Difficulty</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Difficulty</label>
               <select value={q.difficulty} onChange={e => onChange({ ...q, difficulty: e.target.value as any })}
-                className="mt-1 h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]">
+                className="h-10 w-full px-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10">
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
                 <option value="hard">Hard</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-500 font-semibold">Marks +/-</label>
-              <div className="mt-1 flex gap-1">
-                <input type="number" value={q.marksCorrect}
-                  onChange={e => onChange({ ...q, marksCorrect: +e.target.value })}
-                  className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] text-center" />
-                <input type="number" value={q.marksWrong}
-                  onChange={e => onChange({ ...q, marksWrong: +e.target.value })}
-                  className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] text-center" />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                Marks <span className="text-slate-400 font-normal normal-case">(correct / wrong)</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600 font-bold text-xs">+</span>
+                  <input type="number" value={q.marksCorrect}
+                    onChange={e => onChange({ ...q, marksCorrect: +e.target.value })}
+                    className="h-10 w-full pl-6 pr-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-[#013889] text-center" />
+                </div>
+                <div className="relative flex-1">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-rose-500 font-bold text-xs">−</span>
+                  <input type="number" value={q.marksWrong}
+                    onChange={e => onChange({ ...q, marksWrong: +e.target.value })}
+                    className="h-10 w-full pl-6 pr-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-[#013889] text-center" />
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Options block */}
           {!isInteger && !isDescriptive && q.options && q.options.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="text-xs text-slate-500 font-semibold">Options (tick correct)</label>
+            <div className="p-5 space-y-2 bg-white">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Options
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  {q.type === "mcq_single"
+                    ? `Pick the one correct answer ${correctIndices.length === 1 ? "(✓)" : "— none selected!"}`
+                    : `Tick all correct answers (${correctIndices.length} selected)`}
+                </p>
+              </div>
               {(q.options ?? []).map((opt, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="w-5 text-xs font-bold text-slate-400">{opt.optionLabel}</span>
-                  <input type="text" value={opt.content}
+                <label key={i}
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                    opt.isCorrect
+                      ? "border-emerald-300 bg-emerald-50/40"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40"
+                  )}>
+                  <span className={cn("shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black mt-0.5",
+                    opt.isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>
+                    {opt.optionLabel}
+                  </span>
+                  <textarea rows={1} value={opt.content}
                     onChange={e => setOpt(i, "content", e.target.value)}
-                    placeholder={`Option ${opt.optionLabel}`}
-                    className="h-8 flex-1 px-3 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]" />
+                    onInput={e => {
+                      const t = e.currentTarget;
+                      t.style.height = "auto";
+                      t.style.height = `${Math.min(t.scrollHeight, 200)}px`;
+                    }}
+                    placeholder={`Option ${opt.optionLabel}…`}
+                    className="flex-1 min-h-[36px] px-2 py-1.5 bg-transparent text-sm text-slate-800 outline-none resize-none leading-6"
+                  />
                   <input type={q.type === "mcq_single" ? "radio" : "checkbox"}
                     name={`correct-${q._key}`} checked={opt.isCorrect}
                     onChange={e => setOpt(i, "isCorrect", e.target.checked)}
-                    className="w-4 h-4 accent-[#013889]" />
-                </div>
+                    onClick={e => e.stopPropagation()}
+                    className="mt-2 w-4 h-4 accent-emerald-500 cursor-pointer" />
+                </label>
               ))}
             </div>
           )}
 
           {isInteger && (
-            <div>
-              <label className="text-xs text-slate-500 font-semibold">Correct Integer Answer</label>
+            <div className="p-5 bg-white">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                Correct Integer Answer
+              </label>
               <input value={q.integerAnswer ?? ""}
                 onChange={e => onChange({ ...q, integerAnswer: e.target.value })}
                 placeholder="e.g. 42"
-                className="mt-1 h-9 w-full px-3 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]" />
+                className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10" />
             </div>
           )}
 
           {isDescriptive && (
-            <div>
-              <label className="text-xs text-slate-500 font-semibold">Model answer / key points (optional but recommended)</label>
-              <textarea rows={3} value={(q as DraftQuestion).solutionText ?? ""}
+            <div className="p-5 bg-white">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                Model Answer / Key Points
+                <span className="ml-1 text-slate-400 font-normal normal-case">(optional but recommended)</span>
+              </label>
+              <textarea rows={4} value={(q as DraftQuestion).solutionText ?? ""}
                 onChange={e => onChange({ ...q, solutionText: e.target.value, marksWrong: 0 })}
                 placeholder="Marking points or exemplar answer for review…"
-                className="mt-1 w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] resize-none" />
+                className="w-full min-h-[112px] px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 leading-6 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10 resize-y" />
               {[2, 3, 4, 5].includes(Math.round(q.marksCorrect || 0)) && (
-                <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
-                  {Math.round(q.marksCorrect) === 2 && "2-mark: very concise answer (definition/statement + one point/example)."}
-                  {Math.round(q.marksCorrect) === 3 && "3-mark: definition/principle + 2 explained points in logical flow."}
-                  {Math.round(q.marksCorrect) === 4 && "4-mark: structured explanation with 3-4 points; include stepwise work or diagram/example where relevant."}
-                  {Math.round(q.marksCorrect) === 5 && "5-mark: complete structure - intro/definition, 3 core points/steps, and diagram/example/conclusion."}
+                <p className="mt-2 text-[11px] text-slate-500 leading-relaxed bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  {Math.round(q.marksCorrect) === 2 && "2-mark guide: definition/statement + one point/example."}
+                  {Math.round(q.marksCorrect) === 3 && "3-mark guide: definition/principle + 2 explained points."}
+                  {Math.round(q.marksCorrect) === 4 && "4-mark guide: 3-4 structured points; include stepwise work or diagram/example."}
+                  {Math.round(q.marksCorrect) === 5 && "5-mark guide: intro/definition + 3 core points + diagram/example/conclusion."}
                 </p>
               )}
             </div>
           )}
 
+          {/* Explanation footer */}
           {q.explanation && (
-            <p className="text-xs text-slate-500 italic border-l-2 border-[#013889]/30 pl-3">{q.explanation}</p>
+            <div className="px-5 py-4 bg-blue-50/30 border-t border-blue-100">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#013889] mb-1.5">
+                Explanation
+              </p>
+              <p className="text-xs text-slate-700 leading-6 whitespace-pre-wrap">{q.explanation}</p>
+            </div>
           )}
         </div>
       )}
@@ -1037,6 +1302,7 @@ function QuestionRow({
 
 function AIGeneratePanel({
   exam,
+  examLevel,
   onQuestionsGenerated,
   batchId,
   testCategory,
@@ -1048,6 +1314,8 @@ function AIGeneratePanel({
   initTopicId = "",  initTopicName = "",
 }: {
   exam: string;
+  /** "jee main" | "jee advanced" | "neet" | "cbse" — passed to AI service as exam_target */
+  examLevel?: string;
   onQuestionsGenerated: (questions: DraftQuestion[], topicId?: string) => void;
   batchId?: string;
   testCategory?: TestCategory | null;
@@ -1079,8 +1347,8 @@ function AIGeneratePanel({
   const [aiSubjectName, setAiSubjectName] = useState(initSubjectName);
 
   const { data: subjects } = useSubjects(batchId);
-  const { data: chapters } = useChapters(subjectId);
-  const { data: topics } = useTopics(chapterId);
+  const { data: chapters, isLoading: chaptersLoading } = useChapters(subjectId);
+  const { data: topics, isLoading: topicsLoading } = useTopics(chapterId);
 
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
@@ -1221,6 +1489,13 @@ function AIGeneratePanel({
         ? " Difficulty mix required: equal easy, medium, and hard distribution."
         : ` Generate ALL questions at ${difficultyMode.toUpperCase()} difficulty only.`;
 
+    // For subject tests: if the DB only has 1 chapter for this subject, treat it as a chapter test
+    // so the full scope lock fires. For multiple DB chapters, topicName lists them explicitly.
+    const isSubjectTest = testCategory === "subject";
+    const dbChapterNames = chapterList.map(c => c.name).filter(Boolean);
+    const effectiveChapterName = aiChapterName ||
+      (isSubjectTest && dbChapterNames.length === 1 ? dbChapterNames[0] : "");
+
     let topicName: string;
 
     if (topicSelected) {
@@ -1228,14 +1503,20 @@ function AIGeneratePanel({
       topicName = isCbse
         ? `${topicPath}. Strict scope: subtopics of "${aiTopicName}" only. Use the question-type instructions per segment.${difficultyPrompt}${extra}`.trim()
         : `${topicPath}. Strict scope: subtopics of "${aiTopicName}" only. JEE/NEET-style where applicable; mix conceptual and numerical problems.${difficultyPrompt}${extra}`.trim();
-    } else if (aiChapterName) {
+    } else if (effectiveChapterName) {
+      // Single chapter (or subject test reduced to 1 DB chapter)
       topicName = isCbse
-        ? `Chapter "${aiChapterName}"${aiSubjectName ? ` in subject ${aiSubjectName}` : ""}. Board-style depth on major ideas.${difficultyPrompt}${extra}`.trim()
-        : `Chapter "${aiChapterName}"${aiSubjectName ? ` in subject ${aiSubjectName}` : ""}. Cover major ideas; competitive difficulty; mix conceptual and numerical.${difficultyPrompt}${extra}`.trim();
+        ? `Chapter "${effectiveChapterName}"${aiSubjectName ? ` in subject ${aiSubjectName}` : ""}. Board-style depth on major ideas.${difficultyPrompt}${extra}`.trim()
+        : `Chapter "${effectiveChapterName}"${aiSubjectName ? ` in subject ${aiSubjectName}` : ""}. Cover major ideas; competitive difficulty; mix conceptual and numerical.${difficultyPrompt}${extra}`.trim();
     } else if (aiSubjectName) {
+      // Subject test with multiple DB chapters — constrain AI to exactly those chapters.
+      const chapterConstraint = dbChapterNames.length > 0
+        ? `ONLY from these ${dbChapterNames.length} chapter(s) that exist in this course: ${dbChapterNames.join(", ")}. ` +
+          `DO NOT generate questions from any other chapter. This is a strict constraint.`
+        : "full subject breadth, varied chapters";
       topicName = isCbse
-        ? `Subject "${aiSubjectName}" — full subject breadth, varied chapters; CBSE board-style as defined in the Test details question mix.${difficultyPrompt}${extra}`.trim()
-        : `Subject "${aiSubjectName}" — full subject breadth, varied chapters; competitive-style items as in the Test details mix.${difficultyPrompt}${extra}`.trim();
+        ? `Subject "${aiSubjectName}" — ${chapterConstraint} CBSE board-style.${difficultyPrompt}${extra}`.trim()
+        : `Subject "${aiSubjectName}" — ${chapterConstraint} Competitive difficulty; mix conceptual and numerical.${difficultyPrompt}${extra}`.trim();
     } else {
       topicName = isCbse
         ? `CBSE-oriented work covering (${cfg.description}). Subjects: ${cfg.subjects.join(", ")}. Syllabus hints: ${cfg.topics.join(" | ")}.${difficultyPrompt} ${extra}`.trim()
@@ -1267,8 +1548,13 @@ function AIGeneratePanel({
       const drafts: DraftQuestion[] = [];
       const subj = aiSubjectName || "";
       const seenQuestions = new Set<string>();
+      const seenSubtopicCount = new Map<string, number>();
+      const MAX_PER_SUBTOPIC = Math.max(2, Math.ceil(requestedCount / 4));
       let duplicateFilteredCount = 0;
       const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/[^\w\s]/g, "").trim();
+      // Detect questions with the same opening (first 50 normalized chars) — catches "Assertion (A): The depression..." clusters
+      const seenOpenings = new Set<string>();
+      const openingKey = (s: string) => norm(s).slice(0, 50);
 
       // 1) Cache-first reuse (topic/chapter/subject aware) to reduce AI timeouts.
       const cacheEntries = loadAiQuestionCache();
@@ -1363,6 +1649,10 @@ function AIGeneratePanel({
                   hardCount: alloc.hard,
                   questionType: seg.questionType,
                   questionStyle: seg.style,
+                  examTarget: examLevel,
+                  subject: aiSubjectName || undefined,
+                  chapter: effectiveChapterName || undefined,
+                  chapters: isSubjectTest && dbChapterNames.length > 1 ? dbChapterNames : undefined,
                 });
                 return { segIndex, seg, raw };
               }),
@@ -1375,10 +1665,20 @@ function AIGeneratePanel({
             for (const q of raw) {
               const key = norm(q.questionText || "");
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
+              // Anti-clustering: reject if same opening 50 chars already seen
+              const op = openingKey(q.questionText || "");
+              if (op && seenOpenings.has(op)) { duplicateFilteredCount += 1; continue; }
+              // Anti-clustering: reject if too many on same sub-topic
+              const stKey = ((q as any).subtopic || "").toLowerCase().trim();
+              if (stKey && (seenSubtopicCount.get(stKey) ?? 0) >= MAX_PER_SUBTOPIC) {
+                duplicateFilteredCount += 1; continue;
+              }
               if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
+              if (op) seenOpenings.add(op);
+              if (stKey) seenSubtopicCount.set(stKey, (seenSubtopicCount.get(stKey) ?? 0) + 1);
               drafts.push(
-                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel),
+                aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel, { chapter: effectiveChapterName || undefined, topic: aiTopicName || undefined }),
               );
             }
           }
@@ -1427,13 +1727,25 @@ function AIGeneratePanel({
               hardCount: alloc.hard,
               questionType: seg.questionType,
               questionStyle: seg.style,
+              examTarget: examLevel,
+              subject: aiSubjectName || undefined,
+              chapter: effectiveChapterName || undefined,
+              chapters: isSubjectTest && dbChapterNames.length > 1 ? dbChapterNames : undefined,
             }).catch(() => [] as AiGeneratedQuestion[]);
             for (const q of raw) {
               const key = norm(q.questionText || "");
               if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
+              const op = openingKey(q.questionText || "");
+              if (op && seenOpenings.has(op)) { duplicateFilteredCount += 1; continue; }
+              const stKey = ((q as any).subtopic || "").toLowerCase().trim();
+              if (stKey && (seenSubtopicCount.get(stKey) ?? 0) >= MAX_PER_SUBTOPIC) {
+                duplicateFilteredCount += 1; continue;
+              }
               if (!laneQualityPass(q, seg)) continue;
               seenQuestions.add(key);
-              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel));
+              if (op) seenOpenings.add(op);
+              if (stKey) seenSubtopicCount.set(stKey, (seenSubtopicCount.get(stKey) ?? 0) + 1);
+              drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel, { chapter: effectiveChapterName || undefined, topic: aiTopicName || undefined }));
               have = countLane(lane);
               if (have >= req || drafts.length >= requestedCount) break;
             }
@@ -1470,13 +1782,24 @@ function AIGeneratePanel({
             hardCount: alloc.hard,
             questionType: seg.questionType,
             questionStyle: seg.style,
+            examTarget: examLevel,
+            subject: aiSubjectName || undefined,
+            chapter: effectiveChapterName || undefined,
           }).catch(() => [] as AiGeneratedQuestion[]);
           for (const q of raw) {
             const key = norm(q.questionText || "");
             if (!key || seenQuestions.has(key)) { duplicateFilteredCount += 1; continue; }
+            const op = openingKey(q.questionText || "");
+            if (op && seenOpenings.has(op)) { duplicateFilteredCount += 1; continue; }
+            const stKey = ((q as any).subtopic || "").toLowerCase().trim();
+            if (stKey && (seenSubtopicCount.get(stKey) ?? 0) >= MAX_PER_SUBTOPIC) {
+              duplicateFilteredCount += 1; continue;
+            }
             if (!laneQualityPass(q, seg)) continue;
             seenQuestions.add(key);
-            drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel));
+            if (op) seenOpenings.add(op);
+            if (stKey) seenSubtopicCount.set(stKey, (seenSubtopicCount.get(stKey) ?? 0) + 1);
+            drafts.push(aiToDraft({ ...q, subject: q.subject || subj }, seg.asDraft, subj, mainMixId, undefined, seg.laneLabel, { chapter: effectiveChapterName || undefined, topic: aiTopicName || undefined }));
             if (drafts.length >= requestedCount) break;
           }
           if (!raw.length) break;
@@ -1631,6 +1954,7 @@ function AIGeneratePanel({
               {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
 
+            {/* Chapter dropdown — only shown for Chapter Test and Topic Test (Subject Test doesn't need it) */}
             {testCategory !== "subject" && (
               <select value={chapterId}
                 onChange={e => {
@@ -1638,23 +1962,40 @@ function AIGeneratePanel({
                   const name = chapterList.find(c => c.id === id)?.name ?? "";
                   setChapterId(id); setAiTopicId(""); setAiTopicName(""); setAiChapterName(name);
                 }}
-                disabled={!subjectId}
+                disabled={!subjectId || chaptersLoading}
                 className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-                <option value="">Chapter…</option>
+                <option value="">
+                  {!subjectId
+                    ? "Chapter…"
+                    : chaptersLoading
+                      ? "Loading chapters…"
+                      : chapterList.length === 0
+                        ? "No chapters"
+                        : `Pick chapter (${chapterList.length}) ▾`}
+                </option>
                 {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             )}
 
-            {(!testCategory || testCategory === "topic") && (
+            {/* Topic dropdown — only shown for Topic Test */}
+            {testCategory === "topic" && (
               <select value={aiTopicId}
                 onChange={e => {
                   const id = e.target.value;
                   const name = topicList.find(t => t.id === id)?.name ?? "";
                   setAiTopicId(id); setAiTopicName(name);
                 }}
-                disabled={!chapterId}
+                disabled={!chapterId || topicsLoading}
                 className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-                <option value="">Topic…</option>
+                <option value="">
+                  {!chapterId
+                    ? "Topic…"
+                    : topicsLoading
+                      ? "Loading topics…"
+                      : topicList.length === 0
+                        ? "No topics"
+                        : `Pick topic (${topicList.length}) ▾`}
+                </option>
                 {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             )}
@@ -1679,18 +2020,30 @@ function AIGeneratePanel({
                 onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
                 className="text-xs text-slate-400 hover:text-slate-700 shrink-0">Clear</button>
             </div>
-          ) : aiSubjectName ? (
+          ) : aiChapterName ? (
             <div className="flex items-center gap-1.5 pt-0.5">
               <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span className="text-xs text-emerald-600 font-medium flex-1 truncate">
-                {aiSubjectName}
+                {aiSubjectName} › {aiChapterName} <span className="text-slate-400 font-normal">(chapter scope)</span>
+              </span>
+              <button type="button"
+                onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
+                className="text-xs text-slate-400 hover:text-slate-700 shrink-0">Clear</button>
+            </div>
+          ) : aiSubjectName ? (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="text-xs text-emerald-700 font-medium flex-1 truncate">
+                {aiSubjectName} — {testCategory === "subject"
+                  ? "AI will spread questions across all chapters of this subject"
+                  : "subject scope set"}
               </span>
               <button type="button"
                 onClick={() => { setSubjectId(""); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(""); setAiChapterName(""); }}
                 className="text-xs text-slate-400 hover:text-slate-700 shrink-0">Clear</button>
             </div>
           ) : (
-            <p className="text-xs text-amber-600 pt-0.5">No selection — will use exam-based generation below.</p>
+            <p className="text-xs text-amber-600 pt-0.5">⚠ No subject selected — pick one above to scope the questions.</p>
           )}
       </div>
 
@@ -2050,23 +2403,35 @@ const TEST_CATEGORY_CONFIG: Record<TestCategory, {
 };
 
 function CreateTestModal({
-  batchId, onClose, onCreated,
+  batchId, onClose, onCreated, fullPage = false, resumeDraft = false,
 }: {
   batchId: string;
   onClose: () => void;
   onCreated: (id: string) => void;
+  fullPage?: boolean;
+  /** When true, hydrate state from localStorage draft on mount */
+  resumeDraft?: boolean;
 }) {
   const createMockTest = useCreateMockTest();
 
-  const [step, setStep] = useState<WizardStep>(0);
-  const [testCategory, setTestCategory] = useState<TestCategory | null>(null);
-  const [scope, setScope] = useState<ScopeState>(emptyScope);
-  const [title, setTitle] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState(60);
-  const [passingMarks, setPassingMarks] = useState<number | "">("");
-  const [targetExam, setTargetExam] = useState<string>("JEE");
-  const [questionMixIds, setQuestionMixIds] = useState<QuestionMixId[]>(["comp_mcq"]);
-  const [questions, setQuestions] = useState<DraftQuestion[]>([blankQuestion("mcq_single", "comp_mcq")]);
+  // ── Hydrate from saved draft if requested ────────────────────────────────
+  const initialDraft = resumeDraft ? loadWizardDraft(batchId) : null;
+
+  const [step, setStep] = useState<WizardStep>((initialDraft?.step ?? 0) as WizardStep);
+  const [testCategory, setTestCategory] = useState<TestCategory | null>(initialDraft?.testCategory ?? null);
+  const [scope, setScope] = useState<ScopeState>(initialDraft?.scope ?? emptyScope);
+  const [title, setTitle] = useState(initialDraft?.title ?? "");
+  const [durationMinutes, setDurationMinutes] = useState(initialDraft?.durationMinutes ?? 60);
+  const [passingMarks, setPassingMarks] = useState<number | "">(initialDraft?.passingMarks ?? "");
+  const [targetExam, setTargetExam] = useState<string>(initialDraft?.targetExam ?? "JEE");
+  /** Sub-tier for the exam — "jee main" / "jee advanced" / "neet" / "cbse". Drives the JEE-specific difficulty heuristic in the AI service. */
+  const [examLevel, setExamLevel] = useState<string>(initialDraft?.examLevel ?? "jee main");
+  const [questionMixIds, setQuestionMixIds] = useState<QuestionMixId[]>(initialDraft?.questionMixIds ?? ["comp_mcq"]);
+  const [questions, setQuestions] = useState<DraftQuestion[]>(
+    initialDraft?.questions && initialDraft.questions.length > 0
+      ? initialDraft.questions.map(q => ({ ...q, _key: ++_keyCounter }))
+      : [blankQuestion("mcq_single", "comp_mcq")]
+  );
   const [activeTab, setActiveTab] = useState<"manual" | "ai" | "csv">("manual");
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -2080,16 +2445,48 @@ function CreateTestModal({
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const chapterList = Array.isArray(chapters) ? chapters : [];
   const topicList = Array.isArray(topics) ? topics : [];
+
+  // ── Auto-save wizard state to localStorage so the teacher can resume later ──
+  // Save on any meaningful change. Skip the trivial first-render empty state.
+  useEffect(() => {
+    const hasMeaningfulProgress =
+      step > 0 ||
+      title.trim().length > 0 ||
+      questions.some(q => q.content.trim().length > 0) ||
+      questions.length > 1;
+
+    if (!hasMeaningfulProgress) return;
+
+    saveWizardDraft(batchId, {
+      step,
+      testCategory,
+      scope,
+      title,
+      durationMinutes,
+      passingMarks,
+      targetExam,
+      examLevel,
+      questionMixIds,
+      questions: questions.map(stripKey),
+      updatedAt: Date.now(),
+    });
+  }, [batchId, step, testCategory, scope, title, durationMinutes, passingMarks,
+      targetExam, examLevel, questionMixIds, questions]);
   
   useEffect(() => {
     if (createModalBatch?.examTarget && targetExam !== createModalBatch.examTarget) {
       setTargetExam(createModalBatch.examTarget);
-      const isCompetitive = ["JEE", "NEET"].includes(createModalBatch.examTarget);
+      const examUp = createModalBatch.examTarget.toUpperCase();
+      const isCompetitive = examUp.includes("JEE") || examUp.includes("NEET");
       if (isCompetitive && !questionMixIds.some(id => id.startsWith("comp_"))) {
         setQuestionMixIds(["comp_mcq"]);
       } else if (!isCompetitive && !questionMixIds.some(id => id.startsWith("acad_"))) {
         setQuestionMixIds(["acad_mcq"]);
       }
+      // Set default sub-tier based on the batch exam
+      if (examUp.includes("JEE")) setExamLevel("jee main");
+      else if (examUp.includes("NEET")) setExamLevel("neet");
+      else setExamLevel("cbse");
     }
   }, [createModalBatch?.examTarget, targetExam, questionMixIds]);
 
@@ -2234,6 +2631,8 @@ function CreateTestModal({
         examMode: targetExam,
       });
 
+      // Test created successfully — clear the saved draft so it doesn't reappear
+      clearWizardDraft(batchId);
       onCreated(test.id);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "Failed to create test.";
@@ -2258,355 +2657,459 @@ function CreateTestModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/30 p-4 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className={cn(
-          "w-full rounded-2xl bg-white shadow-2xl p-6 my-8 transition-all duration-300 ease-in-out",
-          step === 3 ? "max-w-5xl" : "max-w-xl"
-        )}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            {step > 0 && (
-              <button onClick={handleBack} className="text-slate-400 hover:text-slate-700 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            )}
-            <h3 className="text-lg font-bold text-slate-800">
-              {step === 0 && "Choose Test Type"}
-              {step === 1 && "Select Scope"}
-              {step === 2 && "Test Details"}
-              {step === 3 && "Add Questions"}
+    <div className="min-h-screen flex flex-col" style={{ background: "#F7FAFF" }}>
+      {/* Page header bar */}
+      <div className="shrink-0 bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={step > 0 ? handleBack : onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all bg-white shadow-sm">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">
+              {step === 0 && "New Mock Test — Choose Type"}
+              {step === 1 && "New Mock Test — Select Scope"}
+              {step === 2 && "New Mock Test — Test Details"}
+              {step === 3 && "New Mock Test — Add Questions"}
             </h3>
+            {[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).length > 0 && (
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ")}
+              </p>
+            )}
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors">
-            <X className="w-5 h-5" />
+        </div>
+        <div className="flex items-center gap-3">
+          <StepBar current={step} steps={STEP_LABELS} />
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors ml-2">
+            <X className="w-4 h-4" />
           </button>
         </div>
+      </div>
 
-        <StepBar current={step} steps={STEP_LABELS} />
+      {/* ── Steps 0-2: centered card ── */}
+      {step !== 3 && (
+        <div className="flex-1 overflow-y-auto py-10 px-4">
+          <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-7">
+            {error && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-600 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+              </div>
+            )}
+            <AnimatePresence mode="wait">
+              {/* Step 0 */}
+              {step === 0 && (
+                <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                  <p className="text-sm text-slate-500 mb-4">What kind of test do you want to create?</p>
+                  {(["subject", "chapter", "topic"] as TestCategory[]).map((cat) => {
+                    const cfg = TEST_CATEGORY_CONFIG[cat];
+                    const Icon = cfg.icon;
+                    const isSelected = testCategory === cat;
+                    return (
+                      <button key={cat} onClick={() => setTestCategory(cat)}
+                        className={cn("w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                          isSelected ? `${cfg.border} ${cfg.bg}` : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50")}>
+                        <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all", isSelected ? cfg.bg : "bg-slate-100")}>
+                          <Icon className={cn("w-5 h-5", isSelected ? cfg.color : "text-slate-400")} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className={cn("font-bold text-sm", isSelected ? cfg.color : "text-slate-700")}>{cfg.label}</p>
+                            {isSelected && <Check className={cn("w-4 h-4", cfg.color)} />}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{cfg.description}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  <Button className="w-full mt-2 gap-2" disabled={!canProceedStep0} onClick={handleNext}
+                    style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                    Continue <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </motion.div>
+              )}
 
-        {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-600 font-medium">
-            <AlertCircle className="w-4 h-4 shrink-0" /> {error}
-          </div>
-        )}
-
-        <AnimatePresence mode="wait">
-          {/* ── Step 0: Test Type ── */}
-          {step === 0 && (
-            <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-              className="space-y-3">
-              <p className="text-sm text-slate-500 mb-4">What kind of test do you want to create?</p>
-              {(["subject", "chapter", "topic"] as TestCategory[]).map((cat) => {
-                const cfg = TEST_CATEGORY_CONFIG[cat];
-                const Icon = cfg.icon;
-                const isSelected = testCategory === cat;
-                return (
-                  <button key={cat} onClick={() => setTestCategory(cat)}
-                    className={cn(
-                      "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
-                      isSelected
-                        ? `${cfg.border} ${cfg.bg}`
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                    )}>
-                    <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                      isSelected ? cfg.bg : "bg-slate-100")}>
-                      <Icon className={cn("w-5 h-5", isSelected ? cfg.color : "text-slate-400")} />
+              {/* Step 1 */}
+              {step === 1 && testCategory && (
+                <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                  <div className={cn("flex items-center gap-2 p-3 rounded-xl border", TEST_CATEGORY_CONFIG[testCategory].border, TEST_CATEGORY_CONFIG[testCategory].bg)}>
+                    {(() => { const Icon = TEST_CATEGORY_CONFIG[testCategory].icon; return <Icon className={cn("w-4 h-4 shrink-0", TEST_CATEGORY_CONFIG[testCategory].color)} />; })()}
+                    <p className={cn("text-xs font-semibold", TEST_CATEGORY_CONFIG[testCategory].color)}>
+                      {TEST_CATEGORY_CONFIG[testCategory].label} — select the scope below
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Subject *</label>
+                    <select value={scope.subjectId} onChange={e => { const id = e.target.value; const name = subjectList.find(s => s.id === id)?.name ?? ""; setScope({ ...emptyScope, subjectId: id, subjectName: name }); }}
+                      className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]">
+                      <option value="">— Select Subject —</option>
+                      {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    {!subjectList.length && <p className="text-xs text-amber-500 mt-1">No subjects found. Create subjects in Content first.</p>}
+                  </div>
+                  {(testCategory === "chapter" || testCategory === "topic") && (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Chapter *</label>
+                      <select value={scope.chapterId} disabled={!scope.subjectId} onChange={e => { const id = e.target.value; const name = chapterList.find(c => c.id === id)?.name ?? ""; setScope(s => ({ ...s, chapterId: id, chapterName: name, topicId: "", topicName: "" })); }}
+                        className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] disabled:opacity-40">
+                        <option value="">— Select Chapter —</option>
+                        {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className={cn("font-bold text-sm", isSelected ? cfg.color : "text-slate-700")}>{cfg.label}</p>
-                        {isSelected && <Check className={cn("w-4 h-4", cfg.color)} />}
+                  )}
+                  {testCategory === "topic" && (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Topic *</label>
+                      <select value={scope.topicId} disabled={!scope.chapterId} onChange={e => { const id = e.target.value; const name = topicList.find(t => t.id === id)?.name ?? ""; setScope(s => ({ ...s, topicId: id, topicName: name })); }}
+                        className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] disabled:opacity-40">
+                        <option value="">— Select Topic —</option>
+                        {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {scope.subjectId && (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span className="font-medium text-slate-700">{[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ")}</span>
+                    </div>
+                  )}
+                  <Button className="w-full gap-2" disabled={!canProceedStep1} onClick={handleNext}
+                    style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                    Continue <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </motion.div>
+              )}
+
+              {/* Step 2 */}
+              {step === 2 && (
+                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Test Title *</label>
+                    <input value={title} onChange={e => setTitle(e.target.value)}
+                      placeholder={suggestTitle(testCategory!, scope) || "e.g. Chapter 1 — Kinematics Test"}
+                      className="h-10 w-full px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10" />
+                    {!title && (
+                      <button onClick={() => setTitle(suggestTitle(testCategory!, scope))}
+                        className="mt-1 text-xs text-[#013889] hover:underline font-medium">
+                        Use suggested: "{suggestTitle(testCategory!, scope) || `${scope.subjectName} Test`}"
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Duration (min) *</label>
+                      <input type="number" min={1} value={durationMinutes} onChange={e => setDurationMinutes(+e.target.value)}
+                        className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Passing Marks <span className="normal-case font-normal text-slate-400">(opt.)</span></label>
+                      <input type="number" min={0} value={passingMarks} onChange={e => setPassingMarks(e.target.value === "" ? "" : +e.target.value)}
+                        placeholder="e.g. 60" className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]" />
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 mb-1">Target Exam</label>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#013889]" />
+                      <span className="text-sm font-bold text-slate-800">{(targetExam || "").toUpperCase().replace("_", " ")}</span>
+                      <span className="text-xs text-slate-400">— {EXAM_CONFIGS[(targetExam || "").toUpperCase()]?.description ?? "From course settings"}</span>
+                    </div>
+                  </div>
+
+                  {/* Exam tier selector — drives JEE Main / JEE Advanced / NEET difficulty heuristic in AI service */}
+                  {(() => {
+                    const examUp = (targetExam || "").toUpperCase();
+                    const isJEE = examUp.includes("JEE");
+                    const isNEET = examUp.includes("NEET");
+                    if (!isJEE && !isNEET) return null;
+                    return (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                        Exam Tier <span className="text-rose-500 normal-case font-normal text-[11px]">— controls AI question difficulty profile</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(isJEE
+                          ? [
+                              { id: "jee main", label: "JEE Main", hint: "Balanced MCQ + numerical, single-concept depth" },
+                              { id: "jee advanced", label: "JEE Advanced", hint: "Multi-step, multi-concept, IIT-level reasoning" },
+                            ]
+                          : [
+                              { id: "neet", label: "NEET", hint: "Statement-based, conceptual NCERT-deep, high trickiness" },
+                            ]
+                        ).map(opt => (
+                          <button key={opt.id} type="button" onClick={() => setExamLevel(opt.id)}
+                            className={cn(
+                              "p-3 rounded-xl border-2 text-left transition-all",
+                              examLevel === opt.id
+                                ? "border-[#013889] bg-blue-50"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            )}>
+                            <div className="flex items-center gap-2">
+                              <div className={cn("w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0",
+                                examLevel === opt.id ? "border-[#013889]" : "border-slate-300")}>
+                                {examLevel === opt.id && <div className="w-1.5 h-1.5 rounded-full bg-[#013889]" />}
+                              </div>
+                              <span className={cn("text-sm font-bold", examLevel === opt.id ? "text-[#013889]" : "text-slate-700")}>
+                                {opt.label}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{opt.hint}</p>
+                          </button>
+                        ))}
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{cfg.description}</p>
+                      <p className="text-[11px] text-amber-700 mt-1.5">
+                        {examLevel === "jee advanced"
+                          ? "AI will use JEE Advanced difficulty formula (D = 0.25C + 0.20S + 0.20M + 0.15T + 0.20X). Hard tier targets D ≥ 8."
+                          : examLevel === "jee main"
+                            ? "AI will use JEE Main difficulty formula (D = 0.22C + 0.20S + 0.18M + 0.20T + 0.20X). Hard tier targets D ≥ 8."
+                            : "AI will use NEET difficulty formula (D = 0.30C + 0.10S + 0.05M + 0.15T + 0.40X). Trickiness-heavy."}
+                      </p>
                     </div>
-                  </button>
-                );
-              })}
-              <Button className="w-full mt-2 gap-2" disabled={!canProceedStep0} onClick={handleNext}
-                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-                Continue <ChevronRight className="w-4 h-4" />
-              </Button>
-            </motion.div>
-          )}
+                    );
+                  })()}
 
-          {/* ── Step 1: Scope ── */}
-          {step === 1 && testCategory && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-              className="space-y-4">
-              <div className={cn("flex items-center gap-2 p-3 rounded-xl border",
-                TEST_CATEGORY_CONFIG[testCategory].border,
-                TEST_CATEGORY_CONFIG[testCategory].bg)}>
-                {(() => { const Icon = TEST_CATEGORY_CONFIG[testCategory].icon; return <Icon className={cn("w-4 h-4 shrink-0", TEST_CATEGORY_CONFIG[testCategory].color)} />; })()}
-                <p className={cn("text-xs font-semibold", TEST_CATEGORY_CONFIG[testCategory].color)}>
-                  {TEST_CATEGORY_CONFIG[testCategory].label} — select the scope below
+                  {/* ── Coverage preview: which chapters/topics this test will span ── */}
+                  {testCategory === "subject" && scope.subjectId && chapterList.length > 0 && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <Layers className="w-4 h-4 text-[#013889]" />
+                        <p className="text-xs font-black uppercase tracking-wider text-[#013889]">
+                          Test Coverage — {chapterList.length} Chapter{chapterList.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <p className="text-[11px] text-slate-600 mb-3 leading-relaxed">
+                        AI will pull questions across <span className="font-bold text-slate-800">{scope.subjectName}</span> spanning these chapters:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {chapterList.map(ch => (
+                          <span key={ch.id}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium bg-white text-slate-700 border border-blue-200 px-2 py-1 rounded-lg">
+                            <BookOpen className="w-3 h-3 text-[#013889]" />
+                            {ch.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {testCategory === "chapter" && scope.chapterId && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Layers className="w-4 h-4 text-emerald-600" />
+                        <p className="text-xs font-black uppercase tracking-wider text-emerald-700">
+                          Test Coverage — Single Chapter
+                        </p>
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Questions will focus on <span className="font-bold text-slate-800">{scope.chapterName}</span> within <span className="font-bold text-slate-800">{scope.subjectName}</span>.
+                      </p>
+                    </div>
+                  )}
+                  {testCategory === "topic" && scope.topicId && (
+                    <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Target className="w-4 h-4 text-violet-600" />
+                        <p className="text-xs font-black uppercase tracking-wider text-violet-700">
+                          Test Coverage — Single Topic
+                        </p>
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        All questions will be strictly within <span className="font-bold text-slate-800">{scope.topicName}</span> ({scope.subjectName} › {scope.chapterName}).
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Question types *</label>
+                    <p className="text-[11px] text-slate-400 mb-2">Select one or more templates. The AI will distribute questions proportionally.</p>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-[280px] overflow-y-auto space-y-4">
+                      {(() => {
+                        const isCompetitive = targetExam.toUpperCase().includes("JEE") || targetExam.toUpperCase().includes("NEET");
+                        const filtered = QUESTION_MIX_CHOICES.filter(c => isCompetitive ? c.id.startsWith("comp_") : c.id.startsWith("acad_"));
+                        let lastGroup = "";
+                        return filtered.map((c, idx) => {
+                          const showGroup = c.group !== lastGroup;
+                          lastGroup = c.group;
+                          return (
+                            <div key={c.id} className={cn("space-y-2", showGroup && idx > 0 && "pt-2 border-t border-slate-200/60")}>
+                              {showGroup && <p className="text-[10px] font-black uppercase tracking-wider text-[#013889] mb-2 pl-0.5">{c.group}</p>}
+                              <label className="flex items-start gap-2.5 cursor-pointer group">
+                                <input type="checkbox" checked={questionMixIds.includes(c.id)}
+                                  onChange={e => { if (e.target.checked) { setQuestionMixIds(prev => [...prev, c.id]); } else { if (questionMixIds.length > 1) setQuestionMixIds(prev => prev.filter(id => id !== c.id)); } }}
+                                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#013889] focus:ring-[#013889] cursor-pointer" />
+                                <div>
+                                  <span className="text-sm font-semibold text-slate-700 group-hover:text-[#013889] transition-colors">{c.label}</span>
+                                  <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{c.hint}</p>
+                                </div>
+                              </label>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                    {isCompetitiveMix(questionMixIds[0] || "comp_mcq")
+                      ? <p className="text-[11px] text-amber-700 mt-1">Competitive marking active: correct adds marks, wrong deducts.</p>
+                      : <p className="text-[11px] text-slate-500 mt-1">{CBSE_THEORY_PATTERN_NOTE}</p>}
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 space-y-1">
+                    <p className="font-semibold text-slate-600">Summary</p>
+                    <p>Scope: <span className="text-slate-700 font-medium">{[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ") || "—"}</span></p>
+                    <p>Type: <span className="text-slate-700 font-medium">{testCategory ? TEST_CATEGORY_CONFIG[testCategory].label : "—"}</span></p>
+                    <p>Formats: <span className="text-slate-700 font-medium">{QUESTION_MIX_CHOICES.filter(c => questionMixIds.includes(c.id)).map(c => c.label).join(", ") || "—"}</span></p>
+                  </div>
+                  <Button className="w-full gap-2" disabled={!canProceedStep2} onClick={handleNext}
+                    style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                    Continue to Questions <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 3: Full two-column layout ── */}
+      {step === 3 && (
+        <div className="flex-1 flex overflow-hidden">
+
+          {/* Left — question list */}
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+            {error && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-600 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+              </div>
+            )}
+
+            {/* Summary strip */}
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h4 className="font-bold text-slate-800 text-sm">{title}</h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ") || "—"} · {durationMinutes} min
                 </p>
               </div>
-
-              {/* Subject */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Subject *</label>
-                <select value={scope.subjectId}
-                  onChange={e => {
-                    const id = e.target.value;
-                    const name = subjectList.find(s => s.id === id)?.name ?? "";
-                    setScope({ ...emptyScope, subjectId: id, subjectName: name });
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-[#013889] bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+                  {questions.length}Q · {computedMarks} marks
+                </span>
+                <button onClick={() => {
+                    const opt = manualMixOptions[0];
+                    setQuestions([...questions, blankQuestion(opt.type, questionMixIds[0] || "comp_mcq", opt.label)]);
                   }}
-                  className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]">
-                  <option value="">— Select Subject —</option>
-                  {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                {!subjectList.length && <p className="text-xs text-amber-500 mt-1">No subjects found. Create subjects in Content first.</p>}
+                  className="flex items-center gap-1 text-xs font-bold text-[#013889] hover:text-[#0257c8] bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:border-[#013889]/30 transition-all">
+                  <Plus className="w-3.5 h-3.5" /> Add Question
+                </button>
               </div>
+            </div>
 
-              {/* Chapter */}
-              {(testCategory === "chapter" || testCategory === "topic") && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Chapter *</label>
-                  <select value={scope.chapterId} disabled={!scope.subjectId}
-                    onChange={e => {
-                      const id = e.target.value;
-                      const name = chapterList.find(c => c.id === id)?.name ?? "";
-                      setScope(s => ({ ...s, chapterId: id, chapterName: name, topicId: "", topicName: "" }));
-                    }}
-                    className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] disabled:opacity-40">
-                    <option value="">— Select Chapter —</option>
-                    {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+            {/* ── Sub-topic clustering banner — flags if AI clustered too many on one sub-topic ── */}
+            {(() => {
+              const subtopicCounts = questions.reduce<Record<string, number>>((acc, q) => {
+                const key = (q.subtopic || "").toLowerCase().trim();
+                if (!key) return acc;
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+              }, {});
+              const clustered = Object.entries(subtopicCounts)
+                .filter(([, n]) => n >= 3)  // 3+ on same sub-topic = clustering
+                .sort((a, b) => b[1] - a[1]);
+              if (clustered.length === 0) return null;
+              return (
+                <div className="mb-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 flex items-start gap-3">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-amber-900">
+                      Sub-topic clustering detected — variety could be improved
+                    </p>
+                    <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                      The AI generated {clustered.map(([k, n]) => `${n} questions on "${k}"`).join(", ")}.
+                      Consider deleting duplicates and clicking "Generate Quiz" again — the prompt now requires a sub-topic mix.
+                    </p>
+                  </div>
                 </div>
-              )}
+              );
+            })()}
 
-              {/* Topic */}
-              {testCategory === "topic" && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Topic *</label>
-                  <select value={scope.topicId} disabled={!scope.chapterId}
-                    onChange={e => {
-                      const id = e.target.value;
-                      const name = topicList.find(t => t.id === id)?.name ?? "";
-                      setScope(s => ({ ...s, topicId: id, topicName: name }));
-                    }}
-                    className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] disabled:opacity-40">
-                    <option value="">— Select Topic —</option>
-                    {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {/* Scope path preview */}
-              {scope.subjectId && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span className="font-medium text-slate-700">
-                    {[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ")}
-                  </span>
-                </div>
-              )}
-
-              <Button className="w-full gap-2" disabled={!canProceedStep1} onClick={handleNext}
-                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-                Continue <ChevronRight className="w-4 h-4" />
-              </Button>
-            </motion.div>
-          )}
-
-          {/* ── Step 2: Details ── */}
-          {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-              className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Test Title *</label>
-                <input value={title} onChange={e => setTitle(e.target.value)}
-                  placeholder={suggestTitle(testCategory!, scope) || "e.g. Chapter 1 — Kinematics Test"}
-                  className="h-10 w-full px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10" />
-                {!title && (
-                  <button onClick={() => setTitle(suggestTitle(testCategory!, scope))}
-                    className="mt-1 text-xs text-[#013889] hover:underline font-medium">
-                    Use suggested: "{suggestTitle(testCategory!, scope) || `${scope.subjectName} Test`}"
-                  </button>
-                )}
+            {/* Question rows */}
+            {questions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-white">
+                <FileText className="w-10 h-10 opacity-20 mb-3" />
+                <p className="text-sm font-medium">No questions yet</p>
+                <p className="text-xs mt-1">Use AI Generate or Manual to add questions →</p>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Duration (minutes) *</label>
-                  <input type="number" min={1} value={durationMinutes}
-                    onChange={e => setDurationMinutes(+e.target.value)}
-                    className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Passing Marks <span className="normal-case font-normal text-slate-400">(optional)</span></label>
-                  <input type="number" min={0} value={passingMarks}
-                    onChange={e => setPassingMarks(e.target.value === "" ? "" : +e.target.value)}
-                    placeholder="e.g. 60"
-                    className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]" />
-                </div>
+            ) : (
+              <div className="space-y-3">
+                {questions.map((q, i) => (
+                  <QuestionRow key={q._key} q={q} index={i}
+                    onChange={u => { const next = [...questions]; next[i] = u; setQuestions(next); }}
+                    onRemove={() => setQuestions(questions.filter((_, j) => j !== i))}
+                    canRemove={questions.length > 1}
+                    allowedMixes={manualMixOptions} />
+                ))}
               </div>
+            )}
+          </div>
 
-              {/* Target Exam info block instead of selector */}
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                <label className="block text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 mb-1">Target Exam</label>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#013889]" />
-                  <span className="text-sm font-bold text-slate-800">{targetExam.replace("_", " ")}</span>
-                  <span className="text-xs text-slate-400">— {EXAM_CONFIGS[targetExam]?.description}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Question types *</label>
-                <p className="text-[11px] text-slate-400 mb-2">Select one or more templates. The AI will distribute questions proportionally.</p>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-[300px] overflow-y-auto space-y-4">
-                  {(() => {
-                    const isCompetitive = targetExam.toUpperCase().includes("JEE") || targetExam.toUpperCase().includes("NEET");
-                    const filtered = QUESTION_MIX_CHOICES.filter(c =>
-                      isCompetitive
-                        ? c.id.startsWith("comp_")
-                        : c.id.startsWith("acad_")
-                    );
-                    
-                    let lastGroup = "";
-                    return filtered.map((c, idx) => {
-                      const showGroup = c.group !== lastGroup;
-                      lastGroup = c.group;
-                      return (
-                        <div key={c.id} className={cn("space-y-2", showGroup && idx > 0 && "pt-2 border-t border-slate-200/60")}>
-                          {showGroup && (
-                            <p className="text-[10px] font-black uppercase tracking-wider text-[#013889] mb-2 pl-0.5">
-                              {c.group}
-                            </p>
-                          )}
-                          <label className="flex items-start gap-2.5 cursor-pointer group">
-                            <input type="checkbox"
-                              checked={questionMixIds.includes(c.id)}
-                              onChange={e => {
-                                if (e.target.checked) {
-                                  setQuestionMixIds(prev => [...prev, c.id]);
-                                } else {
-                                  if (questionMixIds.length > 1) {
-                                    setQuestionMixIds(prev => prev.filter(id => id !== c.id));
-                                  }
-                                }
-                              }}
-                              className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#013889] focus:ring-[#013889] cursor-pointer" />
-                            <div>
-                               <span className="text-sm font-semibold text-slate-700 group-hover:text-[#013889] transition-colors">{c.label}</span>
-                               <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{c.hint}</p>
-                            </div>
-                          </label>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-                {isCompetitiveMix(questionMixIds[0] || "comp_mcq") ? (
-                  <p className="text-[11px] text-amber-700 mt-1">Competitive marking active: correct adds marks, wrong deducts marks.</p>
-                ) : (
-                  <p className="text-[11px] text-slate-500 mt-1">{CBSE_THEORY_PATTERN_NOTE}</p>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 space-y-1">
-                <p className="font-semibold text-slate-600">Test Summary</p>
-                <p>Scope: <span className="text-slate-700 font-medium">{[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ") || "—"}</span></p>
-                <p>Type: <span className="text-slate-700 font-medium">{testCategory ? TEST_CATEGORY_CONFIG[testCategory].label : "—"}</span></p>
-                <p>Questions: <span className="text-slate-700 font-medium">{QUESTION_MIX_CHOICES.filter(c => questionMixIds.includes(c.id)).map(c => c.label).join(", ") || "—"}</span></p>
-                <p className="text-amber-600">Total Marks: computed from questions added in next step</p>
-              </div>
-
-              <Button className="w-full gap-2" disabled={!canProceedStep2} onClick={handleNext}
-                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-                Continue to Questions <ChevronRight className="w-4 h-4" />
-              </Button>
-            </motion.div>
-          )}
-
-          {/* ── Step 3: Questions ── */}
-          {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-              className="space-y-4">
-              {/* Summary bar */}
-              <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
-                <div className="flex-1">
-                  <p className="font-bold text-slate-700 truncate">{title}</p>
-                  <p className="text-slate-400 mt-0.5">{[scope.subjectName, scope.chapterName, scope.topicName].filter(Boolean).join(" › ") || "—"} · {durationMinutes} min · {QUESTION_MIX_CHOICES.filter(c => questionMixIds.includes(c.id)).map(c => c.label).join(", ")}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-[#013889]">{questions.length}Q</p>
-                  <p className="text-slate-400">{computedMarks} marks</p>
-                </div>
-              </div>
-
-              {/* Tab bar */}
+          {/* Right — input panel */}
+          <div className="w-[360px] xl:w-[400px] shrink-0 border-l border-slate-200 bg-white flex flex-col overflow-hidden">
+            {/* Tab selector */}
+            <div className="px-4 pt-4 pb-3 border-b border-slate-100">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Add Questions</p>
               <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
                 {(["manual", "ai", "csv"] as const).map(tab => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={cn(
-                      "flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all capitalize",
-                      activeTab === tab ? "bg-white text-[#013889] shadow-sm" : "text-slate-500 hover:text-slate-700"
-                    )}>
+                    className={cn("flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all",
+                      activeTab === tab ? "bg-white text-[#013889] shadow-sm" : "text-slate-500 hover:text-slate-700")}>
                     {tab === "ai" ? "AI Generate" : tab === "csv" ? "CSV Import" : "Manual"}
                   </button>
                 ))}
               </div>
+            </div>
 
-              {/* Manual Tab */}
+            {/* Tab content */}
+            <div className="flex-1 overflow-y-auto p-4">
               {activeTab === "manual" && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-500">{questions.length} question{questions.length !== 1 ? "s" : ""}</p>
-                    <button onClick={() => {
-                      const opt = manualMixOptions[0];
-                      setQuestions([...questions, blankQuestion(opt.type, questionMixIds[0] || "comp_mcq", opt.label)]);
-                    }}
-                      className="flex items-center gap-1 text-xs font-bold text-[#013889] hover:text-[#0257c8]">
-                      <Plus className="w-3.5 h-3.5" /> Add Question
-                    </button>
-                  </div>
-                  <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
-                    {questions.map((q, i) => (
-                      <QuestionRow key={q._key} q={q} index={i}
-                        onChange={u => { const next = [...questions]; next[i] = u; setQuestions(next); }}
-                        onRemove={() => setQuestions(questions.filter((_, j) => j !== i))}
-                        canRemove={questions.length > 1}
-                        allowedMixes={manualMixOptions} />
+                  <p className="text-xs text-slate-500">Manually add a blank question then fill it in the list on the left.</p>
+                  <div className="space-y-2">
+                    {manualMixOptions.map(opt => (
+                      <button key={`${opt.type}|${opt.label}`}
+                        onClick={() => setQuestions(prev => [...prev, blankQuestion(opt.type, questionMixIds[0] || "comp_mcq", opt.label)])}
+                        className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:border-[#013889]/30 hover:bg-blue-50/40 transition-all text-left">
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          <Plus className="w-3.5 h-3.5 text-[#013889]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-700">{opt.label}</p>
+                          <p className="text-[10px] text-slate-400">{DRAFT_KIND_LABEL[opt.type]}</p>
+                        </div>
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* AI Tab */}
               {activeTab === "ai" && (
-                <div className="max-h-[400px] overflow-y-auto pr-1">
-                  <AIGeneratePanel
-                    exam={targetExam}
-                    batchId={batchId}
-                    testCategory={testCategory}
-                    questionMixIds={questionMixIds}
-                    batchExamTarget={createModalBatch?.examTarget}
-                    batchClass={createModalBatch?.class}
-                    initSubjectId={scope.subjectId}
-                    initSubjectName={scope.subjectName}
-                    initChapterId={scope.chapterId}
-                    initChapterName={scope.chapterName}
-                    initTopicId={scope.topicId}
-                    initTopicName={scope.topicName}
-                    onQuestionsGenerated={(drafts) => {
-                      setQuestions(prev => {
-                        const hasContent = prev.filter(q => q.content.trim().length > 0);
-                        return [...hasContent, ...drafts];
-                      });
-                      setActiveTab("manual");
-                    }}
-                  />
-                </div>
+                <AIGeneratePanel
+                  exam={targetExam}
+                  examLevel={examLevel}
+                  batchId={batchId}
+                  testCategory={testCategory}
+                  questionMixIds={questionMixIds}
+                  batchExamTarget={createModalBatch?.examTarget}
+                  batchClass={createModalBatch?.class}
+                  initSubjectId={scope.subjectId}
+                  initSubjectName={scope.subjectName}
+                  initChapterId={scope.chapterId}
+                  initChapterName={scope.chapterName}
+                  initTopicId={scope.topicId}
+                  initTopicName={scope.topicName}
+                  onQuestionsGenerated={(drafts) => {
+                    setQuestions(prev => [...prev.filter(q => q.content.trim().length > 0), ...drafts]);
+                    setActiveTab("manual");
+                  }}
+                />
               )}
 
-              {/* CSV Tab */}
               {activeTab === "csv" && (
                 <div className="space-y-3">
                   <p className="text-xs text-slate-500">Import questions from a CSV file. Download the template to see the required format.</p>
@@ -2615,27 +3118,25 @@ function CreateTestModal({
                   </Button>
                 </div>
               )}
+            </div>
 
-              {/* Submit */}
-              <div className="pt-2 border-t border-slate-100 space-y-2">
-                {computedMarks > 0 && (
-                  <p className="text-xs text-slate-400 text-center">
-                    {questions.length} questions · {computedMarks} total marks · {durationMinutes} min
-                  </p>
-                )}
-                <Button className="w-full gap-2" disabled={submitting || questions.length === 0}
-                  onClick={handleSubmit}
-                  style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-                  {submitting
-                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving {questions.length} questions…</>
-                    : <><CheckCircle2 className="w-4 h-4" /> Create Test</>
-                  }
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+            {/* Footer — submit */}
+            <div className="shrink-0 border-t border-slate-100 p-4 space-y-2">
+              {computedMarks > 0 && (
+                <p className="text-[11px] text-slate-400 text-center">
+                  {questions.length} questions · {computedMarks} marks · {durationMinutes} min
+                </p>
+              )}
+              <Button className="w-full gap-2" disabled={submitting || questions.length === 0} onClick={handleSubmit}
+                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                {submitting
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving {questions.length} questions…</>
+                  : <><CheckCircle2 className="w-4 h-4" /> Create Test ({questions.length}Q)</>}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2694,7 +3195,7 @@ function AddQuestionModal({ mockTestId, existingIds, batchId, onClose }: {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <TopicPicker value={topicId} onChange={setTopicId} batchId={batchId} />
-          <QuestionRow q={q} index={0} onChange={setQ} onRemove={() => {}} canRemove={false} />
+          <QuestionRow q={q} index={0} onChange={setQ} onRemove={() => {}} canRemove={false} allowedMixes={[{ type: "mcq_single", label: "MCQ" }, { type: "mcq_multi", label: "MSQ" }, { type: "integer", label: "Integer" }, { type: "descriptive", label: "Descriptive" }]} />
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
             <Button type="submit" className="flex-1" disabled={submitting}
@@ -2945,7 +3446,7 @@ function BatchCard({ batch, onClick }: { batch: Batch; onClick: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type MainView = "batches" | "tests" | "detail";
+type MainView = "batches" | "tests" | "create" | "detail";
 
 const MockTestsPage = () => {
   const { data: batches, isLoading: batchesLoading } = useBatches();
@@ -2955,8 +3456,20 @@ const MockTestsPage = () => {
   const [view, setView] = useState<MainView>("batches");
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [selectedTestId, setSelectedTestId] = useState<string>("");
-  const [showCreate, setShowCreate] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
+  /** When true, opening "create" view resumes the saved draft instead of starting fresh */
+  const [resumeDraft, setResumeDraft] = useState(false);
+  /** Saved draft for the currently selected batch (refreshed every time tests view is shown) */
+  const [savedDraft, setSavedDraft] = useState<WizardDraft | null>(null);
+
+  // Refresh savedDraft whenever we land back on the tests list for a batch
+  useEffect(() => {
+    if (view === "tests" && selectedBatch) {
+      setSavedDraft(loadWizardDraft(selectedBatch.id));
+    } else {
+      setSavedDraft(null);
+    }
+  }, [view, selectedBatch]);
 
   const { data: tests, isLoading: testsLoading } = useMockTests(
     selectedBatch ? { batchId: selectedBatch.id } : undefined
@@ -2977,6 +3490,7 @@ const MockTestsPage = () => {
 
   const goBack = () => {
     if (view === "detail") { setView("tests"); setSelectedTestId(""); }
+    else if (view === "create") { setView("tests"); }
     else if (view === "tests") { setView("batches"); setSelectedBatch(null); }
   };
 
@@ -3022,6 +3536,19 @@ const MockTestsPage = () => {
       <div className="min-h-screen p-6" style={{ background: "#F7FAFF" }}>
         <MockTestDetail testId={selectedTestId} onBack={() => { setView("tests"); setSelectedTestId(""); }} />
       </div>
+    );
+  }
+
+  // ── Create view — full page wizard (no modal) ──
+  if (view === "create" && selectedBatch) {
+    return (
+      <CreateTestModal
+        batchId={selectedBatch.id}
+        onClose={() => { setResumeDraft(false); setView("tests"); }}
+        onCreated={id => { setResumeDraft(false); setSelectedTestId(id); setView("detail"); }}
+        fullPage
+        resumeDraft={resumeDraft}
+      />
     );
   }
 
@@ -3091,11 +3618,55 @@ const MockTestsPage = () => {
             </p>
           </div>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-1.5"
+        <Button onClick={() => { setResumeDraft(false); setView("create"); }} className="gap-1.5"
           style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
           <Plus className="w-4 h-4" /> Create Test
         </Button>
       </div>
+
+      {/* ── Unsaved draft banner: resume previously generated questions ── */}
+      {savedDraft && (savedDraft.questions?.length ?? 0) > 0 && (
+        <div className="mb-5 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm">
+          <div className="flex items-start gap-3 flex-wrap">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-bold text-amber-900">Unfinished test draft</p>
+                <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">
+                  {fmtDraftAge(savedDraft.updatedAt)}
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                You have <span className="font-bold">{savedDraft.questions.length} question{savedDraft.questions.length !== 1 ? "s" : ""}</span>
+                {savedDraft.title ? ` in "${savedDraft.title}"` : ""} that haven't been saved yet.
+                {savedDraft.scope?.subjectName && (
+                  <> Scope: <span className="font-semibold">{[savedDraft.scope.subjectName, savedDraft.scope.chapterName, savedDraft.scope.topicName].filter(Boolean).join(" › ")}</span>.</>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline"
+                onClick={() => {
+                  if (selectedBatch) {
+                    clearWizardDraft(selectedBatch.id);
+                    setSavedDraft(null);
+                  }
+                }}
+                className="gap-1.5 h-9 text-xs border-amber-300 text-amber-700 hover:bg-amber-100">
+                <Trash2 className="w-3.5 h-3.5" /> Discard
+              </Button>
+              <Button size="sm"
+                onClick={() => { setResumeDraft(true); setView("create"); }}
+                className="gap-1.5 h-9 text-xs"
+                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                <ChevronRight className="w-3.5 h-3.5" /> Resume Draft
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter pills */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -3138,11 +3709,11 @@ const MockTestsPage = () => {
           </p>
           {examFilter === "all" && (
             <div className="flex gap-2 justify-center mt-5">
-              <Button className="gap-1.5" onClick={() => setShowCreate(true)}
+              <Button className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}
                 style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
                 <Sparkles className="w-3.5 h-3.5" /> Create with AI
               </Button>
-              <Button variant="outline" className="gap-1.5" onClick={() => setShowCreate(true)}>
+              <Button variant="outline" className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}>
                 <Plus className="w-3.5 h-3.5" /> Add Manually
               </Button>
             </div>
@@ -3199,18 +3770,6 @@ const MockTestsPage = () => {
         </div>
       )}
 
-      {createPortal(
-        <AnimatePresence>
-          {showCreate && selectedBatch && (
-            <CreateTestModal
-              batchId={selectedBatch.id}
-              onClose={() => setShowCreate(false)}
-              onCreated={id => { setShowCreate(false); setSelectedTestId(id); setView("detail"); }}
-            />
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
     </div>
   );
 };

@@ -24,6 +24,7 @@ export interface Batch {
   class: string;
   teacherId: string;
   teacher?: { id: string; fullName: string };
+  deliveryMode: string;
   isPaid: boolean;
   feeAmount: number | null;
   /** Platform fee percentage (default 20) */
@@ -47,6 +48,7 @@ export interface CreateBatchPayload {
   examTarget: string;
   class: string;
   teacherId?: string;
+  deliveryMode?: string;
   isPaid?: boolean;
   feeAmount?: number;
   startDate?: string;
@@ -879,6 +881,12 @@ export interface AiGeneratedQuestion {
   subject?: string;
   explanation?: string;
   solutionText?: string;
+  /** AI's echo of which scope it generated for — used in UI to flag drift */
+  scope_check?: string;
+  /** AI-labeled sub-topic within the chapter (e.g. "Raoult's law") — used to detect clustering */
+  subtopic?: string;
+  /** AI-labeled chapter name — set for subject-wide tests where AI picks the chapter per question */
+  chapter?: string;
 }
 
 /** Placeholder topic id when generating exam-wide mocks (Django only uses topic name string). */
@@ -953,6 +961,9 @@ function mapRawToAiGeneratedQuestion(q: any): AiGeneratedQuestion {
       difficulty: q.difficulty ?? "medium",
       subject: q.subject ?? "",
       explanation: q.explanation ?? "",
+      scope_check: q.scope_check || q.scopeCheck || q.scope || undefined,
+      subtopic: q.subtopic || q.sub_topic || q.subTopic || undefined,
+      chapter: q.chapter || q.chapter_name || q.chapterName || undefined,
     };
   }
   return {
@@ -965,6 +976,9 @@ function mapRawToAiGeneratedQuestion(q: any): AiGeneratedQuestion {
     subject: q.subject ?? "",
     explanation: q.explanation ?? "",
     solutionText: q.solutionText || q.solution_text || q.answer || q.modelAnswer || "",
+    scope_check: q.scope_check || q.scopeCheck || q.scope || undefined,
+    subtopic: q.subtopic || q.sub_topic || q.subTopic || undefined,
+    chapter: q.chapter || q.chapter_name || q.chapterName || undefined,
   };
 }
 
@@ -1044,11 +1058,21 @@ export async function aiGenerateMockTestQuestions(params: {
   hardCount: number;
   questionType?: MockAiGenerateType;
   questionStyle?: string;
+  /** "jee main" | "jee advanced" | "neet" | "cbse" — activates JEE/NEET difficulty heuristic in AI service */
+  examTarget?: string;
+  subject?: string;
+  chapter?: string;
+  /** For subject tests: exact chapter names from the DB — AI must ONLY generate from these */
+  chapters?: string[];
 }): Promise<AiGeneratedQuestion[]> {
   const topicId = (params.topicId && params.topicId.trim()) || MOCK_AI_TOPIC_PLACEHOLDER_ID;
   const type = (params.questionType ?? "mcq_single") as string;
   const style = params.questionStyle ?? "";
   const totalCount = params.totalCount;
+  const examTarget = (params.examTarget ?? "").trim().toLowerCase();
+  const subject = params.subject;
+  const chapter = params.chapter;
+  const chapters = params.chapters;
 
   const queue: { difficulty: GenDiff; n: number }[] = [
     { difficulty: "easy", n: params.easyCount },
@@ -1079,6 +1103,10 @@ export async function aiGenerateMockTestQuestions(params: {
       type,
     };
     if (style) body.style = style;
+    if (examTarget) body.examTarget = examTarget;
+    if (subject) body.subject = subject;
+    if (chapter) body.chapter = chapter;
+    if (chapters && chapters.length > 0) body.chapters = chapters;
     const res = await apiClient.post(
       "/ai/questions/generate",
       body,
@@ -1196,8 +1224,12 @@ export async function aiGenerateMockTestQuestionMix(params: {
   mediumCount: number;
   hardCount: number;
   segments: { questionType: MockAiGenerateType; count: number; topicAppend?: string; style?: string }[];
+  examTarget?: string;
+  subject?: string;
+  chapter?: string;
+  chapters?: string[];
 }): Promise<AiGeneratedQuestion[]> {
-  const { totalCount, easyCount, mediumCount, hardCount, segments, topicName, topicId } = params;
+  const { totalCount, easyCount, mediumCount, hardCount, segments, topicName, topicId, examTarget, subject, chapter, chapters } = params;
   const wE = totalCount > 0 ? easyCount / totalCount : 0;
   const wM = totalCount > 0 ? mediumCount / totalCount : 0;
   const wH = totalCount > 0 ? hardCount / totalCount : 0;
@@ -1219,6 +1251,10 @@ export async function aiGenerateMockTestQuestionMix(params: {
       hardCount: alloc.hard,
       questionType: seg.questionType,
       questionStyle: seg.style,
+      examTarget,
+      subject,
+      chapter,
+      chapters,
     });
     out.push(...sub);
   }

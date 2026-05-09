@@ -96,8 +96,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Dashboard",    path: "/student",               icon: LayoutDashboard },
     { label: "Calendar",     path: "/student/calendar",      icon: Calendar        },
     { label: "My Courses",   path: "/student/courses",       icon: Library         },
-    { label: "Learn",        path: "/student/learn",         icon: Brain           },
-    { label: "Lectures",     path: "/student/lectures",      icon: Video           },
+    { label: "Courses",      path: "/student/learn",         icon: Brain           },
     { label: "Study Plan",   path: "/student/study-plan",    icon: ClipboardList   },
     { label: "Doubts",       path: "/student/doubts",        icon: BrainQuestion   },
     { label: "Leaderboard",  path: "/student/leaderboard",   icon: Trophy          },
@@ -222,24 +221,29 @@ const DashboardLayout = () => {
   const examTarget = me?.student?.examTarget ?? "";
   const prefKey    = user ? `pref_modal_done_${user.id}` : null;
 
-  // Show preference modal exactly once per student (localStorage flag only — no repeat on skip)
+  // Show preference modal exactly once per student: only on first login, and only if not already dismissed
   useEffect(() => {
     if (!isStudent || !prefKey || me === undefined) return;
+    if (!user?.isFirstLogin) return;
     if (localStorage.getItem(prefKey)) return;
-    // Fire as soon as we know the user is loaded — regardless of examTarget state
     setShowPrefModal(true);
-  }, [isStudent, prefKey, me]);
+  }, [isStudent, prefKey, me, user?.isFirstLogin]);
 
   function handleSavePref() {
     if (!pendingPref || !prefKey) return;
     updateProfile.mutate({ examTarget: pendingPref }, {
-      onSettled: () => { localStorage.setItem(prefKey, "1"); setShowPrefModal(false); },
+      onSettled: () => {
+        localStorage.setItem(prefKey, "1");
+        setShowPrefModal(false);
+        dismissFirstLogin.mutate();
+      },
     });
   }
 
   function handleDismissPref() {
     if (prefKey) localStorage.setItem(prefKey, "1");
     setShowPrefModal(false);
+    dismissFirstLogin.mutate();
   }
 
   function handleChangeExamTarget(et: string) {
@@ -449,6 +453,7 @@ const DashboardLayout = () => {
   const settingsPath =
     user.role === "institute_admin" ? "/admin/settings"
     : user.role === "super_admin"   ? "/super-admin/settings"
+    : user.role === "student"       ? "/student/profile"
     : "/teacher/profile";
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;

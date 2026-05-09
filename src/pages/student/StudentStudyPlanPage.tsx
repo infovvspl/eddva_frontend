@@ -1,21 +1,25 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, addDays, startOfWeek, differenceInDays, subYears } from "date-fns";
+import { format, differenceInDays, subDays, subYears, addDays } from "date-fns";
 import { toast } from "sonner";
+import { useQueries } from "@tanstack/react-query";
 import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
   RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
-  ArrowRight, Sparkles, Activity, Trash2,
+  ArrowRight, Sparkles, Activity, Trash2, Bell,
+  TrendingDown, AlertTriangle, RefreshCw, FileText, ClipboardList,
 } from "lucide-react";
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
   useClearPlan, useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
+  useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
 } from "@/hooks/use-student";
-import type { StudyPlanItem } from "@/lib/api/student";
-import type { ProgressReport, TopicReportEntry } from "@/lib/api/student";
+import * as studentApi from "@/lib/api/student";
+import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
+import type { ProgressReport, SubjectReportEntry, ChapterReportEntry, TopicReportEntry, TestSession, DailyActivity } from "@/lib/api/student";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -62,85 +66,245 @@ function countdownDays(examYear?: number): number | null {
   return Math.max(0, differenceInDays(new Date(examYear, 3, 15), new Date()));
 }
 
+// ─── Priority ──────────────────────────────────────────────────────────────────
+
+type TaskPriority = "high" | "medium" | "low";
+
+function derivePriority(item: StudyPlanItem, weakTopicIds: Set<string>): TaskPriority {
+  if (item.type === "mock_test") return "high";
+  const topicId = item.content?.topicId;
+  if (item.type === "practice" && topicId && weakTopicIds.has(topicId)) return "high";
+  if (item.type === "practice" || item.type === "lecture") return "medium";
+  return "low";
+}
+
+const PRIORITY_CFG: Record<TaskPriority, { label: string; cls: string }> = {
+  high:   { label: "HIGH", cls: "bg-red-100 text-red-700 border border-red-200" },
+  medium: { label: "MED",  cls: "bg-amber-100 text-amber-700 border border-amber-200" },
+  low:    { label: "LOW",  cls: "bg-slate-100 text-slate-500 border border-slate-200" },
+};
+
 // ─── Preference Wizard ─────────────────────────────────────────────────────────
 
-interface WizardState { examTarget: string; examYear: number; currentClass: "9" | "10" | "11" | "12" | "dropper"; dailyStudyHours: number; }
+interface WizardState {
+  examTarget: string;
+  examYear: number;
+  currentClass: "9" | "10" | "11" | "12" | "dropper";
+  dailyStudyHours: number;
+  schoolCoachingHours: number;
+  weakSubjects: string[];
+  targetScore: number;
+}
+
+const EXAM_SUBJECTS: Record<string, string[]> = {
+  jee_mains:    ["Physics", "Chemistry", "Mathematics"],
+  jee_advanced: ["Physics", "Chemistry", "Mathematics"],
+  neet:         ["Physics", "Chemistry", "Biology"],
+  foundation:   ["Physics", "Chemistry", "Mathematics", "Biology"],
+  other:        ["Physics", "Chemistry", "Mathematics", "Biology"],
+};
+
+const TARGET_SCORE_OPTS: Record<string, Array<{ label: string; value: number; desc: string }>> = {
+  jee_mains: [
+    { label: "99+ Percentile",   value: 99, desc: "Top 1% — IIITs / Top NITs" },
+    { label: "97–99 Percentile", value: 97, desc: "Triple digit — great NIT chances" },
+    { label: "90–97 Percentile", value: 90, desc: "Good NIT / IIIT chances" },
+    { label: "80–90 Percentile", value: 80, desc: "State counselling range" },
+    { label: "Below 80",         value: 70, desc: "Qualify & improve next year" },
+  ],
+  jee_advanced: [
+    { label: "Top 500 IIT",  value: 99, desc: "IIT Bombay / Delhi CS" },
+    { label: "Top 2000 IIT", value: 97, desc: "Top IITs — any branch" },
+    { label: "IIT seat",     value: 90, desc: "Any IIT through JEE Advanced" },
+    { label: "Just qualify", value: 80, desc: "Clear the cutoff first" },
+  ],
+  neet: [
+    { label: "680+ Score", value: 680, desc: "AIIMS / top medical colleges" },
+    { label: "650–680",    value: 650, desc: "State medical colleges" },
+    { label: "600–650",    value: 600, desc: "Private MBBS" },
+    { label: "540–600",    value: 540, desc: "Secure a seat" },
+    { label: "Below 540",  value: 500, desc: "Clear the qualifying cutoff" },
+  ],
+  foundation: [
+    { label: "95%+",     value: 95, desc: "School topper / distinction" },
+    { label: "90–95%",   value: 90, desc: "Excellent result" },
+    { label: "80–90%",   value: 80, desc: "First division" },
+    { label: "Below 80%", value: 70, desc: "Pass & steadily improve" },
+  ],
+  other: [
+    { label: "95%+ / Top rank", value: 95, desc: "Best possible result" },
+    { label: "85–95%",          value: 85, desc: "Great result" },
+    { label: "75–85%",          value: 75, desc: "Good result" },
+    { label: "Below 75%",       value: 65, desc: "Pass with room to grow" },
+  ],
+};
+
+const SCHOOL_HOURS_OPTS = [
+  { label: "None",    value: 0, desc: "Full-time self-study / dropper" },
+  { label: "3–4 hrs", value: 4, desc: "Half-day school" },
+  { label: "5–6 hrs", value: 6, desc: "Full school day" },
+  { label: "7–8 hrs", value: 8, desc: "School + coaching" },
+  { label: "9+ hrs",  value: 9, desc: "Intensive coaching schedule" },
+];
+
+function computePlanRec(prefs: WizardState) {
+  const weeklyStudyHours = prefs.dailyStudyHours * 7;
+  const topicsPerWeek = Math.max(1, Math.round(prefs.dailyStudyHours * 2.4));
+  const exam = prefs.examTarget;
+  const score = prefs.targetScore;
+  let mocksPerMonth = 2, accuracyTarget = 65, insightMsg = "";
+
+  if (exam === "jee_mains" || exam === "jee_advanced") {
+    if (score >= 99)      { mocksPerMonth = 4; accuracyTarget = 78; }
+    else if (score >= 97) { mocksPerMonth = 3; accuracyTarget = 72; }
+    else if (score >= 90) { mocksPerMonth = 2; accuracyTarget = 65; }
+    else                  { mocksPerMonth = 2; accuracyTarget = 58; }
+    const tLabel = score >= 99 ? "99 percentile" : `${score}+ percentile`;
+    insightMsg = `To reach ${tLabel}, complete ${mocksPerMonth} mock tests/month and maintain ${accuracyTarget}%+ accuracy.`;
+  } else if (exam === "neet") {
+    if (score >= 680)      { mocksPerMonth = 4; accuracyTarget = 82; }
+    else if (score >= 650) { mocksPerMonth = 3; accuracyTarget = 75; }
+    else if (score >= 600) { mocksPerMonth = 3; accuracyTarget = 68; }
+    else                   { mocksPerMonth = 2; accuracyTarget = 62; }
+    insightMsg = `To score ${score}+ in NEET, complete ${mocksPerMonth} mock tests/month and maintain ${accuracyTarget}%+ accuracy.`;
+  } else {
+    if (score >= 95)      { mocksPerMonth = 4; accuracyTarget = 80; }
+    else if (score >= 85) { mocksPerMonth = 3; accuracyTarget = 75; }
+    else                  { mocksPerMonth = 2; accuracyTarget = 68; }
+    insightMsg = `To achieve ${score}%+, complete ${mocksPerMonth} chapter tests/month and maintain ${accuracyTarget}%+ accuracy.`;
+  }
+
+  const weakFocus = prefs.weakSubjects.length > 0
+    ? ` Prioritise extra time on ${prefs.weakSubjects.join(" & ")}.`
+    : "";
+
+  return { weeklyStudyHours, topicsPerWeek, mocksPerMonth, accuracyTarget, insightMsg: insightMsg + weakFocus };
+}
 
 function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<WizardState>; onComplete: (p: WizardState) => void; onClose: () => void }) {
   const [step, setStep] = useState(0);
   const [prefs, setPrefs] = useState<WizardState>({
-    examTarget:      initial.examTarget      ?? "",
-    examYear:        initial.examYear        ?? new Date().getFullYear() + 1,
-    currentClass:    initial.currentClass    ?? "11",
-    dailyStudyHours: initial.dailyStudyHours ?? 4,
+    examTarget:          initial.examTarget      ?? "",
+    examYear:            initial.examYear        ?? new Date().getFullYear() + 1,
+    currentClass:        initial.currentClass    ?? "11",
+    dailyStudyHours:     initial.dailyStudyHours ?? 4,
+    schoolCoachingHours: 0,
+    weakSubjects:        [],
+    targetScore:         0,
   });
 
-  const steps = ["Exam Target", "Target Year", "Current Class", "Daily Hours"];
-  const canNext = step === 0 ? !!prefs.examTarget : true;
+  const STEPS = ["Exam", "Target", "Year", "Class", "Schedule", "Subjects", "Preview"];
+  const canNext = step === 0 ? !!prefs.examTarget
+    : step === 1 ? prefs.targetScore > 0
+    : true;
+
+  const subjects = EXAM_SUBJECTS[prefs.examTarget] ?? ["Physics", "Chemistry", "Mathematics"];
+  const rec = computePlanRec(prefs);
+
+  const toggleSubject = (s: string) =>
+    setPrefs(p => ({
+      ...p,
+      weakSubjects: p.weakSubjects.includes(s)
+        ? p.weakSubjects.filter(x => x !== s)
+        : [...p.weakSubjects, s],
+    }));
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        {/* Step indicator */}
-        <div className="mb-8">
-          <div className="flex items-center mb-3">
-            {steps.map((_, i) => (
+        {/* Step bar */}
+        <div className="mb-5">
+          <div className="flex items-center mb-2">
+            {STEPS.map((_, i) => (
               <div key={i} className="flex items-center flex-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-all
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all
                   ${i < step ? "bg-indigo-600 text-white" : i === step ? "bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500" : "bg-gray-100 text-gray-400"}`}>
-                  {i < step ? <CheckCheck className="w-4 h-4" /> : i + 1}
+                  {i < step ? <CheckCheck className="w-3.5 h-3.5" /> : i + 1}
                 </div>
-                {i < steps.length - 1 && <div className={`flex-1 h-1 mx-2 rounded-full ${i < step ? "bg-indigo-500" : "bg-gray-200"}`} />}
+                {i < STEPS.length - 1 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${i < step ? "bg-indigo-500" : "bg-gray-200"}`} />}
               </div>
             ))}
           </div>
-          <p className="text-center text-sm text-gray-500">{steps[step]} — Step {step + 1} of {steps.length}</p>
+          <p className="text-center text-xs text-gray-500">{STEPS[step]} — Step {step + 1} of {STEPS.length}</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <div className="flex justify-end mb-2">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-h-[82vh] overflow-y-auto">
+          <div className="flex justify-end mb-1">
             <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700">Close</button>
           </div>
+
+          {/* ── Step 0: Exam Target ── */}
           {step === 0 && (
             <div>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎯</div>
-                <h2 className="text-2xl font-bold text-gray-900">What's your target exam?</h2>
-                <p className="text-gray-500 mt-1 text-sm">Your study plan will be made based on this exam</p>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">🎯</div>
+                <h2 className="text-xl font-bold text-gray-900">What's your target exam?</h2>
+                <p className="text-gray-500 mt-1 text-sm">Your plan will be fully tailored for this</p>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {EXAM_OPTIONS.map(opt => (
-                  <button key={opt.key} onClick={() => setPrefs(p => ({ ...p, examTarget: opt.key }))}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left
-                      ${prefs.examTarget === opt.key ? "border-indigo-500 bg-indigo-50 shadow-sm" : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"}`}>
-                    <span className="text-2xl">{opt.icon}</span>
+                  <button key={opt.key}
+                    onClick={() => setPrefs(p => ({ ...p, examTarget: opt.key, targetScore: 0 }))}
+                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left
+                      ${prefs.examTarget === opt.key ? "border-indigo-500 bg-indigo-50" : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"}`}>
+                    <span className="text-xl">{opt.icon}</span>
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">{opt.label}</div>
-                      <div className="text-sm text-gray-500">{opt.desc}</div>
+                      <div className="font-semibold text-sm text-gray-900">{opt.label}</div>
+                      <div className="text-xs text-gray-500">{opt.desc}</div>
                     </div>
-                    {prefs.examTarget === opt.key && <CheckCircle2 className="w-5 h-5 text-indigo-600 shrink-0" />}
+                    {prefs.examTarget === opt.key && <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
+          {/* ── Step 1: Target Score ── */}
           {step === 1 && (
             <div>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">📅</div>
-                <h2 className="text-2xl font-bold text-gray-900">Which year are you targeting?</h2>
-                <p className="text-gray-500 mt-1 text-sm">This helps us plan your monthly study schedule</p>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">🏆</div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {prefs.examTarget === "neet" ? "NEET Score Target"
+                    : prefs.examTarget === "jee_mains" || prefs.examTarget === "jee_advanced" ? "JEE Percentile Target"
+                    : "Performance Target"}
+                </h2>
+                <p className="text-gray-500 mt-1 text-sm">Be ambitious but realistic — we'll plan accordingly</p>
+              </div>
+              <div className="space-y-2">
+                {(TARGET_SCORE_OPTS[prefs.examTarget] ?? TARGET_SCORE_OPTS.other).map(opt => (
+                  <button key={opt.value}
+                    onClick={() => setPrefs(p => ({ ...p, targetScore: opt.value }))}
+                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left
+                      ${prefs.targetScore === opt.value ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-amber-300 hover:bg-gray-50"}`}>
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm text-gray-900">{opt.label}</div>
+                      <div className="text-xs text-gray-500">{opt.desc}</div>
+                    </div>
+                    {prefs.targetScore === opt.value && <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Target Year ── */}
+          {step === 2 && (
+            <div>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">📅</div>
+                <h2 className="text-xl font-bold text-gray-900">Which year are you targeting?</h2>
+                <p className="text-gray-500 mt-1 text-sm">Helps us plan your monthly schedule</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {YEAR_OPTIONS.map(yr => {
                   const days = Math.max(0, differenceInDays(new Date(yr, 3, 15), new Date()));
                   return (
                     <button key={yr} onClick={() => setPrefs(p => ({ ...p, examYear: yr }))}
-                      className={`p-5 rounded-xl border-2 text-center transition-all
-                        ${prefs.examYear === yr ? "border-violet-500 bg-violet-50 shadow-sm" : "border-gray-200 hover:border-violet-300 hover:bg-gray-50"}`}>
+                      className={`p-4 rounded-xl border-2 text-center transition-all
+                        ${prefs.examYear === yr ? "border-violet-500 bg-violet-50" : "border-gray-200 hover:border-violet-300 hover:bg-gray-50"}`}>
                       <div className="text-2xl font-bold text-gray-900">{yr}</div>
-                      <div className="text-sm text-gray-500 mt-1">{days} days left</div>
+                      <div className="text-xs text-gray-500 mt-1">{days} days left</div>
                       {prefs.examYear === yr && <div className="text-xs text-violet-600 font-medium mt-1">Selected ✓</div>}
                     </button>
                   );
@@ -149,77 +313,173 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
             </div>
           )}
 
-          {step === 2 && (
+          {/* ── Step 3: Current Class ── */}
+          {step === 3 && (
             <div>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🏫</div>
-                <h2 className="text-2xl font-bold text-gray-900">What is your current class?</h2>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">🏫</div>
+                <h2 className="text-xl font-bold text-gray-900">What is your current class?</h2>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {CLASS_OPTIONS.map(opt => (
-                  <button key={opt.key} onClick={() => setPrefs(p => ({ ...p, currentClass: opt.key as WizardState["currentClass"] }))}
+                  <button key={opt.key}
+                    onClick={() => setPrefs(p => ({ ...p, currentClass: opt.key as WizardState["currentClass"] }))}
                     className={`p-4 rounded-xl border-2 text-center transition-all
-                      ${prefs.currentClass === opt.key ? "border-sky-500 bg-sky-50 shadow-sm" : "border-gray-200 hover:border-sky-300 hover:bg-gray-50"}`}>
-                    <div className="text-base font-semibold text-gray-900">{opt.label}</div>
+                      ${prefs.currentClass === opt.key ? "border-sky-500 bg-sky-50" : "border-gray-200 hover:border-sky-300 hover:bg-gray-50"}`}>
+                    <div className="text-sm font-semibold text-gray-900">{opt.label}</div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {step === 3 && (
+          {/* ── Step 4: Daily Schedule ── */}
+          {step === 4 && (
             <div>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">⏰</div>
-                <h2 className="text-2xl font-bold text-gray-900">How many hours per day?</h2>
-                <p className="text-gray-500 mt-1 text-sm">Choose hours you can follow daily</p>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">⏰</div>
+                <h2 className="text-xl font-bold text-gray-900">Your Daily Schedule</h2>
+                <p className="text-gray-500 mt-1 text-sm">Helps us find your real self-study window</p>
               </div>
-              <div className="grid grid-cols-4 gap-2 mb-6">
-                {HOURS_OPTIONS.map(h => (
-                  <button key={h} onClick={() => setPrefs(p => ({ ...p, dailyStudyHours: h }))}
-                    className={`p-3 rounded-xl border-2 text-center transition-all
-                      ${prefs.dailyStudyHours === h ? "border-emerald-500 bg-emerald-50 shadow-sm" : "border-gray-200 hover:border-emerald-300"}`}>
-                    <div className="text-xl font-bold text-gray-900">{h}h</div>
-                  </button>
-                ))}
-              </div>
-              <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Your Plan Will Be Based On</h3>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <div className="text-base font-bold text-indigo-700">{fmtExam(prefs.examTarget)}</div>
-                    <div className="text-xs text-gray-500">Target Exam</div>
-                  </div>
-                  <div>
-                    <div className="text-base font-bold text-violet-700">{prefs.examYear}</div>
-                    <div className="text-xs text-gray-500">Target Year</div>
-                  </div>
-                  <div>
-                    <div className="text-base font-bold text-sky-700">{CLASS_OPTIONS.find(c => c.key === prefs.currentClass)?.label}</div>
-                    <div className="text-xs text-gray-500">Current Class</div>
-                  </div>
-                  <div>
-                    <div className="text-base font-bold text-emerald-700">{prefs.dailyStudyHours}h/day</div>
-                    <div className="text-xs text-gray-500">Daily Study</div>
-                  </div>
+
+              <div className="mb-5">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Time at school / coaching per day</p>
+                <div className="space-y-2">
+                  {SCHOOL_HOURS_OPTS.map(opt => (
+                    <button key={opt.value}
+                      onClick={() => setPrefs(p => ({ ...p, schoolCoachingHours: opt.value }))}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
+                        ${prefs.schoolCoachingHours === opt.value ? "border-orange-400 bg-orange-50" : "border-gray-200 hover:border-orange-300"}`}>
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm text-gray-900">{opt.label}</div>
+                        <div className="text-xs text-gray-500">{opt.desc}</div>
+                      </div>
+                      {prefs.schoolCoachingHours === opt.value && <CheckCircle2 className="w-4 h-4 text-orange-500 shrink-0" />}
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Self-study hours available per day</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {HOURS_OPTIONS.map(h => (
+                    <button key={h} onClick={() => setPrefs(p => ({ ...p, dailyStudyHours: h }))}
+                      className={`p-3 rounded-xl border-2 text-center transition-all
+                        ${prefs.dailyStudyHours === h ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-300"}`}>
+                      <div className="text-lg font-bold text-gray-900">{h}h</div>
+                    </button>
+                  ))}
+                </div>
+                {prefs.schoolCoachingHours > 0 && (
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    {prefs.schoolCoachingHours}h school/coaching + {prefs.dailyStudyHours}h study = {prefs.schoolCoachingHours + prefs.dailyStudyHours}h committed daily
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          <div className="flex gap-3 mt-8">
+          {/* ── Step 5: Weak Subjects ── */}
+          {step === 5 && (
+            <div>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">📉</div>
+                <h2 className="text-xl font-bold text-gray-900">Which subjects feel hardest?</h2>
+                <p className="text-gray-500 mt-1 text-sm">Select all that apply — your plan will focus more here</p>
+              </div>
+              <div className="space-y-2 mb-3">
+                {subjects.map(subj => {
+                  const cfg = subjectCfg(subj);
+                  const selected = prefs.weakSubjects.includes(subj);
+                  return (
+                    <button key={subj} onClick={() => toggleSubject(subj)}
+                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all
+                        ${selected ? "border-red-400 bg-red-50" : "border-gray-200 hover:border-red-300 hover:bg-gray-50"}`}>
+                      <div className={`w-3 h-3 rounded-full ${cfg.dot}`} />
+                      <span className="flex-1 text-left font-semibold text-sm text-gray-900">{subj}</span>
+                      {selected && <CheckCircle2 className="w-4 h-4 text-red-500 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-400 text-center">
+                {prefs.weakSubjects.length === 0
+                  ? "None selected — skip if no subject feels particularly weak"
+                  : `Marked weak: ${prefs.weakSubjects.join(", ")}`}
+              </p>
+            </div>
+          )}
+
+          {/* ── Step 6: Plan Preview ── */}
+          {step === 6 && (
+            <div>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <Rocket className="w-7 h-7 text-indigo-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Your Plan Preview</h2>
+                <p className="text-gray-500 mt-1 text-sm">Personalised targets before we generate your plan</p>
+              </div>
+
+              {/* 4 metric cards */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {([
+                  { label: "Weekly Study",    value: `${rec.weeklyStudyHours}h/week`,        bg: "bg-indigo-50 border-indigo-100",  text: "text-indigo-700",  icon: "📚" },
+                  { label: "Syllabus Pace",   value: `${rec.topicsPerWeek} topics/week`,     bg: "bg-violet-50 border-violet-100",  text: "text-violet-700",  icon: "⚡" },
+                  { label: "Mock Tests",      value: `${rec.mocksPerMonth}/month`,            bg: "bg-amber-50 border-amber-100",    text: "text-amber-700",   icon: "📝" },
+                  { label: "Accuracy Target", value: `${rec.accuracyTarget}%+`,              bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-700", icon: "🎯" },
+                ] as const).map(m => (
+                  <div key={m.label} className={`${m.bg} border rounded-xl p-3 text-center`}>
+                    <div className="text-xl mb-1">{m.icon}</div>
+                    <div className={`text-base font-bold ${m.text}`}>{m.value}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{m.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* AI insight */}
+              <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-xl p-4 mb-4">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                  <p className="text-sm text-indigo-800 font-medium leading-relaxed">{rec.insightMsg}</p>
+                </div>
+              </div>
+
+              {/* Summary chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  { icon: "🎯", label: fmtExam(prefs.examTarget) },
+                  { icon: "📅", label: String(prefs.examYear) },
+                  { icon: "🏫", label: CLASS_OPTIONS.find(c => c.key === prefs.currentClass)?.label ?? "" },
+                  { icon: "⏰", label: `${prefs.dailyStudyHours}h study/day` },
+                  ...(prefs.schoolCoachingHours > 0 ? [{ icon: "🏛️", label: `${prefs.schoolCoachingHours}h school/coaching` }] : []),
+                  ...prefs.weakSubjects.map(s => ({ icon: "📉", label: s })),
+                ]).map((chip, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full">
+                    {chip.icon} {chip.label}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 text-center mt-3">You can adjust these anytime from your profile</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-6">
             {step > 0 && (
               <button onClick={() => setStep(s => s - 1)}
-                className="flex-1 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                className="flex-1 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors text-sm">
                 Back
               </button>
             )}
             <button
-              onClick={() => step < steps.length - 1 ? setStep(s => s + 1) : onComplete(prefs)}
+              onClick={() => step < STEPS.length - 1 ? setStep(s => s + 1) : onComplete(prefs)}
               disabled={!canNext}
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-              {step === steps.length - 1
-                ? <><Sparkles className="w-4 h-4" /> Generate Plan</>
+              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm">
+              {step === STEPS.length - 1
+                ? <><Sparkles className="w-4 h-4" /> Generate My Plan</>
+                : step === STEPS.length - 2
+                ? <><Star className="w-4 h-4" /> Preview Plan</>
                 : <>Continue <ArrowRight className="w-4 h-4" /></>}
             </button>
           </div>
@@ -320,23 +580,6 @@ function isLikelySubtopicMatch(taskTopicName: string, roadmapTopicName: string):
   return overlap >= 2 || (minTokenLen > 0 && overlap / minTokenLen >= 0.6);
 }
 
-function isNotesTask(item: StudyPlanItem): boolean {
-  const kind = item.content?.taskKind;
-  if (kind === "ai_notes") return true;
-  if (item.type === "revision") return true;
-  if (item.content?.notesUrl) return true;
-  const title = normalizeText(item.title);
-  return /\bnotes?\b/.test(title);
-}
-
-function isPracticeTask(item: StudyPlanItem): boolean {
-  const kind = item.content?.taskKind;
-  if (kind === "practice") return true;
-  if (item.type === "practice") return true;
-  const title = normalizeText(item.title);
-  return /\bpractice\b|\bpaper\b|\bpyq\b|\bquiz\b|\bdpp\b/.test(title);
-}
-
 const STATUS_RANK: Record<TopicReportEntry["status"], number> = {
   locked: 0,
   unlocked: 1,
@@ -368,54 +611,17 @@ function deriveStatusForTopic(topic: TopicReportEntry, todayItems: StudyPlanItem
     ) || (!!title && title.includes(topicName));
   });
 
-  if (relatedItems.length === 0) return topic.status;
-
-  const directItems = relatedItems.filter((item) => normalizeText(item.content?.topicName) === topicName);
-  if (directItems.length > 0) {
-    const notesDone = directItems.some((item) => isNotesTask(item) && item.status === "completed");
-    const practiceDone = directItems.some((item) => isPracticeTask(item) && item.status === "completed");
-    const hasAnyDone = directItems.some((item) => item.status === "completed");
-    const derived: TopicReportEntry["status"] =
-      notesDone && practiceDone ? "completed" :
-      hasAnyDone ? "in_progress" :
-      "unlocked";
-    // Never downgrade backend-computed topic status based on pending plan items.
-    return maxStatus(topic.status, derived);
-  }
-
-  const subtopicItems = relatedItems.filter((item) => {
-    const contentTopic = normalizeText(item.content?.topicName);
-    return !!contentTopic && contentTopic !== topicName;
-  });
-
-  if (subtopicItems.length > 0) {
-    const bySubtopic = new Map<string, StudyPlanItem[]>();
-    for (const item of subtopicItems) {
-      const key = normalizeText(item.content?.topicName);
-      if (!key) continue;
-      if (!bySubtopic.has(key)) bySubtopic.set(key, []);
-      bySubtopic.get(key)!.push(item);
-    }
-
-    const hasAnyDone = subtopicItems.some((item) => item.status === "completed");
-    const distinctSubtopics = bySubtopic.size;
-    const allSubtopicsCompleted =
-      distinctSubtopics > 1 &&
-      Array.from(bySubtopic.values()).every((items) => {
-        const notesDone = items.some((item) => isNotesTask(item) && item.status === "completed");
-        const practiceDone = items.some((item) => isPracticeTask(item) && item.status === "completed");
-        return notesDone && practiceDone;
-      });
-
-    const derived: TopicReportEntry["status"] =
-      allSubtopicsCompleted ? "completed" :
-      hasAnyDone ? "in_progress" :
-      "unlocked";
-    return maxStatus(topic.status, derived);
-  }
-
   const hasAnyDone = relatedItems.some((item) => item.status === "completed");
-  return maxStatus(topic.status, hasAnyDone ? "in_progress" : "unlocked");
+  const hasAnyPending = relatedItems.some((item) => item.status === "pending");
+
+  if (topic.status === "completed") return "completed";
+
+  if (hasAnyDone || hasAnyPending) {
+    const allDone = relatedItems.every(item => item.status === "completed");
+    return maxStatus(topic.status, allDone ? "completed" : "in_progress");
+  }
+
+  return topic.status || "unlocked";
 }
 
 function mergeRoadmapWithTodayPlan(report: ProgressReport, todayItems: StudyPlanItem[]): ProgressReport {
@@ -487,38 +693,75 @@ function mergeRoadmapWithTodayPlan(report: ProgressReport, todayItems: StudyPlan
   };
 }
 
-// Single topic leaf — shows inside an expanded chapter
 function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; lineColor: string }) {
   const st = topicStatus(topic.status);
+
+  const lectureDone = topic.lecture?.anyCompleted || (topic.lecture?.avgWatchPct ?? 0) > 80;
+  const practiceDone = (topic.pyq?.attempted ?? 0) > 0 && (topic.pyq?.accuracy ?? 0) > 50;
+  const aiDone = !!topic.aiSession?.completed;
+
   return (
-    <div className="flex items-start">
-      {/* vertical + elbow lines */}
+    <div className="flex items-start group">
       <div className="relative flex flex-col items-center" style={{ width: 24, minWidth: 24 }}>
-        {/* vertical line from parent — stops halfway for last item */}
         {!isLast && (
           <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: lineColor, opacity: 0.35 }} />
         )}
         {isLast && (
           <div className="absolute left-1/2 top-0 w-px -translate-x-1/2" style={{ height: "50%", background: lineColor, opacity: 0.35 }} />
         )}
-        {/* horizontal elbow */}
         <div className="absolute top-1/2 left-1/2 -translate-y-1/2 h-px" style={{ width: 12, background: lineColor, opacity: 0.35 }} />
       </div>
-      {/* dot + label */}
-      <div className="flex items-center gap-1.5 py-1.5 pl-1 flex-1 min-w-0">
-        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
-          {topic.status === "completed" && <span className="text-[8px] text-white font-black leading-none">✓</span>}
+
+      <div className={`flex-1 flex items-center gap-3 py-2 px-3 ml-1 rounded-xl transition-all border border-transparent
+        ${topic.status === "in_progress" ? "bg-amber-50/50 border-amber-100" : "hover:bg-slate-50"}`}>
+
+        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
+          {topic.status === "completed" && <span className="text-[9px] text-white font-black">✓</span>}
         </div>
-        <span className={`text-xs font-medium truncate leading-tight ${st.text}`}>{topic.topicName}</span>
-        {topic.status === "in_progress" && (
-          <span className="shrink-0 text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">In Progress</span>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`text-sm font-semibold truncate leading-tight ${st.text}`}>{topic.topicName}</span>
+            {topic.status === "in_progress" && (
+              <span className="shrink-0 text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full animate-pulse">Ongoing</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 mt-1.5">
+            <div className="flex items-center gap-1.5" title="Lectures">
+              <PlayCircle className={`w-3 h-3 ${lectureDone ? "text-emerald-500" : "text-slate-300"}`} />
+              <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full transition-all ${lectureDone ? "bg-emerald-500" : "bg-blue-400"}`}
+                  style={{ width: `${topic.lecture?.avgWatchPct ?? 0}%` }} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5" title="Practice">
+              <Zap className={`w-3 h-3 ${practiceDone ? "text-emerald-500" : "text-slate-300"}`} />
+              <span className="text-[10px] font-medium text-slate-400">
+                {topic.pyq?.attempted ?? 0} solved
+              </span>
+            </div>
+
+            {topic.aiSession && (
+              <div className="flex items-center gap-1.5" title="AI Session">
+                <Brain className={`w-3 h-3 ${aiDone ? "text-emerald-500" : "text-slate-300"}`} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {topic.bestAccuracy > 0 && (
+          <div className="shrink-0 flex flex-col items-end">
+            <span className="text-[10px] text-slate-400 font-medium">Accuracy</span>
+            <span className="text-xs font-bold text-slate-700">{topic.bestAccuracy}%</span>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// Chapter node — second level; expands to show topics
 function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
   chapter: any;
   cfg: typeof SUBJECT_CFG[string];
@@ -534,7 +777,6 @@ function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
 
   return (
     <div className="flex items-start">
-      {/* vertical line from subject */}
       <div className="relative flex flex-col items-center" style={{ width: 28, minWidth: 28 }}>
         {!isLast && (
           <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: parentLineColor, opacity: 0.3 }} />
@@ -545,14 +787,12 @@ function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
         <div className="absolute top-[18px] left-1/2 h-px -translate-y-1/2" style={{ width: 14, background: parentLineColor, opacity: 0.3 }} />
       </div>
 
-      {/* Chapter card */}
       <div className="flex-1 min-w-0 mb-2">
         <button
           onClick={() => setOpen(o => !o)}
           className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all
             ${open ? `${cfg.bg} ${cfg.border}` : "bg-white border-slate-200 hover:border-slate-300"}`}
         >
-          {/* chapter dot */}
           <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${allDone ? "bg-emerald-500" : cfg.dot}`} />
           <span className="flex-1 text-sm font-semibold text-slate-800 truncate">{chapter.chapterName}</span>
           <div className="flex items-center gap-2 shrink-0">
@@ -568,10 +808,8 @@ function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
           </div>
         </button>
 
-        {/* Topics subtree */}
         {open && topics.length > 0 && (
           <div className="mt-1 ml-5 pl-1 relative">
-            {/* Vertical spine for topics */}
             <div className="absolute left-0 top-0 bottom-3 w-px" style={{ background: cfg.ring, opacity: 0.25 }} />
             {topics.map((t, idx) => (
               <TopicLeaf key={t.topicId} topic={t} isLast={idx === topics.length - 1} lineColor={cfg.ring} />
@@ -586,9 +824,8 @@ function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
   );
 }
 
-// Subject root node — top level; expands to show chapters
 function SubjectNode({ subject, index }: { subject: any; index: number }) {
-  const [open, setOpen] = useState(index === 0); // first subject open by default
+  const [open, setOpen] = useState(index === 0);
   const cfg = subjectCfg(subject.subjectName);
   const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
   const chapters: any[] = subject.chapters ?? [];
@@ -600,13 +837,11 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
 
   return (
     <div className="mb-4">
-      {/* Subject header */}
       <button
         onClick={() => setOpen(o => !o)}
         className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 text-left transition-all shadow-sm
           ${open ? `${cfg.bg} ${cfg.border} shadow-md` : `bg-white ${cfg.border} hover:${cfg.bg}`}`}
       >
-        {/* circle progress */}
         <div className="relative shrink-0">
           <CircleProgress pct={pct} color={cfg.ring} size={48} />
           <div className="absolute inset-0 flex items-center justify-center">
@@ -636,10 +871,8 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
         </div>
       </button>
 
-      {/* Chapters subtree */}
       {open && (
         <div className="mt-2 ml-6 pl-2 relative">
-          {/* Spine line from subject down through all chapters */}
           <div className="absolute left-0 top-0 bottom-4 w-px" style={{ background: cfg.ring, opacity: 0.25 }} />
           {chapters.map((ch, idx) => (
             <ChapterNode
@@ -659,12 +892,13 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
   );
 }
 
-function CurriculumRoadmap() {
+function CurriculumRoadmap({ reportOverride }: { reportOverride?: ProgressReport }) {
   const todayKey = format(new Date(), "yyyy-MM-dd");
   const historyStart = format(subYears(new Date(), 5), "yyyy-MM-dd");
   const { data: groupedHistory = {} } = useWeeklyPlanGrouped(historyStart, todayKey);
-  const { data: report, isLoading } = useProgressReport();
-  if (isLoading) return (
+  const { data: fetchedReport, isLoading, isError, refetch } = useProgressReport();
+  const report = (reportOverride?.subjects?.length ?? 0) > 0 ? reportOverride : fetchedReport;
+  if (!reportOverride && isLoading) return (
     <div className="flex items-center justify-center h-48">
       <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
@@ -672,7 +906,18 @@ function CurriculumRoadmap() {
   if (!report?.subjects?.length) return (
     <div className="text-center py-16 text-gray-400">
       <MapIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-      <p className="text-sm">AI syllabus is being prepared for your target exam. Please refresh in a few seconds.</p>
+      <p className="text-sm font-medium text-gray-500">
+        {isError ? "Couldn't load your curriculum." : "Syllabus data is being prepared."}
+      </p>
+      <p className="text-xs text-gray-400 mt-1 mb-4">
+        {isError
+          ? "Check your connection and try again."
+          : "Make sure you are enrolled in a course."}
+      </p>
+      <button onClick={() => refetch()}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-medium rounded-xl border border-indigo-200 transition-colors">
+        <RotateCcw className="w-3.5 h-3.5" /> Refresh
+      </button>
     </div>
   );
   const datedEntries = Object.entries(groupedHistory)
@@ -688,18 +933,8 @@ function CurriculumRoadmap() {
   const effectiveReport = mergeRoadmapWithTodayPlan(report, planHistory);
   const { summary } = effectiveReport;
   const overallPct = summary.totalTopics > 0 ? Math.round((summary.completedTopics / summary.totalTopics) * 100) : 0;
-  const completedLectureCount = summary.lecturesCompleted ?? 0;
-  const practiceItems = planHistory.filter(isPracticeTask);
-  const completedPracticeCount = practiceItems.filter((item) => item.status === "completed").length;
-  const derivedAccuracy =
-    summary.overallAccuracy && summary.overallAccuracy > 0
-      ? Math.round(summary.overallAccuracy)
-      : practiceItems.length > 0
-        ? Math.round((completedPracticeCount / practiceItems.length) * 100)
-        : 0;
   return (
     <div className="space-y-5">
-      {/* Summary banner */}
       <div className="bg-gradient-to-r from-indigo-600 to-violet-700 rounded-2xl p-5 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -713,19 +948,21 @@ function CurriculumRoadmap() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 text-center text-sm">
-          <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{completedLectureCount}</div>
-            <div className="text-indigo-200 text-xs">Lectures Done</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-2.5">
-            <div className="font-bold text-lg">{derivedAccuracy}%</div>
-            <div className="text-indigo-200 text-xs">Accuracy</div>
-          </div>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { val: summary.completedTopics, label: "Completed" },
+            { val: summary.inProgressTopics, label: "Ongoing" },
+            { val: (summary.unlockedTopics ?? 0) + (summary.lockedTopics ?? 0), label: "To Do" },
+            { val: `${summary.overallAccuracy}%`, label: "Accuracy" },
+          ].map(({ val, label }) => (
+            <div key={label} className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10 text-center">
+              <div className="text-white text-lg font-bold">{val}</div>
+              <div className="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">{label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-slate-500 px-1 flex-wrap">
         {[
           { dot: "bg-emerald-500", label: "Completed" },
@@ -740,7 +977,6 @@ function CurriculumRoadmap() {
         ))}
       </div>
 
-      {/* Tree */}
       <div>
         {effectiveReport.subjects.map((s, i) => (
           <SubjectNode key={s.subjectId} subject={s} index={i} />
@@ -761,16 +997,18 @@ const TYPE_CFG: Record<string, { icon: React.ReactNode; color: string; bg: strin
   doubt_session: { icon: <Brain      className="w-4 h-4" />, color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
 };
 
-function PlanItemCard({ item, onComplete, onSkip, onOpen }: {
+function PlanItemCard({ item, onComplete, onSkip, onOpen, priority }: {
   item: StudyPlanItem;
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
   onOpen: (item: StudyPlanItem) => void;
+  priority?: TaskPriority;
 }) {
   const t       = TYPE_CFG[item.type] ?? TYPE_CFG.lecture;
   const isDone  = item.status === "completed";
   const isSkip  = item.status === "skipped";
   const cfg     = item.content?.subjectName ? subjectCfg(item.content.subjectName) : null;
+  const pCfg    = priority ? PRIORITY_CFG[priority] : null;
   return (
     <div className={`flex gap-3 p-3.5 rounded-xl border transition-all
       ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}>
@@ -781,9 +1019,14 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="font-medium text-sm text-gray-900 leading-tight line-clamp-2">{item.title}</div>
-          {item.xpReward && !isDone && (
-            <span className="shrink-0 text-xs font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {pCfg && !isDone && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pCfg.cls}`}>{pCfg.label}</span>
+            )}
+            {item.xpReward && !isDone && (
+              <span className="text-xs font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           {cfg && item.content?.subjectName && (
@@ -817,43 +1060,501 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen }: {
   );
 }
 
-// ─── Week Strip ────────────────────────────────────────────────────────────────
+// ─── Micro Goals Card ──────────────────────────────────────────────────────────
 
-function WeekStrip({ weekStart, selectedDate, onSelect, weekData }: {
-  weekStart: Date; selectedDate: string; onSelect: (d: string) => void; weekData: Record<string, StudyPlanItem[]>;
+type MicroGoal = { id: string; icon: string; text: string; sub: string; url: string };
+
+function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNegativeTopics }: {
+  weakTopics:         Array<{ topicId: string; topicName: string; subjectName: string; accuracy: number }>;
+  revisionTopics:     Array<{ topicId: string; topicName: string; subjectName: string; isOverdue: boolean }>;
+  pendingPYQTopics:   Array<{ topicId: string; topicName: string; subjectName: string }>;
+  highNegativeTopics: Array<{ topicId: string; topicName: string; subjectName: string; wrong: number; attempted: number }>;
 }) {
-  const today = format(new Date(), "yyyy-MM-dd");
+  const navigate  = useNavigate();
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setChecked(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const goals: MicroGoal[] = [];
+
+  revisionTopics.filter(t => t.isOverdue).slice(0, 2).forEach(t =>
+    goals.push({ id: `rev-${t.topicId}`, icon: "🔁", text: `Revise ${t.topicName}`, sub: `${t.subjectName} · Overdue`, url: `/student/ai-study/${t.topicId}` })
+  );
+  weakTopics.slice(0, 2).forEach(t =>
+    goals.push({ id: `wk-${t.topicId}`, icon: "⚡", text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} · ${t.accuracy}% accuracy`, url: `/student/quiz?topicId=${t.topicId}` })
+  );
+  highNegativeTopics.slice(0, 1).forEach(t =>
+    goals.push({ id: `neg-${t.topicId}`, icon: "🎯", text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} · ${t.wrong}/${t.attempted} wrong`, url: `/student/quiz?topicId=${t.topicId}` })
+  );
+  pendingPYQTopics.slice(0, 2).forEach(t =>
+    goals.push({ id: `pyq-${t.topicId}`, icon: "📋", text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} · Not attempted`, url: `/student/quiz?topicId=${t.topicId}` })
+  );
+
+  const display   = goals.slice(0, 5);
+  const doneCount = display.filter(g => checked.has(g.id)).length;
+
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1">
-      {Array.from({ length: 7 }, (_, i) => {
-        const d     = addDays(weekStart, i);
-        const key   = format(d, "yyyy-MM-dd");
-        const items = weekData[key] ?? [];
-        const done  = items.filter(x => x.status === "completed").length;
-        const isSel = key === selectedDate;
-        const isTod = key === today;
-        return (
-          <button key={key} onClick={() => onSelect(key)}
-            className={`flex flex-col items-center py-2 px-3 rounded-xl min-w-[52px] transition-all
-              ${isSel ? "bg-indigo-600 text-white shadow-md" : isTod ? "bg-indigo-50 border-2 border-indigo-300 text-indigo-700" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-            <div className="text-xs font-medium">{format(d, "EEE")}</div>
-            <div className={`text-lg font-bold mt-0.5 ${isSel ? "text-white" : isTod ? "text-indigo-700" : "text-gray-800"}`}>{format(d, "d")}</div>
-            <div className="flex gap-0.5 mt-1 h-2 items-center">
-              {items.slice(0, 3).map((_, j) => (
-                <div key={j} className={`w-1.5 h-1.5 rounded-full ${j < done ? (isSel ? "bg-white" : "bg-emerald-400") : (isSel ? "bg-indigo-300" : "bg-gray-200")}`} />
-              ))}
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border-b border-amber-100">
+        <Zap className="w-4 h-4 text-amber-500" />
+        <h3 className="text-sm font-bold text-amber-700 flex-1">Micro Goals</h3>
+        {display.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-amber-600 font-medium">{doneCount}/{display.length}</span>
+            <div className="w-14 h-1.5 bg-amber-100 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-400 rounded-full transition-all"
+                style={{ width: `${display.length > 0 ? (doneCount / display.length) * 100 : 0}%` }} />
             </div>
+          </div>
+        )}
+      </div>
+      {display.length === 0 ? (
+        <div className="px-4 py-5 text-center">
+          <Trophy className="w-7 h-7 text-amber-300 mx-auto mb-2" />
+          <p className="text-xs text-gray-400">Complete more topics to unlock personalised micro goals.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50">
+          {display.map(g => {
+            const done = checked.has(g.id);
+            return (
+              <div key={g.id} className={`flex items-start gap-3 px-4 py-2.5 transition-colors ${done ? "bg-gray-50" : "hover:bg-amber-50/30"}`}>
+                <button onClick={() => toggle(g.id)}
+                  className={`shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all
+                    ${done ? "bg-emerald-500 border-emerald-500" : "border-gray-300 hover:border-amber-400"}`}>
+                  {done && <CheckCheck className="w-2.5 h-2.5 text-white" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <button onClick={() => !done && navigate(g.url)}
+                    className={`text-xs font-medium text-left leading-snug ${done ? "line-through text-gray-400" : "text-gray-800 hover:text-indigo-600"}`}>
+                    {g.icon} {g.text}
+                  </button>
+                  <div className="text-[10px] text-gray-400 mt-0.5">{g.sub}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Smart Reminders Card ──────────────────────────────────────────────────────
+
+function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, forgottenConcepts, weakTopics, pendingPYQTopics, onTabChange }: {
+  revisionTopics:    Array<{ isOverdue: boolean }>;
+  weeklyActivity:    DailyActivity[];
+  pendingMockTests:  Array<{ id: string; title: string }>;
+  forgottenConcepts: Array<{ topicId: string }>;
+  weakTopics:        Array<{ topicId: string }>;
+  pendingPYQTopics:  Array<{ topicId: string }>;
+  onTabChange:       (tab: ActiveTab) => void;
+}) {
+  const navigate    = useNavigate();
+  const overdueCount = revisionTopics.filter(t => t.isOverdue).length;
+  const activeDays   = weeklyActivity.filter(d => d.minutesStudied > 0).length;
+
+  type Sev = "high" | "medium" | "info";
+  const reminders: Array<{ id: string; icon: string; text: string; sev: Sev; action?: { label: string; fn: () => void } }> = [];
+
+  if (overdueCount > 0)
+    reminders.push({ id: "overdue", icon: "⚠️", sev: "high",
+      text: `${overdueCount} topic${overdueCount > 1 ? "s" : ""} overdue for revision`,
+      action: { label: "Revise now →", fn: () => onTabChange("revision") } });
+
+  if (activeDays < 3)
+    reminders.push({ id: "inactive", icon: "📉", sev: activeDays === 0 ? "high" : "medium",
+      text: `Only ${activeDays} active day${activeDays !== 1 ? "s" : ""} this week — streak at risk`,
+      action: { label: "Study today →", fn: () => onTabChange("today") } });
+
+  if (pendingMockTests.length > 0)
+    reminders.push({ id: "mock", icon: "📝", sev: "info",
+      text: `${pendingMockTests.length} mock test${pendingMockTests.length > 1 ? "s" : ""} available`,
+      action: { label: "Take now →", fn: () => navigate("/student/tests") } });
+
+  if (forgottenConcepts.length > 3)
+    reminders.push({ id: "forgotten", icon: "🔁", sev: "medium",
+      text: `${forgottenConcepts.length} concepts not revisited in 14+ days`,
+      action: { label: "View →", fn: () => onTabChange("revision") } });
+
+  if (weakTopics.length > 5)
+    reminders.push({ id: "weak", icon: "⚡", sev: "medium",
+      text: `${weakTopics.length} weak topics need practice`,
+      action: { label: "Practice →", fn: () => onTabChange("weakness") } });
+
+  if (pendingPYQTopics.length > 0)
+    reminders.push({ id: "pyq", icon: "📋", sev: "info",
+      text: `${pendingPYQTopics.length} topics with no PYQ attempts yet`,
+      action: { label: "Go to Backlogs →", fn: () => onTabChange("backlogs") } });
+
+  const ORDER: Record<Sev, number> = { high: 0, medium: 1, info: 2 };
+  reminders.sort((a, b) => ORDER[a.sev] - ORDER[b.sev]);
+  const display = reminders.slice(0, 4);
+
+  const urgentCount = display.filter(r => r.sev === "high").length;
+
+  const SEV: Record<Sev, { row: string; text: string }> = {
+    high:   { row: "bg-red-50/60",   text: "text-red-700" },
+    medium: { row: "bg-amber-50/40", text: "text-amber-700" },
+    info:   { row: "",               text: "text-gray-700" },
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 bg-indigo-50 border-b border-indigo-100">
+        <Bell className="w-4 h-4 text-indigo-500" />
+        <h3 className="text-sm font-bold text-indigo-700 flex-1">Smart Reminders</h3>
+        {urgentCount > 0 && (
+          <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full border border-red-200">
+            {urgentCount} urgent
+          </span>
+        )}
+      </div>
+      {display.length === 0 ? (
+        <div className="px-4 py-5 text-center">
+          <CheckCircle2 className="w-7 h-7 text-emerald-400 mx-auto mb-2" />
+          <p className="text-xs text-gray-400">All caught up — no urgent reminders!</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50">
+          {display.map(r => (
+            <div key={r.id}
+              onClick={r.action ? r.action.fn : undefined}
+              className={`px-4 py-2.5 ${SEV[r.sev].row} ${r.action ? "cursor-pointer hover:brightness-95 transition-all" : ""}`}>
+              <div className="flex items-start gap-2">
+                <span className="text-sm shrink-0 mt-px">{r.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <span className={`text-xs font-medium leading-snug block ${SEV[r.sev].text}`}>{r.text}</span>
+                  {r.action && (
+                    <span className="mt-0.5 text-[11px] font-semibold text-indigo-500 flex items-center gap-0.5">
+                      {r.action.label}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── AI Sarthi Card ────────────────────────────────────────────────────────────
+
+function metricColor(score: number): string {
+  if (score >= 70) return "text-emerald-600";
+  if (score >= 40) return "text-amber-500";
+  return "text-red-500";
+}
+function metricBg(score: number): string {
+  if (score >= 70) return "bg-emerald-50";
+  if (score >= 40) return "bg-amber-50";
+  return "bg-red-50";
+}
+
+function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActivity, sessions, weakTopicsCount, revisionTopicsCount, forgottenCount }: {
+  todayItems:        StudyPlanItem[];
+  streak:            number;
+  xpPoints:          number;
+  progressReport?:   ProgressReport;
+  weeklyActivity:    DailyActivity[];
+  sessions:          TestSession[];
+  weakTopicsCount:   number;
+  revisionTopicsCount: number;
+  forgottenCount:    number;
+}) {
+  // ── Syllabus completion ──────────────────────────────────────────────────────
+  const syllabusTotal     = progressReport?.summary.totalTopics     ?? 0;
+  const syllabusCompleted = progressReport?.summary.completedTopics ?? 0;
+  const syllabusPct = syllabusTotal > 0 ? Math.round((syllabusCompleted / syllabusTotal) * 100) : 0;
+
+  // ── Consistency (active days / 7) ────────────────────────────────────────────
+  const daysActive        = weeklyActivity.filter(d => d.minutesStudied > 0).length;
+  const consistencyScore  = Math.round((daysActive / 7) * 100);
+
+  // ── Test readiness (avg accuracy from last 5 submitted sessions) ─────────────
+  const doneSessions = sessions.filter(
+    s => ["submitted", "completed", "auto_submitted"].includes(s.status)
+      && ((s.correctCount ?? 0) + (s.wrongCount ?? 0)) > 0
+  );
+  const testReadiness = doneSessions.length > 0
+    ? Math.round(
+        doneSessions.slice(-5).reduce((sum, s) => {
+          const tot = (s.correctCount ?? 0) + (s.wrongCount ?? 0);
+          return sum + (tot > 0 ? ((s.correctCount ?? 0) / tot) * 100 : 0);
+        }, 0) / Math.min(doneSessions.length, 5)
+      )
+    : 0;
+
+  // ── Focus hours this week ────────────────────────────────────────────────────
+  const focusHours = Math.round(weeklyActivity.reduce((s, d) => s + d.minutesStudied, 0) / 60 * 10) / 10;
+
+  // ── Revision health ──────────────────────────────────────────────────────────
+  const overdueCount = revisionTopicsCount + forgottenCount;
+  const revisionHealth = syllabusCompleted > 0
+    ? Math.max(0, Math.round(100 - (overdueCount / syllabusCompleted) * 100))
+    : 100;
+
+  // ── Lecture vs question imbalance ────────────────────────────────────────────
+  const allTopics = progressReport?.subjects.flatMap(s => s.chapters.flatMap(c => c.topics)) ?? [];
+  const lectureNoQ = allTopics.filter(t => t.lecture?.anyCompleted && (t.pyq?.attempted ?? 0) === 0).length;
+  const lectureImbalance = allTopics.length > 0 && lectureNoQ / allTopics.length >= 0.35;
+
+  // ── Consistency trend (first 3 days vs last 4 days of week) ──────────────────
+  const firstHalf  = weeklyActivity.slice(0, 3).reduce((s, d) => s + d.minutesStudied, 0);
+  const secondHalf = weeklyActivity.slice(3).reduce( (s, d) => s + d.minutesStudied, 0);
+  const consistencyDropped = firstHalf > 30 && secondHalf < firstHalf * 0.55;
+
+  // ── Best performance time from session timestamps ────────────────────────────
+  let bestTimeInsight: string | null = null;
+  if (doneSessions.length >= 3) {
+    const byHour: Record<number, { total: number; count: number }> = {};
+    doneSessions.forEach(s => {
+      const h   = new Date(s.startedAt).getHours();
+      const tot = (s.correctCount ?? 0) + (s.wrongCount ?? 0);
+      const acc = tot > 0 ? ((s.correctCount ?? 0) / tot) * 100 : 0;
+      byHour[h] ??= { total: 0, count: 0 };
+      byHour[h].total += acc;
+      byHour[h].count += 1;
+    });
+    let bestH = -1, bestAvg = 0;
+    Object.entries(byHour).forEach(([h, { total, count }]) => {
+      if (count >= 2 && total / count > bestAvg) { bestAvg = total / count; bestH = +h; }
+    });
+    if (bestH >= 0) {
+      const fmt = (h: number) => h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
+      bestTimeInsight = `You perform best between ${fmt(bestH)}–${fmt(bestH + 2)}.`;
+    }
+  }
+
+  // ── Build personalised insights ───────────────────────────────────────────────
+  type InsightSeverity = "warning" | "success" | "info";
+  const insights: { icon: string; text: string; sev: InsightSeverity }[] = [];
+
+  if (consistencyDropped)
+    insights.push({ icon: "📉", text: "Your consistency dropped this week.", sev: "warning" });
+  if (lectureImbalance)
+    insights.push({ icon: "📺", text: "You are spending too much time watching lectures vs solving questions.", sev: "warning" });
+  if (overdueCount > 5 || (syllabusCompleted > 0 && overdueCount / syllabusCompleted > 0.3))
+    insights.push({ icon: "🔁", text: "Your revision gap is too high. Schedule revision sessions.", sev: "warning" });
+  if (testReadiness > 0 && testReadiness < 50)
+    insights.push({ icon: "📝", text: "Mock test accuracy is below 50%. Increase practice question frequency.", sev: "warning" });
+  if (weakTopicsCount >= 5)
+    insights.push({ icon: "⚠️", text: `${weakTopicsCount} weak topics need focused practice this week.`, sev: "warning" });
+  if (bestTimeInsight)
+    insights.push({ icon: "⏰", text: bestTimeInsight, sev: "info" });
+  if (streak >= 7)
+    insights.push({ icon: "🔥", text: `${streak}-day streak! You're building an unbreakable habit.`, sev: "success" });
+  if (syllabusPct >= 80)
+    insights.push({ icon: "🚀", text: "Syllabus almost complete — start full-length mock tests now.", sev: "success" });
+  if (testReadiness >= 75)
+    insights.push({ icon: "💪", text: "Excellent test accuracy — keep the momentum.", sev: "success" });
+  if (insights.length === 0 && syllabusPct === 0)
+    insights.push({ icon: "✨", text: "Complete more study sessions to unlock personalised insights.", sev: "info" });
+  if (insights.length === 0)
+    insights.push({ icon: "📚", text: "You're on track. Keep completing tasks consistently.", sev: "info" });
+
+  // Sort: warnings first, then info, then success
+  const ORDER: Record<InsightSeverity, number> = { warning: 0, info: 1, success: 2 };
+  insights.sort((a, b) => ORDER[a.sev] - ORDER[b.sev]);
+
+  const SEV_STYLE: Record<InsightSeverity, string> = {
+    warning: "bg-amber-50 border-amber-200 text-amber-800",
+    success: "bg-emerald-50 border-emerald-200 text-emerald-800",
+    info:    "bg-indigo-50 border-indigo-200 text-indigo-800",
+  };
+
+  const METRICS = [
+    { label: "Syllabus",    value: `${syllabusPct}%`,          score: syllabusPct,      icon: "📚" },
+    { label: "Consistency", value: `${streak} day streak`,      score: Math.min(100, streak * 14), icon: "🔥" },
+    { label: "Test Ready",  value: doneSessions.length > 0 ? `${testReadiness}%` : "—", score: testReadiness, icon: "📝" },
+    { label: "XP Points",   value: xpPoints.toLocaleString(),   score: -1,               icon: "⭐" },
+    { label: "Rev. Health", value: `${revisionHealth}%`,        score: revisionHealth,   icon: "🔁" },
+    { label: "Weak Topics", value: String(weakTopicsCount),     score: weakTopicsCount === 0 ? 100 : weakTopicsCount > 10 ? 10 : 50, icon: "⚡" },
+  ];
+
+  return (
+    <div className="bg-white border border-indigo-100 rounded-2xl overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 flex items-center gap-2">
+        <Brain className="w-4 h-4 text-white" />
+        <span className="text-sm font-bold text-white">AI Sarthi</span>
+        <span className="ml-auto text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-semibold">
+          Personalised
+        </span>
+      </div>
+
+      {/* 6 metric tiles */}
+      <div className="grid grid-cols-3 divide-x divide-y divide-gray-100 border-b border-gray-100">
+        {METRICS.map(m => (
+          <div key={m.label} className={`px-2 py-2.5 text-center ${m.score >= 0 ? metricBg(m.score) : "bg-slate-50"}`}>
+            <div className="text-base mb-0.5">{m.icon}</div>
+            <div className={`text-sm font-bold leading-none ${m.score >= 0 ? metricColor(m.score) : "text-slate-600"}`}>
+              {m.value}
+            </div>
+            <div className="text-[9px] text-gray-500 mt-0.5 leading-tight">{m.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Personalised insights */}
+      <div className="p-3 space-y-2">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Insights</p>
+        {insights.slice(0, 3).map((ins, i) => (
+          <div key={i} className={`flex gap-2 items-start text-xs px-2.5 py-2 rounded-lg border ${SEV_STYLE[ins.sev]} leading-snug`}>
+            <span className="shrink-0 text-sm">{ins.icon}</span>
+            <span className="font-medium">{ins.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Backlog Section Wrapper ───────────────────────────────────────────────────
+
+type AccentColor = "red" | "blue" | "amber" | "violet" | "teal";
+
+const ACCENT: Record<AccentColor, { header: string; badge: string; border: string }> = {
+  red:    { header: "bg-red-50",    badge: "bg-red-100 text-red-700",    border: "border-red-200" },
+  blue:   { header: "bg-blue-50",   badge: "bg-blue-100 text-blue-700",  border: "border-blue-200" },
+  amber:  { header: "bg-amber-50",  badge: "bg-amber-100 text-amber-700",border: "border-amber-200" },
+  violet: { header: "bg-violet-50", badge: "bg-violet-100 text-violet-700", border: "border-violet-200" },
+  teal:   { header: "bg-teal-50",   badge: "bg-teal-100 text-teal-700",  border: "border-teal-200" },
+};
+
+function BacklogSection({ icon, title, count, accentColor, children }: {
+  icon: React.ReactNode;
+  title: string;
+  count: number;
+  accentColor: AccentColor;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+  const ac = ACCENT[accentColor];
+  return (
+    <div className={`rounded-2xl border-2 ${ac.border} overflow-hidden`}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-3 px-4 py-3 text-left ${ac.header}`}>
+        <span className="text-gray-600">{icon}</span>
+        <span className="font-bold text-sm text-gray-900 flex-1">{title}</span>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ac.badge}`}>{count}</span>
+        {open ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+      </button>
+      {open && <div className="bg-white p-3 space-y-2">{children}</div>}
+    </div>
+  );
+}
+
+// ─── Revision Note Prompts ────────────────────────────────────────────────────
+
+const NOTE_PROMPTS: Record<string, string> = {
+  physics:     "Formulas:\n\nUnits & Dimensions:\n\nKey Laws / Concepts:\n\nCommon Mistakes:",
+  chemistry:   "Reactions / Equations:\n\nException Cases:\n\nKey Definitions:\n\nMemory Tips:",
+  mathematics: "Formulas:\n\nTheorems:\n\nSolving Steps:\n\nCommon Mistakes:",
+  biology:     "Key Terms:\n\nDiagrams to Draw:\n\nProcesses / Cycles:\n\nClassifications:",
+};
+function notePlaceholder(subject: string): string {
+  const key = Object.keys(NOTE_PROMPTS).find(k => subject.toLowerCase().includes(k));
+  return key ? NOTE_PROMPTS[key] : "Key Concepts:\n\nFormulas / Definitions:\n\nCommon Mistakes:";
+}
+
+// ─── Revision Topic Card ──────────────────────────────────────────────────────
+
+type RevisionTopicItem = {
+  topicId: string; topicName: string; subjectName: string; chapterName: string;
+  accuracy: number; completedAt: string | null; learnedOn: string;
+  nextRevisionDate: Date; nextRevisionLabel: string;
+  intervalDays: 1 | 3 | 7 | 21; isOverdue: boolean;
+};
+
+function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteChange, onRevise, onFullNotes }: {
+  topic:        RevisionTopicItem;
+  isNoteOpen:   boolean;
+  noteText:     string;
+  onToggleNote: () => void;
+  onNoteChange: (v: string) => void;
+  onRevise:     () => void;
+  onFullNotes:  () => void;
+}) {
+  const cfg = subjectCfg(topic.subjectName);
+  const accColor = topic.accuracy < 40 ? "text-red-600 bg-red-50 border-red-200"
+    : topic.accuracy < 55 ? "text-orange-500 bg-orange-50 border-orange-200"
+    : topic.accuracy < 65 ? "text-amber-600 bg-amber-50 border-amber-200"
+    : "text-teal-600 bg-teal-50 border-teal-200";
+
+  return (
+    <div className={`bg-white rounded-xl border-2 overflow-hidden transition-all
+      ${topic.isOverdue ? "border-red-200" : "border-gray-200 hover:border-teal-200"}`}>
+      <div className="p-3.5 flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-sm text-gray-900 truncate">{topic.topicName}</span>
+            {topic.isOverdue && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full border border-red-200 shrink-0">
+                OVERDUE
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap text-xs">
+            <span className={`px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+              {topic.subjectName}
+            </span>
+            <span className="text-gray-400 truncate">{topic.chapterName}</span>
+          </div>
+          <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
+            <span>📅 Learned <strong className="text-gray-700">{topic.learnedOn}</strong></span>
+            <span className={`font-semibold ${topic.isOverdue ? "text-red-600" : "text-teal-600"}`}>
+              → {topic.isOverdue ? "Overdue" : `Revise ${topic.nextRevisionLabel}`}
+            </span>
+          </div>
+        </div>
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${accColor}`}>{topic.accuracy}%</span>
+          <div className="flex gap-1">
+            <button onClick={onRevise}
+              className="px-2.5 py-1.5 bg-teal-600 text-white rounded-lg text-[11px] font-semibold hover:bg-teal-700 flex items-center gap-1">
+              <RefreshCw className="w-2.5 h-2.5" /> Revise
+            </button>
+            <button onClick={onToggleNote}
+              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors
+                ${isNoteOpen ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-600 hover:bg-violet-50 hover:text-violet-600"}`}>
+              <FileText className="w-2.5 h-2.5" /> Notes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Inline Notes Panel */}
+      {isNoteOpen && (
+        <div className="border-t border-violet-100 bg-violet-50/60 p-3 space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Brain className="w-3 h-3 text-violet-600" />
+            <span className="text-[11px] font-semibold text-violet-700">Revision Notes — {topic.topicName}</span>
+          </div>
+          <textarea
+            value={noteText}
+            onChange={e => onNoteChange(e.target.value)}
+            placeholder={notePlaceholder(topic.subjectName)}
+            rows={5}
+            className="w-full text-xs text-gray-700 border border-violet-200 rounded-lg p-2.5 resize-y focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white placeholder:text-gray-400 font-mono leading-relaxed"
+          />
+          <button onClick={onFullNotes}
+            className="w-full py-2 bg-violet-600 text-white rounded-lg text-xs font-semibold hover:bg-violet-700 flex items-center justify-center gap-1.5">
+            <Brain className="w-3 h-3" /> Generate Full AI Notes
           </button>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
-type ActiveTab = "plan" | "roadmap";
-type PlanTab   = "today" | "week";
+type ActiveTab = "today" | "backlogs" | "weakness" | "revision" | "roadmap";
 
 export default function StudentStudyPlanPage() {
   const navigate = useNavigate();
@@ -861,29 +1562,424 @@ export default function StudentStudyPlanPage() {
   const student = me?.student;
 
   const today     = format(new Date(), "yyyy-MM-dd");
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const weekEnd   = addDays(weekStart, 6);
-  const ws = format(weekStart, "yyyy-MM-dd");
-  const we = format(weekEnd,   "yyyy-MM-dd");
+  const backlogStart = format(subDays(new Date(), 7), "yyyy-MM-dd");
+  const yesterday  = format(subDays(new Date(), 1), "yyyy-MM-dd");
+  const weekEnd    = format(addDays(new Date(), 6), "yyyy-MM-dd");
 
-  const [activeTab,   setActiveTab]   = useState<ActiveTab>("plan");
-  const [planTab,     setPlanTab]     = useState<PlanTab>("today");
-  const [selectedDay, setSelectedDay] = useState(today);
+  const [activeTab,    setActiveTab]    = useState<ActiveTab>("today");
   const [wizardDone,   setWizardDone]   = useState(false);
   const [showWizard,   setShowWizard]   = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [todayView,       setTodayView]       = useState<"today" | "week">("today");
+  const [selectedWeekDay, setSelectedWeekDay] = useState<string>("");
+  const [backlogPage,  setBacklogPage]  = useState<null|"plan"|"lectures"|"notes"|"pyq"|"dpp">(null);
+  const [weakPage,     setWeakPage]     = useState<null|"chapters"|"topics"|"forgotten"|"negative">(null);
+  const [revisionPage, setRevisionPage] = useState<null|"schedule"|"table"|"aiplan">(null);
+  const [openNoteIds,     setOpenNoteIds]     = useState<Set<string>>(new Set());
+  const [revisionNotes,   setRevisionNotes]   = useState<Record<string, string>>({});
+  const [openRevBuckets,  setOpenRevBuckets]  = useState<Set<number>>(new Set([1, 3, 7, 21]));
+
+  const toggleNote = (id: string) =>
+    setOpenNoteIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const toggleRevBucket = (interval: number) =>
+    setOpenRevBuckets(prev => { const n = new Set(prev); n.has(interval) ? n.delete(interval) : n.add(interval); return n; });
 
   const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan();
-  const { data: weekData   = {} }                         = useWeeklyPlanGrouped(ws, we);
+  const { data: backlogWeekData = {} }                    = useWeeklyPlanGrouped(backlogStart, yesterday);
+  const { data: weekPlanData = {} }                       = useWeeklyPlanGrouped(today, weekEnd);
+  const { data: progressReport }                          = useProgressReport();
 
-  const generate      = useGeneratePlan();
-  const regenerate    = useRegeneratePlan();
-  const clearPlan     = useClearPlan();
-  const complete      = useCompletePlanItem();
-  const skip          = useSkipPlanItem();
+  // For the full backlogs tab
+  const { data: myCourses = [] }         = useMyCourses();
+  const { data: allLectures = [] }       = useAllBatchLectures();
+  const { data: mockTests = [] }         = useMockTests({ isPublished: true });
+  const { data: sessions = [] }          = useStudentSessions();
+  const { data: weeklyActivity = [] }    = useWeeklyActivity();
 
-  const hasPlan  = todayItems.length > 0;
+  // Per-batch curriculum (for DPPs, PDFs, notes resources)
+  const curriculaResults = useQueries({
+    queries: myCourses.map(c => ({
+      queryKey: ["student", "curriculum", c.id] as const,
+      queryFn: () => studentApi.getCourseCurriculum(c.id),
+      enabled: !!c.id,
+      staleTime: 60_000,
+      retry: false,
+    })),
+  });
 
+  const generate   = useGeneratePlan();
+  const regenerate = useRegeneratePlan();
+  const clearPlan  = useClearPlan();
+  const complete   = useCompletePlanItem();
+  const skip       = useSkipPlanItem();
+
+  const hasPlan = todayItems.length > 0;
+  const days    = countdownDays(student?.examYear);
+
+  // Synthesize a ProgressReport from course curriculum data when the real report has no subjects.
+  // This happens when the student hasn't taken any gate quizzes yet — curriculum data always has
+  // the full subject→chapter→topic tree with live lecture/status info.
+  const effectiveProgressReport = useMemo((): ProgressReport | undefined => {
+    if ((progressReport?.subjects?.length ?? 0) > 0) return progressReport;
+    const subjects: SubjectReportEntry[] = [];
+    curriculaResults.forEach(result => {
+      if (!result.data?.subjects?.length) return;
+      result.data.subjects.forEach(s => {
+        const chapters: ChapterReportEntry[] = s.chapters.map(ch => {
+          const topics: TopicReportEntry[] = ch.topics.map(t => ({
+            topicId:            t.id,
+            topicName:          t.name,
+            status:             t.status,
+            bestAccuracy:       t.bestAccuracy ?? 0,
+            attemptCount:       0,
+            gatePassPercentage: t.gatePassPercentage ?? 70,
+            completedAt:        t.completedAt ?? null,
+            lecture: t.lectures.total > 0
+              ? { avgWatchPct: (t.lectures.completed / t.lectures.total) * 100, anyCompleted: t.lectures.completed > 0 }
+              : null,
+            pyq:       null,
+            aiSession: null,
+          }));
+          const completedCount   = topics.filter(t => t.status === "completed").length;
+          return {
+            chapterId:       ch.id,
+            chapterName:     ch.name,
+            topicsTotal:     topics.length,
+            topicsCompleted: completedCount,
+            overallAccuracy: topics.reduce((s, t) => s + t.bestAccuracy, 0) / Math.max(topics.length, 1),
+            topics,
+          };
+        });
+        const totalTopics     = chapters.reduce((s, c) => s + c.topicsTotal, 0);
+        const completedTopics = chapters.reduce((s, c) => s + c.topicsCompleted, 0);
+        subjects.push({
+          subjectId:       s.id,
+          subjectName:     s.name,
+          examTarget:      s.examTarget ?? null,
+          colorCode:       s.colorCode  ?? null,
+          topicsTotal:     totalTopics,
+          topicsCompleted: completedTopics,
+          overallAccuracy: chapters.reduce((s, c) => s + c.overallAccuracy * c.topicsTotal, 0) / Math.max(totalTopics, 1),
+          chapters,
+        });
+      });
+    });
+    if (subjects.length === 0) return progressReport;
+    const totalTopics     = subjects.reduce((s, sub) => s + sub.topicsTotal,     0);
+    const completedTopics = subjects.reduce((s, sub) => s + sub.topicsCompleted, 0);
+    const allTopics       = subjects.flatMap(sub => sub.chapters.flatMap(c => c.topics));
+    return {
+      studentId: progressReport?.studentId ?? "",
+      subjects,
+      summary: {
+        totalTopics,
+        completedTopics,
+        inProgressTopics:    allTopics.filter(t => t.status === "in_progress").length,
+        unlockedTopics:      allTopics.filter(t => t.status === "unlocked").length,
+        lockedTopics:        allTopics.filter(t => t.status === "locked").length,
+        overallAccuracy:     Math.round(allTopics.reduce((s, t) => s + t.bestAccuracy, 0) / Math.max(allTopics.length, 1)),
+        totalPYQAttempted:   0,
+        pyqAccuracy:         0,
+        lecturesCompleted:   allTopics.filter(t => t.lecture?.anyCompleted).length,
+      },
+    };
+  }, [progressReport, curriculaResults]);
+
+  // Derive weak topic IDs from progress report (accuracy < 50, has been attempted)
+  const weakTopicIds = useMemo<Set<string>>(() => {
+    const ids = new Set<string>();
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => {
+          if ((t.bestAccuracy ?? 0) > 0 && (t.bestAccuracy ?? 0) < 50) ids.add(t.topicId);
+        })
+      )
+    );
+    return ids;
+  }, [effectiveProgressReport]);
+
+  // Weak topics list for Weak Topics tab
+  const weakTopics = useMemo(() => {
+    const list: Array<{ topicId: string; topicName: string; subjectName: string; chapterName: string; accuracy: number }> = [];
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => {
+          if ((t.bestAccuracy ?? 0) > 0 && (t.bestAccuracy ?? 0) < 50) {
+            list.push({
+              topicId: t.topicId,
+              topicName: t.topicName,
+              subjectName: s.subjectName,
+              chapterName: c.chapterName,
+              accuracy: t.bestAccuracy ?? 0,
+            });
+          }
+        })
+      )
+    );
+    return list.sort((a, b) => a.accuracy - b.accuracy);
+  }, [effectiveProgressReport]);
+
+  // Weak chapters: chapters with overall accuracy > 0 and < 50% with at least one attempted topic
+  const weakChapters = useMemo(() => {
+    const list: Array<{ chapterId: string; chapterName: string; subjectName: string; topicsTotal: number; topicsCompleted: number; overallAccuracy: number; attemptedTopics: number }> = [];
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c => {
+        const attempted = c.topics.filter(t => t.attemptCount > 0 || t.status === "completed" || t.status === "in_progress").length;
+        if (attempted > 0 && c.overallAccuracy > 0 && c.overallAccuracy < 50) {
+          list.push({
+            chapterId: c.chapterId,
+            chapterName: c.chapterName,
+            subjectName: s.subjectName,
+            topicsTotal: c.topicsTotal,
+            topicsCompleted: c.topicsCompleted,
+            overallAccuracy: Math.round(c.overallAccuracy),
+            attemptedTopics: attempted,
+          });
+        }
+      })
+    );
+    return list.sort((a, b) => a.overallAccuracy - b.overallAccuracy);
+  }, [effectiveProgressReport]);
+
+  // Forgotten concepts: completed topics not revisited in 14+ days, or abandoned in-progress (3+ attempts)
+  const forgottenConcepts = useMemo(() => {
+    const now = new Date();
+    const list: Array<{ topicId: string; topicName: string; subjectName: string; chapterName: string; status: string; daysSince: number | null; attemptCount: number; bestAccuracy: number }> = [];
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => {
+          if (t.status === "completed" && t.completedAt) {
+            const days = differenceInDays(now, new Date(t.completedAt));
+            if (days >= 14) {
+              list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName, status: "completed", daysSince: days, attemptCount: t.attemptCount, bestAccuracy: t.bestAccuracy });
+            }
+          } else if (t.status === "in_progress" && t.attemptCount >= 3) {
+            list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName, status: "in_progress", daysSince: null, attemptCount: t.attemptCount, bestAccuracy: t.bestAccuracy });
+          }
+        })
+      )
+    );
+    return list.sort((a, b) => (b.daysSince ?? 999) - (a.daysSince ?? 999));
+  }, [effectiveProgressReport]);
+
+  // High negative-marking areas: topics where PYQ accuracy < 50% (high wrong-answer rate)
+  const highNegativeTopics = useMemo(() => {
+    const list: Array<{ topicId: string; topicName: string; subjectName: string; chapterName: string; attempted: number; correct: number; wrong: number; pyqAccuracy: number }> = [];
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => {
+          if (t.pyq && t.pyq.attempted > 0 && t.pyq.accuracy < 50) {
+            list.push({
+              topicId: t.topicId,
+              topicName: t.topicName,
+              subjectName: s.subjectName,
+              chapterName: c.chapterName,
+              attempted: t.pyq.attempted,
+              correct: t.pyq.correct,
+              wrong: t.pyq.attempted - t.pyq.correct,
+              pyqAccuracy: Math.round(t.pyq.accuracy),
+            });
+          }
+        })
+      )
+    );
+    return list.sort((a, b) => a.pyqAccuracy - b.pyqAccuracy);
+  }, [effectiveProgressReport]);
+
+  // Revision queue: topics the student has studied (via completed plan items OR report signals)
+  // Primary source: completed StudyPlanItems — always fresh, never stale from cache.
+  // Secondary: effectiveProgressReport for topics with quiz/lecture signals not in the plan.
+  const revisionTopics = useMemo(() => {
+    const now = new Date();
+    type RevItem = {
+      topicId: string; topicName: string; subjectName: string; chapterName: string;
+      accuracy: number; completedAt: string | null; learnedOn: string;
+      nextRevisionDate: Date; nextRevisionLabel: string;
+      intervalDays: 1 | 3 | 7 | 21; isOverdue: boolean;
+    };
+    const list: RevItem[] = [];
+    const seenTopicIds = new Set<string>();
+
+    const addTopic = (
+      topicId: string, topicName: string, subjectName: string, chapterName: string,
+      accuracy: number, completedAt: string | null, learnedOnFallback: string
+    ) => {
+      if (seenTopicIds.has(topicId) || accuracy >= 75) return;
+      seenTopicIds.add(topicId);
+      const interval: 1 | 3 | 7 | 21 = accuracy < 40 ? 1 : accuracy < 55 ? 3 : accuracy < 65 ? 7 : 21;
+      const base      = completedAt ? new Date(completedAt) : now;
+      const nextDate  = addDays(base, interval);
+      const daysUntil = differenceInDays(nextDate, now);
+      const isOverdue = daysUntil < 0;
+      const learnedOn = completedAt ? format(new Date(completedAt), "MMM d") : learnedOnFallback;
+      const nextLabel = isOverdue ? "Overdue" : daysUntil === 0 ? "Today" : format(nextDate, "MMM d");
+      list.push({ topicId, topicName, subjectName, chapterName: chapterName ?? "", accuracy, completedAt, learnedOn, nextRevisionDate: nextDate, nextRevisionLabel: nextLabel, intervalDays: interval, isOverdue });
+    };
+
+    // Build accuracy lookup from report
+    const reportMap = new Map<string, { accuracy: number; completedAt: string | null }>();
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t =>
+          reportMap.set(t.topicId, { accuracy: t.bestAccuracy ?? 0, completedAt: t.completedAt ?? null })
+        )
+      )
+    );
+
+    // Primary: all completed plan items (today + past week)
+    const allPlanItems = [
+      ...todayItems,
+      ...Object.values(backlogWeekData).flat(),
+    ];
+    allPlanItems.forEach(item => {
+      if (item.status !== "completed" || !item.content?.topicId) return;
+      const { topicId, topicName = "Unknown Topic", subjectName = "General", chapterName = "" } = item.content;
+      const rep = reportMap.get(topicId);
+      addTopic(topicId, topicName, subjectName, chapterName, rep?.accuracy ?? 0, rep?.completedAt ?? null, format(new Date(item.scheduledDate), "MMM d"));
+    });
+
+    // Secondary: report topics with clear interaction signals (quiz attempts, lectures, AI sessions)
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => {
+          const hasInteracted =
+            t.status !== "locked" &&
+            (t.bestAccuracy > 0 || t.attemptCount > 0 ||
+             t.lecture?.anyCompleted || t.aiSession?.completed);
+          if (hasInteracted)
+            addTopic(t.topicId, t.topicName, s.subjectName, c.chapterName, t.bestAccuracy ?? 0, t.completedAt ?? null, "—");
+        })
+      )
+    );
+
+    return list.sort((a, b) =>
+      a.isOverdue !== b.isOverdue ? (a.isOverdue ? -1 : 1)
+      : a.nextRevisionDate.getTime() - b.nextRevisionDate.getTime()
+    );
+  }, [effectiveProgressReport, todayItems, backlogWeekData]);
+
+  // 7-day AI revision plan: assign each topic to the day it's due (capped 0–6)
+  const aiRevisionPlan = useMemo(() => {
+    const now = new Date();
+    const days = Array.from({ length: 7 }, (_, i) => ({
+      date: addDays(now, i),
+      label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : format(addDays(now, i), "EEE, MMM d"),
+      topics: [] as typeof revisionTopics,
+    }));
+    const sorted = [...revisionTopics].sort((a, b) =>
+      a.isOverdue !== b.isOverdue ? (a.isOverdue ? -1 : 1) : a.accuracy - b.accuracy
+    );
+    sorted.forEach(topic => {
+      const daysUntil = Math.max(0, Math.min(6, differenceInDays(topic.nextRevisionDate, now)));
+      for (let d = daysUntil; d < 7; d++) {
+        if (days[d].topics.length < 4) { days[d].topics.push(topic); break; }
+      }
+    });
+    return days;
+  }, [revisionTopics]);
+
+  // Backlog items: past 7 days study-plan tasks that are NOT completed
+  const backlogPlanItems = useMemo<Array<StudyPlanItem & { date: string }>>(() => {
+    const items: Array<StudyPlanItem & { date: string }> = [];
+    Object.entries(backlogWeekData).forEach(([date, dayItems]) => {
+      if (date >= today) return;
+      dayItems.forEach(item => {
+        if (item.status !== "completed") items.push({ ...item, date });
+      });
+    });
+    return items.sort((a, b) => a.date.localeCompare(b.date));
+  }, [backlogWeekData, today]);
+
+  // Pending lectures: not completed, not locked
+  const pendingLectures = useMemo(() =>
+    allLectures.filter(l => !l.isLocked && !l.studentProgress?.isCompleted),
+    [allLectures]
+  );
+
+  // Pending PYQs: topics where no PYQ has been attempted yet
+  const pendingPYQTopics = useMemo(() => {
+    const list: Array<{ topicId: string; topicName: string; subjectName: string; chapterName: string }> = [];
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => {
+          if (t.status !== "locked" && (!t.pyq || t.pyq.attempted === 0)) {
+            list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName });
+          }
+        })
+      )
+    );
+    return list;
+  }, [effectiveProgressReport]);
+
+  // Pending AI notes/study: in-progress topics with no completed AI session
+  const pendingAiTopics = useMemo(() => {
+    const list: Array<{ topicId: string; topicName: string; subjectName: string; chapterName: string }> = [];
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => {
+          if (t.status === "in_progress" && (!t.aiSession || !t.aiSession.completed)) {
+            list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName });
+          }
+        })
+      )
+    );
+    return list;
+  }, [effectiveProgressReport]);
+
+  // Pending DPPs & PDFs: resources on non-locked, non-completed topics
+  const pendingResources = useMemo(() => {
+    const completedTopicIds = new Set<string>();
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t => { if (t.status === "completed") completedTopicIds.add(t.topicId); })
+      )
+    );
+    const seen = new Set<string>();
+    const list: Array<CourseResource & { topicName: string; subjectName: string; chapterName: string; topicId: string }> = [];
+    curriculaResults.forEach(result => {
+      result.data?.subjects.forEach(subj =>
+        subj.chapters.forEach(ch =>
+          ch.topics.forEach(topic => {
+            if (topic.status === "locked" || completedTopicIds.has(topic.id)) return;
+            topic.resources.forEach(r => {
+              if (!["pdf", "dpp", "notes"].includes(r.type)) return;
+              if (seen.has(r.id)) return;
+              seen.add(r.id);
+              list.push({
+                ...r,
+                topicName:   r.topicName   ?? topic.name,
+                subjectName: r.subjectName ?? subj.name,
+                chapterName: r.chapterName ?? ch.name,
+                topicId:     r.topicId     ?? topic.id,
+              });
+            });
+          })
+        )
+      );
+    });
+    return list;
+  }, [curriculaResults, effectiveProgressReport]);
+
+  // Pending mock tests: published tests with no submitted/completed session
+  const pendingMockTests = useMemo(() => {
+    const doneIds = new Set(
+      sessions
+        .filter(s => ["submitted", "auto_submitted", "completed"].includes(s.status))
+        .map(s => s.mockTestId)
+    );
+    return mockTests.filter(t => t.isPublished && !doneIds.has(t.id));
+  }, [mockTests, sessions]);
+
+  const totalBacklogCount =
+    backlogPlanItems.length +
+    pendingLectures.length +
+    pendingPYQTopics.length +
+    pendingAiTopics.length +
+    pendingResources.length +
+    pendingMockTests.length;
+
+  // Subject groups for Today tab
   const bySubject = useMemo(() => {
     const map: Record<string, StudyPlanItem[]> = {};
     for (const item of todayItems) {
@@ -893,10 +1989,18 @@ export default function StudentStudyPlanPage() {
     return map;
   }, [todayItems]);
 
-  const totalMinutes = todayItems.reduce((s, i) => s + i.estimatedMinutes, 0);
   const doneCount    = todayItems.filter(i => i.status === "completed").length;
   const donePct      = todayItems.length > 0 ? Math.round((doneCount / todayItems.length) * 100) : 0;
-  const days         = countdownDays(student?.examYear);
+  const totalMinutes = todayItems.reduce((s, i) => s + i.estimatedMinutes, 0);
+
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(new Date(), i);
+      const key  = format(date, "yyyy-MM-dd");
+      const label = i === 0 ? "Today" : i === 1 ? "Tomorrow" : format(date, "EEE, MMM d");
+      return { key, label, date, items: weekPlanData[key] ?? [] };
+    });
+  }, [weekPlanData]);
 
   const handleWizardComplete = async (prefs: WizardState) => {
     setWizardDone(true);
@@ -918,8 +2022,6 @@ export default function StudentStudyPlanPage() {
     });
   };
 
-  const handleGenerate = () => setShowWizard(true);
-
   const handleRegenerate = () =>
     regenerate.mutate(undefined, {
       onSuccess: () => toast.success("Plan regenerated!"),
@@ -937,27 +2039,12 @@ export default function StudentStudyPlanPage() {
     });
 
   const handleOpenPlanItem = (item: StudyPlanItem) => {
-    const notesUrl = item.content?.notesUrl?.trim();
     const videoUrl = item.content?.videoUrl?.trim();
-    const topicId = item.content?.topicId;
-
-    if (item.type === "practice" && topicId) {
-      navigate(`/student/quiz?topicId=${topicId}`);
-      return;
-    }
-    // Study-plan notes should always use AI self-study context, not teacher-uploaded notes files.
-    if (item.type === "revision" && topicId) {
-      navigate(`/student/ai-study/${topicId}`);
-      return;
-    }
-    if ((item.type === "lecture" || item.type === "revision") && videoUrl) {
-      window.open(videoUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (topicId) {
-      navigate(`/student/ai-study/${topicId}`);
-      return;
-    }
+    const topicId  = item.content?.topicId;
+    if (item.type === "practice" && topicId) { navigate(`/student/quiz?topicId=${topicId}`); return; }
+    if (item.type === "revision" && topicId) { navigate(`/student/ai-study/${topicId}`); return; }
+    if ((item.type === "lecture" || item.type === "revision") && videoUrl) { window.open(videoUrl, "_blank", "noopener,noreferrer"); return; }
+    if (topicId) { navigate(`/student/ai-study/${topicId}`); return; }
     toast.error("No study resource is attached to this task yet.");
   };
 
@@ -969,10 +2056,18 @@ export default function StudentStudyPlanPage() {
 
   if (wizardDone || generate.isPending || regenerate.isPending || clearPlan.isPending) return <GeneratingView />;
 
+  const TABS: Array<{ key: ActiveTab; label: string; icon: React.ReactNode; badge?: number }> = [
+    { key: "today",     label: "Today",       icon: <ListTodo className="w-4 h-4" />,      badge: todayItems.filter(i => i.status !== "completed").length || undefined },
+    { key: "backlogs",  label: "Backlogs",    icon: <AlertTriangle className="w-4 h-4" />, badge: totalBacklogCount || undefined },
+    { key: "weakness",  label: "Weak Topics", icon: <TrendingDown className="w-4 h-4" />,  badge: (weakTopics.length + weakChapters.length + forgottenConcepts.length + highNegativeTopics.length) || undefined },
+    { key: "revision",  label: "Revision",    icon: <RefreshCw className="w-4 h-4" />,     badge: revisionTopics.length || undefined },
+    { key: "roadmap",   label: "Roadmap",     icon: <MapIcon className="w-4 h-4" /> },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ── Reset confirmation dialog ─────────────────────────────────────── */}
+      {/* Reset confirmation */}
       {confirmReset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
@@ -981,17 +2076,12 @@ export default function StudentStudyPlanPage() {
               Your current plan and all progress will be deleted. You'll answer a few questions to generate a fresh plan.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmReset(false)}
-                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
+              <button onClick={() => setConfirmReset(false)}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
-              <button
-                onClick={handleResetConfirmed}
-                disabled={clearPlan.isPending}
-                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
-              >
+              <button onClick={handleResetConfirmed} disabled={clearPlan.isPending}
+                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50">
                 {clearPlan.isPending ? "Resetting..." : "Yes, Reset"}
               </button>
             </div>
@@ -1011,9 +2101,10 @@ export default function StudentStudyPlanPage() {
           onClose={() => setShowWizard(false)}
         />
       )}
+
       {/* Hero */}
       <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="max-w-5xl mx-auto px-4 py-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-indigo-300 text-sm">
@@ -1056,17 +2147,18 @@ export default function StudentStudyPlanPage() {
             )}
           </div>
         </div>
+
         {/* Tabs */}
         <div className="max-w-5xl mx-auto px-4">
-          <div className="flex gap-1 border-b border-white/20">
-            {[
-              { key: "plan"    as const, label: "Study Plan",  icon: <ListTodo className="w-4 h-4" /> },
-              { key: "roadmap" as const, label: "My Roadmap",  icon: <MapIcon className="w-4 h-4" /> },
-            ].map(tab => (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 transition-all
+          <div className="flex gap-0.5 border-b border-white/20 overflow-x-auto">
+            {TABS.map(tab => (
+              <button key={tab.key} onClick={() => { setActiveTab(tab.key); setBacklogPage(null); setWeakPage(null); setRevisionPage(null); }}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
                   ${activeTab === tab.key ? "border-white text-white" : "border-transparent text-indigo-300 hover:text-white"}`}>
                 {tab.icon} {tab.label}
+                {tab.badge ? (
+                  <span className="ml-1 text-[10px] font-bold bg-white/20 text-white px-1.5 py-0.5 rounded-full">{tab.badge}</span>
+                ) : null}
               </button>
             ))}
           </div>
@@ -1075,121 +2167,202 @@ export default function StudentStudyPlanPage() {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
 
-        {/* ══ STUDY PLAN ══════════════════════════════════════════════════════ */}
-        {activeTab === "plan" && (
+        {/* ══ TODAY TAB ══════════════════════════════════════════════════════════ */}
+        {activeTab === "today" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              {/* Sub-tabs */}
-              <div className="flex gap-1 p-1 bg-white rounded-xl border border-gray-200 w-fit">
-                {(["today", "week"] as const).map(t => (
-                  <button key={t} onClick={() => setPlanTab(t)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all
-                      ${planTab === t ? "bg-indigo-600 text-white shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
-                    {t === "today" ? "Today" : "This Week"}
-                  </button>
-                ))}
-              </div>
 
-              {planTab === "today" ? (
-                planLoading ? (
-                  <div className="flex items-center justify-center h-40">
-                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : !hasPlan ? (
-                  <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-                    <Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-gray-900">No plan created yet</h3>
-                    <p className="text-gray-500 mt-2 mb-6 text-sm max-w-sm mx-auto">
-                      Click below to create your monthly plan for {fmtExam(student?.examTarget)}
-                    </p>
-                    <button onClick={handleGenerate}
-                      className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors mx-auto flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" /> Generate Study Plan
+              {/* Today | This Week toggle */}
+              {hasPlan && (
+                <div className="flex bg-gray-100 rounded-xl p-1 w-fit">
+                  {(["today", "week"] as const).map(v => (
+                    <button key={v} onClick={() => setTodayView(v)}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        todayView === v
+                          ? "bg-white text-indigo-700 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}>
+                      {v === "today" ? "Today" : "This Week"}
                     </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {Object.entries(bySubject).map(([subj, items]) => {
-                      const cfg      = subjectCfg(subj);
-                      const subjDone = items.filter(i => i.status === "completed").length;
-                      const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
-                      return (
-                        <div key={subj} className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
-                          <div className={`flex items-center justify-between px-4 py-3 ${cfg.bg}`}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-                              <span className={`font-bold ${cfg.color}`}>{subj}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <span>{subjDone}/{items.length} done</span>
-                              <span>·</span>
-                              <Clock className="w-3 h-3" /><span>{subjMins}m</span>
-                            </div>
+                  ))}
+                </div>
+              )}
+
+              {planLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : !hasPlan ? (
+                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                  <Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-bold text-gray-900">No plan created yet</h3>
+                  <p className="text-gray-500 mt-2 mb-6 text-sm max-w-sm mx-auto">
+                    Click below to create your monthly plan for {fmtExam(student?.examTarget)}
+                  </p>
+                  <button onClick={() => setShowWizard(true)}
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors mx-auto flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Generate Study Plan
+                  </button>
+                </div>
+              ) : todayView === "week" ? (
+                /* ── Week View ── */
+                (() => {
+                  const activeDay = selectedWeekDay || today;
+                  const activeDayData = weekDays.find(d => d.key === activeDay) ?? weekDays[0];
+                  const activeDayBySubject: Record<string, StudyPlanItem[]> = {};
+                  for (const item of (activeDayData?.items ?? [])) {
+                    const key = item.content?.subjectName ?? "General";
+                    (activeDayBySubject[key] ??= []).push(item);
+                  }
+                  return (
+                    <div className="space-y-4">
+                      {/* Day selector strip */}
+                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                        {weekDays.map(({ key, date, items: dayItems }) => {
+                          const isActive = activeDay === key;
+                          const isToday  = key === today;
+                          const hasTasks = dayItems.length > 0;
+                          return (
+                            <button key={key} onClick={() => setSelectedWeekDay(key)}
+                              className={`flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all ${
+                                isActive
+                                  ? "border-indigo-400 bg-indigo-600 text-white"
+                                  : isToday
+                                  ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                              }`}>
+                              <span className="text-[10px] font-medium uppercase tracking-wide opacity-75">
+                                {format(date, "EEE")}
+                              </span>
+                              <span className="text-lg font-bold leading-tight">{format(date, "d")}</span>
+                              <div className={`w-1.5 h-1.5 rounded-full mt-1 ${
+                                hasTasks
+                                  ? isActive ? "bg-white" : "bg-indigo-400"
+                                  : "bg-transparent"
+                              }`} />
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Plan for selected day */}
+                      {activeDayData && activeDayData.items.length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
+                          <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500 text-sm font-medium">No tasks planned for {activeDayData.label}</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {Object.entries(activeDayBySubject).map(([subj, items]) => {
+                            const cfg      = subjectCfg(subj);
+                            const subjDone = items.filter(i => i.status === "completed").length;
+                            const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
+                            return (
+                              <div key={subj} className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
+                                <div className={`flex items-center justify-between px-4 py-3 ${cfg.bg}`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                                    <span className={`font-bold ${cfg.color}`}>{subj}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <span>{subjDone}/{items.length} done</span>
+                                    <span>·</span>
+                                    <Clock className="w-3 h-3" /><span>{subjMins}m</span>
+                                  </div>
+                                </div>
+                                <div className="bg-white p-2 space-y-2">
+                                  {items.map(item => (
+                                    <PlanItemCard key={item.id} item={item}
+                                      priority={derivePriority(item, weakTopicIds)}
+                                      onComplete={id => complete.mutate(id)}
+                                      onSkip={id => skip.mutate(id)}
+                                      onOpen={handleOpenPlanItem}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              ) : (
+                /* ── Today View ── */
+                <div className="space-y-4">
+                  {Object.entries(bySubject).map(([subj, items]) => {
+                    const cfg      = subjectCfg(subj);
+                    const subjDone = items.filter(i => i.status === "completed").length;
+                    const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
+                    return (
+                      <div key={subj} className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
+                        <div className={`flex items-center justify-between px-4 py-3 ${cfg.bg}`}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                            <span className={`font-bold ${cfg.color}`}>{subj}</span>
                           </div>
-                          <div className="bg-white p-2 space-y-2">
-                            {items.map(item => (
-                              <PlanItemCard key={item.id} item={item}
-                                onComplete={id => complete.mutate(id)}
-                                onSkip={id => skip.mutate(id)}
-                                onOpen={handleOpenPlanItem}
-                              />
-                            ))}
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{subjDone}/{items.length} done</span>
+                            <span>·</span>
+                            <Clock className="w-3 h-3" /><span>{subjMins}m</span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )
-              ) : (
-                <div className="space-y-4">
-                  <WeekStrip weekStart={weekStart} selectedDate={selectedDay} onSelect={setSelectedDay} weekData={weekData} />
-                  {(() => {
-                    const dayItems = weekData[selectedDay] ?? [];
-                    if (!dayItems.length) return (
-                      <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400">
-                        <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                        <p className="text-sm">No tasks for {format(new Date(selectedDay + "T00:00:00"), "EEEE, MMM d")}</p>
+                        <div className="bg-white p-2 space-y-2">
+                          {items.map(item => (
+                            <PlanItemCard key={item.id} item={item}
+                              priority={derivePriority(item, weakTopicIds)}
+                              onComplete={id => complete.mutate(id)}
+                              onSkip={id => skip.mutate(id)}
+                              onOpen={handleOpenPlanItem}
+                            />
+                          ))}
+                        </div>
                       </div>
                     );
-                    return (
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-gray-600">{format(new Date(selectedDay + "T00:00:00"), "EEEE, MMMM d")}</p>
-                        {dayItems.map(item => (
-                          <PlanItemCard key={item.id} item={item}
-                            onComplete={id => complete.mutate(id)}
-                            onSkip={id => skip.mutate(id)}
-                            onOpen={handleOpenPlanItem}
-                          />
-                        ))}
-                      </div>
-                    );
-                  })()}
+                  })}
                 </div>
               )}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-4">
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Your Stats</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
-                    <div className="text-2xl font-bold text-amber-600">{student?.streakDays ?? 0}</div>
-                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1 mt-0.5"><Flame className="w-3 h-3 text-amber-500" /> Streak</div>
-                  </div>
-                  <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 text-center">
-                    <div className="text-2xl font-bold text-violet-600">{(student?.xpPoints ?? 0).toLocaleString()}</div>
-                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1 mt-0.5"><Star className="w-3 h-3 text-violet-500" /> XP</div>
-                  </div>
-                </div>
-              </div>
+              <AISarthiCard
+                todayItems={todayItems}
+                streak={student?.streakDays ?? 0}
+                xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport}
+                weeklyActivity={weeklyActivity}
+                sessions={sessions}
+                weakTopicsCount={weakTopics.length}
+                revisionTopicsCount={revisionTopics.length}
+                forgottenCount={forgottenConcepts.length}
+              />
+
+              <MicroGoalsCard
+                weakTopics={weakTopics}
+                revisionTopics={revisionTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                highNegativeTopics={highNegativeTopics}
+              />
+              <SmartRemindersCard
+                revisionTopics={revisionTopics}
+                weeklyActivity={weeklyActivity}
+                pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts}
+                weakTopics={weakTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                onTabChange={setActiveTab}
+              />
+
+
 
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-4 h-4 text-indigo-500" />
                   <h3 className="text-sm font-semibold text-gray-700">AI Plan</h3>
                 </div>
-                <p className="text-xs text-gray-500 mb-3">Create a fresh monthly plan with the next set of topics</p>
+                <p className="text-xs text-gray-500 mb-3">Regenerate your monthly plan with next topics</p>
                 <button onClick={handleRegenerate} disabled={regenerate.isPending}
                   className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
                   <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
@@ -1197,20 +2370,713 @@ export default function StudentStudyPlanPage() {
                 </button>
                 <button onClick={() => setConfirmReset(true)}
                   className="w-full mt-2 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Reset &amp; Start Fresh
+                  <Trash2 className="w-3.5 h-3.5" /> Reset &amp; Start Fresh
                 </button>
               </div>
-
-              <button onClick={() => setActiveTab("roadmap")}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-semibold text-sm hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                <MapIcon className="w-4 h-4" /> View My Curriculum Roadmap
-              </button>
             </div>
           </div>
         )}
 
-        {/* ══ ROADMAP TAB ═════════════════════════════════════════════════════ */}
+        {/* ══ BACKLOGS TAB ════════════════════════════════════════════════════════ */}
+        {activeTab === "backlogs" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {/* ── Back button ── */}
+              {backlogPage && (
+                <button onClick={() => setBacklogPage(null)}
+                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                  Back to Backlogs
+                </button>
+              )}
+
+              {/* ── Landing: category cards ── */}
+              {!backlogPage && (
+                <>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">All Pending Work</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Choose a category to review and clear your backlogs</p>
+                  </div>
+                  {totalBacklogCount === 0 ? (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                      <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-bold text-gray-900">All caught up!</h3>
+                      <p className="text-gray-500 mt-2 text-sm">No pending lectures, notes, PYQs, or DPPs right now.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {([
+                        { key: "plan",     icon: <ClipboardList className="w-5 h-5" />, label: "Missed Study Tasks",    count: backlogPlanItems.length,  desc: "Study plan items you didn't complete",  accent: "bg-red-50 border-red-200 text-red-600",    badge: "bg-red-100 text-red-700"    },
+                        { key: "lectures", icon: <PlayCircle    className="w-5 h-5" />, label: "Pending Lectures",      count: pendingLectures.length,   desc: "Video lectures not yet watched",         accent: "bg-blue-50 border-blue-200 text-blue-600",  badge: "bg-blue-100 text-blue-700"  },
+                        { key: "notes",    icon: <BookOpen      className="w-5 h-5" />, label: "Notes & AI Study",      count: pendingAiTopics.length,   desc: "Topics with no completed AI session",    accent: "bg-amber-50 border-amber-200 text-amber-600", badge: "bg-amber-100 text-amber-700" },
+                        { key: "pyq",      icon: <Activity      className="w-5 h-5" />, label: "PYQs Not Attempted",    count: pendingPYQTopics.length,  desc: "Previous year questions not practised",  accent: "bg-violet-50 border-violet-200 text-violet-600", badge: "bg-violet-100 text-violet-700" },
+                        { key: "dpp",      icon: <FileText      className="w-5 h-5" />, label: "DPPs & PDFs",           count: pendingResources.length,  desc: "Practice sheets and reading material",   accent: "bg-teal-50 border-teal-200 text-teal-600",  badge: "bg-teal-100 text-teal-700"  },
+                      ] as const).filter(c => c.count > 0).map(c => (
+                        <button key={c.key} onClick={() => setBacklogPage(c.key)}
+                          className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>
+                              {c.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-gray-900">{c.label}</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── Detail: Missed Study Plan Tasks ── */}
+              {backlogPage === "plan" && (
+                <BacklogSection icon={<ClipboardList className="w-4 h-4" />} title="Missed Study Plan Tasks" count={backlogPlanItems.length} accentColor="red">
+                  {(() => {
+                    const byDate: Record<string, typeof backlogPlanItems> = {};
+                    backlogPlanItems.forEach(item => { (byDate[item.date] ??= []).push(item); });
+                    return Object.entries(byDate).map(([date, items]) => (
+                      <div key={date} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3 h-3 text-red-400" />
+                          <span className="text-[11px] font-semibold text-red-500">{format(new Date(date + "T00:00:00"), "EEEE, MMM d")}</span>
+                          <div className="flex-1 h-px bg-red-100" />
+                        </div>
+                        {items.map((item: StudyPlanItem & { date: string }) => (
+                          <PlanItemCard key={item.id} item={item} priority={derivePriority(item, weakTopicIds)}
+                            onComplete={id => complete.mutate(id)} onSkip={id => skip.mutate(id)} onOpen={handleOpenPlanItem} />
+                        ))}
+                      </div>
+                    ));
+                  })()}
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: Pending Lectures ── */}
+              {backlogPage === "lectures" && (
+                <BacklogSection icon={<PlayCircle className="w-4 h-4" />} title="Pending Lectures" count={pendingLectures.length} accentColor="blue">
+                  <div className="space-y-2">
+                    {pendingLectures.map(lec => {
+                      const subj = lec.topic?.chapter?.subject?.name ?? "";
+                      const cfg = subjectCfg(subj);
+                      const watchPct = lec.studentProgress?.watchPercentage ?? 0;
+                      return (
+                        <div key={lec.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-blue-200 hover:shadow-sm transition-all">
+                          <div className="shrink-0 w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600"><PlayCircle className="w-4 h-4" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">{lec.title}</div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {subj && <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{subj}</span>}
+                              {lec.topic?.name && <span className="text-xs text-gray-400 truncate">{lec.topic.name}</span>}
+                              {watchPct > 0 && <span className="text-xs text-amber-600 font-medium">{watchPct}% watched</span>}
+                            </div>
+                          </div>
+                          <button onClick={() => navigate(`/student/lectures/${lec.id}`)}
+                            className="shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors">
+                            {watchPct > 0 ? "Resume" : "Watch"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: Notes & AI Study ── */}
+              {backlogPage === "notes" && (
+                <BacklogSection icon={<BookOpen className="w-4 h-4" />} title="Pending Notes & AI Study" count={pendingAiTopics.length} accentColor="amber">
+                  <div className="space-y-2">
+                    {pendingAiTopics.map(t => {
+                      const cfg = subjectCfg(t.subjectName);
+                      return (
+                        <div key={t.topicId} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-amber-200 hover:shadow-sm transition-all">
+                          <div className="shrink-0 w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600"><BookOpen className="w-4 h-4" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">{t.topicName}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{t.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{t.chapterName}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => navigate(`/student/ai-study/${t.topicId}`)}
+                            className="shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-semibold hover:bg-amber-700 transition-colors">Study</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: PYQs ── */}
+              {backlogPage === "pyq" && (
+                <BacklogSection icon={<Activity className="w-4 h-4" />} title="PYQs Not Attempted" count={pendingPYQTopics.length} accentColor="violet">
+                  <div className="space-y-2">
+                    {pendingPYQTopics.map(t => {
+                      const cfg = subjectCfg(t.subjectName);
+                      return (
+                        <div key={t.topicId} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-violet-200 hover:shadow-sm transition-all">
+                          <div className="shrink-0 w-9 h-9 rounded-lg bg-violet-50 border border-violet-200 flex items-center justify-center text-violet-600"><Activity className="w-4 h-4" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">{t.topicName}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{t.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{t.chapterName}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => navigate(`/student/quiz?topicId=${t.topicId}`)}
+                            className="shrink-0 px-3 py-1.5 bg-violet-600 text-white rounded-xl text-xs font-semibold hover:bg-violet-700 transition-colors">Attempt</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: DPPs & PDFs ── */}
+              {backlogPage === "dpp" && (
+                <BacklogSection icon={<FileText className="w-4 h-4" />} title="DPPs & PDFs" count={pendingResources.length} accentColor="teal">
+                  <div className="space-y-2">
+                    {pendingResources.map(r => {
+                      const cfg = subjectCfg(r.subjectName);
+                      const url = r.fileUrl ?? r.externalUrl;
+                      const typeLabel = r.type === "dpp" ? "DPP" : r.type === "pdf" ? "PDF" : "Notes";
+                      const typeBg = r.type === "dpp" ? "bg-teal-50 border-teal-200 text-teal-600" : r.type === "pdf" ? "bg-sky-50 border-sky-200 text-sky-600" : "bg-amber-50 border-amber-200 text-amber-600";
+                      return (
+                        <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-teal-200 hover:shadow-sm transition-all">
+                          <div className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center ${typeBg}`}><FileText className="w-4 h-4" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="font-medium text-sm text-gray-900 truncate">{r.title}</span>
+                              <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${typeBg}`}>{typeLabel}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{r.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{r.topicName}</span>
+                            </div>
+                          </div>
+                          {url ? <a href={url} target="_blank" rel="noopener noreferrer" className="shrink-0 px-3 py-1.5 bg-teal-600 text-white rounded-xl text-xs font-semibold hover:bg-teal-700 transition-colors">Open</a>
+                               : <span className="shrink-0 text-xs text-gray-400">No link</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </BacklogSection>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
+                weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                <div className="font-semibold text-amber-700 text-sm mb-1 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Backlog Tip</div>
+                <p className="text-xs text-amber-700 leading-relaxed">Don't tackle everything at once. Pick 2–3 tasks per day and blend them into today's plan.</p>
+              </div>
+              <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
+              <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+            </div>
+          </div>
+        )}
+
+        {/* ══ WEAK TOPICS TAB ═════════════════════════════════════════════════════ */}
+        {activeTab === "weakness" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {weakPage && (
+                <button onClick={() => setWeakPage(null)}
+                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
+                  <ChevronRight className="w-4 h-4 rotate-180" /> Back to Weak Areas
+                </button>
+              )}
+
+              {/* ── Landing ── */}
+              {!weakPage && (
+                <>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Weak Areas Analysis</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Select a category to analyse and improve your weak areas</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {([
+                      { key: "chapters",  icon: <BookOpen     className="w-5 h-5" />, label: "Weak Chapters",         count: weakChapters.length,       desc: "Chapters with overall accuracy < 50%",   accent: "bg-amber-50 border-amber-200 text-amber-600",   badge: "bg-amber-100 text-amber-700"  },
+                      { key: "topics",    icon: <TrendingDown className="w-5 h-5" />, label: "Low Accuracy Topics",    count: weakTopics.length,         desc: "Topics where you score below 50%",       accent: "bg-red-50 border-red-200 text-red-600",         badge: "bg-red-100 text-red-700"     },
+                      { key: "forgotten", icon: <Brain        className="w-5 h-5" />, label: "Forgotten Concepts",     count: forgottenConcepts.length,  desc: "Completed 14+ days ago without revision", accent: "bg-violet-50 border-violet-200 text-violet-600", badge: "bg-violet-100 text-violet-700"},
+                      { key: "negative",  icon: <Target       className="w-5 h-5" />, label: "High Negative-Marking",  count: highNegativeTopics.length, desc: "PYQ topics with > 50% wrong answers",    accent: "bg-rose-50 border-rose-200 text-rose-600",      badge: "bg-rose-100 text-rose-700"   },
+                    ] as const).map(c => (
+                      <button key={c.key} onClick={() => setWeakPage(c.key)}
+                        className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>{c.icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-gray-900">{c.label}</span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* ── Detail: Weak Chapters ── */}
+              {weakPage === "chapters" && (
+              <BacklogSection
+                icon={<BookOpen className="w-4 h-4" />}
+                title="Weak Chapters"
+                count={weakChapters.length}
+                accentColor="amber"
+              >
+                {weakChapters.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-2 text-center">No weak chapters — great chapter-level accuracy!</p>
+                ) : weakChapters.map(ch => {
+                  const cfg = subjectCfg(ch.subjectName);
+                  const accColor = ch.overallAccuracy < 30 ? "text-red-600 bg-red-50 border-red-200"
+                    : ch.overallAccuracy < 40 ? "text-orange-600 bg-orange-50 border-orange-200"
+                    : "text-amber-600 bg-amber-50 border-amber-200";
+                  const progressPct = ch.topicsTotal > 0 ? Math.round((ch.topicsCompleted / ch.topicsTotal) * 100) : 0;
+                  return (
+                    <div key={ch.chapterId} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-amber-200 hover:shadow-sm transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm text-gray-900 truncate">{ch.chapterName}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                              {ch.subjectName}
+                            </span>
+                            <span className="text-xs text-gray-400">{ch.topicsCompleted}/{ch.topicsTotal} topics done</span>
+                          </div>
+                          <div className="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${progressPct}%` }} />
+                          </div>
+                        </div>
+                        <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full border ${accColor}`}>{ch.overallAccuracy}%</span>
+                        <button
+                          onClick={() => navigate(`/student/quiz?chapterId=${ch.chapterId}`)}
+                          className="shrink-0 px-3 py-2 bg-amber-500 text-white rounded-xl text-xs font-semibold hover:bg-amber-600 transition-colors flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> Practice
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </BacklogSection>
+
+              )}
+
+              {/* ── Detail: Low Accuracy Topics ── */}
+              {weakPage === "topics" && (
+                <BacklogSection icon={<TrendingDown className="w-4 h-4" />} title="Low Accuracy Topics" count={weakTopics.length} accentColor="red">
+                  {weakTopics.length === 0 ? (
+                    <div className="py-4 text-center"><Trophy className="w-8 h-8 text-amber-400 mx-auto mb-2" /><p className="text-sm text-gray-400">No weak topics — accuracy is solid!</p></div>
+                  ) : weakTopics.map((topic, i) => {
+                    const cfg = subjectCfg(topic.subjectName);
+                    const accColor = topic.accuracy < 30 ? "text-red-600 bg-red-50 border-red-200" : topic.accuracy < 40 ? "text-orange-600 bg-orange-50 border-orange-200" : "text-amber-600 bg-amber-50 border-amber-200";
+                    return (
+                      <div key={topic.topicId} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 hover:border-red-200 hover:shadow-sm transition-all">
+                        <div className="shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-sm font-bold text-red-600">{i + 1}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm text-gray-900 truncate">{topic.topicName}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{topic.subjectName}</span>
+                            <span className="text-xs text-gray-400 truncate">{topic.chapterName}</span>
+                          </div>
+                        </div>
+                        <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full border ${accColor}`}>{topic.accuracy}%</span>
+                        <button onClick={() => navigate(`/student/quiz?topicId=${topic.topicId}`)}
+                          className="shrink-0 px-3 py-2 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700 transition-colors flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> Practice
+                        </button>
+                      </div>
+                    );
+                  })}
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: Forgotten Concepts ── */}
+              {weakPage === "forgotten" && (
+                <BacklogSection icon={<Brain className="w-4 h-4" />} title="Forgotten Concepts" count={forgottenConcepts.length} accentColor="violet">
+                  {forgottenConcepts.length === 0 ? (
+                    <p className="text-sm text-gray-400 py-2 text-center">No forgotten concepts — you're on top of your material!</p>
+                  ) : forgottenConcepts.map(t => {
+                    const cfg = subjectCfg(t.subjectName);
+                    const isAbandoned = t.status === "in_progress";
+                    return (
+                      <div key={t.topicId} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 hover:border-violet-200 hover:shadow-sm transition-all">
+                        <div className="shrink-0 w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center"><Brain className="w-4 h-4 text-violet-600" /></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm text-gray-900 truncate">{t.topicName}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{t.subjectName}</span>
+                            {isAbandoned
+                              ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-orange-50 text-orange-600 border-orange-200">Abandoned ({t.attemptCount} attempts)</span>
+                              : <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-violet-50 text-violet-600 border-violet-200">{t.daysSince}d ago</span>}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right"><span className="text-sm font-bold text-gray-700">{t.bestAccuracy}%</span><div className="text-[10px] text-gray-400 mt-0.5">accuracy</div></div>
+                        <button onClick={() => navigate(`/student/ai-study/${t.topicId}`)}
+                          className="shrink-0 px-3 py-2 bg-violet-600 text-white rounded-xl text-xs font-semibold hover:bg-violet-700 transition-colors flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3" /> Revise
+                        </button>
+                      </div>
+                    );
+                  })}
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: High Negative-Marking ── */}
+              {weakPage === "negative" && (
+                <BacklogSection icon={<Target className="w-4 h-4" />} title="High Negative-Marking Areas" count={highNegativeTopics.length} accentColor="red">
+                  {highNegativeTopics.length === 0 ? (
+                    <p className="text-sm text-gray-400 py-2 text-center">No high negative-marking areas — your PYQ accuracy is good!</p>
+                  ) : highNegativeTopics.map(t => {
+                    const cfg = subjectCfg(t.subjectName);
+                    const wrongPct = t.attempted > 0 ? Math.round((t.wrong / t.attempted) * 100) : 0;
+                    return (
+                      <div key={t.topicId} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-red-200 hover:shadow-sm transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-gray-900 truncate">{t.topicName}</div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{t.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{t.chapterName}</span>
+                            </div>
+                            <div className="flex items-center gap-3 mt-2 text-[11px]">
+                              <span className="text-emerald-600 font-medium">✓ {t.correct} correct</span>
+                              <span className="text-red-600 font-medium">✗ {t.wrong} wrong</span>
+                              <span className="text-gray-400">of {t.attempted} PYQs</span>
+                              <span className="font-bold text-red-600">{wrongPct}% miss rate</span>
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right"><span className="text-sm font-bold text-red-600">{t.pyqAccuracy}%</span><div className="text-[10px] text-gray-400 mt-0.5">PYQ acc.</div></div>
+                          <button onClick={() => navigate(`/student/quiz?topicId=${t.topicId}`)}
+                            className="shrink-0 px-3 py-2 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition-colors flex items-center gap-1">
+                            <Target className="w-3 h-3" /> Retry PYQ
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </BacklogSection>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
+                weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
+              <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                <div className="font-semibold text-red-700 text-sm mb-2 flex items-center gap-1.5"><TrendingDown className="w-4 h-4" /> Weakness Engine</div>
+                <div className="space-y-1.5 text-xs text-red-700">
+                  {[["Weak Chapters","Chapter accuracy < 50%"],["Low Accuracy","Topic accuracy < 50%"],["Forgotten","Completed 14+ days ago"],["Negative Marking","PYQ accuracy < 50%"]].map(([label, desc]) => (
+                    <div key={label} className="flex justify-between gap-2"><span className="text-red-400 shrink-0">{label}</span><span className="font-medium text-right">{desc}</span></div>
+                  ))}
+                </div>
+              </div>
+              <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
+              <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+            </div>
+          </div>
+        )}
+
+        {/* ══ REVISION TAB ════════════════════════════════════════════════════════ */}
+        {activeTab === "revision" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+
+              {revisionPage && (
+                <button onClick={() => setRevisionPage(null)}
+                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
+                  <ChevronRight className="w-4 h-4 rotate-180" /> Back to Revision
+                </button>
+              )}
+
+              {/* ── Landing ── */}
+              {!revisionPage && (
+                <>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Spaced Revision Plan</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Choose how you want to review your topics</p>
+                  </div>
+                  {revisionTopics.length === 0 ? (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                      <BookOpen className="w-12 h-12 text-teal-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-bold text-gray-900">Revision queue is empty</h3>
+                      <p className="text-gray-500 mt-2 text-sm">Complete study plan tasks to populate your revision queue.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {([
+                        { key: "schedule", icon: <RefreshCw className="w-5 h-5" />, label: "Spaced Schedule",   desc: "Topics grouped by 1d / 3d / 7d / 21d revision intervals", count: revisionTopics.length, accent: "bg-teal-50 border-teal-200 text-teal-600",     badge: "bg-teal-100 text-teal-700"    },
+                        { key: "table",    icon: <ListTodo   className="w-5 h-5" />, label: "Topic Table",       desc: "Full list with learned-on and next-revision dates",       count: revisionTopics.length, accent: "bg-indigo-50 border-indigo-200 text-indigo-600", badge: "bg-indigo-100 text-indigo-700" },
+                        { key: "aiplan",   icon: <Sparkles  className="w-5 h-5" />, label: "AI 7-Day Plan",     desc: "Auto-scheduled revision across the next 7 days",          count: revisionTopics.filter(t => !t.isOverdue).length + revisionTopics.filter(t => t.isOverdue).length, accent: "bg-violet-50 border-violet-200 text-violet-600", badge: "bg-violet-100 text-violet-700" },
+                      ] as const).map(c => (
+                        <button key={c.key} onClick={() => setRevisionPage(c.key)}
+                          className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>{c.icon}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-gray-900">{c.label}</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── Detail: Schedule ── */}
+              {revisionPage === "schedule" && (() => {
+                    const BUCKETS: Array<{
+                      interval: 1 | 3 | 7 | 21;
+                      label: string;
+                      sublabel: string;
+                      accentBg: string; accentBorder: string; accentBadge: string; accentText: string;
+                    }> = [
+                      { interval: 1,  label: "1-Day Revision",  sublabel: "accuracy < 40% — revise every day",        accentBg: "bg-red-50",    accentBorder: "border-red-300",    accentBadge: "bg-red-100 text-red-700",    accentText: "text-red-700" },
+                      { interval: 3,  label: "3-Day Revision",  sublabel: "accuracy 40–54% — revise every 3 days",    accentBg: "bg-orange-50", accentBorder: "border-orange-300", accentBadge: "bg-orange-100 text-orange-700", accentText: "text-orange-700" },
+                      { interval: 7,  label: "7-Day Revision",  sublabel: "accuracy 55–64% — revise every 7 days",    accentBg: "bg-amber-50",  accentBorder: "border-amber-300",  accentBadge: "bg-amber-100 text-amber-700",  accentText: "text-amber-700" },
+                      { interval: 21, label: "21-Day Revision", sublabel: "accuracy 65–74% — revise every 3 weeks",   accentBg: "bg-teal-50",   accentBorder: "border-teal-300",   accentBadge: "bg-teal-100 text-teal-700",   accentText: "text-teal-700" },
+                    ];
+                    return (
+                      <div className="space-y-3">
+                        {BUCKETS.map(bkt => {
+                          const items = revisionTopics.filter(t => t.intervalDays === bkt.interval);
+                          if (items.length === 0) return null;
+                          const open = openRevBuckets.has(bkt.interval);
+                          const overdue = items.filter(t => t.isOverdue).length;
+                          return (
+                            <div key={bkt.interval} className={`rounded-2xl border-2 ${bkt.accentBorder} overflow-hidden`}>
+                              <button onClick={() => toggleRevBucket(bkt.interval)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-left ${bkt.accentBg}`}>
+                                <RefreshCw className={`w-4 h-4 ${bkt.accentText}`} />
+                                <div className="flex-1">
+                                  <span className={`font-bold text-sm ${bkt.accentText}`}>{bkt.label}</span>
+                                  <span className="text-xs text-gray-400 ml-2">{bkt.sublabel}</span>
+                                </div>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${bkt.accentBadge}`}>{items.length}</span>
+                                {overdue > 0 && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                                    {overdue} overdue
+                                  </span>
+                                )}
+                                {open ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                              </button>
+                              {open && (
+                                <div className="bg-white p-3 space-y-2">
+                                  {items.map(topic => (
+                                    <RevisionTopicCard
+                                      key={topic.topicId}
+                                      topic={topic}
+                                      isNoteOpen={openNoteIds.has(topic.topicId)}
+                                      noteText={revisionNotes[topic.topicId] ?? ""}
+                                      onToggleNote={() => toggleNote(topic.topicId)}
+                                      onNoteChange={v => setRevisionNotes(p => ({ ...p, [topic.topicId]: v }))}
+                                      onRevise={() => navigate(`/student/ai-study/${topic.topicId}`)}
+                                      onFullNotes={() => navigate(`/student/ai-study/${topic.topicId}`)}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+              {/* ── Detail: Table ── */}
+              {revisionPage === "table" && (
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Topic</th>
+                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Learned On</th>
+                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Next Revision</th>
+                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Interval</th>
+                              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Accuracy</th>
+                              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {revisionTopics.map(topic => {
+                              const cfg = subjectCfg(topic.subjectName);
+                              const accColor = topic.accuracy < 40 ? "text-red-600" : topic.accuracy < 55 ? "text-orange-500" : topic.accuracy < 65 ? "text-amber-600" : "text-teal-600";
+                              return (
+                                <tr key={topic.topicId} className={`hover:bg-gray-50 transition-colors ${topic.isOverdue ? "bg-red-50/40" : ""}`}>
+                                  <td className="px-4 py-3">
+                                    <div className="font-medium text-gray-900 truncate max-w-[180px]">{topic.topicName}</div>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{topic.subjectName}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{topic.learnedOn}</td>
+                                  <td className="px-4 py-3 whitespace-nowrap">
+                                    <span className={`text-sm font-semibold ${topic.isOverdue ? "text-red-600" : "text-teal-600"}`}>
+                                      {topic.nextRevisionLabel}
+                                    </span>
+                                    {topic.isOverdue && <span className="ml-1.5 text-[9px] font-bold text-red-600 bg-red-100 px-1 py-0.5 rounded">OVERDUE</span>}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{topic.intervalDays}d</span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <span className={`text-sm font-bold ${accColor}`}>{topic.accuracy}%</span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button onClick={() => navigate(`/student/ai-study/${topic.topicId}`)}
+                                        className="px-2.5 py-1 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 flex items-center gap-1">
+                                        <RefreshCw className="w-2.5 h-2.5" /> Revise
+                                      </button>
+                                      <button onClick={() => { setRevisionPage("schedule"); toggleNote(topic.topicId); }}
+                                        className="px-2.5 py-1 bg-violet-100 text-violet-700 rounded-lg text-xs font-semibold hover:bg-violet-200 flex items-center gap-1">
+                                        <FileText className="w-2.5 h-2.5" /> Notes
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+              {/* ── Detail: AI Plan ── */}
+              {revisionPage === "aiplan" && (
+                    <div className="space-y-3">
+                      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Sparkles className="w-4 h-4 text-indigo-600" />
+                          <span className="text-sm font-bold text-indigo-700">7-Day AI Revision Plan</span>
+                        </div>
+                        <p className="text-xs text-indigo-600 leading-relaxed">
+                          Topics assigned based on next due date and accuracy. Overdue items are prioritised first. Max 4 topics/day to keep revision manageable.
+                        </p>
+                      </div>
+                      {aiRevisionPlan.map((day, di) => {
+                        if (day.topics.length === 0) return (
+                          <div key={di} className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs font-semibold text-gray-400 w-24 shrink-0">{day.label}</span>
+                            <span className="text-xs text-gray-400 italic">No revision due — rest day 🎉</span>
+                          </div>
+                        );
+                        return (
+                          <div key={di} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className={`px-4 py-2.5 flex items-center gap-3 border-b border-gray-100
+                              ${di === 0 ? "bg-indigo-50" : "bg-gray-50"}`}>
+                              <Calendar className={`w-4 h-4 ${di === 0 ? "text-indigo-600" : "text-gray-400"}`} />
+                              <span className={`text-sm font-bold ${di === 0 ? "text-indigo-700" : "text-gray-700"}`}>
+                                {day.label}
+                              </span>
+                              <span className="ml-auto text-xs text-gray-400">{day.topics.length} topics</span>
+                            </div>
+                            <div className="divide-y divide-gray-50">
+                              {day.topics.map(topic => {
+                                const cfg = subjectCfg(topic.subjectName);
+                                const accColor = topic.accuracy < 40 ? "text-red-600" : topic.accuracy < 55 ? "text-orange-500" : topic.accuracy < 65 ? "text-amber-600" : "text-teal-600";
+                                return (
+                                  <div key={topic.topicId} className="px-4 py-3 flex items-center gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-sm font-medium text-gray-900 truncate">{topic.topicName}</span>
+                                        {topic.isOverdue && <span className="text-[9px] font-bold text-red-600 bg-red-100 px-1 py-0.5 rounded-full border border-red-200">OVERDUE</span>}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{topic.subjectName}</span>
+                                        <span className="text-[10px] text-gray-400">Learned {topic.learnedOn}</span>
+                                        <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{topic.intervalDays}d cycle</span>
+                                      </div>
+                                    </div>
+                                    <span className={`text-sm font-bold shrink-0 ${accColor}`}>{topic.accuracy}%</span>
+                                    <button onClick={() => navigate(`/student/ai-study/${topic.topicId}`)}
+                                      className="shrink-0 px-2.5 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 flex items-center gap-1">
+                                      <RefreshCw className="w-2.5 h-2.5" /> Revise
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <AISarthiCard
+                todayItems={todayItems}
+                streak={student?.streakDays ?? 0}
+                xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport}
+                weeklyActivity={weeklyActivity}
+                sessions={sessions}
+                weakTopicsCount={weakTopics.length}
+                revisionTopicsCount={revisionTopics.length}
+                forgottenCount={forgottenConcepts.length}
+              />
+              <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
+                <div className="font-semibold text-teal-700 text-sm mb-3 flex items-center gap-1.5">
+                  <RefreshCw className="w-4 h-4" /> Spaced Repetition
+                </div>
+                <div className="space-y-2 text-xs">
+                  {([
+                    ["1-Day",  "< 40%",   "bg-red-100 text-red-700"],
+                    ["3-Day",  "40–54%",  "bg-orange-100 text-orange-700"],
+                    ["7-Day",  "55–64%",  "bg-amber-100 text-amber-700"],
+                    ["21-Day", "65–74%",  "bg-teal-100 text-teal-700"],
+                  ] as const).map(([interval, range, cls]) => (
+                    <div key={interval} className="flex items-center gap-2">
+                      <span className={`font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>{interval}</span>
+                      <span className="text-gray-500">accuracy {range}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-teal-100 text-xs text-teal-600 leading-relaxed">
+                  Accuracy improves → interval extends → topic eventually clears the queue.
+                </div>
+              </div>
+              <MicroGoalsCard
+                weakTopics={weakTopics}
+                revisionTopics={revisionTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                highNegativeTopics={highNegativeTopics}
+              />
+              <SmartRemindersCard
+                revisionTopics={revisionTopics}
+                weeklyActivity={weeklyActivity}
+                pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts}
+                weakTopics={weakTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                onTabChange={setActiveTab}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ══ ROADMAP TAB ═════════════════════════════════════════════════════════ */}
         {activeTab === "roadmap" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
@@ -1220,7 +3086,7 @@ export default function StudentStudyPlanPage() {
                   Your complete {fmtExam(student?.examTarget)} syllabus — tap any subject to expand chapters and topics
                 </p>
               </div>
-              <CurriculumRoadmap />
+              <CurriculumRoadmap reportOverride={effectiveProgressReport} />
             </div>
             <div className="space-y-4">
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
@@ -1251,7 +3117,7 @@ export default function StudentStudyPlanPage() {
                 </p>
               </div>
 
-              <button onClick={() => setActiveTab("plan")}
+              <button onClick={() => setActiveTab("today")}
                 className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-semibold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
                 <ListTodo className="w-4 h-4" /> Go to Today's Plan
               </button>
@@ -1264,6 +3130,7 @@ export default function StudentStudyPlanPage() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

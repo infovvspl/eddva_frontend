@@ -42,6 +42,7 @@ export interface PublicBatch {
   isPaid: boolean;
   feeAmount: number | null;
   maxStudents: number;
+  deliveryMode?: string;
   startDate?: string | null;
   endDate?: string | null;
   thumbnailUrl?: string;
@@ -98,6 +99,7 @@ export interface MyCourse {
   class: string;
   thumbnailUrl?: string;
   status: string;
+  deliveryMode?: string;
   startDate?: string | null;
   endDate?: string | null;
   enrolledAt?: string;
@@ -245,6 +247,7 @@ interface RawEnrollment {
     class?: string;
     thumbnailUrl?: string | null;
     status?: string;
+    deliveryMode?: string;
     startDate?: string | null;
     endDate?: string | null;
     teacher?: { id: string; fullName: string };
@@ -285,6 +288,7 @@ function normalizeEnrollment(raw: RawEnrollment): MyCourse {
     class: batch.class ?? "",
     thumbnailUrl: batch.thumbnailUrl ?? undefined,
     status: batch.status ?? raw.enrollmentStatus ?? "active",
+    deliveryMode: batch.deliveryMode ?? "hybrid",
     startDate: batch.startDate ?? null,
     endDate: batch.endDate ?? null,
     enrolledAt: raw.enrolledAt,
@@ -1035,6 +1039,8 @@ export async function createBattle(
   topicName?: string,
   difficulty?: "easy" | "medium" | "hard",
   batchId?: string,
+  subjectId?: string,
+  chapterId?: string,
 ): Promise<BattleRoom> {
   const payload: Record<string, string> = {
     mode,
@@ -1043,6 +1049,8 @@ export async function createBattle(
   if (topicId) payload.topicId = topicId;
   if (topicName) payload.topicName = topicName;
   if (batchId) payload.batchId = batchId;
+  if (subjectId) payload.subjectId = subjectId;
+  if (chapterId) payload.chapterId = chapterId;
   const res = await apiClient.post("/battles/create", payload);
   return extractData<BattleRoom>(res);
 }
@@ -1523,6 +1531,7 @@ export interface ProgressReportSummary {
   totalTopics: number;
   completedTopics: number;
   inProgressTopics: number;
+  unlockedTopics: number;
   lockedTopics: number;
   overallAccuracy: number;
   totalPYQAttempted: number;

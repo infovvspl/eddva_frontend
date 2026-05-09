@@ -470,8 +470,8 @@ function ResourceCard({ res, isLocked }: { res: CourseResource; isLocked: boolea
 // ─── Flat Resource List (DPP / PYQ / Material tabs) ──────────────────────────
 
 function ResourceTab({
-  resources, isLocked, emptyLabel, showSubFilters = false,
-}: { resources: CourseResource[]; isLocked: boolean; emptyLabel: string; showSubFilters?: boolean }) {
+  resources, isLocked, emptyLabel, showSubFilters = false, courseSubjectNames,
+}: { resources: CourseResource[]; isLocked: boolean; emptyLabel: string; showSubFilters?: boolean; courseSubjectNames?: string[] }) {
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [subFilter, setSubFilter] = useState("all");
@@ -485,7 +485,10 @@ function ResourceTab({
     { id: "others", label: "Other Notes" },
   ];
 
-  const subjects = useMemo(() => [...new Set(resources.map(r => r.subjectName).filter(Boolean))], [resources]);
+  const subjects = useMemo(
+    () => courseSubjectNames ?? [...new Set(resources.map(r => r.subjectName).filter(Boolean))],
+    [courseSubjectNames, resources],
+  );
 
   const filtered = resources.filter(r => {
     if (subjectFilter !== "all" && r.subjectName !== subjectFilter) return false;
@@ -514,18 +517,6 @@ function ResourceTab({
     return map;
   }, [filtered]);
 
-  if (resources.length === 0) {
-    return (
-      <div className="py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <BookOpen className="w-7 h-7 text-slate-300" />
-        </div>
-        <p className="font-semibold text-slate-500">{emptyLabel}</p>
-        <p className="text-sm text-slate-400 mt-1">Resources will appear here once added by your teacher.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-5">
       {/* Filters */}
@@ -540,27 +531,37 @@ function ResourceTab({
             className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
           />
         </div>
-        {subjects.length > 1 && (
-          <div className="flex gap-2 flex-wrap">
-            {["all", ...subjects].map(s => (
-              <button
-                key={s}
-                onClick={() => setSubjectFilter(s as string)}
-                className={cn(
-                  "px-3 py-2 rounded-xl text-xs font-semibold border transition-all",
-                  subjectFilter === s
-                    ? "bg-indigo-600 text-white border-transparent"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
-                )}
-              >
-                {s === "all" ? "All Subjects" : s}
-              </button>
-            ))}
+        {subjects.length > 0 && (
+          <div className="relative shrink-0">
+            <select
+              value={subjectFilter}
+              onChange={e => setSubjectFilter(e.target.value)}
+              className={cn(
+                "appearance-none cursor-pointer pl-4 pr-9 py-2.5 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
+                subjectFilter === "all"
+                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
+                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
+              )}
+              style={{
+                backgroundImage: subjectFilter === "all"
+                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
+                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.65rem center",
+              }}
+            >
+              <option value="all">All subjects ({resources.length})</option>
+              {subjects.map(s => (
+                <option key={s} value={s}>
+                  {s} ({resources.filter(r => r.subjectName === s).length})
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>
 
-      {showSubFilters && (
+      {showSubFilters && resources.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {categories.map(cat => {
             const count = resources.filter(r => {
@@ -596,19 +597,31 @@ function ResourceTab({
         </div>
       )}
 
-      <p className="text-xs text-slate-400 font-medium">
-        {filtered.length} resource{filtered.length !== 1 ? "s" : ""}
-      </p>
-
-      {/* Grouped list */}
-      {Array.from(groups.entries()).map(([groupKey, items]) => (
-        <div key={groupKey}>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">{groupKey}</p>
-          <div className="space-y-2">
-            {items.map(r => <ResourceCard key={r.id} res={r} isLocked={isLocked} />)}
+      {filtered.length === 0 ? (
+        <div className="py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="w-7 h-7 text-slate-300" />
           </div>
+          <p className="font-semibold text-slate-500">{emptyLabel}</p>
+          <p className="text-sm text-slate-400 mt-1">Resources will appear here once added by your teacher.</p>
         </div>
-      ))}
+      ) : (
+        <>
+          <p className="text-xs text-slate-400 font-medium">
+            {filtered.length} resource{filtered.length !== 1 ? "s" : ""}
+          </p>
+
+          {/* Grouped list */}
+          {Array.from(groups.entries()).map(([groupKey, items]) => (
+            <div key={groupKey}>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">{groupKey}</p>
+              <div className="space-y-2">
+                {items.map(r => <ResourceCard key={r.id} res={r} isLocked={isLocked} />)}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -1776,6 +1789,8 @@ function MockTestTabContent({
   hasFilters,
   navigate,
   sessionsByTestId,
+  getTestSubjectName,
+  courseSubjectNames,
 }: {
   mockTests: MockTestListItem[];
   mockTestsLoading: boolean;
@@ -1786,24 +1801,19 @@ function MockTestTabContent({
   hasFilters: boolean;
   navigate: (path: string) => void;
   sessionsByTestId: Map<string, TestSession[]>;
+  getTestSubjectName: (mt: MockTestListItem) => string | null;
+  courseSubjectNames: string[];
 }) {
   const [activeScope, setActiveScope] = useState<"all" | "subject" | "chapter" | "topic">("all");
   const [examFilter, setExamFilter] = useState<"all" | "competitive" | "academic">("all");
+  const [subjectFilter, setSubjectFilter] = useState<string>("all");
+
+  const testSubjectNames = useMemo(() => [...courseSubjectNames].sort(), [courseSubjectNames]);
 
   if (mockTestsLoading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-      </div>
-    );
-  }
-
-  if (mockTests.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-        <FlaskConical className="w-10 h-10 mb-3 opacity-30" />
-        <p className="font-semibold text-slate-500">No mock tests available yet</p>
-        <p className="text-xs mt-1">Tests will appear here once your teacher publishes them.</p>
       </div>
     );
   }
@@ -1843,11 +1853,14 @@ function MockTestTabContent({
   };
 
   const scopeTests = grouped[activeScope] ?? mockTests;
-  const visibleTests = examFilter === "all" ? scopeTests : scopeTests.filter((mt) => inferExamLane(mt) === examFilter);
+  const subjectFiltered = subjectFilter === "all"
+    ? scopeTests
+    : scopeTests.filter((mt) => getTestSubjectName(mt) === subjectFilter);
+  const visibleTests = examFilter === "all" ? subjectFiltered : subjectFiltered.filter((mt) => inferExamLane(mt) === examFilter);
 
   const getCount = (lane: "competitive" | "academic" | "all") => {
-    if (lane === "all") return scopeTests.length;
-    return scopeTests.filter(t => inferExamLane(t) === lane).length;
+    if (lane === "all") return subjectFiltered.length;
+    return subjectFiltered.filter(t => inferExamLane(t) === lane).length;
   };
 
   return (
@@ -1856,14 +1869,42 @@ function MockTestTabContent({
       <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-100">
         <FlaskConical className="w-4 h-4 text-indigo-500 shrink-0" />
         <span className="text-xs font-semibold text-indigo-700">
-          {mockTests.length} test{mockTests.length !== 1 ? "s" : ""} available
+          {visibleTests.length} test{visibleTests.length !== 1 ? "s" : ""} available
         </span>
         <span className="text-xs text-indigo-400 ml-auto">
-          {mockTests.filter(mt => mt.questionIds?.length).reduce((s, mt) => s + (mt.questionIds?.length ?? 0), 0)} total questions
+          {visibleTests.filter(mt => mt.questionIds?.length).reduce((s, mt) => s + (mt.questionIds?.length ?? 0), 0)} total questions
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        {testSubjectNames.length > 0 && (
+          <div className="relative shrink-0">
+            <select
+              value={subjectFilter}
+              onChange={e => setSubjectFilter(e.target.value)}
+              className={cn(
+                "appearance-none cursor-pointer pl-4 pr-9 py-2 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
+                subjectFilter === "all"
+                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
+                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
+              )}
+              style={{
+                backgroundImage: subjectFilter === "all"
+                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
+                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.65rem center",
+              }}
+            >
+              <option value="all">All subjects ({mockTests.length})</option>
+              {testSubjectNames.map(s => (
+                <option key={s} value={s}>
+                  {s} ({mockTests.filter(mt => getTestSubjectName(mt) === s).length})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         {(["all", "competitive", "academic"] as const).map((lane) => {
           const count = getCount(lane);
           return (
@@ -1919,8 +1960,16 @@ function MockTestTabContent({
 
       {/* Test list */}
       {visibleTests.length === 0 ? (
-        <div className="py-12 text-center bg-white rounded-2xl border border-slate-100">
-          <p className="text-slate-400 font-medium">No {activeScope === "all" ? "" : activeScope} tests found in this category.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <FlaskConical className="w-10 h-10 mb-3 opacity-30" />
+          {mockTests.length === 0 ? (
+            <>
+              <p className="font-semibold text-slate-500">No mock tests available yet</p>
+              <p className="text-xs mt-1">Tests will appear here once your teacher publishes them.</p>
+            </>
+          ) : (
+            <p className="font-semibold text-slate-500">No tests match the selected filters.</p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -2537,13 +2586,13 @@ export default function StudentCourseDetailPage() {
           )}
 
           {/* ── DPP TAB ── */}
-          {activeTab === "dpp" && <ResourceTab resources={dppList} isLocked={resourcesLocked} emptyLabel="No DPPs available yet" />}
+          {activeTab === "dpp" && <ResourceTab resources={dppList} isLocked={resourcesLocked} emptyLabel="No DPPs available yet" courseSubjectNames={subjects.map(s => s.name)} />}
 
           {/* ── PYQ TAB ── */}
-          {activeTab === "pyq" && <ResourceTab resources={pyqList} isLocked={resourcesLocked} emptyLabel="No PYQs available yet" />}
+          {activeTab === "pyq" && <ResourceTab resources={pyqList} isLocked={resourcesLocked} emptyLabel="No PYQs available yet" courseSubjectNames={subjects.map(s => s.name)} />}
 
           {/* ── MATERIAL TAB ── */}
-          {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" showSubFilters />}
+          {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" showSubFilters courseSubjectNames={subjects.map(s => s.name)} />}
 
           {/* ── MOCK TESTS TAB ── */}
           {activeTab === "mock_test" && (() => {
@@ -2585,6 +2634,13 @@ export default function StudentCourseDetailPage() {
               return "";
             };
 
+            const getTestSubjectName = (mt: MockTestListItem): string | null => {
+              if (mt.subjectId) return subjectMap.get(mt.subjectId) ?? null;
+              if (mt.chapterId) return chapterMap.get(mt.chapterId)?.subjectName ?? null;
+              if (mt.topicId) return topicMap.get(mt.topicId)?.subjectName ?? null;
+              return null;
+            };
+
             const scopeFilter = ["all", "subject", "chapter", "topic"] as const;
             type ScopeFilter = typeof scopeFilter[number];
 
@@ -2608,6 +2664,8 @@ export default function StudentCourseDetailPage() {
                 hasFilters={hasFilters}
                 navigate={navigate}
                 sessionsByTestId={sessionsByTestId}
+                getTestSubjectName={getTestSubjectName}
+                courseSubjectNames={subjects.map(s => s.name)}
               />
             );
           })()}
