@@ -1,22 +1,9 @@
-import { useMemo, useState, type ElementType } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  AlertTriangle,
-  Award,
-  BarChart3,
-  Crown,
-  Loader2,
-  Lock,
-  Medal,
-  RotateCcw,
-  Shield,
-  Trophy,
-  Zap,
-  Swords,
-  ShieldCheck,
-  ArrowUpRight,
-  Flame
+  AlertTriangle, Award, BarChart3, Crown, Flame, Loader2, Lock,
+  Medal, RotateCcw, Shield, ShieldCheck, Swords, Trophy, TrendingUp, Zap,
 } from "lucide-react";
 import { leaderboardApi, type LeaderboardGroupMember } from "@/lib/api/xp";
 import { useStudentMe } from "@/hooks/use-student";
@@ -24,384 +11,505 @@ import { cn } from "@/lib/utils";
 
 const nf = new Intl.NumberFormat("en-IN");
 
-// --- UI Components ---
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function zoneLabel(zone?: string | null) {
-  if (zone === "promotion") return "Promotion Zone";
-  if (zone === "demotion") return "Demotion Zone";
-  if (zone === "safety") return "Safe Zone";
+function zoneLabel(z?: string | null) {
+  if (z === "promotion") return "Promotion Zone";
+  if (z === "demotion")  return "Demotion Zone";
+  if (z === "safety")    return "Safe Zone";
   return "Unranked";
 }
-
-function zoneClass(zone?: string | null) {
-  if (zone === "promotion") return "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm";
-  if (zone === "demotion") return "border-rose-200 bg-rose-50 text-rose-700";
-  if (zone === "safety") return "border-blue-200 bg-blue-50 text-blue-700";
-  return "border-slate-200 bg-slate-50 text-slate-600";
+function zoneCls(z?: string | null) {
+  if (z === "promotion") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (z === "demotion")  return "bg-rose-50 text-rose-600 border-rose-200";
+  if (z === "safety")    return "bg-blue-50 text-blue-600 border-blue-200";
+  return "bg-slate-50 text-slate-500 border-slate-200";
 }
 
-function StatTile({
-  label,
-  value,
-  icon: Icon,
-  color = "indigo",
-}: {
-  label: string;
-  value: string;
-  icon: ElementType;
-  color?: string;
+function avatarSrc(name: string, url?: string | null) {
+  return url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+}
+
+// ─── Compact Stat Card ────────────────────────────────────────────────────────
+
+function StatCard({ icon: Icon, value, label, sub, color }: {
+  icon: React.ElementType; value: string; label: string; sub?: string;
+  color: "indigo" | "amber" | "teal" | "violet";
 }) {
-  const colorMap: Record<string, string> = {
-    purple: "from-purple-50 to-white border-purple-100 text-purple-600 shadow-purple-50",
-    blue: "from-blue-50 to-white border-blue-100 text-blue-600 shadow-blue-50",
-    cyan: "from-cyan-50 to-white border-cyan-100 text-cyan-600 shadow-cyan-50",
-    amber: "from-amber-50 to-white border-amber-100 text-amber-600 shadow-amber-50",
-    indigo: "from-indigo-50 to-white border-indigo-100 text-indigo-600 shadow-indigo-50",
+  const colors = {
+    indigo: "bg-indigo-50 border-indigo-100 text-indigo-600",
+    amber:  "bg-amber-50  border-amber-100  text-amber-600",
+    teal:   "bg-teal-50   border-teal-100   text-teal-600",
+    violet: "bg-violet-50 border-violet-100 text-violet-600",
+  };
+  return (
+    <div className={cn("flex items-center gap-3 rounded-xl border p-3", colors[color])}>
+      <div className="shrink-0">
+        <Icon className="h-4.5 w-4.5" style={{ width: 18, height: 18 }} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-lg font-black leading-none tracking-tight text-slate-900">{value}</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">{label}</p>
+        {sub && <p className="text-[10px] text-slate-500 mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Compact Podium ───────────────────────────────────────────────────────────
+
+function CompactPodium({ top3 }: { top3: LeaderboardGroupMember[] }) {
+  const first  = top3.find(m => m.rank === 1);
+  const second = top3.find(m => m.rank === 2);
+  const third  = top3.find(m => m.rank === 3);
+
+  const Slot = ({ m, pos }: { m?: LeaderboardGroupMember; pos: "left" | "center" | "right" }) => {
+    if (!m) return <div className="flex-1" />;
+    const isC = pos === "center";
+    const ringCls = isC
+      ? "ring-4 ring-amber-400 ring-offset-2 shadow-amber-100"
+      : pos === "left"
+      ? "ring-2 ring-slate-300 ring-offset-1"
+      : "ring-2 ring-orange-300 ring-offset-1";
+    const badgeCls = isC ? "bg-amber-500" : pos === "left" ? "bg-slate-500" : "bg-orange-400";
+    const avatarSize = isC ? "h-16 w-16" : "h-13 w-13";
+    const baseH = isC ? "h-14" : pos === "left" ? "h-10" : "h-7";
+    const baseCls = isC
+      ? "bg-gradient-to-b from-amber-100 to-amber-50"
+      : pos === "left"
+      ? "bg-gradient-to-b from-slate-100 to-slate-50"
+      : "bg-gradient-to-b from-orange-100 to-orange-50";
+
+    return (
+      <motion.div
+        className="flex flex-1 flex-col items-center gap-1.5"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: isC ? 0 : 0.08, duration: 0.35 }}
+      >
+        {isC ? (
+          <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }} className="text-amber-400">
+            <Crown className="h-6 w-6 drop-shadow" fill="currentColor" />
+          </motion.div>
+        ) : <div className="h-6" />}
+
+        <div className="relative">
+          <div className={cn("overflow-hidden rounded-full bg-slate-100 shadow-md", avatarSize, ringCls)}
+            style={isC ? { width: 64, height: 64 } : { width: 52, height: 52 }}>
+            <img src={avatarSrc(m.fullName, m.avatarUrl)} alt={m.fullName} className="h-full w-full object-cover" />
+          </div>
+          <span className={cn("absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-[9px] font-black text-white", badgeCls)}>
+            {m.rank}
+          </span>
+        </div>
+
+        <div className="text-center">
+          <p className={cn("font-bold text-slate-900 leading-tight", isC ? "text-sm" : "text-xs")}>
+            {m.fullName.split(" ")[0]}
+            {m.isCurrentStudent && <span className="ml-1 text-indigo-500">·</span>}
+          </p>
+          <p className={cn("font-semibold text-indigo-600", isC ? "text-xs" : "text-[11px]")}>
+            {nf.format(m.xpEarned)} XP
+          </p>
+        </div>
+
+        <div className={cn("w-full rounded-t-xl", baseH, baseCls)} />
+      </motion.div>
+    );
   };
 
   return (
-    <div className={cn(
-      "group relative overflow-hidden rounded-[1.75rem] border bg-gradient-to-br p-5 transition-all hover:translate-y-[-2px] hover:shadow-xl shadow-md",
-      colorMap[color] || colorMap.indigo
-    )}>
-      <div className="relative z-10">
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-100 transition-transform group-hover:rotate-3">
-          <Icon className="h-5 w-5" />
-        </div>
-        <p className="text-[34px] font-black tracking-tighter text-slate-900 leading-tight">{value}</p>
-        <p className="mt-1 text-[11px] font-bold uppercase tracking-[1.5px] text-slate-400">{label}</p>
-      </div>
-      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-current opacity-[0.04] blur-2xl transition-all group-hover:opacity-[0.08]" />
+    <div className="flex items-end gap-2 px-4 pb-0">
+      <Slot m={second} pos="left" />
+      <Slot m={first}  pos="center" />
+      <Slot m={third}  pos="right" />
     </div>
   );
 }
 
-function LeaderboardPodium({ top3 }: { top3: LeaderboardGroupMember[] }) {
-  if (top3.length === 0) return null;
+// ─── Member Row ───────────────────────────────────────────────────────────────
 
-  const displayOrder = [
-    top3[1] || null,
-    top3[0] || null,
-    top3[2] || null
-  ].filter(Boolean);
-
-  return (
-    <div className="flex items-end justify-center gap-2 py-8 sm:gap-6">
-      {displayOrder.map((member, idx) => {
-        if (!member) return null;
-        const isFirst = member.rank === 1;
-        const isSecond = member.rank === 2;
-
-        return (
-          <motion.div
-            key={member.studentId}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05, duration: 0.5 }}
-            className={cn(
-              "flex flex-col items-center gap-4",
-              isFirst ? "z-10 -mb-2" : "z-0 scale-90"
-            )}
-          >
-            <div className="relative">
-              {isFirst && (
-                <motion.div
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 text-amber-500"
-                >
-                  <Crown className="h-10 w-10 drop-shadow-md" fill="currentColor" />
-                </motion.div>
-              )}
-              <div className={cn(
-                "relative rounded-full p-1",
-                isFirst ? "bg-gradient-to-tr from-amber-400 to-yellow-100 shadow-xl shadow-amber-100" : 
-                isSecond ? "bg-gradient-to-tr from-slate-300 to-slate-50 shadow-lg shadow-slate-100" :
-                "bg-gradient-to-tr from-orange-400 to-orange-50 shadow-lg shadow-orange-50"
-              )}>
-                <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-50 sm:h-24 sm:w-24">
-                  <img 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.fullName}`} 
-                    alt={member.fullName}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className={cn(
-                  "absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-black shadow-md sm:h-9 sm:w-9",
-                  isFirst ? "bg-amber-500 text-white" : "bg-slate-700 text-white"
-                )}>
-                  #{member.rank}
-                </div>
-              </div>
-            </div>
-
-            <div className={cn(
-              "flex w-28 flex-col items-center rounded-2xl border border-white bg-white/80 p-3 shadow-lg shadow-slate-200/40 backdrop-blur-md sm:w-32",
-              isFirst ? "border-amber-100 bg-amber-50/60" : ""
-            )}>
-              <span className="truncate text-center text-[18px] font-bold text-slate-900 leading-tight">{member.fullName.split(' ')[0]}</span>
-              <span className="text-[13px] font-bold text-indigo-600 tracking-tight">{nf.format(member.xpEarned)} XP</span>
-            </div>
-
-            <div className={cn(
-              "w-full rounded-t-3xl sm:w-24",
-              isFirst ? "h-32 bg-gradient-to-b from-amber-100/50 to-transparent" :
-              isSecond ? "h-24 bg-gradient-to-b from-slate-100/50 to-transparent" :
-              "h-16 bg-gradient-to-b from-orange-50/50 to-transparent"
-            )} />
-          </motion.div>
-        );
-      })}
-    </div>
-  );
-}
-
-function MemberCard({ member, idx }: { member: LeaderboardGroupMember; idx: number }) {
+function MemberRow({ m, idx }: { m: LeaderboardGroupMember; idx: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.05 + idx * 0.03 }}
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: idx * 0.02, duration: 0.25 }}
       className={cn(
-        "group relative flex items-center gap-4 rounded-2xl border p-3.5 transition-all hover:bg-slate-50/50 hover:shadow-md",
-        member.isCurrentStudent 
-          ? "border-indigo-200 bg-indigo-50/50 shadow-sm ring-1 ring-indigo-100/50" 
-          : "border-slate-100 bg-white/40"
+        "group grid items-center gap-2 rounded-xl border px-3 py-2.5 transition-all",
+        "grid-cols-[28px_36px_1fr_auto_32px]",
+        m.isCurrentStudent
+          ? "border-indigo-200 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-100"
+          : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/60",
       )}
     >
-      <div className="flex w-6 shrink-0 items-center justify-center text-sm font-black text-slate-300">
-        {member.rank === 1 ? <Crown className="h-5 w-5 text-amber-500" /> :
-         member.rank === 2 ? <Medal className="h-5 w-5 text-slate-400" /> :
-         member.rank === 3 ? <Medal className="h-5 w-5 text-orange-400" /> :
-         <span>{member.rank}</span>}
+      {/* Rank */}
+      <div className="flex justify-center text-sm font-black">
+        {m.rank === 1 ? <Crown className="h-4 w-4 text-amber-400" fill="currentColor" /> :
+         m.rank === 2 ? <span className="text-slate-400">🥈</span> :
+         m.rank === 3 ? <span className="text-orange-400">🥉</span> :
+         <span className="text-slate-400 text-[13px]">{m.rank}</span>}
       </div>
 
-      <div className="relative h-11 w-11 shrink-0">
-        <div className="h-full w-full overflow-hidden rounded-xl border border-white bg-slate-50 shadow-sm">
-          <img 
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.fullName}`} 
-            alt={member.fullName}
-            className="h-full w-full object-cover"
-          />
+      {/* Avatar */}
+      <div className="h-9 w-9 overflow-hidden rounded-xl border border-white bg-slate-50 shadow-sm">
+        <img src={avatarSrc(m.fullName, m.avatarUrl)} alt={m.fullName} className="h-full w-full object-cover" />
+      </div>
+
+      {/* Name + XP */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="truncate text-[13px] font-bold text-slate-900 leading-none">{m.fullName}</p>
+          {m.isCurrentStudent && (
+            <span className="shrink-0 rounded-full bg-indigo-600 px-1.5 py-0.5 text-[9px] font-black text-white uppercase">You</span>
+          )}
         </div>
+        <p className="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5">
+          <Zap className="h-2.5 w-2.5 text-amber-400" fill="currentColor" />
+          {nf.format(m.xpEarned)} XP
+        </p>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-[15px] font-bold text-slate-900">
-            {member.fullName}
-            {member.isCurrentStudent && (
-              <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-black uppercase text-indigo-700">You</span>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400">
-          <Zap className="h-3 w-3 text-amber-500" fill="currentColor" />
-          <span>{nf.format(member.xpEarned)} Cycle XP</span>
-        </div>
-      </div>
+      {/* Zone */}
+      <span className={cn("hidden rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:inline-block", zoneCls(m.zone))}>
+        {zoneLabel(m.zone)}
+      </span>
 
-      <div className="hidden sm:block">
-        <span className={cn("rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider", zoneClass(member.zone))}>
-          {zoneLabel(member.zone)}
-        </span>
-      </div>
-
-      <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-slate-100/50 group-hover:bg-indigo-50 transition-colors">
-        <Swords className="h-4 w-4 text-slate-400 group-hover:text-indigo-600" />
-      </div>
+      {/* Duel */}
+      <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 transition-colors hover:bg-indigo-100 group-hover:bg-indigo-50">
+        <Swords className="h-3.5 w-3.5 text-slate-400 hover:text-indigo-600" />
+      </button>
     </motion.div>
   );
 }
 
-// --- Main Page Component ---
+// ─── Progress Sidebar ─────────────────────────────────────────────────────────
+
+function ProgressSidebar({ stats, streak, xp }: {
+  stats: { cycleXp: number; rank: number | null; level: number; zone: string | null; daysUntilReset: number; isUnlocked: boolean } | undefined;
+  streak: number;
+  xp: number;
+}) {
+  const level = stats?.level ?? 1;
+  const cycleXp = stats?.cycleXp ?? 0;
+  // Rough XP thresholds per level (approximate)
+  const levelXpMap: Record<number, number> = { 1: 500, 2: 1200, 3: 2500, 4: 5000, 5: 10000 };
+  const nextLevelXp = levelXpMap[level] ?? 9999;
+  const pct = Math.min(100, Math.round((cycleXp / nextLevelXp) * 100));
+
+  const xpToPromotion = 244; // TODO: get from API
+
+  return (
+    <div className="space-y-3">
+      {/* Promotion meter */}
+      <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-amber-50 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Flame className="h-4 w-4 text-orange-500" fill="currentColor" />
+          <span className="text-xs font-black uppercase tracking-wider text-orange-700">Promotion Target</span>
+        </div>
+        <p className="text-2xl font-black text-slate-900">{nf.format(xpToPromotion)} <span className="text-sm font-semibold text-slate-400">XP away</span></p>
+        <div className="mt-2 h-2 w-full rounded-full bg-orange-100 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-400"
+            initial={{ width: 0 }}
+            animate={{ width: `${100 - Math.min(100, Math.round(xpToPromotion / 3))}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          />
+        </div>
+        <p className="text-[10px] text-orange-600 mt-1.5 font-semibold">Keep going — promotion is close!</p>
+      </div>
+
+      {/* Streak + Zone */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 flex flex-col items-center gap-1">
+          <Flame className="h-5 w-5 text-amber-500" fill="currentColor" />
+          <p className="text-xl font-black text-slate-900">{streak}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-amber-600">Day Streak</p>
+        </div>
+        <div className={cn("rounded-xl border p-3 flex flex-col items-center gap-1", zoneCls(stats?.zone))}>
+          <ShieldCheck className="h-5 w-5" />
+          <p className="text-[11px] font-black uppercase tracking-wide text-center leading-tight">{zoneLabel(stats?.zone)}</p>
+        </div>
+      </div>
+
+      {/* Level progress */}
+      <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Award className="h-4 w-4 text-indigo-500" />
+            <span className="text-xs font-black uppercase tracking-wide text-slate-600">Level {level}</span>
+          </div>
+          <span className="text-[10px] font-bold text-slate-400">{nf.format(cycleXp)} / {nf.format(nextLevelXp)} XP</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+          />
+        </div>
+        <p className="text-[10px] text-slate-400 mt-1.5">{pct}% to Level {level + 1}</p>
+      </div>
+
+      {/* Total XP */}
+      <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Zap className="h-4 w-4 text-indigo-500" fill="currentColor" />
+          <span className="text-[10px] font-black uppercase tracking-wide text-indigo-600">Total XP</span>
+        </div>
+        <p className="text-2xl font-black text-slate-900">{nf.format(xp)}</p>
+        <p className="text-[11px] text-indigo-600 font-semibold mt-0.5">{nf.format(cycleXp)} this cycle</p>
+      </div>
+
+      {/* Cycle reset */}
+      <div className="rounded-xl border border-slate-100 bg-white p-3 flex items-center gap-3">
+        <RotateCcw className="h-4 w-4 text-slate-400 shrink-0" />
+        <div>
+          <p className="text-sm font-black text-slate-900">{stats?.daysUntilReset ?? 0}d left</p>
+          <p className="text-[10px] text-slate-400 font-medium">Cycle resets in {stats?.daysUntilReset ?? 0} days</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+type TabKey = "group" | "mock";
 
 export default function StudentLeaderboardPage() {
   const { data: me } = useStudentMe();
-  const [examType, setExamType] = useState<"jee" | "neet">(() => {
-    const target = me?.student?.examTarget?.toLowerCase();
-    return target?.includes("neet") ? "neet" : "jee";
-  });
+  const [tab, setTab] = useState<TabKey>("group");
+  const [examType, setExamType] = useState<"jee" | "neet">(() =>
+    me?.student?.examTarget?.toLowerCase().includes("neet") ? "neet" : "jee"
+  );
 
-  const meQuery = useQuery({
-    queryKey: ["leaderboard", "me"],
-    queryFn: leaderboardApi.getMe,
-  });
-
+  const meQuery    = useQuery({ queryKey: ["leaderboard", "me"],  queryFn: leaderboardApi.getMe });
   const groupQuery = useQuery({
     queryKey: ["leaderboard", "group"],
-    queryFn: leaderboardApi.getGroup,
-    enabled: Boolean(meQuery.data?.isUnlocked),
+    queryFn:  leaderboardApi.getGroup,
+    enabled:  Boolean(meQuery.data?.isUnlocked),
     retry: false,
   });
-
-  const mockQuery = useQuery({
+  const mockQuery  = useQuery({
     queryKey: ["leaderboard", "mock", examType],
-    queryFn: () => leaderboardApi.getMockRank(examType),
+    queryFn:  () => leaderboardApi.getMockRank(examType),
   });
 
   const sortedGroup = useMemo(
     () => [...(groupQuery.data ?? [])].sort((a, b) => a.rank - b.rank),
     [groupQuery.data],
   );
+  const top3 = sortedGroup.slice(0, 3);
 
-  const top3Members = useMemo(() => sortedGroup.slice(0, 3), [sortedGroup]);
+  const stats  = meQuery.data;
+  const mock   = mockQuery.data;
+  const isLocked = !stats?.isUnlocked;
+  const streak = me?.student?.streakDays ?? 0;
+  const xp     = me?.student?.xpPoints   ?? 0;
 
   if (meQuery.isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-indigo-400" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-7 w-7 animate-spin text-indigo-400" />
       </div>
     );
   }
 
-  const stats = meQuery.data;
-  const mock = mockQuery.data;
-  const isLocked = !stats?.isUnlocked;
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: "group", label: "Group Rank" },
+    { key: "mock",  label: "Mock Test Rank" },
+  ];
 
   return (
-    <div className="relative space-y-10">
-      {/* Subtle Background Elements */}
-      <div className="pointer-events-none absolute -left-10 top-0 h-[400px] w-[400px] rounded-full bg-indigo-50/50 blur-[100px]" />
-      <div className="pointer-events-none absolute -right-10 top-20 h-[400px] w-[400px] rounded-full bg-purple-50/50 blur-[100px]" />
-
-      <div className="relative mx-auto max-w-7xl space-y-8">
-        {/* Header Section */}
-        <motion.section 
-          initial={{ opacity: 0, y: 10 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="space-y-6"
-        >
-          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600">Season 4</span>
-                <div className="h-px w-8 bg-slate-200" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">14-Day Cycle</span>
-              </div>
-              <h1 className="text-[48px] font-bold tracking-[-1px] leading-[1.1] text-slate-900">
-                <span className="font-medium text-slate-600">Group</span> <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Leaderboard</span>
-              </h1>
+    <div className="space-y-4 pb-8">
+      {/* ── Compressed Header ──────────────────────────────────────── */}
+      <div className="space-y-3">
+        {/* Title row */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                Season 4
+              </span>
+              <div className="h-px w-5 bg-slate-200" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">14-Day Cycle</span>
             </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/50 px-4 py-2 shadow-sm">
-                <Flame className="h-4 w-4 text-orange-500" fill="currentColor" />
-                <span className="text-[12px] font-bold text-indigo-700 uppercase tracking-wide">Promotion in <span className="text-orange-600">244 XP</span></span>
-              </div>
-              <div className={cn("flex items-center gap-2 rounded-full border px-4 py-2 shadow-sm backdrop-blur-sm", zoneClass(stats?.zone))}>
-                <ShieldCheck className="h-4 w-4" />
-                <span className="text-[12px] font-black uppercase tracking-wider">{zoneLabel(stats?.zone)}</span>
-              </div>
+            <h1 className="text-[28px] font-black leading-tight tracking-tight text-slate-900">
+              Group{" "}
+              <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                Leaderboard
+              </span>
+            </h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5">
+              <Flame className="h-3.5 w-3.5 text-orange-500" fill="currentColor" />
+              <span className="text-[11px] font-black text-orange-700 uppercase tracking-wide">
+                +244 XP to promote
+              </span>
+            </div>
+            <div className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5", zoneCls(stats?.zone))}>
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="text-[11px] font-black uppercase tracking-wide">{zoneLabel(stats?.zone)}</span>
             </div>
           </div>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatTile label="Cycle XP" value={nf.format(stats?.cycleXp ?? 0)} icon={Zap} color="purple" />
-            <StatTile label="Group Rank" value={stats?.rank ? `#${stats.rank}` : "-"} icon={Trophy} color="amber" />
-            <StatTile label="Level" value={`${stats?.level ?? 1}`} icon={Award} color="cyan" />
-            <StatTile label="Reset In" value={`${stats?.daysUntilReset ?? 0}d`} icon={RotateCcw} color="indigo" />
-          </div>
-
-          {/* Main Content Area */}
-          <div className="rounded-[2.5rem] border border-slate-100 bg-white/40 p-4 sm:p-8 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.02)] backdrop-blur-xl">
-            {isLocked ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] border border-amber-100 bg-amber-50 text-amber-500 shadow-lg shadow-amber-50">
-                  <Lock className="h-8 w-8" />
-                </div>
-                <h2 className="text-2xl font-black text-slate-900">Entrance Locked</h2>
-                <p className="mx-auto mt-3 max-w-sm text-sm font-medium leading-relaxed text-slate-400">
-                  Earn 10 cycle XP to join the group and see where you rank among peers.
-                </p>
-                <button className="mt-8 rounded-xl bg-slate-900 px-8 py-3.5 text-sm font-bold text-white shadow-xl transition-all hover:bg-slate-800 hover:-translate-y-1">
-                  Start Learning
-                </button>
-              </div>
-            ) : groupQuery.isLoading ? (
-              <div className="flex h-64 flex-col items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
-                <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Compiling Rankings...</p>
-              </div>
-            ) : groupQuery.isError ? (
-              <div className="rounded-3xl border border-rose-100 bg-rose-50/30 p-8 text-center">
-                <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-rose-500" />
-                <p className="text-sm font-bold text-rose-700">Leaderboard data unavailable.</p>
-              </div>
-            ) : (
-              <div className="space-y-10">
-                <LeaderboardPodium top3={top3Members} />
-
-                <div className="space-y-2 max-w-4xl mx-auto">
-                  <div className="mb-4 grid grid-cols-[3rem_minmax(0,1fr)_auto] px-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 sm:grid-cols-[3rem_3.5rem_minmax(0,1fr)_9rem_2.5rem]">
-                    <div className="text-center">#</div>
-                    <div className="hidden sm:block">Img</div>
-                    <div>Student</div>
-                    <div className="hidden sm:block">League</div>
-                    <div className="text-right sm:text-center">Duel</div>
-                  </div>
-                  
-                  {sortedGroup.map((member, idx) => (
-                    <MemberCard key={member.studentId} member={member} idx={idx} />
-                  ))}
-
-                  {sortedGroup.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <Shield className="mb-4 h-12 w-12 text-slate-100" />
-                      <p className="text-[11px] font-black text-slate-300 uppercase tracking-widest">No group members</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.section>
-
-        {/* Mock Test Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="space-y-6 border-t border-slate-100 pt-10"
-        >
-          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.15em] text-violet-600">National</span>
-                <div className="h-px w-8 bg-slate-200" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global Rankings</span>
-              </div>
-              <h2 className="text-[24px] font-black tracking-tight text-slate-900">Mock Test Rank</h2>
-            </div>
-            
-            <div className="flex w-fit items-center gap-1 rounded-xl border border-slate-100 bg-white p-1 shadow-sm">
-              {(["jee", "neet"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setExamType(type)}
-                  className={cn(
-                    "rounded-lg px-5 py-2 text-[11px] font-black uppercase tracking-wider transition-all",
-                    examType === type 
-                      ? "bg-slate-900 text-white shadow-md shadow-slate-200" 
-                      : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-                  )}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatTile label="Mock XP" value={nf.format(mock?.mockXpTotal ?? 0)} icon={Zap} color="purple" />
-            <StatTile label="Global Rank" value={mock?.rank ? `#${mock.rank}` : "-"} icon={Trophy} color="amber" />
-            <StatTile label="Percentile" value={mock?.percentile != null ? `${mock.percentile.toFixed(1)}` : "-"} icon={BarChart3} color="cyan" />
-            <StatTile label="Accuracy" value={mock?.accuracy != null ? `${mock.accuracy.toFixed(0)}%` : "-"} icon={Medal} color="indigo" />
-          </div>
-        </motion.section>
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <StatCard icon={Zap}       value={nf.format(stats?.cycleXp ?? 0)}           label="Cycle XP"   sub={`${nf.format(xp)} total`}       color="indigo" />
+          <StatCard icon={Trophy}    value={stats?.rank ? `#${stats.rank}` : "—"}      label="Group Rank" sub="in your group"                   color="amber"  />
+          <StatCard icon={Award}     value={String(stats?.level ?? 1)}                 label="Level"      sub={`${Math.min(100, Math.round((stats?.cycleXp ?? 0) / 12))}% to next`} color="teal"   />
+          <StatCard icon={RotateCcw} value={`${stats?.daysUntilReset ?? 0}d`}          label="Reset In"   sub="cycle ends soon"                 color="violet" />
+        </div>
       </div>
+
+      {/* ── Tab bar ────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white p-1 shadow-sm w-fit">
+        {TABS.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={cn(
+              "rounded-lg px-4 py-1.5 text-[12px] font-black uppercase tracking-wide transition-all",
+              tab === t.key ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-700",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+        {tab === "mock" && (
+          <div className="ml-1 flex gap-1 border-l border-slate-100 pl-2">
+            {(["jee", "neet"] as const).map(e => (
+              <button
+                key={e}
+                onClick={() => setExamType(e)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-all",
+                  examType === e ? "bg-slate-800 text-white shadow" : "text-slate-400 hover:text-slate-600",
+                )}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Main two-column layout ─────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {tab === "group" ? (
+          <motion.div
+            key="group"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="grid gap-4 lg:grid-cols-[1fr_256px]"
+          >
+            {/* Left: podium + table */}
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                {isLocked ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                    <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-100 bg-amber-50">
+                      <Lock className="h-6 w-6 text-amber-500" />
+                    </div>
+                    <h2 className="text-lg font-black text-slate-900">Earn 10 XP to unlock</h2>
+                    <p className="mt-1 text-sm text-slate-400">Complete tasks in your study plan to join the group leaderboard.</p>
+                  </div>
+                ) : groupQuery.isLoading ? (
+                  <div className="flex h-40 items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Loading…</span>
+                  </div>
+                ) : groupQuery.isError ? (
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <AlertTriangle className="mb-2 h-7 w-7 text-rose-400" />
+                    <p className="text-sm font-semibold text-rose-600">Leaderboard unavailable.</p>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Compact podium */}
+                    {top3.length > 0 && (
+                      <div className="border-b border-slate-100 bg-gradient-to-b from-slate-50/60 to-white pt-4">
+                        <CompactPodium top3={top3} />
+                      </div>
+                    )}
+
+                    {/* Table header */}
+                    <div className="grid grid-cols-[28px_36px_1fr_auto_32px] gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 border-b border-slate-50">
+                      <div className="text-center">#</div>
+                      <div />
+                      <div>Student</div>
+                      <div className="hidden sm:block">League</div>
+                      <div className="text-center">Duel</div>
+                    </div>
+
+                    {/* Rows */}
+                    <div className="divide-y divide-slate-50 px-2 py-1.5 space-y-1">
+                      {sortedGroup.length === 0 ? (
+                        <div className="flex flex-col items-center py-10">
+                          <Shield className="mb-2 h-8 w-8 text-slate-200" />
+                          <p className="text-xs font-bold uppercase tracking-widest text-slate-300">No members yet</p>
+                        </div>
+                      ) : (
+                        sortedGroup.map((m, i) => <MemberRow key={m.studentId} m={m} idx={i} />)
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: progress sidebar */}
+            <ProgressSidebar stats={stats} streak={streak} xp={xp} />
+          </motion.div>
+        ) : (
+          /* Mock Test Tab */
+          <motion.div
+            key="mock"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="grid gap-4 lg:grid-cols-[1fr_256px]"
+          >
+            {/* Left: mock stats */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard icon={Zap}      value={nf.format(mock?.mockXpTotal ?? 0)}                              label="Mock XP"     sub="from all tests"     color="indigo" />
+                <StatCard icon={Trophy}   value={mock?.rank ? `#${mock.rank}` : "—"}                             label="Global Rank"  sub="national ranking"   color="amber"  />
+                <StatCard icon={BarChart3} value={mock?.percentile != null ? `${mock.percentile.toFixed(1)}%` : "—"} label="Percentile" sub="top performers"   color="teal"   />
+                <StatCard icon={TrendingUp} value={mock?.accuracy != null ? `${mock.accuracy.toFixed(0)}%` : "—"}   label="Accuracy"   sub="across all tests"  color="violet" />
+              </div>
+
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm">
+                {mockQuery.isLoading ? (
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin text-indigo-400" />
+                ) : mock?.rank ? (
+                  <div className="space-y-2">
+                    <Trophy className="mx-auto h-10 w-10 text-amber-400" />
+                    <p className="text-3xl font-black text-slate-900">#{mock.rank}</p>
+                    <p className="text-sm text-slate-500">You're in the top {mock.percentile?.toFixed(0) ?? "—"}% nationally for {examType.toUpperCase()}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Medal className="mx-auto h-10 w-10 text-slate-300" />
+                    <p className="text-sm font-semibold text-slate-400">Attempt mock tests to earn a national rank.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: progress sidebar */}
+            <ProgressSidebar stats={stats} streak={streak} xp={xp} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

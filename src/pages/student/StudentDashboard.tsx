@@ -1,7 +1,7 @@
 import { Loader2, BookOpen, ChevronRight, Flame, Zap, Trophy, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { useStudentMe, useMyCourses, useStudentDashboard, useMyPerformance } from "@/hooks/use-student";
+import { useStudentMe, useMyCourses, useStudentDashboard, useMyPerformance, useWeeklyActivity } from "@/hooks/use-student";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import student from "@/assets/undraw_studying-science_kk9e.svg"
@@ -99,6 +99,7 @@ export default function StudentDashboard() {
   const { data: rawCourses = [], isLoading: coursesLoading } = useMyCourses();
   const { data: dash, isLoading: dashLoading } = useStudentDashboard();
   const { data: perf, isLoading: perfLoading } = useMyPerformance();
+  const { data: weeklyActivity = [] } = useWeeklyActivity();
 
   const isLoading = meLoading || coursesLoading || dashLoading || perfLoading;
 
@@ -308,6 +309,7 @@ export default function StudentDashboard() {
                   subjectAccuracy={perf?.subjectAccuracy}
                   totalTestsTaken={perf?.totalTestsTaken}
                   overallAccuracy={accuracy}
+                  weeklyActivity={weeklyActivity}
                 />
               </Section>
             </Card>
