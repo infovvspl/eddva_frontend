@@ -911,23 +911,9 @@ export interface LeaderboardResult {
   currentStudentRank?: { rank: number; score: number };
 }
 
-export async function getMyPerformance(): Promise<PerformanceProfile> {
+export async function getMyPerformance(): Promise<StudentPerformance> {
   const res = await apiClient.get("/analytics/performance");
-  // Backend returns { performanceProfile: {...}, weakTopics: [...] } — unwrap it
-  const raw = extractData<{ performanceProfile: any; weakTopics: any[] }>(res);
-  const profile = raw?.performanceProfile ?? {};
-  return {
-    overallAccuracy: profile.overallAccuracy ?? 0,
-    estimatedRank: profile.estimatedRank ?? undefined,
-    totalTestsTaken: profile.totalTestsTaken ?? 0,
-    subjectAccuracy: profile.subjectAccuracy ?? {},
-    weakTopics: (raw?.weakTopics ?? []).map((wt: any) => ({
-      topicId: wt.topicId,
-      topicName: wt.topic?.name ?? wt.topicName ?? "Unknown Topic",
-      accuracy: wt.accuracy ?? 0,
-      severity: wt.severity,
-    })),
-  };
+  return extractData(res);
 }
 
 export async function getLeaderboard(params?: {
@@ -1785,10 +1771,7 @@ export interface StudentPerformance {
   weakTopics: WeakTopic[];
 }
 
-export async function getMyPerformance(): Promise<StudentPerformance> {
-  const res = await apiClient.get("/analytics/performance");
-  return extractData(res);
-}
+
 
 export async function getMyAdvancedPerformance(batchId?: string): Promise<StudentAdvancedPerformance> {
   const res = await apiClient.get("/analytics/student/performance", { params: batchId ? { batchId } : {} });
