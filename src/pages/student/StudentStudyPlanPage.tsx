@@ -1010,48 +1010,48 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority }: {
   const cfg     = item.content?.subjectName ? subjectCfg(item.content.subjectName) : null;
   const pCfg    = priority ? PRIORITY_CFG[priority] : null;
   return (
-    <div className={`flex gap-3 p-3.5 rounded-xl border transition-all
+    <div className={`flex gap-2.5 p-2.5 rounded-lg border transition-all
       ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}>
-      <div className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center
+      <div className={`shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center
         ${isDone ? "bg-emerald-50 border-emerald-200 text-emerald-600" : `${t.bg} ${t.color}`}`}>
-        {isDone ? <CheckCircle2 className="w-4 h-4" /> : t.icon}
+        {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : t.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="font-medium text-sm text-gray-900 leading-tight line-clamp-2">{item.title}</div>
-          <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-medium text-sm text-gray-900 leading-tight truncate">{item.title}</div>
+          <div className="flex items-center gap-1 shrink-0">
             {pCfg && !isDone && (
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pCfg.cls}`}>{pCfg.label}</span>
             )}
             {item.xpReward && !isDone && (
-              <span className="text-xs font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           {cfg && item.content?.subjectName && (
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
           )}
-          <span className="text-xs text-gray-400 flex items-center gap-0.5">
+          <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
             <Clock className="w-3 h-3" />{item.estimatedMinutes}m
           </span>
-          {item.content?.topicName && <span className="text-xs text-gray-400 truncate">{item.content.topicName}</span>}
+          {item.content?.topicName && <span className="text-[11px] text-gray-400 truncate">{item.content.topicName}</span>}
         </div>
       </div>
       {!isDone && !isSkip && (
         <div className="flex items-center gap-1 shrink-0">
           {(item.content?.notesUrl || item.content?.videoUrl || item.content?.topicId) && (
             <button onClick={() => onOpen(item)}
-              className="px-2 py-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-medium">
+              className="px-2 py-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-medium">
               Open
             </button>
           )}
           <button onClick={() => onSkip(item.id)}
-            className="px-2 py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
+            className="px-2 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
             Skip
           </button>
           <button onClick={() => onComplete(item.id)}
-            className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
+            className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
             Done
           </button>
         </div>
@@ -2065,7 +2065,7 @@ export default function StudentStudyPlanPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 -mx-3 -mt-4 sm:-mx-4 lg:-mx-6 lg:-mt-6">
 
       {/* Reset confirmation */}
       {confirmReset && (
@@ -2104,43 +2104,43 @@ export default function StudentStudyPlanPage() {
 
       {/* Hero */}
       <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white">
-        <div className="max-w-5xl mx-auto px-4 py-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="px-4 py-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-indigo-300 text-sm">
+              <p className="text-indigo-300 text-xs">
                 Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"},
               </p>
-              <h1 className="text-2xl font-bold mt-0.5">{me?.fullName?.split(" ")[0]} 👋</h1>
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full text-sm">
-                  <Target className="w-3.5 h-3.5" /> {fmtExam(student?.examTarget)} {student?.examYear}
+              <h1 className="text-xl font-bold mt-0">{me?.fullName?.split(" ")[0]} 👋</h1>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full text-xs">
+                  <Target className="w-3 h-3" /> {fmtExam(student?.examTarget)} {student?.examYear}
                 </span>
                 {days !== null && (
-                  <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full text-sm">
-                    <Calendar className="w-3.5 h-3.5" /> {days} days left
+                  <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full text-xs">
+                    <Calendar className="w-3 h-3" /> {days} days left
                   </span>
                 )}
-                <span className="flex items-center gap-1.5 bg-amber-400/20 text-amber-200 px-3 py-1.5 rounded-full text-sm">
-                  <Flame className="w-3.5 h-3.5 text-amber-300" /> {student?.streakDays ?? 0} day streak
+                <span className="flex items-center gap-1 bg-amber-400/20 text-amber-200 px-2.5 py-1 rounded-full text-xs">
+                  <Flame className="w-3 h-3 text-amber-300" /> {student?.streakDays ?? 0} day streak
                 </span>
               </div>
             </div>
             {hasPlan && (
-              <div className="flex items-center gap-3 bg-white/10 rounded-2xl px-4 py-3 border border-white/10">
+              <div className="flex items-center gap-2.5 bg-white/10 rounded-xl px-3 py-2 border border-white/10">
                 <div className="relative">
-                  <svg width={52} height={52} className="-rotate-90">
-                    <circle cx={26} cy={26} r={20} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={5} />
-                    <circle cx={26} cy={26} r={20} fill="none" stroke="white" strokeWidth={5}
-                      strokeDasharray={2 * Math.PI * 20}
-                      strokeDashoffset={2 * Math.PI * 20 * (1 - donePct / 100)}
+                  <svg width={42} height={42} className="-rotate-90">
+                    <circle cx={21} cy={21} r={16} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={4} />
+                    <circle cx={21} cy={21} r={16} fill="none" stroke="white" strokeWidth={4}
+                      strokeDasharray={2 * Math.PI * 16}
+                      strokeDashoffset={2 * Math.PI * 16 * (1 - donePct / 100)}
                       strokeLinecap="round" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-bold">{donePct}%</span>
+                    <span className="text-[10px] font-bold">{donePct}%</span>
                   </div>
                 </div>
                 <div>
-                  <div className="font-semibold">{doneCount}/{todayItems.length} done</div>
+                  <div className="text-sm font-semibold">{doneCount}/{todayItems.length} done</div>
                   <div className="text-indigo-200 text-xs">{totalMinutes} min today</div>
                 </div>
               </div>
@@ -2149,15 +2149,16 @@ export default function StudentStudyPlanPage() {
         </div>
 
         {/* Tabs */}
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex gap-0.5 border-b border-white/20 overflow-x-auto">
+        <div className="px-4">
+          <div className="flex border-b border-white/20">
             {TABS.map(tab => (
               <button key={tab.key} onClick={() => { setActiveTab(tab.key); setBacklogPage(null); setWeakPage(null); setRevisionPage(null); }}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium border-b-2 transition-all
                   ${activeTab === tab.key ? "border-white text-white" : "border-transparent text-indigo-300 hover:text-white"}`}>
-                {tab.icon} {tab.label}
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
                 {tab.badge ? (
-                  <span className="ml-1 text-[10px] font-bold bg-white/20 text-white px-1.5 py-0.5 rounded-full">{tab.badge}</span>
+                  <span className="text-[10px] font-bold bg-white/20 text-white px-1.5 py-0.5 rounded-full">{tab.badge}</span>
                 ) : null}
               </button>
             ))}
@@ -2165,12 +2166,12 @@ export default function StudentStudyPlanPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="px-4 py-3">
 
         {/* ══ TODAY TAB ══════════════════════════════════════════════════════════ */}
         {activeTab === "today" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+            <div className="lg:col-span-4 space-y-2">
 
               {/* Today | This Week toggle */}
               {hasPlan && (
@@ -2252,25 +2253,25 @@ export default function StudentStudyPlanPage() {
                           <p className="text-gray-500 text-sm font-medium">No tasks planned for {activeDayData.label}</p>
                         </div>
                       ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                           {Object.entries(activeDayBySubject).map(([subj, items]) => {
                             const cfg      = subjectCfg(subj);
                             const subjDone = items.filter(i => i.status === "completed").length;
                             const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
                             return (
-                              <div key={subj} className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
-                                <div className={`flex items-center justify-between px-4 py-3 ${cfg.bg}`}>
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-                                    <span className={`font-bold ${cfg.color}`}>{subj}</span>
+                              <div key={subj} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
+                                <div className={`flex items-center justify-between px-3 py-2 ${cfg.bg}`}>
+                                  <div className="flex items-center gap-1.5">
+                                    <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                                    <span className={`font-semibold text-sm ${cfg.color}`}>{subj}</span>
                                   </div>
-                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                     <span>{subjDone}/{items.length} done</span>
                                     <span>·</span>
                                     <Clock className="w-3 h-3" /><span>{subjMins}m</span>
                                   </div>
                                 </div>
-                                <div className="bg-white p-2 space-y-2">
+                                <div className="bg-white p-1.5 space-y-1.5">
                                   {items.map(item => (
                                     <PlanItemCard key={item.id} item={item}
                                       priority={derivePriority(item, weakTopicIds)}
@@ -2290,25 +2291,25 @@ export default function StudentStudyPlanPage() {
                 })()
               ) : (
                 /* ── Today View ── */
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {Object.entries(bySubject).map(([subj, items]) => {
                     const cfg      = subjectCfg(subj);
                     const subjDone = items.filter(i => i.status === "completed").length;
                     const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
                     return (
-                      <div key={subj} className={`rounded-2xl border-2 ${cfg.border} overflow-hidden`}>
-                        <div className={`flex items-center justify-between px-4 py-3 ${cfg.bg}`}>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-                            <span className={`font-bold ${cfg.color}`}>{subj}</span>
+                      <div key={subj} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
+                        <div className={`flex items-center justify-between px-3 py-2 ${cfg.bg}`}>
+                          <div className="flex items-center gap-1.5">
+                            <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                            <span className={`font-semibold text-sm ${cfg.color}`}>{subj}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500">
                             <span>{subjDone}/{items.length} done</span>
                             <span>·</span>
                             <Clock className="w-3 h-3" /><span>{subjMins}m</span>
                           </div>
                         </div>
-                        <div className="bg-white p-2 space-y-2">
+                        <div className="bg-white p-1.5 space-y-1.5">
                           {items.map(item => (
                             <PlanItemCard key={item.id} item={item}
                               priority={derivePriority(item, weakTopicIds)}
@@ -2326,52 +2327,52 @@ export default function StudentStudyPlanPage() {
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-4">
-              <AISarthiCard
-                todayItems={todayItems}
-                streak={student?.streakDays ?? 0}
-                xpPoints={student?.xpPoints ?? 0}
-                progressReport={effectiveProgressReport}
-                weeklyActivity={weeklyActivity}
-                sessions={sessions}
-                weakTopicsCount={weakTopics.length}
-                revisionTopicsCount={revisionTopics.length}
-                forgottenCount={forgottenConcepts.length}
-              />
-
-              <MicroGoalsCard
-                weakTopics={weakTopics}
-                revisionTopics={revisionTopics}
-                pendingPYQTopics={pendingPYQTopics}
-                highNegativeTopics={highNegativeTopics}
-              />
-              <SmartRemindersCard
-                revisionTopics={revisionTopics}
-                weeklyActivity={weeklyActivity}
-                pendingMockTests={pendingMockTests}
-                forgottenConcepts={forgottenConcepts}
-                weakTopics={weakTopics}
-                pendingPYQTopics={pendingPYQTopics}
-                onTabChange={setActiveTab}
-              />
-
-
-
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-indigo-500" />
-                  <h3 className="text-sm font-semibold text-gray-700">AI Plan</h3>
+            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
+              <div className="flex-1 min-w-0 space-y-3">
+                <AISarthiCard
+                  todayItems={todayItems}
+                  streak={student?.streakDays ?? 0}
+                  xpPoints={student?.xpPoints ?? 0}
+                  progressReport={effectiveProgressReport}
+                  weeklyActivity={weeklyActivity}
+                  sessions={sessions}
+                  weakTopicsCount={weakTopics.length}
+                  revisionTopicsCount={revisionTopics.length}
+                  forgottenCount={forgottenConcepts.length}
+                />
+                <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <h3 className="text-sm font-semibold text-gray-700">AI Plan</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Regenerate your monthly plan with next topics</p>
+                  <button onClick={handleRegenerate} disabled={regenerate.isPending}
+                    className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
+                    <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                    {regenerate.isPending ? "Creating..." : "Regenerate Plan"}
+                  </button>
+                  <button onClick={() => setConfirmReset(true)}
+                    className="w-full mt-2 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+                    <Trash2 className="w-3.5 h-3.5" /> Reset &amp; Start Fresh
+                  </button>
                 </div>
-                <p className="text-xs text-gray-500 mb-3">Regenerate your monthly plan with next topics</p>
-                <button onClick={handleRegenerate} disabled={regenerate.isPending}
-                  className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
-                  <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
-                  {regenerate.isPending ? "Creating..." : "Regenerate Plan"}
-                </button>
-                <button onClick={() => setConfirmReset(true)}
-                  className="w-full mt-2 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
-                  <Trash2 className="w-3.5 h-3.5" /> Reset &amp; Start Fresh
-                </button>
+              </div>
+              <div className="flex-1 min-w-0 space-y-3">
+                <MicroGoalsCard
+                  weakTopics={weakTopics}
+                  revisionTopics={revisionTopics}
+                  pendingPYQTopics={pendingPYQTopics}
+                  highNegativeTopics={highNegativeTopics}
+                />
+                <SmartRemindersCard
+                  revisionTopics={revisionTopics}
+                  weeklyActivity={weeklyActivity}
+                  pendingMockTests={pendingMockTests}
+                  forgottenConcepts={forgottenConcepts}
+                  weakTopics={weakTopics}
+                  pendingPYQTopics={pendingPYQTopics}
+                  onTabChange={setActiveTab}
+                />
               </div>
             </div>
           </div>
@@ -2379,8 +2380,8 @@ export default function StudentStudyPlanPage() {
 
         {/* ══ BACKLOGS TAB ════════════════════════════════════════════════════════ */}
         {activeTab === "backlogs" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+            <div className="lg:col-span-4 space-y-2">
               {/* ── Back button ── */}
               {backlogPage && (
                 <button onClick={() => setBacklogPage(null)}
@@ -2569,25 +2570,29 @@ export default function StudentStudyPlanPage() {
               )}
             </div>
 
-            <div className="space-y-4">
-              <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
-                progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
-                weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
-              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                <div className="font-semibold text-amber-700 text-sm mb-1 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Backlog Tip</div>
-                <p className="text-xs text-amber-700 leading-relaxed">Don't tackle everything at once. Pick 2–3 tasks per day and blend them into today's plan.</p>
+            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
+              <div className="flex-1 min-w-0 space-y-3">
+                <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
+                  progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
+                  weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                  <div className="font-semibold text-amber-700 text-sm mb-1 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Backlog Tip</div>
+                  <p className="text-xs text-amber-700 leading-relaxed">Don't tackle everything at once. Pick 2–3 tasks per day and blend them into today's plan.</p>
+                </div>
               </div>
-              <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
-              <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+              <div className="flex-1 min-w-0 space-y-3">
+                <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
+                <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+              </div>
             </div>
           </div>
         )}
 
         {/* ══ WEAK TOPICS TAB ═════════════════════════════════════════════════════ */}
         {activeTab === "weakness" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+            <div className="lg:col-span-4 space-y-2">
               {weakPage && (
                 <button onClick={() => setWeakPage(null)}
                   className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
@@ -2770,29 +2775,33 @@ export default function StudentStudyPlanPage() {
               )}
             </div>
 
-            <div className="space-y-4">
-              <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
-                progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
-                weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
-              <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-                <div className="font-semibold text-red-700 text-sm mb-2 flex items-center gap-1.5"><TrendingDown className="w-4 h-4" /> Weakness Engine</div>
-                <div className="space-y-1.5 text-xs text-red-700">
-                  {[["Weak Chapters","Chapter accuracy < 50%"],["Low Accuracy","Topic accuracy < 50%"],["Forgotten","Completed 14+ days ago"],["Negative Marking","PYQ accuracy < 50%"]].map(([label, desc]) => (
-                    <div key={label} className="flex justify-between gap-2"><span className="text-red-400 shrink-0">{label}</span><span className="font-medium text-right">{desc}</span></div>
-                  ))}
+            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
+              <div className="flex-1 min-w-0 space-y-3">
+                <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
+                  progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
+                  weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
+                <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                  <div className="font-semibold text-red-700 text-sm mb-2 flex items-center gap-1.5"><TrendingDown className="w-4 h-4" /> Weakness Engine</div>
+                  <div className="space-y-1.5 text-xs text-red-700">
+                    {[["Weak Chapters","Chapter accuracy < 50%"],["Low Accuracy","Topic accuracy < 50%"],["Forgotten","Completed 14+ days ago"],["Negative Marking","PYQ accuracy < 50%"]].map(([label, desc]) => (
+                      <div key={label} className="flex justify-between gap-2"><span className="text-red-400 shrink-0">{label}</span><span className="font-medium text-right">{desc}</span></div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
-              <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+              <div className="flex-1 min-w-0 space-y-3">
+                <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
+                <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+              </div>
             </div>
           </div>
         )}
 
         {/* ══ REVISION TAB ════════════════════════════════════════════════════════ */}
         {activeTab === "revision" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+            <div className="lg:col-span-4 space-y-2">
 
               {revisionPage && (
                 <button onClick={() => setRevisionPage(null)}
@@ -3024,62 +3033,66 @@ export default function StudentStudyPlanPage() {
               )}
             </div>
 
-            <div className="space-y-4">
-              <AISarthiCard
-                todayItems={todayItems}
-                streak={student?.streakDays ?? 0}
-                xpPoints={student?.xpPoints ?? 0}
-                progressReport={effectiveProgressReport}
-                weeklyActivity={weeklyActivity}
-                sessions={sessions}
-                weakTopicsCount={weakTopics.length}
-                revisionTopicsCount={revisionTopics.length}
-                forgottenCount={forgottenConcepts.length}
-              />
-              <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
-                <div className="font-semibold text-teal-700 text-sm mb-3 flex items-center gap-1.5">
-                  <RefreshCw className="w-4 h-4" /> Spaced Repetition
-                </div>
-                <div className="space-y-2 text-xs">
-                  {([
-                    ["1-Day",  "< 40%",   "bg-red-100 text-red-700"],
-                    ["3-Day",  "40–54%",  "bg-orange-100 text-orange-700"],
-                    ["7-Day",  "55–64%",  "bg-amber-100 text-amber-700"],
-                    ["21-Day", "65–74%",  "bg-teal-100 text-teal-700"],
-                  ] as const).map(([interval, range, cls]) => (
-                    <div key={interval} className="flex items-center gap-2">
-                      <span className={`font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>{interval}</span>
-                      <span className="text-gray-500">accuracy {range}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 pt-3 border-t border-teal-100 text-xs text-teal-600 leading-relaxed">
-                  Accuracy improves → interval extends → topic eventually clears the queue.
+            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
+              <div className="flex-1 min-w-0 space-y-3">
+                <AISarthiCard
+                  todayItems={todayItems}
+                  streak={student?.streakDays ?? 0}
+                  xpPoints={student?.xpPoints ?? 0}
+                  progressReport={effectiveProgressReport}
+                  weeklyActivity={weeklyActivity}
+                  sessions={sessions}
+                  weakTopicsCount={weakTopics.length}
+                  revisionTopicsCount={revisionTopics.length}
+                  forgottenCount={forgottenConcepts.length}
+                />
+                <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
+                  <div className="font-semibold text-teal-700 text-sm mb-3 flex items-center gap-1.5">
+                    <RefreshCw className="w-4 h-4" /> Spaced Repetition
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    {([
+                      ["1-Day",  "< 40%",   "bg-red-100 text-red-700"],
+                      ["3-Day",  "40–54%",  "bg-orange-100 text-orange-700"],
+                      ["7-Day",  "55–64%",  "bg-amber-100 text-amber-700"],
+                      ["21-Day", "65–74%",  "bg-teal-100 text-teal-700"],
+                    ] as const).map(([interval, range, cls]) => (
+                      <div key={interval} className="flex items-center gap-2">
+                        <span className={`font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>{interval}</span>
+                        <span className="text-gray-500">accuracy {range}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-teal-100 text-xs text-teal-600 leading-relaxed">
+                    Accuracy improves → interval extends → topic eventually clears the queue.
+                  </div>
                 </div>
               </div>
-              <MicroGoalsCard
-                weakTopics={weakTopics}
-                revisionTopics={revisionTopics}
-                pendingPYQTopics={pendingPYQTopics}
-                highNegativeTopics={highNegativeTopics}
-              />
-              <SmartRemindersCard
-                revisionTopics={revisionTopics}
-                weeklyActivity={weeklyActivity}
-                pendingMockTests={pendingMockTests}
-                forgottenConcepts={forgottenConcepts}
-                weakTopics={weakTopics}
-                pendingPYQTopics={pendingPYQTopics}
-                onTabChange={setActiveTab}
-              />
+              <div className="flex-1 min-w-0 space-y-3">
+                <MicroGoalsCard
+                  weakTopics={weakTopics}
+                  revisionTopics={revisionTopics}
+                  pendingPYQTopics={pendingPYQTopics}
+                  highNegativeTopics={highNegativeTopics}
+                />
+                <SmartRemindersCard
+                  revisionTopics={revisionTopics}
+                  weeklyActivity={weeklyActivity}
+                  pendingMockTests={pendingMockTests}
+                  forgottenConcepts={forgottenConcepts}
+                  weakTopics={weakTopics}
+                  pendingPYQTopics={pendingPYQTopics}
+                  onTabChange={setActiveTab}
+                />
+              </div>
             </div>
           </div>
         )}
 
         {/* ══ ROADMAP TAB ═════════════════════════════════════════════════════════ */}
         {activeTab === "roadmap" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+            <div className="lg:col-span-4">
               <div className="mb-5">
                 <h2 className="text-xl font-bold text-gray-900">My Curriculum Roadmap</h2>
                 <p className="text-sm text-gray-500 mt-0.5">
@@ -3088,7 +3101,7 @@ export default function StudentStudyPlanPage() {
               </div>
               <CurriculumRoadmap reportOverride={effectiveProgressReport} />
             </div>
-            <div className="space-y-4">
+            <div className="lg:col-span-3 grid grid-cols-2 gap-3 items-start sticky top-4 self-start">
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <Target className="w-4 h-4 text-indigo-500" /> Exam Target
@@ -3107,7 +3120,6 @@ export default function StudentStudyPlanPage() {
                   ))}
                 </div>
               </div>
-
               <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
                 <div className="font-semibold text-indigo-700 text-sm mb-1 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> How AI uses this
@@ -3116,12 +3128,10 @@ export default function StudentStudyPlanPage() {
                   Your study plan is generated from your enrolled curriculum, topic accuracy scores, weak areas, and daily study hours — and improves each time you regenerate.
                 </p>
               </div>
-
               <button onClick={() => setActiveTab("today")}
                 className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-semibold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
                 <ListTodo className="w-4 h-4" /> Go to Today's Plan
               </button>
-
               <button onClick={handleRegenerate} disabled={regenerate.isPending}
                 className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-2xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
                 <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />

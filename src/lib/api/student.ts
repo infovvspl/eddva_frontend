@@ -1565,8 +1565,15 @@ export interface DailyActivity {
 export async function getWeeklyActivity(): Promise<DailyActivity[]> {
   try {
     const res = await apiClient.get("/students/weekly-activity");
-    const data = extractData<DailyActivity[]>(res);
-    return Array.isArray(data) ? data : [];
+    const raw = extractData<{ weeklyActivity: any[] }>(res);
+    const arr = Array.isArray(raw?.weeklyActivity) ? raw.weeklyActivity : [];
+    return arr.map((d: any) => ({
+      date:           d.date,
+      // Estimate study minutes from activity counts (no per-minute tracking yet)
+      minutesStudied: (d.lecturesWatched ?? 0) * 40 + (d.topicsCompleted ?? 0) * 20 + (d.testsTaken ?? 0) * 45,
+      tasksCompleted: (d.topicsCompleted ?? 0) + (d.lecturesWatched ?? 0) + (d.testsTaken ?? 0),
+      xpEarned:       0,
+    }));
   } catch {
     return [];
   }
