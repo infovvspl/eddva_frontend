@@ -10,6 +10,7 @@ interface AdvancedMetricCardProps {
   tooltip?: string;
   icon?: React.ReactNode;
   subValue?: string;
+  onClick?: () => void;
 }
 
 export function AdvancedMetricCard({
@@ -20,6 +21,7 @@ export function AdvancedMetricCard({
   tooltip,
   icon,
   subValue,
+  onClick,
 }: AdvancedMetricCardProps) {
   const statusColors = {
     red: "text-red-400 border-red-500/30 bg-red-500/5",
@@ -34,7 +36,10 @@ export function AdvancedMetricCard({
   };
 
   return (
-    <div className={`card-surface p-4 border transition-all duration-300 ${status ? statusColors[status] : "border-border hover:border-primary/30"}`}>
+    <div 
+      onClick={onClick}
+      className={`card-surface p-4 border transition-all duration-300 ${onClick ? "cursor-pointer" : ""} ${status ? statusColors[status] : "border-border hover:border-primary/30"}`}
+    >
       <div className="flex justify-between items-start mb-2">
         <div className="p-2 rounded-lg bg-primary/10 text-primary">
           {icon}
@@ -44,7 +49,7 @@ export function AdvancedMetricCard({
           {tooltip && (
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger asChild>
                   <Info className="w-3.5 h-3.5 text-muted-foreground opacity-50 hover:opacity-100" />
                 </TooltipTrigger>
                 <TooltipContent>

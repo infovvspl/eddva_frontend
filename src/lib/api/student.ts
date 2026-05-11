@@ -1742,6 +1742,47 @@ export interface StudentInsight {
   strongTopicCount: number;
 }
 
+export interface WeakTopic {
+  id: string;
+  topicId: string;
+  severity: number;
+  errorCount: number;
+  conceptualErrors: number;
+  sillyErrors: number;
+  timeErrors: number;
+  lastPracticed: string;
+  accuracy: number;
+  topic: {
+    id: string;
+    name: string;
+    chapter?: {
+      id: string;
+      name: string;
+      subject?: {
+        id: string;
+        name: string;
+      };
+    };
+  };
+}
+
+export interface StudentPerformance {
+  performanceProfile: {
+    studentId: string;
+    overallAccuracy: number;
+    averageScore: number;
+    totalTestsTaken: number;
+    totalQuestionsAttempted: number;
+    estimatedRank: number | null;
+  };
+  weakTopics: WeakTopic[];
+}
+
+export async function getMyPerformance(): Promise<StudentPerformance> {
+  const res = await apiClient.get("/analytics/performance");
+  return extractData(res);
+}
+
 export async function getMyAdvancedPerformance(batchId?: string): Promise<StudentAdvancedPerformance> {
   const res = await apiClient.get("/analytics/student/performance", { params: batchId ? { batchId } : {} });
   return extractData(res);
