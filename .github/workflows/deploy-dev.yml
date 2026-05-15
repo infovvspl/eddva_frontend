@@ -1,0 +1,60 @@
+name: Deploy Frontend (DEV)
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  deploy:
+    name: Build & Deploy Frontend (DEV)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for DEV
+        run: NODE_OPTIONS="--max-old-space-size=3072" npm run build
+        env:
+          VITE_API_BASE_URL: https://dev-api.eddva.in/api/v1
+          VITE_BACKEND_URL: https://dev-api.eddva.in/api/v1
+          VITE_SOCKET_URL: https://dev-api.eddva.in
+          VITE_AI_URL: https://dev-ai.eddva.in
+          VITE_APP_ENV: development
+          VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
+          VITE_SARVAM_API_KEY: ${{ secrets.VITE_SARVAM_API_KEY }}
+
+      - name: Copy built files to EC2 (DEV)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: 'dist/*'
+          target: '/tmp/eddva_dev_deploy'
+          strip_components: 1
+
+      - name: Swap files & reload Nginx (DEV)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mkdir -p /var/www/eddva_dev
+            sudo rm -rf /var/www/eddva_dev/*
+            sudo mv /tmp/eddva_dev_deploy/* /var/www/eddva_dev/
+            sudo chown -R www-data:www-data /var/www/eddva_dev
+            sudo chmod -R 755 /var/www/eddva_dev
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✓ DEV Frontend deployed to dev.eddva.in at $(date)"
