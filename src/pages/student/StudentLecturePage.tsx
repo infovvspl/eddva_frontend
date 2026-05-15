@@ -11,7 +11,7 @@ import {
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
   ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
-  Video,
+  Video, Brain,
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import ResourceViewerModal from "@/components/resources/ResourceViewerModal";

@@ -335,7 +335,7 @@ function TopicRow({
     return counts;
   }, [topic.resourceCounts, topic.resources]);
 
-  const goTopicResourceTab = (e: React.MouseEvent, open: "dpp" | "pyq" | "material") => {
+  const goTopicResourceTab = (e: React.MouseEvent, open: "dpp" | "pyq" | "material" | "mindmap") => {
     e.stopPropagation();
     if (locked) { toast.error("Unlock this course to access materials"); return; }
     navigate(`/student/courses/${batchId}/topics/${topic.id}?open=${open}`);
@@ -407,8 +407,8 @@ function TopicRow({
             {Object.entries(resourceCounts).map(([type, count]) => {
               const meta = RESOURCE_META[type];
               if (!meta || !count) return null;
-              const open: "dpp" | "pyq" | "material" =
-                type === "dpp" ? "dpp" : type === "pyq" ? "pyq" : "material";
+              const open: "dpp" | "pyq" | "material" | "mindmap" =
+                type === "dpp" ? "dpp" : type === "pyq" ? "pyq" : type === "mindmap" ? "mindmap" : "material";
               return (
                 <button
                   key={type}

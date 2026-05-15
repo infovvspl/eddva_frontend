@@ -22,6 +22,8 @@ import {
 import * as studentApi from "@/lib/api/student";
 import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
 import type { ProgressReport, SubjectReportEntry, ChapterReportEntry, TopicReportEntry, TestSession, DailyActivity } from "@/lib/api/student";
+import RevisionSessionModal from "@/components/student/RevisionSessionModal";
+import IntensiveRevisionSection from "@/components/student/IntensiveRevisionSection";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1609,14 +1611,16 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
 
 // ─── Backlog Section Wrapper ───────────────────────────────────────────────────
 
-type AccentColor = "red" | "blue" | "amber" | "violet" | "teal";
+type AccentColor = "red" | "blue" | "amber" | "violet" | "teal" | "indigo" | "rose";
 
 const ACCENT: Record<AccentColor, { header: string; badge: string; border: string }> = {
-  red:    { header: "bg-red-50",    badge: "bg-red-100 text-red-700",    border: "border-red-200" },
-  blue:   { header: "bg-blue-50",   badge: "bg-blue-100 text-blue-700",  border: "border-blue-200" },
-  amber:  { header: "bg-amber-50",  badge: "bg-amber-100 text-amber-700",border: "border-amber-200" },
+  red:    { header: "bg-red-50",    badge: "bg-red-100 text-red-700",       border: "border-red-200"    },
+  blue:   { header: "bg-blue-50",   badge: "bg-blue-100 text-blue-700",     border: "border-blue-200"   },
+  amber:  { header: "bg-amber-50",  badge: "bg-amber-100 text-amber-700",   border: "border-amber-200"  },
   violet: { header: "bg-violet-50", badge: "bg-violet-100 text-violet-700", border: "border-violet-200" },
-  teal:   { header: "bg-teal-50",   badge: "bg-teal-100 text-teal-700",  border: "border-teal-200" },
+  teal:   { header: "bg-teal-50",   badge: "bg-teal-100 text-teal-700",     border: "border-teal-200"   },
+  indigo: { header: "bg-indigo-50", badge: "bg-indigo-100 text-indigo-700", border: "border-indigo-200" },
+  rose:   { header: "bg-rose-50",   badge: "bg-rose-100 text-rose-700",     border: "border-rose-200"   },
 };
 
 function BacklogSection({ icon, title, count, accentColor, children }: {
@@ -1782,13 +1786,17 @@ export default function StudentStudyPlanPage() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [todayView,       setTodayView]       = useState<"today" | "week">("today");
   const [selectedWeekDay, setSelectedWeekDay] = useState<string>("");
-  const [backlogPage, setBacklogPage] = useState<null|"plan"|"lectures"|"notes"|"pyq"|"dpp">(null);
+  const [backlogPage, setBacklogPage] = useState<null|"plan"|"lectures"|"notes"|"pyq"|"dpp"|"mindmaps"|"mocktests">(null);
   const [weakPage,    setWeakPage]    = useState<null|"chapters"|"topics"|"forgotten"|"negative">(null);
   const [revisionCategory, setRevisionCategory] = useState<null|"spaced"|"intensive"|"notes"|"practice">(null);
   const [revisionPage, setRevisionPage] = useState<null|"schedule"|"table"|"aiplan">(null);
   const [openNoteIds,     setOpenNoteIds]     = useState<Set<string>>(new Set());
   const [revisionNotes,   setRevisionNotes]   = useState<Record<string, string>>({});
   const [openRevBuckets,  setOpenRevBuckets]  = useState<Set<number>>(new Set([1, 3, 7, 21]));
+  const [revisionModal, setRevisionModal] = useState<null | {
+    topicId: string; topicName: string; subjectName: string;
+    accuracy: number; intervalDays: 1 | 3 | 7 | 21;
+  }>(null);
 
   const toggleNote = (id: string) =>
     setOpenNoteIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -1926,14 +1934,50 @@ export default function StudentStudyPlanPage() {
     return ids;
   }, [curriculaResults]);
 
+  // Topic IDs scoped to the currently selected course only (falls back to all when no course selected)
+  const selectedCourseTopicIds = useMemo(() => {
+    const ids = new Set<string>();
+    curriculaResults.forEach((result, idx) => {
+      const course = myCourses[idx];
+      if (!course || (selectedCourseId && course.id !== selectedCourseId)) return;
+      result.data?.subjects?.forEach(s =>
+        s.chapters.forEach(c => c.topics.forEach(t => ids.add(t.id)))
+      );
+    });
+    return ids;
+  }, [curriculaResults, myCourses, selectedCourseId]);
+
   const isSyllabusComplete = useMemo(() => {
     const total     = effectiveProgressReport?.summary?.totalTopics ?? 0;
     const completed = effectiveProgressReport?.summary?.completedTopics ?? 0;
     return total > 0 && completed >= total;
   }, [effectiveProgressReport]);
 
+  // Chapter weightage map for intensive revision priority (keyed by chapterId)
+  const chapterWeightMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const target = courseExamTarget?.toLowerCase() ?? "";
+    const useJee  = target.includes("jee");
+    const useNeet = target.includes("neet");
+    if (!useJee && !useNeet) return map;
+    curriculaResults.forEach((result, idx) => {
+      const course = myCourses[idx];
+      if (!course || (selectedCourseId && course.id !== selectedCourseId)) return;
+      result.data?.subjects.forEach(s =>
+        s.chapters.forEach(ch => {
+          const w = useJee ? ch.jeeWeightage : ch.neetWeightage;
+          if (w !== undefined) map.set(ch.id, w);
+        })
+      );
+    });
+    return map;
+  }, [curriculaResults, myCourses, selectedCourseId, courseExamTarget]);
+
   const syncStatus = useCallback((items: StudyPlanItem[]) => {
     return items.map(item => {
+      // Practice items must be completed explicitly (quiz flow or Done button) — never auto-synced
+      // from AI session history, because completing AI notes ≠ completing practice questions.
+      if (item.type === "practice") return item;
       const tid = item.content?.topicId || item.refId;
       if (item.status === "pending" && tid && completedHistoryTopicIds.has(tid)) {
         return { ...item, status: "completed" as const };
@@ -1974,6 +2018,7 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
+          if (!selectedCourseTopicIds.has(t.topicId)) return;
           if ((t.bestAccuracy ?? 0) > 0 && (t.bestAccuracy ?? 0) < 50) {
             list.push({
               topicId: t.topicId,
@@ -1987,14 +2032,17 @@ export default function StudentStudyPlanPage() {
       )
     );
     return list.sort((a, b) => a.accuracy - b.accuracy);
-  }, [effectiveProgressReport]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
   // Weak chapters: chapters with overall accuracy > 0 and < 50% with at least one attempted topic
   const weakChapters = useMemo(() => {
     const list: Array<{ chapterId: string; chapterName: string; subjectName: string; topicsTotal: number; topicsCompleted: number; overallAccuracy: number; attemptedTopics: number }> = [];
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c => {
-        const attempted = c.topics.filter(t => t.attemptCount > 0 || t.status === "completed" || t.status === "in_progress").length;
+        const attempted = c.topics.filter(t =>
+          selectedCourseTopicIds.has(t.topicId) &&
+          (t.attemptCount > 0 || t.status === "completed" || t.status === "in_progress")
+        ).length;
         if (attempted > 0 && c.overallAccuracy > 0 && c.overallAccuracy < 50) {
           list.push({
             chapterId: c.chapterId,
@@ -2009,7 +2057,7 @@ export default function StudentStudyPlanPage() {
       })
     );
     return list.sort((a, b) => a.overallAccuracy - b.overallAccuracy);
-  }, [effectiveProgressReport]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
   // Forgotten concepts: completed topics not revisited in 14+ days, or abandoned in-progress (3+ attempts)
   const forgottenConcepts = useMemo(() => {
@@ -2018,7 +2066,7 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
-          if (!activeCourseTopicIds.has(t.topicId)) return;
+          if (!selectedCourseTopicIds.has(t.topicId)) return;
           if (t.status === "completed" && t.completedAt) {
             const days = differenceInDays(now, new Date(t.completedAt));
             if (days >= 14) {
@@ -2031,7 +2079,7 @@ export default function StudentStudyPlanPage() {
       )
     );
     return list.sort((a, b) => (b.daysSince ?? 999) - (a.daysSince ?? 999));
-  }, [effectiveProgressReport, activeCourseTopicIds]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
   // High negative-marking areas: topics where PYQ accuracy < 50% (high wrong-answer rate)
   const highNegativeTopics = useMemo(() => {
@@ -2039,7 +2087,7 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
-          if (!activeCourseTopicIds.has(t.topicId)) return;
+          if (!selectedCourseTopicIds.has(t.topicId)) return;
           if (t.pyq && t.pyq.attempted > 0 && t.pyq.accuracy < 50) {
             list.push({
               topicId: t.topicId,
@@ -2056,7 +2104,7 @@ export default function StudentStudyPlanPage() {
       )
     );
     return list.sort((a, b) => a.pyqAccuracy - b.pyqAccuracy);
-  }, [effectiveProgressReport, activeCourseTopicIds]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
   // Revision queue: topics the student has studied (via completed plan items OR report signals)
   // Primary source: completed StudyPlanItems — always fresh, never stale from cache.
@@ -2098,38 +2146,71 @@ export default function StudentStudyPlanPage() {
       )
     );
 
+    // Resolve accuracy: use quiz score when available; fall back to 60 (→ 7-day)
+    // when the topic was studied (AI session / lecture) but never formally quizzed.
+    const resolveAcc = (quizAcc: number, studied: boolean) =>
+      quizAcc > 0 ? quizAcc : studied ? 60 : 0;
+
     // Primary: all completed plan items (today + past week)
     const allPlanItems = [
       ...todayItems,
       ...Object.values(backlogWeekData).flat(),
     ];
     allPlanItems.forEach(item => {
-      if (item.status !== "completed" || !item.content?.topicId || !activeCourseTopicIds.has(item.content.topicId)) return;
+      if (item.status !== "completed" || !item.content?.topicId || !selectedCourseTopicIds.has(item.content.topicId)) return;
       const { topicId, topicName = "Unknown Topic", subjectName = "General", chapterName = "" } = item.content;
       const rep = reportMap.get(topicId);
-      addTopic(topicId, topicName, subjectName, chapterName, rep?.accuracy ?? 0, rep?.completedAt ?? null, format(new Date(item.scheduledDate), "MMM d"));
+      const acc = resolveAcc(rep?.accuracy ?? 0, true);
+      addTopic(topicId, topicName, subjectName, chapterName, acc, rep?.completedAt ?? null, format(new Date(item.scheduledDate), "MMM d"));
     });
 
     // Secondary: report topics with clear interaction signals (quiz attempts, lectures, AI sessions)
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
-          if (!activeCourseTopicIds.has(t.topicId)) return;
+          if (!selectedCourseTopicIds.has(t.topicId)) return;
           const hasInteracted =
             t.status !== "locked" &&
             (t.bestAccuracy > 0 || t.attemptCount > 0 ||
              t.lecture?.anyCompleted || t.aiSession?.completed);
-          if (hasInteracted)
-            addTopic(t.topicId, t.topicName, s.subjectName, c.chapterName, t.bestAccuracy ?? 0, t.completedAt ?? null, "—");
+          if (!hasInteracted) return;
+          const studied = !!(t.aiSession?.completed || t.lecture?.anyCompleted);
+          const acc = resolveAcc(t.bestAccuracy ?? 0, studied);
+          addTopic(t.topicId, t.topicName, s.subjectName, c.chapterName, acc, t.completedAt ?? null, "—");
         })
       )
     );
+
+    // Tertiary: completed AI study sessions (studied directly, outside the plan)
+    // Build a fast lookup: topicId → { subjectName, chapterName, bestAccuracy } from report
+    const reportTopicMeta = new Map<string, { subjectName: string; chapterName: string; bestAccuracy: number }>();
+    effectiveProgressReport?.subjects.forEach(s =>
+      s.chapters.forEach(c =>
+        c.topics.forEach(t =>
+          reportTopicMeta.set(t.topicId, { subjectName: s.subjectName, chapterName: c.chapterName, bestAccuracy: t.bestAccuracy ?? 0 })
+        )
+      )
+    );
+    aiStudyHistory.forEach(session => {
+      if (!session.topicId || !(session.isCompleted || session.completedAt)) return;
+      const meta = reportTopicMeta.get(session.topicId);
+      const acc  = resolveAcc(meta?.bestAccuracy ?? 0, true);
+      addTopic(
+        session.topicId,
+        session.topicName ?? "Topic",
+        meta?.subjectName ?? "",
+        meta?.chapterName ?? "",
+        acc,
+        session.completedAt ?? null,
+        "—",
+      );
+    });
 
     return list.sort((a, b) =>
       a.isOverdue !== b.isOverdue ? (a.isOverdue ? -1 : 1)
       : a.nextRevisionDate.getTime() - b.nextRevisionDate.getTime()
     );
-  }, [effectiveProgressReport, todayItems, backlogWeekData, activeCourseTopicIds]);
+  }, [effectiveProgressReport, todayItems, backlogWeekData, selectedCourseTopicIds, aiStudyHistory]);
 
   // 7-day AI revision plan: assign each topic to the day it's due (capped 0–6)
   const aiRevisionPlan = useMemo(() => {
@@ -2151,22 +2232,21 @@ export default function StudentStudyPlanPage() {
     return days;
   }, [revisionTopics]);
 
-  // Backlog items: past 7 days study-plan tasks that are NOT completed
+  // Backlog items: past 7 days study-plan tasks that are NOT completed, scoped to selected course
   const backlogPlanItems = useMemo<Array<StudyPlanItem & { date: string }>>(() => {
     const items: Array<StudyPlanItem & { date: string }> = [];
     Object.entries(backlogWeekData).forEach(([date, dayItems]) => {
       if (date >= today) return;
       dayItems.forEach(item => {
         if (item.status !== "completed") {
-          // Only include if topicId belongs to the active course (or no topicId — keep plan-only items)
-          if (!item.content?.topicId || activeCourseTopicIds.has(item.content.topicId)) {
+          if (!item.content?.topicId || selectedCourseTopicIds.has(item.content.topicId)) {
             items.push({ ...item, date });
           }
         }
       });
     });
     return items.sort((a, b) => a.date.localeCompare(b.date));
-  }, [backlogWeekData, today, activeCourseTopicIds]);
+  }, [backlogWeekData, today, selectedCourseTopicIds]);
 
   // Intensive revision: plan items of type 'revision' from today + past week, course-filtered
   const intensiveRevisionItems = useMemo(() => {
@@ -2186,11 +2266,11 @@ export default function StudentStudyPlanPage() {
     return aiStudyHistory.filter(s => (s.isCompleted || s.completedAt) && (s.practiceQuestions?.length ?? 0) > 0);
   }, [aiStudyHistory]);
 
-  // Pending lectures: not completed, not locked
+  // Pending lectures: not completed, not locked, scoped to selected course
   const pendingLectures = useMemo(() =>
     allLectures.filter(l => !l.isLocked && !l.studentProgress?.isCompleted &&
-      (!l.topic?.id || activeCourseTopicIds.has(l.topic.id))),
-    [allLectures, activeCourseTopicIds]
+      (!l.topic?.id || selectedCourseTopicIds.has(l.topic.id))),
+    [allLectures, selectedCourseTopicIds]
   );
 
   // Pending PYQs: topics where no PYQ has been attempted yet
@@ -2199,32 +2279,17 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
-          if (t.status !== "locked" && (!t.pyq || t.pyq.attempted === 0) && activeCourseTopicIds.has(t.topicId)) {
+          if (t.status !== "locked" && (!t.pyq || t.pyq.attempted === 0) && selectedCourseTopicIds.has(t.topicId)) {
             list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName });
           }
         })
       )
     );
     return list;
-  }, [effectiveProgressReport, activeCourseTopicIds]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
-  // Pending AI notes/study: in-progress topics with no completed AI session
-  const pendingAiTopics = useMemo(() => {
-    const list: Array<{ topicId: string; topicName: string; subjectName: string; chapterName: string }> = [];
-    effectiveProgressReport?.subjects.forEach(s =>
-      s.chapters.forEach(c =>
-        c.topics.forEach(t => {
-          if (t.status === "in_progress" && (!t.aiSession || !t.aiSession.completed) && activeCourseTopicIds.has(t.topicId)) {
-            list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName });
-          }
-        })
-      )
-    );
-    return list;
-  }, [effectiveProgressReport, activeCourseTopicIds]);
-
-  // Pending DPPs & PDFs: resources on non-locked, non-completed topics — scoped to selected course only
-  const pendingResources = useMemo(() => {
+  // Helper: build pending resource list for given types, scoped to selected course
+  const buildPendingResources = useCallback((types: string[]) => {
     const completedTopicIds = new Set<string>();
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
@@ -2234,16 +2299,14 @@ export default function StudentStudyPlanPage() {
     const seen = new Set<string>();
     const list: Array<CourseResource & { topicName: string; subjectName: string; chapterName: string; topicId: string }> = [];
     curriculaResults.forEach((result, idx) => {
-      // ── Scope strictly to the selected course ──────────────────────────────
       const course = myCourses[idx];
       if (!course || course.id !== selectedCourseId) return;
-      // ──────────────────────────────────────────────────────────────────────
       result.data?.subjects.forEach(subj =>
         subj.chapters.forEach(ch =>
           ch.topics.forEach(topic => {
             if (topic.status === "locked" || completedTopicIds.has(topic.id)) return;
             topic.resources.forEach(r => {
-              if (!["pdf", "dpp", "notes"].includes(r.type)) return;
+              if (!types.includes(r.type)) return;
               if (seen.has(r.id)) return;
               seen.add(r.id);
               list.push({
@@ -2261,21 +2324,43 @@ export default function StudentStudyPlanPage() {
     return list;
   }, [curriculaResults, effectiveProgressReport, myCourses, selectedCourseId]);
 
-  // Pending mock tests: published tests with no submitted/completed session
+  // Pending unread notes resources from selected course
+  const pendingNotes = useMemo(
+    () => buildPendingResources(["notes"]),
+    [buildPendingResources],
+  );
+
+  // Pending mindmaps from selected course
+  const pendingMindmaps = useMemo(
+    () => buildPendingResources(["mindmap"]),
+    [buildPendingResources],
+  );
+
+  // Pending DPPs & PDFs: resources on non-locked, non-completed topics — scoped to selected course only
+  const pendingResources = useMemo(() => buildPendingResources(["pdf", "dpp"]), [buildPendingResources]);
+
+
+
+  // Pending mock tests: published, not yet attempted, scoped to selected course
   const pendingMockTests = useMemo(() => {
     const doneIds = new Set(
       sessions
         .filter(s => ["submitted", "auto_submitted", "completed"].includes(s.status))
         .map(s => s.mockTestId)
     );
-    return mockTests.filter(t => t.isPublished && !doneIds.has(t.id));
-  }, [mockTests, sessions]);
+    return mockTests.filter(t =>
+      t.isPublished &&
+      !doneIds.has(t.id) &&
+      (!selectedCourseId || !t.batchId || t.batchId === selectedCourseId)
+    );
+  }, [mockTests, sessions, selectedCourseId]);
 
   const totalBacklogCount =
     backlogPlanItems.length +
     pendingLectures.length +
     pendingPYQTopics.length +
-    pendingAiTopics.length +
+    pendingNotes.length +
+    pendingMindmaps.length +
     pendingResources.length +
     pendingMockTests.length;
 
@@ -2779,16 +2864,18 @@ export default function StudentStudyPlanPage() {
                     <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
                       <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
                       <h3 className="text-lg font-bold text-gray-900">All caught up!</h3>
-                      <p className="text-gray-500 mt-2 text-sm">No pending lectures, notes, PYQs, or DPPs right now.</p>
+                      <p className="text-gray-500 mt-2 text-sm">No pending tasks, lectures, notes, mindmaps, PYQs, DPPs, or mock tests right now.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {([
-                        { key: "plan",     icon: <ClipboardList className="w-8 h-8" />, label: "Missed Tasks",     count: backlogPlanItems.length,  desc: "Study plan items you didn't complete",  bg: "bg-red-50", text: "text-red-600", border: "border-red-100", hover: "hover:border-red-300", bgHover: "group-hover:bg-red-100" },
-                        { key: "lectures", icon: <PlayCircle    className="w-8 h-8" />, label: "Video Lectures",   count: pendingLectures.length,   desc: "Video lectures not yet watched",         bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-100", hover: "hover:border-blue-300", bgHover: "group-hover:bg-blue-100" },
-                        { key: "notes",    icon: <BookOpen      className="w-8 h-8" />, label: "Notes & AI",       count: pendingAiTopics.length,   desc: "Topics with no completed AI session",    bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100", hover: "hover:border-amber-300", bgHover: "group-hover:bg-amber-100" },
-                        { key: "pyq",      icon: <Activity      className="w-8 h-8" />, label: "PYQs Pending",     count: pendingPYQTopics.length,  desc: "Previous year questions not practised",  bg: "bg-violet-50", text: "text-violet-600", border: "border-violet-100", hover: "hover:border-violet-300", bgHover: "group-hover:bg-violet-100" },
-                        { key: "dpp",      icon: <FileText      className="w-8 h-8" />, label: "DPPs & PDFs",      count: pendingResources.length,  desc: "Practice sheets and reading material",   bg: "bg-teal-50", text: "text-teal-600", border: "border-teal-100", hover: "hover:border-teal-300", bgHover: "group-hover:bg-teal-100" },
+                        { key: "plan",      icon: <ClipboardList className="w-8 h-8" />, label: "Missed Tasks",    count: backlogPlanItems.length,  desc: "Study plan items you didn't complete",  bg: "bg-red-50",    text: "text-red-600",    border: "border-red-100",    hover: "hover:border-red-300",    bgHover: "group-hover:bg-red-100"    },
+                        { key: "lectures",  icon: <PlayCircle    className="w-8 h-8" />, label: "Video Lectures",  count: pendingLectures.length,   desc: "All unwatched lectures from this course", bg: "bg-blue-50",   text: "text-blue-600",   border: "border-blue-100",   hover: "hover:border-blue-300",   bgHover: "group-hover:bg-blue-100"   },
+                        { key: "notes",     icon: <BookOpen      className="w-8 h-8" />, label: "Notes",           count: pendingNotes.length,      desc: "Unread notes from this course",          bg: "bg-amber-50",  text: "text-amber-600",  border: "border-amber-100",  hover: "hover:border-amber-300",  bgHover: "group-hover:bg-amber-100"  },
+                        { key: "mindmaps",  icon: <BrainCircuit  className="w-8 h-8" />, label: "Mindmaps",        count: pendingMindmaps.length,   desc: "Visual mindmaps not yet reviewed",       bg: "bg-indigo-50", text: "text-indigo-600", border: "border-indigo-100", hover: "hover:border-indigo-300", bgHover: "group-hover:bg-indigo-100" },
+                        { key: "pyq",       icon: <Activity      className="w-8 h-8" />, label: "PYQs Pending",    count: pendingPYQTopics.length,  desc: "Previous year questions not practised",  bg: "bg-violet-50", text: "text-violet-600", border: "border-violet-100", hover: "hover:border-violet-300", bgHover: "group-hover:bg-violet-100" },
+                        { key: "dpp",       icon: <FileText      className="w-8 h-8" />, label: "DPPs & PDFs",     count: pendingResources.length,  desc: "Practice sheets and reading material",   bg: "bg-teal-50",   text: "text-teal-600",   border: "border-teal-100",   hover: "hover:border-teal-300",   bgHover: "group-hover:bg-teal-100"   },
+                        { key: "mocktests", icon: <ClipboardList className="w-8 h-8" />, label: "Mock Tests",      count: pendingMockTests.length,  desc: "Published tests not yet attempted",      bg: "bg-rose-50",   text: "text-rose-600",   border: "border-rose-100",   hover: "hover:border-rose-300",   bgHover: "group-hover:bg-rose-100"   },
                       ] as const).map(c => (
                         <div key={c.key}
                           onClick={c.count > 0 ? () => setBacklogPage(c.key) : undefined}
@@ -2869,24 +2956,53 @@ export default function StudentStudyPlanPage() {
                 </BacklogSection>
               )}
 
-              {/* ── Detail: Notes & AI Study ── */}
+              {/* ── Detail: Notes ── */}
               {backlogPage === "notes" && (
-                <BacklogSection icon={<BookOpen className="w-4 h-4" />} title="Pending Notes & AI Study" count={pendingAiTopics.length} accentColor="amber">
+                <BacklogSection icon={<BookOpen className="w-4 h-4" />} title="Unread Notes" count={pendingNotes.length} accentColor="amber">
                   <div className="space-y-2">
-                    {pendingAiTopics.map(t => {
-                      const cfg = subjectCfg(t.subjectName);
+                    {pendingNotes.map(r => {
+                      const cfg = subjectCfg(r.subjectName);
+                      const url = r.fileUrl ?? r.externalUrl;
                       return (
-                        <div key={t.topicId} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-amber-200 hover:shadow-sm transition-all">
+                        <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-amber-200 hover:shadow-sm transition-all">
                           <div className="shrink-0 w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600"><BookOpen className="w-4 h-4" /></div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-gray-900 truncate">{t.topicName}</div>
+                            <div className="font-medium text-sm text-gray-900 truncate">{r.title}</div>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{t.subjectName}</span>
-                              <span className="text-xs text-gray-400 truncate">{t.chapterName}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{r.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{r.topicName}</span>
                             </div>
                           </div>
-                          <button onClick={() => navigate(`/student/ai-study/${t.topicId}`)}
-                            className="shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-semibold hover:bg-amber-700 transition-colors">Study</button>
+                          {url
+                            ? <a href={url} target="_blank" rel="noopener noreferrer" className="shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-semibold hover:bg-amber-700 transition-colors">Read</a>
+                            : <span className="shrink-0 text-xs text-gray-400">No link</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: Mindmaps ── */}
+              {backlogPage === "mindmaps" && (
+                <BacklogSection icon={<BrainCircuit className="w-4 h-4" />} title="Mindmaps" count={pendingMindmaps.length} accentColor="indigo">
+                  <div className="space-y-2">
+                    {pendingMindmaps.map(r => {
+                      const cfg = subjectCfg(r.subjectName);
+                      const url = r.fileUrl ?? r.externalUrl;
+                      return (
+                        <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-indigo-200 hover:shadow-sm transition-all">
+                          <div className="shrink-0 w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600"><BrainCircuit className="w-4 h-4" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">{r.title}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{r.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{r.topicName}</span>
+                            </div>
+                          </div>
+                          {url
+                            ? <a href={url} target="_blank" rel="noopener noreferrer" className="shrink-0 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition-colors">View</a>
+                            : <span className="shrink-0 text-xs text-gray-400">No link</span>}
                         </div>
                       );
                     })}
@@ -2946,6 +3062,30 @@ export default function StudentStudyPlanPage() {
                         </div>
                       );
                     })}
+                  </div>
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: Mock Tests ── */}
+              {backlogPage === "mocktests" && (
+                <BacklogSection icon={<ClipboardList className="w-4 h-4" />} title="Mock Tests" count={pendingMockTests.length} accentColor="rose">
+                  <div className="space-y-2">
+                    {pendingMockTests.map(t => (
+                      <div key={t.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-rose-200 hover:shadow-sm transition-all">
+                        <div className="shrink-0 w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600"><ClipboardList className="w-4 h-4" /></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-gray-900 truncate">{t.title}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {t.durationMinutes > 0 && <span className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{t.durationMinutes} min</span>}
+                            {t.totalMarks > 0 && <span className="text-xs text-gray-400">{t.totalMarks} marks</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => navigate(`/student/mock-tests/${t.id}`)}
+                          className="shrink-0 px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition-colors">
+                          Start
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </BacklogSection>
               )}
@@ -3312,7 +3452,13 @@ export default function StudentStudyPlanPage() {
                                       </div>
                                     </div>
                                     <span className={`text-sm font-bold shrink-0 ${accColor}`}>{topic.accuracy}%</span>
-                                    <button onClick={() => navigate(`/student/ai-study/${topic.topicId}`)}
+                                    <button onClick={() => setRevisionModal({
+                                        topicId: topic.topicId,
+                                        topicName: topic.topicName,
+                                        subjectName: topic.subjectName,
+                                        accuracy: topic.accuracy,
+                                        intervalDays: topic.intervalDays,
+                                      })}
                                       className="shrink-0 px-2.5 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 flex items-center gap-1">
                                       <RefreshCw className="w-2.5 h-2.5" /> Revise
                                     </button>
@@ -3329,10 +3475,6 @@ export default function StudentStudyPlanPage() {
                   {/* ── Intensive Revision ── */}
                   {revisionCategory === "intensive" && (
                     <div className="space-y-3">
-                      <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                        <h3 className="text-base font-bold text-gray-900">Intensive Review</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Quickly review concepts and lectures from your recent study plan.</p>
-                      </div>
                       {!isSyllabusComplete ? (
                         <div className="bg-white rounded-[2.5rem] border border-gray-200 p-12 text-center relative overflow-hidden group">
                           <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -3344,38 +3486,24 @@ export default function StudentStudyPlanPage() {
                             <p className="text-gray-500 mb-8 text-base max-w-sm mx-auto leading-relaxed">
                               This feature unlocks automatically once you reach <span className="font-bold text-orange-600">100% syllabus completion</span>. Finish your roadmap to start elite revision.
                             </p>
-                            
-                            {/* Progress visualization */}
                             <div className="max-w-xs mx-auto mb-8 bg-gray-100 h-3 rounded-full overflow-hidden p-0.5 border border-gray-200">
-                              <div 
+                              <div
                                 className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-1000"
                                 style={{ width: `${Math.round((effectiveProgressReport?.summary?.completedTopics ?? 0) / Math.max(effectiveProgressReport?.summary?.totalTopics ?? 1, 1) * 100)}%` }}
                               />
                             </div>
-                            
                             <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-2xl border border-orange-100 text-sm font-bold">
                               <Target className="w-4 h-4" /> {effectiveProgressReport?.summary?.completedTopics ?? 0}/{effectiveProgressReport?.summary?.totalTopics ?? 0} topics completed
                             </div>
                           </div>
                         </div>
-                      ) : intensiveRevisionItems.length === 0 ? (
-                        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center">
-                          <CheckCheck className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                          <p className="text-gray-500 font-medium">No recent revision items found</p>
-                        </div>
                       ) : (
-                        <div className="space-y-3">
-                          {intensiveRevisionItems.map(item => (
-                            <PlanItemCard
-                              key={item.id}
-                              item={item}
-                              priority={derivePriority(item, weakTopicIds)}
-                              onOpen={handleOpenPlanItem}
-                              onComplete={(id) => complete.mutate(id)}
-                              onSkip={(id) => skip.mutate(id)}
-                            />
-                          ))}
-                        </div>
+                        <IntensiveRevisionSection
+                          progressReport={effectiveProgressReport}
+                          days={days}
+                          examTarget={courseExamTarget}
+                          chapterWeightMap={chapterWeightMap.size > 0 ? chapterWeightMap : undefined}
+                        />
                       )}
                     </div>
                   )}
@@ -3544,7 +3672,13 @@ export default function StudentStudyPlanPage() {
       </div>
     </>
   )}
-</div>
 
+      {revisionModal && (
+        <RevisionSessionModal
+          topic={revisionModal}
+          onClose={() => setRevisionModal(null)}
+        />
+      )}
+</div>
   );
 }

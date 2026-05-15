@@ -816,6 +816,44 @@ export async function clearPlan(batchId?: string): Promise<{ message: string }> 
   return extractData(res);
 }
 
+// ─── Spaced Revision Session ──────────────────────────────────────────────────
+
+export interface RevisionConceptQuestion {
+  question: string;
+  answer: string;
+  explanation: string;
+}
+
+export interface RevisionDrillQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+  difficulty: string;
+}
+
+export interface RevisionSessionData {
+  sessionType: 'INTENSIVE' | 'STANDARD' | 'QUICK' | 'FLASH';
+  estimatedMinutes: number;
+  targetAccuracy: number;
+  previousAccuracy: number;
+  topicName: string;
+  subjectName: string;
+  chapterName: string;
+  recallPrompts: string[];
+  conceptQuestions: RevisionConceptQuestion[];
+  drillQuestions: RevisionDrillQuestion[];
+}
+
+export async function startRevisionSession(payload: {
+  topicId: string;
+  accuracy: number;
+  intervalDays: 1 | 3 | 7 | 21;
+}): Promise<RevisionSessionData> {
+  const res = await apiClient.post('/study-plans/revision-session', payload);
+  return extractData<RevisionSessionData>(res);
+}
+
 export async function completePlanItem(itemId: string): Promise<StudyPlanItem> {
   const res = await apiClient.patch(`/study-plans/items/${itemId}/complete`, {});
   return extractData<StudyPlanItem>(res);

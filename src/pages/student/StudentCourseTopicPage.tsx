@@ -231,11 +231,9 @@ function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string })
           "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
           "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
         )}>
-          {loading
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : res.externalUrl
-              ? <ExternalLink className="w-3.5 h-3.5" />
-              : <Download className="w-3.5 h-3.5" />
+          {res.externalUrl
+            ? <ExternalLink className="w-3.5 h-3.5" />
+            : <Download className="w-3.5 h-3.5" />
           }
         </div>
       </motion.div>
@@ -255,7 +253,7 @@ export default function StudentCourseTopicPage() {
 
   const openParam = searchParams.get("open");
   useLayoutEffect(() => {
-    if (openParam === "dpp" || openParam === "pyq" || openParam === "material") {
+    if (openParam === "dpp" || openParam === "pyq" || openParam === "material" || openParam === "mindmap") {
       setResourceTab(openParam);
     } else {
       setResourceTab("dpp");
