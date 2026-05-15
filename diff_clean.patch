@@ -1,0 +1,1705 @@
+diff --git a/src/pages/student/StudentStudyPlanPage.tsx b/src/pages/student/StudentStudyPlanPage.tsx
+index 8558cca..e2b068f 100644
+--- a/src/pages/student/StudentStudyPlanPage.tsx
++++ b/src/pages/student/StudentStudyPlanPage.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { useState, useMemo, useEffect, useRef } from "react";
+ import { useNavigate } from "react-router-dom";
+-import { format, differenceInDays, subDays, subYears, addDays } from "date-fns";
++import { format, differenceInDays, subDays, subYears, addDays, isAfter, startOfDay } from "date-fns";
+ import { toast } from "sonner";
+ import { useQueries } from "@tanstack/react-query";
+ import {
+@@ -16,22 +16,26 @@ import {
+   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
+   useClearPlan, useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
+   useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
++  useAiStudyHistory,
+ } from "@/hooks/use-student";
+ import * as studentApi from "@/lib/api/student";
+ import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
+ import type { ProgressReport, SubjectReportEntry, ChapterReportEntry, TopicReportEntry, TestSession, DailyActivity } from "@/lib/api/student";
++import { cn } from "@/lib/utils";
+ 
+-// ΓöÇΓöÇΓöÇ Constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Constants ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ const EXAM_OPTIONS = [
+-  { key: "jee_mains",    label: "JEE Mains",   icon: "ΓÜ¢∩╕Å", desc: "B.Tech admissions (NIT/IIIT)" },
+-  { key: "jee_advanced", label: "JEE Advanced", icon: "≡ƒö¼", desc: "IIT admissions" },
+-  { key: "neet",         label: "NEET",         icon: "≡ƒ⌐║", desc: "MBBS/BDS admissions" },
+-  { key: "foundation",   label: "Foundation",   icon: "≡ƒôÜ", desc: "Class 8ΓÇô10" },
+-  { key: "other",        label: "Other",        icon: "≡ƒÄ»", desc: "Custom target" },
++  { key: "jee_mains",    label: "JEE Mains",   icon: "├ó┼íΓÇ║├»┬╕┬Å", desc: "B.Tech admissions (NIT/IIIT)" },
++  { key: "jee_advanced", label: "JEE Advanced", icon: "├░┼╕ΓÇ¥┬¼", desc: "IIT admissions" },
++  { key: "neet",         label: "NEET",         icon: "├░┼╕┬⌐┬║", desc: "MBBS/BDS admissions" },
++  { key: "foundation",   label: "Foundation",   icon: "├░┼╕ΓÇ£┼í", desc: "Class 8├óΓé¼ΓÇ£10" },
++  { key: "other",        label: "Other",        icon: "├░┼╕┼╜┬»", desc: "Custom target" },
+ ];
+ 
+-const YEAR_OPTIONS = [2025, 2026, 2027, 2028];
++const CURRENT_YEAR = new Date().getFullYear();
++const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR + i)
++  .filter(yr => isAfter(new Date(yr, 3, 15), startOfDay(new Date())));
+ const HOURS_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
+ const CLASS_OPTIONS = [
+   { key: "9", label: "Class 9" },
+@@ -58,7 +62,7 @@ function subjectCfg(name: string) {
+ }
+ 
+ function fmtExam(key?: string) {
+-  return EXAM_OPTIONS.find(e => e.key === key)?.label ?? key ?? "ΓÇö";
++  return EXAM_OPTIONS.find(e => e.key === key)?.label ?? key ?? "├óΓé¼ΓÇ¥";
+ }
+ 
+ function countdownDays(examYear?: number): number | null {
+@@ -66,7 +70,7 @@ function countdownDays(examYear?: number): number | null {
+   return Math.max(0, differenceInDays(new Date(examYear, 3, 15), new Date()));
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Priority ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Priority ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ type TaskPriority = "high" | "medium" | "low";
+ 
+@@ -84,7 +88,7 @@ const PRIORITY_CFG: Record<TaskPriority, { label: string; cls: string }> = {
+   low:    { label: "LOW",  cls: "bg-slate-100 text-slate-500 border border-slate-200" },
+ };
+ 
+-// ΓöÇΓöÇΓöÇ Preference Wizard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Preference Wizard ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ interface WizardState {
+   examTarget: string;
+@@ -106,44 +110,44 @@ const EXAM_SUBJECTS: Record<string, string[]> = {
+ 
+ const TARGET_SCORE_OPTS: Record<string, Array<{ label: string; value: number; desc: string }>> = {
+   jee_mains: [
+-    { label: "99+ Percentile",   value: 99, desc: "Top 1% ΓÇö IIITs / Top NITs" },
+-    { label: "97ΓÇô99 Percentile", value: 97, desc: "Triple digit ΓÇö great NIT chances" },
+-    { label: "90ΓÇô97 Percentile", value: 90, desc: "Good NIT / IIIT chances" },
+-    { label: "80ΓÇô90 Percentile", value: 80, desc: "State counselling range" },
++    { label: "99+ Percentile",   value: 99, desc: "Top 1% ├óΓé¼ΓÇ¥ IIITs / Top NITs" },
++    { label: "97├óΓé¼ΓÇ£99 Percentile", value: 97, desc: "Triple digit ├óΓé¼ΓÇ¥ great NIT chances" },
++    { label: "90├óΓé¼ΓÇ£97 Percentile", value: 90, desc: "Good NIT / IIIT chances" },
++    { label: "80├óΓé¼ΓÇ£90 Percentile", value: 80, desc: "State counselling range" },
+     { label: "Below 80",         value: 70, desc: "Qualify & improve next year" },
+   ],
+   jee_advanced: [
+     { label: "Top 500 IIT",  value: 99, desc: "IIT Bombay / Delhi CS" },
+-    { label: "Top 2000 IIT", value: 97, desc: "Top IITs ΓÇö any branch" },
++    { label: "Top 2000 IIT", value: 97, desc: "Top IITs ├óΓé¼ΓÇ¥ any branch" },
+     { label: "IIT seat",     value: 90, desc: "Any IIT through JEE Advanced" },
+     { label: "Just qualify", value: 80, desc: "Clear the cutoff first" },
+   ],
+   neet: [
+     { label: "680+ Score", value: 680, desc: "AIIMS / top medical colleges" },
+-    { label: "650ΓÇô680",    value: 650, desc: "State medical colleges" },
+-    { label: "600ΓÇô650",    value: 600, desc: "Private MBBS" },
+-    { label: "540ΓÇô600",    value: 540, desc: "Secure a seat" },
++    { label: "650├óΓé¼ΓÇ£680",    value: 650, desc: "State medical colleges" },
++    { label: "600├óΓé¼ΓÇ£650",    value: 600, desc: "Private MBBS" },
++    { label: "540├óΓé¼ΓÇ£600",    value: 540, desc: "Secure a seat" },
+     { label: "Below 540",  value: 500, desc: "Clear the qualifying cutoff" },
+   ],
+   foundation: [
+     { label: "95%+",     value: 95, desc: "School topper / distinction" },
+-    { label: "90ΓÇô95%",   value: 90, desc: "Excellent result" },
+-    { label: "80ΓÇô90%",   value: 80, desc: "First division" },
++    { label: "90├óΓé¼ΓÇ£95%",   value: 90, desc: "Excellent result" },
++    { label: "80├óΓé¼ΓÇ£90%",   value: 80, desc: "First division" },
+     { label: "Below 80%", value: 70, desc: "Pass & steadily improve" },
+   ],
+   other: [
+     { label: "95%+ / Top rank", value: 95, desc: "Best possible result" },
+-    { label: "85ΓÇô95%",          value: 85, desc: "Great result" },
+-    { label: "75ΓÇô85%",          value: 75, desc: "Good result" },
++    { label: "85├óΓé¼ΓÇ£95%",          value: 85, desc: "Great result" },
++    { label: "75├óΓé¼ΓÇ£85%",          value: 75, desc: "Good result" },
+     { label: "Below 75%",       value: 65, desc: "Pass with room to grow" },
+   ],
+ };
+ 
+ const SCHOOL_HOURS_OPTS = [
+   { label: "None",    value: 0, desc: "Full-time self-study / dropper" },
+-  { label: "3ΓÇô4 hrs", value: 4, desc: "Half-day school" },
+-  { label: "5ΓÇô6 hrs", value: 6, desc: "Full school day" },
+-  { label: "7ΓÇô8 hrs", value: 8, desc: "School + coaching" },
++  { label: "3├óΓé¼ΓÇ£4 hrs", value: 4, desc: "Half-day school" },
++  { label: "5├óΓé¼ΓÇ£6 hrs", value: 6, desc: "Full school day" },
++  { label: "7├óΓé¼ΓÇ£8 hrs", value: 8, desc: "School + coaching" },
+   { label: "9+ hrs",  value: 9, desc: "Intensive coaching schedule" },
+ ];
+ 
+@@ -225,7 +229,7 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+               </div>
+             ))}
+           </div>
+-          <p className="text-center text-xs text-gray-500">{STEPS[step]} ΓÇö Step {step + 1} of {STEPS.length}</p>
++          <p className="text-center text-xs text-gray-500">{STEPS[step]} ├óΓé¼ΓÇ¥ Step {step + 1} of {STEPS.length}</p>
+         </div>
+ 
+         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-h-[82vh] overflow-y-auto">
+@@ -233,11 +237,11 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+             <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700">Close</button>
+           </div>
+ 
+-          {/* ΓöÇΓöÇ Step 0: Exam Target ΓöÇΓöÇ */}
++          {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Step 0: Exam Target ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+           {step === 0 && (
+             <div>
+               <div className="text-center mb-5">
+-                <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">≡ƒÄ»</div>
++                <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">├░┼╕┼╜┬»</div>
+                 <h2 className="text-xl font-bold text-gray-900">What's your target exam?</h2>
+                 <p className="text-gray-500 mt-1 text-sm">Your plan will be fully tailored for this</p>
+               </div>
+@@ -259,17 +263,17 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+             </div>
+           )}
+ 
+-          {/* ΓöÇΓöÇ Step 1: Target Score ΓöÇΓöÇ */}
++          {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Step 1: Target Score ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+           {step === 1 && (
+             <div>
+               <div className="text-center mb-5">
+-                <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">≡ƒÅå</div>
++                <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">├░┼╕┬ÅΓÇá</div>
+                 <h2 className="text-xl font-bold text-gray-900">
+                   {prefs.examTarget === "neet" ? "NEET Score Target"
+                     : prefs.examTarget === "jee_mains" || prefs.examTarget === "jee_advanced" ? "JEE Percentile Target"
+                     : "Performance Target"}
+                 </h2>
+-                <p className="text-gray-500 mt-1 text-sm">Be ambitious but realistic ΓÇö we'll plan accordingly</p>
++                <p className="text-gray-500 mt-1 text-sm">Be ambitious but realistic ├óΓé¼ΓÇ¥ we'll plan accordingly</p>
+               </div>
+               <div className="space-y-2">
+                 {(TARGET_SCORE_OPTS[prefs.examTarget] ?? TARGET_SCORE_OPTS.other).map(opt => (
+@@ -288,11 +292,11 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+             </div>
+           )}
+ 
+-          {/* ΓöÇΓöÇ Step 2: Target Year ΓöÇΓöÇ */}
++          {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Step 2: Target Year ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+           {step === 2 && (
+             <div>
+               <div className="text-center mb-5">
+-                <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">≡ƒôà</div>
++                <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">├░┼╕ΓÇ£ΓÇª</div>
+                 <h2 className="text-xl font-bold text-gray-900">Which year are you targeting?</h2>
+                 <p className="text-gray-500 mt-1 text-sm">Helps us plan your monthly schedule</p>
+               </div>
+@@ -305,7 +309,7 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+                         ${prefs.examYear === yr ? "border-violet-500 bg-violet-50" : "border-gray-200 hover:border-violet-300 hover:bg-gray-50"}`}>
+                       <div className="text-2xl font-bold text-gray-900">{yr}</div>
+                       <div className="text-xs text-gray-500 mt-1">{days} days left</div>
+-                      {prefs.examYear === yr && <div className="text-xs text-violet-600 font-medium mt-1">Selected Γ£ô</div>}
++                      {prefs.examYear === yr && <div className="text-xs text-violet-600 font-medium mt-1">Selected ├ó┼ôΓÇ£</div>}
+                     </button>
+                   );
+                 })}
+@@ -313,11 +317,11 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+             </div>
+           )}
+ 
+-          {/* ΓöÇΓöÇ Step 3: Current Class ΓöÇΓöÇ */}
++          {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Step 3: Current Class ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+           {step === 3 && (
+             <div>
+               <div className="text-center mb-5">
+-                <div className="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">≡ƒÅ½</div>
++                <div className="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">├░┼╕┬Å┬½</div>
+                 <h2 className="text-xl font-bold text-gray-900">What is your current class?</h2>
+               </div>
+               <div className="grid grid-cols-2 gap-3">
+@@ -333,11 +337,11 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+             </div>
+           )}
+ 
+-          {/* ΓöÇΓöÇ Step 4: Daily Schedule ΓöÇΓöÇ */}
++          {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Step 4: Daily Schedule ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+           {step === 4 && (
+             <div>
+               <div className="text-center mb-5">
+-                <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">ΓÅ░</div>
++                <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">├ó┬Å┬░</div>
+                 <h2 className="text-xl font-bold text-gray-900">Your Daily Schedule</h2>
+                 <p className="text-gray-500 mt-1 text-sm">Helps us find your real self-study window</p>
+               </div>
+@@ -380,13 +384,13 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+             </div>
+           )}
+ 
+-          {/* ΓöÇΓöÇ Step 5: Weak Subjects ΓöÇΓöÇ */}
++          {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Step 5: Weak Subjects ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+           {step === 5 && (
+             <div>
+               <div className="text-center mb-5">
+-                <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">≡ƒôë</div>
++                <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">├░┼╕ΓÇ£ΓÇ░</div>
+                 <h2 className="text-xl font-bold text-gray-900">Which subjects feel hardest?</h2>
+-                <p className="text-gray-500 mt-1 text-sm">Select all that apply ΓÇö your plan will focus more here</p>
++                <p className="text-gray-500 mt-1 text-sm">Select all that apply ├óΓé¼ΓÇ¥ your plan will focus more here</p>
+               </div>
+               <div className="space-y-2 mb-3">
+                 {subjects.map(subj => {
+@@ -405,13 +409,13 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+               </div>
+               <p className="text-xs text-gray-400 text-center">
+                 {prefs.weakSubjects.length === 0
+-                  ? "None selected ΓÇö skip if no subject feels particularly weak"
++                  ? "None selected ├óΓé¼ΓÇ¥ skip if no subject feels particularly weak"
+                   : `Marked weak: ${prefs.weakSubjects.join(", ")}`}
+               </p>
+             </div>
+           )}
+ 
+-          {/* ΓöÇΓöÇ Step 6: Plan Preview ΓöÇΓöÇ */}
++          {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Step 6: Plan Preview ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+           {step === 6 && (
+             <div>
+               <div className="text-center mb-5">
+@@ -425,10 +429,10 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+               {/* 4 metric cards */}
+               <div className="grid grid-cols-2 gap-3 mb-4">
+                 {([
+-                  { label: "Weekly Study",    value: `${rec.weeklyStudyHours}h/week`,        bg: "bg-indigo-50 border-indigo-100",  text: "text-indigo-700",  icon: "≡ƒôÜ" },
+-                  { label: "Syllabus Pace",   value: `${rec.topicsPerWeek} topics/week`,     bg: "bg-violet-50 border-violet-100",  text: "text-violet-700",  icon: "ΓÜí" },
+-                  { label: "Mock Tests",      value: `${rec.mocksPerMonth}/month`,            bg: "bg-amber-50 border-amber-100",    text: "text-amber-700",   icon: "≡ƒô¥" },
+-                  { label: "Accuracy Target", value: `${rec.accuracyTarget}%+`,              bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-700", icon: "≡ƒÄ»" },
++                  { label: "Weekly Study",    value: `${rec.weeklyStudyHours}h/week`,        bg: "bg-indigo-50 border-indigo-100",  text: "text-indigo-700",  icon: "├░┼╕ΓÇ£┼í" },
++                  { label: "Syllabus Pace",   value: `${rec.topicsPerWeek} topics/week`,     bg: "bg-violet-50 border-violet-100",  text: "text-violet-700",  icon: "├ó┼í┬í" },
++                  { label: "Mock Tests",      value: `${rec.mocksPerMonth}/month`,            bg: "bg-amber-50 border-amber-100",    text: "text-amber-700",   icon: "├░┼╕ΓÇ£┬¥" },
++                  { label: "Accuracy Target", value: `${rec.accuracyTarget}%+`,              bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-700", icon: "├░┼╕┼╜┬»" },
+                 ] as const).map(m => (
+                   <div key={m.label} className={`${m.bg} border rounded-xl p-3 text-center`}>
+                     <div className="text-xl mb-1">{m.icon}</div>
+@@ -449,12 +453,12 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+               {/* Summary chips */}
+               <div className="flex flex-wrap gap-1.5">
+                 {([
+-                  { icon: "≡ƒÄ»", label: fmtExam(prefs.examTarget) },
+-                  { icon: "≡ƒôà", label: String(prefs.examYear) },
+-                  { icon: "≡ƒÅ½", label: CLASS_OPTIONS.find(c => c.key === prefs.currentClass)?.label ?? "" },
+-                  { icon: "ΓÅ░", label: `${prefs.dailyStudyHours}h study/day` },
+-                  ...(prefs.schoolCoachingHours > 0 ? [{ icon: "≡ƒÅ¢∩╕Å", label: `${prefs.schoolCoachingHours}h school/coaching` }] : []),
+-                  ...prefs.weakSubjects.map(s => ({ icon: "≡ƒôë", label: s })),
++                  { icon: "├░┼╕┼╜┬»", label: fmtExam(prefs.examTarget) },
++                  { icon: "├░┼╕ΓÇ£ΓÇª", label: String(prefs.examYear) },
++                  { icon: "├░┼╕┬Å┬½", label: CLASS_OPTIONS.find(c => c.key === prefs.currentClass)?.label ?? "" },
++                  { icon: "├ó┬Å┬░", label: `${prefs.dailyStudyHours}h study/day` },
++                  ...(prefs.schoolCoachingHours > 0 ? [{ icon: "├░┼╕┬ÅΓÇ║├»┬╕┬Å", label: `${prefs.schoolCoachingHours}h school/coaching` }] : []),
++                  ...prefs.weakSubjects.map(s => ({ icon: "├░┼╕ΓÇ£ΓÇ░", label: s })),
+                 ]).map((chip, i) => (
+                   <span key={i} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full">
+                     {chip.icon} {chip.label}
+@@ -490,7 +494,7 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Generating Animation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Generating Animation ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ function GeneratingView() {
+   return (
+@@ -509,10 +513,10 @@ function GeneratingView() {
+         </p>
+         <div className="space-y-3">
+           {[
+-            { label: "Checking your syllabus", icon: "≡ƒôÜ" },
+-            { label: "Finding important topics",  icon: "≡ƒöì" },
+-            { label: "Making daily schedule",  icon: "≡ƒôà" },
+-            { label: "Preparing for your exam", icon: "≡ƒÄ»" },
++            { label: "Checking your syllabus", icon: "├░┼╕ΓÇ£┼í" },
++            { label: "Finding important topics",  icon: "├░┼╕ΓÇ¥┬ì" },
++            { label: "Making daily schedule",  icon: "├░┼╕ΓÇ£ΓÇª" },
++            { label: "Preparing for your exam", icon: "├░┼╕┼╜┬»" },
+           ].map((s, i) => (
+             <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+               <span className="text-lg">{s.icon}</span>
+@@ -526,7 +530,7 @@ function GeneratingView() {
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Circular Progress ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Circular Progress ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ function CircleProgress({ pct, color, size = 56 }: { pct: number; color: string; size?: number }) {
+   const r    = (size - 8) / 2;
+@@ -541,13 +545,13 @@ function CircleProgress({ pct, color, size = 56 }: { pct: number; color: string;
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Curriculum Roadmap Tree ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Curriculum Roadmap Tree ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ const TOPIC_STATUS = {
+-  completed:   { dot: "bg-emerald-500 border-emerald-500", text: "text-emerald-700", badge: "bg-emerald-50 border-emerald-200 text-emerald-700", icon: "Γ£ô" },
+-  in_progress: { dot: "bg-amber-400 border-amber-400",     text: "text-amber-700",   badge: "bg-amber-50 border-amber-200 text-amber-700",       icon: "ΓÇª" },
+-  locked:      { dot: "bg-slate-300 border-slate-300",     text: "text-slate-400",   badge: "bg-slate-50 border-slate-200 text-slate-400",        icon: "≡ƒöÆ" },
+-  default:     { dot: "bg-blue-400 border-blue-400",       text: "text-blue-700",    badge: "bg-blue-50 border-blue-200 text-blue-700",           icon: "Γùï" },
++  completed:   { dot: "bg-emerald-500 border-emerald-500", text: "text-emerald-700", badge: "bg-emerald-50 border-emerald-200 text-emerald-700", icon: "├ó┼ôΓÇ£" },
++  in_progress: { dot: "bg-amber-400 border-amber-400",     text: "text-amber-700",   badge: "bg-amber-50 border-amber-200 text-amber-700",       icon: "├óΓé¼┬ª" },
++  locked:      { dot: "bg-slate-300 border-slate-300",     text: "text-slate-400",   badge: "bg-slate-50 border-slate-200 text-slate-400",        icon: "├░┼╕ΓÇ¥ΓÇÖ" },
++  default:     { dot: "bg-blue-400 border-blue-400",       text: "text-blue-700",    badge: "bg-blue-50 border-blue-200 text-blue-700",           icon: "├óΓÇöΓÇ╣" },
+ };
+ function topicStatus(s: string) { return TOPIC_STATUS[s as keyof typeof TOPIC_STATUS] ?? TOPIC_STATUS.default; }
+ 
+@@ -716,7 +720,7 @@ function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean;
+         ${topic.status === "in_progress" ? "bg-amber-50/50 border-amber-100" : "hover:bg-slate-50"}`}>
+ 
+         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
+-          {topic.status === "completed" && <span className="text-[9px] text-white font-black">Γ£ô</span>}
++          {topic.status === "completed" && <span className="text-[9px] text-white font-black">├ó┼ôΓÇ£</span>}
+         </div>
+ 
+         <div className="flex-1 min-w-0">
+@@ -831,9 +835,9 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
+   const chapters: any[] = subject.chapters ?? [];
+ 
+   const subjectEmoji: Record<string, string> = {
+-    physics: "ΓÜ¢∩╕Å", chemistry: "≡ƒº¬", mathematics: "≡ƒôÉ", math: "≡ƒôÉ", biology: "≡ƒî▒",
++    physics: "├ó┼íΓÇ║├»┬╕┬Å", chemistry: "├░┼╕┬º┬¬", mathematics: "├░┼╕ΓÇ£┬É", math: "├░┼╕ΓÇ£┬É", biology: "├░┼╕┼Æ┬▒",
+   };
+-  const emoji = Object.entries(subjectEmoji).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? "≡ƒôÜ";
++  const emoji = Object.entries(subjectEmoji).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? "├░┼╕ΓÇ£┼í";
+ 
+   return (
+     <div className="mb-4">
+@@ -859,7 +863,7 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
+               <div className={`h-full ${cfg.dot} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+             </div>
+             <span className="text-xs text-slate-500">{subject.topicsCompleted}/{subject.topicsTotal} topics</span>
+-            <span className="text-xs text-slate-400">┬╖</span>
++            <span className="text-xs text-slate-400">├é┬╖</span>
+             <span className="text-xs text-slate-500">{chapters.length} chapters</span>
+           </div>
+         </div>
+@@ -986,7 +990,7 @@ function CurriculumRoadmap({ reportOverride }: { reportOverride?: ProgressReport
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Plan Item Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Plan Item Card ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ const TYPE_CFG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+   lecture:       { icon: <PlayCircle className="w-4 h-4" />, color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
+@@ -1060,7 +1064,7 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority }: {
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Micro Goals Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Micro Goals Card ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ type MicroGoal = { id: string; icon: string; text: string; sub: string; url: string };
+ 
+@@ -1078,16 +1082,16 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
+   const goals: MicroGoal[] = [];
+ 
+   revisionTopics.filter(t => t.isOverdue).slice(0, 2).forEach(t =>
+-    goals.push({ id: `rev-${t.topicId}`, icon: "≡ƒöü", text: `Revise ${t.topicName}`, sub: `${t.subjectName} ┬╖ Overdue`, url: `/student/ai-study/${t.topicId}` })
++    goals.push({ id: `rev-${t.topicId}`, icon: "├░┼╕ΓÇ¥┬ü", text: `Revise ${t.topicName}`, sub: `${t.subjectName} ├é┬╖ Overdue`, url: `/student/ai-study/${t.topicId}` })
+   );
+   weakTopics.slice(0, 2).forEach(t =>
+-    goals.push({ id: `wk-${t.topicId}`, icon: "ΓÜí", text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} ┬╖ ${t.accuracy}% accuracy`, url: `/student/quiz?topicId=${t.topicId}` })
++    goals.push({ id: `wk-${t.topicId}`, icon: "├ó┼í┬í", text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} ├é┬╖ ${t.accuracy}% accuracy`, url: `/student/quiz?topicId=${t.topicId}` })
+   );
+   highNegativeTopics.slice(0, 1).forEach(t =>
+-    goals.push({ id: `neg-${t.topicId}`, icon: "≡ƒÄ»", text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} ┬╖ ${t.wrong}/${t.attempted} wrong`, url: `/student/quiz?topicId=${t.topicId}` })
++    goals.push({ id: `neg-${t.topicId}`, icon: "├░┼╕┼╜┬»", text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} ├é┬╖ ${t.wrong}/${t.attempted} wrong`, url: `/student/quiz?topicId=${t.topicId}` })
+   );
+   pendingPYQTopics.slice(0, 2).forEach(t =>
+-    goals.push({ id: `pyq-${t.topicId}`, icon: "≡ƒôï", text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} ┬╖ Not attempted`, url: `/student/quiz?topicId=${t.topicId}` })
++    goals.push({ id: `pyq-${t.topicId}`, icon: "├░┼╕ΓÇ£ΓÇ╣", text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} ├é┬╖ Not attempted`, url: `/student/quiz?topicId=${t.topicId}` })
+   );
+ 
+   const display   = goals.slice(0, 5);
+@@ -1140,7 +1144,7 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Smart Reminders Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Smart Reminders Card ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, forgottenConcepts, weakTopics, pendingPYQTopics, onTabChange }: {
+   revisionTopics:    Array<{ isOverdue: boolean }>;
+@@ -1159,34 +1163,34 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests,
+   const reminders: Array<{ id: string; icon: string; text: string; sev: Sev; action?: { label: string; fn: () => void } }> = [];
+ 
+   if (overdueCount > 0)
+-    reminders.push({ id: "overdue", icon: "ΓÜá∩╕Å", sev: "high",
++    reminders.push({ id: "overdue", icon: "├ó┼í┬á├»┬╕┬Å", sev: "high",
+       text: `${overdueCount} topic${overdueCount > 1 ? "s" : ""} overdue for revision`,
+-      action: { label: "Revise now ΓåÆ", fn: () => onTabChange("revision") } });
++      action: { label: "Revise now ├óΓÇáΓÇÖ", fn: () => onTabChange("revision") } });
+ 
+   if (activeDays < 3)
+-    reminders.push({ id: "inactive", icon: "≡ƒôë", sev: activeDays === 0 ? "high" : "medium",
+-      text: `Only ${activeDays} active day${activeDays !== 1 ? "s" : ""} this week ΓÇö streak at risk`,
+-      action: { label: "Study today ΓåÆ", fn: () => onTabChange("today") } });
++    reminders.push({ id: "inactive", icon: "├░┼╕ΓÇ£ΓÇ░", sev: activeDays === 0 ? "high" : "medium",
++      text: `Only ${activeDays} active day${activeDays !== 1 ? "s" : ""} this week ├óΓé¼ΓÇ¥ streak at risk`,
++      action: { label: "Study today ├óΓÇáΓÇÖ", fn: () => onTabChange("today") } });
+ 
+   if (pendingMockTests.length > 0)
+-    reminders.push({ id: "mock", icon: "≡ƒô¥", sev: "info",
++    reminders.push({ id: "mock", icon: "├░┼╕ΓÇ£┬¥", sev: "info",
+       text: `${pendingMockTests.length} mock test${pendingMockTests.length > 1 ? "s" : ""} available`,
+-      action: { label: "Take now ΓåÆ", fn: () => navigate("/student/tests") } });
++      action: { label: "Take now ├óΓÇáΓÇÖ", fn: () => navigate("/student/tests") } });
+ 
+   if (forgottenConcepts.length > 3)
+-    reminders.push({ id: "forgotten", icon: "≡ƒöü", sev: "medium",
++    reminders.push({ id: "forgotten", icon: "├░┼╕ΓÇ¥┬ü", sev: "medium",
+       text: `${forgottenConcepts.length} concepts not revisited in 14+ days`,
+-      action: { label: "View ΓåÆ", fn: () => onTabChange("revision") } });
++      action: { label: "View ├óΓÇáΓÇÖ", fn: () => onTabChange("revision") } });
+ 
+   if (weakTopics.length > 5)
+-    reminders.push({ id: "weak", icon: "ΓÜí", sev: "medium",
++    reminders.push({ id: "weak", icon: "├ó┼í┬í", sev: "medium",
+       text: `${weakTopics.length} weak topics need practice`,
+-      action: { label: "Practice ΓåÆ", fn: () => onTabChange("weakness") } });
++      action: { label: "Practice ├óΓÇáΓÇÖ", fn: () => onTabChange("weakness") } });
+ 
+   if (pendingPYQTopics.length > 0)
+-    reminders.push({ id: "pyq", icon: "≡ƒôï", sev: "info",
++    reminders.push({ id: "pyq", icon: "├░┼╕ΓÇ£ΓÇ╣", sev: "info",
+       text: `${pendingPYQTopics.length} topics with no PYQ attempts yet`,
+-      action: { label: "Go to Backlogs ΓåÆ", fn: () => onTabChange("backlogs") } });
++      action: { label: "Go to Backlogs ├óΓÇáΓÇÖ", fn: () => onTabChange("backlogs") } });
+ 
+   const ORDER: Record<Sev, number> = { high: 0, medium: 1, info: 2 };
+   reminders.sort((a, b) => ORDER[a.sev] - ORDER[b.sev]);
+@@ -1214,7 +1218,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests,
+       {display.length === 0 ? (
+         <div className="px-4 py-5 text-center">
+           <CheckCircle2 className="w-7 h-7 text-emerald-400 mx-auto mb-2" />
+-          <p className="text-xs text-gray-400">All caught up ΓÇö no urgent reminders!</p>
++          <p className="text-xs text-gray-400">All caught up ├óΓé¼ΓÇ¥ no urgent reminders!</p>
+         </div>
+       ) : (
+         <div className="divide-y divide-gray-50">
+@@ -1241,7 +1245,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests,
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ AI Sarthi Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ AI Sarthi Card ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ function metricColor(score: number): string {
+   if (score >= 70) return "text-emerald-600";
+@@ -1265,16 +1269,16 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
+   revisionTopicsCount: number;
+   forgottenCount:    number;
+ }) {
+-  // ΓöÇΓöÇ Syllabus completion ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Syllabus completion ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   const syllabusTotal     = progressReport?.summary.totalTopics     ?? 0;
+   const syllabusCompleted = progressReport?.summary.completedTopics ?? 0;
+   const syllabusPct = syllabusTotal > 0 ? Math.round((syllabusCompleted / syllabusTotal) * 100) : 0;
+ 
+-  // ΓöÇΓöÇ Consistency (active days / 7) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Consistency (active days / 7) ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   const daysActive        = weeklyActivity.filter(d => d.minutesStudied > 0).length;
+   const consistencyScore  = Math.round((daysActive / 7) * 100);
+ 
+-  // ΓöÇΓöÇ Test readiness (avg accuracy from last 5 submitted sessions) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Test readiness (avg accuracy from last 5 submitted sessions) ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   const doneSessions = sessions.filter(
+     s => ["submitted", "completed", "auto_submitted"].includes(s.status)
+       && ((s.correctCount ?? 0) + (s.wrongCount ?? 0)) > 0
+@@ -1288,26 +1292,26 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
+       )
+     : 0;
+ 
+-  // ΓöÇΓöÇ Focus hours this week ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Focus hours this week ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   const focusHours = Math.round(weeklyActivity.reduce((s, d) => s + d.minutesStudied, 0) / 60 * 10) / 10;
+ 
+-  // ΓöÇΓöÇ Revision health ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Revision health ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   const overdueCount = revisionTopicsCount + forgottenCount;
+   const revisionHealth = syllabusCompleted > 0
+     ? Math.max(0, Math.round(100 - (overdueCount / syllabusCompleted) * 100))
+     : 100;
+ 
+-  // ΓöÇΓöÇ Lecture vs question imbalance ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Lecture vs question imbalance ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   const allTopics = progressReport?.subjects.flatMap(s => s.chapters.flatMap(c => c.topics)) ?? [];
+   const lectureNoQ = allTopics.filter(t => t.lecture?.anyCompleted && (t.pyq?.attempted ?? 0) === 0).length;
+   const lectureImbalance = allTopics.length > 0 && lectureNoQ / allTopics.length >= 0.35;
+ 
+-  // ΓöÇΓöÇ Consistency trend (first 3 days vs last 4 days of week) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Consistency trend (first 3 days vs last 4 days of week) ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   const firstHalf  = weeklyActivity.slice(0, 3).reduce((s, d) => s + d.minutesStudied, 0);
+   const secondHalf = weeklyActivity.slice(3).reduce( (s, d) => s + d.minutesStudied, 0);
+   const consistencyDropped = firstHalf > 30 && secondHalf < firstHalf * 0.55;
+ 
+-  // ΓöÇΓöÇ Best performance time from session timestamps ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Best performance time from session timestamps ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   let bestTimeInsight: string | null = null;
+   if (doneSessions.length >= 3) {
+     const byHour: Record<number, { total: number; count: number }> = {};
+@@ -1325,36 +1329,36 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
+     });
+     if (bestH >= 0) {
+       const fmt = (h: number) => h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
+-      bestTimeInsight = `You perform best between ${fmt(bestH)}ΓÇô${fmt(bestH + 2)}.`;
++      bestTimeInsight = `You perform best between ${fmt(bestH)}├óΓé¼ΓÇ£${fmt(bestH + 2)}.`;
+     }
+   }
+ 
+-  // ΓöÇΓöÇ Build personalised insights ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Build personalised insights ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+   type InsightSeverity = "warning" | "success" | "info";
+   const insights: { icon: string; text: string; sev: InsightSeverity }[] = [];
+ 
+   if (consistencyDropped)
+-    insights.push({ icon: "≡ƒôë", text: "Your consistency dropped this week.", sev: "warning" });
++    insights.push({ icon: "├░┼╕ΓÇ£ΓÇ░", text: "Your consistency dropped this week.", sev: "warning" });
+   if (lectureImbalance)
+-    insights.push({ icon: "≡ƒô║", text: "You are spending too much time watching lectures vs solving questions.", sev: "warning" });
++    insights.push({ icon: "├░┼╕ΓÇ£┬║", text: "You are spending too much time watching lectures vs solving questions.", sev: "warning" });
+   if (overdueCount > 5 || (syllabusCompleted > 0 && overdueCount / syllabusCompleted > 0.3))
+-    insights.push({ icon: "≡ƒöü", text: "Your revision gap is too high. Schedule revision sessions.", sev: "warning" });
++    insights.push({ icon: "├░┼╕ΓÇ¥┬ü", text: "Your revision gap is too high. Schedule revision sessions.", sev: "warning" });
+   if (testReadiness > 0 && testReadiness < 50)
+-    insights.push({ icon: "≡ƒô¥", text: "Mock test accuracy is below 50%. Increase practice question frequency.", sev: "warning" });
++    insights.push({ icon: "├░┼╕ΓÇ£┬¥", text: "Mock test accuracy is below 50%. Increase practice question frequency.", sev: "warning" });
+   if (weakTopicsCount >= 5)
+-    insights.push({ icon: "ΓÜá∩╕Å", text: `${weakTopicsCount} weak topics need focused practice this week.`, sev: "warning" });
++    insights.push({ icon: "├ó┼í┬á├»┬╕┬Å", text: `${weakTopicsCount} weak topics need focused practice this week.`, sev: "warning" });
+   if (bestTimeInsight)
+-    insights.push({ icon: "ΓÅ░", text: bestTimeInsight, sev: "info" });
++    insights.push({ icon: "├ó┬Å┬░", text: bestTimeInsight, sev: "info" });
+   if (streak >= 7)
+-    insights.push({ icon: "≡ƒöÑ", text: `${streak}-day streak! You're building an unbreakable habit.`, sev: "success" });
++    insights.push({ icon: "├░┼╕ΓÇ¥┬Ñ", text: `${streak}-day streak! You're building an unbreakable habit.`, sev: "success" });
+   if (syllabusPct >= 80)
+-    insights.push({ icon: "≡ƒÜÇ", text: "Syllabus almost complete ΓÇö start full-length mock tests now.", sev: "success" });
++    insights.push({ icon: "├░┼╕┼íΓé¼", text: "Syllabus almost complete ├óΓé¼ΓÇ¥ start full-length mock tests now.", sev: "success" });
+   if (testReadiness >= 75)
+-    insights.push({ icon: "≡ƒÆ¬", text: "Excellent test accuracy ΓÇö keep the momentum.", sev: "success" });
++    insights.push({ icon: "├░┼╕ΓÇÖ┬¬", text: "Excellent test accuracy ├óΓé¼ΓÇ¥ keep the momentum.", sev: "success" });
+   if (insights.length === 0 && syllabusPct === 0)
+-    insights.push({ icon: "Γ£¿", text: "Complete more study sessions to unlock personalised insights.", sev: "info" });
++    insights.push({ icon: "├ó┼ô┬¿", text: "Complete more study sessions to unlock personalised insights.", sev: "info" });
+   if (insights.length === 0)
+-    insights.push({ icon: "≡ƒôÜ", text: "You're on track. Keep completing tasks consistently.", sev: "info" });
++    insights.push({ icon: "├░┼╕ΓÇ£┼í", text: "You're on track. Keep completing tasks consistently.", sev: "info" });
+ 
+   // Sort: warnings first, then info, then success
+   const ORDER: Record<InsightSeverity, number> = { warning: 0, info: 1, success: 2 };
+@@ -1367,12 +1371,12 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
+   };
+ 
+   const METRICS = [
+-    { label: "Syllabus",    value: `${syllabusPct}%`,          score: syllabusPct,      icon: "≡ƒôÜ" },
+-    { label: "Consistency", value: `${streak} day streak`,      score: Math.min(100, streak * 14), icon: "≡ƒöÑ" },
+-    { label: "Test Ready",  value: doneSessions.length > 0 ? `${testReadiness}%` : "ΓÇö", score: testReadiness, icon: "≡ƒô¥" },
+-    { label: "XP Points",   value: xpPoints.toLocaleString(),   score: -1,               icon: "Γ¡É" },
+-    { label: "Rev. Health", value: `${revisionHealth}%`,        score: revisionHealth,   icon: "≡ƒöü" },
+-    { label: "Weak Topics", value: String(weakTopicsCount),     score: weakTopicsCount === 0 ? 100 : weakTopicsCount > 10 ? 10 : 50, icon: "ΓÜí" },
++    { label: "Syllabus",    value: `${syllabusPct}%`,          score: syllabusPct,      icon: "├░┼╕ΓÇ£┼í" },
++    { label: "Consistency", value: `${streak} day streak`,      score: Math.min(100, streak * 14), icon: "├░┼╕ΓÇ¥┬Ñ" },
++    { label: "Test Ready",  value: doneSessions.length > 0 ? `${testReadiness}%` : "├óΓé¼ΓÇ¥", score: testReadiness, icon: "├░┼╕ΓÇ£┬¥" },
++    { label: "XP Points",   value: xpPoints.toLocaleString(),   score: -1,               icon: "├ó┬¡┬É" },
++    { label: "Rev. Health", value: `${revisionHealth}%`,        score: revisionHealth,   icon: "├░┼╕ΓÇ¥┬ü" },
++    { label: "Weak Topics", value: String(weakTopicsCount),     score: weakTopicsCount === 0 ? 100 : weakTopicsCount > 10 ? 10 : 50, icon: "├ó┼í┬í" },
+   ];
+ 
+   return (
+@@ -1413,7 +1417,7 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Backlog Section Wrapper ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Backlog Section Wrapper ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ type AccentColor = "red" | "blue" | "amber" | "violet" | "teal";
+ 
+@@ -1449,7 +1453,7 @@ function BacklogSection({ icon, title, count, accentColor, children }: {
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Revision Note Prompts ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Revision Note Prompts ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ const NOTE_PROMPTS: Record<string, string> = {
+   physics:     "Formulas:\n\nUnits & Dimensions:\n\nKey Laws / Concepts:\n\nCommon Mistakes:",
+@@ -1462,7 +1466,7 @@ function notePlaceholder(subject: string): string {
+   return key ? NOTE_PROMPTS[key] : "Key Concepts:\n\nFormulas / Definitions:\n\nCommon Mistakes:";
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Revision Topic Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Revision Topic Card ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
+ 
+ type RevisionTopicItem = {
+   topicId: string; topicName: string; subjectName: string; chapterName: string;
+@@ -1506,9 +1510,9 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
+             <span className="text-gray-400 truncate">{topic.chapterName}</span>
+           </div>
+           <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
+-            <span>≡ƒôà Learned <strong className="text-gray-700">{topic.learnedOn}</strong></span>
++            <span>├░┼╕ΓÇ£ΓÇª Learned <strong className="text-gray-700">{topic.learnedOn}</strong></span>
+             <span className={`font-semibold ${topic.isOverdue ? "text-red-600" : "text-teal-600"}`}>
+-              ΓåÆ {topic.isOverdue ? "Overdue" : `Revise ${topic.nextRevisionLabel}`}
++              ├óΓÇáΓÇÖ {topic.isOverdue ? "Overdue" : `Revise ${topic.nextRevisionLabel}`}
+             </span>
+           </div>
+         </div>
+@@ -1533,7 +1537,7 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
+         <div className="border-t border-violet-100 bg-violet-50/60 p-3 space-y-2">
+           <div className="flex items-center gap-1.5">
+             <Brain className="w-3 h-3 text-violet-600" />
+-            <span className="text-[11px] font-semibold text-violet-700">Revision Notes ΓÇö {topic.topicName}</span>
++            <span className="text-[11px] font-semibold text-violet-700">Revision Notes ├óΓé¼ΓÇ¥ {topic.topicName}</span>
+           </div>
+           <textarea
+             value={noteText}
+@@ -1552,7 +1556,96 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Main Page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Main Page ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
++
++// ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Course List Landing ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
++
++function CourseListView({
++  courses,
++  isLoading,
++  onSelect,
++}: {
++  courses: import("@/lib/api/student").MyCourse[];
++  isLoading: boolean;
++  onSelect: (c: import("@/lib/api/student").MyCourse) => void;
++}) {
++  const examIcon: Record<string, string> = {
++    jee_mains: "├ó┼íΓÇ║├»┬╕┬Å", jee_advanced: "├░┼╕ΓÇ¥┬¼", neet: "├░┼╕┬⌐┬║", foundation: "├░┼╕ΓÇ£┼í", other: "├░┼╕┼╜┬»",
++  };
++
++  if (isLoading) {
++    return (
++      <div className="flex items-center justify-center h-64">
++        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
++      </div>
++    );
++  }
++
++  if (!courses.length) {
++    return (
++      <div className="flex flex-col items-center justify-center h-64 text-center px-6">
++        <BookOpen className="w-12 h-12 text-gray-300 mb-3" />
++        <p className="text-gray-500 font-medium">No enrolled courses found</p>
++        <p className="text-gray-400 text-sm mt-1">Enroll in a course to get a personalised study plan</p>
++      </div>
++    );
++  }
++
++  return (
++    <div className="min-h-screen bg-gray-50 -mx-3 -mt-4 sm:-mx-4 lg:-mx-6 lg:-mt-6">
++      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-3">
++        <div className="max-w-3xl mx-auto flex items-center gap-3">
++          <Brain className="w-5 h-5 text-indigo-500 shrink-0" />
++          <div>
++            <h1 className="text-base font-bold text-gray-900">Study Plans</h1>
++            <p className="text-xs text-gray-500">Select a course to view its AI study plan</p>
++          </div>
++        </div>
++      </div>
++
++      <div className="max-w-3xl mx-auto px-4 py-5 space-y-3">
++        {courses.map((c) => {
++          const icon = examIcon[c.examTarget ?? "other"] ?? "├░┼╕┼╜┬»";
++          const examLabel = EXAM_OPTIONS.find(e => e.key === c.examTarget)?.label ?? c.examTarget ?? "Course";
++          const pct = c.progress?.overallPct ?? 0;
++          return (
++            <button
++              key={c.id}
++              onClick={() => onSelect(c)}
++              className="w-full text-left bg-white rounded-2xl border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-sm transition-all group"
++            >
++              <div className="flex items-start gap-3">
++                {c.thumbnailUrl ? (
++                  <img src={c.thumbnailUrl} alt={c.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
++                ) : (
++                  <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl shrink-0">{icon}</div>
++                )}
++                <div className="flex-1 min-w-0">
++                  <p className="font-semibold text-gray-900 text-sm truncate group-hover:text-indigo-700 transition-colors">{c.name}</p>
++                  <p className="text-xs text-gray-500 mt-0.5">{examLabel} ├é┬╖ {c.class ?? ""}</p>
++                  {pct > 0 && (
++                    <div className="mt-2 flex items-center gap-2">
++                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
++                        <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
++                      </div>
++                      <span className="text-xs text-gray-400 shrink-0">{Math.round(pct)}%</span>
++                    </div>
++                  )}
++                  <div className="mt-2">
++                    <span className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded-full font-medium">
++                      <Sparkles className="w-3 h-3" /> View AI Study Plan
++                    </span>
++                  </div>
++                </div>
++                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 shrink-0 mt-1 transition-colors" />
++              </div>
++            </button>
++          );
++        })}
++      </div>
++    </div>
++  );
++}
+ 
+ type ActiveTab = "today" | "backlogs" | "weakness" | "revision" | "roadmap";
+ 
+@@ -1561,6 +1654,10 @@ export default function StudentStudyPlanPage() {
+   const { data: me, isLoading: meLoading } = useStudentMe();
+   const student = me?.student;
+ 
++  // ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Course selection ├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼├óΓÇ¥Γé¼
++  const [selectedBatch, setSelectedBatch] = useState<{ batchId: string; batchName: string; examTarget?: string | null; thumbnailUrl?: string | null } | null>(null);
++  const { data: myCourses = [], isLoading: coursesLoading } = useMyCourses();
++
+   const today     = format(new Date(), "yyyy-MM-dd");
+   const backlogStart = format(subDays(new Date(), 7), "yyyy-MM-dd");
+   const yesterday  = format(subDays(new Date(), 1), "yyyy-MM-dd");
+@@ -1575,6 +1672,7 @@ export default function StudentStudyPlanPage() {
+   const [backlogPage,  setBacklogPage]  = useState<null|"plan"|"lectures"|"notes"|"pyq"|"dpp">(null);
+   const [weakPage,     setWeakPage]     = useState<null|"chapters"|"topics"|"forgotten"|"negative">(null);
+   const [revisionPage, setRevisionPage] = useState<null|"schedule"|"table"|"aiplan">(null);
++  const [revisionSubTab, setRevisionSubTab] = useState<"intensive" | "spaced" | "notes" | "questions">("spaced");
+   const [openNoteIds,     setOpenNoteIds]     = useState<Set<string>>(new Set());
+   const [revisionNotes,   setRevisionNotes]   = useState<Record<string, string>>({});
+   const [openRevBuckets,  setOpenRevBuckets]  = useState<Set<number>>(new Set([1, 3, 7, 21]));
+@@ -1585,17 +1683,19 @@ export default function StudentStudyPlanPage() {
+   const toggleRevBucket = (interval: number) =>
+     setOpenRevBuckets(prev => { const n = new Set(prev); n.has(interval) ? n.delete(interval) : n.add(interval); return n; });
+ 
+-  const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan();
+-  const { data: backlogWeekData = {} }                    = useWeeklyPlanGrouped(backlogStart, yesterday);
+-  const { data: weekPlanData = {} }                       = useWeeklyPlanGrouped(today, weekEnd);
++  const activeBatchId = selectedBatch?.batchId;
++  const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan(activeBatchId);
++  const { data: backlogWeekData = {} }                    = useWeeklyPlanGrouped(backlogStart, yesterday, activeBatchId);
++  const { data: weekPlanData = {} }                       = useWeeklyPlanGrouped(today, weekEnd, activeBatchId);
+   const { data: progressReport }                          = useProgressReport();
+ 
+   // For the full backlogs tab
+-  const { data: myCourses = [] }         = useMyCourses();
+-  const { data: allLectures = [] }       = useAllBatchLectures();
+-  const { data: mockTests = [] }         = useMockTests({ isPublished: true });
++  // myCourses already declared above (course selection)
++  const { data: allLectures = [] }       = useAllBatchLectures(activeBatchId);
++  const { data: mockTests = [] }         = useMockTests({ isPublished: true, batchId: activeBatchId });
+   const { data: sessions = [] }          = useStudentSessions();
+   const { data: weeklyActivity = [] }    = useWeeklyActivity();
++  const { data: aiStudyHistory = [] }    = useAiStudyHistory();
+ 
+   // Per-batch curriculum (for DPPs, PDFs, notes resources)
+   const curriculaResults = useQueries({
+@@ -1618,53 +1718,84 @@ export default function StudentStudyPlanPage() {
+   const days    = countdownDays(student?.examYear);
+ 
+   // Synthesize a ProgressReport from course curriculum data when the real report has no subjects.
+-  // This happens when the student hasn't taken any gate quizzes yet ΓÇö curriculum data always has
+-  // the full subjectΓåÆchapterΓåÆtopic tree with live lecture/status info.
++  // This happens when the student hasn't taken any gate quizzes yet ├óΓé¼ΓÇ¥ curriculum data always has
++  // the full subject├óΓÇáΓÇÖchapter├óΓÇáΓÇÖtopic tree with live lecture/status info.
+   const effectiveProgressReport = useMemo((): ProgressReport | undefined => {
+-    if ((progressReport?.subjects?.length ?? 0) > 0) return progressReport;
++    const activeCurriculum = curriculaResults.find(
++      (r, idx) => myCourses[idx]?.id === activeBatchId
++    )?.data;
++    const activeSubjectIds = new Set(activeCurriculum?.subjects?.map(s => s.id) || []);
++
++    const filterReport = (report: ProgressReport) => {
++      if (!activeBatchId) return { ...report, subjects: [], summary: { ...report.summary, totalTopics: 0, completedTopics: 0 } };
++      const filteredSubjects = report.subjects.filter(s => activeSubjectIds.has(s.subjectId));
++      const totalTopics     = filteredSubjects.reduce((s, sub) => s + sub.topicsTotal,     0);
++      const completedTopics = filteredSubjects.reduce((s, sub) => s + sub.topicsCompleted, 0);
++      const allTopics       = filteredSubjects.flatMap(sub => sub.chapters.flatMap(c => c.topics));
++      return {
++        ...report,
++        subjects: filteredSubjects,
++        summary: {
++          ...report.summary,
++          totalTopics,
++          completedTopics,
++          inProgressTopics:    allTopics.filter(t => t.status === "in_progress").length,
++          unlockedTopics:      allTopics.filter(t => t.status === "unlocked").length,
++          lockedTopics:        allTopics.filter(t => t.status === "locked").length,
++          overallAccuracy:     Math.round(allTopics.reduce((s, t) => s + (t.bestAccuracy ?? 0), 0) / Math.max(allTopics.length, 1)),
++          totalPYQAttempted:   allTopics.reduce((s, t) => s + (t.pyq?.attempted ?? 0), 0),
++          pyqAccuracy:         Math.round(allTopics.reduce((s, t) => s + ((t.pyq?.accuracy ?? 0) * (t.pyq?.attempted ?? 0)), 0) / Math.max(allTopics.reduce((s, t) => s + (t.pyq?.attempted ?? 0), 0), 1)),
++          lecturesCompleted:   allTopics.filter(t => t.lecture?.anyCompleted).length,
++        }
++      };
++    };
++
++    if (!activeBatchId) return undefined;
++    if ((progressReport?.subjects?.length ?? 0) > 0) return filterReport(progressReport!);
++
+     const subjects: SubjectReportEntry[] = [];
+-    curriculaResults.forEach(result => {
+-      if (!result.data?.subjects?.length) return;
+-      result.data.subjects.forEach(s => {
+-        const chapters: ChapterReportEntry[] = s.chapters.map(ch => {
+-          const topics: TopicReportEntry[] = ch.topics.map(t => ({
+-            topicId:            t.id,
+-            topicName:          t.name,
+-            status:             t.status,
+-            bestAccuracy:       t.bestAccuracy ?? 0,
+-            attemptCount:       0,
+-            gatePassPercentage: t.gatePassPercentage ?? 70,
+-            completedAt:        t.completedAt ?? null,
+-            lecture: t.lectures.total > 0
+-              ? { avgWatchPct: (t.lectures.completed / t.lectures.total) * 100, anyCompleted: t.lectures.completed > 0 }
+-              : null,
+-            pyq:       null,
+-            aiSession: null,
+-          }));
+-          const completedCount   = topics.filter(t => t.status === "completed").length;
+-          return {
+-            chapterId:       ch.id,
+-            chapterName:     ch.name,
+-            topicsTotal:     topics.length,
+-            topicsCompleted: completedCount,
+-            overallAccuracy: topics.reduce((s, t) => s + t.bestAccuracy, 0) / Math.max(topics.length, 1),
+-            topics,
+-          };
+-        });
+-        const totalTopics     = chapters.reduce((s, c) => s + c.topicsTotal, 0);
+-        const completedTopics = chapters.reduce((s, c) => s + c.topicsCompleted, 0);
+-        subjects.push({
+-          subjectId:       s.id,
+-          subjectName:     s.name,
+-          examTarget:      s.examTarget ?? null,
+-          colorCode:       s.colorCode  ?? null,
+-          topicsTotal:     totalTopics,
+-          topicsCompleted: completedTopics,
+-          overallAccuracy: chapters.reduce((s, c) => s + c.overallAccuracy * c.topicsTotal, 0) / Math.max(totalTopics, 1),
+-          chapters,
+-        });
++    const subjectsToProcess = activeCurriculum?.subjects ?? [];
++    
++    subjectsToProcess.forEach(s => {
++      const chapters: ChapterReportEntry[] = s.chapters.map(ch => {
++        const topics: TopicReportEntry[] = ch.topics.map(t => ({
++          topicId:            t.id,
++          topicName:          t.name,
++          status:             t.status,
++          bestAccuracy:       t.bestAccuracy ?? 0,
++          attemptCount:       0,
++          gatePassPercentage: t.gatePassPercentage ?? 70,
++          completedAt:        t.completedAt ?? null,
++          lecture: t.lectures.total > 0
++            ? { avgWatchPct: (t.lectures.completed / t.lectures.total) * 100, anyCompleted: t.lectures.completed > 0 }
++            : null,
++          pyq:       null,
++          aiSession: null,
++        }));
++        const completedCount   = topics.filter(t => t.status === "completed").length;
++        return {
++          chapterId:       ch.id,
++          chapterName:     ch.name,
++          topicsTotal:     topics.length,
++          topicsCompleted: completedCount,
++          overallAccuracy: topics.reduce((s, t) => s + t.bestAccuracy, 0) / Math.max(topics.length, 1),
++          topics,
++        };
++      });
++      const totalTopics     = chapters.reduce((s, c) => s + c.topicsTotal, 0);
++      const completedTopics = chapters.reduce((s, c) => s + c.topicsCompleted, 0);
++      subjects.push({
++        subjectId:       s.id,
++        subjectName:     s.name,
++        examTarget:      s.examTarget ?? null,
++        colorCode:       s.colorCode  ?? null,
++        topicsTotal:     totalTopics,
++        topicsCompleted: completedTopics,
++        overallAccuracy: chapters.reduce((s, c) => s + c.overallAccuracy * c.topicsTotal, 0) / Math.max(totalTopics, 1),
++        chapters,
+       });
+     });
++
+     if (subjects.length === 0) return progressReport;
+     const totalTopics     = subjects.reduce((s, sub) => s + sub.topicsTotal,     0);
+     const completedTopics = subjects.reduce((s, sub) => s + sub.topicsCompleted, 0);
+@@ -1684,7 +1815,7 @@ export default function StudentStudyPlanPage() {
+         lecturesCompleted:   allTopics.filter(t => t.lecture?.anyCompleted).length,
+       },
+     };
+-  }, [progressReport, curriculaResults]);
++  }, [progressReport, curriculaResults, myCourses, activeBatchId]);
+ 
+   // Derive weak topic IDs from progress report (accuracy < 50, has been attempted)
+   const weakTopicIds = useMemo<Set<string>>(() => {
+@@ -1788,7 +1919,7 @@ export default function StudentStudyPlanPage() {
+   }, [effectiveProgressReport]);
+ 
+   // Revision queue: topics the student has studied (via completed plan items OR report signals)
+-  // Primary source: completed StudyPlanItems ΓÇö always fresh, never stale from cache.
++  // Primary source: completed StudyPlanItems ├óΓé¼ΓÇ¥ always fresh, never stale from cache.
+   // Secondary: effectiveProgressReport for topics with quiz/lecture signals not in the plan.
+   const revisionTopics = useMemo(() => {
+     const now = new Date();
+@@ -1848,7 +1979,7 @@ export default function StudentStudyPlanPage() {
+             (t.bestAccuracy > 0 || t.attemptCount > 0 ||
+              t.lecture?.anyCompleted || t.aiSession?.completed);
+           if (hasInteracted)
+-            addTopic(t.topicId, t.topicName, s.subjectName, c.chapterName, t.bestAccuracy ?? 0, t.completedAt ?? null, "ΓÇö");
++            addTopic(t.topicId, t.topicName, s.subjectName, c.chapterName, t.bestAccuracy ?? 0, t.completedAt ?? null, "├óΓé¼ΓÇ¥");
+         })
+       )
+     );
+@@ -1859,7 +1990,47 @@ export default function StudentStudyPlanPage() {
+     );
+   }, [effectiveProgressReport, todayItems, backlogWeekData]);
+ 
+-  // 7-day AI revision plan: assign each topic to the day it's due (capped 0ΓÇô6)
++  // 7-day AI revision plan: assign each topic to the day it's due (capped 0├óΓé¼ΓÇ£6)
++  const syllabusCompleted = useMemo(() => {
++    if (!effectiveProgressReport?.summary) return false;
++    const { completedTopics, totalTopics } = effectiveProgressReport.summary;
++    return totalTopics > 0 && completedTopics >= totalTopics;
++  }, [effectiveProgressReport]);
++
++  const intensiveRevisionItems = useMemo(() => {
++    if (!syllabusCompleted) return [];
++    const items = [
++      ...todayItems,
++      ...Object.values(weekPlanData).flat()
++    ].filter(it => it.type === 'revision');
++    const seen = new Set();
++    return items.filter(it => {
++      const tid = it.content?.topicId;
++      if (!tid || seen.has(tid)) return false;
++      seen.add(tid);
++      return true;
++    });
++  }, [todayItems, weekPlanData, syllabusCompleted]);
++
++  const aiNotesHistory = useMemo(() => {
++    return aiStudyHistory.filter(s => !!s.lessonMarkdown);
++  }, [aiStudyHistory]);
++
++  const aiPracticeHistory = useMemo(() => {
++    const list: Array<{ topicId: string; topicName: string; subjectName?: string; question: string; answer: string; explanation: string; options?: string[] }> = [];
++    aiStudyHistory.forEach(s => {
++      (s.practiceQuestions || []).forEach(q => {
++        list.push({
++          topicId: s.topicId,
++          topicName: s.topicName ?? "Unknown Topic",
++          subjectName: s.subjectName,
++          ...q
++        });
++      });
++    });
++    return list;
++  }, [aiStudyHistory]);
++
+   const aiRevisionPlan = useMemo(() => {
+     const now = new Date();
+     const days = Array.from({ length: 7 }, (_, i) => ({
+@@ -1937,7 +2108,11 @@ export default function StudentStudyPlanPage() {
+     );
+     const seen = new Set<string>();
+     const list: Array<CourseResource & { topicName: string; subjectName: string; chapterName: string; topicId: string }> = [];
+-    curriculaResults.forEach(result => {
++    const curriculaToProcess = activeBatchId
++      ? curriculaResults.filter((r, idx) => myCourses[idx]?.id === activeBatchId)
++      : curriculaResults;
++
++    curriculaToProcess.forEach(result => {
+       result.data?.subjects.forEach(subj =>
+         subj.chapters.forEach(ch =>
+           ch.topics.forEach(topic => {
+@@ -1959,7 +2134,7 @@ export default function StudentStudyPlanPage() {
+       );
+     });
+     return list;
+-  }, [curriculaResults, effectiveProgressReport]);
++  }, [curriculaResults, effectiveProgressReport, activeBatchId, myCourses]);
+ 
+   // Pending mock tests: published tests with no submitted/completed session
+   const pendingMockTests = useMemo(() => {
+@@ -2005,13 +2180,14 @@ export default function StudentStudyPlanPage() {
+   const handleWizardComplete = async (prefs: WizardState) => {
+     setWizardDone(true);
+     generate.mutate({
++      batchId: activeBatchId!,
+       targetExam: prefs.examTarget,
+       examYear: String(prefs.examYear),
+       currentClass: prefs.currentClass,
+       dailyStudyHours: prefs.dailyStudyHours,
+     }, {
+       onSuccess: () => {
+-        toast.success("Your roadmap and study plan are ready!");
++        toast.success("Your study plan is ready!");
+         setWizardDone(false);
+         setShowWizard(false);
+       },
+@@ -2023,13 +2199,13 @@ export default function StudentStudyPlanPage() {
+   };
+ 
+   const handleRegenerate = () =>
+-    regenerate.mutate(undefined, {
++    regenerate.mutate(activeBatchId, {
+       onSuccess: () => toast.success("Plan regenerated!"),
+       onError:   () => toast.error("Could not regenerate. Please try again."),
+     });
+ 
+   const handleResetConfirmed = () =>
+-    clearPlan.mutate(undefined, {
++    clearPlan.mutate(activeBatchId, {
+       onSuccess: () => {
+         setConfirmReset(false);
+         setShowWizard(true);
+@@ -2054,6 +2230,20 @@ export default function StudentStudyPlanPage() {
+     </div>
+   );
+ 
++  // Show course list when no course is selected
++  if (!selectedBatch) {
++    return (
++      <CourseListView
++        courses={myCourses}
++        isLoading={coursesLoading}
++        onSelect={(c) => {
++          setSelectedBatch({ batchId: c.id, batchName: c.name, examTarget: c.examTarget, thumbnailUrl: c.thumbnailUrl ?? null });
++          setShowWizard(false);
++        }}
++      />
++    );
++  }
++
+   if (wizardDone || generate.isPending || regenerate.isPending || clearPlan.isPending) return <GeneratingView />;
+ 
+   const TABS: Array<{ key: ActiveTab; label: string; icon: React.ReactNode; badge?: number }> = [
+@@ -2067,6 +2257,24 @@ export default function StudentStudyPlanPage() {
+   return (
+     <div className="min-h-screen bg-gray-50 -mx-3 -mt-4 sm:-mx-4 lg:-mx-6 lg:-mt-6">
+ 
++      {/* Course breadcrumb / back nav */}
++      <div className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-2.5">
++        <div className="max-w-3xl mx-auto flex items-center gap-2">
++          <button
++            onClick={() => { setSelectedBatch(null); setShowWizard(false); setWizardDone(false); }}
++            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 transition-colors py-1 pr-2"
++          >
++            <ChevronRight className="w-3.5 h-3.5 rotate-180" />
++            All Courses
++          </button>
++          <span className="text-gray-300">/</span>
++          <span className="text-xs font-semibold text-gray-800 truncate">{selectedBatch.batchName}</span>
++          {selectedBatch.examTarget && (
++            <span className="text-xs text-gray-400 hidden sm:inline">├é┬╖ {EXAM_OPTIONS.find(e => e.key === selectedBatch.examTarget)?.label ?? selectedBatch.examTarget}</span>
++          )}
++        </div>
++      </div>
++
+       {/* Reset confirmation */}
+       {confirmReset && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+@@ -2110,7 +2318,7 @@ export default function StudentStudyPlanPage() {
+               <p className="text-indigo-300 text-xs">
+                 Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"},
+               </p>
+-              <h1 className="text-xl font-bold mt-0">{me?.fullName?.split(" ")[0]} ≡ƒæï</h1>
++              <h1 className="text-xl font-bold mt-0">{me?.fullName?.split(" ")[0]} ├░┼╕ΓÇÿΓÇ╣</h1>
+               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                 <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full text-xs">
+                   <Target className="w-3 h-3" /> {fmtExam(student?.examTarget)} {student?.examYear}
+@@ -2168,7 +2376,7 @@ export default function StudentStudyPlanPage() {
+ 
+       <div className="px-4 py-3">
+ 
+-        {/* ΓòÉΓòÉ TODAY TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
++        {/* ├óΓÇó┬É├óΓÇó┬É TODAY TAB ├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É */}
+         {activeTab === "today" && (
+           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+             <div className="lg:col-span-4 space-y-2">
+@@ -2206,7 +2414,7 @@ export default function StudentStudyPlanPage() {
+                   </button>
+                 </div>
+               ) : todayView === "week" ? (
+-                /* ΓöÇΓöÇ Week View ΓöÇΓöÇ */
++                /* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Week View ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */
+                 (() => {
+                   const activeDay = selectedWeekDay || today;
+                   const activeDayData = weekDays.find(d => d.key === activeDay) ?? weekDays[0];
+@@ -2267,7 +2475,7 @@ export default function StudentStudyPlanPage() {
+                                   </div>
+                                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                     <span>{subjDone}/{items.length} done</span>
+-                                    <span>┬╖</span>
++                                    <span>├é┬╖</span>
+                                     <Clock className="w-3 h-3" /><span>{subjMins}m</span>
+                                   </div>
+                                 </div>
+@@ -2290,7 +2498,7 @@ export default function StudentStudyPlanPage() {
+                   );
+                 })()
+               ) : (
+-                /* ΓöÇΓöÇ Today View ΓöÇΓöÇ */
++                /* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Today View ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */
+                 <div className="space-y-2">
+                   {Object.entries(bySubject).map(([subj, items]) => {
+                     const cfg      = subjectCfg(subj);
+@@ -2305,7 +2513,7 @@ export default function StudentStudyPlanPage() {
+                           </div>
+                           <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                             <span>{subjDone}/{items.length} done</span>
+-                            <span>┬╖</span>
++                            <span>├é┬╖</span>
+                             <Clock className="w-3 h-3" /><span>{subjMins}m</span>
+                           </div>
+                         </div>
+@@ -2378,11 +2586,11 @@ export default function StudentStudyPlanPage() {
+           </div>
+         )}
+ 
+-        {/* ΓòÉΓòÉ BACKLOGS TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
++        {/* ├óΓÇó┬É├óΓÇó┬É BACKLOGS TAB ├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É */}
+         {activeTab === "backlogs" && (
+           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+             <div className="lg:col-span-4 space-y-2">
+-              {/* ΓöÇΓöÇ Back button ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Back button ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {backlogPage && (
+                 <button onClick={() => setBacklogPage(null)}
+                   className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
+@@ -2391,7 +2599,7 @@ export default function StudentStudyPlanPage() {
+                 </button>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Landing: category cards ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Landing: category cards ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {!backlogPage && (
+                 <>
+                   <div>
+@@ -2435,7 +2643,7 @@ export default function StudentStudyPlanPage() {
+                 </>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: Missed Study Plan Tasks ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Missed Study Plan Tasks ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {backlogPage === "plan" && (
+                 <BacklogSection icon={<ClipboardList className="w-4 h-4" />} title="Missed Study Plan Tasks" count={backlogPlanItems.length} accentColor="red">
+                   {(() => {
+@@ -2458,7 +2666,7 @@ export default function StudentStudyPlanPage() {
+                 </BacklogSection>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: Pending Lectures ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Pending Lectures ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {backlogPage === "lectures" && (
+                 <BacklogSection icon={<PlayCircle className="w-4 h-4" />} title="Pending Lectures" count={pendingLectures.length} accentColor="blue">
+                   <div className="space-y-2">
+@@ -2488,7 +2696,7 @@ export default function StudentStudyPlanPage() {
+                 </BacklogSection>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: Notes & AI Study ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Notes & AI Study ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {backlogPage === "notes" && (
+                 <BacklogSection icon={<BookOpen className="w-4 h-4" />} title="Pending Notes & AI Study" count={pendingAiTopics.length} accentColor="amber">
+                   <div className="space-y-2">
+@@ -2513,7 +2721,7 @@ export default function StudentStudyPlanPage() {
+                 </BacklogSection>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: PYQs ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: PYQs ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {backlogPage === "pyq" && (
+                 <BacklogSection icon={<Activity className="w-4 h-4" />} title="PYQs Not Attempted" count={pendingPYQTopics.length} accentColor="violet">
+                   <div className="space-y-2">
+@@ -2538,7 +2746,7 @@ export default function StudentStudyPlanPage() {
+                 </BacklogSection>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: DPPs & PDFs ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: DPPs & PDFs ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {backlogPage === "dpp" && (
+                 <BacklogSection icon={<FileText className="w-4 h-4" />} title="DPPs & PDFs" count={pendingResources.length} accentColor="teal">
+                   <div className="space-y-2">
+@@ -2577,7 +2785,7 @@ export default function StudentStudyPlanPage() {
+                   weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
+                 <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                   <div className="font-semibold text-amber-700 text-sm mb-1 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Backlog Tip</div>
+-                  <p className="text-xs text-amber-700 leading-relaxed">Don't tackle everything at once. Pick 2ΓÇô3 tasks per day and blend them into today's plan.</p>
++                  <p className="text-xs text-amber-700 leading-relaxed">Don't tackle everything at once. Pick 2├óΓé¼ΓÇ£3 tasks per day and blend them into today's plan.</p>
+                 </div>
+               </div>
+               <div className="flex-1 min-w-0 space-y-3">
+@@ -2589,7 +2797,7 @@ export default function StudentStudyPlanPage() {
+           </div>
+         )}
+ 
+-        {/* ΓòÉΓòÉ WEAK TOPICS TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
++        {/* ├óΓÇó┬É├óΓÇó┬É WEAK TOPICS TAB ├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É */}
+         {activeTab === "weakness" && (
+           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+             <div className="lg:col-span-4 space-y-2">
+@@ -2600,7 +2808,7 @@ export default function StudentStudyPlanPage() {
+                 </button>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Landing ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Landing ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {!weakPage && (
+                 <>
+                   <div>
+@@ -2633,7 +2841,7 @@ export default function StudentStudyPlanPage() {
+                 </>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: Weak Chapters ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Weak Chapters ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {weakPage === "chapters" && (
+               <BacklogSection
+                 icon={<BookOpen className="w-4 h-4" />}
+@@ -2642,7 +2850,7 @@ export default function StudentStudyPlanPage() {
+                 accentColor="amber"
+               >
+                 {weakChapters.length === 0 ? (
+-                  <p className="text-sm text-gray-400 py-2 text-center">No weak chapters ΓÇö great chapter-level accuracy!</p>
++                  <p className="text-sm text-gray-400 py-2 text-center">No weak chapters ├óΓé¼ΓÇ¥ great chapter-level accuracy!</p>
+                 ) : weakChapters.map(ch => {
+                   const cfg = subjectCfg(ch.subjectName);
+                   const accColor = ch.overallAccuracy < 30 ? "text-red-600 bg-red-50 border-red-200"
+@@ -2678,11 +2886,11 @@ export default function StudentStudyPlanPage() {
+ 
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: Low Accuracy Topics ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Low Accuracy Topics ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {weakPage === "topics" && (
+                 <BacklogSection icon={<TrendingDown className="w-4 h-4" />} title="Low Accuracy Topics" count={weakTopics.length} accentColor="red">
+                   {weakTopics.length === 0 ? (
+-                    <div className="py-4 text-center"><Trophy className="w-8 h-8 text-amber-400 mx-auto mb-2" /><p className="text-sm text-gray-400">No weak topics ΓÇö accuracy is solid!</p></div>
++                    <div className="py-4 text-center"><Trophy className="w-8 h-8 text-amber-400 mx-auto mb-2" /><p className="text-sm text-gray-400">No weak topics ├óΓé¼ΓÇ¥ accuracy is solid!</p></div>
+                   ) : weakTopics.map((topic, i) => {
+                     const cfg = subjectCfg(topic.subjectName);
+                     const accColor = topic.accuracy < 30 ? "text-red-600 bg-red-50 border-red-200" : topic.accuracy < 40 ? "text-orange-600 bg-orange-50 border-orange-200" : "text-amber-600 bg-amber-50 border-amber-200";
+@@ -2707,11 +2915,11 @@ export default function StudentStudyPlanPage() {
+                 </BacklogSection>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: Forgotten Concepts ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Forgotten Concepts ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {weakPage === "forgotten" && (
+                 <BacklogSection icon={<Brain className="w-4 h-4" />} title="Forgotten Concepts" count={forgottenConcepts.length} accentColor="violet">
+                   {forgottenConcepts.length === 0 ? (
+-                    <p className="text-sm text-gray-400 py-2 text-center">No forgotten concepts ΓÇö you're on top of your material!</p>
++                    <p className="text-sm text-gray-400 py-2 text-center">No forgotten concepts ├óΓé¼ΓÇ¥ you're on top of your material!</p>
+                   ) : forgottenConcepts.map(t => {
+                     const cfg = subjectCfg(t.subjectName);
+                     const isAbandoned = t.status === "in_progress";
+@@ -2738,11 +2946,11 @@ export default function StudentStudyPlanPage() {
+                 </BacklogSection>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: High Negative-Marking ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: High Negative-Marking ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {weakPage === "negative" && (
+                 <BacklogSection icon={<Target className="w-4 h-4" />} title="High Negative-Marking Areas" count={highNegativeTopics.length} accentColor="red">
+                   {highNegativeTopics.length === 0 ? (
+-                    <p className="text-sm text-gray-400 py-2 text-center">No high negative-marking areas ΓÇö your PYQ accuracy is good!</p>
++                    <p className="text-sm text-gray-400 py-2 text-center">No high negative-marking areas ├óΓé¼ΓÇ¥ your PYQ accuracy is good!</p>
+                   ) : highNegativeTopics.map(t => {
+                     const cfg = subjectCfg(t.subjectName);
+                     const wrongPct = t.attempted > 0 ? Math.round((t.wrong / t.attempted) * 100) : 0;
+@@ -2756,8 +2964,8 @@ export default function StudentStudyPlanPage() {
+                               <span className="text-xs text-gray-400 truncate">{t.chapterName}</span>
+                             </div>
+                             <div className="flex items-center gap-3 mt-2 text-[11px]">
+-                              <span className="text-emerald-600 font-medium">Γ£ô {t.correct} correct</span>
+-                              <span className="text-red-600 font-medium">Γ£ù {t.wrong} wrong</span>
++                              <span className="text-emerald-600 font-medium">├ó┼ôΓÇ£ {t.correct} correct</span>
++                              <span className="text-red-600 font-medium">├ó┼ôΓÇö {t.wrong} wrong</span>
+                               <span className="text-gray-400">of {t.attempted} PYQs</span>
+                               <span className="font-bold text-red-600">{wrongPct}% miss rate</span>
+                             </div>
+@@ -2798,59 +3006,221 @@ export default function StudentStudyPlanPage() {
+           </div>
+         )}
+ 
+-        {/* ΓòÉΓòÉ REVISION TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
++        {/* ├óΓÇó┬É├óΓÇó┬É REVISION TAB ├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É */}
+         {activeTab === "revision" && (
+           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+             <div className="lg:col-span-4 space-y-2">
+ 
+-              {revisionPage && (
+-                <button onClick={() => setRevisionPage(null)}
+-                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
++              {(revisionPage || revisionSubTab !== "spaced") && (
++                <button onClick={() => { setRevisionPage(null); setRevisionSubTab("spaced"); }}
++                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors mb-2">
+                   <ChevronRight className="w-4 h-4 rotate-180" /> Back to Revision
+                 </button>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Landing ΓöÇΓöÇ */}
++              {/* -- Landing -- */}
+               {!revisionPage && (
+                 <>
+-                  <div>
+-                    <h2 className="text-lg font-bold text-gray-900">Spaced Revision Plan</h2>
+-                    <p className="text-sm text-gray-500 mt-0.5">Choose how you want to review your topics</p>
++                  {revisionSubTab === "spaced" && (
++                    <div className="space-y-4">
++                      <div>
++                    <h2 className="text-lg font-bold text-gray-900">Revision & History</h2>
++                    <p className="text-sm text-gray-500 mt-0.5">Access your notes, practice history, and revision schedule</p>
+                   </div>
+-                  {revisionTopics.length === 0 ? (
+-                    <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+-                      <BookOpen className="w-12 h-12 text-teal-400 mx-auto mb-4" />
+-                      <h3 className="text-lg font-bold text-gray-900">Revision queue is empty</h3>
+-                      <p className="text-gray-500 mt-2 text-sm">Complete study plan tasks to populate your revision queue.</p>
+-                    </div>
+-                  ) : (
++                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
++                    {([
++                      { key: "spaced_schedule", icon: <RefreshCw className="w-5 h-5" />, label: "Spaced Revision", count: revisionTopics.length, desc: "Topics due for periodic review", accent: "bg-teal-50 border-teal-200 text-teal-600", badge: "bg-teal-100 text-teal-700" },
++                      { key: "intensive",       icon: <Rocket    className="w-5 h-5" />, label: "Intensive Revision", count: intensiveRevisionItems.length, desc: "Post-syllabus revision rounds", accent: "bg-indigo-50 border-indigo-200 text-indigo-600", badge: "bg-indigo-100 text-indigo-700" },
++                      { key: "notes",           icon: <FileText  className="w-5 h-5" />, label: "AI Study Notes", count: aiNotesHistory.length, desc: "Your personalized study summaries", accent: "bg-blue-50 border-blue-200 text-blue-600", badge: "bg-blue-100 text-blue-700" },
++                      { key: "questions",       icon: <ListTodo  className="w-5 h-5" />, label: "Practice History", count: aiPracticeHistory.length, desc: "Attempted practice questions", accent: "bg-emerald-50 border-emerald-200 text-emerald-600", badge: "bg-emerald-100 text-emerald-700" },
++                    ] as const).map(c => (
++                      <button key={c.key} onClick={() => {
++                        if (c.key === "spaced_schedule") setRevisionPage("schedule");
++                        else setRevisionSubTab(c.key as any);
++                      }}
++                        className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
++                        <div className="flex items-start gap-3">
++                          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>{c.icon}</div>
++                          <div className="flex-1 min-w-0">
++                            <div className="flex items-center gap-2">
++                              <span className="font-bold text-sm text-gray-900">{c.label}</span>
++                              {c.count > 0 && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>}
++                            </div>
++                            <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
++                          </div>
++                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
++                        </div>
++                      </button>
++                    ))}
++                  </div>
++
++                  <div className="mt-6">
++                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">More Revision Views</h3>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                       {([
+-                        { key: "schedule", icon: <RefreshCw className="w-5 h-5" />, label: "Spaced Schedule",   desc: "Topics grouped by 1d / 3d / 7d / 21d revision intervals", count: revisionTopics.length, accent: "bg-teal-50 border-teal-200 text-teal-600",     badge: "bg-teal-100 text-teal-700"    },
+-                        { key: "table",    icon: <ListTodo   className="w-5 h-5" />, label: "Topic Table",       desc: "Full list with learned-on and next-revision dates",       count: revisionTopics.length, accent: "bg-indigo-50 border-indigo-200 text-indigo-600", badge: "bg-indigo-100 text-indigo-700" },
+-                        { key: "aiplan",   icon: <Sparkles  className="w-5 h-5" />, label: "AI 7-Day Plan",     desc: "Auto-scheduled revision across the next 7 days",          count: revisionTopics.filter(t => !t.isOverdue).length + revisionTopics.filter(t => t.isOverdue).length, accent: "bg-violet-50 border-violet-200 text-violet-600", badge: "bg-violet-100 text-violet-700" },
++                        { key: "table",  icon: <ListTodo className="w-4 h-4" />, label: "Full Topic Table", desc: "Detailed view with dates", accent: "text-gray-600 bg-gray-50 border-gray-200" },
++                        { key: "aiplan", icon: <Sparkles className="w-4 h-4" />, label: "AI 7-Day Plan",   desc: "Weekly revision schedule", accent: "text-violet-600 bg-violet-50 border-violet-100" },
+                       ] as const).map(c => (
+                         <button key={c.key} onClick={() => setRevisionPage(c.key)}
+-                          className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
+-                          <div className="flex items-start gap-3">
+-                            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>{c.icon}</div>
+-                            <div className="flex-1 min-w-0">
+-                              <div className="flex items-center gap-2">
+-                                <span className="font-bold text-sm text-gray-900">{c.label}</span>
+-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>
+-                              </div>
+-                              <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
+-                            </div>
+-                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
++                          className="flex items-center gap-3 bg-white border border-gray-200 p-3 rounded-xl hover:border-gray-300 transition-colors group">
++                          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${c.accent}`}>{c.icon}</div>
++                          <div className="flex-1 min-w-0">
++                            <div className="font-bold text-xs text-gray-900">{c.label}</div>
++                            <div className="text-[10px] text-gray-400">{c.desc}</div>
+                           </div>
+                         </button>
+                       ))}
+                     </div>
++                  </div>
++                </div>
++              )}
++
++                  {revisionSubTab === "intensive" && (
++                    <div className="space-y-4">
++                      <div>
++                        <h2 className="text-lg font-bold text-gray-900">Intensive Revision</h2>
++                        <p className="text-sm text-gray-500 mt-0.5">High-intensity revision tasks generated after syllabus completion</p>
++                      </div>
++                      {intensiveRevisionItems.length === 0 ? (
++                        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
++                          <Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
++                          <h3 className="text-lg font-bold text-gray-900">No intensive revision yet</h3>
++                          <p className="text-gray-500 mt-2 text-sm">Finish your core syllabus to unlock intensive revision rounds.</p>
++                        </div>
++                      ) : (
++                        <div className="space-y-3">
++                          {intensiveRevisionItems.map(it => {
++                            const cfg = subjectCfg(it.content?.subjectName || "");
++                            return (
++                              <div key={it.id} className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
++                                <div className="flex items-center gap-4">
++                                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", cfg.bg)}>
++                                    <Rocket className={cn("w-6 h-6", cfg.color)} />
++                                  </div>
++                                  <div className="flex-1 min-w-0">
++                                    <div className="flex items-center gap-2">
++                                      <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase border", cfg.bg, cfg.color, cfg.border)}>
++                                        {it.content?.subjectName}
++                                      </span>
++                                      <span className="text-xs text-gray-400 truncate">{it.content?.chapterName}</span>
++                                    </div>
++                                    <h4 className="font-bold text-gray-900 mt-1 truncate">{it.title}</h4>
++                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{it.content?.topicName}</p>
++                                  </div>
++                                  <button
++                                    onClick={() => navigate(`/student/ai-study/${it.content?.topicId}`)}
++                                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shrink-0"
++                                  >
++                                    Start Round
++                                  </button>
++                                </div>
++                              </div>
++                            );
++                          })}
++                        </div>
++                      )}
++                    </div>
++                  )}
++
++                  {revisionSubTab === "notes" && (
++                    <div className="space-y-4">
++                      <div>
++                        <h2 className="text-lg font-bold text-gray-900">AI Study Notes</h2>
++                        <p className="text-sm text-gray-500 mt-0.5">Review personalized notes and summaries from your AI study sessions</p>
++                      </div>
++                      {aiNotesHistory.length === 0 ? (
++                        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
++                          <FileText className="w-12 h-12 text-blue-400 mx-auto mb-4" />
++                          <h3 className="text-lg font-bold text-gray-900">No notes saved yet</h3>
++                          <p className="text-gray-500 mt-2 text-sm">Start an AI study session to generate personalized revision notes.</p>
++                        </div>
++                      ) : (
++                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
++                          {aiNotesHistory.map(session => {
++                            const cfg = subjectCfg(session.subjectName || "");
++                            return (
++                              <div key={session.id} className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow group">
++                                <div className="flex items-start justify-between">
++                                  <div className={cn("p-2 rounded-lg", cfg.bg)}>
++                                    <FileText className={cn("w-5 h-5", cfg.color)} />
++                                  </div>
++                                  <span className="text-[10px] font-medium text-gray-400">
++                                    {session.completedAt ? format(new Date(session.completedAt), "MMM d, yyyy") : "In Progress"}
++                                  </span>
++                                </div>
++                                <div className="mt-3">
++                                  <div className="flex items-center gap-2">
++                                    <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase", cfg.bg, cfg.color)}>
++                                      {session.subjectName}
++                                    </span>
++                                  </div>
++                                  <h4 className="font-bold text-gray-900 mt-1 truncate">{session.topicName}</h4>
++                                  <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
++                                    {session.lessonMarkdown.slice(0, 100)}...
++                                  </p>
++                                </div>
++                                <button
++                                  onClick={() => navigate(`/student/ai-study/${session.topicId}`)}
++                                  className="w-full mt-4 flex items-center justify-center gap-2 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-600 group-hover:bg-blue-50 group-hover:border-blue-100 group-hover:text-blue-700 transition-all"
++                                >
++                                  Read Notes <ArrowRight className="w-3.5 h-3.5" />
++                                </button>
++                              </div>
++                            );
++                          })}
++                        </div>
++                      )}
++                    </div>
++                  )}
++
++                  {revisionSubTab === "questions" && (
++                    <div className="space-y-4">
++                      <div>
++                        <h2 className="text-lg font-bold text-gray-900">Practice History</h2>
++                        <p className="text-sm text-gray-500 mt-0.5">Review practice questions you've already attempted</p>
++                      </div>
++                      {aiPracticeHistory.length === 0 ? (
++                        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
++                          <ListTodo className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
++                          <h3 className="text-lg font-bold text-gray-900">No practice history</h3>
++                          <p className="text-gray-500 mt-2 text-sm">Attempt practice questions in AI study to see them here.</p>
++                        </div>
++                      ) : (
++                        <div className="space-y-3">
++                          {aiPracticeHistory.map((q, qi) => {
++                            const cfg = subjectCfg(q.subjectName || "");
++                            return (
++                              <div key={qi} className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
++                                <div className="flex items-center gap-2 mb-2">
++                                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase", cfg.bg, cfg.color)}>
++                                    {q.subjectName}
++                                  </span>
++                                  <span className="text-xs font-bold text-gray-900">{q.topicName}</span>
++                                </div>
++                                <p className="text-sm text-gray-700 font-medium leading-relaxed">{q.question}</p>
++                                <div className="mt-4 p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
++                                  <div className="text-[11px] font-bold text-emerald-700 uppercase flex items-center gap-1 mb-1">
++                                    <CheckCircle2 className="w-3.5 h-3.5" /> Correct Answer
++                                  </div>
++                                  <p className="text-sm text-emerald-800 font-semibold">{q.answer}</p>
++                                </div>
++                                {q.explanation && (
++                                  <div className="mt-2 p-3 bg-gray-50 border border-gray-100 rounded-xl">
++                                    <div className="text-[11px] font-bold text-gray-500 uppercase mb-1">Explanation</div>
++                                    <p className="text-xs text-gray-600 leading-relaxed">{q.explanation}</p>
++                                  </div>
++                                )}
++                              </div>
++                            );
++                          })}
++                        </div>
++                      )}
++                    </div>
+                   )}
+                 </>
+               )}
+ 
+-              {/* ΓöÇΓöÇ Detail: Schedule ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Schedule ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {revisionPage === "schedule" && (() => {
+                     const BUCKETS: Array<{
+                       interval: 1 | 3 | 7 | 21;
+@@ -2858,10 +3228,10 @@ export default function StudentStudyPlanPage() {
+                       sublabel: string;
+                       accentBg: string; accentBorder: string; accentBadge: string; accentText: string;
+                     }> = [
+-                      { interval: 1,  label: "1-Day Revision",  sublabel: "accuracy < 40% ΓÇö revise every day",        accentBg: "bg-red-50",    accentBorder: "border-red-300",    accentBadge: "bg-red-100 text-red-700",    accentText: "text-red-700" },
+-                      { interval: 3,  label: "3-Day Revision",  sublabel: "accuracy 40ΓÇô54% ΓÇö revise every 3 days",    accentBg: "bg-orange-50", accentBorder: "border-orange-300", accentBadge: "bg-orange-100 text-orange-700", accentText: "text-orange-700" },
+-                      { interval: 7,  label: "7-Day Revision",  sublabel: "accuracy 55ΓÇô64% ΓÇö revise every 7 days",    accentBg: "bg-amber-50",  accentBorder: "border-amber-300",  accentBadge: "bg-amber-100 text-amber-700",  accentText: "text-amber-700" },
+-                      { interval: 21, label: "21-Day Revision", sublabel: "accuracy 65ΓÇô74% ΓÇö revise every 3 weeks",   accentBg: "bg-teal-50",   accentBorder: "border-teal-300",   accentBadge: "bg-teal-100 text-teal-700",   accentText: "text-teal-700" },
++                      { interval: 1,  label: "1-Day Revision",  sublabel: "accuracy < 40% ├óΓé¼ΓÇ¥ revise every day",        accentBg: "bg-red-50",    accentBorder: "border-red-300",    accentBadge: "bg-red-100 text-red-700",    accentText: "text-red-700" },
++                      { interval: 3,  label: "3-Day Revision",  sublabel: "accuracy 40├óΓé¼ΓÇ£54% ├óΓé¼ΓÇ¥ revise every 3 days",    accentBg: "bg-orange-50", accentBorder: "border-orange-300", accentBadge: "bg-orange-100 text-orange-700", accentText: "text-orange-700" },
++                      { interval: 7,  label: "7-Day Revision",  sublabel: "accuracy 55├óΓé¼ΓÇ£64% ├óΓé¼ΓÇ¥ revise every 7 days",    accentBg: "bg-amber-50",  accentBorder: "border-amber-300",  accentBadge: "bg-amber-100 text-amber-700",  accentText: "text-amber-700" },
++                      { interval: 21, label: "21-Day Revision", sublabel: "accuracy 65├óΓé¼ΓÇ£74% ├óΓé¼ΓÇ¥ revise every 3 weeks",   accentBg: "bg-teal-50",   accentBorder: "border-teal-300",   accentBadge: "bg-teal-100 text-teal-700",   accentText: "text-teal-700" },
+                     ];
+                     return (
+                       <div className="space-y-3">
+@@ -2910,7 +3280,7 @@ export default function StudentStudyPlanPage() {
+                     );
+                   })()}
+ 
+-              {/* ΓöÇΓöÇ Detail: Table ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: Table ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {revisionPage === "table" && (
+                     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                       <div className="overflow-x-auto">
+@@ -2971,7 +3341,7 @@ export default function StudentStudyPlanPage() {
+                     </div>
+                   )}
+ 
+-              {/* ΓöÇΓöÇ Detail: AI Plan ΓöÇΓöÇ */}
++              {/* ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ Detail: AI Plan ├óΓÇ¥Γé¼├óΓÇ¥Γé¼ */}
+               {revisionPage === "aiplan" && (
+                     <div className="space-y-3">
+                       <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl p-4">
+@@ -2987,7 +3357,7 @@ export default function StudentStudyPlanPage() {
+                         if (day.topics.length === 0) return (
+                           <div key={di} className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200">
+                             <span className="text-xs font-semibold text-gray-400 w-24 shrink-0">{day.label}</span>
+-                            <span className="text-xs text-gray-400 italic">No revision due ΓÇö rest day ≡ƒÄë</span>
++                            <span className="text-xs text-gray-400 italic">No revision due ├óΓé¼ΓÇ¥ rest day ├░┼╕┼╜ΓÇ░</span>
+                           </div>
+                         );
+                         return (
+@@ -3030,7 +3400,7 @@ export default function StudentStudyPlanPage() {
+                         );
+                       })}
+                     </div>
+-              )}
++                  )}
+             </div>
+ 
+             <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
+@@ -3053,9 +3423,9 @@ export default function StudentStudyPlanPage() {
+                   <div className="space-y-2 text-xs">
+                     {([
+                       ["1-Day",  "< 40%",   "bg-red-100 text-red-700"],
+-                      ["3-Day",  "40ΓÇô54%",  "bg-orange-100 text-orange-700"],
+-                      ["7-Day",  "55ΓÇô64%",  "bg-amber-100 text-amber-700"],
+-                      ["21-Day", "65ΓÇô74%",  "bg-teal-100 text-teal-700"],
++                      ["3-Day",  "40├óΓé¼ΓÇ£54%",  "bg-orange-100 text-orange-700"],
++                      ["7-Day",  "55├óΓé¼ΓÇ£64%",  "bg-amber-100 text-amber-700"],
++                      ["21-Day", "65├óΓé¼ΓÇ£74%",  "bg-teal-100 text-teal-700"],
+                     ] as const).map(([interval, range, cls]) => (
+                       <div key={interval} className="flex items-center gap-2">
+                         <span className={`font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>{interval}</span>
+@@ -3064,7 +3434,7 @@ export default function StudentStudyPlanPage() {
+                     ))}
+                   </div>
+                   <div className="mt-3 pt-3 border-t border-teal-100 text-xs text-teal-600 leading-relaxed">
+-                    Accuracy improves ΓåÆ interval extends ΓåÆ topic eventually clears the queue.
++                    Accuracy improves ├óΓÇáΓÇÖ interval extends ├óΓÇáΓÇÖ topic eventually clears the queue.
+                   </div>
+                 </div>
+               </div>
+@@ -3089,14 +3459,14 @@ export default function StudentStudyPlanPage() {
+           </div>
+         )}
+ 
+-        {/* ΓòÉΓòÉ ROADMAP TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
++        {/* ├óΓÇó┬É├óΓÇó┬É ROADMAP TAB ├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É├óΓÇó┬É */}
+         {activeTab === "roadmap" && (
+           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+             <div className="lg:col-span-4">
+               <div className="mb-5">
+                 <h2 className="text-xl font-bold text-gray-900">My Curriculum Roadmap</h2>
+                 <p className="text-sm text-gray-500 mt-0.5">
+-                  Your complete {fmtExam(student?.examTarget)} syllabus ΓÇö tap any subject to expand chapters and topics
++                  Your complete {fmtExam(student?.examTarget)} syllabus ├óΓé¼ΓÇ¥ tap any subject to expand chapters and topics
+                 </p>
+               </div>
+               <CurriculumRoadmap reportOverride={effectiveProgressReport} />
+@@ -3109,9 +3479,9 @@ export default function StudentStudyPlanPage() {
+                 <div className="space-y-2 text-sm">
+                   {([
+                     ["Exam",        fmtExam(student?.examTarget)],
+-                    ["Target Year", String(student?.examYear ?? "ΓÇö")],
+-                    ["Daily Hours", student?.dailyStudyHours ? `${student.dailyStudyHours}h` : "ΓÇö"],
+-                    ["Days Left",   days !== null ? `${days} days` : "ΓÇö"],
++                    ["Target Year", String(student?.examYear ?? "├óΓé¼ΓÇ¥")],
++                    ["Daily Hours", student?.dailyStudyHours ? `${student.dailyStudyHours}h` : "├óΓé¼ΓÇ¥"],
++                    ["Days Left",   days !== null ? `${days} days` : "├óΓé¼ΓÇ¥"],
+                   ] as [string, string][]).map(([label, val]) => (
+                     <div key={label} className="flex justify-between">
+                       <span className="text-gray-500">{label}</span>
+@@ -3125,7 +3495,7 @@ export default function StudentStudyPlanPage() {
+                   <Sparkles className="w-3.5 h-3.5" /> How AI uses this
+                 </div>
+                 <p className="text-xs text-indigo-600 leading-relaxed">
+-                  Your study plan is generated from your enrolled curriculum, topic accuracy scores, weak areas, and daily study hours ΓÇö and improves each time you regenerate.
++                  Your study plan is generated from your enrolled curriculum, topic accuracy scores, weak areas, and daily study hours ├óΓé¼ΓÇ¥ and improves each time you regenerate.
+                 </p>
+               </div>
+               <button onClick={() => setActiveTab("today")}
+@@ -3137,9 +3507,10 @@ export default function StudentStudyPlanPage() {
+                 <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                 Regenerate Plan
+               </button>
+-            </div>
+           </div>
+-        )}
++        </div>
++      )}
++
+ 
+       </div>
+     </div>

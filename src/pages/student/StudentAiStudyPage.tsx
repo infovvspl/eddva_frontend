@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import {
   useAiStudySession, useStartAiStudy, useAskAiQuestion,
-  useCompleteAiStudy,
+  useCompleteAiStudy, useCompletePlanItem
 } from "@/hooks/use-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
 import { CardGlass } from "@/components/shared/CardGlass";
@@ -420,10 +420,14 @@ export default function StudentAiStudyPage() {
   const savedTextRef = useRef<string>("");
   const isCompactLayout = useIsCompactLayout();
 
+  const [searchParams] = useSearchParams();
+  const planItemId = searchParams.get("planItemId");
+
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
   const startMut = useStartAiStudy();
   const askMut = useAskAiQuestion();
   const completeMut = useCompleteAiStudy();
+  const planItemMut = useCompletePlanItem();
 
   const sessionData: AiStudySessionData | undefined = session ?? startMut.data;
   const sessionId = sessionData?.id;
@@ -584,11 +588,21 @@ export default function StudentAiStudyPage() {
   }, [askMut, sessionId, topicId, aiMode]);
 
   const handleComplete = useCallback(() => {
-    if (!sessionId) return;
-    completeMut.mutate({ topicId, sessionId, timeSpentSeconds: elapsed }, {
-      onSuccess: () => { setCompleted(true); setShowComplete(false); },
+    if (!sessionId || !topicId) return;
+    completeMut.mutate({ 
+      topicId, 
+      sessionId, 
+      timeSpentSeconds: elapsed,
+      highlights,
+      inlineComments
+    }, {
+      onSuccess: () => { 
+        setCompleted(true); 
+        setShowComplete(false); 
+        if (planItemId) planItemMut.mutate(planItemId);
+      },
     });
-  }, [sessionId, topicId, elapsed, completeMut]);
+  }, [sessionId, topicId, elapsed, completeMut, highlights, inlineComments, planItemId, planItemMut]);
 
   // Get the range/text the user most recently selected inside the notes, falling
   // back to the saved ref when focus has moved to the tool panel (buttons/textarea).
