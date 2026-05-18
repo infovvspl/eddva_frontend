@@ -137,7 +137,7 @@ export interface Topic {
   isActive: boolean;
 }
 
-export type TopicResourceType = "pdf" | "dpp" | "pyq" | "quiz" | "video" | "notes" | "link" | "mindmap";
+export type TopicResourceType = "pdf" | "dpp" | "pyq" | "faq" | "quiz" | "video" | "notes" | "link" | "mindmap";
 
 export interface TopicResource {
   id: string;

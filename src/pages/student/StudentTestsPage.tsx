@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Clock, Trophy, Play, BookOpen, ArrowLeft } from "lucide-react";
 import { useMyCourses, useMockTests, useStudentSessions } from "@/hooks/use-student";
@@ -7,11 +7,12 @@ import { cn } from "@/lib/utils";
 
 export default function StudentTestsPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: courses = [], isLoading: loadingCourses } = useMyCourses();
   const { data: mockTests = [], isLoading: loadingTests } = useMockTests({ isPublished: true });
   const { data: sessions = [], isLoading: loadingSessions } = useStudentSessions();
   const [examFilter, setExamFilter] = useState<"all" | "competitive" | "academic">("all");
-  const [selectedCourseId, setSelectedCourseId] = useState<string>("all");
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(() => searchParams.get("course") ?? "all");
 
   const isLoading = loadingCourses || loadingTests || loadingSessions;
 

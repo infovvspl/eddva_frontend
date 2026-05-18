@@ -17,7 +17,7 @@ import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
   useClearPlan, useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
   useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
-  useAiStudyHistory,
+  useAiStudyHistory, useRevisionSpaced, useRevisionNotes, usePracticeHistory,
 } from "@/hooks/use-student";
 import * as studentApi from "@/lib/api/student";
 import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
@@ -35,7 +35,12 @@ const EXAM_OPTIONS = [
   { key: "other",        label: "Other",        icon: "🎯", desc: "Custom target" },
 ];
 
-const YEAR_OPTIONS = [2025, 2026, 2027, 2028];
+// Only show years whose April exam date is still in the future
+const _today = new Date();
+const FIRST_FUTURE_EXAM_YEAR = _today.getMonth() >= 3 /* April = 3 */
+  ? _today.getFullYear() + 1
+  : _today.getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => FIRST_FUTURE_EXAM_YEAR + i);
 const HOURS_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
 const CLASS_OPTIONS = [
   { key: "9", label: "Class 9" },
@@ -189,7 +194,9 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
   const [step, setStep] = useState(0);
   const [prefs, setPrefs] = useState<WizardState>({
     examTarget:          initial.examTarget      ?? "",
-    examYear:            initial.examYear        ?? new Date().getFullYear() + 1,
+    examYear:            (initial.examYear && initial.examYear >= FIRST_FUTURE_EXAM_YEAR)
+                           ? initial.examYear
+                           : FIRST_FUTURE_EXAM_YEAR,
     currentClass:        initial.currentClass    ?? "11",
     dailyStudyHours:     initial.dailyStudyHours ?? 4,
     schoolCoachingHours: 0,
@@ -1338,14 +1345,16 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
 
 // ─── Smart Reminders Card ──────────────────────────────────────────────────────
 
-function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, forgottenConcepts, weakTopics, pendingPYQTopics, onTabChange }: {
-  revisionTopics:    Array<{ isOverdue: boolean }>;
-  weeklyActivity:    DailyActivity[];
-  pendingMockTests:  Array<{ id: string; title: string }>;
-  forgottenConcepts: Array<{ topicId: string }>;
-  weakTopics:        Array<{ topicId: string }>;
-  pendingPYQTopics:  Array<{ topicId: string }>;
-  onTabChange:       (tab: ActiveTab) => void;
+function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, forgottenConcepts, weakTopics, pendingPYQTopics, onTabChange, onBacklogPageChange, selectedCourseId }: {
+  revisionTopics:      Array<{ isOverdue: boolean }>;
+  weeklyActivity:      DailyActivity[];
+  pendingMockTests:    Array<{ id: string; title: string }>;
+  forgottenConcepts:   Array<{ topicId: string }>;
+  weakTopics:          Array<{ topicId: string }>;
+  pendingPYQTopics:    Array<{ topicId: string }>;
+  onTabChange:         (tab: ActiveTab) => void;
+  onBacklogPageChange: (page: "pyq") => void;
+  selectedCourseId:    string | null;
 }) {
   const navigate    = useNavigate();
   const overdueCount = revisionTopics.filter(t => t.isOverdue).length;
@@ -1367,7 +1376,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
   if (pendingMockTests.length > 0)
     reminders.push({ id: "mock", icon: "📝", sev: "info",
       text: `${pendingMockTests.length} mock test${pendingMockTests.length > 1 ? "s" : ""} available`,
-      action: { label: "Take now →", fn: () => navigate("/student/tests") } });
+      action: { label: "Take now →", fn: () => navigate(selectedCourseId ? `/student/tests?course=${selectedCourseId}` : "/student/tests") } });
 
   if (forgottenConcepts.length > 3)
     reminders.push({ id: "forgotten", icon: "🔁", sev: "medium",
@@ -1382,7 +1391,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
   if (pendingPYQTopics.length > 0)
     reminders.push({ id: "pyq", icon: "📋", sev: "info",
       text: `${pendingPYQTopics.length} topics with no PYQ attempts yet`,
-      action: { label: "Go to Backlogs →", fn: () => onTabChange("backlogs") } });
+      action: { label: "Go to Backlogs →", fn: () => { onTabChange("backlogs"); onBacklogPageChange("pyq"); } } });
 
   const ORDER: Record<Sev, number> = { high: 0, medium: 1, info: 2 };
   reminders.sort((a, b) => ORDER[a.sev] - ORDER[b.sev]);
@@ -1804,9 +1813,9 @@ export default function StudentStudyPlanPage() {
   const toggleRevBucket = (interval: number) =>
     setOpenRevBuckets(prev => { const n = new Set(prev); n.has(interval) ? n.delete(interval) : n.add(interval); return n; });
 
-  const { data: rawTodayItems = [], isLoading: todayPlanLoading } = useTodaysPlan();
-  const { data: rawBacklogWeekData = {} }                    = useWeeklyPlanGrouped(backlogStart, yesterday);
-  const { data: rawWeekPlanData = {} }                       = useWeeklyPlanGrouped(today, weekEnd);
+  const { data: rawTodayItems = [], isLoading: todayPlanLoading } = useTodaysPlan(selectedCourseId ?? undefined);
+  const { data: rawBacklogWeekData = {} }                    = useWeeklyPlanGrouped(backlogStart, yesterday, selectedCourseId ?? undefined);
+  const { data: rawWeekPlanData = {} }                       = useWeeklyPlanGrouped(today, weekEnd, selectedCourseId ?? undefined);
   const { data: progressReport }                             = useProgressReport();
 
   // For the full backlogs tab
@@ -1815,8 +1824,11 @@ export default function StudentStudyPlanPage() {
   const { data: mockTests = [] }         = useMockTests({ isPublished: true });
   const { data: sessions = [] }          = useStudentSessions();
   const { data: weeklyActivity = [] }    = useWeeklyActivity();
-  const { data: aiStudyHistory = [] }    = useAiStudyHistory();
-  const completedHistoryTopicIds = useMemo(() => 
+  const { data: aiStudyHistory = [] }     = useAiStudyHistory();
+  const { data: spacedRevisionData = [] }   = useRevisionSpaced(selectedCourseId ?? undefined);
+  const { data: backendNotes = [] }         = useRevisionNotes(selectedCourseId ?? undefined);
+  const { data: backendPractice = [] }      = usePracticeHistory(selectedCourseId ?? undefined);
+  const completedHistoryTopicIds = useMemo(() =>
     new Set(aiStudyHistory.filter(s => s.isCompleted).map(s => s.topicId)),
     [aiStudyHistory]
   );
@@ -1838,8 +1850,8 @@ export default function StudentStudyPlanPage() {
   const generate   = useGeneratePlan();
   const regenerate = useRegeneratePlan();
   const clearPlan  = useClearPlan();
-  const complete   = useCompletePlanItem();
-  const skip       = useSkipPlanItem();
+  const complete   = useCompletePlanItem(selectedCourseId ?? undefined);
+  const skip       = useSkipPlanItem(selectedCourseId ?? undefined);
 
   const selectedCourse = useMemo(() => myCourses.find(c => c.id === selectedCourseId) ?? null, [myCourses, selectedCourseId]);
 
@@ -1986,8 +1998,11 @@ export default function StudentStudyPlanPage() {
     });
   }, [completedHistoryTopicIds]);
 
-  const todayItems = useMemo(() => syncStatus(rawTodayItems), [rawTodayItems, syncStatus]);
-  const hasPlan = todayItems.length > 0;
+  const allTodayItems = useMemo(() => syncStatus(rawTodayItems), [rawTodayItems, syncStatus]);
+  const hasPlan = allTodayItems.length > 0;
+
+  // Today plan is global (not course-scoped) — show all items regardless of selected course
+  const todayItems = allTodayItems;
 
   const backlogWeekData = useMemo(() => {
     const synced: Record<string, StudyPlanItem[]> = {};
@@ -2106,111 +2121,30 @@ export default function StudentStudyPlanPage() {
     return list.sort((a, b) => a.pyqAccuracy - b.pyqAccuracy);
   }, [effectiveProgressReport, selectedCourseTopicIds]);
 
-  // Revision queue: topics the student has studied (via completed plan items OR report signals)
-  // Primary source: completed StudyPlanItems — always fresh, never stale from cache.
-  // Secondary: effectiveProgressReport for topics with quiz/lecture signals not in the plan.
+
+  // Spaced revision: always backend-scoped to the selected course. Empty when no course selected.
   const revisionTopics = useMemo(() => {
+    if (!selectedCourseId) return [];
+    if (!spacedRevisionData.length) return [];
     const now = new Date();
-    type RevItem = {
-      topicId: string; topicName: string; subjectName: string; chapterName: string;
-      accuracy: number; completedAt: string | null; learnedOn: string;
-      nextRevisionDate: Date; nextRevisionLabel: string;
-      intervalDays: 1 | 3 | 7 | 21; isOverdue: boolean;
-    };
-    const list: RevItem[] = [];
-    const seenTopicIds = new Set<string>();
-
-    const addTopic = (
-      topicId: string, topicName: string, subjectName: string, chapterName: string,
-      accuracy: number, completedAt: string | null, learnedOnFallback: string
-    ) => {
-      if (seenTopicIds.has(topicId) || accuracy >= 75) return;
-      seenTopicIds.add(topicId);
-      const interval: 1 | 3 | 7 | 21 = accuracy < 40 ? 1 : accuracy < 55 ? 3 : accuracy < 65 ? 7 : 21;
-      const base      = completedAt ? new Date(completedAt) : now;
-      const nextDate  = addDays(base, interval);
-      const daysUntil = differenceInDays(nextDate, now);
-      const isOverdue = daysUntil < 0;
-      const learnedOn = completedAt ? format(new Date(completedAt), "MMM d") : learnedOnFallback;
-      const nextLabel = isOverdue ? "Overdue" : daysUntil === 0 ? "Today" : format(nextDate, "MMM d");
-      list.push({ topicId, topicName, subjectName, chapterName: chapterName ?? "", accuracy, completedAt, learnedOn, nextRevisionDate: nextDate, nextRevisionLabel: nextLabel, intervalDays: interval, isOverdue });
-    };
-
-    // Build accuracy lookup from report
-    const reportMap = new Map<string, { accuracy: number; completedAt: string | null }>();
-    effectiveProgressReport?.subjects.forEach(s =>
-      s.chapters.forEach(c =>
-        c.topics.forEach(t =>
-          reportMap.set(t.topicId, { accuracy: t.bestAccuracy ?? 0, completedAt: t.completedAt ?? null })
-        )
-      )
-    );
-
-    // Resolve accuracy: use quiz score when available; fall back to 60 (→ 7-day)
-    // when the topic was studied (AI session / lecture) but never formally quizzed.
-    const resolveAcc = (quizAcc: number, studied: boolean) =>
-      quizAcc > 0 ? quizAcc : studied ? 60 : 0;
-
-    // Primary: all completed plan items (today + past week)
-    const allPlanItems = [
-      ...todayItems,
-      ...Object.values(backlogWeekData).flat(),
-    ];
-    allPlanItems.forEach(item => {
-      if (item.status !== "completed" || !item.content?.topicId || !selectedCourseTopicIds.has(item.content.topicId)) return;
-      const { topicId, topicName = "Unknown Topic", subjectName = "General", chapterName = "" } = item.content;
-      const rep = reportMap.get(topicId);
-      const acc = resolveAcc(rep?.accuracy ?? 0, true);
-      addTopic(topicId, topicName, subjectName, chapterName, acc, rep?.completedAt ?? null, format(new Date(item.scheduledDate), "MMM d"));
+    return spacedRevisionData.map(item => {
+      const nextRevisionDate = new Date(item.nextRevisionDate);
+      const daysUntil = differenceInDays(nextRevisionDate, now);
+      return {
+        topicId:           item.topicId,
+        topicName:         item.topicName,
+        subjectName:       item.subjectName,
+        chapterName:       item.chapterName,
+        accuracy:          item.accuracy,
+        completedAt:       item.lastStudiedAt as string | null,
+        learnedOn:         item.lastStudiedAt ? format(new Date(item.lastStudiedAt), "MMM d") : "—",
+        nextRevisionDate,
+        nextRevisionLabel: item.isOverdue ? "Overdue" : daysUntil === 0 ? "Today" : format(nextRevisionDate, "MMM d"),
+        intervalDays:      item.intervalDays,
+        isOverdue:         item.isOverdue,
+      };
     });
-
-    // Secondary: report topics with clear interaction signals (quiz attempts, lectures, AI sessions)
-    effectiveProgressReport?.subjects.forEach(s =>
-      s.chapters.forEach(c =>
-        c.topics.forEach(t => {
-          if (!selectedCourseTopicIds.has(t.topicId)) return;
-          const hasInteracted =
-            t.status !== "locked" &&
-            (t.bestAccuracy > 0 || t.attemptCount > 0 ||
-             t.lecture?.anyCompleted || t.aiSession?.completed);
-          if (!hasInteracted) return;
-          const studied = !!(t.aiSession?.completed || t.lecture?.anyCompleted);
-          const acc = resolveAcc(t.bestAccuracy ?? 0, studied);
-          addTopic(t.topicId, t.topicName, s.subjectName, c.chapterName, acc, t.completedAt ?? null, "—");
-        })
-      )
-    );
-
-    // Tertiary: completed AI study sessions (studied directly, outside the plan)
-    // Build a fast lookup: topicId → { subjectName, chapterName, bestAccuracy } from report
-    const reportTopicMeta = new Map<string, { subjectName: string; chapterName: string; bestAccuracy: number }>();
-    effectiveProgressReport?.subjects.forEach(s =>
-      s.chapters.forEach(c =>
-        c.topics.forEach(t =>
-          reportTopicMeta.set(t.topicId, { subjectName: s.subjectName, chapterName: c.chapterName, bestAccuracy: t.bestAccuracy ?? 0 })
-        )
-      )
-    );
-    aiStudyHistory.forEach(session => {
-      if (!session.topicId || !(session.isCompleted || session.completedAt)) return;
-      const meta = reportTopicMeta.get(session.topicId);
-      const acc  = resolveAcc(meta?.bestAccuracy ?? 0, true);
-      addTopic(
-        session.topicId,
-        session.topicName ?? "Topic",
-        meta?.subjectName ?? "",
-        meta?.chapterName ?? "",
-        acc,
-        session.completedAt ?? null,
-        "—",
-      );
-    });
-
-    return list.sort((a, b) =>
-      a.isOverdue !== b.isOverdue ? (a.isOverdue ? -1 : 1)
-      : a.nextRevisionDate.getTime() - b.nextRevisionDate.getTime()
-    );
-  }, [effectiveProgressReport, todayItems, backlogWeekData, selectedCourseTopicIds, aiStudyHistory]);
+  }, [selectedCourseId, spacedRevisionData]);
 
   // 7-day AI revision plan: assign each topic to the day it's due (capped 0–6)
   const aiRevisionPlan = useMemo(() => {
@@ -2253,18 +2187,20 @@ export default function StudentStudyPlanPage() {
     return [
       ...todayItems,
       ...Object.values(backlogWeekData).flat(),
-    ].filter(it => it.type === 'revision' && (!it.content?.topicId || activeCourseTopicIds.has(it.content.topicId)));
-  }, [todayItems, backlogWeekData, activeCourseTopicIds]);
+    ].filter(it => it.type === 'revision' && (!it.content?.topicId || selectedCourseTopicIds.has(it.content.topicId)));
+  }, [todayItems, backlogWeekData, selectedCourseTopicIds]);
 
-  // Notes: completed AI study history
+  // Notes: always backend-scoped to the selected course. Empty when no course selected.
   const completedAiNotes = useMemo(() => {
-    return aiStudyHistory.filter(s => s.isCompleted || s.completedAt);
-  }, [aiStudyHistory]);
+    if (!selectedCourseId) return [];
+    return backendNotes;
+  }, [selectedCourseId, backendNotes]);
 
-  // Practice: ALL completed sessions that have practice questions
+  // Practice: same — always course-scoped, never global.
   const completedPracticeSessions = useMemo(() => {
-    return aiStudyHistory.filter(s => (s.isCompleted || s.completedAt) && (s.practiceQuestions?.length ?? 0) > 0);
-  }, [aiStudyHistory]);
+    if (!selectedCourseId) return [];
+    return backendPractice;
+  }, [selectedCourseId, backendPractice]);
 
   // Pending lectures: not completed, not locked, scoped to selected course
   const pendingLectures = useMemo(() =>
@@ -2389,7 +2325,9 @@ export default function StudentStudyPlanPage() {
 
   const handleWizardComplete = async (prefs: WizardState) => {
     setWizardDone(true);
-    generate.mutate({
+    // Always force-regenerate from the wizard so stale cached plans are never returned.
+    regenerate.mutate({
+      batchId: selectedCourseId ?? undefined,
       targetExam: prefs.examTarget,
       examYear: String(prefs.examYear),
       currentClass: prefs.currentClass,
@@ -2408,13 +2346,13 @@ export default function StudentStudyPlanPage() {
   };
 
   const handleRegenerate = () =>
-    regenerate.mutate(undefined, {
+    regenerate.mutate(selectedCourseId ?? undefined, {
       onSuccess: () => toast.success("Plan regenerated!"),
       onError:   () => toast.error("Could not regenerate. Please try again."),
     });
 
   const handleResetConfirmed = () =>
-    clearPlan.mutate(undefined, {
+    clearPlan.mutate(selectedCourseId ?? undefined, {
       onSuccess: () => {
         setConfirmReset(false);
         setShowWizard(true);
@@ -2533,8 +2471,9 @@ export default function StudentStudyPlanPage() {
       {showWizard && (
         <PreferenceWizard
           initial={{
-            examTarget: student?.examTarget,
-            examYear: student?.examYear,
+            examTarget: selectedCourse?.examTarget ?? student?.examTarget,
+            examYear:   selectedCourse?.examYear   ? Number(selectedCourse.examYear)
+                          : student?.examYear,
             currentClass: (student?.currentClass as WizardState["currentClass"]) ?? "11",
             dailyStudyHours: student?.dailyStudyHours ?? 4,
           }}
@@ -2826,6 +2765,8 @@ export default function StudentStudyPlanPage() {
                   weakTopics={weakTopics}
                   pendingPYQTopics={pendingPYQTopics}
                   onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage}
+                  selectedCourseId={selectedCourseId}
                 />
               </div>
             </div>
@@ -3104,7 +3045,8 @@ export default function StudentStudyPlanPage() {
               <div className="flex-1 min-w-0 space-y-3">
                 <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
                 <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
               </div>
             </div>
           </div>
@@ -3319,7 +3261,8 @@ export default function StudentStudyPlanPage() {
               <div className="flex-1 min-w-0 space-y-3">
                 <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
                 <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
               </div>
             </div>
           </div>
@@ -3367,15 +3310,22 @@ export default function StudentStudyPlanPage() {
                   </div>
 
                   <div onClick={() => setRevisionCategory("intensive")}
-                    className="group bg-white p-6 rounded-2xl border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer relative overflow-hidden">
+                    className={`group bg-white p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden
+                      ${isSyllabusComplete ? "border-gray-200 hover:border-orange-300 hover:shadow-md" : "border-gray-200 opacity-60"}`}>
                     <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-orange-100 transition-colors" />
-                    <Flame className="w-8 h-8 text-orange-600 mb-4" />
+                    <Flame className={`w-8 h-8 mb-4 ${isSyllabusComplete ? "text-orange-600" : "text-gray-400"}`} />
                     <h3 className="text-lg font-bold text-gray-900">Intensive Revision</h3>
                     <p className="text-sm text-gray-500 mt-1">Focus on high-volume review of recently learned concepts.</p>
                     <div className="mt-4 flex items-center gap-2">
-                      <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
-                        {intensiveRevisionItems.length} items
-                      </span>
+                      {isSyllabusComplete ? (
+                        <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
+                          {intensiveRevisionItems.length} items
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 flex items-center gap-1">
+                          🔒 Unlocks at 100% completion
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -3612,6 +3562,8 @@ export default function StudentStudyPlanPage() {
                   weakTopics={weakTopics}
                   pendingPYQTopics={pendingPYQTopics}
                   onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage}
+                  selectedCourseId={selectedCourseId}
                 />
               </div>
             </div>

@@ -334,11 +334,10 @@ export function useGeneratePlan() {
 export function useRegeneratePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (batchId?: string) => studentApi.regeneratePlan(batchId),
+    mutationFn: (payload?: studentApi.GeneratePlanPayload | string) => studentApi.regeneratePlan(payload),
     onSuccess: () => {
-      // Remove first so subsequent invalidates always trigger a real fetch.
       qc.removeQueries({ queryKey: ["student", "plan"] });
-      qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      qc.refetchQueries({ queryKey: ["student", "plan"], type: "active" });
       qc.invalidateQueries({ queryKey: studentKeys.me });
       qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
@@ -358,51 +357,48 @@ export function useClearPlan() {
   });
 }
 
-export function useCompletePlanItem() {
+export function useCompletePlanItem(batchId?: string) {
   const qc = useQueryClient();
+  const planKey = batchId ? studentKeys.todayPlanByBatch(batchId) : studentKeys.plan;
   return useMutation({
     mutationFn: (itemId: string) => studentApi.completePlanItem(itemId),
-    // Optimistic update: mark item done instantly so the UI responds in 0ms, not ~300ms.
     onMutate: async (itemId) => {
-      await qc.cancelQueries({ queryKey: studentKeys.plan });
-      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan);
-      qc.setQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan, (old = []) =>
+      await qc.cancelQueries({ queryKey: planKey });
+      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(planKey);
+      qc.setQueryData<studentApi.StudyPlanItem[]>(planKey, (old = []) =>
         old.map(item => item.id === itemId ? { ...item, status: "completed" as const } : item)
       );
       return { prev };
     },
     onError: (_err, _itemId, ctx) => {
-      // Revert optimistic change on failure.
-      if (ctx?.prev !== undefined) qc.setQueryData(studentKeys.plan, ctx.prev);
+      if (ctx?.prev !== undefined) qc.setQueryData(planKey, ctx.prev);
     },
     onSettled: () => {
-      // Always sync with server after mutation settles (success or error).
-      qc.invalidateQueries({ queryKey: studentKeys.plan });
-      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["student", "plan"] });
       qc.invalidateQueries({ queryKey: studentKeys.me });
       qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
   });
 }
 
-export function useSkipPlanItem() {
+export function useSkipPlanItem(batchId?: string) {
   const qc = useQueryClient();
+  const planKey = batchId ? studentKeys.todayPlanByBatch(batchId) : studentKeys.plan;
   return useMutation({
     mutationFn: (itemId: string) => studentApi.skipPlanItem(itemId),
     onMutate: async (itemId) => {
-      await qc.cancelQueries({ queryKey: studentKeys.plan });
-      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan);
-      qc.setQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan, (old = []) =>
+      await qc.cancelQueries({ queryKey: planKey });
+      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(planKey);
+      qc.setQueryData<studentApi.StudyPlanItem[]>(planKey, (old = []) =>
         old.map(item => item.id === itemId ? { ...item, status: "skipped" as const } : item)
       );
       return { prev };
     },
     onError: (_err, _itemId, ctx) => {
-      if (ctx?.prev !== undefined) qc.setQueryData(studentKeys.plan, ctx.prev);
+      if (ctx?.prev !== undefined) qc.setQueryData(planKey, ctx.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: studentKeys.plan });
-      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["student", "plan"] });
     },
   });
 }
@@ -412,6 +408,46 @@ export function useNextAction() {
     queryKey: [...studentKeys.plan, "next-action"],
     queryFn: studentApi.getNextAction,
     staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useRevisionSpaced(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "spaced", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionSpaced(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useRevisionIntensive(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "intensive", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionIntensive(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useRevisionNotes(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "notes", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionNotes(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function usePracticeHistory(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "practice", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionPractice(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
     retry: false,
   });
 }
@@ -461,6 +497,18 @@ export function useMarkDoubtHelpful() {
   return useMutation({
     mutationFn: ({ id, isHelpful }: { id: string; isHelpful: boolean }) =>
       studentApi.markDoubtHelpful(id, isHelpful),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ["student", "doubts"] });
+      qc.invalidateQueries({ queryKey: studentKeys.doubt(id) });
+    },
+  });
+}
+
+export function useReopenDoubt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      studentApi.reopenDoubt(id, reason),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ["student", "doubts"] });
       qc.invalidateQueries({ queryKey: studentKeys.doubt(id) });

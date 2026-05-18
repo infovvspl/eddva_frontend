@@ -8,7 +8,7 @@ import {
   Users, BarChart3, Trophy, Loader2, Search, Filter,
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
   Youtube, File, ClipboardList, FlaskConical, X, Printer,
-  RotateCcw, ListChecks, Check, Brain,
+  RotateCcw, ListChecks, Check, Brain, HelpCircle,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
 import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
@@ -74,6 +74,7 @@ const RESOURCE_META: Record<string, { label: string; icon: React.ReactNode; colo
   link:  { label: "Link",  icon: <ExternalLink className="w-4 h-4" />,  color: "text-teal-600",    bg: "bg-teal-50 border-teal-200" },
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-4 h-4" />,  color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
   mindmap: { label: "Mindmap", icon: <Brain className="w-4 h-4" />, color: "text-teal-600", bg: "bg-teal-50 border-teal-200" },
+  faq:     { label: "FAQ",     icon: <HelpCircle className="w-4 h-4" />, color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1791,7 +1792,7 @@ function MockTestTabContent({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material" | "mock_test" | "mindmap";
+type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "faq" | "material" | "mock_test" | "mindmap";
 
 export default function StudentCourseDetailPage() {
   const { batchId = "" } = useParams<{ batchId: string }>();
@@ -1817,7 +1818,7 @@ export default function StudentCourseDetailPage() {
   const enablePreview = isError && !isKnownEnrolled && !myCoursesLoading;
   const { data: preview, isLoading: previewLoading } = useBatchPreview(enablePreview ? batchId : "");
 
-  const VALID_TABS: EnrolledTab[] = ["curriculum", "lectures", "dpp", "pyq", "material", "mock_test", "mindmap"];
+  const VALID_TABS: EnrolledTab[] = ["curriculum", "lectures", "dpp", "pyq", "faq", "material", "mock_test", "mindmap"];
   const tabParam = searchParams.get("tab") as EnrolledTab | null;
   const [activeTab, setActiveTab] = useState<EnrolledTab>(
     tabParam && VALID_TABS.includes(tabParam) ? tabParam : "curriculum"
@@ -1854,6 +1855,7 @@ export default function StudentCourseDetailPage() {
     [subjects],
   );
   const mindmapList = useMemo(() => collectResources(subjects, ["mindmap"]), [subjects]);
+  const faqList = useMemo(() => collectResources(subjects, ["faq"]), [subjects]);
   const allTopicsFlat = useMemo(
     () => subjects.flatMap(s => s.chapters.flatMap(c =>
       c.topics.map(t => ({ ...t, subjectName: s.name, chapterName: c.name }))
@@ -1942,6 +1944,7 @@ export default function StudentCourseDetailPage() {
     { id: "lectures",   label: "Lectures",      count: lectures.length || undefined,       icon: <Video className="w-4 h-4" /> },
     { id: "dpp",        label: "DPP",           count: dppList.length || undefined,        icon: <ClipboardList className="w-4 h-4" /> },
     { id: "pyq",        label: "PYQ",           count: pyqList.length || undefined,        icon: <Trophy className="w-4 h-4" /> },
+    { id: "faq",        label: "FAQ",           count: faqList.length || undefined,        icon: <HelpCircle className="w-4 h-4" /> },
     { id: "material",   label: "Notes",         count: materialList.length || undefined,   icon: <BookOpen className="w-4 h-4" /> },
     { id: "mindmap",    label: "Mindmaps",      count: mindmapList.length || undefined,    icon: <Brain className="w-4 h-4" /> },
     { id: "mock_test", label: "Mock Tests", count: mockTests.length || undefined, icon: <FlaskConical className="w-4 h-4" /> },
@@ -2063,6 +2066,7 @@ export default function StudentCourseDetailPage() {
                   { id: "lectures"  as EnrolledTab, label: "Lectures",    count: lectures.length,    icon: <Video className="w-3.5 h-3.5" />,        color: "text-blue-600"   },
                   { id: "dpp"       as EnrolledTab, label: "DPP",         count: dppList.length,     icon: <ClipboardList className="w-3.5 h-3.5" />, color: "text-orange-600" },
                   { id: "pyq"       as EnrolledTab, label: "PYQ",         count: pyqList.length,     icon: <Trophy className="w-3.5 h-3.5" />,        color: "text-violet-600" },
+                  { id: "faq"       as EnrolledTab, label: "FAQ",         count: faqList.length,     icon: <HelpCircle className="w-3.5 h-3.5" />,    color: "text-amber-600"  },
                   { id: "material"  as EnrolledTab, label: "Notes",       count: materialList.length, icon: <BookOpen className="w-3.5 h-3.5" />,     color: "text-teal-600"   },
                   { id: "mindmap"   as EnrolledTab, label: "Mindmaps",    count: mindmapList.length, icon: <Brain className="w-3.5 h-3.5" />,        color: "text-indigo-600" },
                   { id: "mock_test" as EnrolledTab, label: "Mock Tests",  count: mockTests.length,   icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-rose-600"   },
@@ -2280,6 +2284,9 @@ export default function StudentCourseDetailPage() {
 
           {/* ── PYQ TAB ── */}
           {activeTab === "pyq" && <ResourceTab resources={pyqList} isLocked={resourcesLocked} emptyLabel="No PYQs available yet" courseSubjectNames={subjects.map(s => s.name)} />}
+
+          {/* ── FAQ TAB ── */}
+          {activeTab === "faq" && <ResourceTab resources={faqList} isLocked={resourcesLocked} emptyLabel="No FAQs uploaded yet" courseSubjectNames={subjects.map(s => s.name)} />}
 
           {/* ── MATERIAL TAB ── */}
           {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" showSubFilters courseSubjectNames={subjects.map(s => s.name)} />}
