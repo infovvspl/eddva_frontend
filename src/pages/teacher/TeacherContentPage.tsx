@@ -75,6 +75,7 @@ const RES_TYPES: {
     { value: "dpp", label: "DPP Sheet", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx" },
     { value: "pyq", label: "PYQ Paper", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx" },
     { value: "notes", label: "Reading Material", shortLabel: "Reading", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
+    { value: "mindmap", label: "Mindmap", shortLabel: "Mindmap", icon: Brain, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
     { value: "video", label: "YouTube Video", shortLabel: "Video", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
     { value: "link", label: "External Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
   ];
@@ -218,6 +219,7 @@ const AI_CONTENT_TYPES = [
   { id: "pyq", label: "PYQ Practice", desc: "Previous Year Question style paper with solutions", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", saveAs: "pyq" },
   { id: "study_guide", label: "Study Guide", desc: "Crisp exam-ready summary for quick revision", icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", saveAs: "notes" },
   { id: "key_concepts", label: "Key Concepts", desc: "Must-know concepts, formulas and definitions", icon: Lightbulb, color: "text-rose-600", bg: "bg-rose-50", saveAs: "notes" },
+  { id: "mindmap", label: "Mindmap", desc: "Visual hierarchical breakdown of topic concepts", icon: Brain, color: "text-teal-600", bg: "bg-teal-50", saveAs: "mindmap" },
 ];
 
 function AiContentPanel({ topicId, topicName, subjectName, chapterName }: any) {

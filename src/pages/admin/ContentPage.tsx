@@ -85,6 +85,7 @@ const RES_TYPES: {
     { value: "dpp", label: "DPP", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx" },
     { value: "pyq", label: "PYQ", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx" },
     { value: "notes", label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
+    { value: "mindmap", label: "Mindmap", shortLabel: "Mindmap", icon: Brain, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
     { value: "video", label: "YouTube", shortLabel: "YouTube", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
     { value: "link", label: "Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
   ];
@@ -2868,6 +2869,17 @@ const AI_CONTENT_TYPES = [
     accent: "#EA580C",
     badge: "NEW",
     saveAs: "dpp",
+  },
+  {
+    id: "mindmap",
+    label: "Mindmap",
+    desc: "Visual hierarchical breakdown of topic concepts and sub-topics",
+    icon: Brain,
+    color: "text-teal-600",
+    bg: "bg-teal-50",
+    border: "border-teal-200",
+    accent: "#0D9488",
+    saveAs: "mindmap",
   },
   {
     id: "pyq",

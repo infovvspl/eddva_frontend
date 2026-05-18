@@ -7,10 +7,11 @@ import {
   Download, ExternalLink, FileText, BookOpen, Trophy,
   ClipboardList, FlaskConical, Youtube, File, Link2,
   Loader2, AlertCircle, Video, Zap, Lock, Sparkles,
-  BarChart2, PlayCircle, X, Printer,
+  BarChart2, PlayCircle, X, Printer, Brain,
 } from "lucide-react";
 import { useCourseTopicDetail } from "@/hooks/use-student";
 import { getResourceDownloadUrl } from "@/lib/api/student";
+import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
 import type { TopicLecture, TopicResource } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -34,7 +35,7 @@ function fmtDuration(secs?: number) {
   return `${s}s`;
 }
 
-type ResourceTab = "dpp" | "pyq" | "material" | "about";
+type ResourceTab = "dpp" | "pyq" | "material" | "mindmap" | "about";
 
 const RESOURCE_META: Record<string, {
   label: string; icon: React.ReactNode; color: string; bg: string; border: string;
@@ -46,6 +47,7 @@ const RESOURCE_META: Record<string, {
   video: { label: "Video", icon: <Youtube className="w-3.5 h-3.5" />,       color: "text-rose-600",    bg: "bg-rose-50",    border: "border-rose-200" },
   link:  { label: "Link",  icon: <Link2 className="w-3.5 h-3.5" />,         color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200" },
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  mindmap: { label: "Mindmap", icon: <Brain className="w-3.5 h-3.5" />, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" },
 };
 
 function getYouTubeThumbnail(url?: string | null) {
@@ -175,107 +177,40 @@ function LectureCard({
   );
 }
 
-// ─── AI Content Viewer Modal ──────────────────────────────────────────────────
-
-function AiContentModal({ title, content, type, onClose }: {
-  title: string; content: string; type: string; onClose: () => void;
-}) {
-  const meta = RESOURCE_META[type] ?? RESOURCE_META.dpp;
-  return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97 }}
-        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl my-8 overflow-hidden"
-      >
-        {/* Header */}
-        <div className={cn("flex items-center gap-3 px-6 py-4 border-b", meta.bg, meta.border)}>
-          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", meta.bg, meta.color)}>
-            {meta.icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-slate-800 text-sm line-clamp-1">{title}</p>
-            <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>{meta.label}</span>
-          </div>
-          <button
-            onClick={() => window.print()}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all"
-            title="Print"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[75vh]">
-          <DppContentRenderer content={content} />
-        </div>
-      </motion.div>
-    </div>
-  );
-}
+// Resource Viewer Modal is now handled by ResourceViewerModal component
 
 // ─── Resource Card ─────────────────────────────────────────────────────────────
 
 function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string }) {
   const meta = RESOURCE_META[String(res.type ?? "").toLowerCase()] ?? RESOURCE_META.link;
-  const [loading, setLoading] = useState(false);
-  const [aiModal, setAiModal] = useState<{ content: string } | null>(null);
+  const [viewing, setViewing] = useState(false);
 
-  const handleOpen = async () => {
-    // AI-generated content — description is already in the loaded data, no API call needed
-    if (!res.fileUrl && !res.externalUrl) {
-      if (res.description) {
-        setAiModal({ content: res.description });
-      } else {
-        toast.error("Resource not available yet — teacher is still preparing it");
-      }
-      return;
-    }
-
-    // External link (YouTube, etc.)
-    if (res.externalUrl) {
-      window.open(res.externalUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    // Uploaded S3 file — get presigned URL, fall back to direct URL
-    setLoading(true);
-    try {
-      const result = await getResourceDownloadUrl(topicId, res.id);
-      if (result.url) {
-        window.open(result.url, "_blank", "noopener,noreferrer");
-      } else {
-        window.open(resolveUrl(res.fileUrl)!, "_blank", "noopener,noreferrer");
-      }
-    } catch {
-      // backend endpoint not deployed yet — try direct S3 URL (works if bucket is public)
-      window.open(resolveUrl(res.fileUrl)!, "_blank", "noopener,noreferrer");
-    } finally {
-      setLoading(false);
-    }
+  const handleOpen = () => {
+    // If it's an external URL that's NOT a mindmap, maybe open in new tab?
+    // But user wants "in our platform directly", so we use the modal which handles both.
+    setViewing(true);
   };
 
   return (
     <>
-      {aiModal && (
-        <AiContentModal
-          title={res.title}
-          content={aiModal.content}
-          type={String(res.type ?? "").toLowerCase()}
-          onClose={() => setAiModal(null)}
-        />
-      )}
+      <AnimatePresence>
+        {viewing && (
+          <ResourceViewerModal
+            title={res.title}
+            content={res.description || undefined}
+            fileUrl={res.fileUrl}
+            externalUrl={res.externalUrl}
+            type={String(res.type ?? "").toLowerCase()}
+            topicId={topicId}
+            resourceId={res.id}
+            onClose={() => setViewing(false)}
+          />
+        )}
+      </AnimatePresence>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        onClick={loading ? undefined : handleOpen}
+        onClick={handleOpen}
         className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group"
       >
         <div className={cn(
@@ -296,11 +231,9 @@ function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string })
           "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
           "bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white"
         )}>
-          {loading
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : res.externalUrl
-              ? <ExternalLink className="w-3.5 h-3.5" />
-              : <Download className="w-3.5 h-3.5" />
+          {res.externalUrl
+            ? <ExternalLink className="w-3.5 h-3.5" />
+            : <Download className="w-3.5 h-3.5" />
           }
         </div>
       </motion.div>
@@ -320,7 +253,7 @@ export default function StudentCourseTopicPage() {
 
   const openParam = searchParams.get("open");
   useLayoutEffect(() => {
-    if (openParam === "dpp" || openParam === "pyq" || openParam === "material") {
+    if (openParam === "dpp" || openParam === "pyq" || openParam === "material" || openParam === "mindmap") {
       setResourceTab(openParam);
     } else {
       setResourceTab("dpp");
@@ -363,18 +296,21 @@ export default function StudentCourseTopicPage() {
   const dppList      = resources.filter(r => resType(r) === "dpp");
   const pyqList      = resources.filter(r => resType(r) === "pyq");
   const materialList = resources.filter(r => ["pdf", "notes", "video", "link"].includes(resType(r)));
+  const mindmapList = resources.filter(r => resType(r) === "mindmap");
 
   const tabConfig: { id: ResourceTab; label: string; count: number; icon: React.ReactNode }[] = [
     { id: "dpp",      label: "DPP",           count: dppList.length,      icon: <ClipboardList className="w-4 h-4" /> },
     { id: "pyq",      label: "PYQ",           count: pyqList.length,      icon: <Trophy className="w-4 h-4" /> },
     { id: "material", label: "Study Material", count: materialList.length, icon: <BookOpen className="w-4 h-4" /> },
+    { id: "mindmap",  label: "Mindmaps",      count: mindmapList.length,  icon: <Brain className="w-4 h-4" /> },
     { id: "about",    label: "About",         count: 0,                   icon: <FileText className="w-4 h-4" /> },
   ];
 
   const activeResources =
     resourceTab === "dpp"      ? dppList :
     resourceTab === "pyq"      ? pyqList :
-    resourceTab === "material" ? materialList : [];
+    resourceTab === "material" ? materialList :
+    resourceTab === "mindmap"  ? mindmapList : [];
 
   return (
     <div className="max-w-5xl mx-auto pb-32 space-y-6">

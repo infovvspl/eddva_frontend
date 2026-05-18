@@ -11,9 +11,10 @@ import {
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
   ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
-  Video,
+  Video, Brain,
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
+import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
 import { cn } from "@/lib/utils";
 import { cleanAiNotesContent } from "@/lib/ai-notes";
 import { apiClient, extractData } from "@/lib/api/client";
@@ -96,6 +97,7 @@ const RESOURCE_CONFIG: Record<TopicResourceType, {
   video: { label: "Video",  icon: Youtube,      bg: "bg-red-50",    text: "text-red-700",    border: "border-red-200"    },
   link:  { label: "Link",   icon: Link2,        bg: "bg-slate-50",  text: "text-slate-700",  border: "border-slate-200"  },
   quiz:  { label: "Quiz",   icon: Sparkles,     bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
+  mindmap: { label: "Mindmap", icon: Brain, bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200" },
 };
 
 function youtubeThumb(url: string) {
@@ -113,6 +115,7 @@ function MaterialsSection({ lecture, resources }: { lecture: Lecture; resources:
     { key: "dpp" as TopicResourceType,   items: resources.filter(r => r.type === "dpp")   },
     { key: "pdf" as TopicResourceType,   items: resources.filter(r => r.type === "pdf")   },
     { key: "notes" as TopicResourceType, items: resources.filter(r => r.type === "notes") },
+    { key: "mindmap" as TopicResourceType, items: resources.filter(r => r.type === "mindmap") },
     { key: "video" as TopicResourceType, items: resources.filter(r => r.type === "video") },
     { key: "link" as TopicResourceType,  items: resources.filter(r => r.type === "link")  },
   ].filter(g => g.items.length > 0);
@@ -1095,8 +1098,10 @@ function VideosPanel({ resources }: { resources: TopicResource[] }) {
 
 // ─── Resource List Panel (DPP / PYQ / PDF / Notes / Links) ────────────────────
 
-function ResourceListPanel({ resources, type }: { resources: TopicResource[]; type: TopicResourceType }) {
+function ResourceListPanel({ resources, type, topicId }: { resources: TopicResource[]; type: TopicResourceType; topicId?: string }) {
   const cfg = RESOURCE_CONFIG[type];
+  const [viewingResource, setViewingResource] = useState<TopicResource | null>(null);
+
   if (!resources.length) return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <cfg.icon className="w-8 h-8 text-slate-200 mb-3" />
@@ -1105,43 +1110,58 @@ function ResourceListPanel({ resources, type }: { resources: TopicResource[]; ty
   );
 
   return (
-    <div className="space-y-2.5">
-      {resources.map((r, i) => {
-        const href = r.fileUrl || r.externalUrl || "#";
-        const isExternal = !!r.externalUrl && !r.fileUrl;
-        return (
-          <a key={r.id} href={href} target="_blank" rel="noopener noreferrer"
-            className={cn(
-              "flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm group",
-              cfg.bg, cfg.border
-            )}>
-            {/* Index badge */}
-            <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-black text-xs bg-white/80", cfg.text)}>
-              {i + 1}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={cn("text-sm font-bold leading-snug", cfg.text)}>{r.title}</p>
-              {r.description && (
-                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{r.description}</p>
-              )}
-              {r.fileSizeKb && (
-                <p className="text-[10px] text-slate-400 mt-1 font-medium">
-                  {r.fileSizeKb >= 1024
-                    ? `${(r.fileSizeKb / 1024).toFixed(1)} MB`
-                    : `${r.fileSizeKb} KB`}
-                </p>
-              )}
-            </div>
-            <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-white/60 group-hover:bg-white transition-all", cfg.text)}>
-              {isExternal
-                ? <ExternalLink className="w-3.5 h-3.5" />
-                : <Download className="w-3.5 h-3.5" />
-              }
-            </div>
-          </a>
-        );
-      })}
-    </div>
+    <>
+      <AnimatePresence>
+        {viewingResource && (
+          <ResourceViewerModal
+            title={viewingResource.title}
+            content={viewingResource.description || undefined}
+            fileUrl={viewingResource.fileUrl}
+            externalUrl={viewingResource.externalUrl}
+            type={type}
+            topicId={topicId}
+            resourceId={viewingResource.id}
+            onClose={() => setViewingResource(null)}
+          />
+        )}
+      </AnimatePresence>
+      <div className="space-y-2.5">
+        {resources.map((r, i) => {
+          const isExternal = !!r.externalUrl && !r.fileUrl;
+          return (
+            <button key={r.id} onClick={() => setViewingResource(r)}
+              className={cn(
+                "w-full flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm group text-left",
+                cfg.bg, cfg.border
+              )}>
+              {/* Index badge */}
+              <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-black text-xs bg-white/80", cfg.text)}>
+                {i + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={cn("text-sm font-bold leading-snug", cfg.text)}>{r.title}</p>
+                {r.description && (
+                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{r.description}</p>
+                )}
+                {r.fileSizeKb && (
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                    {r.fileSizeKb >= 1024
+                      ? `${(r.fileSizeKb / 1024).toFixed(1)} MB`
+                      : `${r.fileSizeKb} KB`}
+                  </p>
+                )}
+              </div>
+              <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-white/60 group-hover:bg-white transition-all", cfg.text)}>
+                {isExternal
+                  ? <ExternalLink className="w-3.5 h-3.5" />
+                  : <Download className="w-3.5 h-3.5" />
+                }
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -1357,10 +1377,10 @@ export default function StudentLecturePage() {
   // ── Materials content renderer ───────────────────────────────────────────────
   const renderMaterials = () => {
     if (activeMatTab === "videos") return <VideosPanel resources={videoRes} />;
-    if (activeMatTab === "dpp")    return <ResourceListPanel resources={dppRes}  type="dpp"   />;
-    if (activeMatTab === "pyq")    return <ResourceListPanel resources={pyqRes}  type="pyq"   />;
-    if (activeMatTab === "pdf")    return <ResourceListPanel resources={pdfRes}  type="pdf"   />;
-    if (activeMatTab === "links")  return <ResourceListPanel resources={linkRes} type="link"  />;
+    if (activeMatTab === "dpp")    return <ResourceListPanel resources={dppRes}  type="dpp"  topicId={lecture.topicId} />;
+    if (activeMatTab === "pyq")    return <ResourceListPanel resources={pyqRes}  type="pyq"  topicId={lecture.topicId} />;
+    if (activeMatTab === "pdf")    return <ResourceListPanel resources={pdfRes}  type="pdf"  topicId={lecture.topicId} />;
+    if (activeMatTab === "links")  return <ResourceListPanel resources={linkRes} type="link" topicId={lecture.topicId} />;
 
     // "all" tab — grouped sections
     const sections: { key: MatTabKey; label: string; cfg: typeof RESOURCE_CONFIG[keyof typeof RESOURCE_CONFIG]; items: TopicResource[]; isVideo?: boolean }[] = [

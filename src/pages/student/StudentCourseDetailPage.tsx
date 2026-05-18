@@ -8,9 +8,10 @@ import {
   Users, BarChart3, Trophy, Loader2, Search, Filter,
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
   Youtube, File, ClipboardList, FlaskConical, X, Printer,
-  RotateCcw, ListChecks, Check,
+  RotateCcw, ListChecks, Check, Brain,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
+import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
 import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture, MockTestListItem, TestSession } from "@/lib/api/student";
 import { isSessionCompleted } from "@/lib/api/student";
 import { apiClient, extractData } from "@/lib/api/client";
@@ -72,6 +73,7 @@ const RESOURCE_META: Record<string, { label: string; icon: React.ReactNode; colo
   video: { label: "Video", icon: <Youtube className="w-4 h-4" />,       color: "text-red-600",     bg: "bg-red-50 border-red-200" },
   link:  { label: "Link",  icon: <ExternalLink className="w-4 h-4" />,  color: "text-teal-600",    bg: "bg-teal-50 border-teal-200" },
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-4 h-4" />,  color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
+  mindmap: { label: "Mindmap", icon: <Brain className="w-4 h-4" />, color: "text-teal-600", bg: "bg-teal-50 border-teal-200" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -92,350 +94,35 @@ function collectResources(subjects: CourseSubject[], types?: string[]): CourseRe
   return out;
 }
 
-// ─── Flashcard Viewer ─────────────────────────────────────────────────────────
-
-function FlashcardViewer({ content }: { content: string }) {
-  const [index, setIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-
-  const cards = useMemo(() => {
-    const lines = content.split("\n");
-    const result: { q: string; a: string }[] = [];
-    let currentQ = "";
-    let currentA = "";
-
-    for (const raw of lines) {
-      const line = raw.trim().replace(/\*\*/g, ""); // Remove bold markers for parsing
-      if (!line) continue;
-
-      if (/^[Qq][\s\d]*[:.]/.test(line)) {
-        if (currentQ && currentA) {
-          result.push({ q: currentQ, a: currentA });
-          currentA = "";
-        }
-        currentQ = line.replace(/^[Qq][\s\d]*[:.]\s*/, "").trim();
-      } else if (/^[Aa][\s\d]*[:.]/.test(line)) {
-        currentA = line.replace(/^[Aa][\s\d]*[:.]\s*/, "").trim();
-      } else if (currentQ) {
-        // Append to current A if it exists, otherwise ignore or treat as part of Q (usually A follows Q)
-        if (currentA) currentA += "\n" + line;
-        else currentQ += "\n" + line;
-      }
-    }
-    if (currentQ && currentA) result.push({ q: currentQ, a: currentA });
-    return result;
-  }, [content]);
-
-  if (cards.length === 0) return <DppContentRenderer content={content} />;
-
-  const card = cards[index];
-
-  return (
-    <div className="flex flex-col items-center py-4 sm:py-8">
-      {/* Progress */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="h-1.5 w-48 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-            style={{ width: `${((index + 1) / cards.length) * 100}%` }}
-          />
-        </div>
-        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-          {index + 1} / {cards.length}
-        </span>
-      </div>
-
-      {/* Card Container */}
-      <div className="w-full max-w-lg perspective-1000 h-[280px] sm:h-[320px] relative">
-        <motion.div
-          className="w-full h-full relative cursor-pointer"
-          animate={{ rotateY: flipped ? 180 : 0 }}
-          transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
-          onClick={() => setFlipped(!flipped)}
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          {/* Front */}
-          <div
-            className="absolute inset-0 w-full h-full bg-white border border-slate-200 rounded-[2.5rem] p-6 sm:p-10 shadow-xl flex flex-col items-center justify-center text-center backface-hidden"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 mb-6 shrink-0">
-              <Zap className="w-5 h-5" />
-            </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 shrink-0">Question</p>
-            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2">
-              <h3 className="text-base sm:text-lg font-bold text-slate-800 leading-relaxed">
-                {card.q}
-              </h3>
-            </div>
-            <div className="mt-6 flex items-center gap-2 text-indigo-500 font-bold text-[10px] uppercase tracking-widest animate-pulse shrink-0">
-              <RotateCcw className="w-3.5 h-3.5" /> Tap to reveal answer
-            </div>
-          </div>
-
-          {/* Back */}
-          <div
-            className="absolute inset-0 w-full h-full bg-indigo-600 border border-indigo-500 rounded-[2.5rem] p-6 sm:p-10 shadow-xl flex flex-col items-center justify-center text-center backface-hidden"
-            style={{ transform: "rotateY(180deg)" }}
-          >
-            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-white mb-6 shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.3em] mb-4 shrink-0">Correct Answer</p>
-            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2">
-              <h3 className="text-base sm:text-lg font-bold text-white leading-relaxed whitespace-pre-wrap">
-                {card.a}
-              </h3>
-            </div>
-            <div className="mt-6 flex items-center gap-2 text-white/60 font-bold text-[10px] uppercase tracking-widest shrink-0">
-              <RotateCcw className="w-3.5 h-3.5" /> Tap to flip back
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center gap-4 mt-10">
-        <button
-          disabled={index === 0}
-          onClick={() => { setIndex(index - 1); setFlipped(false); }}
-          className="w-12 h-12 rounded-2xl border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        <button
-          disabled={index === cards.length - 1}
-          onClick={() => { setIndex(index + 1); setFlipped(false); }}
-          className="px-8 h-12 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-30 disabled:hover:bg-indigo-600"
-        >
-          Next Card
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Checklist Viewer ─────────────────────────────────────────────────────────
-
-function ChecklistViewer({ content, title }: { content: string; title: string }) {
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem(`checklist_state_${title}`);
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
-  });
-
-  useEffect(() => {
-    localStorage.setItem(`checklist_state_${title}`, JSON.stringify(checkedItems));
-  }, [checkedItems, title]);
-
-  const sections = useMemo(() => {
-    const lines = content.split("\n");
-    const result: { title: string; items: string[] }[] = [];
-    let currentSection = { title: "General", items: [] as string[] };
-
-    for (const raw of lines) {
-      const line = raw.trim();
-      if (!line) continue;
-
-      if (/^#+\s+/.test(line)) {
-        if (currentSection.items.length > 0 || currentSection.title !== "General") {
-          result.push(currentSection);
-        }
-        currentSection = { title: line.replace(/^#+\s+/, "").trim(), items: [] };
-      } else if (/^[*+-]\s+\[\s*\]\s+/.test(line) || /^[*+-]\s+/.test(line)) {
-        currentSection.items.push(line.replace(/^[*+-]\s+\[\s*\]\s+/, "").replace(/^[*+-]\s+/, "").trim());
-      } else if (currentSection.items.length > 0) {
-        // Append to last item if it's not a bullet (multi-line)
-        const lastIdx = currentSection.items.length - 1;
-        currentSection.items[lastIdx] += " " + line;
-      }
-    }
-    if (currentSection.items.length > 0 || currentSection.title !== "General") {
-      result.push(currentSection);
-    }
-    return result;
-  }, [content]);
-
-  const totalItems = sections.reduce((acc, s) => acc + s.items.length, 0);
-  const completedCount = Object.values(checkedItems).filter(Boolean).length;
-  const progress = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
-
-  if (sections.length === 0) return <DppContentRenderer content={content} />;
-
-  const toggleItem = (itemText: string) => {
-    setCheckedItems(prev => ({ ...prev, [itemText]: !prev[itemText] }));
-  };
-
-  return (
-    <div className="py-4">
-      {/* Progress Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md pb-6 pt-2 border-b border-slate-100 mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
-              <ListChecks className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-slate-900">Your Progress</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                {completedCount} of {totalItems} items completed
-              </p>
-            </div>
-          </div>
-          <span className="text-xl font-black text-indigo-600">{Math.round(progress)}%</span>
-        </div>
-        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-indigo-500 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          />
-        </div>
-      </div>
-
-      {/* Sections */}
-      <div className="space-y-10">
-        {sections.map((section, si) => (
-          <div key={si} className="space-y-4">
-            <h4 className="text-xs font-black text-indigo-500 uppercase tracking-[0.2em] px-1 border-l-4 border-indigo-500 pl-3 py-1">
-              {section.title}
-            </h4>
-            <div className="grid grid-cols-1 gap-2">
-              {section.items.map((item, ii) => {
-                const isChecked = !!checkedItems[item];
-                return (
-                  <button
-                    key={ii}
-                    onClick={() => toggleItem(item)}
-                    className={cn(
-                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all group",
-                      isChecked
-                        ? "bg-emerald-50 border-emerald-100 text-emerald-800"
-                        : "bg-white border-slate-50 hover:border-slate-200 hover:shadow-sm"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border-2 transition-all mt-0.5",
-                      isChecked ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 group-hover:border-indigo-300"
-                    )}>
-                      {isChecked && <Check className="w-3.5 h-3.5" />}
-                    </div>
-                    <span className={cn(
-                      "text-[13px] font-medium leading-relaxed transition-all",
-                      isChecked ? "line-through opacity-60" : "text-slate-700"
-                    )}>
-                      {item}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {progress === 100 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-12 p-8 rounded-[2.5rem] bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-center shadow-xl shadow-emerald-500/20"
-        >
-          <Trophy className="w-12 h-12 mx-auto mb-4" />
-          <h3 className="text-xl font-black mb-2">Topic Mastered!</h3>
-          <p className="text-sm font-medium text-white/80">You've completed all items in this checklist. Great job!</p>
-        </motion.div>
-      )}
-    </div>
-  );
-}
-
-// ─── AI Content Viewer Modal ──────────────────────────────────────────────────
-
-function AiContentModal({ title, content, type, onClose }: {
-  title: string; content: string; type: string; onClose: () => void;
-}) {
-  const meta = RESOURCE_META[type] ?? RESOURCE_META.dpp;
-  return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97 }}
-        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl my-8 overflow-hidden"
-      >
-        <div className={cn("flex items-center gap-3 px-6 py-4 border-b", meta.bg)}>
-          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", meta.color)}>
-            {meta.icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-slate-800 text-sm line-clamp-1">{title}</p>
-            <span className={cn("text-[10px] font-black uppercase tracking-wider", meta.color)}>{meta.label}</span>
-          </div>
-          <button onClick={() => window.print()} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all" title="Print">
-            <Printer className="w-4 h-4" />
-          </button>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="p-6 overflow-y-auto max-h-[75vh]">
-          {(title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
-            <FlashcardViewer content={content} />
-          ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
-            <ChecklistViewer content={content} title={title} />
-          ) : (
-            <DppContentRenderer content={content} />
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
+// Specialized viewers are now handled by ResourceViewerModal
 
 // ─── Resource Card ────────────────────────────────────────────────────────────
 
 function ResourceCard({ res, isLocked }: { res: CourseResource; isLocked: boolean }) {
   const meta = RESOURCE_META[res.type] ?? RESOURCE_META.link;
-  const [aiModal, setAiModal] = useState<{ content: string } | null>(null);
+  const [viewing, setViewing] = useState(false);
 
   const handleOpen = () => {
     if (isLocked) { toast.error("Unlock this course to access materials"); return; }
-
-    // AI-generated content stored in description (no file URL)
-    if (!res.fileUrl && !res.externalUrl) {
-      if (res.description) {
-        setAiModal({ content: res.description });
-      } else {
-        toast.error("Resource not available yet — teacher is still preparing it");
-      }
-      return;
-    }
-
-    // External link
-    if (res.externalUrl) {
-      window.open(res.externalUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    // Uploaded file
-    const url = resolveUrl(res.fileUrl);
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
-    else toast.error("Resource not available");
+    setViewing(true);
   };
 
   return (
     <>
-      {aiModal && (
-        <AiContentModal
-          title={res.title}
-          content={aiModal.content}
-          type={res.type}
-          onClose={() => setAiModal(null)}
-        />
-      )}
+      <AnimatePresence>
+        {viewing && (
+          <ResourceViewerModal
+            title={res.title}
+            content={res.description || undefined}
+            fileUrl={res.fileUrl}
+            externalUrl={res.externalUrl}
+            type={res.type}
+            topicId={res.topicId}
+            resourceId={res.id}
+            onClose={() => setViewing(false)}
+          />
+        )}
+      </AnimatePresence>
       <div
         className={cn(
           "flex items-center gap-4 p-4 rounded-2xl border bg-white hover:shadow-md transition-all group cursor-pointer",
@@ -648,7 +335,7 @@ function TopicRow({
     return counts;
   }, [topic.resourceCounts, topic.resources]);
 
-  const goTopicResourceTab = (e: React.MouseEvent, open: "dpp" | "pyq" | "material") => {
+  const goTopicResourceTab = (e: React.MouseEvent, open: "dpp" | "pyq" | "material" | "mindmap") => {
     e.stopPropagation();
     if (locked) { toast.error("Unlock this course to access materials"); return; }
     navigate(`/student/courses/${batchId}/topics/${topic.id}?open=${open}`);
@@ -720,8 +407,8 @@ function TopicRow({
             {Object.entries(resourceCounts).map(([type, count]) => {
               const meta = RESOURCE_META[type];
               if (!meta || !count) return null;
-              const open: "dpp" | "pyq" | "material" =
-                type === "dpp" ? "dpp" : type === "pyq" ? "pyq" : "material";
+              const open: "dpp" | "pyq" | "material" | "mindmap" =
+                type === "dpp" ? "dpp" : type === "pyq" ? "pyq" : type === "mindmap" ? "mindmap" : "material";
               return (
                 <button
                   key={type}
@@ -2104,7 +1791,7 @@ function MockTestTabContent({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material" | "mock_test";
+type EnrolledTab = "curriculum" | "lectures" | "dpp" | "pyq" | "material" | "mock_test" | "mindmap";
 
 export default function StudentCourseDetailPage() {
   const { batchId = "" } = useParams<{ batchId: string }>();
@@ -2130,7 +1817,7 @@ export default function StudentCourseDetailPage() {
   const enablePreview = isError && !isKnownEnrolled && !myCoursesLoading;
   const { data: preview, isLoading: previewLoading } = useBatchPreview(enablePreview ? batchId : "");
 
-  const VALID_TABS: EnrolledTab[] = ["curriculum", "lectures", "dpp", "pyq", "material", "mock_test"];
+  const VALID_TABS: EnrolledTab[] = ["curriculum", "lectures", "dpp", "pyq", "material", "mock_test", "mindmap"];
   const tabParam = searchParams.get("tab") as EnrolledTab | null;
   const [activeTab, setActiveTab] = useState<EnrolledTab>(
     tabParam && VALID_TABS.includes(tabParam) ? tabParam : "curriculum"
@@ -2166,6 +1853,7 @@ export default function StudentCourseDetailPage() {
     () => collectResources(subjects, ["pdf", "notes"]),
     [subjects],
   );
+  const mindmapList = useMemo(() => collectResources(subjects, ["mindmap"]), [subjects]);
   const allTopicsFlat = useMemo(
     () => subjects.flatMap(s => s.chapters.flatMap(c =>
       c.topics.map(t => ({ ...t, subjectName: s.name, chapterName: c.name }))
@@ -2255,6 +1943,7 @@ export default function StudentCourseDetailPage() {
     { id: "dpp",        label: "DPP",           count: dppList.length || undefined,        icon: <ClipboardList className="w-4 h-4" /> },
     { id: "pyq",        label: "PYQ",           count: pyqList.length || undefined,        icon: <Trophy className="w-4 h-4" /> },
     { id: "material",   label: "Notes",         count: materialList.length || undefined,   icon: <BookOpen className="w-4 h-4" /> },
+    { id: "mindmap",    label: "Mindmaps",      count: mindmapList.length || undefined,    icon: <Brain className="w-4 h-4" /> },
     { id: "mock_test", label: "Mock Tests", count: mockTests.length || undefined, icon: <FlaskConical className="w-4 h-4" /> },
   ];
 
@@ -2375,6 +2064,7 @@ export default function StudentCourseDetailPage() {
                   { id: "dpp"       as EnrolledTab, label: "DPP",         count: dppList.length,     icon: <ClipboardList className="w-3.5 h-3.5" />, color: "text-orange-600" },
                   { id: "pyq"       as EnrolledTab, label: "PYQ",         count: pyqList.length,     icon: <Trophy className="w-3.5 h-3.5" />,        color: "text-violet-600" },
                   { id: "material"  as EnrolledTab, label: "Notes",       count: materialList.length, icon: <BookOpen className="w-3.5 h-3.5" />,     color: "text-teal-600"   },
+                  { id: "mindmap"   as EnrolledTab, label: "Mindmaps",    count: mindmapList.length, icon: <Brain className="w-3.5 h-3.5" />,        color: "text-indigo-600" },
                   { id: "mock_test" as EnrolledTab, label: "Mock Tests",  count: mockTests.length,   icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-rose-600"   },
                 ].filter(r => r.count > 0 || r.id === "lectures" || r.id === "mock_test").map(r => (
                   <button
@@ -2593,6 +2283,9 @@ export default function StudentCourseDetailPage() {
 
           {/* ── MATERIAL TAB ── */}
           {activeTab === "material" && <ResourceTab resources={materialList} isLocked={resourcesLocked} emptyLabel="No study materials added yet" showSubFilters courseSubjectNames={subjects.map(s => s.name)} />}
+
+          {/* ── MINDMAP TAB ── */}
+          {activeTab === "mindmap" && <ResourceTab resources={mindmapList} isLocked={resourcesLocked} emptyLabel="No mindmaps uploaded yet" showSubFilters={false} courseSubjectNames={subjects.map(s => s.name)} />}
 
           {/* ── MOCK TESTS TAB ── */}
           {activeTab === "mock_test" && (() => {

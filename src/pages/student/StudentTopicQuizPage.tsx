@@ -12,6 +12,7 @@ import {
   getMockTests, startSession, submitAnswer, submitSession,
   generateAiQuiz, completeAiQuiz,
 } from "@/lib/api/student";
+import { useCompletePlanItem } from "@/hooks/use-student";
 import { xpApi } from "@/lib/api/xp";
 import { triggerXPToast } from "@/lib/xp-toast";
 import type {
@@ -396,6 +397,9 @@ export default function StudentTopicQuizPage() {
   const [answers, setAnswers]     = useState<Record<string, string[]>>({});
   const [teacherResult, setTeacherResult] = useState<SessionResult | null>(null);
   const [aiResult, setAiResult]   = useState<AiQuizResult | null>(null);
+  
+  const planItemId = params.get("planItemId");
+  const planItemMut = useCompletePlanItem();
 
   const durationSec = (
     stage === "quiz" ? (mockTest?.durationMinutes ?? 30) :
@@ -462,6 +466,7 @@ export default function StudentTopicQuizPage() {
       const res = await submitSession(session.id);
       setTeacherResult(res);
       setStage("results");
+      if (planItemId) planItemMut.mutate(planItemId);
       if (mockTest) {
         xpApi.submitTest(mockTest.id, res.totalCorrect, 1, res.totalSkipped === 0)
           .then((xp) => triggerXPToast(xp.xpEarned, xp.isMockXp))
@@ -500,7 +505,9 @@ export default function StudentTopicQuizPage() {
     });
     try {
       const res = await completeAiQuiz(topicId, { score: Math.max(0, correct * 4 - wrong), totalMarks: aiQuizData.totalMarks, accuracy: qs.length ? (correct/qs.length)*100 : 0, correctCount: correct, wrongCount: wrong });
-      setAiResult(res); setStage("ai_results");
+      setAiResult(res); 
+      setStage("ai_results");
+      if (planItemId) planItemMut.mutate(planItemId);
     } catch { setStage("ai_quiz"); }
   };
 
