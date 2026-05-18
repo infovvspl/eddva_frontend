@@ -22,6 +22,8 @@ import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
+import { useAppTour } from "@/components/onboarding/useAppTour";
 import { tokenStorage } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
 import { ensureBattleSocket, disconnectBattleSocket } from "@/lib/battle-socket";
@@ -169,6 +171,18 @@ const DashboardLayout = () => {
   const isStudent      = user?.role === "student";
   const isInstAdmin    = user?.role === "institute_admin";
 
+  // ── Welcome walkthrough (shown once per user, before other first-login modals) ─
+  const walkthroughKey = user ? `walkthrough_v1_${user.id}` : null;
+  const [walkthroughDone, setWalkthroughDone] = useState(
+    () => !walkthroughKey || !!localStorage.getItem(walkthroughKey)
+  );
+  const { startTour } = useAppTour(user.role, navigate);
+  function handleWalkthroughDone() {
+    if (walkthroughKey) localStorage.setItem(walkthroughKey, "1");
+    setWalkthroughDone(true);
+    setTimeout(startTour, 300);
+  }
+
   // ── Admin profile setup modal (shown once on first login) ────────────────
   const { data: instProfile } = useInstituteProfile(isInstAdmin);
   const updateInstProfile = useUpdateInstituteProfile();
@@ -181,6 +195,7 @@ const DashboardLayout = () => {
   useEffect(() => {
     if (!isInstAdmin || instProfile === undefined) return;
     if (!user?.isFirstLogin) return;
+    if (!walkthroughDone) return;
     if (adminProfileKey && localStorage.getItem(adminProfileKey)) return;
 
     setAdminForm({
@@ -225,9 +240,10 @@ const DashboardLayout = () => {
   useEffect(() => {
     if (!isStudent || !prefKey || me === undefined) return;
     if (!user?.isFirstLogin) return;
+    if (!walkthroughDone) return;
     if (localStorage.getItem(prefKey)) return;
     setShowPrefModal(true);
-  }, [isStudent, prefKey, me, user?.isFirstLogin]);
+  }, [isStudent, prefKey, me, user?.isFirstLogin, walkthroughDone]);
 
   function handleSavePref() {
     if (!pendingPref || !prefKey) return;
@@ -372,6 +388,7 @@ const DashboardLayout = () => {
               key={item.path}
               to={item.path}
               end={item.path === roleRedirectPath[user.role]}
+              data-tour={`nav-${item.path.split("/").filter(Boolean).pop()}`}
               onClick={() => {
                 setMobileSidebarOpen(false);
                 setShowUserMenu(false);
@@ -465,7 +482,7 @@ const DashboardLayout = () => {
       {!lightDashboardShell && <AeroBackground />}
       
       {/* ── Desktop Sidebar ── */}
-      <aside className={cn(
+      <aside data-tour="sidebar" className={cn(
           "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
           sidebarOpen ? "w-[280px]" : "w-[90px]"
         )}>
@@ -575,6 +592,7 @@ const DashboardLayout = () => {
               )}
 
               <button
+                data-tour="notifications"
                 onClick={() => notificationPath && navigate(notificationPath)}
                 className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
                 title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -646,7 +664,7 @@ const DashboardLayout = () => {
            </div>
         </header>
 
-        <main className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
+        <main data-tour="main-content" className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
            <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
@@ -720,6 +738,9 @@ const DashboardLayout = () => {
           </div>
         </div>
       )}
+
+      {/* ── Welcome Walkthrough (shown once per user, before other first-login modals) ── */}
+      {!walkthroughDone && <WelcomeWalkthrough onDone={handleWalkthroughDone} />}
 
       {/* ── Admin Profile Setup Modal (shown once on first login) ── */}
       {showAdminProfileModal && (

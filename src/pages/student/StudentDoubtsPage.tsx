@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Plus, ThumbsUp, ThumbsDown, ChevronDown,
   Loader2, CheckCircle, Clock, X, Sparkles, User,
-  Brain, BookOpen, Send, Upload, Image as ImageIcon,
+  Brain, BookOpen, Send, Upload, Image as ImageIcon, ArrowUpDown,
 } from "lucide-react";
 import {
   useMyDoubts, useCreateDoubt, useMarkDoubtHelpful,
@@ -810,10 +810,26 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
 export default function StudentDoubtsPage() {
   const [activeTab, setActiveTab] = useState<typeof TABS[number]["key"]>("all");
   const [showForm, setShowForm]   = useState(false);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const { data: doubts = [], isLoading } = useMyDoubts(
     activeTab === "all" ? undefined : activeTab
   );
+
+  const sorted = useMemo(() => {
+    const result = [...doubts];
+    const isPriority = (d: StudentDoubt) =>
+      d.status === "escalated" && (d.isTeacherResponseHelpful === false || d.isHelpful === false);
+    result.sort((a, b) => {
+      const ra = isPriority(a) ? 1 : 0;
+      const rb = isPriority(b) ? 1 : 0;
+      if (rb !== ra) return rb - ra;
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      return sortOrder === "newest" ? tb - ta : ta - tb;
+    });
+    return result;
+  }, [doubts, sortOrder]);
 
   const resolvedCount  = doubts.filter(d => d.status === "teacher_resolved" || d.status === "ai_resolved").length;
   const pendingCount   = doubts.filter(d => d.status === "open" || d.status === "escalated").length;
@@ -854,22 +870,35 @@ export default function StudentDoubtsPage() {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-        {TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              "shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-              activeTab === tab.key
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-            )}
+      {/* ── Tabs + Sort ── */}
+      <div className="flex items-center gap-2">
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none flex-1">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                "shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                activeTab === tab.key
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-600">
+          <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+          <select
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value as "newest" | "oldest")}
+            className="bg-transparent outline-none cursor-pointer"
           >
-            {tab.label}
-          </button>
-        ))}
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </div>
       </div>
 
       {/* ── List ── */}
@@ -896,7 +925,7 @@ export default function StudentDoubtsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {doubts.map(d => <DoubtCard key={d.id} doubt={d} />)}
+          {sorted.map(d => <DoubtCard key={d.id} doubt={d} />)}
         </div>
       )}
 
