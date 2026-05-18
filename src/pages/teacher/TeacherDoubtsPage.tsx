@@ -23,6 +23,10 @@ import {
   Loader2, Search, RefreshCw, ChevronRight, Image as ImageIcon,
   BookOpen, Sparkles, ThumbsUp, ThumbsDown, Link2, Eye, EyeOff,
   CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload, Trash2,
+  Star, RotateCcw, Mic, PenTool, Bold, Italic, List, ListOrdered,
+  Superscript, Code, Paperclip, SmilePlus, AtSign, MoreVertical,
+  Video, UserPlus, ArrowUpRight, FileText, Layers, Globe, Lightbulb,
+  TrendingUp, ChevronDown, Bookmark,
 } from "lucide-react";
 import { apiClient, extractData } from "@/lib/api/client";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
@@ -35,6 +39,26 @@ const STATUS_META: Record<string, { label: string; bg: string; text: string; dot
   escalated:        { label: "Needs Answer",     bg: "bg-red-100 dark:bg-red-950/30",     text: "text-red-700 dark:text-red-400",     dot: "bg-red-500" },
   teacher_resolved: { label: "Resolved",         bg: "bg-emerald-100 dark:bg-emerald-50/30", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
 };
+
+const PRIORITY_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+  high:   { label: "HIGH PRIORITY",   bg: "bg-red-50 dark:bg-red-950/30",    text: "text-red-600 dark:text-red-400",       dot: "bg-red-500" },
+  medium: { label: "MEDIUM PRIORITY", bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400",   dot: "bg-amber-500" },
+  low:    { label: "LOW PRIORITY",    bg: "bg-emerald-50 dark:bg-emerald-950/30", text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500" },
+};
+
+function getPriority(mins?: number): "high" | "medium" | "low" {
+  if (!mins) return "low";
+  if (mins > 120) return "high";
+  if (mins > 60) return "medium";
+  return "low";
+}
+
+function waitingBadgeColor(mins?: number): string {
+  if (!mins) return "bg-slate-100 text-slate-500";
+  if (mins > 120) return "bg-red-50 text-red-600";
+  if (mins > 60) return "bg-amber-50 text-amber-600";
+  return "bg-emerald-50 text-emerald-600";
+}
 
 const AI_QUALITY_OPTIONS = [
   { value: "correct", label: "Completely Correct", desc: "AI answered it right — no extra response needed", icon: CheckCircle2, color: "text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-50/20" },
@@ -141,37 +165,62 @@ function DoubtListItem({ doubt, selected, onClick }: {
   const mins = doubt.timeSinceAskedMinutes ?? doubt.minutesSinceAsked;
   const name = doubt.student?.fullName ?? doubt.studentName ?? "Student";
   const topic = doubt.topic?.name ?? doubt.topicName;
+  const subject = doubt.topic?.chapter?.subject?.name ?? doubt.subjectName;
+  const priority = getPriority(mins);
+  const pm = PRIORITY_META[priority];
+  const imgCount = doubt.questionImageUrl ? 1 : 0;
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left px-4 py-3.5 border-b border-border transition-colors",
+        "w-full text-left px-4 py-3.5 border-b border-border/60 transition-all group",
         selected
-          ? "bg-primary/5 border-l-2 border-l-primary"
-          : "hover:bg-muted/40 border-l-2 border-l-transparent"
+          ? "bg-primary/5 border-l-[3px] border-l-primary shadow-sm"
+          : "hover:bg-muted/30 border-l-[3px] border-l-transparent"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <StatusBadge status={doubt.status} />
-            {mins != null && (
-              <span className={cn("text-xs flex items-center gap-1", urgencyColor(mins))}>
-                <Clock className="w-3 h-3" /> {timeAgo(mins)}
-              </span>
-            )}
-          </div>
-          <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
-            {doubt.questionText || doubt.ocrExtractedText || "Image question"}
-          </p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium">{name}</span>
-            {topic && <><span>·</span><span>{topic}</span></>}
-          </div>
+      {/* Priority + time row */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className={cn("inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded", pm.bg, pm.text)}>
+            <span className={cn("w-1.5 h-1.5 rounded-full", pm.dot)} />
+            {pm.label}
+          </span>
+          {mins != null && (
+            <span className="text-[11px] text-muted-foreground">
+              {timeAgo(mins)}
+            </span>
+          )}
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+        {imgCount > 0 && (
+          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <ImageIcon className="w-3 h-3" /> {imgCount}
+          </span>
+        )}
       </div>
+
+      {/* Question title */}
+      <p className="text-[13px] font-semibold text-foreground line-clamp-2 mb-1.5 leading-snug">
+        {doubt.questionText || doubt.ocrExtractedText || "Image question"}
+      </p>
+
+      {/* Student + subject */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/80">{name}</span>
+        </div>
+        {mins != null && (
+          <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", waitingBadgeColor(mins))}>
+            ⏳ Waiting {timeAgo(mins).replace(" ago", "")}
+          </span>
+        )}
+      </div>
+      {(subject || topic) && (
+        <p className="text-[11px] text-muted-foreground mt-1">
+          {[subject, topic].filter(Boolean).join(" · ")}
+        </p>
+      )}
     </button>
   );
 }
@@ -258,31 +307,39 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Preview toggle */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">Write Response</p>
-        <button
-          onClick={() => setShowPreview(v => !v)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-          {showPreview ? "Edit" : "Preview"}
-        </button>
-      </div>
+  const [answerTab, setAnswerTab] = useState<"write" | "voice" | "whiteboard">("write");
 
-      {/* AI Assist button */}
-      {!showPreview && (
+  return (
+    <div className="space-y-3">
+      {/* Answer mode tabs */}
+      <div className="flex items-center border-b border-border">
+        {([
+          { key: "write" as const, icon: PenTool, label: "Write Answer" },
+          { key: "voice" as const, icon: Mic, label: "Voice Answer" },
+          { key: "whiteboard" as const, icon: BookOpen, label: "Whiteboard" },
+        ]).map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            onClick={() => setAnswerTab(key)}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-colors border-b-2",
+              answerTab === key
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            )}
+          >
+            <Icon className="w-3.5 h-3.5" /> {label}
+          </button>
+        ))}
+        {/* AI magic button */}
         <button
           onClick={handleAiAssist}
           disabled={aiLoading}
-          className="w-full flex items-center justify-center gap-2 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-50/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
+          className="ml-auto flex items-center gap-1.5 text-xs text-blue-600 font-medium px-2.5 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors disabled:opacity-50"
         >
-          {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-          {aiLoading ? "Generating AI draft…" : "Ask AI for Help (pre-fill response)"}
+          {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
         </button>
-      )}
+      </div>
 
       {showPreview ? (
         <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-50/20 rounded-xl p-4 min-h-[120px]">
@@ -306,77 +363,78 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
         </div>
       ) : (
         <>
+          {/* Rich text toolbar */}
+          <div className="flex items-center gap-0.5 px-1 py-1 border border-border rounded-t-xl bg-muted/30 border-b-0">
+            {[Bold, Italic, List, ListOrdered, Superscript, Code, Link2].map((Icon, i) => (
+              <button key={i} className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                <Icon className="w-3.5 h-3.5" />
+              </button>
+            ))}
+          </div>
+
           {/* Main textarea */}
           <textarea
-            rows={5}
+            rows={4}
             value={response}
             onChange={e => setResponse(e.target.value)}
-            placeholder="Write a clear, step-by-step explanation for the student…"
-            className="w-full px-4 py-3 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+            placeholder="Type your answer here..."
+            className="w-full px-4 py-3 border border-border rounded-b-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none -mt-3"
           />
 
-          {/* Lecture reference */}
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Link2 className="w-3.5 h-3.5" /> Lecture Reference (optional)
-            </label>
-            <input
-              value={lectureRef}
-              onChange={e => setLectureRef(e.target.value)}
-              placeholder='e.g. "Lecture 3 at 12min 30sec"'
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-            />
-          </div>
-
-          {/* Diagram: URL or upload */}
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <ImageIcon className="w-3.5 h-3.5" /> Diagram / image (optional)
-            </label>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-              <input
-                value={imageUrl}
-                onChange={e => setImageUrl(e.target.value)}
-                placeholder="Paste image URL, or use Upload"
-                className="w-full min-w-0 flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-              <input
-                ref={diagramFileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
-                className="hidden"
-                onChange={onDiagramFileSelected}
-              />
-              <button
-                type="button"
-                onClick={() => diagramFileRef.current?.click()}
-                disabled={diagramUploading}
-                className="inline-flex shrink-0 items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium bg-muted/50 hover:bg-muted transition-colors disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {diagramUploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
-                {diagramUploading ? "Uploading…" : "Upload image"}
-              </button>
-            </div>
-            <p className="text-[11px] text-muted-foreground leading-snug">
-              JPG, PNG, WebP, or GIF up to 10&nbsp;MB. Uploaded files are stored for your institute and the URL is filled in automatically.
-            </p>
-          </div>
+          {/* Hidden file input */}
+          <input
+            ref={diagramFileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+            className="hidden"
+            onChange={onDiagramFileSelected}
+          />
         </>
       )}
 
-      {/* Send button */}
-      <button
-        onClick={handleSend}
-        disabled={respondM.isPending || !response.trim() || diagramUploading}
-        className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {respondM.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        {respondM.isPending ? "Sending…" : "Send Response to Student"}
-      </button>
+      {/* Bottom bar: attachments + send */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => diagramFileRef.current?.click()}
+            disabled={diagramUploading}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+            title="Attach image"
+          >
+            {diagramUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => diagramFileRef.current?.click()}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title="Upload image"
+          >
+            <ImageIcon className="w-4 h-4" />
+          </button>
+          <button className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors" title="Add emoji">
+            <SmilePlus className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowPreview(v => !v)}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title={showPreview ? "Edit" : "Preview"}
+          >
+            {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        <div className="flex items-center">
+          <button
+            onClick={handleSend}
+            disabled={respondM.isPending || !response.trim() || diagramUploading}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-l-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {respondM.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {respondM.isPending ? "Sending…" : "Send Answer"}
+          </button>
+          <button className="px-2 py-2.5 bg-primary text-primary-foreground rounded-r-xl border-l border-primary-foreground/20 hover:bg-primary/90 transition-colors">
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -398,6 +456,9 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
   const isResolved = doubt.status === "teacher_resolved";
   const isEscalated = doubt.status === "escalated";
   const hasAI = !!doubt.aiExplanation;
+  const priority = getPriority(mins);
+  const pm = PRIORITY_META[priority];
+  const shortId = doubt.id?.slice(0, 8)?.toUpperCase() ?? "";
 
   const handleMarkReviewed = async () => {
     try {
@@ -427,47 +488,55 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header: student + meta */}
-      <div className="px-6 py-5 border-b border-border shrink-0">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <StatusBadge status={doubt.status} />
-              {mins != null && (
-                <span className={cn("text-xs flex items-center gap-1.5", urgencyColor(mins))}>
-                  <Clock className="w-3.5 h-3.5" /> {timeAgo(mins)}
-                  {mins > 120 && <span className="text-red-500 font-medium">· Waiting long</span>}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                {name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <p className="font-semibold">{name}</p>
-                {(topic || subject) && (
-                  <p className="text-xs text-muted-foreground">
-                    {[subject, topic].filter(Boolean).join(" › ")}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {doubt.source && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
-                {doubt.source}
-              </span>
+      {/* Header: priority + ID + actions */}
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border shrink-0">
+        {/* Top row: priority badge, time, doubt ID, actions */}
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div className="flex items-center gap-2">
+            <span className={cn("inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded", pm.bg, pm.text)}>
+              <span className={cn("w-1.5 h-1.5 rounded-full", pm.dot)} />
+              {pm.label}
+            </span>
+            {mins != null && (
+              <span className="text-xs text-muted-foreground">{timeAgo(mins)}</span>
             )}
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">Doubt ID: #DQ{shortId}</span>
+            <button className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors">
+              <Star className="w-4 h-4" />
+            </button>
             <button
               onClick={() => setConfirmDelete(true)}
               title="Delete doubt"
               className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
+              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
+        </div>
+
+        {/* Question title */}
+        <h2 className="text-base sm:text-lg font-bold text-foreground mb-2 sm:mb-3 leading-snug">
+          {doubt.questionText || doubt.ocrExtractedText || "Image question"}
+        </h2>
+
+        {/* Student info row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-sm shrink-0 border border-primary/10">
+              {name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{name}</p>
+              <p className="text-xs text-muted-foreground">
+                {[subject, topic].filter(Boolean).join(" · ") || "Student"}
+              </p>
+            </div>
+          </div>
+          <button className="text-xs text-primary font-medium hover:underline px-3 py-1.5 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors">
+            View Profile
+          </button>
         </div>
       </div>
 
@@ -508,71 +577,57 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
         </div>
       )}
 
-      <div className="flex-1 px-6 py-5 space-y-5">
+      <div className="flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
 
-        {/* ── Student's Question ── */}
+        {/* ── Question ── */}
         <section>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Student's Question</p>
-          <div className="border border-border rounded-xl p-4 bg-muted/20">
-            {doubt.questionText && (
-              <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Question</p>
+          <div className="text-sm text-foreground leading-relaxed">
+            {doubt.questionText ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
                 <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                   {formatMarkdown(doubt.questionText)}
                 </ReactMarkdown>
               </div>
+            ) : (
+              <p className="text-muted-foreground italic">No question text provided.</p>
             )}
             {doubt.ocrExtractedText && doubt.ocrExtractedText !== doubt.questionText && (
-              <p className="text-sm text-muted-foreground mt-2 italic">(Extracted from image: {doubt.ocrExtractedText})</p>
-            )}
-            {doubt.questionImageUrl && (
-              <div className="mt-3 border border-border rounded-lg overflow-hidden">
-                <img
-                  src={doubt.questionImageUrl}
-                  alt="Student's uploaded question"
-                  className="max-h-64 object-contain w-full bg-white"
-                />
-              </div>
-            )}
-            {!doubt.questionText && !doubt.questionImageUrl && (
-              <p className="text-sm text-muted-foreground italic">No question text provided.</p>
+              <p className="text-muted-foreground mt-1 italic text-xs">(Extracted from image: {doubt.ocrExtractedText})</p>
             )}
           </div>
         </section>
 
-        {/* ── What AI Tried ── */}
+        {/* ── Attachments ── */}
+        {doubt.questionImageUrl && (
+          <section>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Attachments (1)</p>
+            <div className="flex gap-2">
+              <div className="w-28 h-20 rounded-lg border border-border overflow-hidden bg-white">
+                <img
+                  src={doubt.questionImageUrl}
+                  alt="Attachment"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── AI Suggested Answer ── */}
         {hasAI && (
           <section>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-blue-500" /> What AI Tried
-              </p>
-              
-              {/* Brief / Detailed toggle — only when structured data available */}
-              {parseAiAnswer(doubt.aiExplanation) && (
-                <div className="flex gap-0.5 bg-blue-100/70 dark:bg-blue-900/30 p-0.5 rounded-lg shrink-0">
-                  <button
-                    onClick={() => setViewMode("brief")}
-                    className={cn(
-                      "px-2 py-0.5 rounded-md text-[10px] font-bold transition-all",
-                      viewMode === "brief" ? "bg-white dark:bg-blue-800 text-blue-700 dark:text-white shadow-sm" : "text-blue-400 hover:text-blue-600"
-                    )}
-                  >
-                    Brief
-                  </button>
-                  <button
-                    onClick={() => setViewMode("detailed")}
-                    className={cn(
-                      "px-2 py-0.5 rounded-md text-[10px] font-bold transition-all",
-                      viewMode === "detailed" ? "bg-white dark:bg-blue-800 text-blue-700 dark:text-white shadow-sm" : "text-blue-400 hover:text-blue-600"
-                    )}
-                  >
-                    Detailed
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+                <p className="text-sm font-bold text-foreground">AI Suggested Answer</p>
+              </div>
+              <button className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-medium hover:text-blue-700 transition-colors px-2.5 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/20">
+                <RotateCcw className="w-3.5 h-3.5" /> Regenerate
+              </button>
             </div>
 
-            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-50/20 rounded-xl p-4 space-y-3">
+            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-50/10 rounded-xl p-4 space-y-3">
               {(() => {
                 const parsed = parseAiAnswer(doubt.aiExplanation);
                 if (!parsed) {
@@ -623,9 +678,30 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
                   ))}
                 </div>
               )}
+
+              {/* Feedback + action row */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-blue-200/60 dark:border-blue-800/40">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">Was this helpful?</span>
+                  <button className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                    <ThumbsUp className="w-3.5 h-3.5 text-muted-foreground hover:text-blue-600" />
+                  </button>
+                  <button className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                    <ThumbsDown className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {["Explain More", "Simplify", "Create Diagram"].map(action => (
+                    <button key={action} className="text-[11px] text-blue-600 font-medium hover:underline flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> <span className="hidden sm:inline">{action}</span><span className="sm:hidden">{action.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Student's rating of AI */}
               {doubt.isHelpful === false && (
-                <div className="flex items-center gap-1.5 text-xs text-red-600 border-t border-blue-200 dark:border-blue-800 pt-2 mt-2">
+                <div className="flex items-center gap-1.5 text-xs text-red-600 border-t border-blue-200 dark:border-blue-800 pt-2 mt-1">
                   <ThumbsDown className="w-3.5 h-3.5" /> Student said this wasn't helpful
                 </div>
               )}
@@ -839,121 +915,187 @@ export default function TeacherDoubtsPage() {
     d.resolvedAt && new Date(d.resolvedAt).toDateString() === new Date().toDateString()
   ).length;
 
+  // Derived stats
+  const escalatedCount = allDoubts.filter(d => d.status === "escalated").length;
+  const avgResponseMins = useMemo(() => {
+    const resolved = allDoubts.filter(d => d.resolvedAt && d.createdAt);
+    if (!resolved.length) return 0;
+    const total = resolved.reduce((sum, d) => {
+      const diff = new Date(d.resolvedAt!).getTime() - new Date(d.createdAt).getTime();
+      return sum + diff / 60000;
+    }, 0);
+    return Math.round(total / resolved.length);
+  }, [allDoubts]);
+
+  // Student insights for selected doubt
+  const selectedName = selectedDoubt ? (selectedDoubt.student?.fullName ?? selectedDoubt.studentName ?? "Student") : "";
+  const selectedSubject = selectedDoubt ? (selectedDoubt.topic?.chapter?.subject?.name ?? selectedDoubt.subjectName) : "";
+  const selectedTopic = selectedDoubt ? (selectedDoubt.topic?.name ?? selectedDoubt.topicName) : "";
+
   return (
     <div className="flex flex-col h-full min-h-0">
 
-      {/* Page header */}
-      <div className="px-6 py-5 border-b border-border shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Answer Doubts</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {pendingCount > 0
-                ? `${pendingCount} doubt${pendingCount > 1 ? "s" : ""} waiting for your response`
-                : "All caught up! No pending doubts."}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Quick stats */}
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="text-center border border-border rounded-xl px-4 py-2">
-                <p className="text-lg font-bold text-red-500">{pendingCount}</p>
-                <p className="text-xs text-muted-foreground">Pending</p>
-              </div>
-              <div className="text-center border border-border rounded-xl px-4 py-2">
-                <p className="text-lg font-bold text-emerald-600">{resolvedToday}</p>
-                <p className="text-xs text-muted-foreground">Resolved Today</p>
+      {/* ── Top Stats Bar ── */}
+      <div className="px-3 sm:px-6 py-3 border-b border-border shrink-0 bg-background">
+        <div className="grid grid-cols-2 lg:flex lg:flex-row items-center gap-2 lg:gap-4">
+          {/* Pending Doubts */}
+          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 rounded-xl border border-border bg-background">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Pending Doubts</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-foreground">{pendingCount}</p>
+                <span className="text-[10px] text-orange-600 font-medium hidden sm:inline">↑ queue</span>
               </div>
             </div>
-            <button
-              onClick={handleRefresh}
-              className="p-2.5 border border-border rounded-xl hover:bg-secondary transition-colors text-muted-foreground"
-              title="Refresh"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
           </div>
+          {/* Escalated */}
+          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 rounded-xl border border-border bg-background">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Escalated</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-foreground">{escalatedCount}</p>
+                <span className="text-[10px] text-red-600 font-medium hidden sm:inline">↑ urgent</span>
+              </div>
+            </div>
+          </div>
+          {/* Avg Response Time */}
+          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 rounded-xl border border-border bg-background">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 dark:bg-blue-950/30 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Avg. Response</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-foreground">
+                  {avgResponseMins >= 60 ? `${Math.floor(avgResponseMins / 60)}h ${avgResponseMins % 60}m` : `${avgResponseMins}m`}
+                </p>
+                <span className="text-[10px] text-emerald-600 font-medium hidden sm:inline">↓ fast</span>
+              </div>
+            </div>
+          </div>
+          {/* Resolved Today */}
+          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 rounded-xl border border-border bg-background">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Resolved Today</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-foreground">{resolvedToday}</p>
+                <span className="text-[10px] text-emerald-600 font-medium hidden sm:inline">✓ today</span>
+              </div>
+            </div>
+          </div>
+          {/* Refresh button */}
+          <button
+            onClick={handleRefresh}
+            className="lg:ml-auto col-span-2 lg:col-span-1 flex items-center justify-center gap-2 p-2.5 border border-border rounded-xl hover:bg-secondary transition-colors text-muted-foreground w-full lg:w-auto"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="text-xs lg:hidden">Refresh</span>
+          </button>
         </div>
       </div>
 
-      {/* Body: split panel */}
+      {/* ── Page Title ── */}
+      <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-border shrink-0 flex items-center justify-between">
+        <div>
+          <h1 className="text-base sm:text-xl font-bold text-foreground">Doubt Queue</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block mt-0.5">
+            Respond to student doubts and help them learn better.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Body: 3-column layout ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
-        {/* ── LEFT: Doubt List ── */}
+        {/* ── COL 1: Doubt List ── */}
         <div className={cn(
-          "flex flex-col border-r border-border bg-background",
-          selectedDoubt ? "hidden md:flex w-80 xl:w-96 shrink-0" : "flex flex-1"
+          "flex flex-col border-r border-border bg-background transition-all duration-200",
+          selectedDoubt
+            ? "hidden md:flex md:w-[300px] lg:w-[340px] xl:w-[380px] shrink-0"
+            : "flex w-full"
         )}>
+          {/* Search */}
+          <div className="p-3 border-b border-border shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search doubts, students or topics…"
+                className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+          </div>
+
+          {/* Filter row */}
+          <div className="px-3 py-2 border-b border-border shrink-0 flex items-center gap-2 flex-wrap">
+            <button className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-border hover:bg-muted/50 transition-colors">
+              <Filter className="w-3 h-3" /> Filter
+            </button>
+            {batches.length > 0 && (
+              <select
+                value={filterBatchId}
+                onChange={e => { setFilterBatchId(e.target.value); setSelectedId(null); }}
+                className="py-1 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none"
+              >
+                <option value="">All Subjects</option>
+                {batches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            )}
+            <select className="py-1 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none">
+              <option>All Priorities</option>
+              <option>High Priority</option>
+              <option>Medium Priority</option>
+              <option>Low Priority</option>
+            </select>
+            {tab === "all" && (
+              <select
+                value={filterStatus}
+                onChange={e => setFilterStatus(e.target.value as FilterStatus)}
+                className="py-1 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none"
+              >
+                <option value="">All Status</option>
+                <option value="escalated">Needs Answer</option>
+                <option value="ai_resolved">AI Resolved</option>
+                <option value="teacher_resolved">Resolved</option>
+              </select>
+            )}
+          </div>
+
           {/* Tabs */}
           <div className="flex border-b border-border shrink-0">
             <button
               onClick={() => { setTab("queue"); setSelectedId(null); }}
-              className={cn("flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2",
+              className={cn("flex-1 py-2.5 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5",
                 tab === "queue" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
-              <Inbox className="w-4 h-4" />
+              <Inbox className="w-3.5 h-3.5" />
               Escalated Queue
               {pendingCount > 0 && (
-                <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.1rem] text-center">
                   {pendingCount}
                 </span>
               )}
             </button>
             <button
               onClick={() => { setTab("all"); setSelectedId(null); }}
-              className={cn("flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2",
+              className={cn("flex-1 py-2.5 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5",
                 tab === "all" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
-              <MessageSquare className="w-4 h-4" /> All Doubts
+              <MessageSquare className="w-3.5 h-3.5" /> All Doubts
             </button>
-          </div>
-
-          {/* Search + filter */}
-          <div className="p-3 border-b border-border space-y-2 shrink-0">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search by question or student…"
-                className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-            </div>
-
-            {/* Course filter */}
-            {batches.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <select
-                  value={filterBatchId}
-                  onChange={e => { setFilterBatchId(e.target.value); setSelectedId(null); }}
-                  className="flex-1 py-1.5 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  <option value="">All Courses</option>
-                  {batches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {tab === "all" && (
-              <div className="flex gap-1 flex-wrap">
-                {([["", "All"], ["escalated", "Needs Answer"], ["ai_resolved", "AI Resolved"], ["teacher_resolved", "Resolved"]] as [FilterStatus, string][]).map(([val, label]) => (
-                  <button
-                    key={val}
-                    onClick={() => setFilterStatus(val)}
-                    className={cn("px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
-                      filterStatus === val
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-secondary"
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* List */}
@@ -979,30 +1121,135 @@ export default function TeacherDoubtsPage() {
                     onClick={() => setSelectedId(d.id)}
                   />
                 ))}
+                {/* Pagination footer */}
+                <div className="px-4 py-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Showing 1 to {Math.min(filtered.length, 6)} of {filtered.length} doubts</span>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4].map(n => (
+                      <button key={n} className={cn("w-6 h-6 rounded text-xs font-medium", n === 1 ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>{n}</button>
+                    ))}
+                    <button className="w-6 h-6 rounded text-xs hover:bg-muted">›</button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── RIGHT: Detail Panel ── */}
+        {/* ── COL 2: Detail Panel ── */}
         {selectedDoubt ? (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            {/* Back button (mobile) */}
-            <div className="md:hidden px-4 py-2 border-b border-border shrink-0">
-              <button
-                onClick={() => setSelectedId(null)}
-                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-              >
-                ← Back to list
-              </button>
+          <div className="flex-1 flex min-h-0 overflow-hidden">
+            {/* Detail content */}
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              {/* Back button (mobile) */}
+              <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border shrink-0 bg-muted/20">
+                <button
+                  onClick={() => setSelectedId(null)}
+                  className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                  Back to doubts
+                </button>
+                <span className="text-muted-foreground text-xs ml-auto">
+                  {filtered.findIndex(d => d.id === selectedId) + 1} / {filtered.length}
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <DoubtDetailPanel
+                  key={selectedDoubt.id}
+                  doubt={selectedDoubt}
+                  onRefresh={handleRefresh}
+                  onDelete={() => { setSelectedId(null); handleRefresh(); }}
+                />
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
-              <DoubtDetailPanel
-                key={selectedDoubt.id}
-                doubt={selectedDoubt}
-                onRefresh={handleRefresh}
-                onDelete={() => { setSelectedId(null); handleRefresh(); }}
-              />
+
+            {/* ── COL 3: Right Sidebar ── */}
+            <div className="hidden xl:flex flex-col w-[280px] border-l border-border bg-background overflow-y-auto shrink-0">
+              {/* Student Insights */}
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-foreground">Student Insights</h3>
+                  <button className="text-[11px] text-primary font-medium hover:underline">View Full Profile</button>
+                </div>
+                {/* Performance */}
+                <div className="flex items-center justify-between mb-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <span className="text-xs text-muted-foreground font-medium">Overall Performance</span>
+                  <span className="text-sm font-bold text-primary">72%</span>
+                </div>
+                {/* Strong Topics */}
+                <div className="mb-3">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Strong Topics</p>
+                  <p className="text-xs text-foreground">Thermodynamics, Equilibrium</p>
+                </div>
+                {/* Weak Topics */}
+                <div className="mb-3">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Weak Topics</p>
+                  <p className="text-xs text-foreground">Solutions, Colligative Properties</p>
+                </div>
+                {/* Mini stats row */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <p className="text-sm font-bold text-foreground">18</p>
+                    <p className="text-[10px] text-muted-foreground">Doubts Asked</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <p className="text-sm font-bold text-foreground">3</p>
+                    <p className="text-[10px] text-muted-foreground">This Week</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <p className="text-sm font-bold text-emerald-600">15</p>
+                    <p className="text-[10px] text-muted-foreground">Resolved</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="p-4 border-b border-border">
+                <h3 className="text-sm font-bold text-foreground mb-3">Quick Actions</h3>
+                <div className="space-y-1">
+                  {[
+                    { icon: CheckCircle2, label: "Mark as Resolved", color: "text-emerald-600" },
+                    { icon: Video, label: "Convert to Live Session", color: "text-blue-600" },
+                    { icon: UserPlus, label: "Assign to TA", color: "text-purple-600" },
+                    { icon: ArrowUpRight, label: "Escalate Doubt", color: "text-orange-600" },
+                    { icon: Bookmark, label: "Add to Notes", color: "text-slate-600" },
+                  ].map(({ icon: Icon, label, color }) => (
+                    <button
+                      key={label}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <Icon className={cn("w-4 h-4", color)} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Assistant */}
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-bold text-foreground">AI Assistant</h3>
+                  <span className="text-[9px] font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-white px-1.5 py-0.5 rounded">BETA</span>
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { icon: Sparkles, label: "Generate Explanation" },
+                    { icon: Globe, label: "Convert to Hindi" },
+                    { icon: FileText, label: "Create Practice Question" },
+                    { icon: Layers, label: "Similar Doubts" },
+                    { icon: Lightbulb, label: "Generate Diagram" },
+                  ].map(({ icon: Icon, label }) => (
+                    <button
+                      key={label}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
+                    >
+                      <Icon className="w-4 h-4 text-blue-600" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         ) : (
