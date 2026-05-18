@@ -22,15 +22,7 @@ import {
   MessageSquare, Clock, AlertCircle, CheckCircle2, Send,
   Loader2, Search, RefreshCw, ChevronRight, Image as ImageIcon,
   BookOpen, Sparkles, ThumbsUp, ThumbsDown, Link2, Eye, EyeOff,
-<<<<<<< HEAD
-  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload, Trash2, ArrowUpDown,
-=======
-  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload, Trash2,
-  Star, RotateCcw, Mic, PenTool, Bold, Italic, List, ListOrdered,
-  Superscript, Code, Paperclip, SmilePlus, AtSign, MoreVertical,
-  Video, UserPlus, ArrowUpRight, FileText, Layers, Globe, Lightbulb,
-  TrendingUp, ChevronDown, Bookmark,
->>>>>>> 75d05cb45304297f8e61008820cb17d5ea571823
+  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload, Trash2, ArrowUpDown, TrendingUp,
 } from "lucide-react";
 import { apiClient, extractData } from "@/lib/api/client";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
@@ -38,16 +30,16 @@ import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  open:             { label: "Open",             bg: "bg-orange-100 dark:bg-orange-950/30", text: "text-orange-700 dark:text-orange-400", dot: "bg-orange-500" },
-  ai_resolved:      { label: "AI Resolved",      bg: "bg-blue-100 dark:bg-blue-50/30",   text: "text-blue-700 dark:text-blue-400",   dot: "bg-blue-500" },
-  escalated:        { label: "Needs Answer",     bg: "bg-red-100 dark:bg-red-950/30",     text: "text-red-700 dark:text-red-400",     dot: "bg-red-500" },
-  teacher_resolved: { label: "Resolved",         bg: "bg-emerald-100 dark:bg-emerald-50/30", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
+  open: { label: "Open", bg: "bg-orange-100 dark:bg-orange-950/30", text: "text-orange-700 dark:text-orange-400", dot: "bg-orange-500" },
+  ai_resolved: { label: "AI Resolved", bg: "bg-blue-100 dark:bg-blue-50/30", text: "text-blue-700 dark:text-blue-400", dot: "bg-blue-500" },
+  escalated: { label: "Needs Answer", bg: "bg-red-100 dark:bg-red-950/30", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" },
+  teacher_resolved: { label: "Resolved", bg: "bg-emerald-100 dark:bg-emerald-50/30", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
 };
 
 const PRIORITY_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  high:   { label: "HIGH PRIORITY",   bg: "bg-red-50 dark:bg-red-950/30",    text: "text-red-600 dark:text-red-400",       dot: "bg-red-500" },
-  medium: { label: "MEDIUM PRIORITY", bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400",   dot: "bg-amber-500" },
-  low:    { label: "LOW PRIORITY",    bg: "bg-emerald-50 dark:bg-emerald-950/30", text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500" },
+  high: { label: "HIGH PRIORITY", bg: "bg-red-50 dark:bg-red-950/30", text: "text-red-600 dark:text-red-400", dot: "bg-red-500" },
+  medium: { label: "MEDIUM PRIORITY", bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500" },
+  low: { label: "LOW PRIORITY", bg: "bg-emerald-50 dark:bg-emerald-950/30", text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500" },
 };
 
 function getPriority(mins?: number): "high" | "medium" | "low" {
@@ -66,8 +58,8 @@ function waitingBadgeColor(mins?: number): string {
 
 const AI_QUALITY_OPTIONS = [
   { value: "correct", label: "Completely Correct", desc: "AI answered it right — no extra response needed", icon: CheckCircle2, color: "text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-50/20" },
-  { value: "partial", label: "Partially Correct",  desc: "AI got some parts right — I'll complete it", icon: AlertCircle, color: "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-50/20" },
-  { value: "wrong",   label: "Completely Wrong",   desc: "AI missed it entirely — I'll write from scratch", icon: XCircle, color: "text-red-600 border-red-300 bg-red-50 dark:bg-red-950/20" },
+  { value: "partial", label: "Partially Correct", desc: "AI got some parts right — I'll complete it", icon: AlertCircle, color: "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-50/20" },
+  { value: "wrong", label: "Completely Wrong", desc: "AI missed it entirely — I'll write from scratch", icon: XCircle, color: "text-red-600 border-red-300 bg-red-50 dark:bg-red-950/20" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -98,7 +90,7 @@ interface AiAnswerStructured {
 function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | null {
   if (!raw) return null;
   let str = raw.trim();
-  
+
   // Try to find the outermost { } block first (strips preambles/postscripts)
   const jsonMatch = str.match(/(\{[\s\S]*\})/);
   if (jsonMatch) str = jsonMatch[1].trim();
@@ -112,7 +104,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
     return JSON.parse(str) as AiAnswerStructured;
   } catch {
     // Aggressive fix: escape raw newlines inside what looks like string values
-    const fixed = str.replace(/"([\s\S]*?)"/g, (match) => 
+    const fixed = str.replace(/"([\s\S]*?)"/g, (match) =>
       match.replace(/\n/g, "\\n").replace(/\r/g, "\\n")
     );
     try {
@@ -184,7 +176,6 @@ function DoubtListItem({ doubt, selected, onClick }: {
           : "hover:bg-muted/30 border-l-[3px] border-l-transparent"
       )}
     >
-<<<<<<< HEAD
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -212,20 +203,6 @@ function DoubtListItem({ doubt, selected, onClick }: {
             <span className="font-medium">{name}</span>
             {topic && <><span>·</span><span>{topic}</span></>}
           </div>
-=======
-      {/* Priority + time row */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className={cn("inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded", pm.bg, pm.text)}>
-            <span className={cn("w-1.5 h-1.5 rounded-full", pm.dot)} />
-            {pm.label}
-          </span>
-          {mins != null && (
-            <span className="text-[11px] text-muted-foreground">
-              {timeAgo(mins)}
-            </span>
-          )}
->>>>>>> 75d05cb45304297f8e61008820cb17d5ea571823
         </div>
         {imgCount > 0 && (
           <span className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -391,7 +368,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
           )}
           {imageUrl && (
             <div className="mt-3 border border-border rounded-lg overflow-hidden">
-              <img src={imageUrl} alt="Diagram" className="max-h-48 object-contain w-full" onError={() => {}} />
+              <img src={imageUrl} alt="Diagram" className="max-h-48 object-contain w-full" onError={() => { }} />
             </div>
           )}
         </div>
@@ -930,10 +907,10 @@ export default function TeacherDoubtsPage() {
     const q = search.trim().toLowerCase();
     const result = q
       ? doubts.filter(d =>
-          d.questionText?.toLowerCase().includes(q) ||
-          (d.student?.fullName ?? d.studentName ?? "").toLowerCase().includes(q) ||
-          (d.topic?.name ?? d.topicName ?? "").toLowerCase().includes(q)
-        )
+        d.questionText?.toLowerCase().includes(q) ||
+        (d.student?.fullName ?? d.studentName ?? "").toLowerCase().includes(q) ||
+        (d.topic?.name ?? d.topicName ?? "").toLowerCase().includes(q)
+      )
       : [...doubts];
     const isPriority = (d: typeof result[0]) =>
       d.status === "escalated" && (
@@ -1148,7 +1125,6 @@ export default function TeacherDoubtsPage() {
             </button>
           </div>
 
-<<<<<<< HEAD
           {/* Search + filter */}
           <div className="p-3 border-b border-border space-y-2 shrink-0">
             <div className="relative">
@@ -1206,8 +1182,6 @@ export default function TeacherDoubtsPage() {
             )}
           </div>
 
-=======
->>>>>>> 75d05cb45304297f8e61008820cb17d5ea571823
           {/* List */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
