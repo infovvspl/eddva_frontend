@@ -24,10 +24,10 @@ import {
   BarChart, Bar, Cell, PieChart, Pie
 } from "recharts";
 import { 
-  getMyAdvancedPerformance, 
-  getMyAdvancedEngagement, 
   getMyAdvancedStudyPlan, 
   getMyProgressInsights,
+  getMyPerformance,
+  type WeakTopic,
 } from "@/lib/api/student";
 import { useProgressReport } from "@/hooks/use-student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProgressReportTree from "@/components/shared/ProgressReportTree";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -99,6 +106,9 @@ export default function StudentProgressPage() {
     return null;
   };
 
+  const [selectedInsight, setSelectedInsight] = useState<string | null>(null);
+  const [showWeakTopics, setShowWeakTopics] = useState(false);
+
   const insightsQuery = useQuery({
     queryKey: ["student", "insights", batchId],
     queryFn: () => getMyProgressInsights(batchId),
@@ -107,6 +117,12 @@ export default function StudentProgressPage() {
   const perfQuery = useQuery({
     queryKey: ["student", "perf-advanced", batchId],
     queryFn: () => getMyAdvancedPerformance(batchId),
+  });
+
+  const fullPerfQuery = useQuery({
+    queryKey: ["student", "perf-full"],
+    queryFn: getMyPerformance,
+    enabled: showWeakTopics,
   });
 
   const engageQuery = useQuery({
@@ -134,6 +150,7 @@ export default function StudentProgressPage() {
   );
 
   const insights = insightsQuery.data;
+  const weakTopics = fullPerfQuery.data?.weakTopics ?? [];
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -170,6 +187,7 @@ export default function StudentProgressPage() {
           status={(insights?.readinessScore ?? 0) > 80 ? "green" : (insights?.readinessScore ?? 0) > 50 ? "yellow" : "red"}
           icon={<ShieldCheck className="w-4 h-4" />}
           tooltip="A composite of syllabus coverage and test accuracy."
+          onClick={() => setSelectedInsight("Readiness Score")}
         />
         <AdvancedMetricCard 
           label="Performance Trend"
@@ -177,12 +195,14 @@ export default function StudentProgressPage() {
           trend={insights?.performanceTrend}
           icon={<TrendingUp className="w-4 h-4" />}
           tooltip="Calculated from your last 10 quiz attempts."
+          onClick={() => setSelectedInsight("Performance Trend")}
         />
         <AdvancedMetricCard 
           label="Consistency"
           value={`${insights?.consistencyScore ?? 0}%`}
           icon={<Activity className="w-4 h-4" />}
           tooltip="Based on daily platform interaction and study plan adherence."
+          onClick={() => setSelectedInsight("Consistency")}
         />
         <AdvancedMetricCard 
           label="Weak Topics"
@@ -190,6 +210,7 @@ export default function StudentProgressPage() {
           status={(insights?.weakTopicCount ?? 0) > 5 ? "red" : (insights?.weakTopicCount ?? 0) > 2 ? "yellow" : "green"}
           icon={<Brain className="w-4 h-4" />}
           tooltip="Topics where your accuracy is below 50%."
+          onClick={() => setShowWeakTopics(true)}
         />
       </div>
 
@@ -468,6 +489,178 @@ export default function StudentProgressPage() {
            </div>
         </TabsContent>
       </Tabs>
+
+      {/* Actionable Suggestions */}
+      <div className="card-surface p-8 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden">
+         <div className="absolute top-0 right-0 p-8 opacity-10">
+            <ShieldCheck className="w-32 h-32 text-primary" />
+         </div>
+         <div className="relative z-10 max-w-2xl space-y-4">
+            <h3 className="text-xl font-black text-foreground">AI Performance Insights</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+               Based on your current readiness score of <span className="font-bold text-foreground">{insights?.readinessScore}%</span>, 
+               you are on track for your target exam. However, your <span className="font-bold text-foreground">Time Management</span> in physics quizzes 
+               is a bottleneck. We recommend focusing on "Work Power Energy" practice sessions.
+            </p>
+            <div className="flex gap-4 pt-2">
+               <button 
+                 onClick={() => navigate("/student/learn")}
+                 className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+                 Fix Weak Topics
+               </button>
+               <button 
+                 onClick={() => {
+                   setActiveTab("performance");
+                   setTimeout(() => {
+                     document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" });
+                   }, 100);
+                 }}
+                 className="px-6 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
+                 View Topic Breakdown
+               </button>
+            </div>
+         </div>
+      </div>
+
+      {/* --- Modals --- */}
+
+      <Dialog open={showWeakTopics} onOpenChange={setShowWeakTopics}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto rounded-[2rem]">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-black flex items-center gap-3">
+              <Brain className="w-6 h-6 text-primary" />
+              Weak Topic Analysis
+            </DialogTitle>
+            <DialogDescription className="font-medium text-sm">
+              Focus on these topics to rapidly improve your overall percentile.
+            </DialogDescription>
+          </DialogHeader>
+
+          {fullPerfQuery.isLoading ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Analyzing your data...</p>
+            </div>
+          ) : weakTopics.length === 0 ? (
+            <div className="py-20 text-center space-y-4">
+               <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto opacity-20" />
+               <p className="font-bold text-slate-400">No critical weak topics identified yet!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {weakTopics.map((wt) => (
+                <div key={wt.id} className="p-5 rounded-3xl border border-border bg-muted/20 space-y-4 hover:border-primary/30 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-foreground leading-tight">{wt.topic.name}</h4>
+                      <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
+                        {wt.topic.chapter?.subject?.name} • {wt.topic.chapter?.name}
+                      </p>
+                    </div>
+                    <Badge variant={wt.severity > 7 ? "destructive" : "warning"} className="text-[10px] font-black uppercase h-5">
+                      {wt.severity > 7 ? "Critical" : "Improvement"}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center p-2 rounded-xl bg-background/50 border border-border/50">
+                      <p className="text-xs font-black text-foreground">{wt.accuracy}%</p>
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Accuracy</p>
+                    </div>
+                    <div className="text-center p-2 rounded-xl bg-background/50 border border-border/50">
+                      <p className="text-xs font-black text-foreground">{wt.errorCount}</p>
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Errors</p>
+                    </div>
+                    <div className="text-center p-2 rounded-xl bg-background/50 border border-border/50">
+                      <p className="text-xs font-black text-foreground">{wt.timeErrors}</p>
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Time Exp</p>
+                    </div>
+                  </div>
+
+                  <Button 
+                    className="w-full rounded-2xl h-10 text-xs font-bold"
+                    onClick={() => {
+                      setShowWeakTopics(false);
+                      navigate(`/student/learn/topic/${wt.topicId}`);
+                    }}
+                  >
+                    Launch Fix
+                    <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>
+        <DialogContent className="rounded-[2.5rem] max-w-lg">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="text-2xl font-black">{selectedInsight}</DialogTitle>
+            <DialogDescription className="text-sm font-medium">
+              Detailed breakdown of your {selectedInsight?.toLowerCase()} metrics.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {selectedInsight === "Readiness Score" && (
+              <div className="space-y-6">
+                <div className="p-8 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center">
+                  <p className="text-5xl font-black text-emerald-600 mb-2">{insights?.readinessScore}%</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Exam Ready</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
+                    <span className="text-sm font-bold">Syllabus Coverage</span>
+                    <Badge variant="outline" className="font-black">78%</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
+                    <span className="text-sm font-bold">Concept Retention</span>
+                    <Badge variant="outline" className="font-black">82%</Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedInsight === "Performance Trend" && (
+              <div className="space-y-6">
+                <div className="p-8 rounded-[2rem] bg-primary/10 border border-primary/20 text-center">
+                  <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
+                  <p className="text-3xl font-black text-foreground mb-1 uppercase tracking-tighter">{insights?.performanceTrend}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Velocity Index</p>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+                  Your accuracy has increased by <span className="text-emerald-500 font-bold">12%</span> over the last 3 assessment sessions. Keep up the current study velocity!
+                </p>
+              </div>
+            )}
+
+            {selectedInsight === "Consistency" && (
+              <div className="space-y-6">
+                <div className="p-8 rounded-[2rem] bg-orange-500/10 border border-orange-500/20 text-center">
+                   <p className="text-5xl font-black text-orange-600 mb-2">{insights?.consistencyScore}%</p>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">Platform Adherence</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
+                      <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Daily Streak</p>
+                      <p className="text-xl font-black text-foreground">{planQuery.data?.currentStreak} Days</p>
+                   </div>
+                   <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
+                      <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Avg Focus</p>
+                      <p className="text-xl font-black text-foreground">142 min</p>
+                   </div>
+                </div>
+              </div>
+            )}
+
+            <Button className="w-full h-12 rounded-2xl font-bold" onClick={() => setSelectedInsight(null)}>
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

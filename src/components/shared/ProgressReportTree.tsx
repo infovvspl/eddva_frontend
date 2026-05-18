@@ -11,7 +11,7 @@ import type { SubjectReportEntry, ChapterReportEntry, TopicReportEntry } from "@
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  completed:   { label: "Completed",   color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle },
+  completed:   { label: "100%",   color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle },
   in_progress: { label: "In Progress", color: "text-blue-500",    bg: "bg-blue-500/10",    icon: Circle },
   unlocked:    { label: "Not Started", color: "text-slate-400",   bg: "bg-slate-500/10",   icon: Circle },
   locked:      { label: "Locked",      color: "text-slate-500",   bg: "bg-slate-500/10",   icon: Lock },

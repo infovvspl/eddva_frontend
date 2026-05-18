@@ -354,6 +354,7 @@ function TeacherTopicWorkspace() {
 
   const { data: resources = [], isLoading } = useTopicResources(topicId!);
   const { data: subjects = [] } = useSubjects(batchId!);
+  const { data: coverage } = useContentCoverageSummary(batchId!);
   const deleteRes = useDeleteTopicResource(topicId!);
   
   const [showAi, setShowAi] = useState(false);
@@ -387,9 +388,30 @@ function TeacherTopicWorkspace() {
             <span className="text-slate-600">{topic?.chapterName}</span>
           </div>
           <div className="flex items-end justify-between gap-6">
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-black text-slate-900 tracking-tight">{topic?.name}</h1>
               <p className="text-slate-500 font-medium mt-1">Audit and manage study materials for this topic</p>
+              
+              {/* Readiness Indicator */}
+              {(() => {
+                const tc = coverage?.subjects.find(s => s.id === subjectId)?.chapters.find(chap => chap.id === chapterId)?.topics.find(top => top.id === topicId);
+                if (!tc) return null;
+                const score = Math.min(100, tc.totalCount * 25);
+                return (
+                  <div className="mt-4 max-w-xs">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Readiness</span>
+                      <span className="text-xs font-black text-indigo-600">{score}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 transition-all duration-1000"
+                        style={{ width: `${score}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <button onClick={() => setShowAi(true)} className="h-12 px-6 rounded-2xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 shrink-0">
               <Sparkles className="w-4 h-4" /> AI Content Generator
@@ -513,18 +535,27 @@ function TeacherBatchContent() {
                               <div className="flex flex-col">
                                 <span className="text-[12px] font-medium text-slate-500 group-hover:text-indigo-600">{t.name}</span>
                                 {coverage && (
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    {(() => {
-                                      const tc = coverage.subjects.find(sub => sub.id === s.id)?.chapters.find(chap => chap.id === ch.id)?.topics.find(top => top.id === t.id);
-                                      if (!tc) return null;
-                                      return (
-                                        <>
-                                          {tc.studyMaterialCount > 0 && <span className="text-[8px] font-black bg-blue-50 text-blue-500 px-1 py-0.5 rounded-md">SM {tc.studyMaterialCount}</span>}
-                                          {tc.dppCount > 0 && <span className="text-[8px] font-black bg-orange-50 text-orange-500 px-1 py-0.5 rounded-md">DPP {tc.dppCount}</span>}
-                                          {tc.pyqCount > 0 && <span className="text-[8px] font-black bg-violet-50 text-violet-500 px-1 py-0.5 rounded-md">PYQ {tc.pyqCount}</span>}
-                                        </>
-                                      );
-                                    })()}
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex items-center gap-1">
+                                      {(() => {
+                                        const tc = coverage.subjects.find(sub => sub.id === s.id)?.chapters.find(chap => chap.id === ch.id)?.topics.find(top => top.id === t.id);
+                                        if (!tc) return null;
+                                        const score = Math.min(100, tc.totalCount * 25);
+                                        return (
+                                          <>
+                                            <div className="flex items-center gap-1 mr-2">
+                                              <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-indigo-500" style={{ width: `${score}%` }} />
+                                              </div>
+                                              <span className="text-[9px] font-black text-indigo-600">{score === 100 ? "100%" : `${score}%`}</span>
+                                            </div>
+                                            {tc.studyMaterialCount > 0 && <span className="text-[8px] font-black bg-blue-50 text-blue-500 px-1 py-0.5 rounded-md">SM {tc.studyMaterialCount}</span>}
+                                            {tc.dppCount > 0 && <span className="text-[8px] font-black bg-orange-50 text-orange-500 px-1 py-0.5 rounded-md">DPP {tc.dppCount}</span>}
+                                            {tc.pyqCount > 0 && <span className="text-[8px] font-black bg-violet-50 text-violet-500 px-1 py-0.5 rounded-md">PYQ {tc.pyqCount}</span>}
+                                          </>
+                                        );
+                                      })()}
+                                    </div>
                                   </div>
                                 )}
                               </div>

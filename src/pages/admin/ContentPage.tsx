@@ -1364,7 +1364,7 @@ function getTopicStatus(tc: TopicCoverage): "empty" | "in_progress" | "completed
 
 function topicStatusLabel(s: "empty" | "in_progress" | "completed") {
   if (s === "empty") return { label: "Empty", className: "bg-slate-100 text-slate-600 border-slate-200" };
-  if (s === "completed") return { label: "Completed", className: "bg-emerald-50 text-emerald-800 border-emerald-200" };
+  if (s === "completed") return { label: "100%", className: "bg-emerald-50 text-emerald-800 border-emerald-200" };
   return { label: "In progress", className: "bg-amber-50 text-amber-900 border-amber-200" };
 }
 

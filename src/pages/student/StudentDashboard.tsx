@@ -118,8 +118,8 @@ export default function StudentDashboard() {
     return acc + Math.max(0, t - w);
   }, 0);
   const pendingLectures = (dash?.pendingLectures ?? 0) > 0 ? dash!.pendingLectures : pendingFromCourses;
-  const testsAttempted = Math.max(dash?.testsAttempted ?? 0, perf?.totalTestsTaken ?? 0);
-  const accuracy = Math.round(dash?.overallAccuracy ?? perf?.overallAccuracy ?? 0);
+  const testsAttempted = Math.max(dash?.testsAttempted ?? 0, perf?.performanceProfile?.totalTestsTaken ?? 0);
+  const accuracy = Math.round(dash?.overallAccuracy ?? perf?.performanceProfile?.overallAccuracy ?? 0);
   const grad              = examGradient(activeExamTarget);
 
   const courses = rawCourses.map((c: any) => ({
@@ -306,8 +306,8 @@ export default function StudentDashboard() {
             <Card>
               <Section title="Performance Overview">
                 <PerformanceChart
-                  subjectAccuracy={perf?.subjectAccuracy}
-                  totalTestsTaken={perf?.totalTestsTaken}
+                  subjectAccuracy={perf?.performanceProfile?.subjectAccuracy}
+                  totalTestsTaken={perf?.performanceProfile?.totalTestsTaken}
                   overallAccuracy={accuracy}
                   weeklyActivity={weeklyActivity}
                 />
