@@ -23,7 +23,9 @@ import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admi
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
-import { useAppTour } from "@/components/onboarding/useAppTour";
+import { useNavTour } from "@/components/onboarding/useNavTour";
+import { NavTourCard } from "@/components/onboarding/NavTourCard";
+import { PageTourCard } from "@/components/onboarding/PageTourCard";
 import { tokenStorage } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
 import { ensureBattleSocket, disconnectBattleSocket } from "@/lib/battle-socket";
@@ -176,7 +178,20 @@ const DashboardLayout = () => {
   const [walkthroughDone, setWalkthroughDone] = useState(
     () => !walkthroughKey || !!localStorage.getItem(walkthroughKey)
   );
-  const { startTour } = useAppTour(user.role, navigate);
+  const {
+    startTour,
+    isActive: tourActive,
+    currentStep: tourStep,
+    currentStepIdx,
+    totalSteps: tourTotalSteps,
+    phase: tourPhase,
+    currentPageFeature,
+    pageFeatureIdx,
+    totalPageFeatures,
+    advanceFromNav,
+    advancePageFeature,
+    skip: skipTour,
+  } = useNavTour(user.role);
   function handleWalkthroughDone() {
     if (walkthroughKey) localStorage.setItem(walkthroughKey, "1");
     setWalkthroughDone(true);
@@ -383,16 +398,20 @@ const DashboardLayout = () => {
             {section.main}
           </p>
         )}
-        {navItems.map((item) => (
+        {navItems.map((item) => {
+          const itemNavKey = item.path.split("/").filter(Boolean).pop();
+          const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
+          return (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === roleRedirectPath[user.role]}
-              data-tour={`nav-${item.path.split("/").filter(Boolean).pop()}`}
+              data-tour={`nav-${itemNavKey}`}
               onClick={() => {
                 setMobileSidebarOpen(false);
                 setShowUserMenu(false);
                 setPrefDropdownOpen(false);
+                if (isTourTarget) advanceFromNav();
               }}
               className={({ isActive }) =>
                 cn(
@@ -400,7 +419,8 @@ const DashboardLayout = () => {
                   sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
                   isActive
                     ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
-                    : "text-slate-600 hover:text-black hover:bg-slate-50/40"
+                    : "text-slate-600 hover:text-black hover:bg-slate-50/40",
+                  isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
                 )
               }
             >
@@ -436,11 +456,18 @@ const DashboardLayout = () => {
                 </>
               )}
             </NavLink>
-        ))}
+          );
+        })}
       </nav>
 
       {/* ── Footer ── */}
-      <div className="p-4 border-t border-slate-100 bg-slate-50/30 shrink-0">
+      <div
+        data-tour="nav-sidebar-footer"
+        className={cn(
+          "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
+          tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
+        )}
+      >
         <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
           <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
             <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
@@ -548,7 +575,7 @@ const DashboardLayout = () => {
               </button>
            </div>
 
-           <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+           <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
               {/* ── Exam Preference Switcher (students only) ── */}
               {isStudent && examTarget && (
                 <div className="relative">
@@ -809,6 +836,31 @@ const DashboardLayout = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── Nav Tour: point at sidebar item → click to navigate ── */}
+      {tourActive && tourStep && tourPhase === "nav" && (
+        <NavTourCard
+          step={tourStep}
+          stepIndex={currentStepIdx}
+          totalSteps={tourTotalSteps}
+          onNext={() => { navigate(tourStep.path); advanceFromNav(); }}
+          onSkip={skipTour}
+        />
+      )}
+
+      {/* ── Page Tour: describe features of the current page ── */}
+      {tourActive && tourStep && tourPhase === "page" && currentPageFeature && (
+        <PageTourCard
+          step={tourStep}
+          stepIndex={currentStepIdx}
+          totalSteps={tourTotalSteps}
+          feature={currentPageFeature}
+          featureIndex={pageFeatureIdx}
+          totalFeatures={totalPageFeatures}
+          onNext={advancePageFeature}
+          onSkip={skipTour}
+        />
       )}
 
     </div>

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, FileText, Trash2, X, ChevronRight,
   Eye, EyeOff, ClipboardList, Clock, CheckCircle2,
   AlertCircle, Pencil, ArrowLeft, Sparkles, Wand2,
   Check, Upload, Download, Users, Search,
-  BookOpen, Layers, Target, ImagePlus, ImageIcon
+  BookOpen, Layers, Target, ImagePlus, ImageIcon, BarChart2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -3449,6 +3450,8 @@ function BatchCard({ batch, onClick }: { batch: Batch; onClick: () => void }) {
 type MainView = "batches" | "tests" | "create" | "detail";
 
 const MockTestsPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { data: batches, isLoading: batchesLoading } = useBatches();
   const deleteMockTest = useDeleteMockTest();
   const publishMockTest = usePublishMockTest();
@@ -3470,6 +3473,20 @@ const MockTestsPage = () => {
       setSavedDraft(null);
     }
   }, [view, selectedBatch]);
+
+  // Restore view from navigation state (e.g. back button from Results Page)
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.restoreBatchId && batches) {
+      const b = batches.find((x: any) => x.id === state.restoreBatchId);
+      if (b) {
+        setSelectedBatch(b);
+        setView("tests");
+      }
+      // Clear state so it doesn't trigger again on subsequent re-renders or internal navigations
+      navigate(".", { replace: true, state: {} });
+    }
+  }, [location.state, batches, navigate]);
 
   const { data: tests, isLoading: testsLoading } = useMockTests(
     selectedBatch ? { batchId: selectedBatch.id } : undefined
@@ -3754,6 +3771,10 @@ const MockTestsPage = () => {
                     onClick={() => publishMockTest.mutate({ id: test.id, publish: !test.isPublished })}>
                     {test.isPublished ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     {test.isPublished ? "Unpublish" : "Publish"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1 text-xs h-8"
+                    onClick={() => navigate(`/admin/mock-tests/${test.id}/results`)}>
+                    <BarChart2 className="w-3 h-3" /> View Results
                   </Button>
                   <Button size="sm" variant="outline" className="gap-1 text-xs h-8"
                     onClick={() => { setSelectedTestId(test.id); setView("detail"); }}>

@@ -1330,6 +1330,78 @@ export async function removeQuestionFromMockTest(mockTestId: string, questionId:
   await apiClient.delete(`/assessments/mock-tests/${mockTestId}/questions/${questionId}`);
 }
 
+// ─── Session Results & Manual Grading ─────────────────────────────────────────
+
+export interface SessionAttempt {
+  id: string;
+  questionId: string;
+  selectedOptionIds: string[];
+  integerAnswer: string | null;
+  answerImageUrls: string[];
+  isCorrect: boolean | null;
+  marksAwarded: number;
+  timeSpentSeconds: number;
+  errorType: string | null;
+  question?: {
+    id: string;
+    content: string;
+    type: string;
+    difficulty: string;
+    marksCorrect: number;
+    marksWrong: number;
+    solutionText?: string | null;
+    solution_text?: string | null;
+    integerAnswer?: string | null;
+    options?: { id: string; optionLabel: string; content: string; isCorrect: boolean }[];
+  };
+  analysis?: {
+    isCorrect: boolean | null;
+    marksAwarded: number;
+    errorType: string | null;
+    timeTakenSeconds: number;
+  };
+}
+
+export interface SessionResult {
+  id: string;
+  studentId: string;
+  mockTestId: string;
+  status: string;
+  totalScore: number;
+  correctCount: number;
+  wrongCount: number;
+  skippedCount: number;
+  accuracy: number;
+  startedAt: string;
+  submittedAt: string | null;
+  attempts: SessionAttempt[];
+  student?: { id: string; fullName: string };
+  mockTest?: { id: string; title: string; totalMarks: number; durationMinutes: number };
+  questions?: any[];
+}
+
+export async function getSessionResult(sessionId: string): Promise<SessionResult> {
+  const res = await apiClient.get(`/assessments/sessions/${sessionId}/result`);
+  return extractData<SessionResult>(res);
+}
+
+export async function getMockTestSessions(mockTestId: string): Promise<any[]> {
+  const res = await apiClient.get(`/assessments/sessions?mockTestId=${mockTestId}&limit=500`);
+  const result = extractData<{ data: any[]; meta: any } | any[]>(res);
+  if (result && !Array.isArray(result) && Array.isArray((result as any).data)) {
+    return (result as any).data ?? [];
+  }
+  return (result as any[]) ?? [];
+}
+
+export async function gradeSessionAnswers(
+  sessionId: string,
+  grades: { questionId: string; marksAwarded: number }[],
+): Promise<{ message: string; totalScore: number; correctCount: number; wrongCount: number }> {
+  const res = await apiClient.patch(`/assessments/sessions/${sessionId}/grade`, { grades });
+  return extractData(res);
+}
+
 // ---------------------------------------------------------------------------
 // Institute Settings
 // ---------------------------------------------------------------------------

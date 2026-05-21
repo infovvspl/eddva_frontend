@@ -76,6 +76,8 @@ const StudentTestsPage = lazy(() => import("./pages/student/StudentTestsPage"));
 const StudentProgressPage = lazy(() => import("./pages/student/StudentProgressPage"));
 const PYQManagementPage = lazy(() => import("./pages/admin/PYQManagementPage"));
 const ReportsPage = lazy(() => import("./pages/admin/ReportsPage"));
+const TeacherTestResultsPage = lazy(() => import("./pages/admin/TeacherTestResultsPage"));
+const TeacherManualGradingPage = lazy(() => import("./pages/admin/TeacherManualGradingPage"));
 const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificationsPage"));
 const LiveClassRoom = lazy(() => import("./pages/live/LiveClassRoom"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -130,6 +132,8 @@ const AdminRoutes = () => (
     <Route path="/admin/students/:studentId" element={<AdminStudentDetailPage />} />
     <Route path="/admin/content/*" element={<ContentPage />} />
     <Route path="/admin/mock-tests" element={<MockTestsPage />} />
+    <Route path="/admin/mock-tests/:testId/results" element={<TeacherTestResultsPage />} />
+    <Route path="/admin/mock-tests/:testId/sessions/:sessionId/grade" element={<TeacherManualGradingPage />} />
     <Route path="/admin/lectures" element={<LecturesPage />} />
     <Route path="/admin/calendar" element={<AdminCalendarPage />} />
     <Route path="/admin/reports" element={<ReportsPage />} />
