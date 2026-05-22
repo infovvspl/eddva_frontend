@@ -296,6 +296,21 @@ export async function getBatchAttendance(batchId: string, startDate: string, end
   return extractData<any>(res);
 }
 
+export interface SubmitFeedbackDto {
+  rating: number;
+  comment?: string;
+}
+
+export async function submitBatchFeedback(batchId: string, payload: SubmitFeedbackDto) {
+  const res = await apiClient.post(`/batches/${batchId}/feedback`, payload);
+  return extractData<{ success: boolean; message: string }>(res);
+}
+
+export async function getBatchFeedback(batchId: string) {
+  const res = await apiClient.get(`/batches/${batchId}/feedback`);
+  return extractData<any[]>(res);
+}
+
 export interface LiveAttendanceStudent {
   studentId: string;
   name: string | null;

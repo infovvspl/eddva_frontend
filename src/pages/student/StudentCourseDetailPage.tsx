@@ -11,6 +11,7 @@ import {
   RotateCcw, ListChecks, Check, Brain, HelpCircle,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
+import CourseFeedbackWidget from "@/components/student/course/CourseFeedbackWidget";
 import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
 import type { CourseSubject, CourseChapter, CourseTopic, CourseResource, BatchPreview, PreviewSubject, StudentLecture, MockTestListItem, TestSession } from "@/lib/api/student";
 import { isSessionCompleted } from "@/lib/api/student";
@@ -2371,6 +2372,7 @@ export default function StudentCourseDetailPage() {
           })()}
         </div>
       </div>
+      <CourseFeedbackWidget batchId={batchId} />
     </div>
   );
 }

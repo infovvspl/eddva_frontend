@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as adminApi from "@/lib/api/admin";
+import { 
+  RemoveSubjectTeacherParams,
+  JoinBatchDto,
+  SubmitFeedbackDto
+} from "@/lib/api/admin";
 
 // ---------------------------------------------------------------------------
 // Query keys
@@ -806,6 +811,28 @@ export function useBulkImportCurriculum() {
       // Invalidate subjects for the affected batch
       qc.invalidateQueries({ queryKey: adminKeys.subjects });
       qc.invalidateQueries({ queryKey: ["admin", "subjects", variables.batchId] });
+    },
+  });
+}
+
+// ── Feedback ────────────────────────────────────────────────────────────
+
+export function useBatchFeedback(batchId: string) {
+  return useQuery({
+    queryKey: ["batch-feedback", batchId],
+    queryFn: () => adminApi.getBatchFeedback(batchId),
+    enabled: !!batchId,
+  });
+}
+
+export function useSubmitBatchFeedback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ batchId, data }: { batchId: string; data: adminApi.SubmitFeedbackDto }) => adminApi.submitBatchFeedback(batchId, data),
+    onSuccess: (_, { batchId }) => {
+      queryClient.invalidateQueries({ queryKey: ["batch-feedback", batchId] });
+      queryClient.invalidateQueries({ queryKey: adminKeys.batch(batchId) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.batches });
     },
   });
 }

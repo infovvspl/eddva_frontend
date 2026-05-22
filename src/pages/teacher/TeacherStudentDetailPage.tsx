@@ -243,6 +243,20 @@ export default function TeacherStudentDetailPage() {
                     </span>
                   </div>
                   <div className="flex flex-col items-center md:items-start px-4 py-2 rounded-2xl bg-muted/20 border border-border/40">
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Global Rank</span>
+                    <span className="text-sm font-black text-foreground flex items-center gap-1.5">
+                      <Trophy className="w-4 h-4 text-blue-500 fill-blue-500/20" />
+                      #{profile.rank?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center md:items-start px-4 py-2 rounded-2xl bg-muted/20 border border-border/40">
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Level</span>
+                    <span className="text-sm font-black text-foreground flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-indigo-500 fill-indigo-500/20" />
+                      {profile.level || 1}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center md:items-start px-4 py-2 rounded-2xl bg-muted/20 border border-border/40">
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Presence</span>
                     <span className="text-sm font-black text-foreground flex items-center gap-1.5">
                       <Clock className="w-4 h-4 text-primary/70" />

@@ -1954,3 +1954,39 @@ export async function getMyProgressInsights(batchId?: string): Promise<StudentIn
   return extractData(res);
 }
 
+// ─── Assignments ─────────────────────────────────────────────────────────────
+
+export interface LectureAssignment {
+  id: string;
+  lectureId: string;
+  title: string;
+  description?: string;
+  attachmentUrl?: string;
+  dueDate?: string;
+  maxMarks?: number;
+  createdAt: string;
+  mySubmission?: AssignmentSubmission | null;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  submissionUrl: string;
+  status: "submitted" | "graded" | "late";
+  grade?: number;
+  feedback?: string;
+  submittedAt: string;
+}
+
+export async function getLectureAssignments(lectureId: string): Promise<LectureAssignment[]> {
+  const res = await apiClient.get(`/assignments/lecture/${lectureId}`);
+  return extractData<LectureAssignment[]>(res) ?? [];
+}
+
+export async function submitAssignment(assignmentId: string, submissionUrl: string): Promise<AssignmentSubmission> {
+  const res = await apiClient.post(`/assignments/${assignmentId}/submit`, { submissionUrl });
+  return extractData<AssignmentSubmission>(res);
+}
+
+

@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, Trash2, X, ChevronRight, CalendarDays, AlertCircle, Radio, ChevronDown, Brain,
@@ -24,6 +24,7 @@ const TYPE_COLOR_MAP: Record<string, string> = {
   test: "#f59e0b",
   other: "#6b7280",
   study_plan: "#6366f1",
+  assignment: "#8b5cf6", // Purple for assignments
 };
 
 // Grouped categories for the "Add Event" form dropdown
@@ -77,6 +78,7 @@ const VIEW_FILTERS = [
   { value: "exam", label: "Exams (All)" },
   { value: "live_class", label: "Live Classes" },
   { value: "study_plan", label: "Study Plan" },
+  { value: "assignment", label: "Assignments" },
 ];
 
 const EXAM_TYPES = new Set(["exam", "test", "mock_test", "pt_exam", "half_yearly", "annual_exam"]);
@@ -127,14 +129,15 @@ function matchesFilter(viewFilter: string, kind: string, type: string): boolean 
   if (viewFilter === "all") return true;
   if (viewFilter === "public_holiday") return kind === "public_holiday";
   if (kind === "public_holiday") return false;
-  if (viewFilter === "live_class") return kind === "live";
-  if (kind === "live") return false;
+  if (viewFilter === "live_class") return type === "live_class";
+  if (viewFilter === "assignment") return type === "assignment";
   if (viewFilter === "study_plan") return kind === "study_plan";
   if (viewFilter === "exam") return EXAM_TYPES.has(type);
   return type === viewFilter;
 }
 
-const itemStyle = (kind: string) => kind === "live" ? "cursor-pointer hover:opacity-90" : "";
+const itemStyle = (kind: string) => 
+  ["live", "assignment", "mock_test"].includes(kind) ? "cursor-pointer hover:opacity-90 transition-opacity" : "";
 
 
 type DayItem =
@@ -176,11 +179,25 @@ function buildByDate(
   }
 
   for (const lec of liveClasses) {
-    if (!matchesFilter(viewFilter, "live", "live_class")) continue;
+    // liveClasses array now also includes assignments and mock tests from the backend feed
+    const actualType = (lec as any).type || "live_class";
+    if (!matchesFilter(viewFilter, "live", actualType)) continue;
+    
     const key = new Date(lec.scheduledAt).toISOString().split("T")[0];
+    
+    let color = LIVE_COLOR;
+    let finalKind = "live";
+    if (actualType === "assignment") {
+      color = TYPE_COLOR_MAP.assignment;
+      finalKind = "assignment";
+    } else if (actualType === "mock_test") {
+      color = TYPE_COLOR_MAP.mock_test;
+      finalKind = "mock_test";
+    }
+    
     byDate[key] = [
       ...(byDate[key] ?? []),
-      { kind: "live", id: lec.id, title: lec.title, type: "live_class", color: LIVE_COLOR, raw: lec },
+      { kind: finalKind as any, id: lec.id, title: lec.title, type: actualType, color, raw: lec as any },
     ];
   }
 
@@ -218,8 +235,8 @@ function mergedList(
   viewFilter: string,
   year: number,
   month: number,
-): { sortKey: string; label: string; sub: string; color: string; kind: string; id: string }[] {
-  const rows: { sortKey: string; label: string; sub: string; color: string; kind: string; id: string }[] = [];
+): { sortKey: string; label: string; sub: string; color: string; kind: string; id: string; raw?: any }[] {
+  const rows: { sortKey: string; label: string; sub: string; color: string; kind: string; id: string; raw?: any }[] = [];
 
   // Public holidays for the month
   if (viewFilter === "all" || viewFilter === "public_holiday") {
@@ -233,6 +250,7 @@ function mergedList(
         color: PUBLIC_HOLIDAY_COLOR,
         kind: "Public Holiday",
         id: `ph-${ph.date}-${ph.title}`,
+        raw: null,
       });
     }
   }
@@ -247,19 +265,33 @@ function mergedList(
       color: ev.color || eventColor(ev.type),
       kind: typeLabel,
       id: ev.id,
+      raw: ev,
     });
   }
 
   for (const lec of liveClasses) {
-    if (!matchesFilter(viewFilter, "live", "live_class")) continue;
+    const actualType = (lec as any).type || "live_class";
+    if (!matchesFilter(viewFilter, "live", actualType)) continue;
     const d = new Date(lec.scheduledAt);
+    
+    let color = LIVE_COLOR;
+    let finalKind = "Live class";
+    if (actualType === "assignment") {
+      color = TYPE_COLOR_MAP.assignment;
+      finalKind = "Assignment Deadline";
+    } else if (actualType === "mock_test") {
+      color = TYPE_COLOR_MAP.mock_test;
+      finalKind = "Mock Test Deadline";
+    }
+
     rows.push({
       sortKey: lec.scheduledAt,
       label: lec.title,
       sub: `${d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}${lec.batchName ? ` · ${lec.batchName}` : ""}`,
-      color: LIVE_COLOR,
-      kind: "Live class",
+      color,
+      kind: finalKind,
       id: lec.id,
+      raw: lec,
     });
   }
 
@@ -272,6 +304,7 @@ function mergedList(
       color: "#6366f1",
       kind: "Study Plan",
       id: item.id,
+      raw: item,
     });
   }
 
@@ -289,6 +322,7 @@ export default function AcademicCalendarPage({
   pageTitle = "Calendar",
 }: AcademicCalendarPageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -379,7 +413,17 @@ export default function AcademicCalendarPage({
   };
 
   const handleChipClick = (item: DayItem) => {
-    if (item.kind === "live") navigate(`/live/${item.id}`);
+    if (item.kind === "live") {
+      navigate(`/live/${item.id}`);
+    } else if (item.kind === "mock_test") {
+      navigate(canManageEvents ? `/admin/mock-tests/${item.id}/results` : `/student/mock-tests/${item.id}`, { state: { from: location.pathname } });
+    } else if (item.kind === "assignment") {
+      if (canManageEvents && item.raw && (item.raw as any).lectureId) {
+        navigate(`/teacher/lectures?action=assignments&lectureId=${(item.raw as any).lectureId}`, { state: { from: location.pathname } });
+      } else if (item.raw && (item.raw as any).lectureId) {
+        navigate(`/student/lectures/${(item.raw as any).lectureId}#assignments`, { state: { from: location.pathname } });
+      }
+    }
   };
 
   const listRows = useMemo(
@@ -688,6 +732,10 @@ export default function AcademicCalendarPage({
               </div>
             ))}
             <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: TYPE_COLOR_MAP.assignment }} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Assignment</span>
+            </div>
+            <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: LIVE_COLOR }} />
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Live class</span>
             </div>
@@ -721,8 +769,18 @@ export default function AcademicCalendarPage({
                         key={`${row.kind}-${row.id}`}
                         className="relative group/item flex items-center gap-4 bg-secondary/20 hover:bg-secondary/40 border border-transparent hover:border-border p-4 rounded-3xl transition-all active:scale-[0.98] cursor-pointer overflow-hidden"
                         onClick={() => {
-                          if (isLive) navigate(`/live/${row.id}`);
-                          if (isStudy) navigate("/student/study-plan");
+                          if (row.kind === "Live class") navigate(`/live/${row.id}`);
+                          else if (row.kind === "Study Plan") navigate("/student/study-plan");
+                          else if (row.kind === "Mock Test Deadline") {
+                            navigate(canManageEvents ? `/admin/mock-tests/${row.id}/results` : `/student/mock-tests/${row.id}`, { state: { from: location.pathname } });
+                          }
+                          else if (row.kind === "Assignment Deadline") {
+                            if (canManageEvents && row.raw?.lectureId) {
+                              navigate(`/teacher/lectures?action=assignments&lectureId=${row.raw.lectureId}`, { state: { from: location.pathname } });
+                            } else if (row.raw?.lectureId) {
+                              navigate(`/student/lectures/${row.raw.lectureId}#assignments`, { state: { from: location.pathname } });
+                            }
+                          }
                         }}
                       >
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-black/5" style={{ backgroundColor: `${row.color}15` }}>
@@ -737,8 +795,8 @@ export default function AcademicCalendarPage({
                             {row.kind}
                           </p>
                         </div>
-                        {isLive && (
-                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 group-hover/item:scale-110 transition-transform">
+                        {["Live class", "Study Plan", "Mock Test Deadline", "Assignment Deadline"].includes(row.kind) && (
+                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 group-hover/item:scale-110 transition-transform shrink-0 ml-2">
                             <ChevronRight className="w-4 h-4" />
                           </div>
                         )}

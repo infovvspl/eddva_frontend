@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, Printer, ExternalLink, FileText, Loader2, 
@@ -332,6 +333,7 @@ export default function ResourceViewerModal({
   useEffect(() => {
     async function fetchUrl() {
       if (!fileUrl || !topicId || !resourceId) {
+        setPresignedUrl(resolveUrl(fileUrl) || null);
         setLoadingFile(false);
         return;
       }
@@ -351,7 +353,7 @@ export default function ResourceViewerModal({
   const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
   const isPdf = fileUrl?.match(/\.(pdf)$/i);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
       <motion.div
         ref={containerRef}
@@ -473,6 +475,7 @@ export default function ResourceViewerModal({
           )}
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -637,6 +637,7 @@ type WizardDraft = {
   title: string;
   durationMinutes: number;
   passingMarks: number | "";
+  deadlineAt: string;
   targetExam: string;
   examLevel: string;
   questionMixIds: QuestionMixId[];
@@ -2424,6 +2425,7 @@ function CreateTestModal({
   const [title, setTitle] = useState(initialDraft?.title ?? "");
   const [durationMinutes, setDurationMinutes] = useState(initialDraft?.durationMinutes ?? 60);
   const [passingMarks, setPassingMarks] = useState<number | "">(initialDraft?.passingMarks ?? "");
+  const [deadlineAt, setDeadlineAt] = useState(initialDraft?.deadlineAt ?? "");
   const [targetExam, setTargetExam] = useState<string>(initialDraft?.targetExam ?? "JEE");
   /** Sub-tier for the exam — "jee main" / "jee advanced" / "neet" / "cbse". Drives the JEE-specific difficulty heuristic in the AI service. */
   const [examLevel, setExamLevel] = useState<string>(initialDraft?.examLevel ?? "jee main");
@@ -2465,13 +2467,14 @@ function CreateTestModal({
       title,
       durationMinutes,
       passingMarks,
+      deadlineAt,
       targetExam,
       examLevel,
       questionMixIds,
       questions: questions.map(stripKey),
       updatedAt: Date.now(),
     });
-  }, [batchId, step, testCategory, scope, title, durationMinutes, passingMarks,
+  }, [batchId, step, testCategory, scope, title, durationMinutes, passingMarks, deadlineAt,
       targetExam, examLevel, questionMixIds, questions]);
   
   useEffect(() => {
@@ -2625,6 +2628,7 @@ function CreateTestModal({
         durationMinutes: durationMinutes || computedDuration,
         totalMarks: computedMarks || ids.length * 4,
         passingMarks: passingMarks !== "" ? passingMarks : undefined,
+        deadlineAt: deadlineAt ? new Date(deadlineAt).toISOString() : undefined,
         subjectId: scope.subjectId || undefined,
         chapterId: scope.chapterId || undefined,
         topicId: scope.topicId || undefined,
@@ -2807,6 +2811,11 @@ function CreateTestModal({
                       <input type="number" min={0} value={passingMarks} onChange={e => setPassingMarks(e.target.value === "" ? "" : +e.target.value)}
                         placeholder="e.g. 60" className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]" />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Deadline <span className="normal-case font-normal text-slate-400">(opt.)</span></label>
+                    <input type="datetime-local" value={deadlineAt} onChange={e => setDeadlineAt(e.target.value)}
+                      className="h-10 w-full px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10" />
                   </div>
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                     <label className="block text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 mb-1">Target Exam</label>

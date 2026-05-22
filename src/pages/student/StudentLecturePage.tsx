@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type MutableRefObject } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -31,6 +31,7 @@ import { useLectureProgress, type ExternalLecturePlayback } from "@/hooks/useLec
 import { useVideoXP } from "@/hooks/useVideoXP";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
+import { LectureAssignmentsSection } from "@/components/student/lecture/LectureAssignmentsSection";
 import { isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
 import {
   ensureYouTubeIframeApi,
@@ -1209,6 +1210,7 @@ export default function StudentLecturePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const qc = useQueryClient();
 
   const handleBack = () => {
@@ -1270,6 +1272,18 @@ export default function StudentLecturePage() {
     getTopicProgress(lecture.topicId).then(p => setTopicProgress(p)).catch(() => {});
     fetchMockTestForTopic(lecture.topicId).then(setMockTestId);
   }, [lecture?.topicId]);
+
+  // Handle hash scrolling
+  useEffect(() => {
+    if (location.hash === "#assignments" && !lectureLoading) {
+      setTimeout(() => {
+        const el = document.getElementById("assignments");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 500); // Wait for rendering
+    }
+  }, [location.hash, lectureLoading]);
 
   useEffect(() => {
     ytPlaybackRef.current = null;
@@ -1647,6 +1661,9 @@ export default function StudentLecturePage() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* ── Assignments Section ── */}
+            <LectureAssignmentsSection lectureId={lecture.id} courseId={lecture.batchId} />
 
             {/* ── Topic Materials Section ── */}
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">

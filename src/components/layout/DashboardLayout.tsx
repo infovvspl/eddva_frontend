@@ -173,11 +173,9 @@ const DashboardLayout = () => {
   const isStudent      = user?.role === "student";
   const isInstAdmin    = user?.role === "institute_admin";
 
-  // ── Welcome walkthrough (shown once per user, before other first-login modals) ─
+  // ── Welcome walkthrough (disabled for now) ─────────────────────────────────
   const walkthroughKey = user ? `walkthrough_v1_${user.id}` : null;
-  const [walkthroughDone, setWalkthroughDone] = useState(
-    () => !walkthroughKey || !!localStorage.getItem(walkthroughKey)
-  );
+  const [walkthroughDone] = useState(true); // Tour disabled — always skip
   const {
     startTour,
     isActive: tourActive,
@@ -194,8 +192,7 @@ const DashboardLayout = () => {
   } = useNavTour(user.role);
   function handleWalkthroughDone() {
     if (walkthroughKey) localStorage.setItem(walkthroughKey, "1");
-    setWalkthroughDone(true);
-    setTimeout(startTour, 300);
+    // Tour disabled — do not start nav tour
   }
 
   // ── Admin profile setup modal (shown once on first login) ────────────────

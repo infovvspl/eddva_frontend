@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -31,7 +31,21 @@ function accPct(correct?: number, wrong?: number, skipped?: number) {
   return Math.round(((correct ?? 0) / total) * 100);
 }
 
-type SortKey = "name" | "score" | "accuracy" | "status";
+function calcTimeSpent(start?: string | null, end?: string | null) {
+  if (!start || !end) return "—";
+  const s = new Date(start).getTime();
+  const e = new Date(end).getTime();
+  const diffMs = e - s;
+  if (diffMs < 0) return "—";
+  const diffSecs = Math.floor(diffMs / 1000);
+  const h = Math.floor(diffSecs / 3600);
+  const m = Math.floor((diffSecs % 3600) / 60);
+  const sRem = diffSecs % 60;
+  if (h > 0) return `${h}h ${m}m ${sRem}s`;
+  return `${m}m ${sRem}s`;
+}
+
+type SortKey = "name" | "score" | "accuracy" | "status" | "time";
 type SortDir = "asc" | "desc";
 
 // ─── Score Histogram ──────────────────────────────────────────────────────────
@@ -82,6 +96,7 @@ interface StudentRow {
   skippedCount: number | null;
   submittedAt: string | null;
   startedAt: string | null;
+  isLate?: boolean;
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -129,6 +144,8 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
 export default function TeacherTestResultsPage() {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from;
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -163,11 +180,20 @@ export default function TeacherTestResultsPage() {
 
   // Merge roster with sessions so ALL enrolled students appear
   const rows: StudentRow[] = useMemo(() => {
+    const deadlineTime = (test as any)?.deadlineAt ? new Date((test as any).deadlineAt).getTime() : null;
+    // Pick the FIRST attempt (earliest startedAt) for each student — retakes are student practice only
     const sessionMap = new Map<string, any>();
     for (const s of sessions) {
       const sid = s.studentId ?? s.student_id;
-      if (!sessionMap.has(sid) || s.status === "completed" || s.status === "auto_submitted") {
+      const existing = sessionMap.get(sid);
+      if (!existing) {
         sessionMap.set(sid, s);
+      } else {
+        const existingTime = new Date(existing.startedAt ?? 0).getTime();
+        const thisTime = new Date(s.startedAt ?? 0).getTime();
+        if (thisTime < existingTime) {
+          sessionMap.set(sid, s);
+        }
       }
     }
 
@@ -189,6 +215,7 @@ export default function TeacherTestResultsPage() {
         skippedCount: s?.skippedCount ?? null,
         submittedAt: s?.submittedAt ?? null,
         startedAt: s?.startedAt ?? null,
+        isLate: s?.submittedAt && deadlineTime ? new Date(s.submittedAt).getTime() > deadlineTime : false,
       });
     }
 
@@ -209,12 +236,13 @@ export default function TeacherTestResultsPage() {
           skippedCount: s.skippedCount ?? null,
           submittedAt: s.submittedAt ?? null,
           startedAt: s.startedAt ?? null,
+          isLate: s.submittedAt && deadlineTime ? new Date(s.submittedAt).getTime() > deadlineTime : false,
         });
       }
     }
 
     return result;
-  }, [roster, sessions]);
+  }, [roster, sessions, test]);
 
   const totalMarks = test?.totalMarks ?? 0;
   const submitted = rows.filter(r => r.status === "completed" || r.status === "auto_submitted");
@@ -242,6 +270,11 @@ export default function TeacherTestResultsPage() {
       if (sortKey === "name") diff = a.name.localeCompare(b.name);
       else if (sortKey === "score") diff = (a.totalScore ?? -1) - (b.totalScore ?? -1);
       else if (sortKey === "accuracy") diff = (accPct(a.correctCount ?? 0, a.wrongCount ?? 0) ?? -1) - (accPct(b.correctCount ?? 0, b.wrongCount ?? 0) ?? -1);
+      else if (sortKey === "time") {
+        const timeA = (a.startedAt && a.submittedAt) ? new Date(a.submittedAt).getTime() - new Date(a.startedAt).getTime() : -1;
+        const timeB = (b.startedAt && b.submittedAt) ? new Date(b.submittedAt).getTime() - new Date(b.startedAt).getTime() : -1;
+        diff = timeA - timeB;
+      }
       else if (sortKey === "status") {
         const order: Record<string, number> = { completed: 0, auto_submitted: 1, in_progress: 2, abandoned: 3, not_started: 4 };
         diff = (order[a.status] ?? 5) - (order[b.status] ?? 5);
@@ -251,7 +284,7 @@ export default function TeacherTestResultsPage() {
   }, [rows, search, filterStatus, sortKey, sortDir]);
 
   const exportCsv = () => {
-    const cols = ["#", "Student", "Status", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Submitted At"];
+    const cols = ["#", "Student", "Status", "Score", "Correct", "Wrong", "Skipped", "Accuracy %", "Time Spent", "Submitted At"];
     const data = filtered.map((r, i) => [
       i + 1,
       r.name,
@@ -261,6 +294,7 @@ export default function TeacherTestResultsPage() {
       r.wrongCount ?? "",
       r.skippedCount ?? "",
       accPct(r.correctCount ?? 0, r.wrongCount ?? 0) ?? "",
+      calcTimeSpent(r.startedAt, r.submittedAt),
       fmtDate(r.submittedAt),
     ]);
     const csv = [cols, ...data].map(row => row.join(",")).join("\n");
@@ -298,7 +332,7 @@ export default function TeacherTestResultsPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
         <AlertCircle className="w-10 h-10 opacity-30" />
         <p>Test not found.</p>
-        <button onClick={() => navigate("/admin/mock-tests", { state: { restoreBatchId: batchId } })} className="text-sm text-primary underline">Back to Course</button>
+        <button onClick={() => navigate(from || "/admin/mock-tests", { state: { restoreBatchId: batchId } })} className="text-sm text-primary underline">Back to Course</button>
       </div>
     );
   }
@@ -309,7 +343,7 @@ export default function TeacherTestResultsPage() {
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
-            onClick={() => navigate("/admin/mock-tests", { state: { restoreBatchId: batchId } })}
+            onClick={() => navigate(from || "/admin/mock-tests", { state: { restoreBatchId: batchId } })}
             className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -416,6 +450,7 @@ export default function TeacherTestResultsPage() {
                       <th className="px-4 py-3 text-right text-red-500 font-semibold text-xs hidden sm:table-cell">✗</th>
                       <th className="px-4 py-3 text-right text-muted-foreground font-semibold text-xs hidden sm:table-cell">—</th>
                       <th className="px-4 py-3 text-right hidden md:table-cell"><SortBtn k="accuracy" label="Accuracy" /></th>
+                      <th className="px-4 py-3 text-right hidden lg:table-cell"><SortBtn k="time" label="Time" /></th>
                       <th className="px-4 py-3 text-right text-muted-foreground text-xs hidden lg:table-cell">Submitted</th>
                       <th className="px-4 py-3 text-center text-xs text-muted-foreground">Actions</th>
                     </tr>
@@ -438,7 +473,12 @@ export default function TeacherTestResultsPage() {
                         >
                           <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{i + 1}</td>
                           <td className="px-4 py-3 font-medium max-w-[180px] truncate">{row.name}</td>
-                          <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <StatusBadge status={row.status} />
+                              {row.isLate && <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Late</span>}
+                            </div>
+                          </td>
                           <td className="px-4 py-3 text-right">
                             {isSubmitted ? (
                               <div className="flex items-center justify-end gap-2">
@@ -467,6 +507,9 @@ export default function TeacherTestResultsPage() {
                                 acc >= 70 ? "text-emerald-600" : acc >= 40 ? "text-amber-600" : "text-red-500"
                               )}>{acc}%</span>
                             ) : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs font-mono text-muted-foreground hidden lg:table-cell">
+                            {calcTimeSpent(row.startedAt, row.submittedAt)}
                           </td>
                           <td className="px-4 py-3 text-right text-xs text-muted-foreground hidden lg:table-cell">
                             {fmtDate(row.submittedAt)}
