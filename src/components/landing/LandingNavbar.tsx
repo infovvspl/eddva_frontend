@@ -1,83 +1,147 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Menu, X, Sparkles
-} from "lucide-react";
-import { EddvaLogo } from "@/components/branding/EddvaLogo";
-import { B, P } from "./DesignTokens";
+import { Link } from "react-router-dom";
+import { FiArrowUpRight, FiMenu, FiX } from "react-icons/fi";
+import logo from "../../assets/logo.svg";
 
-export const LandingNavbar = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
+// Type definitions for standard navigation structures
+interface NavLink {
+  label: string;
+  to: string;
+}
 
-  const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "Courses", href: "/courses" },
-    { name: "About Us", href: "/about-us" },
-    { name: "Career", href: "/career" }
-  ];
+const leftLinks: NavLink[] = [
+  { label: "Home", to: "/" },
+  { label: "About us", to: "/about" },
+  { label: "Courses", to: "/courses" },
+];
+
+const rightLinks: NavLink[] = [
+  { label: "Career", to: "/career" },
+  { label: "Login", to: "/login" },
+];
+
+export default function Navbar() {
+  // Explicitly typing state as a boolean
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-gray-100/80 bg-white/95 supports-[backdrop-filter]:md:bg-white/80 supports-[backdrop-filter]:md:backdrop-blur-lg">
-      <div className="landing-shell flex items-center justify-between py-2">
-        <Link to="/" className="flex max-w-[min(58vw,12rem)] shrink-0 items-center sm:max-w-[16rem]">
-          <EddvaLogo className="h-20 w-auto sm:h-18" />
-        </Link>
+    <>
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="fixed top-0 left-0 w-full z-50 bg-white border-b border-blue-200"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="flex items-center justify-between h-20">
+            
+            {/* Left Nav Menu (Desktop) */}
+            <div className="hidden lg:flex items-center gap-8">
+              {leftLinks.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="relative text-[15px] font-bold text-black transition-all duration-300 group"
+                >
+                  {item.label}
+                  {/* Elegant underline */}
+                  <span className="absolute left-0 -bottom-1 h-[2px] w-0 rounded-full bg-gradient-to-r from-[#004499] to-[#00a6ff] transition-all duration-300 group-hover:w-full" />
+                </Link>
+              ))}
+            </div>
 
-        <nav className="hidden items-center gap-6 lg:flex lg:gap-8">
-          {navLinks.map(link => (
-            <Link key={link.name} to={link.href}
-              className="group relative text-[18px] font-black uppercase tracking-widest text-black transition-colors hover:text-blue-600">
-              {link.name}
-              <span className="absolute -bottom-1 left-0 h-0.5 w-0 origin-left scale-x-0 bg-blue-600 transition-all group-hover:w-full group-hover:scale-x-100" />
-            </Link>
-          ))}
+            {/* Centered Brand Logo */}
+            <div className="flex items-center gap-3 p-1">
+              <div className="w-44 h-16">
+                <img
+                  src={logo}
+                  alt="Eddva Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
 
-        </nav>
+            {/* Right Nav Menu (Desktop) */}
+            <div className="hidden lg:flex items-center gap-8">
+              {rightLinks.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="group relative rounded-lg text-[15px] font-bold text-black transition-all duration-300"
+                >
+                  {item.label}
+                  {/* Bottom Accent */}
+                  <span className="absolute left-0 -bottom-1 h-[2px] w-0 rounded-full bg-gradient-to-r from-[#004499] to-[#00a6ff] transition-all duration-300 group-hover:w-full" />
+                </Link>
+              ))}
 
-        <div className="hidden items-center gap-4 lg:flex">
-          <Link to="/login"
-            className="group relative text-[18px] font-black uppercase tracking-widest text-black transition-colors hover:text-blue-600">
-            Login
-            <span className="absolute -bottom-1 left-0 h-0.5 w-0 origin-left scale-x-0 bg-blue-600 transition-all group-hover:w-full group-hover:scale-x-100" />
-          </Link>
-          <motion.div whileHover={{ scale: 1.05, boxShadow: `0 12px 30px rgba(230, 0, 0, 0.2)` }} whileTap={{ scale: 0.95 }}>
-            <Link to="/register"
-              className="btn-register-glossy shadow-lg">
-              REGISTER NOW
-            </Link>
-          </motion.div>
+              {/* CTA BUTTON */}
+              <Link
+                to="/register"
+                className="group ml-2 relative overflow-hidden rounded-xl bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
+              >
+                {/* Hover Shine */}
+                <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                <span className="relative z-10 flex items-center gap-2">
+                  Register
+                  <FiArrowUpRight className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </span>
+              </Link>
+            </div>
+
+            {/* Mobile Toggler Action Button */}
+            <div className="lg:hidden">
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200"
+              >
+                {mobileOpen ? (
+                  <FiX className="w-5 h-5 text-slate-700" />
+                ) : (
+                  <FiMenu className="w-5 h-5 text-slate-700" />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
+      </motion.nav>
 
-        <button className="rounded-xl p-2 hover:bg-gray-100 lg:hidden" onClick={() => setMenuOpen(!menuOpen)}>
-          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-      </div>
-
+      {/* Animated Dropdown Menu for Mobile Drawer Viewports */}
       <AnimatePresence>
-        {menuOpen && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-gray-100 bg-white px-4 pb-6 sm:px-5 lg:hidden">
-            {navLinks.map(link => (
-              <Link key={link.name} to={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="block py-4 text-[14px] font-black uppercase tracking-widest text-gray-700 hover:text-blue-600 border-b border-gray-50">
-                {link.name}
-              </Link>
-            ))}
-            <div className="mt-4 flex flex-col gap-3">
-              <Link to="/login" onClick={() => setMenuOpen(false)}
-                className="block py-4 text-[14px] font-black uppercase tracking-widest text-gray-700 hover:text-blue-600 border-b border-gray-50">
-                Login
-              </Link>
-              <Link to="/register" onClick={() => setMenuOpen(false)}
-                className="btn-register-glossy block text-center shadow-lg">
-                REGISTER NOW
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-20 left-0 w-full bg-white border-b border-slate-200 z-40 lg:hidden"
+          >
+            <div className="px-4 py-5 flex flex-col gap-2">
+              {[...leftLinks, ...rightLinks].map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="px-4 py-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 transition"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <Link
+                to="/register"
+                onClick={() => setMobileOpen(false)}
+                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+              >
+                Get Started
+                <FiArrowUpRight />
               </Link>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
-};
+}
