@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import {
   useAiStudySession, useStartAiStudy, useAskAiQuestion,
-  useCompleteAiStudy,
+  useCompleteAiStudy, useCompletePlanItem
 } from "@/hooks/use-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
 import { CardGlass } from "@/components/shared/CardGlass";
@@ -410,6 +410,7 @@ export default function StudentAiStudyPage() {
   const [noteDraft, setNoteDraft] = useState("");
   const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
   const [activeInlineCommentId, setActiveInlineCommentId] = useState<string | null>(null);
+  const [openBubbleId, setOpenBubbleId] = useState<string | null>(null);
   const [toolPanel, setToolPanel] = useState<"highlights" | "notes" | null>(null);
   const [showFlashcards, setShowFlashcards] = useState(false);
   const [flashcardIndex, setFlashcardIndex] = useState(0);
@@ -420,10 +421,14 @@ export default function StudentAiStudyPage() {
   const savedTextRef = useRef<string>("");
   const isCompactLayout = useIsCompactLayout();
 
+  const [searchParams] = useSearchParams();
+  const planItemId = searchParams.get("planItemId");
+
   const { data: session, isLoading: sessionLoading } = useAiStudySession(topicId);
   const startMut = useStartAiStudy();
   const askMut = useAskAiQuestion();
   const completeMut = useCompleteAiStudy();
+  const planItemMut = useCompletePlanItem();
 
   const sessionData: AiStudySessionData | undefined = session ?? startMut.data;
   const sessionId = sessionData?.id;
@@ -469,13 +474,20 @@ export default function StudentAiStudyPage() {
     try {
       const h = localStorage.getItem(storageKey("highlights", topicId));
       const c = localStorage.getItem(storageKey("inline-comments", topicId));
-      setHighlights(h ? JSON.parse(h) : []);
-      setInlineComments(c ? JSON.parse(c) : []);
+      const localH: SavedHighlight[] = h ? JSON.parse(h) : [];
+      const localC: InlineComment[]  = c ? JSON.parse(c) : [];
+      // localStorage is the primary source (may have unsaved in-progress work);
+      // fall back to DB values so highlights persist across devices / cleared storage.
+      setHighlights(localH.length > 0 ? localH : (sessionData?.highlights ?? []));
+      setInlineComments(localC.length > 0 ? localC : (sessionData?.inlineComments ?? []));
     } catch {
-      setHighlights([]);
-      setInlineComments([]);
+      setHighlights(sessionData?.highlights ?? []);
+      setInlineComments(sessionData?.inlineComments ?? []);
     }
-  }, [topicId]);
+  // sessionData?.id ensures this re-runs once when the DB session first loads,
+  // so DB values are picked up if localStorage was empty on the initial render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicId, sessionData?.id]);
 
   useEffect(() => {
     if (!topicId) return;
@@ -584,11 +596,21 @@ export default function StudentAiStudyPage() {
   }, [askMut, sessionId, topicId, aiMode]);
 
   const handleComplete = useCallback(() => {
-    if (!sessionId) return;
-    completeMut.mutate({ topicId, sessionId, timeSpentSeconds: elapsed }, {
-      onSuccess: () => { setCompleted(true); setShowComplete(false); },
+    if (!sessionId || !topicId) return;
+    completeMut.mutate({ 
+      topicId, 
+      sessionId, 
+      timeSpentSeconds: elapsed,
+      highlights,
+      inlineComments
+    }, {
+      onSuccess: () => { 
+        setCompleted(true); 
+        setShowComplete(false); 
+        if (planItemId) planItemMut.mutate(planItemId);
+      },
     });
-  }, [sessionId, topicId, elapsed, completeMut]);
+  }, [sessionId, topicId, elapsed, completeMut, highlights, inlineComments, planItemId, planItemMut]);
 
   // Get the range/text the user most recently selected inside the notes, falling
   // back to the saved ref when focus has moved to the tool panel (buttons/textarea).
@@ -1127,26 +1149,48 @@ export default function StudentAiStudyPage() {
                     </div>
 
                     <div className="relative">
+                      {openBubbleId && (
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setOpenBubbleId(null)}
+                        />
+                      )}
                       {!isCompactLayout &&
                         inlineComments.map((comment) => (
-                          <button
+                          <div
                             key={comment.id}
-                            type="button"
-                            onClick={() => {
-                              setActiveInlineCommentId(comment.id);
-                              setToolPanel("notes");
-                            }}
-                            className={cn(
-                              "absolute right-0 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition-colors",
-                              activeInlineCommentId === comment.id
-                                ? "border-blue-300 bg-blue-600 text-white"
-                                : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
-                            )}
-                            style={{ top: comment.top }}
-                            title={comment.text}
+                            className="absolute right-0 z-20"
+                            style={{ top: comment.top, transform: "translateY(-50%)" }}
                           >
-                            <StickyNote className="h-4 w-4" />
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => setOpenBubbleId(prev => prev === comment.id ? null : comment.id)}
+                              className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-colors",
+                                openBubbleId === comment.id
+                                  ? "border-blue-300 bg-blue-600 text-white"
+                                  : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
+                              )}
+                              title={comment.text}
+                            >
+                              <StickyNote className="h-4 w-4" />
+                            </button>
+
+                            {openBubbleId === comment.id && (
+                              <div className="absolute right-10 top-1/2 -translate-y-1/2 z-30 w-64 rounded-2xl border border-blue-100 bg-white shadow-xl">
+                                {comment.quote && (
+                                  <div className="border-b border-slate-100 px-3 py-2">
+                                    <p className="line-clamp-2 border-l-2 border-blue-300 pl-2 text-xs italic text-slate-400">
+                                      "{comment.quote}"
+                                    </p>
+                                  </div>
+                                )}
+                                <div className="px-3 py-2.5">
+                                  <p className="text-sm leading-snug text-slate-800">{comment.text}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         ))}
 
                       <div ref={notesContentRef} className={cn("relative pr-0 lg:pr-12", mdClassBase, mdZoomClass)}>

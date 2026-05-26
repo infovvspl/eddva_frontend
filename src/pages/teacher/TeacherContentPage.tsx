@@ -75,6 +75,7 @@ const RES_TYPES: {
     { value: "dpp", label: "DPP Sheet", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx" },
     { value: "pyq", label: "PYQ Paper", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx" },
     { value: "notes", label: "Reading Material", shortLabel: "Reading", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
+    { value: "mindmap", label: "Mindmap", shortLabel: "Mindmap", icon: Brain, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
     { value: "video", label: "YouTube Video", shortLabel: "Video", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
     { value: "link", label: "External Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
   ];
@@ -218,6 +219,7 @@ const AI_CONTENT_TYPES = [
   { id: "pyq", label: "PYQ Practice", desc: "Previous Year Question style paper with solutions", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", saveAs: "pyq" },
   { id: "study_guide", label: "Study Guide", desc: "Crisp exam-ready summary for quick revision", icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", saveAs: "notes" },
   { id: "key_concepts", label: "Key Concepts", desc: "Must-know concepts, formulas and definitions", icon: Lightbulb, color: "text-rose-600", bg: "bg-rose-50", saveAs: "notes" },
+  { id: "mindmap", label: "Mindmap", desc: "Visual hierarchical breakdown of topic concepts", icon: Brain, color: "text-teal-600", bg: "bg-teal-50", saveAs: "mindmap" },
 ];
 
 function AiContentPanel({ topicId, topicName, subjectName, chapterName }: any) {
@@ -352,6 +354,7 @@ function TeacherTopicWorkspace() {
 
   const { data: resources = [], isLoading } = useTopicResources(topicId!);
   const { data: subjects = [] } = useSubjects(batchId!);
+  const { data: coverage } = useContentCoverageSummary(batchId!);
   const deleteRes = useDeleteTopicResource(topicId!);
   
   const [showAi, setShowAi] = useState(false);
@@ -385,9 +388,30 @@ function TeacherTopicWorkspace() {
             <span className="text-slate-600">{topic?.chapterName}</span>
           </div>
           <div className="flex items-end justify-between gap-6">
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-black text-slate-900 tracking-tight">{topic?.name}</h1>
               <p className="text-slate-500 font-medium mt-1">Audit and manage study materials for this topic</p>
+              
+              {/* Readiness Indicator */}
+              {(() => {
+                const tc = coverage?.subjects.find(s => s.id === subjectId)?.chapters.find(chap => chap.id === chapterId)?.topics.find(top => top.id === topicId);
+                if (!tc) return null;
+                const score = Math.min(100, tc.totalCount * 25);
+                return (
+                  <div className="mt-4 max-w-xs">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Readiness</span>
+                      <span className="text-xs font-black text-indigo-600">{score}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 transition-all duration-1000"
+                        style={{ width: `${score}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <button onClick={() => setShowAi(true)} className="h-12 px-6 rounded-2xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 shrink-0">
               <Sparkles className="w-4 h-4" /> AI Content Generator
@@ -511,18 +535,27 @@ function TeacherBatchContent() {
                               <div className="flex flex-col">
                                 <span className="text-[12px] font-medium text-slate-500 group-hover:text-indigo-600">{t.name}</span>
                                 {coverage && (
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    {(() => {
-                                      const tc = coverage.subjects.find(sub => sub.id === s.id)?.chapters.find(chap => chap.id === ch.id)?.topics.find(top => top.id === t.id);
-                                      if (!tc) return null;
-                                      return (
-                                        <>
-                                          {tc.studyMaterialCount > 0 && <span className="text-[8px] font-black bg-blue-50 text-blue-500 px-1 py-0.5 rounded-md">SM {tc.studyMaterialCount}</span>}
-                                          {tc.dppCount > 0 && <span className="text-[8px] font-black bg-orange-50 text-orange-500 px-1 py-0.5 rounded-md">DPP {tc.dppCount}</span>}
-                                          {tc.pyqCount > 0 && <span className="text-[8px] font-black bg-violet-50 text-violet-500 px-1 py-0.5 rounded-md">PYQ {tc.pyqCount}</span>}
-                                        </>
-                                      );
-                                    })()}
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex items-center gap-1">
+                                      {(() => {
+                                        const tc = coverage.subjects.find(sub => sub.id === s.id)?.chapters.find(chap => chap.id === ch.id)?.topics.find(top => top.id === t.id);
+                                        if (!tc) return null;
+                                        const score = Math.min(100, tc.totalCount * 25);
+                                        return (
+                                          <>
+                                            <div className="flex items-center gap-1 mr-2">
+                                              <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-indigo-500" style={{ width: `${score}%` }} />
+                                              </div>
+                                              <span className="text-[9px] font-black text-indigo-600">{score === 100 ? "100%" : `${score}%`}</span>
+                                            </div>
+                                            {tc.studyMaterialCount > 0 && <span className="text-[8px] font-black bg-blue-50 text-blue-500 px-1 py-0.5 rounded-md">SM {tc.studyMaterialCount}</span>}
+                                            {tc.dppCount > 0 && <span className="text-[8px] font-black bg-orange-50 text-orange-500 px-1 py-0.5 rounded-md">DPP {tc.dppCount}</span>}
+                                            {tc.pyqCount > 0 && <span className="text-[8px] font-black bg-violet-50 text-violet-500 px-1 py-0.5 rounded-md">PYQ {tc.pyqCount}</span>}
+                                          </>
+                                        );
+                                      })()}
+                                    </div>
                                   </div>
                                 )}
                               </div>

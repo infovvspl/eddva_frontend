@@ -343,13 +343,20 @@ function AttemptHistory({ sessions, totalMarks, onViewResult }: {
         {completed.slice(0, 5).map((s, i) => {
           const score = s.totalScore ?? 0;
           const pct = totalMarks > 0 ? Math.round((score / totalMarks) * 100) : 0;
+          const timeSpent = (() => {
+            if (!s.startedAt || !s.submittedAt) return null;
+            const diffSecs = Math.max(0, Math.floor(
+              (new Date(s.submittedAt).getTime() - new Date(s.startedAt).getTime()) / 1000
+            ));
+            return fmt(diffSecs);
+          })();
           return (
             <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-100">
               <span className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
                 #{completed.length - i}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className={cn(
                     "text-xs font-bold",
                     pct >= 70 ? "text-emerald-600" : pct >= 40 ? "text-amber-600" : "text-red-500",
@@ -359,6 +366,12 @@ function AttemptHistory({ sessions, totalMarks, onViewResult }: {
                   <span className="text-xs text-slate-400">
                     ✓{s.correctCount ?? 0} ✗{s.wrongCount ?? 0} —{s.skippedCount ?? 0}
                   </span>
+                  {timeSpent && (
+                    <span className="flex items-center gap-1 text-[10px] font-semibold text-indigo-500 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">
+                      <Clock className="w-2.5 h-2.5" />
+                      {timeSpent}
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   {formatDistanceToNow(new Date(s.submittedAt ?? s.startedAt), { addSuffix: true })}
@@ -373,6 +386,7 @@ function AttemptHistory({ sessions, totalMarks, onViewResult }: {
             </div>
           );
         })}
+
       </div>
     </div>
   );

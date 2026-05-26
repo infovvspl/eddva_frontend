@@ -5,7 +5,7 @@ import {
   ArrowLeft, Loader2, Users, Edit2, Trash2, X,
   Check, Copy, ImageIcon, DollarSign,
   BookOpen, GraduationCap, Plus,
-  CheckCircle2, PauseCircle, PlayCircle, Link, Calendar, AlertCircle
+  CheckCircle2, PauseCircle, PlayCircle, Link, Calendar, AlertCircle, Star
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import {
   useBatch,
   useUpdateBatch, useDeleteBatch,
-  useUploadBatchThumbnail, useGenerateInviteLink,
+  useUploadBatchThumbnail, useGenerateInviteLink, useBatchFeedback
 } from "@/hooks/use-admin";
 import { getApiOrigin } from "@/lib/api-config";
 import {
@@ -433,6 +433,70 @@ function CourseFAQsSection({ batchId, initialFaqs = [] }: { batchId: string; ini
   );
 }
 
+// ─── Feedback Section ─────────────────────────────────────────────────────────
+
+function BatchFeedbackSection({ batchId }: { batchId: string }) {
+  const { data: feedbackList, isLoading } = useBatchFeedback(batchId);
+  const averageRating = feedbackList?.length
+    ? feedbackList.reduce((acc: number, f: any) => acc + f.rating, 0) / feedbackList.length
+    : 0;
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>;
+  }
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
+            <Star className="w-4 h-4 text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-black text-slate-900">Student Feedback</h2>
+            <p className="text-xs text-slate-400">Anonymous reviews from students</p>
+          </div>
+        </div>
+        {feedbackList && feedbackList.length > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-xl">
+            <Star className="w-4 h-4 text-amber-500 fill-current" />
+            <span className="font-bold text-amber-700">{averageRating.toFixed(1)}</span>
+            <span className="text-xs text-amber-600/70">({feedbackList.length})</span>
+          </div>
+        )}
+      </div>
+
+      {!feedbackList || feedbackList.length === 0 ? (
+        <p className="text-sm text-slate-400">No feedback submitted yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {feedbackList.map((f: any, i: number) => (
+            <div key={f.id || i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-slate-700">Anonymous Student</span>
+                <span className="text-xs text-slate-400">
+                  {new Date(f.updatedAt || f.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              </div>
+              <div className="flex items-center gap-0.5 mb-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={cn("w-3.5 h-3.5", star <= f.rating ? "text-amber-500 fill-current" : "text-slate-200")}
+                  />
+                ))}
+              </div>
+              {f.comment && (
+                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{f.comment}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
@@ -649,6 +713,9 @@ export default function BatchDetailPage() {
 
       {/* ── FAQs Section ── */}
       <CourseFAQsSection batchId={id!} initialFaqs={(batch as any).faqs || []} />
+
+      {/* ── Feedback Section ── */}
+      <BatchFeedbackSection batchId={id!} />
 
       {/* Edit modal */}
       <AnimatePresence>

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -8,11 +8,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Plus, ThumbsUp, ThumbsDown, ChevronDown,
   Loader2, CheckCircle, Clock, X, Sparkles, User,
-  Brain, BookOpen, Send, Upload, Image as ImageIcon,
+  Brain, BookOpen, Send, Upload, Image as ImageIcon, ArrowUpDown,
 } from "lucide-react";
 import {
   useMyDoubts, useCreateDoubt, useMarkDoubtHelpful,
-  useRequestAiForDoubt, useMyCourses, useCourseCurriculum,
+  useRequestAiForDoubt, useMyCourses, useCourseCurriculum, useReopenDoubt,
 } from "@/hooks/use-student";
 import { StudentDoubt, DoubtStatus } from "@/lib/api/student";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
@@ -106,8 +106,11 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
   const [expanded, setExpanded] = useState(false);
   const [askAiMode, setAskAiMode] = useState<"short" | "detailed">("detailed");
   const [viewMode, setViewMode]   = useState<"brief" | "detailed">("brief");
+  const [showReopenForm, setShowReopenForm] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
   const markHelpful = useMarkDoubtHelpful();
   const requestAi   = useRequestAiForDoubt();
+  const reopenMut   = useReopenDoubt();
 
   const parsedAi = parseAiAnswer(doubt.aiExplanation);
 
@@ -393,31 +396,108 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
               )}
 
               {/* AI helpfulness rating */}
-              {doubt.status === "ai_resolved" && doubt.isHelpful === undefined && (
-                <div className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-xl">
-                  <p className="text-xs font-semibold text-slate-500 flex-1">Was this AI explanation helpful?</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => markHelpful.mutate(
-                        { id: doubt.id, isHelpful: true },
-                        { onSuccess: () => toast.success("Thanks for the feedback!") }
-                      )}
-                      disabled={markHelpful.isPending}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors"
-                    >
-                      <ThumbsUp className="w-3.5 h-3.5" /> Yes
-                    </button>
+              {doubt.status === "ai_resolved" && (
+                doubt.isHelpful == null ? (
+                  /* Not yet rated — show full Yes / No */
+                  <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-3">
+                    <p className="text-xs font-semibold text-slate-500">Was this AI explanation helpful?</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => markHelpful.mutate(
+                          { id: doubt.id, isHelpful: true },
+                          { onSuccess: () => toast.success("Thanks for the feedback!") }
+                        )}
+                        disabled={markHelpful.isPending}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" /> Yes, got it
+                      </button>
+                      <button
+                        onClick={() => markHelpful.mutate(
+                          { id: doubt.id, isHelpful: false },
+                          { onSuccess: () => toast.info("Sent to teacher — they'll answer it soon.") }
+                        )}
+                        disabled={markHelpful.isPending}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50"
+                      >
+                        {markHelpful.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsDown className="w-3.5 h-3.5" />}
+                        Not helpful — ask teacher
+                      </button>
+                    </div>
+                  </div>
+                ) : doubt.isHelpful === true ? (
+                  /* Rated helpful but still has escape hatch */
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <p className="text-xs text-slate-500 flex-1">You marked this as helpful.</p>
                     <button
                       onClick={() => markHelpful.mutate(
                         { id: doubt.id, isHelpful: false },
-                        { onSuccess: () => toast.info("Escalated to teacher.") }
+                        { onSuccess: () => toast.info("Sent to teacher — they'll answer it soon.") }
                       )}
                       disabled={markHelpful.isPending}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                      className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-red-600 transition-colors disabled:opacity-50"
                     >
-                      <ThumbsDown className="w-3.5 h-3.5" /> No, ask teacher
+                      {markHelpful.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsDown className="w-3 h-3" />}
+                      Still confused? Ask teacher
                     </button>
                   </div>
+                ) : null
+              )}
+
+              {/* Reopen — only for teacher-resolved doubts */}
+              {doubt.status === "teacher_resolved" && (
+                <div className="border border-orange-100 rounded-xl overflow-hidden">
+                  {!showReopenForm ? (
+                    <button
+                      onClick={() => setShowReopenForm(true)}
+                      className="w-full flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 transition-colors text-left"
+                    >
+                      <MessageSquare className="w-4 h-4 text-orange-500 shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-orange-700">Still confused?</p>
+                        <p className="text-[11px] text-orange-500 mt-0.5">Reopen this doubt — your teacher will answer it again with priority.</p>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-orange-400 shrink-0" />
+                    </button>
+                  ) : (
+                    <div className="p-4 bg-orange-50 space-y-3">
+                      <p className="text-xs font-bold text-orange-700">What's still unclear? (optional)</p>
+                      <textarea
+                        rows={3}
+                        value={reopenReason}
+                        onChange={e => setReopenReason(e.target.value)}
+                        placeholder="e.g. I didn't understand the step where…"
+                        className="w-full px-3 py-2.5 border border-orange-200 rounded-xl text-sm bg-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-300/50 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setShowReopenForm(false); setReopenReason(""); }}
+                          className="flex-1 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => reopenMut.mutate(
+                            { id: doubt.id, reason: reopenReason.trim() || undefined },
+                            {
+                              onSuccess: () => {
+                                toast.success("Doubt reopened — your teacher will answer it on priority.");
+                                setShowReopenForm(false);
+                                setReopenReason("");
+                              },
+                              onError: () => toast.error("Failed to reopen. Please try again."),
+                            }
+                          )}
+                          disabled={reopenMut.isPending}
+                          className="flex-1 py-2 rounded-xl bg-orange-600 text-white text-xs font-bold hover:bg-orange-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          {reopenMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          Reopen Doubt
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -730,10 +810,26 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
 export default function StudentDoubtsPage() {
   const [activeTab, setActiveTab] = useState<typeof TABS[number]["key"]>("all");
   const [showForm, setShowForm]   = useState(false);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const { data: doubts = [], isLoading } = useMyDoubts(
     activeTab === "all" ? undefined : activeTab
   );
+
+  const sorted = useMemo(() => {
+    const result = [...doubts];
+    const isPriority = (d: StudentDoubt) =>
+      d.status === "escalated" && (d.isTeacherResponseHelpful === false || d.isHelpful === false);
+    result.sort((a, b) => {
+      const ra = isPriority(a) ? 1 : 0;
+      const rb = isPriority(b) ? 1 : 0;
+      if (rb !== ra) return rb - ra;
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      return sortOrder === "newest" ? tb - ta : ta - tb;
+    });
+    return result;
+  }, [doubts, sortOrder]);
 
   const resolvedCount  = doubts.filter(d => d.status === "teacher_resolved" || d.status === "ai_resolved").length;
   const pendingCount   = doubts.filter(d => d.status === "open" || d.status === "escalated").length;
@@ -774,22 +870,35 @@ export default function StudentDoubtsPage() {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-        {TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              "shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-              activeTab === tab.key
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-            )}
+      {/* ── Tabs + Sort ── */}
+      <div className="flex items-center gap-2">
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none flex-1">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                "shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                activeTab === tab.key
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-600">
+          <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+          <select
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value as "newest" | "oldest")}
+            className="bg-transparent outline-none cursor-pointer"
           >
-            {tab.label}
-          </button>
-        ))}
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </div>
       </div>
 
       {/* ── List ── */}
@@ -816,7 +925,7 @@ export default function StudentDoubtsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {doubts.map(d => <DoubtCard key={d.id} doubt={d} />)}
+          {sorted.map(d => <DoubtCard key={d.id} doubt={d} />)}
         </div>
       )}
 

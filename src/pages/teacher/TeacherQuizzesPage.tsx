@@ -80,6 +80,7 @@ interface WizardState {
   showAnswersAfterSubmit: boolean;
   allowReattempt: boolean;
   publishNow: boolean;
+  deadlineAt: string;
 }
 
 const DEFAULT_WIZARD: WizardState = {
@@ -102,6 +103,7 @@ const DEFAULT_WIZARD: WizardState = {
   showAnswersAfterSubmit: true,
   allowReattempt: false,
   publishNow: true,
+  deadlineAt: "",
 };
 
 function makeLocalId() {
@@ -1650,6 +1652,15 @@ function Step3Settings({ state, onChange, onBack, onSubmit, submitting }: Step3P
             />
           </div>
         )}
+        <div className="pt-2 border-t border-border mt-3">
+          <label className="text-xs font-medium text-muted-foreground">Deadline Date & Time (Optional)</label>
+          <input
+            type="datetime-local"
+            value={state.deadlineAt}
+            onChange={(e) => onChange({ deadlineAt: e.target.value })}
+            className="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+        </div>
       </div>
 
       <div className="flex justify-between pt-2">
@@ -2027,6 +2038,7 @@ function CreateWizardModal({ onClose, onSuccess }: { onClose: () => void; onSucc
         topicId: state.testScope === "topic" ? (state.topicId || undefined) : undefined,
         questionIds,
         scheduledAt: !state.publishNow && state.scheduledAt ? state.scheduledAt : undefined,
+        deadlineAt: state.deadlineAt ? state.deadlineAt : undefined,
         shuffleQuestions: state.shuffleQuestions,
         showAnswersAfterSubmit: state.showAnswersAfterSubmit,
         allowReattempt: state.allowReattempt,

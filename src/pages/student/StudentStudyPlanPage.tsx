@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays, subDays, subYears, addDays } from "date-fns";
 import { toast } from "sonner";
@@ -9,17 +9,21 @@ import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
   RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
-  ArrowRight, Sparkles, Activity, Trash2, Bell,
+  ArrowRight, ArrowLeft, Sparkles, Activity, Trash2, Bell,
   TrendingDown, AlertTriangle, RefreshCw, FileText, ClipboardList,
+  BrainCircuit,
 } from "lucide-react";
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
   useClearPlan, useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
   useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
+  useAiStudyHistory, useRevisionSpaced, useRevisionNotes, usePracticeHistory,
 } from "@/hooks/use-student";
 import * as studentApi from "@/lib/api/student";
 import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
 import type { ProgressReport, SubjectReportEntry, ChapterReportEntry, TopicReportEntry, TestSession, DailyActivity } from "@/lib/api/student";
+import RevisionSessionModal from "@/components/student/RevisionSessionModal";
+import IntensiveRevisionSection from "@/components/student/IntensiveRevisionSection";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -31,7 +35,12 @@ const EXAM_OPTIONS = [
   { key: "other",        label: "Other",        icon: "🎯", desc: "Custom target" },
 ];
 
-const YEAR_OPTIONS = [2025, 2026, 2027, 2028];
+// Only show years whose April exam date is still in the future
+const _today = new Date();
+const FIRST_FUTURE_EXAM_YEAR = _today.getMonth() >= 3 /* April = 3 */
+  ? _today.getFullYear() + 1
+  : _today.getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => FIRST_FUTURE_EXAM_YEAR + i);
 const HOURS_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
 const CLASS_OPTIONS = [
   { key: "9", label: "Class 9" },
@@ -185,7 +194,9 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
   const [step, setStep] = useState(0);
   const [prefs, setPrefs] = useState<WizardState>({
     examTarget:          initial.examTarget      ?? "",
-    examYear:            initial.examYear        ?? new Date().getFullYear() + 1,
+    examYear:            (initial.examYear && initial.examYear >= FIRST_FUTURE_EXAM_YEAR)
+                           ? initial.examYear
+                           : FIRST_FUTURE_EXAM_YEAR,
     currentClass:        initial.currentClass    ?? "11",
     dailyStudyHours:     initial.dailyStudyHours ?? 4,
     schoolCoachingHours: 0,
@@ -997,18 +1008,22 @@ const TYPE_CFG: Record<string, { icon: React.ReactNode; color: string; bg: strin
   doubt_session: { icon: <Brain      className="w-4 h-4" />, color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
 };
 
-function PlanItemCard({ item, onComplete, onSkip, onOpen, priority }: {
+function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIfDone }: {
   item: StudyPlanItem;
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
   onOpen: (item: StudyPlanItem) => void;
   priority?: TaskPriority;
+  hideReviewIfDone?: boolean;
 }) {
   const t       = TYPE_CFG[item.type] ?? TYPE_CFG.lecture;
   const isDone  = item.status === "completed";
   const isSkip  = item.status === "skipped";
   const cfg     = item.content?.subjectName ? subjectCfg(item.content.subjectName) : null;
   const pCfg    = priority ? PRIORITY_CFG[priority] : null;
+
+  const showReview = (item.content?.notesUrl || item.content?.videoUrl || item.content?.topicId || item.refId) && (!hideReviewIfDone || (!isDone && !isSkip));
+
   return (
     <div className={`flex gap-2.5 p-2.5 rounded-lg border transition-all
       ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}>
@@ -1038,22 +1053,210 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority }: {
           {item.content?.topicName && <span className="text-[11px] text-gray-400 truncate">{item.content.topicName}</span>}
         </div>
       </div>
-      {!isDone && !isSkip && (
-        <div className="flex items-center gap-1 shrink-0">
-          {(item.content?.notesUrl || item.content?.videoUrl || item.content?.topicId) && (
-            <button onClick={() => onOpen(item)}
-              className="px-2 py-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-medium">
-              Open
+      <div className="flex items-center gap-1 shrink-0">
+        {showReview && (
+          <button onClick={() => onOpen(item)}
+            className={`px-2 py-1 rounded-lg transition-colors text-xs font-medium ${isDone || isSkip ? "text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200" : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"}`}>
+            {isDone || isSkip ? "Review" : "Open"}
+          </button>
+        )}
+        {!isDone && !isSkip && (
+          <>
+            <button onClick={() => onSkip(item.id)}
+              className="px-2 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
+              Skip
             </button>
+            <button onClick={() => onComplete(item.id)}
+              className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
+              Done
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Practice History Review Card ─────────────────────────────────────────────
+
+function PracticeHistoryReviewCard({ session }: { 
+  session: studentApi.AiStudySessionData;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const questions = session.practiceQuestions ?? [];
+  const cfg = session.subjectName ? subjectCfg(session.subjectName) : null;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:border-indigo-200">
+      <div className="p-3 flex items-center gap-3">
+        <div className="shrink-0 w-8 h-8 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600">
+          <Activity className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm text-gray-900 truncate">{session.topicName}</div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+             {cfg && session.subjectName && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{session.subjectName}</span>
+             )}
+             <span className="text-[10px] text-gray-400">
+               {session.completedAt ? format(new Date(session.completedAt), "MMM d") : "Recent"}
+             </span>
+          </div>
+        </div>
+        <button 
+          onClick={() => setExpanded(!expanded)}
+          className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1"
+        >
+          {expanded ? "Hide Details" : "Review Questions"}
+          <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-gray-100 bg-gray-50/50 p-4 space-y-4">
+          {questions.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-xs text-gray-500">No practice questions saved for this session.</p>
+            </div>
+          ) : (
+            questions.map((q, idx) => {
+              const opts = q.options || q.choices || [];
+              return (
+                <div key={idx} className="bg-white rounded-lg border border-gray-200 p-3.5 space-y-3 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded bg-indigo-50 text-indigo-600 text-[10px] font-bold flex items-center justify-center border border-indigo-100">Q{idx+1}</span>
+                    <p className="text-sm font-semibold text-gray-900 leading-relaxed">{q.question}</p>
+                  </div>
+                  
+                  {opts.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-9">
+                      {opts.map((opt, oIdx) => {
+                         const label = typeof opt === 'string' ? String.fromCharCode(65 + oIdx) : (opt as any).optionLabel || String.fromCharCode(65 + oIdx);
+                         const content = typeof opt === 'string' ? opt : (opt as any).content || (opt as any).text || "";
+                         return (
+                           <div key={oIdx} className="p-2 rounded-lg border border-gray-100 bg-gray-50 text-xs text-gray-700">
+                             <span className="font-bold mr-1.5">{label}.</span> {content}
+                           </div>
+                         );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="ml-9 space-y-2">
+                    <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+                      <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">Correct Answer</p>
+                      <p className="text-xs font-medium text-emerald-900">{q.answer}</p>
+                    </div>
+                    {q.explanation && (
+                      <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
+                        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Explanation</p>
+                        <p className="text-xs text-gray-700 leading-relaxed">{q.explanation}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           )}
-          <button onClick={() => onSkip(item.id)}
-            className="px-2 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
-            Skip
-          </button>
-          <button onClick={() => onComplete(item.id)}
-            className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
-            Done
-          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Note History Review Card ─────────────────────────────────────────────────
+
+function NoteHistoryReviewCard({ session, onNavigate }: { 
+  session: studentApi.AiStudySessionData;
+  onNavigate: (topicId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hlCount = session.highlights?.length ?? 0;
+  const cmCount = session.inlineComments?.length ?? 0;
+  const dbCount = session.conversation?.filter((m: any) => m.role === 'student').length ?? 0;
+  
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:border-indigo-200">
+      <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+            <BrainCircuit className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-800 truncate">{session.topicName}</p>
+            <div className="flex items-center flex-wrap gap-2 mt-0.5">
+              <p className="text-[10px] text-gray-400">
+                {session.completedAt ? format(new Date(session.completedAt), "MMM d") : "Recent"} · {Math.round((session.timeSpentSeconds || 0) / 60)}m
+              </p>
+              {(hlCount > 0 || cmCount > 0 || dbCount > 0) && (
+                <div className="flex items-center gap-1.5 ml-1">
+                  {hlCount > 0 && <span className="text-[9px] font-medium bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-100 flex items-center gap-0.5"><Sparkles className="w-2.5 h-2.5" /> {hlCount}</span>}
+                  {cmCount > 0 && <span className="text-[9px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-0.5"><FileText className="w-2.5 h-2.5" /> {cmCount}</span>}
+                  {dbCount > 0 && <span className="text-[9px] font-medium bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 flex items-center gap-0.5"><Brain className="w-2.5 h-2.5" /> {dbCount}</span>}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+           {(hlCount > 0 || cmCount > 0 || dbCount > 0) && (
+             <button 
+               onClick={() => setExpanded(!expanded)}
+               className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-md transition-all border border-indigo-100"
+             >
+               {expanded ? "Hide Details" : "View Details"}
+             </button>
+           )}
+           <button
+             onClick={() => onNavigate(session.topicId)}
+             className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-md transition-all"
+           >
+             Full Notes
+           </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-gray-100 bg-gray-50/50 p-4 space-y-4">
+          {cmCount > 0 && (
+            <div className="space-y-2">
+               <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1 px-1">Your Comments</p>
+               {session.inlineComments?.map((cm, idx) => (
+                 <div key={cm.id || idx} className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
+                    <p className="text-[10px] text-gray-400 italic mb-1.5">"{cm.quote}"</p>
+                    <p className="text-sm font-medium text-gray-800 leading-relaxed">{cm.text}</p>
+                 </div>
+               ))}
+            </div>
+          )}
+          
+          {dbCount > 0 && (
+            <div className="space-y-2">
+               <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1 px-1">AI Doubts & Chat</p>
+               <div className="space-y-2 bg-white p-3 rounded-lg border border-purple-100 shadow-sm">
+                  {session.conversation?.map((msg, idx) => (
+                    <div key={idx} className={`flex ${msg.role === 'student' ? 'justify-end' : 'justify-start'}`}>
+                       <div className={`max-w-[90%] p-2 rounded-lg text-xs ${msg.role === 'student' ? 'bg-purple-50 text-purple-900 border border-purple-100' : 'bg-gray-50 text-gray-700 border border-gray-200'}`}>
+                          <p className="leading-relaxed">{msg.message}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+          )}
+
+          {hlCount > 0 && (
+             <div className="space-y-2">
+                <p className="text-[10px] font-bold text-yellow-700 uppercase tracking-wider mb-1 px-1">Key Highlights</p>
+                <div className="flex flex-wrap gap-2">
+                   {session.highlights?.map((hl, idx) => (
+                     <div key={idx} className="bg-yellow-100/50 px-3 py-2 rounded-lg border border-yellow-200 text-xs text-gray-800 font-medium shadow-sm">
+                        {hl.text}
+                     </div>
+                   ))}
+                </div>
+             </div>
+          )}
         </div>
       )}
     </div>
@@ -1142,14 +1345,16 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
 
 // ─── Smart Reminders Card ──────────────────────────────────────────────────────
 
-function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, forgottenConcepts, weakTopics, pendingPYQTopics, onTabChange }: {
-  revisionTopics:    Array<{ isOverdue: boolean }>;
-  weeklyActivity:    DailyActivity[];
-  pendingMockTests:  Array<{ id: string; title: string }>;
-  forgottenConcepts: Array<{ topicId: string }>;
-  weakTopics:        Array<{ topicId: string }>;
-  pendingPYQTopics:  Array<{ topicId: string }>;
-  onTabChange:       (tab: ActiveTab) => void;
+function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, forgottenConcepts, weakTopics, pendingPYQTopics, onTabChange, onBacklogPageChange, selectedCourseId }: {
+  revisionTopics:      Array<{ isOverdue: boolean }>;
+  weeklyActivity:      DailyActivity[];
+  pendingMockTests:    Array<{ id: string; title: string }>;
+  forgottenConcepts:   Array<{ topicId: string }>;
+  weakTopics:          Array<{ topicId: string }>;
+  pendingPYQTopics:    Array<{ topicId: string }>;
+  onTabChange:         (tab: ActiveTab) => void;
+  onBacklogPageChange: (page: "pyq") => void;
+  selectedCourseId:    string | null;
 }) {
   const navigate    = useNavigate();
   const overdueCount = revisionTopics.filter(t => t.isOverdue).length;
@@ -1171,7 +1376,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
   if (pendingMockTests.length > 0)
     reminders.push({ id: "mock", icon: "📝", sev: "info",
       text: `${pendingMockTests.length} mock test${pendingMockTests.length > 1 ? "s" : ""} available`,
-      action: { label: "Take now →", fn: () => navigate("/student/tests") } });
+      action: { label: "Take now →", fn: () => navigate(selectedCourseId ? `/student/tests?course=${selectedCourseId}` : "/student/tests") } });
 
   if (forgottenConcepts.length > 3)
     reminders.push({ id: "forgotten", icon: "🔁", sev: "medium",
@@ -1186,7 +1391,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
   if (pendingPYQTopics.length > 0)
     reminders.push({ id: "pyq", icon: "📋", sev: "info",
       text: `${pendingPYQTopics.length} topics with no PYQ attempts yet`,
-      action: { label: "Go to Backlogs →", fn: () => onTabChange("backlogs") } });
+      action: { label: "Go to Backlogs →", fn: () => { onTabChange("backlogs"); onBacklogPageChange("pyq"); } } });
 
   const ORDER: Record<Sev, number> = { high: 0, medium: 1, info: 2 };
   reminders.sort((a, b) => ORDER[a.sev] - ORDER[b.sev]);
@@ -1415,14 +1620,16 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
 
 // ─── Backlog Section Wrapper ───────────────────────────────────────────────────
 
-type AccentColor = "red" | "blue" | "amber" | "violet" | "teal";
+type AccentColor = "red" | "blue" | "amber" | "violet" | "teal" | "indigo" | "rose";
 
 const ACCENT: Record<AccentColor, { header: string; badge: string; border: string }> = {
-  red:    { header: "bg-red-50",    badge: "bg-red-100 text-red-700",    border: "border-red-200" },
-  blue:   { header: "bg-blue-50",   badge: "bg-blue-100 text-blue-700",  border: "border-blue-200" },
-  amber:  { header: "bg-amber-50",  badge: "bg-amber-100 text-amber-700",border: "border-amber-200" },
+  red:    { header: "bg-red-50",    badge: "bg-red-100 text-red-700",       border: "border-red-200"    },
+  blue:   { header: "bg-blue-50",   badge: "bg-blue-100 text-blue-700",     border: "border-blue-200"   },
+  amber:  { header: "bg-amber-50",  badge: "bg-amber-100 text-amber-700",   border: "border-amber-200"  },
   violet: { header: "bg-violet-50", badge: "bg-violet-100 text-violet-700", border: "border-violet-200" },
-  teal:   { header: "bg-teal-50",   badge: "bg-teal-100 text-teal-700",  border: "border-teal-200" },
+  teal:   { header: "bg-teal-50",   badge: "bg-teal-100 text-teal-700",     border: "border-teal-200"   },
+  indigo: { header: "bg-indigo-50", badge: "bg-indigo-100 text-indigo-700", border: "border-indigo-200" },
+  rose:   { header: "bg-rose-50",   badge: "bg-rose-100 text-rose-700",     border: "border-rose-200"   },
 };
 
 function BacklogSection({ icon, title, count, accentColor, children }: {
@@ -1566,18 +1773,39 @@ export default function StudentStudyPlanPage() {
   const yesterday  = format(subDays(new Date(), 1), "yyyy-MM-dd");
   const weekEnd    = format(addDays(new Date(), 6), "yyyy-MM-dd");
 
-  const [activeTab,    setActiveTab]    = useState<ActiveTab>("today");
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("edva_selected_course_id");
+    return null;
+  });
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    if (typeof window !== "undefined") return (localStorage.getItem("edva_active_tab") as ActiveTab) || "today";
+    return "today";
+  });
+
+  useEffect(() => {
+    if (selectedCourseId) localStorage.setItem("edva_selected_course_id", selectedCourseId);
+    else localStorage.removeItem("edva_selected_course_id");
+  }, [selectedCourseId]);
+
+  useEffect(() => {
+    localStorage.setItem("edva_active_tab", activeTab);
+  }, [activeTab]);
   const [wizardDone,   setWizardDone]   = useState(false);
   const [showWizard,   setShowWizard]   = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [todayView,       setTodayView]       = useState<"today" | "week">("today");
   const [selectedWeekDay, setSelectedWeekDay] = useState<string>("");
-  const [backlogPage,  setBacklogPage]  = useState<null|"plan"|"lectures"|"notes"|"pyq"|"dpp">(null);
-  const [weakPage,     setWeakPage]     = useState<null|"chapters"|"topics"|"forgotten"|"negative">(null);
+  const [backlogPage, setBacklogPage] = useState<null|"plan"|"lectures"|"notes"|"pyq"|"dpp"|"mindmaps"|"mocktests">(null);
+  const [weakPage,    setWeakPage]    = useState<null|"chapters"|"topics"|"forgotten"|"negative">(null);
+  const [revisionCategory, setRevisionCategory] = useState<null|"spaced"|"intensive"|"notes"|"practice">(null);
   const [revisionPage, setRevisionPage] = useState<null|"schedule"|"table"|"aiplan">(null);
   const [openNoteIds,     setOpenNoteIds]     = useState<Set<string>>(new Set());
   const [revisionNotes,   setRevisionNotes]   = useState<Record<string, string>>({});
   const [openRevBuckets,  setOpenRevBuckets]  = useState<Set<number>>(new Set([1, 3, 7, 21]));
+  const [revisionModal, setRevisionModal] = useState<null | {
+    topicId: string; topicName: string; subjectName: string;
+    accuracy: number; intervalDays: 1 | 3 | 7 | 21;
+  }>(null);
 
   const toggleNote = (id: string) =>
     setOpenNoteIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -1585,17 +1813,25 @@ export default function StudentStudyPlanPage() {
   const toggleRevBucket = (interval: number) =>
     setOpenRevBuckets(prev => { const n = new Set(prev); n.has(interval) ? n.delete(interval) : n.add(interval); return n; });
 
-  const { data: todayItems = [], isLoading: planLoading } = useTodaysPlan();
-  const { data: backlogWeekData = {} }                    = useWeeklyPlanGrouped(backlogStart, yesterday);
-  const { data: weekPlanData = {} }                       = useWeeklyPlanGrouped(today, weekEnd);
-  const { data: progressReport }                          = useProgressReport();
+  const { data: rawTodayItems = [], isLoading: todayPlanLoading } = useTodaysPlan(selectedCourseId ?? undefined);
+  const { data: rawBacklogWeekData = {} }                    = useWeeklyPlanGrouped(backlogStart, yesterday, selectedCourseId ?? undefined);
+  const { data: rawWeekPlanData = {} }                       = useWeeklyPlanGrouped(today, weekEnd, selectedCourseId ?? undefined);
+  const { data: progressReport }                             = useProgressReport();
 
   // For the full backlogs tab
-  const { data: myCourses = [] }         = useMyCourses();
+  const { data: myCourses = [], isLoading: myCoursesLoading } = useMyCourses();
   const { data: allLectures = [] }       = useAllBatchLectures();
   const { data: mockTests = [] }         = useMockTests({ isPublished: true });
   const { data: sessions = [] }          = useStudentSessions();
   const { data: weeklyActivity = [] }    = useWeeklyActivity();
+  const { data: aiStudyHistory = [] }     = useAiStudyHistory();
+  const { data: spacedRevisionData = [] }   = useRevisionSpaced(selectedCourseId ?? undefined);
+  const { data: backendNotes = [] }         = useRevisionNotes(selectedCourseId ?? undefined);
+  const { data: backendPractice = [] }      = usePracticeHistory(selectedCourseId ?? undefined);
+  const completedHistoryTopicIds = useMemo(() =>
+    new Set(aiStudyHistory.filter(s => s.isCompleted).map(s => s.topicId)),
+    [aiStudyHistory]
+  );
 
   // Per-batch curriculum (for DPPs, PDFs, notes resources)
   const curriculaResults = useQueries({
@@ -1608,22 +1844,36 @@ export default function StudentStudyPlanPage() {
     })),
   });
 
+  const isCurriculumLoading = myCoursesLoading || curriculaResults.some(r => r.isLoading);
+  const planLoading = todayPlanLoading || isCurriculumLoading;
+
   const generate   = useGeneratePlan();
   const regenerate = useRegeneratePlan();
   const clearPlan  = useClearPlan();
-  const complete   = useCompletePlanItem();
-  const skip       = useSkipPlanItem();
+  const complete   = useCompletePlanItem(selectedCourseId ?? undefined);
+  const skip       = useSkipPlanItem(selectedCourseId ?? undefined);
 
-  const hasPlan = todayItems.length > 0;
+  const selectedCourse = useMemo(() => myCourses.find(c => c.id === selectedCourseId) ?? null, [myCourses, selectedCourseId]);
+
+  // Exam name pill is fixed to the selected course's exam target/year.
+  // "Days left" uses the student profile year so students always see their personal countdown.
+  const courseExamTarget = selectedCourse?.examTarget ?? student?.examTarget;
+  const courseExamYear   = selectedCourse?.examYear   ?? student?.examYear;
   const days    = countdownDays(student?.examYear);
 
   // Synthesize a ProgressReport from course curriculum data when the real report has no subjects.
   // This happens when the student hasn't taken any gate quizzes yet — curriculum data always has
   // the full subject→chapter→topic tree with live lecture/status info.
   const effectiveProgressReport = useMemo((): ProgressReport | undefined => {
-    if ((progressReport?.subjects?.length ?? 0) > 0) return progressReport;
+    if ((progressReport?.subjects?.length ?? 0) > 0) {
+      // If we have a real report, filter it by selected course topics if possible
+      // (Usually the backend scopes this already, but we'll trust the topics filter later)
+      return progressReport;
+    }
     const subjects: SubjectReportEntry[] = [];
-    curriculaResults.forEach(result => {
+    curriculaResults.forEach((result, idx) => {
+      const course = myCourses[idx];
+      if (selectedCourseId && course.id !== selectedCourseId) return;
       if (!result.data?.subjects?.length) return;
       result.data.subjects.forEach(s => {
         const chapters: ChapterReportEntry[] = s.chapters.map(ch => {
@@ -1686,6 +1936,84 @@ export default function StudentStudyPlanPage() {
     };
   }, [progressReport, curriculaResults]);
 
+  const activeCourseTopicIds = useMemo(() => {
+    const ids = new Set<string>();
+    curriculaResults.forEach((result) => {
+      result.data?.subjects?.forEach(s =>
+        s.chapters.forEach(c => c.topics.forEach(t => ids.add(t.id)))
+      );
+    });
+    return ids;
+  }, [curriculaResults]);
+
+  // Topic IDs scoped to the currently selected course only (falls back to all when no course selected)
+  const selectedCourseTopicIds = useMemo(() => {
+    const ids = new Set<string>();
+    curriculaResults.forEach((result, idx) => {
+      const course = myCourses[idx];
+      if (!course || (selectedCourseId && course.id !== selectedCourseId)) return;
+      result.data?.subjects?.forEach(s =>
+        s.chapters.forEach(c => c.topics.forEach(t => ids.add(t.id)))
+      );
+    });
+    return ids;
+  }, [curriculaResults, myCourses, selectedCourseId]);
+
+  const isSyllabusComplete = useMemo(() => {
+    const total     = effectiveProgressReport?.summary?.totalTopics ?? 0;
+    const completed = effectiveProgressReport?.summary?.completedTopics ?? 0;
+    return total > 0 && completed >= total;
+  }, [effectiveProgressReport]);
+
+  // Chapter weightage map for intensive revision priority (keyed by chapterId)
+  const chapterWeightMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const target = courseExamTarget?.toLowerCase() ?? "";
+    const useJee  = target.includes("jee");
+    const useNeet = target.includes("neet");
+    if (!useJee && !useNeet) return map;
+    curriculaResults.forEach((result, idx) => {
+      const course = myCourses[idx];
+      if (!course || (selectedCourseId && course.id !== selectedCourseId)) return;
+      result.data?.subjects.forEach(s =>
+        s.chapters.forEach(ch => {
+          const w = useJee ? ch.jeeWeightage : ch.neetWeightage;
+          if (w !== undefined) map.set(ch.id, w);
+        })
+      );
+    });
+    return map;
+  }, [curriculaResults, myCourses, selectedCourseId, courseExamTarget]);
+
+  const syncStatus = useCallback((items: StudyPlanItem[]) => {
+    return items.map(item => {
+      // Practice items must be completed explicitly (quiz flow or Done button) — never auto-synced
+      // from AI session history, because completing AI notes ≠ completing practice questions.
+      if (item.type === "practice") return item;
+      const tid = item.content?.topicId || item.refId;
+      if (item.status === "pending" && tid && completedHistoryTopicIds.has(tid)) {
+        return { ...item, status: "completed" as const };
+      }
+      return item;
+    });
+  }, [completedHistoryTopicIds]);
+
+  const allTodayItems = useMemo(() => syncStatus(rawTodayItems), [rawTodayItems, syncStatus]);
+  const hasPlan = allTodayItems.length > 0;
+
+  // Today plan is global (not course-scoped) — show all items regardless of selected course
+  const todayItems = allTodayItems;
+
+  const backlogWeekData = useMemo(() => {
+    const synced: Record<string, StudyPlanItem[]> = {};
+    Object.entries(rawBacklogWeekData).forEach(([date, items]) => {
+      synced[date] = syncStatus(items);
+    });
+    return synced;
+  }, [rawBacklogWeekData, syncStatus]);
+
+  const weekPlanData = rawWeekPlanData;
+
   // Derive weak topic IDs from progress report (accuracy < 50, has been attempted)
   const weakTopicIds = useMemo<Set<string>>(() => {
     const ids = new Set<string>();
@@ -1705,6 +2033,7 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
+          if (!selectedCourseTopicIds.has(t.topicId)) return;
           if ((t.bestAccuracy ?? 0) > 0 && (t.bestAccuracy ?? 0) < 50) {
             list.push({
               topicId: t.topicId,
@@ -1718,14 +2047,17 @@ export default function StudentStudyPlanPage() {
       )
     );
     return list.sort((a, b) => a.accuracy - b.accuracy);
-  }, [effectiveProgressReport]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
   // Weak chapters: chapters with overall accuracy > 0 and < 50% with at least one attempted topic
   const weakChapters = useMemo(() => {
     const list: Array<{ chapterId: string; chapterName: string; subjectName: string; topicsTotal: number; topicsCompleted: number; overallAccuracy: number; attemptedTopics: number }> = [];
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c => {
-        const attempted = c.topics.filter(t => t.attemptCount > 0 || t.status === "completed" || t.status === "in_progress").length;
+        const attempted = c.topics.filter(t =>
+          selectedCourseTopicIds.has(t.topicId) &&
+          (t.attemptCount > 0 || t.status === "completed" || t.status === "in_progress")
+        ).length;
         if (attempted > 0 && c.overallAccuracy > 0 && c.overallAccuracy < 50) {
           list.push({
             chapterId: c.chapterId,
@@ -1740,7 +2072,7 @@ export default function StudentStudyPlanPage() {
       })
     );
     return list.sort((a, b) => a.overallAccuracy - b.overallAccuracy);
-  }, [effectiveProgressReport]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
   // Forgotten concepts: completed topics not revisited in 14+ days, or abandoned in-progress (3+ attempts)
   const forgottenConcepts = useMemo(() => {
@@ -1749,6 +2081,7 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
+          if (!selectedCourseTopicIds.has(t.topicId)) return;
           if (t.status === "completed" && t.completedAt) {
             const days = differenceInDays(now, new Date(t.completedAt));
             if (days >= 14) {
@@ -1761,7 +2094,7 @@ export default function StudentStudyPlanPage() {
       )
     );
     return list.sort((a, b) => (b.daysSince ?? 999) - (a.daysSince ?? 999));
-  }, [effectiveProgressReport]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
   // High negative-marking areas: topics where PYQ accuracy < 50% (high wrong-answer rate)
   const highNegativeTopics = useMemo(() => {
@@ -1769,6 +2102,7 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
+          if (!selectedCourseTopicIds.has(t.topicId)) return;
           if (t.pyq && t.pyq.attempted > 0 && t.pyq.accuracy < 50) {
             list.push({
               topicId: t.topicId,
@@ -1785,79 +2119,32 @@ export default function StudentStudyPlanPage() {
       )
     );
     return list.sort((a, b) => a.pyqAccuracy - b.pyqAccuracy);
-  }, [effectiveProgressReport]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
-  // Revision queue: topics the student has studied (via completed plan items OR report signals)
-  // Primary source: completed StudyPlanItems — always fresh, never stale from cache.
-  // Secondary: effectiveProgressReport for topics with quiz/lecture signals not in the plan.
+
+  // Spaced revision: always backend-scoped to the selected course. Empty when no course selected.
   const revisionTopics = useMemo(() => {
+    if (!selectedCourseId) return [];
+    if (!spacedRevisionData.length) return [];
     const now = new Date();
-    type RevItem = {
-      topicId: string; topicName: string; subjectName: string; chapterName: string;
-      accuracy: number; completedAt: string | null; learnedOn: string;
-      nextRevisionDate: Date; nextRevisionLabel: string;
-      intervalDays: 1 | 3 | 7 | 21; isOverdue: boolean;
-    };
-    const list: RevItem[] = [];
-    const seenTopicIds = new Set<string>();
-
-    const addTopic = (
-      topicId: string, topicName: string, subjectName: string, chapterName: string,
-      accuracy: number, completedAt: string | null, learnedOnFallback: string
-    ) => {
-      if (seenTopicIds.has(topicId) || accuracy >= 75) return;
-      seenTopicIds.add(topicId);
-      const interval: 1 | 3 | 7 | 21 = accuracy < 40 ? 1 : accuracy < 55 ? 3 : accuracy < 65 ? 7 : 21;
-      const base      = completedAt ? new Date(completedAt) : now;
-      const nextDate  = addDays(base, interval);
-      const daysUntil = differenceInDays(nextDate, now);
-      const isOverdue = daysUntil < 0;
-      const learnedOn = completedAt ? format(new Date(completedAt), "MMM d") : learnedOnFallback;
-      const nextLabel = isOverdue ? "Overdue" : daysUntil === 0 ? "Today" : format(nextDate, "MMM d");
-      list.push({ topicId, topicName, subjectName, chapterName: chapterName ?? "", accuracy, completedAt, learnedOn, nextRevisionDate: nextDate, nextRevisionLabel: nextLabel, intervalDays: interval, isOverdue });
-    };
-
-    // Build accuracy lookup from report
-    const reportMap = new Map<string, { accuracy: number; completedAt: string | null }>();
-    effectiveProgressReport?.subjects.forEach(s =>
-      s.chapters.forEach(c =>
-        c.topics.forEach(t =>
-          reportMap.set(t.topicId, { accuracy: t.bestAccuracy ?? 0, completedAt: t.completedAt ?? null })
-        )
-      )
-    );
-
-    // Primary: all completed plan items (today + past week)
-    const allPlanItems = [
-      ...todayItems,
-      ...Object.values(backlogWeekData).flat(),
-    ];
-    allPlanItems.forEach(item => {
-      if (item.status !== "completed" || !item.content?.topicId) return;
-      const { topicId, topicName = "Unknown Topic", subjectName = "General", chapterName = "" } = item.content;
-      const rep = reportMap.get(topicId);
-      addTopic(topicId, topicName, subjectName, chapterName, rep?.accuracy ?? 0, rep?.completedAt ?? null, format(new Date(item.scheduledDate), "MMM d"));
+    return spacedRevisionData.map(item => {
+      const nextRevisionDate = new Date(item.nextRevisionDate);
+      const daysUntil = differenceInDays(nextRevisionDate, now);
+      return {
+        topicId:           item.topicId,
+        topicName:         item.topicName,
+        subjectName:       item.subjectName,
+        chapterName:       item.chapterName,
+        accuracy:          item.accuracy,
+        completedAt:       item.lastStudiedAt as string | null,
+        learnedOn:         item.lastStudiedAt ? format(new Date(item.lastStudiedAt), "MMM d") : "—",
+        nextRevisionDate,
+        nextRevisionLabel: item.isOverdue ? "Overdue" : daysUntil === 0 ? "Today" : format(nextRevisionDate, "MMM d"),
+        intervalDays:      item.intervalDays,
+        isOverdue:         item.isOverdue,
+      };
     });
-
-    // Secondary: report topics with clear interaction signals (quiz attempts, lectures, AI sessions)
-    effectiveProgressReport?.subjects.forEach(s =>
-      s.chapters.forEach(c =>
-        c.topics.forEach(t => {
-          const hasInteracted =
-            t.status !== "locked" &&
-            (t.bestAccuracy > 0 || t.attemptCount > 0 ||
-             t.lecture?.anyCompleted || t.aiSession?.completed);
-          if (hasInteracted)
-            addTopic(t.topicId, t.topicName, s.subjectName, c.chapterName, t.bestAccuracy ?? 0, t.completedAt ?? null, "—");
-        })
-      )
-    );
-
-    return list.sort((a, b) =>
-      a.isOverdue !== b.isOverdue ? (a.isOverdue ? -1 : 1)
-      : a.nextRevisionDate.getTime() - b.nextRevisionDate.getTime()
-    );
-  }, [effectiveProgressReport, todayItems, backlogWeekData]);
+  }, [selectedCourseId, spacedRevisionData]);
 
   // 7-day AI revision plan: assign each topic to the day it's due (capped 0–6)
   const aiRevisionPlan = useMemo(() => {
@@ -1879,22 +2166,47 @@ export default function StudentStudyPlanPage() {
     return days;
   }, [revisionTopics]);
 
-  // Backlog items: past 7 days study-plan tasks that are NOT completed
+  // Backlog items: past 7 days study-plan tasks that are NOT completed, scoped to selected course
   const backlogPlanItems = useMemo<Array<StudyPlanItem & { date: string }>>(() => {
     const items: Array<StudyPlanItem & { date: string }> = [];
     Object.entries(backlogWeekData).forEach(([date, dayItems]) => {
       if (date >= today) return;
       dayItems.forEach(item => {
-        if (item.status !== "completed") items.push({ ...item, date });
+        if (item.status !== "completed") {
+          if (!item.content?.topicId || selectedCourseTopicIds.has(item.content.topicId)) {
+            items.push({ ...item, date });
+          }
+        }
       });
     });
     return items.sort((a, b) => a.date.localeCompare(b.date));
-  }, [backlogWeekData, today]);
+  }, [backlogWeekData, today, selectedCourseTopicIds]);
 
-  // Pending lectures: not completed, not locked
+  // Intensive revision: plan items of type 'revision' from today + past week, course-filtered
+  const intensiveRevisionItems = useMemo(() => {
+    return [
+      ...todayItems,
+      ...Object.values(backlogWeekData).flat(),
+    ].filter(it => it.type === 'revision' && (!it.content?.topicId || selectedCourseTopicIds.has(it.content.topicId)));
+  }, [todayItems, backlogWeekData, selectedCourseTopicIds]);
+
+  // Notes: always backend-scoped to the selected course. Empty when no course selected.
+  const completedAiNotes = useMemo(() => {
+    if (!selectedCourseId) return [];
+    return backendNotes;
+  }, [selectedCourseId, backendNotes]);
+
+  // Practice: same — always course-scoped, never global.
+  const completedPracticeSessions = useMemo(() => {
+    if (!selectedCourseId) return [];
+    return backendPractice;
+  }, [selectedCourseId, backendPractice]);
+
+  // Pending lectures: not completed, not locked, scoped to selected course
   const pendingLectures = useMemo(() =>
-    allLectures.filter(l => !l.isLocked && !l.studentProgress?.isCompleted),
-    [allLectures]
+    allLectures.filter(l => !l.isLocked && !l.studentProgress?.isCompleted &&
+      (!l.topic?.id || selectedCourseTopicIds.has(l.topic.id))),
+    [allLectures, selectedCourseTopicIds]
   );
 
   // Pending PYQs: topics where no PYQ has been attempted yet
@@ -1903,32 +2215,17 @@ export default function StudentStudyPlanPage() {
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
         c.topics.forEach(t => {
-          if (t.status !== "locked" && (!t.pyq || t.pyq.attempted === 0)) {
+          if (t.status !== "locked" && (!t.pyq || t.pyq.attempted === 0) && selectedCourseTopicIds.has(t.topicId)) {
             list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName });
           }
         })
       )
     );
     return list;
-  }, [effectiveProgressReport]);
+  }, [effectiveProgressReport, selectedCourseTopicIds]);
 
-  // Pending AI notes/study: in-progress topics with no completed AI session
-  const pendingAiTopics = useMemo(() => {
-    const list: Array<{ topicId: string; topicName: string; subjectName: string; chapterName: string }> = [];
-    effectiveProgressReport?.subjects.forEach(s =>
-      s.chapters.forEach(c =>
-        c.topics.forEach(t => {
-          if (t.status === "in_progress" && (!t.aiSession || !t.aiSession.completed)) {
-            list.push({ topicId: t.topicId, topicName: t.topicName, subjectName: s.subjectName, chapterName: c.chapterName });
-          }
-        })
-      )
-    );
-    return list;
-  }, [effectiveProgressReport]);
-
-  // Pending DPPs & PDFs: resources on non-locked, non-completed topics
-  const pendingResources = useMemo(() => {
+  // Helper: build pending resource list for given types, scoped to selected course
+  const buildPendingResources = useCallback((types: string[]) => {
     const completedTopicIds = new Set<string>();
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c =>
@@ -1937,13 +2234,15 @@ export default function StudentStudyPlanPage() {
     );
     const seen = new Set<string>();
     const list: Array<CourseResource & { topicName: string; subjectName: string; chapterName: string; topicId: string }> = [];
-    curriculaResults.forEach(result => {
+    curriculaResults.forEach((result, idx) => {
+      const course = myCourses[idx];
+      if (!course || course.id !== selectedCourseId) return;
       result.data?.subjects.forEach(subj =>
         subj.chapters.forEach(ch =>
           ch.topics.forEach(topic => {
             if (topic.status === "locked" || completedTopicIds.has(topic.id)) return;
             topic.resources.forEach(r => {
-              if (!["pdf", "dpp", "notes"].includes(r.type)) return;
+              if (!types.includes(r.type)) return;
               if (seen.has(r.id)) return;
               seen.add(r.id);
               list.push({
@@ -1959,23 +2258,45 @@ export default function StudentStudyPlanPage() {
       );
     });
     return list;
-  }, [curriculaResults, effectiveProgressReport]);
+  }, [curriculaResults, effectiveProgressReport, myCourses, selectedCourseId]);
 
-  // Pending mock tests: published tests with no submitted/completed session
+  // Pending unread notes resources from selected course
+  const pendingNotes = useMemo(
+    () => buildPendingResources(["notes"]),
+    [buildPendingResources],
+  );
+
+  // Pending mindmaps from selected course
+  const pendingMindmaps = useMemo(
+    () => buildPendingResources(["mindmap"]),
+    [buildPendingResources],
+  );
+
+  // Pending DPPs & PDFs: resources on non-locked, non-completed topics — scoped to selected course only
+  const pendingResources = useMemo(() => buildPendingResources(["pdf", "dpp"]), [buildPendingResources]);
+
+
+
+  // Pending mock tests: published, not yet attempted, scoped to selected course
   const pendingMockTests = useMemo(() => {
     const doneIds = new Set(
       sessions
         .filter(s => ["submitted", "auto_submitted", "completed"].includes(s.status))
         .map(s => s.mockTestId)
     );
-    return mockTests.filter(t => t.isPublished && !doneIds.has(t.id));
-  }, [mockTests, sessions]);
+    return mockTests.filter(t =>
+      t.isPublished &&
+      !doneIds.has(t.id) &&
+      (!selectedCourseId || !t.batchId || t.batchId === selectedCourseId)
+    );
+  }, [mockTests, sessions, selectedCourseId]);
 
   const totalBacklogCount =
     backlogPlanItems.length +
     pendingLectures.length +
     pendingPYQTopics.length +
-    pendingAiTopics.length +
+    pendingNotes.length +
+    pendingMindmaps.length +
     pendingResources.length +
     pendingMockTests.length;
 
@@ -2004,7 +2325,9 @@ export default function StudentStudyPlanPage() {
 
   const handleWizardComplete = async (prefs: WizardState) => {
     setWizardDone(true);
-    generate.mutate({
+    // Always force-regenerate from the wizard so stale cached plans are never returned.
+    regenerate.mutate({
+      batchId: selectedCourseId ?? undefined,
       targetExam: prefs.examTarget,
       examYear: String(prefs.examYear),
       currentClass: prefs.currentClass,
@@ -2023,13 +2346,13 @@ export default function StudentStudyPlanPage() {
   };
 
   const handleRegenerate = () =>
-    regenerate.mutate(undefined, {
+    regenerate.mutate(selectedCourseId ?? undefined, {
       onSuccess: () => toast.success("Plan regenerated!"),
       onError:   () => toast.error("Could not regenerate. Please try again."),
     });
 
   const handleResetConfirmed = () =>
-    clearPlan.mutate(undefined, {
+    clearPlan.mutate(selectedCourseId ?? undefined, {
       onSuccess: () => {
         setConfirmReset(false);
         setShowWizard(true);
@@ -2040,11 +2363,18 @@ export default function StudentStudyPlanPage() {
 
   const handleOpenPlanItem = (item: StudyPlanItem) => {
     const videoUrl = item.content?.videoUrl?.trim();
-    const topicId  = item.content?.topicId;
-    if (item.type === "practice" && topicId) { navigate(`/student/quiz?topicId=${topicId}`); return; }
-    if (item.type === "revision" && topicId) { navigate(`/student/ai-study/${topicId}`); return; }
+    const topicId  = item.content?.topicId || item.refId;
+    if (item.type === "practice" && topicId) {
+      if (item.status === "completed") {
+        navigate(`/student/ai-study/${topicId}?planItemId=${item.id}`);
+      } else {
+        navigate(`/student/quiz?topicId=${topicId}&planItemId=${item.id}`);
+      }
+      return;
+    }
+    if (item.type === "revision" && topicId) { navigate(`/student/ai-study/${topicId}?planItemId=${item.id}`); return; }
     if ((item.type === "lecture" || item.type === "revision") && videoUrl) { window.open(videoUrl, "_blank", "noopener,noreferrer"); return; }
-    if (topicId) { navigate(`/student/ai-study/${topicId}`); return; }
+    if (topicId) { navigate(`/student/ai-study/${topicId}?planItemId=${item.id}`); return; }
     toast.error("No study resource is attached to this task yet.");
   };
 
@@ -2066,6 +2396,55 @@ export default function StudentStudyPlanPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 -mx-3 -mt-4 sm:-mx-4 lg:-mx-6 lg:-mt-6">
+
+      {/* Course Selection Landing Page */}
+      {!selectedCourseId ? (
+        <div className="px-4 py-16 max-w-5xl mx-auto min-h-[80vh] flex flex-col justify-center">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100 text-indigo-600 text-sm font-bold mb-4">
+              <Sparkles className="w-4 h-4" /> Welcome to Edva Learning Hub
+            </div>
+            <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">Select Your Course</h2>
+            <p className="text-gray-500 mt-4 text-lg max-w-2xl mx-auto">Choose a curriculum to access your personalized study plan, backlogs, and AI revision tools.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {myCourses.map(course => (
+              <div key={course.id} className="group bg-white rounded-[2.5rem] border border-gray-200 p-8 hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-100 transition-all relative overflow-hidden flex flex-col">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 group-hover:bg-indigo-100 transition-colors" />
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mb-8 shadow-xl shadow-indigo-100 group-hover:scale-110 transition-transform">
+                    <BookOpen className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">{course.name}</h3>
+                  <div className="flex flex-col gap-3 mb-10">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <Target className="w-4 h-4 text-indigo-400" /> 
+                      <span className="text-sm font-medium">{fmtExam(course.examTarget)} {course.examYear}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <Clock className="w-4 h-4 text-indigo-400" />
+                      <span className="text-sm font-medium">Batch 2025–26</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedCourseId(course.id)}
+                  className="mt-auto w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-base hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-indigo-200"
+                >
+                  Enter Dashboard <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+            {myCourses.length === 0 && (
+              <div className="col-span-full py-20 text-center bg-white rounded-[2.5rem] border border-dashed border-gray-300">
+                <BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                <p className="text-gray-400 font-medium">No courses found in your account.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
 
       {/* Reset confirmation */}
       {confirmReset && (
@@ -2092,8 +2471,9 @@ export default function StudentStudyPlanPage() {
       {showWizard && (
         <PreferenceWizard
           initial={{
-            examTarget: student?.examTarget,
-            examYear: student?.examYear,
+            examTarget: selectedCourse?.examTarget ?? student?.examTarget,
+            examYear:   selectedCourse?.examYear   ? Number(selectedCourse.examYear)
+                          : student?.examYear,
             currentClass: (student?.currentClass as WizardState["currentClass"]) ?? "11",
             dailyStudyHours: student?.dailyStudyHours ?? 4,
           }}
@@ -2113,7 +2493,7 @@ export default function StudentStudyPlanPage() {
               <h1 className="text-xl font-bold mt-0">{me?.fullName?.split(" ")[0]} 👋</h1>
               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                 <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full text-xs">
-                  <Target className="w-3 h-3" /> {fmtExam(student?.examTarget)} {student?.examYear}
+                  <Target className="w-3 h-3" /> {fmtExam(courseExamTarget)} {courseExamYear}
                 </span>
                 {days !== null && (
                   <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full text-xs">
@@ -2125,26 +2505,28 @@ export default function StudentStudyPlanPage() {
                 </span>
               </div>
             </div>
-            {hasPlan && (
-              <div className="flex items-center gap-2.5 bg-white/10 rounded-xl px-3 py-2 border border-white/10">
-                <div className="relative">
-                  <svg width={42} height={42} className="-rotate-90">
-                    <circle cx={21} cy={21} r={16} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={4} />
-                    <circle cx={21} cy={21} r={16} fill="none" stroke="white" strokeWidth={4}
-                      strokeDasharray={2 * Math.PI * 16}
-                      strokeDashoffset={2 * Math.PI * 16 * (1 - donePct / 100)}
-                      strokeLinecap="round" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[10px] font-bold">{donePct}%</span>
+            <div className="flex items-center gap-3">
+              {hasPlan && (
+                <div className="flex items-center gap-2.5 bg-white/10 rounded-xl px-3 py-2 border border-white/10">
+                  <div className="relative">
+                    <svg width={42} height={42} className="-rotate-90">
+                      <circle cx={21} cy={21} r={16} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={4} />
+                      <circle cx={21} cy={21} r={16} fill="none" stroke="white" strokeWidth={4}
+                        strokeDasharray={2 * Math.PI * 16}
+                        strokeDashoffset={2 * Math.PI * 16 * (1 - donePct / 100)}
+                        strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-bold">{donePct}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">{doneCount}/{todayItems.length} done</div>
+                    <div className="text-indigo-200 text-xs">{totalMinutes} min today</div>
                   </div>
                 </div>
-                <div>
-                  <div className="text-sm font-semibold">{doneCount}/{todayItems.length} done</div>
-                  <div className="text-indigo-200 text-xs">{totalMinutes} min today</div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -2170,7 +2552,16 @@ export default function StudentStudyPlanPage() {
 
         {/* ══ TODAY TAB ══════════════════════════════════════════════════════════ */}
         {activeTab === "today" && (
-          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
+          <div className="space-y-4">
+            <div className="px-4 pt-4">
+              <button
+                onClick={() => setSelectedCourseId(null)}
+                className="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Hub
+              </button>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
             <div className="lg:col-span-4 space-y-2">
 
               {/* Today | This Week toggle */}
@@ -2278,6 +2669,7 @@ export default function StudentStudyPlanPage() {
                                       onComplete={id => complete.mutate(id)}
                                       onSkip={id => skip.mutate(id)}
                                       onOpen={handleOpenPlanItem}
+                                      hideReviewIfDone={true}
                                     />
                                   ))}
                                 </div>
@@ -2316,6 +2708,7 @@ export default function StudentStudyPlanPage() {
                               onComplete={id => complete.mutate(id)}
                               onSkip={id => skip.mutate(id)}
                               onOpen={handleOpenPlanItem}
+                              hideReviewIfDone={true}
                             />
                           ))}
                         </div>
@@ -2372,63 +2765,78 @@ export default function StudentStudyPlanPage() {
                   weakTopics={weakTopics}
                   pendingPYQTopics={pendingPYQTopics}
                   onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage}
+                  selectedCourseId={selectedCourseId}
                 />
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {/* ══ BACKLOGS TAB ════════════════════════════════════════════════════════ */}
         {activeTab === "backlogs" && (
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4 space-y-2">
+            <div className="lg:col-span-4">
               {/* ── Back button ── */}
               {backlogPage && (
-                <button onClick={() => setBacklogPage(null)}
-                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
-                  <ChevronRight className="w-4 h-4 rotate-180" />
-                  Back to Backlogs
+                <button
+                  onClick={() => setBacklogPage(null)}
+                  className="mb-4 flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors bg-white px-3 py-2 rounded-xl border border-indigo-100 shadow-sm self-start"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Backlogs
                 </button>
               )}
 
               {/* ── Landing: category cards ── */}
               {!backlogPage && (
                 <>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">All Pending Work</h2>
+                  <div className="mb-5">
+                    <button
+                      onClick={() => setSelectedCourseId(null)}
+                      className="mb-3 flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" /> Back to Hub
+                    </button>
+                    <h2 className="text-xl font-bold text-gray-900">All Pending Work</h2>
                     <p className="text-sm text-gray-500 mt-0.5">Choose a category to review and clear your backlogs</p>
                   </div>
                   {totalBacklogCount === 0 ? (
                     <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
                       <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
                       <h3 className="text-lg font-bold text-gray-900">All caught up!</h3>
-                      <p className="text-gray-500 mt-2 text-sm">No pending lectures, notes, PYQs, or DPPs right now.</p>
+                      <p className="text-gray-500 mt-2 text-sm">No pending tasks, lectures, notes, mindmaps, PYQs, DPPs, or mock tests right now.</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {([
-                        { key: "plan",     icon: <ClipboardList className="w-5 h-5" />, label: "Missed Study Tasks",    count: backlogPlanItems.length,  desc: "Study plan items you didn't complete",  accent: "bg-red-50 border-red-200 text-red-600",    badge: "bg-red-100 text-red-700"    },
-                        { key: "lectures", icon: <PlayCircle    className="w-5 h-5" />, label: "Pending Lectures",      count: pendingLectures.length,   desc: "Video lectures not yet watched",         accent: "bg-blue-50 border-blue-200 text-blue-600",  badge: "bg-blue-100 text-blue-700"  },
-                        { key: "notes",    icon: <BookOpen      className="w-5 h-5" />, label: "Notes & AI Study",      count: pendingAiTopics.length,   desc: "Topics with no completed AI session",    accent: "bg-amber-50 border-amber-200 text-amber-600", badge: "bg-amber-100 text-amber-700" },
-                        { key: "pyq",      icon: <Activity      className="w-5 h-5" />, label: "PYQs Not Attempted",    count: pendingPYQTopics.length,  desc: "Previous year questions not practised",  accent: "bg-violet-50 border-violet-200 text-violet-600", badge: "bg-violet-100 text-violet-700" },
-                        { key: "dpp",      icon: <FileText      className="w-5 h-5" />, label: "DPPs & PDFs",           count: pendingResources.length,  desc: "Practice sheets and reading material",   accent: "bg-teal-50 border-teal-200 text-teal-600",  badge: "bg-teal-100 text-teal-700"  },
-                      ] as const).filter(c => c.count > 0).map(c => (
-                        <button key={c.key} onClick={() => setBacklogPage(c.key)}
-                          className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>
-                              {c.icon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-gray-900">{c.label}</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>
-                              </div>
-                              <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
+                        { key: "plan",      icon: <ClipboardList className="w-8 h-8" />, label: "Missed Tasks",    count: backlogPlanItems.length,  desc: "Study plan items you didn't complete",  bg: "bg-red-50",    text: "text-red-600",    border: "border-red-100",    hover: "hover:border-red-300",    bgHover: "group-hover:bg-red-100"    },
+                        { key: "lectures",  icon: <PlayCircle    className="w-8 h-8" />, label: "Video Lectures",  count: pendingLectures.length,   desc: "All unwatched lectures from this course", bg: "bg-blue-50",   text: "text-blue-600",   border: "border-blue-100",   hover: "hover:border-blue-300",   bgHover: "group-hover:bg-blue-100"   },
+                        { key: "notes",     icon: <BookOpen      className="w-8 h-8" />, label: "Notes",           count: pendingNotes.length,      desc: "Unread notes from this course",          bg: "bg-amber-50",  text: "text-amber-600",  border: "border-amber-100",  hover: "hover:border-amber-300",  bgHover: "group-hover:bg-amber-100"  },
+                        { key: "mindmaps",  icon: <BrainCircuit  className="w-8 h-8" />, label: "Mindmaps",        count: pendingMindmaps.length,   desc: "Visual mindmaps not yet reviewed",       bg: "bg-indigo-50", text: "text-indigo-600", border: "border-indigo-100", hover: "hover:border-indigo-300", bgHover: "group-hover:bg-indigo-100" },
+                        { key: "pyq",       icon: <Activity      className="w-8 h-8" />, label: "PYQs Pending",    count: pendingPYQTopics.length,  desc: "Previous year questions not practised",  bg: "bg-violet-50", text: "text-violet-600", border: "border-violet-100", hover: "hover:border-violet-300", bgHover: "group-hover:bg-violet-100" },
+                        { key: "dpp",       icon: <FileText      className="w-8 h-8" />, label: "DPPs & PDFs",     count: pendingResources.length,  desc: "Practice sheets and reading material",   bg: "bg-teal-50",   text: "text-teal-600",   border: "border-teal-100",   hover: "hover:border-teal-300",   bgHover: "group-hover:bg-teal-100"   },
+                        { key: "mocktests", icon: <ClipboardList className="w-8 h-8" />, label: "Mock Tests",      count: pendingMockTests.length,  desc: "Published tests not yet attempted",      bg: "bg-rose-50",   text: "text-rose-600",   border: "border-rose-100",   hover: "hover:border-rose-300",   bgHover: "group-hover:bg-rose-100"   },
+                      ] as const).map(c => (
+                        <div key={c.key}
+                          onClick={c.count > 0 ? () => setBacklogPage(c.key) : undefined}
+                          className={`group bg-white p-6 rounded-2xl border border-gray-200 transition-all relative overflow-hidden ${c.count > 0 ? `${c.hover} hover:shadow-md cursor-pointer` : "opacity-50 cursor-not-allowed"}`}>
+                          <div className={`absolute top-0 right-0 w-24 h-24 ${c.bg} rounded-bl-full -mr-8 -mt-8 ${c.count > 0 ? c.bgHover : ""} transition-colors`} />
+                          <div className={`${c.text} mb-4`}>{c.icon}</div>
+                          <h3 className="text-lg font-bold text-gray-900">{c.label}</h3>
+                          <p className="text-sm text-gray-500 mt-1">{c.desc}</p>
+                          <div className="mt-4 flex items-center gap-2">
+                            {c.count > 0 ? (
+                              <span className={`text-xs font-bold ${c.text} ${c.bg} px-2 py-1 rounded-lg border ${c.border}`}>
+                                {c.count} items pending
+                              </span>
+                            ) : (
+                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> All clear
+                              </span>
+                            )}
                           </div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -2450,7 +2858,8 @@ export default function StudentStudyPlanPage() {
                         </div>
                         {items.map((item: StudyPlanItem & { date: string }) => (
                           <PlanItemCard key={item.id} item={item} priority={derivePriority(item, weakTopicIds)}
-                            onComplete={id => complete.mutate(id)} onSkip={id => skip.mutate(id)} onOpen={handleOpenPlanItem} />
+                            onComplete={id => complete.mutate(id)} onSkip={id => skip.mutate(id)} onOpen={handleOpenPlanItem}
+                            hideReviewIfDone={true} />
                         ))}
                       </div>
                     ));
@@ -2488,24 +2897,53 @@ export default function StudentStudyPlanPage() {
                 </BacklogSection>
               )}
 
-              {/* ── Detail: Notes & AI Study ── */}
+              {/* ── Detail: Notes ── */}
               {backlogPage === "notes" && (
-                <BacklogSection icon={<BookOpen className="w-4 h-4" />} title="Pending Notes & AI Study" count={pendingAiTopics.length} accentColor="amber">
+                <BacklogSection icon={<BookOpen className="w-4 h-4" />} title="Unread Notes" count={pendingNotes.length} accentColor="amber">
                   <div className="space-y-2">
-                    {pendingAiTopics.map(t => {
-                      const cfg = subjectCfg(t.subjectName);
+                    {pendingNotes.map(r => {
+                      const cfg = subjectCfg(r.subjectName);
+                      const url = r.fileUrl ?? r.externalUrl;
                       return (
-                        <div key={t.topicId} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-amber-200 hover:shadow-sm transition-all">
+                        <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-amber-200 hover:shadow-sm transition-all">
                           <div className="shrink-0 w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600"><BookOpen className="w-4 h-4" /></div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-gray-900 truncate">{t.topicName}</div>
+                            <div className="font-medium text-sm text-gray-900 truncate">{r.title}</div>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{t.subjectName}</span>
-                              <span className="text-xs text-gray-400 truncate">{t.chapterName}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{r.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{r.topicName}</span>
                             </div>
                           </div>
-                          <button onClick={() => navigate(`/student/ai-study/${t.topicId}`)}
-                            className="shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-semibold hover:bg-amber-700 transition-colors">Study</button>
+                          {url
+                            ? <a href={url} target="_blank" rel="noopener noreferrer" className="shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-semibold hover:bg-amber-700 transition-colors">Read</a>
+                            : <span className="shrink-0 text-xs text-gray-400">No link</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </BacklogSection>
+              )}
+
+              {/* ── Detail: Mindmaps ── */}
+              {backlogPage === "mindmaps" && (
+                <BacklogSection icon={<BrainCircuit className="w-4 h-4" />} title="Mindmaps" count={pendingMindmaps.length} accentColor="indigo">
+                  <div className="space-y-2">
+                    {pendingMindmaps.map(r => {
+                      const cfg = subjectCfg(r.subjectName);
+                      const url = r.fileUrl ?? r.externalUrl;
+                      return (
+                        <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-indigo-200 hover:shadow-sm transition-all">
+                          <div className="shrink-0 w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600"><BrainCircuit className="w-4 h-4" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">{r.title}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{r.subjectName}</span>
+                              <span className="text-xs text-gray-400 truncate">{r.topicName}</span>
+                            </div>
+                          </div>
+                          {url
+                            ? <a href={url} target="_blank" rel="noopener noreferrer" className="shrink-0 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition-colors">View</a>
+                            : <span className="shrink-0 text-xs text-gray-400">No link</span>}
                         </div>
                       );
                     })}
@@ -2545,8 +2983,8 @@ export default function StudentStudyPlanPage() {
                     {pendingResources.map(r => {
                       const cfg = subjectCfg(r.subjectName);
                       const url = r.fileUrl ?? r.externalUrl;
-                      const typeLabel = r.type === "dpp" ? "DPP" : r.type === "pdf" ? "PDF" : "Notes";
-                      const typeBg = r.type === "dpp" ? "bg-teal-50 border-teal-200 text-teal-600" : r.type === "pdf" ? "bg-sky-50 border-sky-200 text-sky-600" : "bg-amber-50 border-amber-200 text-amber-600";
+                      const typeLabel = r.type === "dpp" ? "DPP" : r.type === "pdf" ? "PDF" : r.type === "mindmap" ? "Mindmap" : "Notes";
+                      const typeBg = r.type === "dpp" ? "bg-teal-50 border-teal-200 text-teal-600" : r.type === "pdf" ? "bg-sky-50 border-sky-200 text-sky-600" : r.type === "mindmap" ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-amber-50 border-amber-200 text-amber-600";
                       return (
                         <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-teal-200 hover:shadow-sm transition-all">
                           <div className={`shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center ${typeBg}`}><FileText className="w-4 h-4" /></div>
@@ -2568,6 +3006,30 @@ export default function StudentStudyPlanPage() {
                   </div>
                 </BacklogSection>
               )}
+
+              {/* ── Detail: Mock Tests ── */}
+              {backlogPage === "mocktests" && (
+                <BacklogSection icon={<ClipboardList className="w-4 h-4" />} title="Mock Tests" count={pendingMockTests.length} accentColor="rose">
+                  <div className="space-y-2">
+                    {pendingMockTests.map(t => (
+                      <div key={t.id} className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-rose-200 hover:shadow-sm transition-all">
+                        <div className="shrink-0 w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600"><ClipboardList className="w-4 h-4" /></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-gray-900 truncate">{t.title}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {t.durationMinutes > 0 && <span className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{t.durationMinutes} min</span>}
+                            {t.totalMarks > 0 && <span className="text-xs text-gray-400">{t.totalMarks} marks</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => navigate(`/student/mock-tests/${t.id}`)}
+                          className="shrink-0 px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition-colors">
+                          Start
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </BacklogSection>
+              )}
             </div>
 
             <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
@@ -2583,7 +3045,8 @@ export default function StudentStudyPlanPage() {
               <div className="flex-1 min-w-0 space-y-3">
                 <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
                 <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
               </div>
             </div>
           </div>
@@ -2592,42 +3055,48 @@ export default function StudentStudyPlanPage() {
         {/* ══ WEAK TOPICS TAB ═════════════════════════════════════════════════════ */}
         {activeTab === "weakness" && (
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4 space-y-2">
+            <div className="lg:col-span-4">
               {weakPage && (
-                <button onClick={() => setWeakPage(null)}
-                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
-                  <ChevronRight className="w-4 h-4 rotate-180" /> Back to Weak Areas
+                <button
+                  onClick={() => setWeakPage(null)}
+                  className="mb-4 flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors bg-white px-3 py-2 rounded-xl border border-indigo-100 shadow-sm self-start"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Weak Areas
                 </button>
               )}
 
               {/* ── Landing ── */}
               {!weakPage && (
                 <>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">Weak Areas Analysis</h2>
+                  <div className="mb-5">
+                    <button
+                      onClick={() => setSelectedCourseId(null)}
+                      className="mb-3 flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" /> Back to Hub
+                    </button>
+                    <h2 className="text-xl font-bold text-gray-900">Weak Areas Analysis</h2>
                     <p className="text-sm text-gray-500 mt-0.5">Select a category to analyse and improve your weak areas</p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {([
-                      { key: "chapters",  icon: <BookOpen     className="w-5 h-5" />, label: "Weak Chapters",         count: weakChapters.length,       desc: "Chapters with overall accuracy < 50%",   accent: "bg-amber-50 border-amber-200 text-amber-600",   badge: "bg-amber-100 text-amber-700"  },
-                      { key: "topics",    icon: <TrendingDown className="w-5 h-5" />, label: "Low Accuracy Topics",    count: weakTopics.length,         desc: "Topics where you score below 50%",       accent: "bg-red-50 border-red-200 text-red-600",         badge: "bg-red-100 text-red-700"     },
-                      { key: "forgotten", icon: <Brain        className="w-5 h-5" />, label: "Forgotten Concepts",     count: forgottenConcepts.length,  desc: "Completed 14+ days ago without revision", accent: "bg-violet-50 border-violet-200 text-violet-600", badge: "bg-violet-100 text-violet-700"},
-                      { key: "negative",  icon: <Target       className="w-5 h-5" />, label: "High Negative-Marking",  count: highNegativeTopics.length, desc: "PYQ topics with > 50% wrong answers",    accent: "bg-rose-50 border-rose-200 text-rose-600",      badge: "bg-rose-100 text-rose-700"   },
+                      { key: "chapters",  icon: <BookOpen     className="w-8 h-8" />, label: "Weak Chapters",      count: weakChapters.length,       desc: "Chapters with overall accuracy < 50%",   bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100", hover: "hover:border-amber-300", bgHover: "group-hover:bg-amber-100" },
+                      { key: "topics",    icon: <TrendingDown className="w-8 h-8" />, label: "Low Accuracy",       count: weakTopics.length,         desc: "Topics where you score below 50%",       bg: "bg-red-50",   text: "text-red-600",   border: "border-red-100",   hover: "hover:border-red-300",   bgHover: "group-hover:bg-red-100"   },
+                      { key: "forgotten", icon: <Brain        className="w-8 h-8" />, label: "Forgotten",          count: forgottenConcepts.length,  desc: "Completed 14+ days ago without revision", bg: "bg-violet-50",text: "text-violet-600",border: "border-violet-100",hover: "hover:border-violet-300",bgHover: "group-hover:bg-violet-100" },
+                      { key: "negative",  icon: <Target       className="w-8 h-8" />, label: "High Negative",      count: highNegativeTopics.length, desc: "PYQ topics with > 50% wrong answers",    bg: "bg-rose-50",  text: "text-rose-600",  border: "border-rose-100",  hover: "hover:border-rose-300",  bgHover: "group-hover:bg-rose-100"   },
                     ] as const).map(c => (
-                      <button key={c.key} onClick={() => setWeakPage(c.key)}
-                        className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
-                        <div className="flex items-start gap-3">
-                          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>{c.icon}</div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-gray-900">{c.label}</span>
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>
-                            </div>
-                            <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
+                      <div key={c.key} onClick={() => setWeakPage(c.key)}
+                        className={`group bg-white p-6 rounded-2xl border border-gray-200 ${c.hover} hover:shadow-md transition-all cursor-pointer relative overflow-hidden`}>
+                        <div className={`absolute top-0 right-0 w-24 h-24 ${c.bg} rounded-bl-full -mr-8 -mt-8 ${c.bgHover} transition-colors`} />
+                        <div className={`${c.text} mb-4`}>{c.icon}</div>
+                        <h3 className="text-lg font-bold text-gray-900">{c.label}</h3>
+                        <p className="text-sm text-gray-500 mt-1">{c.desc}</p>
+                        <div className="mt-4 flex items-center gap-2">
+                          <span className={`text-xs font-bold ${c.text} ${c.bg} px-2 py-1 rounded-lg border ${c.border}`}>
+                            {c.count} {c.key === "chapters" ? "chapters" : "topics"}
+                          </span>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </>
@@ -2792,7 +3261,8 @@ export default function StudentStudyPlanPage() {
               <div className="flex-1 min-w-0 space-y-3">
                 <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
                 <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab} />
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
               </div>
             </div>
           </div>
@@ -2801,178 +3271,95 @@ export default function StudentStudyPlanPage() {
         {/* ══ REVISION TAB ════════════════════════════════════════════════════════ */}
         {activeTab === "revision" && (
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4 space-y-2">
+            <div className="lg:col-span-4">
+              {!revisionCategory && (
+                <div className="mb-5">
+                  <button
+                    onClick={() => setSelectedCourseId(null)}
+                    className="mb-3 flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back to Hub
+                  </button>
+                  <h2 className="text-xl font-bold text-gray-900">Revision Hub</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Master topics with smart cycles and intensive review</p>
+                </div>
+              )}
 
-              {revisionPage && (
-                <button onClick={() => setRevisionPage(null)}
-                  className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
-                  <ChevronRight className="w-4 h-4 rotate-180" /> Back to Revision
+              {revisionCategory && (
+                <button
+                  onClick={() => setRevisionCategory(null)}
+                  className="mb-4 flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors bg-white px-3 py-2 rounded-xl border border-indigo-100 shadow-sm self-start"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Revision
                 </button>
               )}
 
-              {/* ── Landing ── */}
-              {!revisionPage && (
-                <>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">Spaced Revision Plan</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Choose how you want to review your topics</p>
+              {!revisionCategory ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div onClick={() => setRevisionCategory("spaced")}
+                    className="group bg-white p-6 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-indigo-100 transition-colors" />
+                    <RefreshCw className="w-8 h-8 text-indigo-600 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">Spaced Repetition</h3>
+                    <p className="text-sm text-gray-500 mt-1">Smart 1, 3, 7, 21 day revision cycles based on your performance.</p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
+                        {revisionTopics.length} topics due
+                      </span>
+                    </div>
                   </div>
-                  {revisionTopics.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-                      <BookOpen className="w-12 h-12 text-teal-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-bold text-gray-900">Revision queue is empty</h3>
-                      <p className="text-gray-500 mt-2 text-sm">Complete study plan tasks to populate your revision queue.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {([
-                        { key: "schedule", icon: <RefreshCw className="w-5 h-5" />, label: "Spaced Schedule",   desc: "Topics grouped by 1d / 3d / 7d / 21d revision intervals", count: revisionTopics.length, accent: "bg-teal-50 border-teal-200 text-teal-600",     badge: "bg-teal-100 text-teal-700"    },
-                        { key: "table",    icon: <ListTodo   className="w-5 h-5" />, label: "Topic Table",       desc: "Full list with learned-on and next-revision dates",       count: revisionTopics.length, accent: "bg-indigo-50 border-indigo-200 text-indigo-600", badge: "bg-indigo-100 text-indigo-700" },
-                        { key: "aiplan",   icon: <Sparkles  className="w-5 h-5" />, label: "AI 7-Day Plan",     desc: "Auto-scheduled revision across the next 7 days",          count: revisionTopics.filter(t => !t.isOverdue).length + revisionTopics.filter(t => t.isOverdue).length, accent: "bg-violet-50 border-violet-200 text-violet-600", badge: "bg-violet-100 text-violet-700" },
-                      ] as const).map(c => (
-                        <button key={c.key} onClick={() => setRevisionPage(c.key)}
-                          className="text-left bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-gray-300 hover:shadow-md transition-all group">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${c.accent}`}>{c.icon}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-gray-900">{c.label}</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}`}>{c.count}</span>
-                              </div>
-                              <p className="text-xs text-gray-400 mt-0.5">{c.desc}</p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 mt-1" />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
 
-              {/* ── Detail: Schedule ── */}
-              {revisionPage === "schedule" && (() => {
-                    const BUCKETS: Array<{
-                      interval: 1 | 3 | 7 | 21;
-                      label: string;
-                      sublabel: string;
-                      accentBg: string; accentBorder: string; accentBadge: string; accentText: string;
-                    }> = [
-                      { interval: 1,  label: "1-Day Revision",  sublabel: "accuracy < 40% — revise every day",        accentBg: "bg-red-50",    accentBorder: "border-red-300",    accentBadge: "bg-red-100 text-red-700",    accentText: "text-red-700" },
-                      { interval: 3,  label: "3-Day Revision",  sublabel: "accuracy 40–54% — revise every 3 days",    accentBg: "bg-orange-50", accentBorder: "border-orange-300", accentBadge: "bg-orange-100 text-orange-700", accentText: "text-orange-700" },
-                      { interval: 7,  label: "7-Day Revision",  sublabel: "accuracy 55–64% — revise every 7 days",    accentBg: "bg-amber-50",  accentBorder: "border-amber-300",  accentBadge: "bg-amber-100 text-amber-700",  accentText: "text-amber-700" },
-                      { interval: 21, label: "21-Day Revision", sublabel: "accuracy 65–74% — revise every 3 weeks",   accentBg: "bg-teal-50",   accentBorder: "border-teal-300",   accentBadge: "bg-teal-100 text-teal-700",   accentText: "text-teal-700" },
-                    ];
-                    return (
-                      <div className="space-y-3">
-                        {BUCKETS.map(bkt => {
-                          const items = revisionTopics.filter(t => t.intervalDays === bkt.interval);
-                          if (items.length === 0) return null;
-                          const open = openRevBuckets.has(bkt.interval);
-                          const overdue = items.filter(t => t.isOverdue).length;
-                          return (
-                            <div key={bkt.interval} className={`rounded-2xl border-2 ${bkt.accentBorder} overflow-hidden`}>
-                              <button onClick={() => toggleRevBucket(bkt.interval)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 text-left ${bkt.accentBg}`}>
-                                <RefreshCw className={`w-4 h-4 ${bkt.accentText}`} />
-                                <div className="flex-1">
-                                  <span className={`font-bold text-sm ${bkt.accentText}`}>{bkt.label}</span>
-                                  <span className="text-xs text-gray-400 ml-2">{bkt.sublabel}</span>
-                                </div>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${bkt.accentBadge}`}>{items.length}</span>
-                                {overdue > 0 && (
-                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-                                    {overdue} overdue
-                                  </span>
-                                )}
-                                {open ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
-                              </button>
-                              {open && (
-                                <div className="bg-white p-3 space-y-2">
-                                  {items.map(topic => (
-                                    <RevisionTopicCard
-                                      key={topic.topicId}
-                                      topic={topic}
-                                      isNoteOpen={openNoteIds.has(topic.topicId)}
-                                      noteText={revisionNotes[topic.topicId] ?? ""}
-                                      onToggleNote={() => toggleNote(topic.topicId)}
-                                      onNoteChange={v => setRevisionNotes(p => ({ ...p, [topic.topicId]: v }))}
-                                      onRevise={() => navigate(`/student/ai-study/${topic.topicId}`)}
-                                      onFullNotes={() => navigate(`/student/ai-study/${topic.topicId}`)}
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-
-              {/* ── Detail: Table ── */}
-              {revisionPage === "table" && (
-                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100">
-                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Topic</th>
-                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Learned On</th>
-                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Next Revision</th>
-                              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Interval</th>
-                              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Accuracy</th>
-                              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50">
-                            {revisionTopics.map(topic => {
-                              const cfg = subjectCfg(topic.subjectName);
-                              const accColor = topic.accuracy < 40 ? "text-red-600" : topic.accuracy < 55 ? "text-orange-500" : topic.accuracy < 65 ? "text-amber-600" : "text-teal-600";
-                              return (
-                                <tr key={topic.topicId} className={`hover:bg-gray-50 transition-colors ${topic.isOverdue ? "bg-red-50/40" : ""}`}>
-                                  <td className="px-4 py-3">
-                                    <div className="font-medium text-gray-900 truncate max-w-[180px]">{topic.topicName}</div>
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${cfg.bg} ${cfg.color} ${cfg.border}`}>{topic.subjectName}</span>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{topic.learnedOn}</td>
-                                  <td className="px-4 py-3 whitespace-nowrap">
-                                    <span className={`text-sm font-semibold ${topic.isOverdue ? "text-red-600" : "text-teal-600"}`}>
-                                      {topic.nextRevisionLabel}
-                                    </span>
-                                    {topic.isOverdue && <span className="ml-1.5 text-[9px] font-bold text-red-600 bg-red-100 px-1 py-0.5 rounded">OVERDUE</span>}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{topic.intervalDays}d</span>
-                                  </td>
-                                  <td className="px-4 py-3 text-right">
-                                    <span className={`text-sm font-bold ${accColor}`}>{topic.accuracy}%</span>
-                                  </td>
-                                  <td className="px-4 py-3 text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                      <button onClick={() => navigate(`/student/ai-study/${topic.topicId}`)}
-                                        className="px-2.5 py-1 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 flex items-center gap-1">
-                                        <RefreshCw className="w-2.5 h-2.5" /> Revise
-                                      </button>
-                                      <button onClick={() => { setRevisionPage("schedule"); toggleNote(topic.topicId); }}
-                                        className="px-2.5 py-1 bg-violet-100 text-violet-700 rounded-lg text-xs font-semibold hover:bg-violet-200 flex items-center gap-1">
-                                        <FileText className="w-2.5 h-2.5" /> Notes
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+                  <div onClick={() => setRevisionCategory("intensive")}
+                    className={`group bg-white p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden
+                      ${isSyllabusComplete ? "border-gray-200 hover:border-orange-300 hover:shadow-md" : "border-gray-200 opacity-60"}`}>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-orange-100 transition-colors" />
+                    <Flame className={`w-8 h-8 mb-4 ${isSyllabusComplete ? "text-orange-600" : "text-gray-400"}`} />
+                    <h3 className="text-lg font-bold text-gray-900">Intensive Revision</h3>
+                    <p className="text-sm text-gray-500 mt-1">Focus on high-volume review of recently learned concepts.</p>
+                    <div className="mt-4 flex items-center gap-2">
+                      {isSyllabusComplete ? (
+                        <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
+                          {intensiveRevisionItems.length} items
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 flex items-center gap-1">
+                          🔒 Unlocks at 100% completion
+                        </span>
+                      )}
                     </div>
-                  )}
+                  </div>
 
-              {/* ── Detail: AI Plan ── */}
-              {revisionPage === "aiplan" && (
+                  <div onClick={() => setRevisionCategory("notes")}
+                    className="group bg-white p-6 rounded-2xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-purple-100 transition-colors" />
+                    <BrainCircuit className="w-8 h-8 text-purple-600 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">AI Revision Notes</h3>
+                    <p className="text-sm text-gray-500 mt-1">Review your personalized AI study summaries and highlights.</p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg border border-purple-100">
+                        {completedAiNotes.length} sessions
+                      </span>
+                    </div>
+                  </div>
+
+                  <div onClick={() => setRevisionCategory("practice")}
+                    className="group bg-white p-6 rounded-2xl border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-teal-100 transition-colors" />
+                    <CheckCheck className="w-8 h-8 text-teal-600 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">Practice History</h3>
+                    <p className="text-sm text-gray-500 mt-1">Re-attempt and review past quizzes and practice questions.</p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-lg border border-teal-100">
+                        {completedPracticeSessions.length} completed
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+
+                  {/* ── Spaced Repetition ── */}
+                  {revisionCategory === "spaced" && (
                     <div className="space-y-3">
                       <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl p-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -2992,12 +3379,9 @@ export default function StudentStudyPlanPage() {
                         );
                         return (
                           <div key={di} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className={`px-4 py-2.5 flex items-center gap-3 border-b border-gray-100
-                              ${di === 0 ? "bg-indigo-50" : "bg-gray-50"}`}>
+                            <div className={`px-4 py-2.5 flex items-center gap-3 border-b border-gray-100 ${di === 0 ? "bg-indigo-50" : "bg-gray-50"}`}>
                               <Calendar className={`w-4 h-4 ${di === 0 ? "text-indigo-600" : "text-gray-400"}`} />
-                              <span className={`text-sm font-bold ${di === 0 ? "text-indigo-700" : "text-gray-700"}`}>
-                                {day.label}
-                              </span>
+                              <span className={`text-sm font-bold ${di === 0 ? "text-indigo-700" : "text-gray-700"}`}>{day.label}</span>
                               <span className="ml-auto text-xs text-gray-400">{day.topics.length} topics</span>
                             </div>
                             <div className="divide-y divide-gray-50">
@@ -3018,7 +3402,13 @@ export default function StudentStudyPlanPage() {
                                       </div>
                                     </div>
                                     <span className={`text-sm font-bold shrink-0 ${accColor}`}>{topic.accuracy}%</span>
-                                    <button onClick={() => navigate(`/student/ai-study/${topic.topicId}`)}
+                                    <button onClick={() => setRevisionModal({
+                                        topicId: topic.topicId,
+                                        topicName: topic.topicName,
+                                        subjectName: topic.subjectName,
+                                        accuracy: topic.accuracy,
+                                        intervalDays: topic.intervalDays,
+                                      })}
                                       className="shrink-0 px-2.5 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 flex items-center gap-1">
                                       <RefreshCw className="w-2.5 h-2.5" /> Revise
                                     </button>
@@ -3030,6 +3420,95 @@ export default function StudentStudyPlanPage() {
                         );
                       })}
                     </div>
+                  )}
+
+                  {/* ── Intensive Revision ── */}
+                  {revisionCategory === "intensive" && (
+                    <div className="space-y-3">
+                      {!isSyllabusComplete ? (
+                        <div className="bg-white rounded-[2.5rem] border border-gray-200 p-12 text-center relative overflow-hidden group">
+                          <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="relative">
+                            <div className="w-20 h-20 bg-orange-100 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-100">
+                              <Flame className="w-10 h-10 text-orange-600 animate-pulse" />
+                            </div>
+                            <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">Intensive Revision Locked</h3>
+                            <p className="text-gray-500 mb-8 text-base max-w-sm mx-auto leading-relaxed">
+                              This feature unlocks automatically once you reach <span className="font-bold text-orange-600">100% syllabus completion</span>. Finish your roadmap to start elite revision.
+                            </p>
+                            <div className="max-w-xs mx-auto mb-8 bg-gray-100 h-3 rounded-full overflow-hidden p-0.5 border border-gray-200">
+                              <div
+                                className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-1000"
+                                style={{ width: `${Math.round((effectiveProgressReport?.summary?.completedTopics ?? 0) / Math.max(effectiveProgressReport?.summary?.totalTopics ?? 1, 1) * 100)}%` }}
+                              />
+                            </div>
+                            <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-2xl border border-orange-100 text-sm font-bold">
+                              <Target className="w-4 h-4" /> {effectiveProgressReport?.summary?.completedTopics ?? 0}/{effectiveProgressReport?.summary?.totalTopics ?? 0} topics completed
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <IntensiveRevisionSection
+                          progressReport={effectiveProgressReport}
+                          days={days}
+                          examTarget={courseExamTarget}
+                          chapterWeightMap={chapterWeightMap.size > 0 ? chapterWeightMap : undefined}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── AI Revision Notes ── */}
+                  {revisionCategory === "notes" && (
+                    <div className="space-y-3">
+                      <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                        <h3 className="text-base font-bold text-gray-900">Personalized Study Notes</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Access your past AI study sessions and key concept summaries.</p>
+                      </div>
+                      {completedAiNotes.length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center">
+                          <BrainCircuit className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                          <p className="text-gray-500 font-medium">No AI study notes generated yet</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {completedAiNotes.map((session: studentApi.AiStudySessionData) => (
+                            <NoteHistoryReviewCard
+                              key={session.id}
+                              session={session}
+                              onNavigate={(topicId) => navigate(`/student/ai-study/${topicId}`)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Practice History ── */}
+                  {revisionCategory === "practice" && (
+                    <div className="space-y-3">
+                      <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                        <h3 className="text-base font-bold text-gray-900">Practice History</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Review and re-attempt past practice questions from your plan.</p>
+                      </div>
+                      {completedPracticeSessions.length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center">
+                          <CheckCheck className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                          <p className="text-gray-500 font-medium">No completed practice items found</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {completedPracticeSessions.map(session => (
+                            <PracticeHistoryReviewCard
+                              key={session.id}
+                              session={session}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
@@ -3083,6 +3562,8 @@ export default function StudentStudyPlanPage() {
                   weakTopics={weakTopics}
                   pendingPYQTopics={pendingPYQTopics}
                   onTabChange={setActiveTab}
+                  onBacklogPageChange={setBacklogPage}
+                  selectedCourseId={selectedCourseId}
                 />
               </div>
             </div>
@@ -3140,8 +3621,16 @@ export default function StudentStudyPlanPage() {
             </div>
           </div>
         )}
-
       </div>
-    </div>
+    </>
+  )}
+
+      {revisionModal && (
+        <RevisionSessionModal
+          topic={revisionModal}
+          onClose={() => setRevisionModal(null)}
+        />
+      )}
+</div>
   );
 }

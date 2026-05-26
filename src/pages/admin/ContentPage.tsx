@@ -18,6 +18,7 @@ import {
   Lightbulb, BookText, Wand2, ChevronUp, Zap, Lock,
   FileSpreadsheet, ArrowRight, CheckCircle2, ClipboardList, Clock,
   Pencil, AlertTriangle, Filter, Home, ListTree, BarChart3,
+  HelpCircle,
 } from "lucide-react";
 import {
   useBatches,
@@ -81,10 +82,12 @@ const RES_TYPES: {
   icon: React.ComponentType<{ className?: string }>;
   color: string; bg: string; border: string; isUrl?: boolean; accept?: string;
 }[] = [
-    { value: "pdf", label: "Lecture Notes", shortLabel: "Lecture Notes", icon: FileText, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", accept: ".pdf" },
-    { value: "dpp", label: "DPP", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx" },
-    { value: "pyq", label: "PYQ", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx" },
-    { value: "notes", label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt" },
+    { value: "pdf",     label: "Lecture Notes",    shortLabel: "Lecture Notes",    icon: FileText,    color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200",     accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "dpp",     label: "DPP",              shortLabel: "DPP",              icon: PenLine,     color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200",  accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "pyq",     label: "PYQ",              shortLabel: "PYQ",              icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50",  border: "border-violet-200",  accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "faq",     label: "FAQ",              shortLabel: "FAQ",              icon: HelpCircle,  color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200",   accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "notes",   label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "mindmap", label: "Mindmap",           shortLabel: "Mindmap",          icon: Brain,      color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200",    accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
     { value: "video", label: "YouTube", shortLabel: "YouTube", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
     { value: "link", label: "Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
   ];
@@ -561,7 +564,7 @@ function ResourceWorkspace({
     isYoutubeLikeUrl(r.externalUrl ?? undefined) || isYoutubeLikeUrl(r.fileUrl ?? undefined);
 
   const grouped = useMemo(() => {
-    const g: Record<TopicResourceType, TopicResource[]> = { pdf: [], dpp: [], pyq: [], notes: [], video: [], link: [], quiz: [] };
+    const g: Record<TopicResourceType, TopicResource[]> = { pdf: [], dpp: [], pyq: [], faq: [], notes: [], video: [], link: [], quiz: [], mindmap: [] };
     for (const r of resources) {
       const t = String(r.type ?? "").toLowerCase() as TopicResourceType;
       if ((t === "link" || t === "video") && isYtResource(r)) { g.video.push(r); }
@@ -1361,7 +1364,7 @@ function getTopicStatus(tc: TopicCoverage): "empty" | "in_progress" | "completed
 
 function topicStatusLabel(s: "empty" | "in_progress" | "completed") {
   if (s === "empty") return { label: "Empty", className: "bg-slate-100 text-slate-600 border-slate-200" };
-  if (s === "completed") return { label: "Completed", className: "bg-emerald-50 text-emerald-800 border-emerald-200" };
+  if (s === "completed") return { label: "100%", className: "bg-emerald-50 text-emerald-800 border-emerald-200" };
   return { label: "In progress", className: "bg-amber-50 text-amber-900 border-amber-200" };
 }
 
@@ -2870,6 +2873,17 @@ const AI_CONTENT_TYPES = [
     saveAs: "dpp",
   },
   {
+    id: "mindmap",
+    label: "Mindmap",
+    desc: "Visual hierarchical breakdown of topic concepts and sub-topics",
+    icon: Brain,
+    color: "text-teal-600",
+    bg: "bg-teal-50",
+    border: "border-teal-200",
+    accent: "#0D9488",
+    saveAs: "mindmap",
+  },
+  {
     id: "pyq",
     label: "PYQ Practice",
     desc: "Previous Year Question style paper (JEE/NEET patterns) with solutions",
@@ -2929,6 +2943,18 @@ const AI_CONTENT_TYPES = [
     badge: null,
     saveAs: "notes",
   },
+  {
+    id: "faq",
+    label: "FAQ",
+    desc: "Frequently asked questions with clear answers for quick doubt clearing",
+    icon: HelpCircle,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    accent: "#D97706",
+    badge: null,
+    saveAs: "faq",
+  },
 ];
 
 function ReactMarkdownContent({ content }: { content: string }) {
@@ -2980,10 +3006,10 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarg
   const saveAiRes = useSaveAiGeneratedResource(topicId);
 
   const isDppOrPyq = selectedType === "dpp" || selectedType === "pyq";
+  const isFaqType = selectedType === "faq";
 
   const selectedTypeCfg = AI_CONTENT_TYPES.find(t => t.id === selectedType)!;
 
-  // Re-clear preview when topic changes
   React.useEffect(() => {
     setGeneratedContent(null);
     setSavedOk(false);
@@ -3115,23 +3141,25 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarg
             2 · Settings
           </p>
 
-          {isDppOrPyq ? (
+          {isDppOrPyq || isFaqType ? (
             <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              {/* Exam Target — auto-set from course, read-only */}
-              <div className="flex items-center gap-2">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Exam Target</p>
-                <span className="text-[11px] font-black uppercase tracking-wide bg-violet-100 text-violet-700 px-2.5 py-1 rounded-xl border border-violet-200">
-                  {examTarget}
-                </span>
-                <span className="text-[9px] font-black uppercase tracking-wide bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
-                  From course
-                </span>
-              </div>
+              {/* Exam Target — only for dpp/pyq */}
+              {!isFaqType && (
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Exam Target</p>
+                  <span className="text-[11px] font-black uppercase tracking-wide bg-violet-100 text-violet-700 px-2.5 py-1 rounded-xl border border-violet-200">
+                    {examTarget}
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-wide bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                    From course
+                  </span>
+                </div>
+              )}
 
-              {/* Question Count */}
+              {/* Count picker */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                  Number of Questions
+                  {isFaqType ? "Number of FAQs" : "Number of Questions"}
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1.5 flex-wrap">
@@ -3142,9 +3170,11 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarg
                         className={cn(
                           "w-10 h-9 rounded-xl text-xs font-black border-2 transition-all",
                           questionCount === n
-                            ? selectedType === "dpp"
-                              ? "bg-orange-600 border-orange-600 text-white shadow-sm"
-                              : "bg-violet-600 border-violet-600 text-white shadow-sm"
+                            ? isFaqType
+                              ? "bg-amber-600 border-amber-600 text-white shadow-sm"
+                              : selectedType === "dpp"
+                                ? "bg-orange-600 border-orange-600 text-white shadow-sm"
+                                : "bg-violet-600 border-violet-600 text-white shadow-sm"
                             : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                         )}
                       >
@@ -3167,9 +3197,11 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName, examTarg
               </div>
 
               <p className="text-[10px] text-slate-400">
-                {selectedType === "dpp"
-                  ? `${questionCount} questions: MCQ + Assertion-Reason + Numericals + Answer Key`
-                  : `${questionCount} questions: JEE Main + NEET + Integer Type + Full Solutions`}
+                {isFaqType
+                  ? `${questionCount} FAQ pairs will be added to this topic`
+                  : selectedType === "dpp"
+                    ? `${questionCount} questions: MCQ + Assertion-Reason + Numericals + Answer Key`
+                    : `${questionCount} questions: JEE Main + NEET + Integer Type + Full Solutions`}
               </p>
             </div>
           ) : (
@@ -4146,6 +4178,7 @@ function ContentTopicWorkspaceRoute() {
                   chapterName={chapter.name}
                   examTarget={batch.examTarget}
                   courseName={batch.name}
+                  faqs={topic.faqs ?? []}
                 />
               </div>
             </motion.div>

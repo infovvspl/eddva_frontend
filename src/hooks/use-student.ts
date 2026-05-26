@@ -32,6 +32,9 @@ export const studentKeys = {
   aiSession: (topicId: string) => ["student", "ai-session", topicId] as const,
   // Progress report key — inside "student" namespace so plan-level invalidations reach it
   progressReport: (id?: string) => ["student", "progress-report", id ?? "self"] as const,
+  coursePlanSummaries: ["student", "plan", "courses"] as const,
+  todayPlanByBatch: (batchId: string) => ["student", "plan", "today", batchId] as const,
+  weeklyPlanByBatch: (start: string, end: string, batchId: string) => ["student", "plan", "weekly", start, end, batchId] as const,
 };
 
 // ─── Auth / Me ────────────────────────────────────────────────────────────────
@@ -270,32 +273,43 @@ export function useSessionResult(sessionId: string) {
 
 // ─── Study Plan ───────────────────────────────────────────────────────────────
 
-export function useTodaysPlan() {
+export function useCoursePlanSummaries() {
   return useQuery({
-    queryKey: studentKeys.plan,
-    queryFn: studentApi.getTodaysPlan,
-    // Plan for a given day is stable — only mutations (complete/skip/regenerate) change it.
-    // 5 min stale: navigating away and back within a study session won't re-fetch.
+    queryKey: studentKeys.coursePlanSummaries,
+    queryFn: studentApi.getCoursePlanSummaries,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useTodaysPlan(batchId?: string) {
+  return useQuery({
+    queryKey: batchId ? studentKeys.todayPlanByBatch(batchId) : studentKeys.plan,
+    queryFn: () => studentApi.getTodaysPlan(batchId),
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     retry: false,
   });
 }
 
-export function useWeeklyPlan(startDate: string, endDate: string) {
+export function useWeeklyPlan(startDate: string, endDate: string, batchId?: string) {
   return useQuery({
-    queryKey: studentKeys.weeklyPlan(startDate, endDate),
-    queryFn: () => studentApi.getWeeklyPlan(startDate, endDate),
+    queryKey: batchId
+      ? studentKeys.weeklyPlanByBatch(startDate, endDate, batchId)
+      : studentKeys.weeklyPlan(startDate, endDate),
+    queryFn: () => studentApi.getWeeklyPlan(startDate, endDate, batchId),
     enabled: !!startDate && !!endDate,
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
   });
 }
 
-export function useWeeklyPlanGrouped(startDate: string, endDate: string) {
+export function useWeeklyPlanGrouped(startDate: string, endDate: string, batchId?: string) {
   return useQuery({
-    queryKey: [...studentKeys.weeklyPlan(startDate, endDate), "grouped"],
-    queryFn: () => studentApi.getWeeklyPlanGrouped(startDate, endDate),
+    queryKey: batchId
+      ? [...studentKeys.weeklyPlanByBatch(startDate, endDate, batchId), "grouped"]
+      : [...studentKeys.weeklyPlan(startDate, endDate), "grouped"],
+    queryFn: () => studentApi.getWeeklyPlanGrouped(startDate, endDate, batchId),
     enabled: !!startDate && !!endDate,
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
@@ -320,11 +334,10 @@ export function useGeneratePlan() {
 export function useRegeneratePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: studentApi.regeneratePlan,
+    mutationFn: (payload?: studentApi.GeneratePlanPayload | string) => studentApi.regeneratePlan(payload),
     onSuccess: () => {
-      // Remove first so subsequent invalidates always trigger a real fetch.
       qc.removeQueries({ queryKey: ["student", "plan"] });
-      qc.invalidateQueries({ queryKey: ["student", "plan"] });
+      qc.refetchQueries({ queryKey: ["student", "plan"], type: "active" });
       qc.invalidateQueries({ queryKey: studentKeys.me });
       qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
@@ -334,7 +347,7 @@ export function useRegeneratePlan() {
 export function useClearPlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: studentApi.clearPlan,
+    mutationFn: (batchId?: string) => studentApi.clearPlan(batchId),
     onSuccess: () => {
       qc.removeQueries({ queryKey: ["student", "plan"] });
       qc.invalidateQueries({ queryKey: ["student", "plan"] });
@@ -344,51 +357,48 @@ export function useClearPlan() {
   });
 }
 
-export function useCompletePlanItem() {
+export function useCompletePlanItem(batchId?: string) {
   const qc = useQueryClient();
+  const planKey = batchId ? studentKeys.todayPlanByBatch(batchId) : studentKeys.plan;
   return useMutation({
     mutationFn: (itemId: string) => studentApi.completePlanItem(itemId),
-    // Optimistic update: mark item done instantly so the UI responds in 0ms, not ~300ms.
     onMutate: async (itemId) => {
-      await qc.cancelQueries({ queryKey: studentKeys.plan });
-      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan);
-      qc.setQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan, (old = []) =>
+      await qc.cancelQueries({ queryKey: planKey });
+      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(planKey);
+      qc.setQueryData<studentApi.StudyPlanItem[]>(planKey, (old = []) =>
         old.map(item => item.id === itemId ? { ...item, status: "completed" as const } : item)
       );
       return { prev };
     },
     onError: (_err, _itemId, ctx) => {
-      // Revert optimistic change on failure.
-      if (ctx?.prev !== undefined) qc.setQueryData(studentKeys.plan, ctx.prev);
+      if (ctx?.prev !== undefined) qc.setQueryData(planKey, ctx.prev);
     },
     onSettled: () => {
-      // Always sync with server after mutation settles (success or error).
-      qc.invalidateQueries({ queryKey: studentKeys.plan });
-      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["student", "plan"] });
       qc.invalidateQueries({ queryKey: studentKeys.me });
       qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
     },
   });
 }
 
-export function useSkipPlanItem() {
+export function useSkipPlanItem(batchId?: string) {
   const qc = useQueryClient();
+  const planKey = batchId ? studentKeys.todayPlanByBatch(batchId) : studentKeys.plan;
   return useMutation({
     mutationFn: (itemId: string) => studentApi.skipPlanItem(itemId),
     onMutate: async (itemId) => {
-      await qc.cancelQueries({ queryKey: studentKeys.plan });
-      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan);
-      qc.setQueryData<studentApi.StudyPlanItem[]>(studentKeys.plan, (old = []) =>
+      await qc.cancelQueries({ queryKey: planKey });
+      const prev = qc.getQueryData<studentApi.StudyPlanItem[]>(planKey);
+      qc.setQueryData<studentApi.StudyPlanItem[]>(planKey, (old = []) =>
         old.map(item => item.id === itemId ? { ...item, status: "skipped" as const } : item)
       );
       return { prev };
     },
     onError: (_err, _itemId, ctx) => {
-      if (ctx?.prev !== undefined) qc.setQueryData(studentKeys.plan, ctx.prev);
+      if (ctx?.prev !== undefined) qc.setQueryData(planKey, ctx.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: studentKeys.plan });
-      qc.invalidateQueries({ queryKey: ["student", "plan", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["student", "plan"] });
     },
   });
 }
@@ -398,6 +408,46 @@ export function useNextAction() {
     queryKey: [...studentKeys.plan, "next-action"],
     queryFn: studentApi.getNextAction,
     staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useRevisionSpaced(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "spaced", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionSpaced(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useRevisionIntensive(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "intensive", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionIntensive(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useRevisionNotes(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "notes", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionNotes(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function usePracticeHistory(batchId?: string) {
+  return useQuery({
+    queryKey: ["student", "revision", "practice", batchId ?? ""] as const,
+    queryFn: () => studentApi.getRevisionPractice(batchId),
+    enabled: !!batchId,
+    staleTime: 5 * 60_000,
     retry: false,
   });
 }
@@ -447,6 +497,18 @@ export function useMarkDoubtHelpful() {
   return useMutation({
     mutationFn: ({ id, isHelpful }: { id: string; isHelpful: boolean }) =>
       studentApi.markDoubtHelpful(id, isHelpful),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ["student", "doubts"] });
+      qc.invalidateQueries({ queryKey: studentKeys.doubt(id) });
+    },
+  });
+}
+
+export function useReopenDoubt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      studentApi.reopenDoubt(id, reason),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ["student", "doubts"] });
       qc.invalidateQueries({ queryKey: studentKeys.doubt(id) });
@@ -573,6 +635,15 @@ export function useStudyStatus(topicId: string) {
   });
 }
 
+export function useAiStudyHistory() {
+  return useQuery({
+    queryKey: ["student", "ai-study-history"],
+    queryFn: studentApi.getAiStudyHistory,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
 export function useAiStudySession(topicId: string) {
   return useQuery({
     queryKey: studentKeys.aiSession(topicId),
@@ -608,14 +679,47 @@ export function useAskAiQuestion() {
 export function useCompleteAiStudy() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ topicId, sessionId, timeSpentSeconds }: { topicId: string; sessionId: string; timeSpentSeconds: number }) =>
-      studentApi.completeAiStudy(topicId, sessionId, timeSpentSeconds),
+    mutationFn: ({
+      topicId,
+      sessionId,
+      timeSpentSeconds,
+      highlights,
+      inlineComments,
+    }: {
+      topicId: string;
+      sessionId: string;
+      timeSpentSeconds: number;
+      highlights: any[];
+      inlineComments: any[];
+    }) => studentApi.completeAiStudy(topicId, sessionId, { timeSpentSeconds, highlights, inlineComments }),
     onSuccess: (_data, { topicId }) => {
       qc.invalidateQueries({ queryKey: studentKeys.studyStatus(topicId) });
       qc.invalidateQueries({ queryKey: studentKeys.aiSession(topicId) });
       qc.invalidateQueries({ queryKey: studentKeys.me });
+      qc.invalidateQueries({ queryKey: studentKeys.plan });
+      qc.invalidateQueries({ queryKey: ["student", "ai-study-history"] });
       // AI session completion can advance topic status in the roadmap tree.
       qc.invalidateQueries({ queryKey: studentKeys.progressReport() });
+    },
+  });
+}
+
+export function useSaveAiStudyNotes() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      topicId,
+      sessionId,
+      highlights,
+      inlineComments,
+    }: {
+      topicId: string;
+      sessionId: string;
+      highlights: any[];
+      inlineComments: any[];
+    }) => studentApi.saveAiStudyNotes(topicId, sessionId, { highlights, inlineComments }),
+    onSuccess: (_data, { topicId }) => {
+      qc.invalidateQueries({ queryKey: studentKeys.aiSession(topicId) });
     },
   });
 }

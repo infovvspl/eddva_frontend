@@ -43,6 +43,7 @@ import { getApiOrigin } from "@/lib/api-config";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
+import { AssignmentManagerModal } from "@/components/teacher/AssignmentManagerModal";
 import {
   isYouTubeUrl,
   isValidYouTubeLectureUrl,
@@ -2622,7 +2623,7 @@ const transcriptStatusBadge: Record<string, { cls: string; label: string }> = {
   failed:     { cls: "bg-red-500/10 text-red-600 border-red-500/20",         label: "Transcript Failed" },
 };
 
-function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, onRegenerateNotes, processingStep, isGeneratingNotes, queuePosition }: {
+function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, onRegenerateNotes, processingStep, isGeneratingNotes, queuePosition, onAssignments }: {
   lecture: Lecture;
   onView: () => void;
   onReview: () => void;
@@ -2630,6 +2631,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
   onDelete: () => void;
   onRetranscribe: () => void;
   onRegenerateNotes: () => void;
+  onAssignments?: () => void;
   processingStep?: number;
   isGeneratingNotes?: boolean;
   /** 0 = not queued, -1 = currently active, 1+ = queue position */
@@ -2809,6 +2811,11 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         {lecture.status === "published" && (
           <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onStats(); }} className="gap-1.5 h-8 text-xs">
             <BarChart2 className="w-3.5 h-3.5" /> Live Stats
+          </Button>
+        )}
+        {lecture.status === "published" && onAssignments && (
+          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onAssignments(); }} className="gap-1.5 h-8 text-xs text-orange-600 border-orange-500/30 hover:bg-orange-50">
+            <ListChecks className="w-3.5 h-3.5" /> Assignments
           </Button>
         )}
         {transcriptFailed && !isYouTube && queuePosition === 0 && (
@@ -3187,6 +3194,8 @@ const TeacherLecturesPage = () => {
     [reviewLectureId, lectures],
   );
   const [statsLecture, setStatsLecture] = useState<Lecture | null>(null);
+  const [assignmentLecture, setAssignmentLecture] = useState<Lecture | null>(null);
+
 
   // Track per-lecture AI processing step for animated UI (0–3)
   const [processingSteps, setProcessingSteps] = useState<Record<string, number>>({});
@@ -3257,6 +3266,24 @@ const TeacherLecturesPage = () => {
     }
     return list;
   }, [all, filterTopicId, filterChapterId, filterSubjectId, topicIdsInChapter, topicIdsInSubject]);
+
+  // Handle deep linking from calendar
+  useEffect(() => {
+    if (searchParams.get("action") === "assignments" && searchParams.get("lectureId")) {
+      const lid = searchParams.get("lectureId");
+      if (filtered) {
+        const found = filtered.find(l => l.id === lid);
+        if (found && !assignmentLecture) {
+          setAssignmentLecture(found);
+          // Remove from url so it doesn't re-open on every render if closed
+          searchParams.delete("action");
+          searchParams.delete("lectureId");
+          setSearchParams(searchParams, { replace: true });
+        }
+      }
+    }
+  }, [searchParams, filtered, assignmentLecture, setSearchParams]);
+
 
   const recorded = filtered.filter(l => l.type === "recorded");
   const live = filtered.filter(l => l.type === "live");
@@ -3543,6 +3570,9 @@ const TeacherLecturesPage = () => {
       )}
       {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLectureId(null)} isGeneratingNotes={reviewLecture ? notesGeneratingIds.has(reviewLecture.id) : false} />}
       {statsLecture && <StatsPanel key="stats" lecture={statsLecture} onClose={() => setStatsLecture(null)} />}
+      {assignmentLecture && (
+        <AssignmentManagerModal key="assignment" lecture={assignmentLecture} onClose={() => setAssignmentLecture(null)} />
+      )}
       {showUpload && (
         <UploadModal
           key="upload"
@@ -3711,6 +3741,7 @@ const TeacherLecturesPage = () => {
                 onDelete={() => handleDelete(l.id)}
                 onRetranscribe={() => handleRetranscribe(l.id)}
                 onRegenerateNotes={() => handleRegenerateNotes(l.id)}
+                onAssignments={() => setAssignmentLecture(l)}
               />
             ))}
             <p className="text-xs text-slate-500 px-1">

@@ -776,6 +776,8 @@ export interface StudentProfileDetail {
   subscriptionPlan: string;
   enrolledAt: string;
   aiEngagementState: EngagementState | null;
+  rank: number;
+  level: number;
 }
 
 export interface StudentAttendanceSummary {
@@ -1211,3 +1213,59 @@ export async function interveneStudent(payload: {
   const res = await apiClient.post('/analytics/teacher/student/intervene', payload);
   return extractData<{ success: boolean; message: string }>(res);
 }
+
+// ─── Assignments ─────────────────────────────────────────────────────────────
+
+export interface LectureAssignment {
+  id: string;
+  lectureId: string;
+  title: string;
+  description?: string;
+  attachmentUrl?: string;
+  dueDate?: string;
+  maxMarks?: number;
+  createdAt: string;
+  mySubmission?: AssignmentSubmission | null;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  submissionUrl: string;
+  status: "submitted" | "graded" | "late";
+  grade?: number;
+  feedback?: string;
+  submittedAt: string;
+  student?: {
+    id: string;
+    user: {
+      name?: string;
+      fullName?: string;
+      email: string;
+      avatarUrl?: string;
+      profilePictureUrl?: string;
+    };
+  };
+}
+
+export async function createLectureAssignment(lectureId: string, data: Partial<LectureAssignment>): Promise<LectureAssignment> {
+  const res = await apiClient.post(`/assignments/lecture/${lectureId}`, data);
+  return extractData<LectureAssignment>(res);
+}
+
+export async function getAssignmentsForLecture(lectureId: string): Promise<LectureAssignment[]> {
+  const res = await apiClient.get(`/assignments/lecture/${lectureId}`);
+  return extractData<LectureAssignment[]>(res);
+}
+
+export async function getAssignmentSubmissions(assignmentId: string): Promise<AssignmentSubmission[]> {
+  const res = await apiClient.get(`/assignments/${assignmentId}/submissions`);
+  return extractData<AssignmentSubmission[]>(res);
+}
+
+export async function gradeAssignmentSubmission(submissionId: string, data: { grade: number; feedback?: string }): Promise<AssignmentSubmission> {
+  const res = await apiClient.post(`/assignments/submissions/${submissionId}/grade`, data);
+  return extractData<AssignmentSubmission>(res);
+}
+

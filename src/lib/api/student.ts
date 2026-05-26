@@ -96,6 +96,7 @@ export interface MyCourse {
   name: string;
   description?: string | null;
   examTarget: string;
+  examYear?: string;
   class: string;
   thumbnailUrl?: string;
   status: string;
@@ -111,7 +112,7 @@ export interface MyCourse {
 
 export interface CourseResource {
   id: string;
-  type: "pdf" | "dpp" | "pyq" | "quiz" | "notes" | "video" | "link";
+  type: "pdf" | "dpp" | "pyq" | "quiz" | "notes" | "mindmap" | "video" | "link";
   title: string;
   fileUrl: string | null;
   externalUrl: string | null;
@@ -743,21 +744,25 @@ export interface StudyPlanItem {
   };
 }
 
-export async function getTodaysPlan(): Promise<StudyPlanItem[]> {
-  const res = await apiClient.get("/study-plans/today");
+export async function getTodaysPlan(batchId?: string): Promise<StudyPlanItem[]> {
+  const q = batchId ? `?batchId=${batchId}` : "";
+  const res = await apiClient.get(`/study-plans/today${q}`);
   return extractData<StudyPlanItem[]>(res) ?? [];
 }
 
-export async function getWeeklyPlan(startDate: string, endDate: string): Promise<StudyPlanItem[]> {
-  const res = await apiClient.get(`/study-plans?startDate=${startDate}&endDate=${endDate}`);
-  // Backend returns items grouped by date: { "2025-01-24": [...], "2025-01-25": [...] }
+export async function getWeeklyPlan(startDate: string, endDate: string, batchId?: string): Promise<StudyPlanItem[]> {
+  const q = new URLSearchParams({ startDate, endDate });
+  if (batchId) q.set("batchId", batchId);
+  const res = await apiClient.get(`/study-plans?${q}`);
   const grouped = extractData<Record<string, StudyPlanItem[]>>(res) ?? {};
   if (Array.isArray(grouped)) return grouped;
   return Object.values(grouped).flat();
 }
 
-export async function getWeeklyPlanGrouped(startDate: string, endDate: string): Promise<Record<string, StudyPlanItem[]>> {
-  const res = await apiClient.get(`/study-plans?startDate=${startDate}&endDate=${endDate}`);
+export async function getWeeklyPlanGrouped(startDate: string, endDate: string, batchId?: string): Promise<Record<string, StudyPlanItem[]>> {
+  const q = new URLSearchParams({ startDate, endDate });
+  if (batchId) q.set("batchId", batchId);
+  const res = await apiClient.get(`/study-plans?${q}`);
   const data = extractData<Record<string, StudyPlanItem[]> | StudyPlanItem[]>(res) ?? {};
   if (Array.isArray(data)) {
     const today = new Date().toISOString().split("T")[0];
@@ -766,7 +771,31 @@ export async function getWeeklyPlanGrouped(startDate: string, endDate: string): 
   return data as Record<string, StudyPlanItem[]>;
 }
 
+export interface CoursePlanSummary {
+  batchId: string;
+  batchName: string;
+  examTarget: string | null;
+  thumbnailUrl: string | null;
+  enrolledAt: string;
+  plan: {
+    id: string;
+    generatedAt: string;
+    validUntil: string | null;
+    isValid: boolean;
+  } | null;
+}
+
+export async function getCoursePlanSummaries(): Promise<CoursePlanSummary[]> {
+  try {
+    const res = await apiClient.get("/study-plans/courses");
+    return extractData<CoursePlanSummary[]>(res) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export interface GeneratePlanPayload {
+  batchId?: string;
   targetExam: string;
   examYear: string;
   currentClass: "9" | "10" | "11" | "12" | "dropper";
@@ -778,14 +807,124 @@ export async function generatePlan(payload: GeneratePlanPayload): Promise<{ mess
   return extractData(res);
 }
 
-export async function regeneratePlan(): Promise<{ message: string }> {
-  const res = await apiClient.post("/study-plans/regenerate", {});
+export async function regeneratePlan(payload?: GeneratePlanPayload | string): Promise<{ message: string }> {
+  const body = typeof payload === "string" ? { batchId: payload } : (payload ?? {});
+  const res = await apiClient.post("/study-plans/regenerate", body);
   return extractData(res);
 }
 
-export async function clearPlan(): Promise<{ message: string }> {
-  const res = await apiClient.post("/study-plans/clear", {});
+export async function clearPlan(batchId?: string): Promise<{ message: string }> {
+  const res = await apiClient.post("/study-plans/clear", batchId ? { batchId } : {});
   return extractData(res);
+}
+
+// ─── Spaced Revision Session ──────────────────────────────────────────────────
+
+export interface RevisionConceptQuestion {
+  question: string;
+  answer: string;
+  explanation: string;
+}
+
+export interface RevisionDrillQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+  difficulty: string;
+}
+
+export interface RevisionSessionData {
+  sessionType: 'INTENSIVE' | 'STANDARD' | 'QUICK' | 'FLASH';
+  estimatedMinutes: number;
+  targetAccuracy: number;
+  previousAccuracy: number;
+  topicName: string;
+  subjectName: string;
+  chapterName: string;
+  recallPrompts: string[];
+  conceptQuestions: RevisionConceptQuestion[];
+  drillQuestions: RevisionDrillQuestion[];
+}
+
+export async function startRevisionSession(payload: {
+  topicId: string;
+  accuracy: number;
+  intervalDays: 1 | 3 | 7 | 21;
+}): Promise<RevisionSessionData> {
+  const res = await apiClient.post('/study-plans/revision-session', payload);
+  return extractData<RevisionSessionData>(res);
+}
+
+// ─── Revision Endpoints (course-scoped) ───────────────────────────────────────
+
+export interface RevisionSpacedTopic {
+  topicId: string;
+  topicName: string;
+  chapterName: string;
+  subjectName: string;
+  accuracy: number;
+  attemptCount: number;
+  lastStudiedAt: string;
+  nextRevisionDate: string;
+  isOverdue: boolean;
+  intervalDays: 1 | 3 | 7 | 21;
+}
+
+export interface RevisionIntensiveSubject {
+  subjectId: string;
+  subjectName: string;
+  topicsTotal: number;
+  topicsCompleted: number;
+  chapters: {
+    chapterId: string;
+    chapterName: string;
+    topicsTotal: number;
+    topicsCompleted: number;
+    overallAccuracy: number;
+    topics: {
+      topicId: string;
+      topicName: string;
+      status: string;
+      bestAccuracy: number;
+      attemptCount: number;
+      completedAt: string | null;
+    }[];
+  }[];
+}
+
+/** Shape returned by /revision/notes — compatible with AiStudySessionData for card rendering */
+export interface RevisionNoteItem extends AiStudySessionData {
+  chapterName: string;
+}
+
+/** Shape returned by /revision/practice — compatible with AiStudySessionData for card rendering */
+export interface RevisionPracticeItem extends AiStudySessionData {
+  chapterName: string;
+}
+
+export async function getRevisionSpaced(batchId?: string): Promise<RevisionSpacedTopic[]> {
+  const q = batchId ? `?batchId=${batchId}` : "";
+  const res = await apiClient.get(`/study-plans/revision/spaced${q}`);
+  return extractData<RevisionSpacedTopic[]>(res) ?? [];
+}
+
+export async function getRevisionIntensive(batchId?: string): Promise<RevisionIntensiveSubject[]> {
+  const q = batchId ? `?batchId=${batchId}` : "";
+  const res = await apiClient.get(`/study-plans/revision/intensive${q}`);
+  return extractData<RevisionIntensiveSubject[]>(res) ?? [];
+}
+
+export async function getRevisionNotes(batchId?: string): Promise<RevisionNoteItem[]> {
+  const q = batchId ? `?batchId=${batchId}` : "";
+  const res = await apiClient.get(`/study-plans/revision/notes${q}`);
+  return extractData<RevisionNoteItem[]>(res) ?? [];
+}
+
+export async function getRevisionPractice(batchId?: string): Promise<RevisionPracticeItem[]> {
+  const q = batchId ? `?batchId=${batchId}` : "";
+  const res = await apiClient.get(`/study-plans/revision/practice${q}`);
+  return extractData<RevisionPracticeItem[]>(res) ?? [];
 }
 
 export async function completePlanItem(itemId: string): Promise<StudyPlanItem> {
@@ -833,6 +972,7 @@ export interface StudentDoubt {
   aiConceptLinks?: string[];
   teacherResponse?: string;
   isHelpful?: boolean;
+  isTeacherResponseHelpful?: boolean;
   resolvedAt?: string;
   createdAt: string;
   topic?: {
@@ -885,6 +1025,11 @@ export async function requestAiForDoubt(id: string, explanationMode?: string): P
   return extractData<StudentDoubt>(res);
 }
 
+export async function reopenDoubt(id: string, reason?: string): Promise<StudentDoubt> {
+  const res = await apiClient.patch(`/doubts/${id}/reopen`, { reason });
+  return extractData<StudentDoubt>(res);
+}
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export interface PerformanceProfile {
@@ -911,23 +1056,9 @@ export interface LeaderboardResult {
   currentStudentRank?: { rank: number; score: number };
 }
 
-export async function getMyPerformance(): Promise<PerformanceProfile> {
+export async function getMyPerformance(): Promise<StudentPerformance> {
   const res = await apiClient.get("/analytics/performance");
-  // Backend returns { performanceProfile: {...}, weakTopics: [...] } — unwrap it
-  const raw = extractData<{ performanceProfile: any; weakTopics: any[] }>(res);
-  const profile = raw?.performanceProfile ?? {};
-  return {
-    overallAccuracy: profile.overallAccuracy ?? 0,
-    estimatedRank: profile.estimatedRank ?? undefined,
-    totalTestsTaken: profile.totalTestsTaken ?? 0,
-    subjectAccuracy: profile.subjectAccuracy ?? {},
-    weakTopics: (raw?.weakTopics ?? []).map((wt: any) => ({
-      topicId: wt.topicId,
-      topicName: wt.topic?.name ?? wt.topicName ?? "Unknown Topic",
-      accuracy: wt.accuracy ?? 0,
-      severity: wt.severity,
-    })),
-  };
+  return extractData(res);
 }
 
 export async function getLeaderboard(params?: {
@@ -1277,6 +1408,7 @@ export interface AiStudySessionData {
   id: string;
   topicId: string;
   topicName?: string;
+  subjectName?: string;
   lessonMarkdown: string;
   keyConcepts: string[];
   formulas: string[];
@@ -1286,6 +1418,8 @@ export interface AiStudySessionData {
   isCompleted: boolean;
   timeSpentSeconds: number;
   completedAt?: string;
+  highlights?: Array<{ text: string; color: string }>;
+  inlineComments?: Array<{ id: string; text: string; quote: string; top: number }>;
 }
 
 export interface AiQuestionResponse {
@@ -1301,6 +1435,11 @@ export interface AiCompleteResponse {
 export async function getStudyStatus(topicId: string): Promise<AiStudyStatus> {
   const res = await apiClient.get(`/content/topics/${topicId}/study-status`);
   return extractData<AiStudyStatus>(res);
+}
+
+export async function getAiStudyHistory(): Promise<AiStudySessionData[]> {
+  const res = await apiClient.get("/content/ai-study/history");
+  return extractData<AiStudySessionData[]>(res) ?? [];
 }
 
 export async function getAiStudySession(topicId: string): Promise<AiStudySessionData> {
@@ -1325,10 +1464,18 @@ export async function askAiQuestion(
 export async function completeAiStudy(
   topicId: string,
   sessionId: string,
-  timeSpentSeconds: number,
+  payload: { timeSpentSeconds: number; highlights: any[]; inlineComments: any[] },
 ): Promise<AiCompleteResponse> {
-  const res = await apiClient.patch(`/content/topics/${topicId}/ai-study/${sessionId}/complete`, { timeSpentSeconds });
+  const res = await apiClient.patch(`/content/topics/${topicId}/ai-study/${sessionId}/complete`, payload);
   return extractData<AiCompleteResponse>(res);
+}
+
+export async function saveAiStudyNotes(
+  topicId: string,
+  sessionId: string,
+  payload: { highlights: any[]; inlineComments: any[] },
+): Promise<void> {
+  await apiClient.patch(`/content/topics/${topicId}/ai-study/${sessionId}/save-notes`, payload);
 }
 
 // ─── AI Quiz (no teacher quiz required) ───────────────────────────────────────
@@ -1749,6 +1896,44 @@ export interface StudentInsight {
   strongTopicCount: number;
 }
 
+export interface WeakTopic {
+  id: string;
+  topicId: string;
+  severity: number;
+  errorCount: number;
+  conceptualErrors: number;
+  sillyErrors: number;
+  timeErrors: number;
+  lastPracticed: string;
+  accuracy: number;
+  topic: {
+    id: string;
+    name: string;
+    chapter?: {
+      id: string;
+      name: string;
+      subject?: {
+        id: string;
+        name: string;
+      };
+    };
+  };
+}
+
+export interface StudentPerformance {
+  performanceProfile: {
+    studentId: string;
+    overallAccuracy: number;
+    averageScore: number;
+    totalTestsTaken: number;
+    totalQuestionsAttempted: number;
+    estimatedRank: number | null;
+  };
+  weakTopics: WeakTopic[];
+}
+
+
+
 export async function getMyAdvancedPerformance(batchId?: string): Promise<StudentAdvancedPerformance> {
   const res = await apiClient.get("/analytics/student/performance", { params: batchId ? { batchId } : {} });
   return extractData(res);
@@ -1768,4 +1953,40 @@ export async function getMyProgressInsights(batchId?: string): Promise<StudentIn
   const res = await apiClient.get("/analytics/student/insights", { params: batchId ? { batchId } : {} });
   return extractData(res);
 }
+
+// ─── Assignments ─────────────────────────────────────────────────────────────
+
+export interface LectureAssignment {
+  id: string;
+  lectureId: string;
+  title: string;
+  description?: string;
+  attachmentUrl?: string;
+  dueDate?: string;
+  maxMarks?: number;
+  createdAt: string;
+  mySubmission?: AssignmentSubmission | null;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  submissionUrl: string;
+  status: "submitted" | "graded" | "late";
+  grade?: number;
+  feedback?: string;
+  submittedAt: string;
+}
+
+export async function getLectureAssignments(lectureId: string): Promise<LectureAssignment[]> {
+  const res = await apiClient.get(`/assignments/lecture/${lectureId}`);
+  return extractData<LectureAssignment[]>(res) ?? [];
+}
+
+export async function submitAssignment(assignmentId: string, submissionUrl: string): Promise<AssignmentSubmission> {
+  const res = await apiClient.post(`/assignments/${assignmentId}/submit`, { submissionUrl });
+  return extractData<AssignmentSubmission>(res);
+}
+
 

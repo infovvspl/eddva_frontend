@@ -1,457 +1,421 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { LandingNavbar } from "@/components/landing/LandingNavbar";
-import { LandingFooter } from "@/components/landing/LandingFooter";
-import { B, P, T, IN, grad, gText, BG_STUDIO } from "@/components/landing/DesignTokens";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Link } from "react-router-dom";
+import { useRef, useState } from "react";
+import { LandingLayout } from "@/components/landing/LandingLayout";
 import {
-  ArrowRight, ChevronRight, Sparkles, Calendar,
-  Clock, Bell, BookOpen, Target, TrendingUp, Award,
-  CheckCircle, AlertCircle, Timer,
-} from "lucide-react";
-import careerImg from "@/assets/glowing-lightbulb-with-graduation-cap-icon-floating-digital-space-learning-new-skill-progress_982248-12957.jpg";
+  FiArrowUpRight,
+  FiClock,
+  FiHeart,
+  FiGlobe,
+  FiMonitor,
+  FiTrendingUp,
+  FiShield,
+} from "react-icons/fi";
 
-const FadeUp = ({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 24 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.55, delay, ease: "easeOut" }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
+// ─── Shared ease ──────────────────────────────────────────────────────────────
+const ease = [0.16, 1, 0.3, 1] as const;
 
-/* ── Exam data ── */
-const exams = [
+// ─── Data Interfaces ──────────────────────────────────────────────────────────
+type CategoryType = "Civil Services" | "Engineering" | "Management" | "Medical";
+
+interface Exam {
+  id: number;
+  title: string;
+  category: CategoryType;
+  date: string;
+  daysLeft: number;
+  description: string;
+  bg: string;
+  text: string;
+  border: string;
+  shadow: string;
+}
+
+interface Perk {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const exams: Exam[] = [
   {
-    id: "jee-mains-1",
-    name: "JEE Mains — Session 1",
-    icon: "⚛️",
-    color: B,
-    category: "Engineering",
-    date: "Jan 22 – Feb 1, 2025",
-    regStart: "Nov 1, 2024",
-    regEnd: "Dec 5, 2024",
-    status: "upcoming",
-    daysLeft: 45,
-    students: "13L+",
-    eligibility: "Class 12 / Dropper",
-    desc: "National-level engineering entrance for IITs, NITs and GFTIs. Physics, Chemistry, Mathematics.",
-    tags: ["Class 11", "Class 12", "Dropper"],
+    id: 1,
+    title: "UPSC Civil Services (Prelims)",
+    category: "Civil Services",
+    date: "May 31, 2026",
+    daysLeft: 5,
+    description:
+      "National level competitive exam for recruitment to various Civil Services of the Government of India.",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "group-hover:border-amber-500/30",
+    shadow: "group-hover:shadow-amber-500/10",
   },
   {
-    id: "neet-2025",
-    name: "NEET UG 2025",
-    icon: "🩺",
-    color: "#EF4444",
+    id: 2,
+    title: "IIT JEE Advanced",
+    category: "Engineering",
+    date: "June 07, 2026",
+    daysLeft: 12,
+    description:
+      "Elite engineering entrance assessment for top-tier Indian Institutes of Technology.",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "group-hover:border-blue-500/30",
+    shadow: "group-hover:shadow-blue-500/10",
+  },
+  {
+    id: 3,
+    title: "CAT (Common Admission Test)",
+    category: "Management",
+    date: "November 29, 2026",
+    daysLeft: 187,
+    description:
+      "Prerequisite for admission into various management programmes at the IIMs and premier business schools.",
+    bg: "bg-purple-50",
+    text: "text-purple-700",
+    border: "group-hover:border-purple-500/30",
+    shadow: "group-hover:shadow-purple-500/10",
+  },
+  {
+    id: 4,
+    title: "NEET UG",
     category: "Medical",
-    date: "May 4, 2025",
-    regStart: "Feb 7, 2025",
-    regEnd: "Mar 7, 2025",
-    status: "upcoming",
-    daysLeft: 116,
-    students: "24L+",
-    eligibility: "Class 12 / Dropper",
-    desc: "Single national medical entrance for MBBS, BDS and Ayush admissions. Biology, Physics, Chemistry.",
-    tags: ["Class 11", "Class 12", "Dropper"],
-  },
-  {
-    id: "jee-mains-2",
-    name: "JEE Mains — Session 2",
-    icon: "⚛️",
-    color: IN,
-    category: "Engineering",
-    date: "Apr 1–15, 2025",
-    regStart: "Jan 27, 2025",
-    regEnd: "Feb 25, 2025",
-    status: "upcoming",
-    daysLeft: 83,
-    students: "13L+",
-    eligibility: "Class 12 / Dropper",
-    desc: "Second session of JEE Mains. Best of two scores considered for JEE Advanced eligibility.",
-    tags: ["Class 12", "Dropper"],
-  },
-  {
-    id: "cbse-boards",
-    name: "CBSE Board Exams 2025",
-    icon: "🎓",
-    color: T,
-    category: "Boards",
-    date: "Feb 15 – Apr 4, 2025",
-    regStart: "Sep 2024",
-    regEnd: "Oct 2024",
-    status: "reg-closed",
-    daysLeft: 58,
-    students: "38L+",
-    eligibility: "Class 10 & 12",
-    desc: "Central Board of Secondary Education annual exams for Class 10 (All India) and Class 12.",
-    tags: ["Class 10", "Class 12"],
-  },
-  {
-    id: "icse-isc",
-    name: "ICSE / ISC Boards 2025",
-    icon: "🏫",
-    color: P,
-    category: "Boards",
-    date: "Feb 18 – Mar 28, 2025",
-    regStart: "Aug 2024",
-    regEnd: "Oct 2024",
-    status: "reg-closed",
-    daysLeft: 61,
-    students: "3L+",
-    eligibility: "Class 10 & 12",
-    desc: "CISCE board examinations for ICSE (Class 10) and ISC (Class 12) students.",
-    tags: ["Class 10", "Class 12"],
-  },
-  {
-    id: "state-board",
-    name: "State Board Exams 2025",
-    icon: "📚",
-    color: "#F59E0B",
-    category: "Boards",
-    date: "Mar 1 – Apr 15, 2025",
-    regStart: "Varies by state",
-    regEnd: "Varies by state",
-    status: "upcoming",
-    daysLeft: 72,
-    students: "50L+",
-    eligibility: "Class 9 – 12",
-    desc: "Annual examinations for all major state boards — MP, UP, Maharashtra, Rajasthan, Karnataka & more.",
-    tags: ["Class 9", "Class 10", "Class 11", "Class 12"],
-  },
-  {
-    id: "jee-advanced",
-    name: "JEE Advanced 2025",
-    icon: "🏆",
-    color: "#F59E0B",
-    category: "Engineering",
-    date: "May 18, 2025",
-    regStart: "Apr 23, 2025",
-    regEnd: "May 2, 2025",
-    status: "upcoming",
-    daysLeft: 130,
-    students: "1.8L+",
-    eligibility: "JEE Mains Top 2.5L",
-    desc: "IIT entrance exam. Only the top 2.5 lakh JEE Mains qualified students are eligible.",
-    tags: ["Dropper", "Class 12"],
-  },
-  {
-    id: "isc-12",
-    name: "ISC Class 11–12 Practicals",
-    icon: "📐",
-    color: IN,
-    category: "Boards",
-    date: "Jan 6 – Feb 14, 2025",
-    regStart: "School registered",
-    regEnd: "School registered",
-    status: "live",
-    daysLeft: 0,
-    students: "1.5L+",
-    eligibility: "ISC Class 12",
-    desc: "Practical examinations for ISC Class 12 Science and Commerce streams.",
-    tags: ["Class 12"],
+    date: "May 03, 2027",
+    daysLeft: 342,
+    description:
+      "All India pre-medical entrance test for students wishing to pursue undergraduate medical courses.",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "group-hover:border-emerald-500/30",
+    shadow: "group-hover:shadow-emerald-500/10",
   },
 ];
 
-const categories = ["All", "Engineering", "Medical", "Boards"];
+const _perks: Perk[] = [
+  {
+    title: "Work from Anywhere",
+    description:
+      "We are a remote-first team. Work from the comfort of your home, a cafe, or a co-working space anywhere in the world.",
+    icon: <FiGlobe className="w-6 h-6" />,
+  },
+  {
+    title: "Health & Wellness",
+    description:
+      "Comprehensive medical, dental, and vision coverage for you and your dependents, plus mental health days.",
+    icon: <FiHeart className="w-6 h-6" />,
+  },
+  {
+    title: "Continuous Learning",
+    description:
+      "$2,000 annual budget for courses, books, and conferences. Because we believe in growth.",
+    icon: <FiTrendingUp className="w-6 h-6" />,
+  },
+  {
+    title: "Home Office Setup",
+    description:
+      "We'll provide the latest gear and a stipend to make sure your workspace is comfortable and productive.",
+    icon: <FiMonitor className="w-6 h-6" />,
+  },
+];
 
-const statusConfig = {
-  live: { label: "Live Now", bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
-  upcoming: { label: "Upcoming", bg: "#EFF6FF", color: "#2563EB", dot: "#3B82F6" },
-  "reg-closed": { label: "Reg Closed", bg: "#FEF2F2", color: "#DC2626", dot: "#EF4444" },
-};
+type CategoryFilter = "All" | CategoryType;
 
-export default function CareerPage() {
-  const [activeTab, setActiveTab] = useState("All");
-  const [expanded, setExpanded] = useState<string | null>(null);
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function CareersPage() {
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
-  const filtered = activeTab === "All" ? exams : exams.filter(e => e.category === activeTab);
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>("All");
+
+  const filteredExams =
+    activeCategory === "All"
+      ? exams
+      : exams.filter((e) => e.category === activeCategory);
+
+  const categories: CategoryFilter[] = [
+    "All",
+    "Civil Services",
+    "Engineering",
+    "Management",
+    "Medical",
+  ];
 
   return (
-    <div className="min-h-screen font-sans text-gray-900 antialiased" style={{ background: BG_STUDIO }}>
-      <LandingNavbar />
+    <LandingLayout>
+      <main className="w-full bg-white text-slate-900 overflow-hidden">
+        {/* HERO */}
+        <section ref={heroRef} className="relative min-h-screen flex overflow-hidden bg-slate-950" >
+          {/* Left panel — text */}
+          <motion.div
+            style={{ y: heroY, opacity: heroOpacity }}
+            className="relative z-10 flex flex-col justify-center px-8 sm:px-16 lg:px-24 pt-28 pb-16 w-full lg:w-1/2"
+          >
+            {/* Eyebrow */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, ease }}
+              className="flex items-center gap-3 mb-8"
+            >
+              <span className="h-px w-10 bg-[#0066cc]" />
+              <span className="text-xs font-bold tracking-[0.2em] text-[#0066cc] uppercase">
+                Careers at Eddva
+              </span>
+            </motion.div>
 
-      <main>
-        {/* ══ HERO BANNER ══ */}
-        <section className="relative h-[72vh] min-h-[500px] overflow-hidden">
-          <img
-            src={careerImg}
-            alt="Upcoming Exams — Future Learning"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(110deg, rgba(3,8,24,0.92) 0%, rgba(3,8,24,0.75) 55%, rgba(3,8,24,0.50) 100%)" }}
-          />
-          <div
-            className="absolute bottom-0 left-0 right-0 h-36"
-            style={{ background: `linear-gradient(to bottom, transparent, ${BG_STUDIO})` }}
-          />
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, ease, delay: 0.1 }}
+              className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.0] tracking-tight mb-8"
+            >
+              Your Next Big
+              <br />
+              <span className="font-spicy bg-gradient-to-r from-[#0066cc] via-[#00a6ff] to-cyan-300 bg-clip-text text-transparent">
+                Exam is Coming.
+              </span>
+            </motion.h1>
 
-          <div className="relative z-10 flex h-full items-center">
-            <div className="landing-shell-wide">
-              <FadeUp>
-                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/80 backdrop-blur-sm">
-                  <Calendar className="h-3 w-3" /> Upcoming Exams 2025
-                </span>
-                <h1 className="landing-title-hero mb-5 text-white">
-                  Your Next Big<br />
-                  <span style={{ background: "linear-gradient(135deg,#FBBF24,#F59E0B,#FCD34D)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                    Exam is Coming.
-                  </span>
-                </h1>
-                <p className="mb-10 max-w-xl text-[17px] font-medium leading-relaxed text-white/65">
-                  Stay ahead of every important exam date — JEE, NEET, CBSE, ICSE, State Boards and more. Start your preparation today.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <motion.a
-                    href="#exams"
-                    whileHover={{ scale: 1.04, boxShadow: "0 16px 40px rgba(251,191,36,0.35)" }}
-                    whileTap={{ scale: 0.97 }}
-                    className="landing-button flex items-center gap-2 text-gray-900 shadow-lg"
-                    style={{ background: "linear-gradient(135deg,#FBBF24,#F59E0B)" }}
-                  >
-                    View All Exams <ArrowRight className="h-4 w-4" />
-                  </motion.a>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.2 }}
+              className="text-slate-400 text-lg leading-relaxed max-w-md mb-10 font-medium"
+            >
+              Stay ahead of every important exam date — JEE, NEET, CBSE, ICSE,
+              State Boards and more. Start your preparation today.
+            </motion.p>
+          </motion.div>
 
-                </div>
-              </FadeUp>
+          {/* Right panel — image mosaic */}
+          <div className="hidden lg:block absolute right-0 top-0 w-1/2 h-full overflow-hidden">
+            {/* Dark overlay on left edge for blend */}
+            <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-slate-950 to-transparent z-10" />
+            <div className="absolute inset-0 bg-slate-950/30 z-10" />
 
-              {/* floating exam stat chips */}
-              <div className="absolute bottom-16 right-8 hidden flex-col gap-3 lg:flex">
-                {[
-                  { icon: "⚛️", val: "JEE Mains",  },
-                  { icon: "🩺", val: "NEET UG",  },
-                  { icon: "🎓", val: "CBSE Boards",  },
-                ].map((s, i) => (
-                  <motion.div
-                    key={s.val}
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5 + i * 0.12 }}
-                    className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/10 px-4 py-2.5 backdrop-blur-md"
-                  >
-                    <span className="text-xl">{s.icon}</span>
-                    <div>
-                      <p className="text-[13px] font-bold text-white leading-none">{s.val}</p>
-                      <p className="mt-0.5 text-[11px] text-white/50">{s.sub}</p>
-                    </div>
-                  </motion.div>
-                ))}
+            {/* Large Hero Image */}
+            <motion.div
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.2, ease, delay: 0.2 }}
+              className="absolute inset-0 p-4 pl-0 py-8"
+            >
+              <div className="w-full h-full rounded-3xl overflow-hidden relative">
+                <img
+                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200"
+                  alt="Team collaborating"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
               </div>
+            </motion.div>
+          </div>
+
+          {/* Scroll hint */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="absolute bottom-8 left-8 sm:left-16 lg:left-24 flex items-center gap-2 text-slate-600 text-xs font-semibold tracking-widest uppercase z-20"
+          >
+            <motion.div
+              animate={{ y: [0, 6, 0] }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="w-px h-8 bg-gradient-to-b from-transparent to-slate-600"
+            />
+            Scroll
+          </motion.div>
+        </section>
+
+        {/* UPCOMING EXAMS */}
+        <section
+          id="upcoming-exams"
+          className="relative py-24 sm:py-32 px-8 sm:px-16 lg:px-24 overflow-hidden bg-slate-50"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px)] bg-[size:6rem] opacity-40 pointer-events-none" />
+
+          <div className="max-w-5xl mx-auto relative z-10">
+            {/* Header & Category Filters */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, ease }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="h-px w-8 bg-[#0066cc]" />
+                  <span className="text-xs font-bold tracking-[0.2em] text-[#0066cc] uppercase">
+                    Stay Ahead
+                  </span>
+                </div>
+                <h2 className="text-4xl sm:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight">
+                  Upcoming
+                  <span className="font-spicy ml-3 bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
+                    Exams Tracker.
+                  </span>
+                </h2>
+              </motion.div>
+
+              {/* Category Tabs */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, ease }}
+                className="flex flex-wrap gap-2"
+              >
+                {categories.map((cat, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                      activeCategory === cat
+                        ? "bg-slate-900 text-white shadow-md"
+                        : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-900"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Exams List */}
+            <div className="flex flex-col gap-4">
+              {filteredExams.map((exam) => (
+                <motion.div
+                  key={exam.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4, ease }}
+                  className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 hover:shadow-xl transition-all duration-300 ${exam.shadow} ${exam.border}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${exam.bg} ${exam.text}`}
+                      >
+                        {exam.category}
+                      </span>
+
+                      {exam.daysLeft <= 15 && (
+                        <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 animate-pulse">
+                          Exam Approaching
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 group-hover:text-[#0066cc] transition-colors">
+                      {exam.title}
+                    </h3>
+
+                    <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-2xl mb-4">
+                      {exam.description}
+                    </p>
+
+                    <div className="flex items-center gap-5 text-xs font-semibold text-slate-500">
+                      <div className="flex items-center gap-1.5">
+                        <FiClock className="w-4 h-4 text-[#0066cc]" />
+                        Date: {exam.date}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-orange-500" />
+                        {exam.daysLeft} Days Left
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* React Router Link Action */}
+                  <div className="flex-shrink-0">
+                    <Link
+                      to="/study-material"
+                      state={{ examId: exam.id, examTitle: exam.title }}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 text-white hover:bg-[#0066cc] px-6 py-3 rounded-xl font-bold text-sm transition-colors duration-300 shadow-sm"
+                    >
+                      Start Prep
+                      <FiArrowUpRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </motion.div>
+              ))}
+
+              {filteredExams.length === 0 && (
+                <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-2xl">
+                  <p className="text-slate-500 font-medium">
+                    No upcoming exams tracked under this field yet.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
+        {/* CTA */}
+        <section className="relative py-24 sm:py-32 px-8 sm:px-16 lg:px-24 overflow-hidden bg-white border-t border-slate-100">
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-blue-50/60 to-transparent pointer-events-none" />
 
-        {/* ══ UPCOMING EXAMS LIST ══ */}
-        <section className="landing-section" id="exams"
-          style={{ background: "linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 55%,#F5F3FF 100%)" }}>
-          <div className="landing-shell">
-            <FadeUp className="mb-3 text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-blue-600">
-                <Calendar className="h-3 w-3" /> Exam Calendar 2025
-              </span>
-            </FadeUp>
-            <FadeUp delay={0.05} className="mb-4 text-center">
-              <h2 className="landing-title-section">
-                Upcoming <span style={gText()}>Exams</span>
-              </h2>
-            </FadeUp>
-            <FadeUp delay={0.08} className="mb-10 text-center">
-              <p className="mx-auto max-w-xl text-[16px] text-gray-500">
-                All major competitive and board exams in one place. Never miss a date.
-              </p>
-            </FadeUp>
-
-            {/* Category tabs */}
-            <FadeUp delay={0.1} className="mb-8 flex justify-center">
-              <div className="flex gap-2 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm">
-                {categories.map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className="relative rounded-xl px-5 py-2 text-[13px] font-bold transition-all"
-                    style={{ color: activeTab === tab ? "white" : "#6B7280" }}
-                  >
-                    {activeTab === tab && (
-                      <motion.div
-                        layoutId="examTabBg"
-                        className="absolute inset-0 rounded-xl"
-                        style={{ background: grad() }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                    <span className="relative z-10">{tab}</span>
-                  </button>
-                ))}
-              </div>
-            </FadeUp>
-
-            {/* Exam cards */}
-            <AnimatePresence mode="wait">
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="grid lg:grid-cols-12 gap-12 items-center">
               <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="grid gap-5 lg:grid-cols-2"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease }}
+                className="lg:col-span-7"
               >
-                {filtered.map((exam, i) => {
-                  const st = statusConfig[exam.status as keyof typeof statusConfig];
-                  const isOpen = expanded === exam.id;
-                  return (
-                    <motion.div
-                      key={exam.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: i * 0.06 }}
-                      whileHover={{ y: -4, boxShadow: `0 20px 48px ${exam.color}18` }}
-                      className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all"
-                    >
-                      {/* top accent */}
-                      <div className="h-1" style={{ background: `linear-gradient(90deg, ${exam.color}, ${exam.color}88)` }} />
-
-                      <div className="p-5">
-                        <div className="mb-4 flex items-start gap-4">
-                          {/* icon */}
-                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
-                            style={{ background: `${exam.color}12` }}>
-                            {exam.icon}
-                          </div>
-                          {/* title + status */}
-                          <div className="flex-1 min-w-0">
-                            <div className="mb-1.5 flex items-center gap-2 flex-wrap">
-                              <h3 className="text-[16px] font-extrabold text-gray-900">{exam.name}</h3>
-                              <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold"
-                                style={{ background: st.bg, color: st.color }}>
-                                <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: st.dot }} />
-                                {st.label}
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {exam.tags.map(t => (
-                                <span key={t} className="rounded-lg bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{t}</span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* date + days left */}
-                        <div className="mb-4 grid grid-cols-2 gap-3">
-                          <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
-                            <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: exam.color }} />
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Exam Date</p>
-                              <p className="text-[13px] font-bold text-gray-800">{exam.date}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
-                            {exam.status === "live" ? (
-                              <Bell className="h-4 w-4 flex-shrink-0 text-green-500" />
-                            ) : (
-                              <Timer className="h-4 w-4 flex-shrink-0" style={{ color: exam.color }} />
-                            )}
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                                {exam.status === "live" ? "In Progress" : "Days Left"}
-                              </p>
-                              <p className="text-[13px] font-bold" style={{ color: exam.color }}>
-                                {exam.status === "live" ? "Ongoing" : `${exam.daysLeft} days`}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* expand toggle */}
-                        <AnimatePresence>
-                          {isOpen && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mb-4 space-y-2 rounded-xl border border-gray-100 p-4">
-                                <p className="text-[13px] leading-relaxed text-gray-600">{exam.desc}</p>
-                                <div className="flex flex-wrap gap-4 pt-2 text-[12px] font-semibold text-gray-500">
-                                  <span className="flex items-center gap-1">
-                                    <CheckCircle className="h-3.5 w-3.5 text-green-500" /> Eligibility: {exam.eligibility}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3.5 w-3.5" style={{ color: exam.color }} /> Reg Starts: {exam.regStart}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <AlertCircle className="h-3.5 w-3.5 text-red-400" /> Reg Ends: {exam.regEnd}
-                                  </span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {/* action row */}
-                        <div className="flex items-center gap-3">
-                          <motion.a
-                            href="/study-material"
-                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                            className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold text-white shadow-sm"
-                            style={{ background: `linear-gradient(135deg, ${exam.color}, ${exam.color}cc)` }}
-                          >
-                            Start Prep <ArrowRight className="h-3.5 w-3.5" />
-                          </motion.a>
-                          <button
-                            onClick={() => setExpanded(isOpen ? null : exam.id)}
-                            className="rounded-xl border border-gray-200 px-3 py-2.5 text-[12px] font-bold text-gray-500 hover:bg-gray-50 transition-colors"
-                          >
-                            {isOpen ? "Less" : "Details"}
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="h-px w-8 bg-[#0066cc]" />
+                  <span className="text-xs font-bold tracking-[0.2em] text-[#0066cc] uppercase">
+                    Don't see a fit?
+                  </span>
+                </div>
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.05] tracking-tight">
+                  Ready to crack
+                  <br />
+                  <span className="font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
+                    your exam?
+                  </span>
+                </h2>
               </motion.div>
-            </AnimatePresence>
-          </div>
-        </section>
 
-        {/* ══ PREP CTA ══ */}
-        <section className="landing-section bg-white text-center">
-          <div className="landing-shell-narrow">
-            <FadeUp>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-blue-600">Start Free — No Credit Card</span>
-              </div>
-              <h2 className="landing-title-feature mb-5">
-                Ready to crack your <span style={gText()}>exam?</span>
-              </h2>
-              <p className="mx-auto mb-10 max-w-lg text-[16px] font-medium leading-relaxed text-gray-500">
-                Join 50,000+ students already preparing on EDDVA. AI-powered study plans, mock tests, and doubt solving — all in one place.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <motion.a href="/study-material"
-                  whileHover={{ scale: 1.05, boxShadow: `0 20px 48px ${B}44` }} whileTap={{ scale: 0.97 }}
-                  className="landing-button flex items-center gap-2 text-white shadow-xl"
-                  style={{ background: grad() }}>
-                  Start Preparing Free <ArrowRight className="h-4 w-4" />
-                </motion.a>
-                <motion.a href="/about"
-                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  className="landing-button flex items-center gap-2 border-2 border-gray-200 text-gray-700 transition-all hover:border-blue-300 hover:bg-blue-50">
-                  Learn About EDDVA <ChevronRight className="h-4 w-4" />
-                </motion.a>
-              </div>
-            </FadeUp>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease, delay: 0.1 }}
+                className="lg:col-span-5 space-y-6"
+              >
+                <p className="text-slate-500 font-medium leading-relaxed text-lg">
+                  Join 50,000+ students already preparing on EDDVA. AI-powered
+                  study plans, mock tests, and doubt solving — all in one place.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button className="group relative inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] text-white px-7 py-4 rounded-xl font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/25 overflow-hidden">
+                    <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="relative z-10">Email Us</span>
+                    <FiArrowUpRight className="relative z-10 w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </button>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
       </main>
-
-      <LandingFooter />
-    </div>
+    </LandingLayout>
   );
 }

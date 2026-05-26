@@ -1,5 +1,5 @@
 import React from "react";
-import { LandingNavbar } from "./LandingNavbar";
+import Navbar from "./LandingNavbar";
 import { LandingFooter } from "./LandingFooter";
 import { Bot } from "lucide-react";
 import { motion } from "framer-motion";
@@ -13,7 +13,7 @@ interface LandingLayoutProps {
 export const LandingLayout = ({ children }: LandingLayoutProps) => {
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#F8FAFC] font-sans text-gray-900 antialiased">
-      <LandingNavbar />
+      <Navbar />
       <main className="pt-[56px]">{children}</main>
       <LandingFooter />
 

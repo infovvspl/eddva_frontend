@@ -22,7 +22,7 @@ import {
   MessageSquare, Clock, AlertCircle, CheckCircle2, Send,
   Loader2, Search, RefreshCw, ChevronRight, Image as ImageIcon,
   BookOpen, Sparkles, ThumbsUp, ThumbsDown, Link2, Eye, EyeOff,
-  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload, Trash2,
+  CheckCheck, XCircle, Users, Inbox, Filter, Bot, Upload, Trash2, ArrowUpDown,
 } from "lucide-react";
 import { apiClient, extractData } from "@/lib/api/client";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
@@ -30,16 +30,16 @@ import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  open:             { label: "Open",             bg: "bg-orange-100 dark:bg-orange-950/30", text: "text-orange-700 dark:text-orange-400", dot: "bg-orange-500" },
-  ai_resolved:      { label: "AI Resolved",      bg: "bg-blue-100 dark:bg-blue-50/30",   text: "text-blue-700 dark:text-blue-400",   dot: "bg-blue-500" },
-  escalated:        { label: "Needs Answer",     bg: "bg-red-100 dark:bg-red-950/30",     text: "text-red-700 dark:text-red-400",     dot: "bg-red-500" },
-  teacher_resolved: { label: "Resolved",         bg: "bg-emerald-100 dark:bg-emerald-50/30", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
+  open: { label: "Open", bg: "bg-orange-100 dark:bg-orange-950/30", text: "text-orange-700 dark:text-orange-400", dot: "bg-orange-500" },
+  ai_resolved: { label: "AI Resolved", bg: "bg-blue-100 dark:bg-blue-50/30", text: "text-blue-700 dark:text-blue-400", dot: "bg-blue-500" },
+  escalated: { label: "Needs Answer", bg: "bg-red-100 dark:bg-red-950/30", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" },
+  teacher_resolved: { label: "Resolved", bg: "bg-emerald-100 dark:bg-emerald-50/30", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
 };
 
 const AI_QUALITY_OPTIONS = [
   { value: "correct", label: "Completely Correct", desc: "AI answered it right — no extra response needed", icon: CheckCircle2, color: "text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-50/20" },
-  { value: "partial", label: "Partially Correct",  desc: "AI got some parts right — I'll complete it", icon: AlertCircle, color: "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-50/20" },
-  { value: "wrong",   label: "Completely Wrong",   desc: "AI missed it entirely — I'll write from scratch", icon: XCircle, color: "text-red-600 border-red-300 bg-red-50 dark:bg-red-950/20" },
+  { value: "partial", label: "Partially Correct", desc: "AI got some parts right — I'll complete it", icon: AlertCircle, color: "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-50/20" },
+  { value: "wrong", label: "Completely Wrong", desc: "AI missed it entirely — I'll write from scratch", icon: XCircle, color: "text-red-600 border-red-300 bg-red-50 dark:bg-red-950/20" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ interface AiAnswerStructured {
 function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | null {
   if (!raw) return null;
   let str = raw.trim();
-  
+
   // Try to find the outermost { } block first (strips preambles/postscripts)
   const jsonMatch = str.match(/(\{[\s\S]*\})/);
   if (jsonMatch) str = jsonMatch[1].trim();
@@ -84,7 +84,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
     return JSON.parse(str) as AiAnswerStructured;
   } catch {
     // Aggressive fix: escape raw newlines inside what looks like string values
-    const fixed = str.replace(/"([\s\S]*?)"/g, (match) => 
+    const fixed = str.replace(/"([\s\S]*?)"/g, (match) =>
       match.replace(/\n/g, "\\n").replace(/\r/g, "\\n")
     );
     try {
@@ -156,6 +156,16 @@ function DoubtListItem({ doubt, selected, onClick }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <StatusBadge status={doubt.status} />
+            {doubt.isTeacherResponseHelpful === false && doubt.status === "escalated" && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                ↩ Reopened
+              </span>
+            )}
+            {doubt.isHelpful === false && doubt.status === "escalated" && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                ✦ AI Escalated
+              </span>
+            )}
             {mins != null && (
               <span className={cn("text-xs flex items-center gap-1", urgencyColor(mins))}>
                 <Clock className="w-3 h-3" /> {timeAgo(mins)}
@@ -300,7 +310,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
           )}
           {imageUrl && (
             <div className="mt-3 border border-border rounded-lg overflow-hidden">
-              <img src={imageUrl} alt="Diagram" className="max-h-48 object-contain w-full" onError={() => {}} />
+              <img src={imageUrl} alt="Diagram" className="max-h-48 object-contain w-full" onError={() => { }} />
             </div>
           )}
         </div>
@@ -546,7 +556,7 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-blue-500" /> What AI Tried
               </p>
-              
+
               {/* Brief / Detailed toggle — only when structured data available */}
               {parseAiAnswer(doubt.aiExplanation) && (
                 <div className="flex gap-0.5 bg-blue-100/70 dark:bg-blue-900/30 p-0.5 rounded-lg shrink-0">
@@ -595,7 +605,7 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
                   <div className="space-y-3">
                     <div className="text-sm text-foreground prose prose-sm prose-blue dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {formatMarkdown(parsed.detailed?.solution || parsed.detailed?.explanation || parsed.brief?.answer || doubt.aiExplanation)}
+                        {formatMarkdown(parsed.detailed?.solution || parsed.brief?.answer || doubt.aiExplanation)}
                       </ReactMarkdown>
                     </div>
                     {parsed.detailed?.verification && (
@@ -807,6 +817,7 @@ export default function TeacherDoubtsPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("");
   const [filterBatchId, setFilterBatchId] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const { data: batches = [] } = useMyBatches();
   const { data: queue = [], isLoading: queueLoading, refetch: refetchQueue } = useDoubtQueue(filterBatchId || undefined);
@@ -816,14 +827,29 @@ export default function TeacherDoubtsPage() {
   const isLoading = tab === "queue" ? queueLoading : allLoading;
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return doubts;
-    const q = search.toLowerCase();
-    return doubts.filter(d =>
-      d.questionText?.toLowerCase().includes(q) ||
-      (d.student?.fullName ?? d.studentName ?? "").toLowerCase().includes(q) ||
-      (d.topic?.name ?? d.topicName ?? "").toLowerCase().includes(q)
-    );
-  }, [doubts, search]);
+    const q = search.trim().toLowerCase();
+    const result = q
+      ? doubts.filter(d =>
+          d.questionText?.toLowerCase().includes(q) ||
+          (d.student?.fullName ?? d.studentName ?? "").toLowerCase().includes(q) ||
+          (d.topic?.name ?? d.topicName ?? "").toLowerCase().includes(q)
+        )
+      : [...doubts];
+    const isPriority = (d: typeof result[0]) =>
+      d.status === "escalated" && (
+        d.isTeacherResponseHelpful === false ||
+        d.isHelpful === false
+      );
+    result.sort((a, b) => {
+      const ra = isPriority(a) ? 1 : 0;
+      const rb = isPriority(b) ? 1 : 0;
+      if (rb !== ra) return rb - ra;
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      return sortOrder === "newest" ? tb - ta : ta - tb;
+    });
+    return result;
+  }, [doubts, search, sortOrder]);
 
   const selectedDoubt = filtered.find(d => d.id === selectedId) ?? null;
 
@@ -920,10 +946,10 @@ export default function TeacherDoubtsPage() {
               />
             </div>
 
-            {/* Course filter */}
-            {batches.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            {/* Course filter + Sort */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              {batches.length > 0 && (
                 <select
                   value={filterBatchId}
                   onChange={e => { setFilterBatchId(e.target.value); setSelectedId(null); }}
@@ -934,8 +960,17 @@ export default function TeacherDoubtsPage() {
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
-              </div>
-            )}
+              )}
+              <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <select
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value as "newest" | "oldest")}
+                className="flex-1 py-1.5 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+            </div>
 
             {tab === "all" && (
               <div className="flex gap-1 flex-wrap">

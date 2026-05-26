@@ -22,6 +22,10 @@ import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
+import { useNavTour } from "@/components/onboarding/useNavTour";
+import { NavTourCard } from "@/components/onboarding/NavTourCard";
+import { PageTourCard } from "@/components/onboarding/PageTourCard";
 import { tokenStorage } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
 import { ensureBattleSocket, disconnectBattleSocket } from "@/lib/battle-socket";
@@ -172,6 +176,28 @@ const DashboardLayout = () => {
   const isStudent      = user?.role === "student";
   const isInstAdmin    = user?.role === "institute_admin";
 
+  // ── Welcome walkthrough (disabled for now) ─────────────────────────────────
+  const walkthroughKey = user ? `walkthrough_v1_${user.id}` : null;
+  const [walkthroughDone] = useState(true); // Tour disabled — always skip
+  const {
+    startTour,
+    isActive: tourActive,
+    currentStep: tourStep,
+    currentStepIdx,
+    totalSteps: tourTotalSteps,
+    phase: tourPhase,
+    currentPageFeature,
+    pageFeatureIdx,
+    totalPageFeatures,
+    advanceFromNav,
+    advancePageFeature,
+    skip: skipTour,
+  } = useNavTour(user.role);
+  function handleWalkthroughDone() {
+    if (walkthroughKey) localStorage.setItem(walkthroughKey, "1");
+    // Tour disabled — do not start nav tour
+  }
+
   // ── Admin profile setup modal (shown once on first login) ────────────────
   const { data: instProfile } = useInstituteProfile(isInstAdmin);
   const updateInstProfile = useUpdateInstituteProfile();
@@ -184,6 +210,7 @@ const DashboardLayout = () => {
   useEffect(() => {
     if (!isInstAdmin || instProfile === undefined) return;
     if (!user?.isFirstLogin) return;
+    if (!walkthroughDone) return;
     if (adminProfileKey && localStorage.getItem(adminProfileKey)) return;
 
     setAdminForm({
@@ -228,9 +255,10 @@ const DashboardLayout = () => {
   useEffect(() => {
     if (!isStudent || !prefKey || me === undefined) return;
     if (!user?.isFirstLogin) return;
+    if (!walkthroughDone) return;
     if (localStorage.getItem(prefKey)) return;
     setShowPrefModal(true);
-  }, [isStudent, prefKey, me, user?.isFirstLogin]);
+  }, [isStudent, prefKey, me, user?.isFirstLogin, walkthroughDone]);
 
   function handleSavePref() {
     if (!pendingPref || !prefKey) return;
@@ -370,15 +398,20 @@ const DashboardLayout = () => {
             {section.main}
           </p>
         )}
-        {navItems.map((item) => (
+        {navItems.map((item) => {
+          const itemNavKey = item.path.split("/").filter(Boolean).pop();
+          const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
+          return (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === roleRedirectPath[user.role]}
+              data-tour={`nav-${itemNavKey}`}
               onClick={() => {
                 setMobileSidebarOpen(false);
                 setShowUserMenu(false);
                 setPrefDropdownOpen(false);
+                if (isTourTarget) advanceFromNav();
               }}
               className={({ isActive }) =>
                 cn(
@@ -386,7 +419,8 @@ const DashboardLayout = () => {
                   sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
                   isActive
                     ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
-                    : "text-slate-600 hover:text-black hover:bg-slate-50/40"
+                    : "text-slate-600 hover:text-black hover:bg-slate-50/40",
+                  isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
                 )
               }
             >
@@ -422,11 +456,18 @@ const DashboardLayout = () => {
                 </>
               )}
             </NavLink>
-        ))}
+          );
+        })}
       </nav>
 
       {/* ── Footer ── */}
-      <div className="p-4 border-t border-slate-100 bg-slate-50/30 shrink-0">
+      <div
+        data-tour="nav-sidebar-footer"
+        className={cn(
+          "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
+          tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
+        )}
+      >
         <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
           <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
             <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
@@ -468,7 +509,7 @@ const DashboardLayout = () => {
       {!lightDashboardShell && <AeroBackground />}
       
       {/* ── Desktop Sidebar ── */}
-      <aside className={cn(
+      <aside data-tour="sidebar" className={cn(
           "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
           sidebarOpen ? "w-[280px]" : "w-[90px]"
         )}>
@@ -534,7 +575,7 @@ const DashboardLayout = () => {
               </button>
            </div>
 
-           <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+           <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
               {/* ── Exam Preference Switcher (students only) ── */}
               {isStudent && examTarget && (
                 <div className="relative">
@@ -578,6 +619,7 @@ const DashboardLayout = () => {
               )}
 
               <button
+                data-tour="notifications"
                 onClick={() => notificationPath && navigate(notificationPath)}
                 className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
                 title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -649,7 +691,7 @@ const DashboardLayout = () => {
            </div>
         </header>
 
-        <main className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
+        <main data-tour="main-content" className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
            <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
@@ -724,6 +766,9 @@ const DashboardLayout = () => {
         </div>
       )}
 
+      {/* ── Welcome Walkthrough (shown once per user, before other first-login modals) ── */}
+      {!walkthroughDone && <WelcomeWalkthrough onDone={handleWalkthroughDone} />}
+
       {/* ── Admin Profile Setup Modal (shown once on first login) ── */}
       {showAdminProfileModal && (
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
@@ -791,6 +836,31 @@ const DashboardLayout = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── Nav Tour: point at sidebar item → click to navigate ── */}
+      {tourActive && tourStep && tourPhase === "nav" && (
+        <NavTourCard
+          step={tourStep}
+          stepIndex={currentStepIdx}
+          totalSteps={tourTotalSteps}
+          onNext={() => { navigate(tourStep.path); advanceFromNav(); }}
+          onSkip={skipTour}
+        />
+      )}
+
+      {/* ── Page Tour: describe features of the current page ── */}
+      {tourActive && tourStep && tourPhase === "page" && currentPageFeature && (
+        <PageTourCard
+          step={tourStep}
+          stepIndex={currentStepIdx}
+          totalSteps={tourTotalSteps}
+          feature={currentPageFeature}
+          featureIndex={pageFeatureIdx}
+          totalFeatures={totalPageFeatures}
+          onNext={advancePageFeature}
+          onSkip={skipTour}
+        />
       )}
 
     </div>

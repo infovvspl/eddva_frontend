@@ -7,7 +7,7 @@ import {
   Layout, Calendar, GraduationCap, BarChart3, Edit2,
   Trophy, TrendingDown, TrendingUp, CheckCircle2,
   PauseCircle, PlayCircle, ImageIcon, IndianRupee, BadgePercent,
-  Building2, Sparkles, Unlock, RotateCcw,
+  Building2, Sparkles, Unlock, RotateCcw, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -1702,6 +1702,15 @@ const BatchesPage = () => {
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-black text-slate-500">{enrolled} students</span>
+                    {b.averageRating != null && b.averageRating > 0 && (
+                      <>
+                        <span className="text-[11px] text-slate-300">·</span>
+                        <span className="flex items-center gap-0.5 text-[11px] font-black text-amber-500">
+                          <Star className="w-3 h-3 fill-current" />
+                          {Number(b.averageRating).toFixed(1)} ({b.ratingCount})
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 
