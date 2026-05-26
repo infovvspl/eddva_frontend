@@ -65,7 +65,7 @@ function AssignmentSubmissionsView({ assignment }: { assignment: LectureAssignme
         <div key={sub.id} className="p-4 border rounded-xl bg-card">
           <div className="flex justify-between items-start mb-2">
             <div>
-              <p className="font-semibold text-sm">{sub.student?.user?.name || "Unknown Student"}</p>
+              <p className="font-semibold text-sm">{sub.student?.user?.fullName || sub.student?.user?.name || "Unknown Student"}</p>
               <p className="text-xs text-muted-foreground">Submitted: {new Date(sub.submittedAt).toLocaleString()}</p>
               <p className="text-xs mt-1">Status: <span className="font-medium capitalize">{sub.status}</span></p>
             </div>

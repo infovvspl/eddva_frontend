@@ -1240,9 +1240,11 @@ export interface AssignmentSubmission {
   student?: {
     id: string;
     user: {
-      name: string;
+      name?: string;
+      fullName?: string;
       email: string;
       avatarUrl?: string;
+      profilePictureUrl?: string;
     };
   };
 }
