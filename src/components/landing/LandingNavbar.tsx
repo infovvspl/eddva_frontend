@@ -35,7 +35,6 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           <div className="flex items-center justify-between h-20">
-            
             {/* Left Nav Menu (Desktop) */}
             <div className="hidden lg:flex items-center gap-8">
               {leftLinks.map((item) => (
@@ -52,7 +51,7 @@ export default function Navbar() {
             </div>
 
             {/* Centered Brand Logo */}
-            <div className="flex items-center gap-3 p-1">
+            <Link to="/" className="flex items-center gap-3 p-1">
               <div className="w-44 h-16">
                 <img
                   src={logo}
@@ -60,7 +59,7 @@ export default function Navbar() {
                   className="w-full h-full object-cover"
                 />
               </div>
-            </div>
+            </Link>
 
             {/* Right Nav Menu (Desktop) */}
             <div className="hidden lg:flex items-center gap-8">

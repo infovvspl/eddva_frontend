@@ -1,404 +1,465 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { LandingLayout } from "@/components/landing/LandingLayout";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef, useState } from "react";
 import {
-  Search,
-  Users,
-  Clock,
-  ArrowRight,
-  MapPin,
-  Loader2,
-  BookOpen,
-  ChevronDown,
-  Filter,
-} from "lucide-react";
-import { B, P } from "@/components/landing/DesignTokens";
-import exploreCoursesBg from "@/assets/bg2.jpg";
-import { useInstituteCoursesCatalog } from "@/hooks/use-tenant-catalog";
-import type { InstituteCatalogCourse } from "@/lib/api/public-tenant";
+  FiArrowUpRight,
+  FiBookOpen,
+  FiClock,
+  FiStar,
+  FiTrendingUp,
+  FiShield,
+  FiLayers,
+  FiMonitor,
+  FiCode,
+  FiTerminal,
+  FiAward,
+} from "react-icons/fi";
+import { LandingLayout } from "@/components/landing/LandingLayout";
+import { Link } from "react-router-dom";
 
-/** After auth, student lands here to enroll or pay for paid batches. */
-const POST_AUTH_ENROLL_PATH = "/student/courses?discover=1";
-const loginWithReturn = `/login?returnTo=${encodeURIComponent(POST_AUTH_ENROLL_PATH)}`;
-const registerWithReturn = `/register?returnTo=${encodeURIComponent(POST_AUTH_ENROLL_PATH)}`;
+// ─── Shared ease ──────────────────────────────────────────────────────────────
+const ease = [0.16, 1, 0.3, 1] as const;
 
-const FALLBACK_IMAGES: Record<string, string> = {
-  jee: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1200",
-  neet: "https://images.unsplash.com/photo-1532187875605-186c73196ed8?auto=format&fit=crop&q=80&w=1200",
-  default:
-    "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=1200",
-};
-
-const normalize = (s?: string) => (s ?? "").toLowerCase().replace(/[\s_-]+/g, "");
-
-function imageFor(course: InstituteCatalogCourse): string {
-  if (course.thumbnailUrl) return course.thumbnailUrl;
-  const e = normalize(course.examTarget);
-  if (e.includes("neet")) return FALLBACK_IMAGES.neet;
-  if (e.includes("jee")) return FALLBACK_IMAGES.jee;
-  return FALLBACK_IMAGES.default;
+// ─── Data Interfaces ──────────────────────────────────────────────────────────
+interface Course {
+  id: number;
+  title: string;
+  category: "Engineering" | "Design" | "Business";
+  level: string;
+  duration: string;
+  rating: string;
+  reviews: string;
+  description: string;
+  image: string;
+  icon: React.ReactNode;
+  color: string;
+  bg: string;
+  text: string;
 }
 
-function formatDuration(c: InstituteCatalogCourse): string {
-  if (!c.startDate || !c.endDate) return "Flexible schedule";
-  const ms = new Date(c.endDate).getTime() - new Date(c.startDate).getTime();
-  const months = Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24 * 30)));
-  return `${months} mo${months > 1 ? "s" : ""}`;
+interface Feature {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
 }
 
-function labelExam(examTarget: string) {
-  return examTarget.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-}
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const courses: Course[] = [
+  {
+    id: 1,
+    title: "Full-Stack Web Engineering",
+    category: "Engineering",
+    level: "Intermediate to Advanced",
+    duration: "12 Weeks",
+    rating: "4.9",
+    reviews: "2.1k",
+    description:
+      "Master React, Node.js, and system architecture. Build production-ready, scalable applications from scratch.",
+    image:
+      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=600",
+    icon: <FiCode className="w-5 h-5" />,
+    color: "from-blue-500 to-cyan-400",
+    bg: "bg-blue-50",
+    text: "text-blue-600",
+  },
+  {
+    id: 2,
+    title: "Advanced UI/UX Design",
+    category: "Design",
+    level: "All Levels",
+    duration: "8 Weeks",
+    rating: "4.8",
+    reviews: "1.5k",
+    description:
+      "Go beyond the basics. Learn design systems, micro-interactions, and psychological principles of user flow.",
+    image:
+      "https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=600",
+    icon: <FiMonitor className="w-5 h-5" />,
+    color: "from-violet-500 to-fuchsia-400",
+    bg: "bg-violet-50",
+    text: "text-violet-600",
+  },
+  {
+    id: 3,
+    title: "Backend Architecture & DevOps",
+    category: "Engineering",
+    level: "Advanced",
+    duration: "10 Weeks",
+    rating: "4.9",
+    reviews: "950",
+    description:
+      "Design robust APIs, manage microservices, and deploy pipelines using Docker, Kubernetes, and AWS.",
+    image:
+      "https://images.unsplash.com/photo-1618401471353-b98a520d9c1a?q=80&w=600",
+    icon: <FiTerminal className="w-5 h-5" />,
+    color: "from-emerald-500 to-teal-400",
+    bg: "bg-emerald-50",
+    text: "text-emerald-600",
+  },
+  {
+    id: 4,
+    title: "Product Management Mastery",
+    category: "Business",
+    level: "Intermediate",
+    duration: "6 Weeks",
+    rating: "4.7",
+    reviews: "1.2k",
+    description:
+      "Learn how to define product vision, manage roadmaps, and lead cross-functional teams to launch successful products.",
+    image:
+      "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=600",
+    icon: <FiLayers className="w-5 h-5" />,
+    color: "from-amber-500 to-orange-400",
+    bg: "bg-amber-50",
+    text: "text-amber-600",
+  },
+];
 
-function labelClass(cls: string) {
-  return cls.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-}
+// Explicitly typed array in case you choose to uncomment the features section later
+const _features: Feature[] = [
+  {
+    title: "Project-Based Learning",
+    description:
+      "No endless lectures. Build real-world projects that you can showcase in your portfolio from day one.",
+    icon: <FiLayers className="w-6 h-6" />,
+  },
+  {
+    title: "Expert Mentorship",
+    description:
+      "Get 1-on-1 guidance from industry leaders who actively work at top tech companies.",
+    icon: <FiAward className="w-6 h-6" />,
+  },
+  {
+    title: "Lifetime Access",
+    description:
+      "Your learning doesn't expire. Revisit the materials and updates anytime in your career.",
+    icon: <FiClock className="w-6 h-6" />,
+  },
+];
 
-function CourseCard({
-  course,
-  index,
-  showInstitute,
-}: {
-  course: InstituteCatalogCourse;
-  index: number;
-  showInstitute: boolean;
-}) {
-  const priceLabel = course.isPaid
-    ? course.feeAmount != null
-      ? `₹${Number(course.feeAmount).toLocaleString("en-IN")}`
-      : "Paid"
-    : "Free";
-  const spotsLeft = Math.max(0, course.maxStudents - course.enrolledCount);
+type CategoryFilter = "All" | "Engineering" | "Design" | "Business";
 
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.35, delay: index * 0.04 }}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-lg"
-    >
-      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
-        <img
-          src={imageFor(course)}
-          alt=""
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGES.default;
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-slate-900/10 to-transparent" />
-        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-800 shadow-sm">
-            {labelExam(course.examTarget)}
-          </span>
-          <span
-            className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm"
-            style={{
-              background: `linear-gradient(135deg, ${B}, ${P})`,
-            }}
-          >
-            {priceLabel}
-          </span>
-        </div>
-      </div>
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function CoursesPage() {
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
-      <div className="flex flex-1 flex-col gap-3 p-5">
-        <h3 className="text-lg font-bold leading-snug text-slate-900 line-clamp-2">{course.name}</h3>
-        {showInstitute && course.instituteName ? (
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {course.instituteName}
-          </p>
-        ) : null}
-        {course.description ? (
-          <p className="line-clamp-2 text-sm text-slate-600">{course.description}</p>
-        ) : null}
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>("All");
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-500">
-          <span className="inline-flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
-            {course.enrolledCount} enrolled
-            {course.maxStudents ? ` · ${spotsLeft} seats left` : ""}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            {formatDuration(course)}
-          </span>
-        </div>
+  const filteredCourses =
+    activeCategory === "All"
+      ? courses
+      : courses.filter((c) => c.category === activeCategory);
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Faculty</p>
-            <p className="truncate text-sm font-semibold text-slate-700">
-              {course.teacherName ?? "Institute faculty"}
-            </p>
-            <p className="text-xs text-slate-500">{labelClass(course.class)}</p>
-          </div>
-          <Link
-            to={loginWithReturn}
-            title="Sign in to enroll or purchase"
-            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
-          >
-            Enroll <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </div>
-    </motion.article>
-  );
-}
-
-export default function Courses() {
-  const { data, isLoading, isError, error } = useInstituteCoursesCatalog();
-  const [query, setQuery] = useState("");
-
-  const courses = data?.courses ?? [];
-  const institute = data?.institute;
-  const isPlatform = data?.catalogScope === "platform";
-
-  const accent = institute?.brandColor && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(institute.brandColor)
-    ? institute.brandColor
-    : B;
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return courses;
-    return courses.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.description && c.description.toLowerCase().includes(q)) ||
-        c.examTarget.toLowerCase().includes(q) ||
-        (c.teacherName && c.teacherName.toLowerCase().includes(q)) ||
-        (c.instituteName && c.instituteName.toLowerCase().includes(q))
-    );
-  }, [courses, query]);
-
-  const showCatalog =
-    !isLoading && !isError && institute && !institute.suspended;
+  const categories: CategoryFilter[] = ["All", "Engineering", "Design", "Business"];
 
   return (
     <LandingLayout>
-      {/* ── Section 1: Institute hero (Explore courses) ── */}
-      <section className="relative overflow-hidden border-b border-slate-200/80 pt-20 pb-14 sm:pt-28 sm:pb-20">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${exploreCoursesBg})` }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-gradient-to-br from-white/90 via-sky-50/85 to-white/92"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 opacity-40"
-          style={{
-            background: `linear-gradient(120deg, ${accent}18 0%, transparent 55%, ${P}14 100%)`,
-          }}
-        />
-        <div className="landing-shell relative">
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-              <Loader2 className="h-12 w-12 animate-spin" style={{ color: accent }} />
-              <p className="mt-4 text-sm font-medium">Loading programs…</p>
-            </div>
-          )}
+    <main className="w-full bg-white text-slate-900 overflow-hidden">
+      {/* hero */}
+      <section
+        ref={heroRef}
+        className="relative min-h-screen flex overflow-hidden bg-slate-950"
+      >
+        {/* Left panel — text */}
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 flex flex-col justify-center px-8 sm:px-16 lg:px-24 pt-28 pb-16 w-full lg:w-1/2"
+        >
+          {/* Eyebrow */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, ease }}
+            className="flex items-center gap-3 mb-8"
+          >
+            <span className="h-px w-10 bg-[#0066cc]" />
+            <span className="text-xs font-bold tracking-[0.2em] text-[#0066cc] uppercase">
+              Our Programs
+            </span>
+          </motion.div>
 
-          {isError && (
-            <div className="mx-auto max-w-lg rounded-2xl border border-red-200 bg-red-50/90 p-8 text-center">
-              <p className="font-semibold text-red-900">Could not load courses</p>
-              <p className="mt-2 text-sm text-red-800">
-                {(error as Error)?.message || "Check your network and try again."}
-              </p>
-            </div>
-          )}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease, delay: 0.1 }}
+            className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.0] tracking-tight mb-8"
+          >
+            Master your craft.
+            <br />
+            <span className="font-spicy bg-gradient-to-r from-[#0066cc] via-[#00a6ff] to-cyan-300 bg-clip-text text-transparent">
+              Build your future.
+            </span>
+          </motion.h1>
 
-          {showCatalog && institute && (
-            <>
-              <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:text-left">
-                {institute.logoUrl ? (
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease, delay: 0.2 }}
+            className="text-slate-400 text-lg leading-relaxed max-w-md mb-10 font-medium"
+          >
+            Industry-aligned curriculum designed to take you from fundamentals
+            to mastery. No fluff, just high-impact skills that employers
+            actually want.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease, delay: 0.3 }}
+            className="flex flex-wrap gap-4"
+          >
+            <button
+              onClick={() => {
+                document
+                  .getElementById("courses-grid")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="group relative inline-flex items-center gap-2 bg-[#0066cc] hover:bg-[#004499] text-white px-7 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 overflow-hidden"
+            >
+              <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="relative z-10">Browse Courses</span>
+              <FiArrowUpRight className="relative z-10 w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </button>
+          </motion.div>
+        </motion.div>
+
+        {/* Right panel — image mosaic */}
+        <div className="hidden lg:block absolute right-0 top-0 w-1/2 h-full overflow-hidden">
+          {/* Dark overlay on left edge for blend */}
+          <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-slate-950 to-transparent z-10" />
+          <div className="absolute inset-0 bg-slate-950/30 z-10" />
+
+          {/* Large Hero Image */}
+          <motion.div
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, ease, delay: 0.2 }}
+            className="absolute inset-0 p-4 pl-0 py-8"
+          >
+            <div className="w-full h-full rounded-3xl overflow-hidden relative">
+              <img
+                src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200"
+                alt="Coding workspace"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Scroll hint */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="absolute bottom-8 left-8 sm:left-16 lg:left-24 flex items-center gap-2 text-slate-600 text-xs font-semibold tracking-widest uppercase z-20"
+        >
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="w-px h-8 bg-gradient-to-b from-transparent to-slate-600"
+          />
+          Explore
+        </motion.div>
+      </section>
+
+      {/* courses content grid */}
+      <section
+        id="courses-grid"
+        className="relative py-24 sm:py-32 px-8 sm:px-16 lg:px-24 overflow-hidden bg-slate-50"
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px)] bg-[size:6rem] opacity-40 pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Header & Filters */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, ease }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <span className="h-px w-8 bg-[#0066cc]" />
+                <span className="text-xs font-bold tracking-[0.2em] text-[#0066cc] uppercase">
+                  Curriculum
+                </span>
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight">
+                Find your
+                <span className="font-spicy ml-3 bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
+                  learning path.
+                </span>
+              </h2>
+            </motion.div>
+
+            {/* Tabs */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, ease }}
+              className="flex flex-wrap gap-2"
+            >
+              {categories.map((cat, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    activeCategory === cat
+                      ? "bg-slate-900 text-white shadow-md"
+                      : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-900"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Grid Container */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredCourses.map((course) => (
+              <motion.div
+                key={course.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, ease }}
+                className="group flex flex-col bg-white border border-slate-200/80 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500"
+              >
+                {/* Image Area */}
+                <div className="relative h-60 overflow-hidden bg-slate-100">
                   <img
-                    src={institute.logoUrl}
-                    alt=""
-                    className="h-20 w-20 rounded-2xl border border-white bg-white object-contain p-1 shadow-md sm:h-24 sm:w-24"
+                    src={course.image}
+                    alt={course.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                ) : (
-                  <div
-                    className="flex h-20 w-20 items-center justify-center rounded-2xl text-2xl font-black text-white shadow-md sm:h-24 sm:w-24"
-                    style={{ background: `linear-gradient(135deg, ${accent}, ${P})` }}
-                  >
-                    {(institute.name?.charAt(0) || "E").toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                    {isPlatform ? "Public catalog" : "Institute"}
-                  </p>
-                  <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
-                    {isPlatform ? "Explore courses" : institute.name}
-                  </h1>
-                  <p className="mx-auto mt-3 max-w-2xl text-base text-slate-600 sm:mx-0">
-                    {institute.welcomeMessage ||
-                      (isPlatform
-                        ? "Programs from partner institutes. Anyone can browse; sign in or create an account to enroll and pay for paid courses."
-                        : "Browse live batches from this institute. Sign in to enroll and access your classroom.")}
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-600 sm:justify-start">
-                    {!isPlatform && (institute.city || institute.state) ? (
-                      <span className="inline-flex items-center gap-1.5 font-medium">
-                        <MapPin className="h-4 w-4 shrink-0 opacity-70" />
-                        {[institute.city, institute.state].filter(Boolean).join(", ")}
-                      </span>
-                    ) : null}
-                    <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
-                      <BookOpen className="h-4 w-4 shrink-0" style={{ color: accent }} />
-                      {courses.length} program{courses.length === 1 ? "" : "s"}
-                      {isPlatform ? " listed" : " open"}
+
+                  {/* Overlay Badges */}
+                  <div className="absolute top-5 left-5 flex gap-2">
+                    <span className="px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm text-xs font-black uppercase tracking-wider text-slate-900 shadow-sm">
+                      {course.category}
                     </span>
                   </div>
-                </div>
-              </div>
-
-              <div className="mx-auto mt-10 max-w-2xl sm:mx-0">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="search"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder={
-                        isPlatform
-                          ? "Search by course, institute, exam, or teacher…"
-                          : "Search by course, exam, or teacher…"
-                      }
-                      className="h-14 w-full rounded-2xl border border-slate-200/90 bg-white/95 pl-12 pr-4 text-sm font-medium text-slate-900 shadow-sm outline-none ring-slate-200 transition focus:ring-2"
-                    />
+                  <div className="absolute bottom-5 right-5 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm">
+                    <FiStar className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    {course.rating} ({course.reviews})
                   </div>
+                </div>
 
-                  <div className="relative shrink-0 sm:w-48">
-                    <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
-                      <Filter className="h-4 w-4 text-slate-400" />
+                {/* Content Area */}
+                <div className="p-8 flex-1 flex flex-col">
+                  <div className="flex items-center gap-4 mb-4 text-xs font-semibold text-slate-500">
+                    <div className="flex items-center gap-1.5">
+                      <FiTrendingUp className="w-4 h-4 text-[#0066cc]" />
+                      {course.level}
                     </div>
-                    <select
-                      value={["jee", "neet", "foundation", "crash course"].includes(query.toLowerCase()) ? query : ""}
-                      onChange={(e) => setQuery(e.target.value)}
-                      className="h-14 w-full appearance-none rounded-2xl border border-slate-200/90 bg-white/95 pl-10 pr-10 text-sm font-bold text-slate-700 shadow-sm outline-none ring-slate-200 transition focus:ring-2"
-                    >
-                      <option value="">All Categories</option>
-                      <option value="JEE">JEE</option>
-                      <option value="NEET">NEET</option>
-                      <option value="Foundation">Foundation</option>
-                      <option value="Crash Course">Crash Course</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <div className="w-1 h-1 rounded-full bg-slate-300" />
+                    <div className="flex items-center gap-1.5">
+                      <FiClock className="w-4 h-4 text-[#0066cc]" />
+                      {course.duration}
+                    </div>
                   </div>
-                </div>
 
-                {query && (
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      onClick={() => setQuery("")}
-                      className="text-xs font-bold text-red-500 transition hover:text-red-600 hover:underline"
-                    >
-                      Clear filters & search
+                  <h3 className="text-2xl font-black text-slate-900 mb-3 group-hover:text-[#0066cc] transition-colors">
+                    {course.title}
+                  </h3>
+
+                  <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8 flex-1">
+                    {course.description}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-auto">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br ${course.color} text-white shadow-sm`}
+                      >
+                        {course.icon}
+                      </div>
+                      <span className="text-sm font-bold text-slate-900">
+                        View Curriculum
+                      </span>
+                    </div>
+                    <button className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-[#0066cc] group-hover:border-[#0066cc] group-hover:text-white transition-all duration-300">
+                      <FiArrowUpRight className="w-4 h-4" />
                     </button>
                   </div>
-                )}
-              </div>
-            </>
-          )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── Section 2: Course catalog ── */}
-      {showCatalog && (
-        <section id="courses" className="landing-section bg-slate-50/80">
-          <div className="landing-shell">
-            <div className="mb-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">All programs</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  {filtered.length === courses.length
-                    ? isPlatform
-                      ? `${courses.length} open course${courses.length === 1 ? "" : "s"} across institutes.`
-                      : `${courses.length} course${courses.length === 1 ? "" : "s"} from ${institute!.name}.`
-                    : `${filtered.length} of ${courses.length} courses match your search.`}
-                </p>
-              </div>
-            </div>
+      {/* cta */}
+      <section className="relative py-24 sm:py-32 px-8 sm:px-16 lg:px-24 overflow-hidden bg-white border-t border-slate-100">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-blue-50/60 to-transparent pointer-events-none" />
 
-            {courses.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center">
-                <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
-                <p className="mt-4 text-lg font-semibold text-slate-800">No programs available yet</p>
-                <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                  {isPlatform
-                    ? "There are no published courses on the platform right now. Check back later."
-                    : "This institute has not published any active batches. Check back soon or contact the institute."}
-                </p>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center text-slate-600">
-                No courses match &ldquo;{query}&rdquo;. Try another search.
-              </div>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map((c, i) => (
-                  <CourseCard key={c.id} course={c} index={i} showInstitute={isPlatform} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {!isLoading && !isError && institute?.suspended && (
-        <section className="landing-section bg-slate-50">
-          <div className="landing-shell max-w-xl rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <p className="text-lg font-bold text-slate-900">This institute is unavailable</p>
-            <p className="mt-2 text-sm text-slate-600">Please contact support or try again later.</p>
-          </div>
-        </section>
-      )}
-
-      {/* ── Section 3: CTA ── */}
-      {showCatalog && (
-        <section className="landing-section pb-20">
-          <div className="landing-shell">
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.4 }}
-              className="relative overflow-hidden rounded-3xl px-8 py-12 text-center text-white sm:px-14 sm:py-14"
-              style={{ background: `linear-gradient(135deg, ${accent} 0%, ${P} 100%)` }}
+              transition={{ duration: 0.8, ease }}
+              className="lg:col-span-7"
             >
-              <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-              <h2 className="relative text-2xl font-black leading-tight sm:text-3xl">Enroll or purchase</h2>
-              <p className="relative mx-auto mt-3 max-w-lg text-sm text-white/90">
-                Create a free student account (or sign in). Then open{" "}
-                <strong className="font-bold">Discover courses</strong> to join a batch and complete payment for paid
-                programs.
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.05] tracking-tight">
+                Don't just learn.
+                <br />
+                <span className="font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
+                  Build and deploy.
+                </span>
+              </h2>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease, delay: 0.1 }}
+              className="lg:col-span-5 space-y-6"
+            >
+              <p className="text-slate-500 font-medium leading-relaxed text-lg">
+                Get full access to all our interactive courses, community
+                discord, and 1-on-1 mentorship sessions. Start building your
+                portfolio today.
               </p>
-              <div className="relative mt-8 flex flex-wrap justify-center gap-3">
+
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  to={registerWithReturn}
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-slate-900 shadow-lg transition hover:scale-[1.02] active:scale-[0.98]"
+                  to="/register"
+                  className="group relative inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] text-white px-7 py-4 rounded-xl font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/25 overflow-hidden"
                 >
-                  Create account <ArrowRight className="h-4 w-4" />
+                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="relative z-10">Enroll Now</span>
+                  <FiArrowUpRight className="relative z-10 w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
+
                 <Link
-                  to={loginWithReturn}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/80 bg-transparent px-7 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                  to="/login"
+                  className="inline-flex items-center justify-center gap-2 border border-slate-200 text-slate-600 hover:border-[#0066cc]/40 hover:text-slate-900 px-7 py-4 rounded-xl font-bold text-sm transition-all duration-300 hover:shadow-md"
                 >
-                  Sign in to continue
+                  <FiBookOpen className="w-4 h-4" />
+                  <span>Sign in to continue</span>
                 </Link>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                <FiShield className="w-3.5 h-3.5 text-emerald-500" />
+                Secure checkout. Cancel anytime.
               </div>
             </motion.div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
+    </main>
     </LandingLayout>
   );
 }
