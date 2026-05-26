@@ -1,0 +1,287 @@
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, Loader } from 'lucide-react';
+import api from '@/lib/api/school-client';
+
+export default function StudentForm({ student, onSubmit, onCancel, isLoading }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    enrollmentNo: '',
+    rollNo: '',
+    dob: '',
+    gender: 'MALE',
+    fatherName: '',
+    motherName: '',
+    parentPhone: '',
+    parentEmail: '',
+    sectionId: '',
+    admissionDate: ''
+  });
+  const [sections, setSections] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (student) {
+      setFormData({
+        name: student.name || '',
+        email: student.email || '',
+        password: '',
+        enrollmentNo: student.studentProfile?.enrollmentNo || '',
+        rollNo: student.studentProfile?.rollNo || '',
+        dob: student.studentProfile?.dob ? new Date(student.studentProfile.dob).toISOString().split('T')[0] : '',
+        gender: student.studentProfile?.gender || 'MALE',
+        fatherName: student.studentProfile?.fatherName || '',
+        motherName: student.studentProfile?.motherName || '',
+        parentPhone: student.studentProfile?.parentPhone || '',
+        parentEmail: student.studentProfile?.parentEmail || '',
+        sectionId: student.studentProfile?.sectionId || '',
+        admissionDate: student.studentProfile?.admissionDate ? new Date(student.studentProfile.admissionDate).toISOString().split('T')[0] : ''
+      });
+    }
+    fetchSections();
+  }, [student]);
+
+  const fetchSections = async () => {
+    try {
+      const res = await api.get('/academic/classes');
+      const allSections = [];
+      (Array.isArray(res.data) ? res.data : []).forEach(cls => {
+        (cls.sections || []).forEach(section => {
+          allSections.push({ ...section, className: cls.name });
+        });
+      });
+      setSections(allSections);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.name.trim()) {
+      setError('Student name is required');
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    if (!student && !formData.password.trim()) {
+      setError('Password is required');
+      return;
+    }
+
+    await onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col max-h-[70vh]">
+      <div className="overflow-y-auto pr-2 space-y-4">
+        {error && (
+          <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+            <p className="text-sm font-semibold text-red-700">{error}</p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Full Name *</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="John Doe"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Email *</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="student@school.com"
+            />
+          </div>
+
+          {!student && (
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Password *</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="••••••••"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Enrollment No.</label>
+            <input
+              type="text"
+              name="enrollmentNo"
+              value={formData.enrollmentNo}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="ENR001"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Roll No.</label>
+            <input
+              type="text"
+              name="rollNo"
+              value={formData.rollNo}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="1"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Date of Birth</label>
+            <input
+              type="date"
+              name="dob"
+              value={formData.dob}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Gender</label>
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            >
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Class & Section</label>
+            <select
+              name="sectionId"
+              value={formData.sectionId}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            >
+              <option value="">Select Section</option>
+              {sections.map(section => (
+                <option key={section.id} value={section.id}>
+                  {section.className} - {section.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Admission Date</label>
+            <input
+              type="date"
+              name="admissionDate"
+              value={formData.admissionDate}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-surface-200 pt-4">
+          <h3 className="font-semibold text-surface-950 mb-4">Parent Information</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Father's Name</label>
+              <input
+                type="text"
+                name="fatherName"
+                value={formData.fatherName}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="Father's Name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Mother's Name</label>
+              <input
+                type="text"
+                name="motherName"
+                value={formData.motherName}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="Mother's Name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Parent Phone</label>
+              <input
+                type="tel"
+                name="parentPhone"
+                value={formData.parentPhone}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="+91 XXXXX XXXXX"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Parent Email</label>
+              <input
+                type="email"
+                name="parentEmail"
+                value={formData.parentEmail}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="parent@email.com"
+              />
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-4 border-t border-surface-200 mt-4">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+        >
+          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {student ? 'Update Student' : 'Add Student'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 rounded-lg border border-surface-200 px-4 py-2 font-semibold text-surface-700 hover:bg-surface-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,21 @@
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  padding: 18px;
+  transition: all var(--transition-base);
+}
+
+.glass-card--hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-200);
+}
+
+.glass-card--hover:active {
+  transform: translateY(0);
+  transition-duration: 0.08s;
+}

@@ -1,0 +1,74 @@
+.notifications-page {
+  padding: 24px;
+}
+
+.notifications-page,
+.notification-card {
+  animation: notificationRise 0.45s ease both;
+}
+
+.notifications-header {
+  margin-bottom: 24px;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notification-card {
+  background: white;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.notification-card--unread {
+  border-left: 4px solid #6366f1;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-content h3 {
+  margin: 0 0 6px;
+}
+
+.notification-content p {
+  margin: 0 0 6px;
+  color: #4b5563;
+}
+
+.notification-content span {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.notification-actions button {
+  border: none;
+  background: #f3f4f6;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+@keyframes notificationRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

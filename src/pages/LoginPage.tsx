@@ -7,7 +7,9 @@ import {
   Sparkles, ArrowLeft, KeyRound, Check,
 } from "lucide-react";
 import * as authApi from "@/lib/api/auth";
+import type { SchoolLoginResponse } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
+import type { User, UserRole } from "@/lib/types";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 
@@ -42,7 +44,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
-  const { setUser } = useAuthStore();
+  const { setUser, setTenantType } = useAuthStore();
 
   const [view, setView] = useState<View>("login");
 
@@ -64,7 +66,7 @@ const LoginPage = () => {
   const [error, setError] = useState("");
 
   /* set-password state (first login) */
-  const [pendingUser,    setPendingUser]    = useState<ReturnType<typeof buildUser> | null>(null);
+  const [pendingUser,    setPendingUser]    = useState<User | null>(null);
   const [setPwNew,       setSetPwNew]       = useState("");
   const [setPwConfirm,   setSetPwConfirm]   = useState("");
   const [showSetNew,     setShowSetNew]     = useState(false);
@@ -104,15 +106,48 @@ const LoginPage = () => {
     };
   };
 
-  const redirectUser = (user: ReturnType<typeof buildUser>) => {
+  const buildSchoolUser = (loginData: SchoolLoginResponse): User => {
+    const u = loginData.user;
+    const inst = loginData.institute;
+    return {
+      id: u.id,
+      name: u.name,
+      phone: u.phone ?? "",
+      email: u.email,
+      role: (u.role.toLowerCase()) as UserRole,
+      avatar: u.photo ?? undefined,
+      tenantId: u.instituteId ?? undefined,
+      tenantName: inst?.name ?? undefined,
+      isFirstLogin: false,
+      onboardingRequired: false,
+      teacherProfile: null,
+      studentProfile: null,
+    };
+  };
+
+  const redirectUser = (user: User, tenantType: "coaching" | "school") => {
+    setTenantType(tenantType);
     setUser(user);
+    if (user.role === "super_admin") {
+      navigate("/super-admin/dashboard");
+      return;
+    }
+    if (tenantType === "school") {
+      const schoolPaths: Record<string, string> = {
+        institute_admin: "/school/admin",
+        teacher:         "/school/teacher",
+        student:         "/school/student",
+        parent:          "/school/parent",
+      };
+      navigate(schoolPaths[user.role] || "/school/student");
+      return;
+    }
     const paths: Record<string, string> = {
-      super_admin:     "/super-admin",
       institute_admin: "/admin",
       teacher:         "/teacher",
       student:         "/student",
     };
-    navigate(paths[user.role] || "/student");
+    navigate(returnTo || paths[user.role] || "/student");
   };
 
   /* ── Login handler ── */
@@ -122,20 +157,48 @@ const LoginPage = () => {
     setError(""); setLoginLoading(true);
     try {
       const isEmail = identifier.includes("@");
-      const loginRes = await authApi.loginWithPassword(
-        isEmail
-          ? { email: identifier.trim(), password }
-          : { phoneNumber: identifier.trim().startsWith("+") ? identifier.trim() : `+91${identifier.trim()}`, password }
-      );
-      const user = buildUser(await authApi.getMe(), { onboardingRequired: loginRes.onboardingRequired });
-      if (user.isFirstLogin) {
-        setPendingUser(user);
-        setView("set-password");
-      } else {
-        redirectUser(user);
+
+      // Try coaching login first
+      let coachingFailed = false;
+      let coachingErrMsg = "";
+      try {
+        const loginRes = await authApi.loginWithPassword(
+          isEmail
+            ? { email: identifier.trim(), password }
+            : { phoneNumber: identifier.trim().startsWith("+") ? identifier.trim() : `+91${identifier.trim()}`, password }
+        );
+        const user = buildUser(await authApi.getMe(), { onboardingRequired: loginRes.onboardingRequired });
+        if (user.isFirstLogin) {
+          setPendingUser(user as User);
+          setView("set-password");
+        } else {
+          redirectUser(user as User, "coaching");
+        }
+        return;
+      } catch (coachingErr: any) {
+        const status = coachingErr?.response?.status;
+        // Fall through to school login only on auth failures with email input
+        if (isEmail && (status === 401 || status === 404 || status === 400)) {
+          coachingFailed = true;
+          coachingErrMsg = coachingErr?.response?.data?.message || "";
+        } else {
+          throw coachingErr;
+        }
+      }
+
+      if (!coachingFailed) return;
+
+      // School login fallback (email only)
+      try {
+        const schoolRes = await authApi.loginSchoolWithPassword({ email: identifier.trim(), password });
+        const schoolUser = buildSchoolUser(schoolRes);
+        redirectUser(schoolUser, "school");
+      } catch (schoolErr: any) {
+        const schoolMsg = schoolErr?.response?.data?.message || "";
+        setError(schoolMsg || coachingErrMsg || "Invalid credentials. Please try again.");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Invalid credentials. Please try again.");
+      setError(err?.response?.data?.message || err?.message || "Invalid credentials. Please try again.");
     } finally { setLoginLoading(false); }
   };
 
@@ -148,13 +211,13 @@ const LoginPage = () => {
     try {
       await authApi.setPassword(setPwNew);
       if (pendingUser) {
-        const user = { ...pendingUser, isFirstLogin: false, onboardingRequired: true };
+        const user: User = { ...pendingUser, isFirstLogin: false, onboardingRequired: true };
         setUser(user);
         // Institute admins always complete onboarding on first-ever login
         if (user.role === "institute_admin") {
           navigate("/admin/onboard");
         } else {
-          redirectUser(user);
+          redirectUser(user, "coaching");
         }
       }
     } catch (err: any) {

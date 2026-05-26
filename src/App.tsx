@@ -8,7 +8,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { getSubdomain } from "@/lib/tenant";
 import { XPToastProvider } from "@/components/student/XPToast";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { SchoolGuard } from "./components/auth/SchoolGuard";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
 
@@ -89,6 +91,90 @@ const ExamTrackDemoPage = lazy(() => import("./pages/landing/ExamTrackDemoPage")
 const PrivacyPolicyPage = lazy(() => import("./pages/landing/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/landing/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("./pages/landing/CookiePolicyPage"));
+const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
+
+// ── School admin pages ───────────────────────────────────────────────────────
+const SchoolAdminLayout       = lazy(() => import("./components/school/admin/Layout"));
+const SchoolAdminDashboard    = lazy(() => import("./pages/school/admin/AdminDashboard"));
+const SchoolStudents          = lazy(() => import("./pages/school/admin/Students"));
+const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
+const SchoolTeachers          = lazy(() => import("./pages/school/admin/Teachers"));
+const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
+const SchoolAttendance        = lazy(() => import("./pages/school/admin/Attendance"));
+const SchoolAcademics         = lazy(() => import("./pages/school/admin/Academics"));
+const SchoolNotices           = lazy(() => import("./pages/school/admin/Notices"));
+const SchoolFees              = lazy(() => import("./pages/school/admin/Fees"));
+const SchoolAcademicCalendar  = lazy(() => import("./pages/school/admin/AcademicCalendar"));
+const SchoolComplaints        = lazy(() => import("./pages/school/admin/Complaints"));
+const SchoolAnalytics         = lazy(() => import("./pages/school/admin/Analytics"));
+const SchoolTimetable         = lazy(() => import("./pages/school/admin/Timetable"));
+const SchoolAdminSettings     = lazy(() => import("./pages/school/admin/AdminSettings"));
+const SchoolReports           = lazy(() => import("./pages/school/admin/Reports"));
+const SchoolFinance           = lazy(() => import("./pages/school/admin/Finance"));
+const SchoolCommunications    = lazy(() => import("./pages/school/admin/Communications"));
+const SchoolRoles             = lazy(() => import("./pages/school/admin/Roles"));
+const SchoolAuditLogs         = lazy(() => import("./pages/school/admin/AuditLogs"));
+const SchoolSecurity          = lazy(() => import("./pages/school/admin/SecurityCenter"));
+const SchoolSubjects          = lazy(() => import("./pages/school/admin/Subjects"));
+const SchoolAssignments       = lazy(() => import("./pages/school/admin/Assignments"));
+const SchoolStudyMaterials    = lazy(() => import("./pages/school/admin/StudyMaterials"));
+const SchoolSyllabus          = lazy(() => import("./pages/school/admin/Syllabus"));
+const SchoolExams             = lazy(() => import("./pages/school/admin/Exams"));
+const SchoolQuestionBank      = lazy(() => import("./pages/school/admin/QuestionBank"));
+const SchoolMarksEntry        = lazy(() => import("./pages/school/admin/MarksEntry"));
+const SchoolResults           = lazy(() => import("./pages/school/admin/Results"));
+const SchoolReportCards       = lazy(() => import("./pages/school/admin/ReportCards"));
+const SchoolFeeStructures     = lazy(() => import("./pages/school/admin/FeeStructures"));
+const SchoolPaymentCollection = lazy(() => import("./pages/school/admin/PaymentCollection"));
+const SchoolPaymentHistory    = lazy(() => import("./pages/school/admin/PaymentHistory"));
+const SchoolFeeDefaulters     = lazy(() => import("./pages/school/admin/FeeDefaulters"));
+const SchoolNotificationsCenter = lazy(() => import("./pages/school/admin/NotificationsCenter"));
+const SchoolMessageLogs       = lazy(() => import("./pages/school/admin/MessageLogs"));
+const SchoolEmailCenter       = lazy(() => import("./pages/school/admin/EmailCenter"));
+const SchoolAiInsights        = lazy(() => import("./pages/school/admin/AiInsights"));
+const SchoolStudentPerformance = lazy(() => import("./pages/school/admin/StudentPerformance"));
+const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/AttendanceAnalytics"));
+const SchoolCustomReports     = lazy(() => import("./pages/school/admin/CustomReports"));
+
+// ── School teacher pages ─────────────────────────────────────────────────────
+const SchoolTeacherLayout       = lazy(() => import("./components/school/admin/Layout"));
+const SchoolTeacherDashboard    = lazy(() => import("./pages/school/teacher/Dashboard"));
+const SchoolTopicManagement     = lazy(() => import("./pages/school/teacher/TopicManagement"));
+const SchoolClassManagement     = lazy(() => import("./pages/school/teacher/ClassManagement"));
+const SchoolAttendanceSystem    = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
+const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
+const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
+const SchoolAssessmentDetails   = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
+const SchoolCreatorStudio       = lazy(() => import("./pages/school/teacher/CreatorStudio"));
+const SchoolTeacherReports      = lazy(() => import("./pages/school/teacher/Reports"));
+const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
+const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
+const SchoolTeacherProfile      = lazy(() => import("./pages/school/teacher/Profile"));
+const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Notifications"));
+
+// ── School student pages ─────────────────────────────────────────────────────
+const SchoolStudentLayout       = lazy(() => import("./components/school/student/Layout"));
+const SchoolStudentDashboard    = lazy(() => import("./pages/school/student/Dashboard"));
+const SchoolStudentClasses      = lazy(() => import("./pages/school/student/Classes"));
+const SchoolStudentClassDetails = lazy(() => import("./pages/school/student/ClassDetails"));
+const SchoolStudentTopicDetails = lazy(() => import("./pages/school/student/TopicDetails"));
+const SchoolStudentAssignments  = lazy(() => import("./pages/school/student/Assignments"));
+const SchoolStudentAssessments  = lazy(() => import("./pages/school/student/Assessments"));
+const SchoolStudentTestEngine   = lazy(() => import("./pages/school/student/TestEngine"));
+const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/SessionResult"));
+const SchoolStudentAiAssistant  = lazy(() => import("./pages/school/student/AiAssistant"));
+const SchoolStudentBattleArena  = lazy(() => import("./pages/school/student/BattleArena"));
+const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
+const SchoolStudentCalendar     = lazy(() => import("./pages/school/student/Calendar"));
+const SchoolStudentAnalytics    = lazy(() => import("./pages/school/student/Analytics"));
+const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feedback"));
+const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
+const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
+
+// ── Super-admin school pages ─────────────────────────────────────────────────
+const SuperAdminSchoolPage      = lazy(() => import("./pages/super-admin/SchoolPage"));
+const SuperAdminSchoolDetailPage = lazy(() => import("./pages/super-admin/SchoolDetailPage"));
+const CreateSchoolPage          = lazy(() => import("./pages/super-admin/CreateSchoolPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -213,6 +299,101 @@ const StudentRoutes = () => (
   </>
 );
 
+// ── School routes ─────────────────────────────────────────────────────────────
+const SchoolRoutes = () => (
+  <>
+    {/* School Admin */}
+    <Route
+      path="/school/admin"
+      element={<SchoolGuard roles={["INSTITUTE_ADMIN", "SUPER_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
+    >
+      <Route index element={<SchoolAdminDashboard />} />
+      <Route path="students" element={<SchoolStudents />} />
+      <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
+      <Route path="teachers" element={<SchoolTeachers />} />
+      <Route path="teachers/:id" element={<SchoolAdminTeacherProfile />} />
+      <Route path="attendance" element={<SchoolAttendance />} />
+      <Route path="academics" element={<SchoolAcademics />} />
+      <Route path="notices" element={<SchoolNotices />} />
+      <Route path="fees" element={<SchoolFees />} />
+      <Route path="calendar" element={<SchoolAcademicCalendar />} />
+      <Route path="complaints" element={<SchoolComplaints />} />
+      <Route path="analytics" element={<SchoolAnalytics />} />
+      <Route path="timetable" element={<SchoolTimetable />} />
+      <Route path="settings" element={<SchoolAdminSettings />} />
+      <Route path="reports" element={<SchoolReports />} />
+      <Route path="finance" element={<SchoolFinance />} />
+      <Route path="communications" element={<SchoolCommunications />} />
+      <Route path="roles" element={<SchoolRoles />} />
+      <Route path="audit-logs" element={<SchoolAuditLogs />} />
+      <Route path="security" element={<SchoolSecurity />} />
+      <Route path="subjects" element={<SchoolSubjects />} />
+      <Route path="assignments" element={<SchoolAssignments />} />
+      <Route path="study-materials" element={<SchoolStudyMaterials />} />
+      <Route path="syllabus" element={<SchoolSyllabus />} />
+      <Route path="exams" element={<SchoolExams />} />
+      <Route path="question-bank" element={<SchoolQuestionBank />} />
+      <Route path="marks-entry" element={<SchoolMarksEntry />} />
+      <Route path="results" element={<SchoolResults />} />
+      <Route path="report-cards" element={<SchoolReportCards />} />
+      <Route path="fee-structures" element={<SchoolFeeStructures />} />
+      <Route path="payment-collection" element={<SchoolPaymentCollection />} />
+      <Route path="payment-history" element={<SchoolPaymentHistory />} />
+      <Route path="fee-defaulters" element={<SchoolFeeDefaulters />} />
+      <Route path="notifications-center" element={<SchoolNotificationsCenter />} />
+      <Route path="message-logs" element={<SchoolMessageLogs />} />
+      <Route path="email-center" element={<SchoolEmailCenter />} />
+      <Route path="ai-insights" element={<SchoolAiInsights />} />
+      <Route path="student-performance" element={<SchoolStudentPerformance />} />
+      <Route path="attendance-analytics" element={<SchoolAttendanceAnalytics />} />
+      <Route path="custom-reports" element={<SchoolCustomReports />} />
+    </Route>
+
+    {/* School Teacher */}
+    <Route
+      path="/school/teacher"
+      element={<SchoolGuard roles={["TEACHER"]}><SchoolTeacherLayout /></SchoolGuard>}
+    >
+      <Route index element={<SchoolTeacherDashboard />} />
+      <Route path="profile" element={<SchoolTeacherProfile />} />
+      <Route path="notifications" element={<SchoolTeacherNotifications />} />
+      <Route path="topics" element={<SchoolTopicManagement />} />
+      <Route path="classes" element={<SchoolClassManagement />} />
+      <Route path="attendance" element={<SchoolAttendanceSystem />} />
+      <Route path="assignments" element={<SchoolAssignmentManagement />} />
+      <Route path="assessments" element={<SchoolAssessmentSystem />} />
+      <Route path="assessments/:id" element={<SchoolAssessmentDetails />} />
+      <Route path="creator" element={<SchoolCreatorStudio />} />
+      <Route path="reports" element={<SchoolTeacherReports />} />
+      <Route path="grievances" element={<SchoolGrievanceHandling />} />
+      <Route path="chat" element={<SchoolChatSystem />} />
+    </Route>
+
+    {/* School Student */}
+    <Route
+      path="/school/student"
+      element={<SchoolGuard roles={["STUDENT"]}><SchoolStudentLayout /></SchoolGuard>}
+    >
+      <Route index element={<SchoolStudentDashboard />} />
+      <Route path="classes" element={<SchoolStudentClasses />} />
+      <Route path="classes/:id" element={<SchoolStudentClassDetails />} />
+      <Route path="classes/:batchId/topics/:topicId" element={<SchoolStudentTopicDetails />} />
+      <Route path="assignments" element={<SchoolStudentAssignments />} />
+      <Route path="assessments" element={<SchoolStudentAssessments />} />
+      <Route path="assessments/:id/take" element={<SchoolStudentTestEngine />} />
+      <Route path="assessments/:id" element={<SchoolStudentSessionResult />} />
+      <Route path="ai-assistant" element={<SchoolStudentAiAssistant />} />
+      <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
+      <Route path="planner" element={<SchoolStudentStudyPlanner />} />
+      <Route path="calendar" element={<SchoolStudentCalendar />} />
+      <Route path="analytics" element={<SchoolStudentAnalytics />} />
+      <Route path="feedback" element={<SchoolStudentFeedback />} />
+      <Route path="chat" element={<SchoolStudentChat />} />
+      <Route path="profile" element={<SchoolStudentProfile />} />
+    </Route>
+  </>
+);
+
 // Super-admin routes — available in BOTH tenant and platform contexts so a
 // super-admin visiting on localhost (with a stored tenant subdomain) doesn't get 404.
 const SuperAdminRoutes = () => (
@@ -220,6 +401,7 @@ const SuperAdminRoutes = () => (
     <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
     <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/super-admin" element={<SuperAdminDashboard />} />
+      <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
       <Route path="/super-admin/tenants" element={<InstitutesPage />} />
       <Route path="/super-admin/tenants/new" element={<NewInstitutePage />} />
       <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
@@ -228,6 +410,9 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
       <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />
+      <Route path="/super-admin/school" element={<SuperAdminSchoolPage />} />
+      <Route path="/super-admin/school/new" element={<CreateSchoolPage />} />
+      <Route path="/super-admin/school/:id" element={<SuperAdminSchoolDetailPage />} />
     </Route>
   </>
 );
@@ -248,6 +433,7 @@ const TenantRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -258,6 +444,7 @@ const TenantRoutes = () => (
     {PYQRoute()}
     {TeacherRoutes()}
     {StudentRoutes()}
+    {SchoolRoutes()}
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -278,17 +465,17 @@ const PlatformRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/join" element={<JoinBatchPage />} />
     {SuperAdminRoutes()}
-
-
     {AdminRoutes()}
     {PYQRoute()}
     {TeacherRoutes()}
     {StudentRoutes()}
+    {SchoolRoutes()}
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -299,15 +486,17 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <XPToastProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Suspense fallback={<RouteLoading />}>
-              {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
-            </Suspense>
-          </BrowserRouter>
-        </XPToastProvider>
+        <SchoolAuthProvider>
+          <XPToastProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Suspense fallback={<RouteLoading />}>
+                {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+              </Suspense>
+            </BrowserRouter>
+          </XPToastProvider>
+        </SchoolAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

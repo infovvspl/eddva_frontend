@@ -1,0 +1,39 @@
+.progress-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-bar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-bar__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+
+.progress-bar__value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.progress-bar__track {
+  background: var(--gray-100);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar__track--sm { height: 4px; }
+.progress-bar__track--md { height: 6px; }
+.progress-bar__track--lg { height: 10px; }
+
+.progress-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -122,6 +122,33 @@ export async function dismissFirstLogin() {
   return extractData(res);
 }
 
+export interface SchoolLoginResponse {
+  success: boolean;
+  message: string;
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    isActive: boolean;
+    photo?: string;
+    phone?: string;
+    instituteId?: string;
+  };
+  institute: { id: string; name: string; tenantDomain?: string; logo?: string } | null;
+  tenantDomain?: string;
+}
+
+/** Login via school backend — returns token (not accessToken) */
+export async function loginSchoolWithPassword(payload: { email: string; password: string }): Promise<SchoolLoginResponse> {
+  tokenStorage.clear();
+  const res = await apiClient.post("/school/auth/login", payload);
+  const data = extractData<SchoolLoginResponse>(res);
+  if (data.token) tokenStorage.setAccess(data.token);
+  return data;
+}
+
 /** Login with email + password */
 export async function loginWithPassword(payload: { email?: string; phoneNumber?: string; password: string }): Promise<OtpVerifyResponse> {
   tokenStorage.clear();

@@ -60,13 +60,14 @@ interface NavItem {
 
 const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
-    { label: "Overview",      path: "/super-admin",               icon: Home       },
-    { label: "Institutes",    path: "/super-admin/tenants",        icon: Building2  },
-    { label: "Users",         path: "/super-admin/users",          icon: Users      },
-    { label: "Enrollments",   path: "/super-admin/enrollments",    icon: GraduationCap },
-    { label: "Announcements", path: "/super-admin/announcements",  icon: Megaphone  },
-    { label: "Stats",         path: "/super-admin/stats",          icon: BarChart3  },
-    { label: "Settings",      path: "/super-admin/settings",       icon: Settings   },
+    { label: "Overview",           path: "/super-admin",               icon: Home       },
+    { label: "Institutes",         path: "/super-admin/tenants",        icon: Building2  },
+    { label: "School Institutes",  path: "/super-admin/school",         icon: GraduationCap },
+    { label: "Users",              path: "/super-admin/users",          icon: Users      },
+    { label: "Enrollments",        path: "/super-admin/enrollments",    icon: BarChart3  },
+    { label: "Announcements",      path: "/super-admin/announcements",  icon: Megaphone  },
+    { label: "Stats",              path: "/super-admin/stats",          icon: BarChart3  },
+    { label: "Settings",           path: "/super-admin/settings",       icon: Settings   },
   ],
   institute_admin: [
     { label: "Dashboard",      path: "/admin",                    icon: Home          },
@@ -104,6 +105,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "My Progress",  path: "/student/progress",      icon: BarChart        },
     { label: "Profile",      path: "/student/profile",       icon: User            },
   ],
+  parent: [],
 };
 
 const sectionLabels: Record<UserRole, { main: string }> = {
@@ -111,6 +113,7 @@ const sectionLabels: Record<UserRole, { main: string }> = {
   institute_admin:  { main: "Operations" },
   teacher:          { main: "Instruction" },
   student:          { main: "Advancement" },
+  parent:           { main: "Parent Portal" },
 };
 
 const DashboardLayout = () => {

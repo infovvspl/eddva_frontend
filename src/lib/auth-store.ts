@@ -5,8 +5,10 @@ import type { User, UserRole } from "./types";
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  tenantType: 'coaching' | 'school' | null;
   setUser: (user: User) => void;
   clearAuth: () => void;
+  setTenantType: (type: 'coaching' | 'school' | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -14,8 +16,10 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      tenantType: null,
       setUser: (user) => set({ user, isAuthenticated: true }),
-      clearAuth: () => set({ user: null, isAuthenticated: false }),
+      clearAuth: () => set({ user: null, isAuthenticated: false, tenantType: null }),
+      setTenantType: (type) => set({ tenantType: type }),
     }),
     {
       name: "eddva_auth",

@@ -171,6 +171,15 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // 403 — account or institute suspended
+    if (error.response?.status === 403) {
+      const message = (error.response.data as ApiError)?.message || "";
+      if (message.toLowerCase().includes("suspend")) {
+        window.location.href = "/suspended";
+        return Promise.reject(error);
+      }
+    }
+
     return Promise.reject(error);
   },
 );

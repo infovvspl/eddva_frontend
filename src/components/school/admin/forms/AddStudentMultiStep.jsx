@@ -1,0 +1,528 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  User, GraduationCap, Users, MapPin, FileText, CheckCircle, 
+  Camera, Upload, Sparkles, AlertCircle, 
+  Eye, EyeOff, ChevronRight, ChevronLeft, Save, 
+  Smartphone, Mail, Shield, HeartPulse,
+  Check, Loader2, Calendar, Fingerprint, Briefcase
+} from 'lucide-react';
+import api from '@/lib/api/school-client';
+import { useAuth } from '@/context/SchoolAuthContext';
+
+const STEPS = [
+  { id: 1, title: 'Basic Information', icon: User, description: 'Personal & identity details' },
+  { id: 2, title: 'Academic Details', icon: GraduationCap, description: 'Enrollment & class info' },
+  { id: 3, title: 'Parent Details', icon: Users, description: 'Guardian information' },
+  { id: 4, title: 'Address & Medical', icon: MapPin, description: 'Residence & health info' },
+  { id: 5, title: 'Document Uploads', icon: Upload, description: 'Identity & certificates' },
+  { id: 6, title: 'Review & Submit', icon: CheckCircle, description: 'Final verification' }
+];
+
+const BLOOD_GROUP_OPTIONS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const MARITAL_STATUS_OPTIONS = ['', 'Single', 'Married'];
+
+function getInstituteCode(name = 'Eddva School') {
+  const words = String(name)
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const code = words.length > 1 ? words.map((word) => word[0]).join('') : (words[0] || 'EDDVA').slice(0, 3);
+  return code.toUpperCase().slice(0, 6);
+}
+
+function getScopedId(instituteName, existingCount = 0) {
+  const year = new Date().getFullYear();
+  return `${getInstituteCode(instituteName)}-${year}-${String(existingCount + 1).padStart(3, '0')}`;
+}
+
+const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange, placeholder, error, ...props }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const hasValue = value && String(value).length > 0;
+
+  return (
+    <div className="relative group">
+      <div className={`
+        relative flex items-center transition-all duration-300 rounded-2xl border-2 
+        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-slate-700'}
+        ${error ? 'border-red-500' : ''}
+        bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm
+      `}>
+        {Icon && (
+          <div className={`pl-4 transition-colors duration-300 ${isFocused ? 'text-blue-500' : 'text-slate-400'}`}>
+            <Icon size={18} />
+          </div>
+        )}
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className={`
+            w-full bg-transparent px-4 py-3.5 outline-none text-slate-900 dark:text-white font-semibold text-sm
+            placeholder-transparent
+          `}
+          placeholder={placeholder || label}
+          {...props}
+        />
+        <label className={`
+          absolute left-10 transition-all duration-300 pointer-events-none font-bold
+          ${(isFocused || hasValue) ? '-top-2.5 left-8 px-2 bg-white dark:bg-slate-900 text-xs text-blue-600' : 'top-3.5 text-sm text-slate-400'}
+        `}>
+          {label}
+        </label>
+      </div>
+      {error && <p className="mt-1 ml-4 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
+    </div>
+  );
+};
+
+const FloatingSelect = ({ label, name, value, onChange, options }) => (
+  <div className="relative">
+    <select
+      name={name}
+      value={value}
+      onChange={onChange}
+      className="w-full h-[54px] rounded-2xl border-2 border-slate-200 bg-white/50 px-4 pt-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white"
+    >
+      {options.map((option) => (
+        <option key={option || 'blank'} value={option}>
+          {option || `Select ${label}`}
+        </option>
+      ))}
+    </select>
+    <label className="absolute left-4 top-1.5 text-[10px] font-black uppercase text-blue-600">{label}</label>
+  </div>
+);
+
+const SectionHeader = ({ title, description, badge }) => (
+  <div className="mb-8">
+    <div className="flex items-center gap-3 mb-1">
+      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+      {badge && (
+        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+          {badge}
+        </span>
+      )}
+    </div>
+    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{description}</p>
+  </div>
+);
+
+const AIAssistantCard = ({ message }) => (
+  <motion.div 
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 rounded-2xl p-5 mb-8 flex gap-4 items-start"
+  >
+    <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20 shrink-0">
+      <Sparkles className="text-white" size={20} />
+    </div>
+    <div>
+      <h4 className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
+      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
+    </div>
+  </motion.div>
+);
+
+export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoading }) {
+  const { institute } = useAuth();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    name: '', email: '', password: '', confirmPassword: '', phone: '',
+    dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', photo: null,
+    enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
+    fatherName: '', motherName: '', parentPhone: '', parentEmail: '', parentOccupation: '',
+    currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
+    allergies: '', medicalConditions: '', documents: {},
+  });
+
+  const [idLoading, setIdLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  useEffect(() => {
+    if (formData.classId) {
+      const selectedClass = classes.find(c => c.id === formData.classId);
+      setSections(selectedClass?.sections || []);
+    } else {
+      setSections([]);
+    }
+  }, [formData.classId, classes]);
+
+  const fetchClasses = async () => {
+    try {
+      const res = await api.get('/academic/classes');
+      const data = res.data?.data ?? res.data;
+      setClasses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch classes:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (student) {
+      const sectionId = student.studentProfile?.section?.id || student.studentProfile?.sectionId || '';
+      const inferredClass = classes.find((cls) => (cls.sections || []).some((sec) => sec.id === sectionId));
+      const studentClassId = student.studentProfile?.section?.classId || student.classId || inferredClass?.id || '';
+      setFormData(prev => ({
+        ...prev,
+        ...student,
+        ...(student.studentProfile || {}),
+        classId: studentClassId,
+      }));
+    }
+  }, [student, classes]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const generateEnrollmentNo = async () => {
+    setIdLoading(true);
+    try {
+      const res = await api.get('/students');
+      const list = res.data?.data ?? res.data;
+      const count = Array.isArray(list) ? list.length : 0;
+      setFormData(prev => ({ ...prev, enrollmentNo: getScopedId(institute?.name, count) }));
+    } catch (error) {
+      console.error('Failed to generate student id:', error);
+      setFormData(prev => ({ ...prev, enrollmentNo: getScopedId(institute?.name, 0) }));
+    } finally {
+      setIdLoading(false);
+    }
+  };
+
+  const handleDocumentUpload = (docName, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({
+        ...prev,
+        documents: {
+          ...(prev.documents || {}),
+          [docName]: reader.result
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <SectionHeader title="Basic Information" description="Enter the student's personal details." badge="Personal" />
+            <div className="flex flex-col md:flex-row gap-8 mb-8">
+              <div className="shrink-0 flex flex-col items-center gap-4">
+                <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 transition-all">
+                  {formData.photo ? (
+                    <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
+                  )}
+                  <input 
+                    type="file" 
+                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setFormData(prev => ({ ...prev, photo: reader.result }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }} 
+                  />
+                </div>
+              </div>
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} icon={User} />
+                <FloatingInput label="Email Address" name="email" value={formData.email} onChange={handleChange} icon={Mail} />
+                <div className="relative">
+                  <FloatingInput
+                    label="Student Password"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    icon={Shield}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-4 top-4 text-slate-400 hover:text-blue-500"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <FloatingInput
+                  label="Confirm Student Password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  icon={Shield}
+                />
+                <FloatingInput label="Mobile Number" name="phone" value={formData.phone} onChange={handleChange} icon={Smartphone} />
+                <FloatingInput label="Aadhar / National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} icon={Fingerprint} />
+                <div className="relative md:col-span-2">
+                  <FloatingInput
+                    label="Institute Admin Password"
+                    type={showAdminPassword ? 'text' : 'password'}
+                    name="instituteAdminPassword"
+                    value={formData.instituteAdminPassword || ''}
+                    onChange={handleChange}
+                    icon={Shield}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword((v) => !v)}
+                    className="absolute right-4 top-4 text-slate-400 hover:text-blue-500"
+                  >
+                    {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
+              <div className="relative">
+                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none">
+                  <option value="">Select Gender</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Gender</label>
+              </div>
+              <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
+              <FloatingSelect label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} options={MARITAL_STATUS_OPTIONS} />
+            </div>
+          </motion.div>
+        );
+      case 2:
+        return (
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <SectionHeader title="Academic Details" description="Enrollment and class assignment." badge="Enrollment" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+              <div className="flex gap-2">
+                <div className="flex-1"><FloatingInput label="Enrollment No" name="enrollmentNo" value={formData.enrollmentNo} readOnly icon={Fingerprint} /></div>
+                <button type="button" onClick={generateEnrollmentNo} className="px-4 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:brightness-110 flex items-center gap-2">
+                  {idLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                </button>
+              </div>
+              <FloatingInput label="Roll No" name="rollNo" value={formData.rollNo} onChange={handleChange} icon={Fingerprint} />
+              <FloatingInput label="Admission Date" type="date" name="admissionDate" value={formData.admissionDate} onChange={handleChange} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+              <div className="relative">
+                <select 
+                  name="classId" 
+                  value={formData.classId} 
+                  onChange={handleChange}
+                  className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
+                >
+                  <option value="">Select Class</option>
+                  {classes.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Class</label>
+              </div>
+
+              <div className="relative">
+                <select 
+                  name="sectionId" 
+                  value={formData.sectionId} 
+                  onChange={handleChange}
+                  disabled={!formData.classId}
+                  className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none disabled:opacity-50"
+                >
+                  <option value="">Select Section</option>
+                  {sections.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Section</label>
+              </div>
+            </div>
+
+            <AIAssistantCard message={`AI recommends ${formData.classId ? classes.find(c => c.id === formData.classId)?.name : 'a class'} based on age and previous school curriculum compatibility.`} />
+          </motion.div>
+        );
+      case 3:
+        return (
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <SectionHeader title="Parent Details" description="Guardian contact information." badge="Guardian" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <FloatingInput label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} icon={User} />
+              <FloatingInput label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} icon={User} />
+              <FloatingInput label="Parent Phone" name="parentPhone" value={formData.parentPhone} onChange={handleChange} icon={Smartphone} />
+              <FloatingInput label="Parent Email" name="parentEmail" value={formData.parentEmail} onChange={handleChange} icon={Mail} />
+              <FloatingInput label="Parent Occupation" name="parentOccupation" value={formData.parentOccupation} onChange={handleChange} icon={Briefcase} />
+            </div>
+          </motion.div>
+        );
+      case 4:
+        return (
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <SectionHeader title="Address & Medical" description="Residence and health info." badge="Safety" />
+            <div className="space-y-6">
+              <FloatingInput label="Address" name="currentAddress" value={formData.currentAddress} onChange={handleChange} icon={MapPin} />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} />
+                <FloatingInput label="State" name="state" value={formData.state} onChange={handleChange} />
+                <FloatingInput label="PIN Code" name="pinCode" value={formData.pinCode} onChange={handleChange} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-slate-100">
+                <FloatingInput label="Allergies" name="allergies" value={formData.allergies} onChange={handleChange} icon={AlertCircle} />
+                <FloatingInput label="Medical Conditions" name="medicalConditions" value={formData.medicalConditions} onChange={handleChange} icon={HeartPulse} />
+              </div>
+            </div>
+          </motion.div>
+        );
+      case 5:
+        return (
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <SectionHeader title="Document Uploads" description="Upload necessary certificates." badge="Docs" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {['Birth Certificate', 'Aadhar Card', 'Previous Marksheet', 'Transfer Certificate'].map(doc => {
+                const hasDoc = formData.documents?.[doc];
+                return (
+                  <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
+                    <input 
+                      type="file" 
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                      onChange={(e) => handleDocumentUpload(doc, e.target.files[0])} 
+                    />
+                    {hasDoc ? (
+                      <div className="flex flex-col items-center">
+                        <CheckCircle className="text-emerald-500 mb-2" size={32} />
+                        <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
+                        <div className="flex gap-2 mt-2 relative z-20">
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); const w = window.open(); w.document.write(`<iframe src="${hasDoc}" width="100%" height="100%"></iframe>`); }}
+                            className="px-3 py-1 bg-white text-blue-600 rounded-lg text-xs font-bold shadow-sm hover:bg-blue-50"
+                          >Preview</button>
+                          <a 
+                            href={hasDoc} 
+                            download={`${doc.replace(' ', '_')}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-3 py-1 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-50"
+                          >Download</a>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="text-blue-500 mb-4 group-hover:scale-110 transition-transform" size={24} />
+                        <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc}</h6>
+                        <p className="text-xs font-bold text-slate-400">PDF, DOC, JPG up to 5MB</p>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        );
+      case 6:
+        return (
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+            <SectionHeader title="Review & Submit" description="Verify all student information." badge="Review" />
+            <div className="p-8 rounded-[40px] bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-8 shadow-2xl">
+              <div className="flex items-center gap-8">
+                <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
+                   {formData.photo ? <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
+                </div>
+                <div>
+                  <h3 className="text-3xl font-black mb-2">{formData.name || 'New Student'}</h3>
+                  <div className="flex flex-wrap gap-4 text-sm font-bold text-white/80">
+                    <div>{formData.enrollmentNo || 'No Enrollment'}</div>
+                    <div>{formData.email || 'No Email'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/20">
+              <CheckCircle className="text-emerald-500" size={20} />
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Information verified and ready for enrollment.</p>
+            </div>
+          </motion.div>
+        );
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800">
+      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800 p-8 hidden lg:flex flex-col">
+        <div className="mb-10 font-black text-2xl tracking-tighter">EDDVA <span className="text-blue-600">STUDENT</span></div>
+        <div className="flex-1 space-y-2">
+          {STEPS.map(step => {
+            const Icon = step.icon;
+            const isActive = currentStep === step.id;
+            const isCompleted = currentStep > step.id;
+            return (
+              <button key={step.id} onClick={() => setCurrentStep(step.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50' : 'hover:bg-slate-200/50'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                  {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
+                </div>
+                <div className="text-left">
+                  <h4 className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
+                  <p className="text-[10px] font-bold text-slate-400">{step.description}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col relative">
+        <div className="h-1 bg-slate-100 dark:bg-slate-800 absolute top-0 left-0 right-0 z-20">
+          <motion.div className="h-full bg-blue-600" animate={{ width: `${(currentStep / STEPS.length) * 100}%` }} />
+        </div>
+        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+          <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
+        </div>
+        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-between">
+          <button onClick={onCancel} className="text-sm font-black text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
+          <div className="flex gap-3">
+            {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-200 text-xs font-black uppercase tracking-widest flex items-center gap-2">Back</button>}
+            <button 
+              onClick={currentStep < STEPS.length ? () => setCurrentStep(s => s + 1) : () => onSubmit(formData)} 
+              disabled={isLoading}
+              className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
+            >
+              {currentStep < STEPS.length ? (
+                <>Next Step <ChevronRight size={16} /></>
+              ) : (
+                <>
+                  {isLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+                  Enroll Student
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,134 @@
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tabs__header {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.tabs--horizontal .tabs__header {
+  padding: 0.4rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.dark .tabs--horizontal .tabs__header {
+  background: rgba(15, 23, 42, 0.68);
+  border-color: rgba(71, 85, 105, 0.45);
+}
+
+.tabs--vertical {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  align-items: start;
+}
+
+.tabs--vertical .tabs__header {
+  flex-direction: column;
+  overflow: visible;
+  padding: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.dark .tabs--vertical .tabs__header {
+  background: rgba(15, 23, 42, 0.68);
+  border-color: rgba(71, 85, 105, 0.45);
+}
+
+.tabs--vertical .tabs__content {
+  padding-top: 0;
+}
+
+.tabs__tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+}
+
+.tabs__tab:hover {
+  color: var(--gray-700);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.tabs__tab--active {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  color: white;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+}
+
+.tabs__tab--active:hover {
+  color: white;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+}
+
+.tabs__tab-icon {
+  display: flex;
+  align-items: center;
+}
+
+.tabs__tab-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.tabs__tab-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.tabs__tab-label {
+  line-height: 1.1;
+}
+
+.tabs__tab-description {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.72;
+}
+
+.tabs__tab--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tabs__content {
+  min-width: 0;
+}
+
+.tabs--vertical .tabs__tab {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 1rem 1.1rem;
+}
+
+.tabs--vertical .tabs__tab--active {
+  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.16);
+}
+
+.tabs--vertical .tabs__tab-description {
+  color: inherit;
+}

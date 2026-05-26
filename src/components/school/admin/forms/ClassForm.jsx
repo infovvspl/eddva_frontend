@@ -1,0 +1,123 @@
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, Loader } from 'lucide-react';
+import api from '@/lib/api/school-client';
+
+export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    level: '',
+    section: '',
+    building: ''
+  });
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (classData) {
+      setFormData({
+        name: classData.name || '',
+        level: classData.level?.toString() || '',
+        section: (classData.sections || []).map(s => s.name).join(', ') || '',
+        building: classData.building || ''
+      });
+    }
+  }, [classData]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.name.trim()) {
+      setError('Class name is required');
+      return;
+    }
+
+    await onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <p className="text-sm font-semibold text-red-700">{error}</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-surface-700 mb-2">Class Name *</label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            placeholder="Class 10-A"
+          />
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+          <label className="block text-sm font-semibold text-surface-700 mb-2">Level</label>
+          <input
+            type="number"
+            name="level"
+            value={formData.level}
+            onChange={handleChange}
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            placeholder="10"
+          />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Section(s)</label>
+            <input
+              type="text"
+              name="section"
+              value={formData.section}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="A, B, C etc."
+            />
+            <p className="mt-1 text-[10px] text-surface-500 italic">Separate multiple sections with commas</p>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Building/Block</label>
+            <input
+              type="text"
+              name="building"
+              value={formData.building}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="Main Building, Block A"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-4">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+        >
+          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {classData ? 'Update Class' : 'Add Class'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 rounded-lg border border-surface-200 px-4 py-2 font-semibold text-surface-700 hover:bg-surface-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

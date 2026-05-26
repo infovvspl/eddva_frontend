@@ -1,0 +1,102 @@
+.assignment {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.assignment__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.assignment__header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.assignment__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.assignment__tracker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.assignment__tracker-card {
+  animation: fadeIn 0.35s ease forwards;
+}
+
+.assignment__tracker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.assignment__tracker-header h4 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  letter-spacing: -0.2px;
+}
+
+.assignment__tracker-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 0.688rem;
+  color: var(--gray-400);
+  margin-bottom: 12px;
+}
+
+.assignment__tracker-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.assignment__tracker-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+}
+
+.assignment__tracker-icon--submitted { color: var(--primary-500); }
+.assignment__tracker-icon--graded { color: var(--success-500); }
+
+.assignment__modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.assignment__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+@media (max-width: 768px) {
+  .assignment__header {
+    justify-content: flex-start;
+  }
+
+  .assignment__header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .assignment__header-actions .btn {
+    width: 100%;
+  }
+}
