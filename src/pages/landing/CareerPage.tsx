@@ -41,7 +41,7 @@ interface Perk {
 const exams: Exam[] = [
   {
     id: 1,
-    title: "UPSC Civil Services (Prelims)",
+    title: "CBSE Class X Board Exams",
     category: "Civil Services",
     date: "May 31, 2026",
     daysLeft: 5,
@@ -67,8 +67,8 @@ const exams: Exam[] = [
   },
   {
     id: 3,
-    title: "CAT (Common Admission Test)",
-    category: "Management",
+    title: "JEE Main 2027",
+    category: "Engineering",
     date: "November 29, 2026",
     daysLeft: 187,
     description:
