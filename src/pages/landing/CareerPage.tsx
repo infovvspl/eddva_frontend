@@ -16,7 +16,7 @@ import {
 const ease = [0.16, 1, 0.3, 1] as const;
 
 // ─── Data Interfaces ──────────────────────────────────────────────────────────
-type CategoryType = "Civil Services" | "Engineering" | "Management" | "Medical";
+type CategoryType = "School Board" | "Engineering" | "Higher Secondary" | "Medical";
 
 interface Exam {
   id: number;
@@ -42,7 +42,7 @@ const exams: Exam[] = [
   {
     id: 1,
     title: "CBSE Class X Board Exams",
-    category: "Civil Services",
+    category: "School Board",
     date: "May 31, 2026",
     daysLeft: 5,
     description:
@@ -141,9 +141,9 @@ export default function CareersPage() {
 
   const categories: CategoryFilter[] = [
     "All",
-    "Civil Services",
+    "School Board",
     "Engineering",
-    "Management",
+    "Higher Secondary",
     "Medical",
   ];
 
