@@ -1,56 +1,40 @@
 import React from "react";
 import { motion, Variants } from "framer-motion";
-import { FiArrowRight, FiClock, FiStar } from "react-icons/fi";
+import { FiArrowRight } from "react-icons/fi";
 
-// Structure blueprint for premium masterclass parameters
+// Refactored structure blueprint focusing on core course information
 interface CourseItem {
   id: number;
   title: string;
   category: string;
-  mentor: string;
-  role: string;
-  rating: string;
-  reviews: string;
-  duration: string;
+  description: string;
   image: string;
   badge: string;
 }
 
-// Mock data typed explicitly with the CourseItem blueprint
+// Cleaned up mock data aligned with your new card elements
 const coursesData: CourseItem[] = [
   {
     id: 1,
-    title: "Advanced System Architecture & Microservices",
+    title: "IIT JEE",
     category: "Engineering",
-    mentor: "Sarah Jenkins",
-    role: "Principal Architect",
-    rating: "4.9",
-    reviews: "1,240",
-    duration: "14 hrs",
+    description: "Crack premium engineering institutes with an adaptive curriculum packed with advanced physics, chemistry, and high-tier mathematical modeling.",
     image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600",
     badge: "Best Seller",
   },
   {
     id: 2,
-    title: "Product-Led Growth & Digital Strategy",
-    category: "Management",
-    mentor: "Alex Rivera",
-    role: "VP of Product",
-    rating: "4.8",
-    reviews: "890",
-    duration: "11 hrs",
+    title: "NEET UG",
+    category: "Medical",
+    description: "Master medical entrance parameters with comprehensive conceptual breakdown of human anatomy, plant physiology, and core chemical reactions.",
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=600",
     badge: "Trending",
   },
   {
     id: 3,
-    title: "Interactive UI Physics & Motion Design",
-    category: "Design",
-    mentor: "Elena Rostova",
-    role: "Creative Director",
-    rating: "5.0",
-    reviews: "620",
-    duration: "9 hrs",
+    title: "CBSE 9–12",
+    category: "CBSE Boards",
+    description: "Build an unbreakable academic foundation. Streamlined structured notes and mock tests structured around latest state board parameters.",
     image: "https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=600",
     badge: "New",
   },
@@ -108,9 +92,9 @@ export default function CoursesSection() {
               variants={fadeInUp}
               className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-[1.1]"
             >
-              Explore Our Premium <br />
+              Choose Your <br />
               <span className="font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
-                Signature Masterclasses
+                Exam Path
               </span>
             </motion.h2>
           </div>
@@ -118,7 +102,7 @@ export default function CoursesSection() {
           {/* Subtitle / CTA combo */}
           <motion.div variants={fadeInUp} className="flex flex-col items-start md:items-end gap-3">
             <p className="text-base text-slate-500 font-medium max-w-xs md:text-right leading-relaxed">
-              Taught exclusively by industry veterans shaping technology and creative design daily.
+              Comprehensive preparation for various tiers. Pick your goal and we'll build your personalized path.
             </p>
           </motion.div>
         </motion.div>
@@ -157,49 +141,28 @@ export default function CoursesSection() {
 
               {/* Card Body */}
               <div className="p-6 flex flex-col flex-1">
-                {/* Meta details */}
-                <div className="flex items-center justify-between gap-2 mb-3">
+                {/* Meta details / Category */}
+                <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs font-bold uppercase tracking-wider text-[#0066cc] bg-blue-50 px-2.5 py-1 rounded-md">
                     {course.category}
                   </span>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-                    <FiClock className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{course.duration}</span>
-                  </div>
                 </div>
 
                 {/* Course Title */}
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-snug mb-3 group-hover:text-[#0066cc] transition-colors duration-200">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-[#0066cc] transition-colors duration-200">
                   {course.title}
                 </h3>
 
-                {/* Star Ratings */}
-                <div className="flex items-center gap-1 mb-6">
-                  <div className="flex items-center gap-0.5 text-amber-400">
-                    {[...Array(5)].map((_, i) => (
-                      <FiStar key={i} className="w-3.5 h-3.5 fill-current" />
-                    ))}
-                  </div>
-                  <span className="text-xs font-bold text-slate-800 ml-1">{course.rating}</span>
-                  <span className="text-xs text-slate-400 font-medium">({course.reviews})</span>
-                </div>
+                {/* Course Description */}
+                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">
+                  {course.description}
+                </p>
 
-                {/* Divider */}
-                <div className="w-full h-px bg-slate-100 mb-5 mt-auto" />
-
-                {/* Mentor Block & Action row */}
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Instructor</p>
-                    <h4 className="text-sm font-bold text-slate-800 tracking-tight">{course.mentor}</h4>
-                    <p className="text-[11px] text-slate-500 font-medium">{course.role}</p>
-                  </div>
-
-                  {/* Elegant Dynamic Action Button */}
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 transition-all duration-300 group-hover:bg-gradient-to-tr group-hover:from-[#004499] group-hover:to-[#0066cc] group-hover:border-transparent group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-500/20">
-                    <FiArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                  </div>
-                </div>
+                {/* Full Width Elegant Explore Path Button */}
+                <button className="w-full mt-auto flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-slate-700 text-sm font-bold tracking-tight transition-all duration-300 group-hover:bg-gradient-to-tr group-hover:from-[#004499] group-hover:to-[#0066cc] group-hover:border-transparent group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-500/20">
+                  <span>Explore</span>
+                  <FiArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </button>
 
               </div>
             </motion.div>

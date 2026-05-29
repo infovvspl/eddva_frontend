@@ -16,7 +16,7 @@ import {
 const ease = [0.16, 1, 0.3, 1] as const;
 
 // ─── Data Interfaces ──────────────────────────────────────────────────────────
-type CategoryType = "Civil Services" | "Engineering" | "Management" | "Medical";
+type CategoryType = "School Board" | "Engineering" | "Higher Secondary" | "Medical";
 
 interface Exam {
   id: number;
@@ -41,8 +41,8 @@ interface Perk {
 const exams: Exam[] = [
   {
     id: 1,
-    title: "UPSC Civil Services (Prelims)",
-    category: "Civil Services",
+    title: "CBSE Class X Board Exams",
+    category: "School Board",
     date: "May 31, 2026",
     daysLeft: 5,
     description:
@@ -67,8 +67,8 @@ const exams: Exam[] = [
   },
   {
     id: 3,
-    title: "CAT (Common Admission Test)",
-    category: "Management",
+    title: "JEE Main 2027",
+    category: "Engineering",
     date: "November 29, 2026",
     daysLeft: 187,
     description:
@@ -141,9 +141,9 @@ export default function CareersPage() {
 
   const categories: CategoryFilter[] = [
     "All",
-    "Civil Services",
+    "School Board",
     "Engineering",
-    "Management",
+    "Higher Secondary",
     "Medical",
   ];
 

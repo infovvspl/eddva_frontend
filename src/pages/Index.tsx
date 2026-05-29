@@ -7,6 +7,7 @@ import WhyChooseUsSection from "@/components/home-page/Why";
 import DownloadAppSection from "@/components/home-page/DownloadApp";
 import FAQSection from "@/components/home-page/Faq";
 import CTASection from "@/components/home-page/Cta";
+import VideoSection from "@/components/home-page/VideoSec";
 
 export default function Home(): React.JSX.Element {
   return (
@@ -15,6 +16,7 @@ export default function Home(): React.JSX.Element {
         {/* Hero Section */}
         <HeroSection />
         <AboutUsSection />
+        <VideoSection />
         <CoursesSection />
         <WhyChooseUsSection />
         <DownloadAppSection />
