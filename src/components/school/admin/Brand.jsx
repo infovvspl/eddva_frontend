@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { BrainCircuit, GraduationCap } from 'lucide-react';
 import { cn } from './Skeleton';
 

@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle, Clock, Plus, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '@/lib/api/school-client';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
+import { useAuth } from '@/context/SchoolAuthContext';
 
 const statusIcon = {
   OPEN: AlertCircle,
@@ -13,7 +14,7 @@ const statusIcon = {
 };
 
 export default function Complaints() {
-  const user = getStoredUser();
+  const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');

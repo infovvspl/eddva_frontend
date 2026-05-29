@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Bell, Trash2, CheckCircle } from "lucide-react";
 import api from "@/lib/api/school-client";
 import useLiveRefresh from "@/hooks/useLiveRefresh";

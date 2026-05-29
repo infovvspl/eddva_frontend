@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle } from 'lucide-react';
 import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';

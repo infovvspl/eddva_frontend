@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { UserCheck, UserX, Clock, Calendar, TrendingUp, Plus } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import StatCard from '@/components/school/StatCard';

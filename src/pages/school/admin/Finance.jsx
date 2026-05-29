@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Area,
@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { cn } from '@/components/school/admin/Skeleton';
-import { getResponseData } from '@/lib/school/apiData';
+import { getResponseData } from '@/lib/school/apiData.js';
 
 function formatInr(value) {
   return new Intl.NumberFormat('en-IN', {

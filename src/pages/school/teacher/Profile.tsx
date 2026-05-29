@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { Camera, Mail, Phone, Shield, BookOpen } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import "./Profile.css";

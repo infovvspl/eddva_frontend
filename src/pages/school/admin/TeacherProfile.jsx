@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { exportToPDF } from "../../../lib/school/pdfExport";
+import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
@@ -32,7 +32,7 @@ const DetailItem = ({ label, value, icon: Icon }) => (
       {Icon && <Icon size={12} />}
       {label}
     </div>
-    <div className="text-sm font-bold text-slate-900 dark:text-white">{value || 'â€”'}</div>
+    <div className="text-sm font-bold text-slate-900 dark:text-white">{value || '—'}</div>
   </div>
 );
 
@@ -135,7 +135,7 @@ export default function TeacherProfile() {
             </div>
             <div className="pb-4 hidden lg:block text-right">
               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Employee ID</div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{profile.employeeId || 'â€”'}</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{profile.employeeId || '—'}</div>
             </div>
           </div>
 
@@ -161,7 +161,7 @@ export default function TeacherProfile() {
                       <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Core Identification</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Full Name" value={teacher.name} icon={User} />
-                        <DetailItem label="Joining Date" value={profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'â€”'} icon={Clock} />
+                        <DetailItem label="Joining Date" value={profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : '—'} icon={Clock} />
                         <DetailItem label="Qualifications" value={profile.qualifications} icon={Award} className="col-span-2" />
                       </div>
                     </div>
