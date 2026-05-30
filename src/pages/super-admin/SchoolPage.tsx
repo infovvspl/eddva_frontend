@@ -33,13 +33,13 @@ const SchoolPage = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), perPage: "15" });
+      const params = new URLSearchParams({ page: String(page), limit: "15" });
       if (search)       params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
-      const res = await apiClient.get(`/super-admin/school/institutes?${params}`);
+      if (statusFilter) params.set("status", statusFilter.toLowerCase());
+      const res = await apiClient.get(`/admin/tenants?${params}`);
       const data = (res.data as any)?.data ?? res.data;
-      setInstitutes(data.data ?? data ?? []);
-      setTotal(data.total ?? 0);
+      setInstitutes(data.items ?? data.data ?? []);
+      setTotal(data.meta?.total ?? data.total ?? 0);
     } catch {
       toast.error("Failed to load school institutes");
     } finally {
@@ -51,7 +51,7 @@ const SchoolPage = () => {
 
   const approve = async (id: string) => {
     try {
-      await apiClient.put(`/super-admin/school/institutes/${id}/approve`);
+      await apiClient.patch(`/admin/tenants/${id}`, { status: "active" });
       toast.success("Institute approved");
       load();
     } catch { toast.error("Failed to approve"); }
@@ -59,7 +59,7 @@ const SchoolPage = () => {
 
   const reject = async (id: string) => {
     try {
-      await apiClient.put(`/super-admin/school/institutes/${id}/reject`);
+      await apiClient.patch(`/admin/tenants/${id}`, { status: "suspended" });
       toast.success("Institute suspended");
       load();
     } catch { toast.error("Failed to reject"); }
@@ -68,7 +68,7 @@ const SchoolPage = () => {
   const remove = async (id: string) => {
     if (!confirm("Delete this school institute?")) return;
     try {
-      await apiClient.delete(`/super-admin/school/institutes/${id}`);
+      await apiClient.delete(`/admin/tenants/${id}`);
       toast.success("Institute deleted");
       load();
     } catch { toast.error("Failed to delete"); }
