@@ -12,6 +12,8 @@ export interface TenantCreatePayload {
   maxTeachers: number;
   adminPhone: string;
   trialDays?: number;
+  aiEnabled?: boolean;
+  aiFeatures?: string[];
 }
 
 export interface TenantResponse {
@@ -31,6 +33,8 @@ export interface TenantResponse {
   logoUrl?: string;
   brandColor?: string;
   trialEndsAt?: string;
+  aiEnabled?: boolean;
+  aiFeatures?: string[];
   [key: string]: unknown;
 }
 

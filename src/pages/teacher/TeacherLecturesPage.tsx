@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import {
   useMyLectures, useCreateLecture, useDeleteLecture,
@@ -1849,6 +1850,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
 }) {
   const createLecture = useCreateLecture();
   const { toast } = useToast();
+  const sttEnabled = useHasAiFeature("ai_speech_to_text");
   const fileRef = useRef<HTMLInputElement>(null);
   const thumbRef = useRef<HTMLInputElement>(null);
 
@@ -2078,29 +2080,31 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <Textarea value={description} onChange={e => setDescription(e.target.value)}
                   placeholder="Brief description for students…" rows={2} className="resize-none" />
               </div>
-              <div className="space-y-1.5">
-                <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
-                <div className="flex gap-2">
-                  {([
-                    { value: "en" as const, label: "English", sub: "Default" },
-                    { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
-                  ] as const).map(opt => (
-                    <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
-                      className={cn(
-                        "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
-                        lectureLanguage === opt.value
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40",
-                      )}>
-                      <span className="text-base font-bold">{opt.label}</span>
-                      <span className="text-[10px] mt-0.5">{opt.sub}</span>
-                    </button>
-                  ))}
+              {sttEnabled && (
+                <div className="space-y-1.5">
+                  <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
+                  <div className="flex gap-2">
+                    {([
+                      { value: "en" as const, label: "English", sub: "Default" },
+                      { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
+                    ] as const).map(opt => (
+                      <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
+                        className={cn(
+                          "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
+                          lectureLanguage === opt.value
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40",
+                        )}>
+                        <span className="text-base font-bold">{opt.label}</span>
+                        <span className="text-[10px] mt-0.5">{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes.
+                  </p>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes.
-                </p>
-              </div>
+              )}
             </div>
           )}
 
@@ -2140,8 +2144,12 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs leading-relaxed text-amber-800">
                   {videoSource === "youtube"
-                    ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
-                    : "Uploaded videos are transcribed with speech-to-text. Choose English or Hindi before continuing."}
+                    ? (sttEnabled
+                        ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
+                        : "Paste a YouTube link for students to watch. For playback-only links, add the video under topic resources instead.")
+                    : (sttEnabled
+                        ? "Uploaded videos are transcribed with speech-to-text. Choose English or Hindi before continuing."
+                        : "Upload a video for students to watch.")}
                 </p>
               </div>
 

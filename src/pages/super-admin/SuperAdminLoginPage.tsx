@@ -25,8 +25,8 @@ const PlatformStat = ({ icon: Icon, label, value, delay }: { icon: any; label: s
       <Icon className="h-5 w-5" />
     </div>
     <div>
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-0.5">{label}</p>
-      <p className="text-[18px] font-black text-slate-900 leading-tight">{value}</p>
+      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
+      <p className="text-[18px] font-semibold text-slate-900 leading-tight">{value}</p>
     </div>
   </motion.div>
 );
@@ -76,7 +76,7 @@ const SuperAdminLoginPage = () => {
   };
 
   const inputClass =
-    "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-600 focus:bg-white focus:border-indigo-400 focus:ring-8 focus:ring-indigo-500/5 disabled:opacity-50 shadow-sm";
+    "h-14 w-full rounded-2xl border border-slate-200 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-600 focus:bg-white focus:border-indigo-400 focus:ring-8 focus:ring-indigo-500/5 disabled:opacity-50 shadow-sm";
 
   return (
     <div className="relative flex min-h-screen w-full flex-col md:flex-row overflow-hidden font-sans bg-white">
@@ -103,9 +103,9 @@ const SuperAdminLoginPage = () => {
           <div className="mb-10">
             <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 mb-4">
               <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
-              <span className="text-[10px] font-black uppercase tracking-[0.1em] text-indigo-700">Governance Portal</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-indigo-700">Governance Portal</span>
             </div>
-            <h1 className="text-[36px] font-black tracking-tight text-slate-900 leading-tight mb-2">Platform Admin</h1>
+            <h1 className="text-[36px] font-bold tracking-tight text-slate-900 leading-tight mb-2">Platform Admin</h1>
             <p className="text-[16px] font-semibold text-slate-400">Authorized access to the EDVA ecosystem.</p>
           </div>
 
@@ -126,7 +126,7 @@ const SuperAdminLoginPage = () => {
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 flex items-center gap-2 ml-1">
+              <label className="text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400 flex items-center gap-2 ml-1">
                 <User className="h-3.5 w-3.5" /> Administrator Email
               </label>
               <input
@@ -141,7 +141,7 @@ const SuperAdminLoginPage = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 flex items-center gap-2 ml-1">
+              <label className="text-[11px] font-medium uppercase tracking-[0.1em] text-slate-400 flex items-center gap-2 ml-1">
                 <Lock className="h-3.5 w-3.5" /> Admin Password
               </label>
               <div className="relative">
@@ -169,7 +169,7 @@ const SuperAdminLoginPage = () => {
               whileHover={{ scale: 1.01, y: -2 }}
               whileTap={{ scale: 0.99 }}
               disabled={loading}
-              className="relative flex h-14 w-full items-center justify-center gap-3 rounded-2xl text-[16px] font-black text-white shadow-2xl shadow-indigo-500/20 transition-all disabled:opacity-50 overflow-hidden"
+              className="relative flex h-14 w-full items-center justify-center gap-3 rounded-2xl text-[16px] font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 overflow-hidden"
               style={{ background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}
             >
               {loading
@@ -180,7 +180,7 @@ const SuperAdminLoginPage = () => {
 
           <div className="mt-16 flex items-center justify-center gap-2 border-t border-slate-200/60 pt-8">
             <Globe className="h-4 w-4 text-gray-600" />
-            <p className="text-[12px] text-slate-400 font-bold uppercase tracking-[0.2em]">Zero-Trust Security Active</p>
+            <p className="text-[12px] text-slate-400 font-bold uppercase tracking-wider">Zero-Trust Security Active</p>
           </div>
         </motion.div>
       </div>
@@ -211,10 +211,10 @@ const SuperAdminLoginPage = () => {
         >
           <div className="mb-12 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/50 px-5 py-2 backdrop-blur-sm shadow-sm">
             <Sparkles className="h-4 w-4 text-indigo-500" />
-            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600">EDVA Cloud Infrastructure</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-indigo-600">EDVA Cloud Infrastructure</span>
           </div>
 
-          <h2 className="text-[48px] font-black leading-[1.1] tracking-tight text-slate-900 mb-6">
+          <h2 className="text-[48px] font-bold leading-[1.1] tracking-tight text-slate-900 mb-6">
             Global Platform <br />
             <span className="text-indigo-600">Unified Governance</span>
           </h2>

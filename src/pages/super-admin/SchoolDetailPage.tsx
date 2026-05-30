@@ -75,7 +75,7 @@ const SchoolDetailPage = () => {
         <div className="rounded-2xl border border-slate-100 p-6">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-black text-slate-900">{institute.name}</h1>
+              <h1 className="text-2xl font-bold text-slate-900">{institute.name}</h1>
               <span className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${STATUS_STYLES[institute.status] ?? ""}`}>
                 {institute.status}
               </span>
@@ -113,7 +113,7 @@ const SchoolDetailPage = () => {
               ["Registered",    institute.created_at ? new Date(institute.created_at).toLocaleDateString() : "—"],
             ].map(([label, value]) => (
               <div key={label} className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-1">{label}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">{label}</p>
                 <p className="text-sm font-semibold text-slate-900 break-all">{value}</p>
               </div>
             ))}

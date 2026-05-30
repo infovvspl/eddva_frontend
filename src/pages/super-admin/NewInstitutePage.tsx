@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
+import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { sendOnboardingOtp, verifyOnboardingOtp } from "@/lib/api/public-tenant";
@@ -157,17 +157,17 @@ const NewInstitutePage = () => {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full text-center">
-          <div className="w-20 h-20 rounded-[24px] bg-emerald-500 text-white flex items-center justify-center mx-auto mb-6 shadow-xl">
+          <div className="w-20 h-20 rounded-2xl bg-emerald-500 text-white flex items-center justify-center mx-auto mb-6 shadow-xl">
             <Check className="w-10 h-10 stroke-[3]" />
           </div>
-          <h2 className="text-3xl font-black text-foreground mb-2">Institute Deployed!</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Institute Deployed!</h2>
           <p className="text-muted-foreground font-medium mb-8">
             <span className="text-primary font-bold">{form.name}</span> is live at <br />
             <span className="underline decoration-primary/30">{form.subdomain}.edva.in</span>
           </p>
 
           <div className="bg-card border border-border rounded-[32px] p-6 shadow-sm mb-8 text-left space-y-3">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Admin Temporary Password</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Admin Temporary Password</p>
             <div className="bg-secondary rounded-2xl p-4 flex items-center justify-between">
               <code className="text-sm font-bold text-foreground font-mono">{tempPassword}</code>
               <button onClick={() => handleCopy(tempPassword)} className="p-2 hover:bg-background rounded-lg transition-all text-primary">
@@ -202,10 +202,10 @@ const NewInstitutePage = () => {
       <div className="max-w-5xl mx-auto">
         <header className="mb-12 border-b border-slate-100 pb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
-            <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-900 font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-2 mb-4 transition-colors">
+            <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-900 font-semibold text-[11px] uppercase tracking-wider flex items-center gap-2 mb-4 transition-colors">
               <X className="w-4 h-4" /> Cancel
             </button>
-            <h1 className="text-[42px] font-black text-slate-900 tracking-tight leading-tight">New Institute</h1>
+            <h1 className="text-[42px] font-bold text-slate-900 tracking-tight leading-tight">New Institute</h1>
             <p className="text-slate-400 text-[17px] font-semibold mt-1">Provision a new educational partner on the platform.</p>
           </div>
 
@@ -213,14 +213,14 @@ const NewInstitutePage = () => {
             {[1, 2].map((s) => (
               <div key={s} className="flex flex-col items-center gap-2">
                 <div className={`h-2 w-20 rounded-full transition-all ${s <= step ? "bg-indigo-600" : "bg-slate-100"}`} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${s === step ? "text-indigo-600" : "text-gray-600"}`}>Step {s}</span>
+                <span className={`text-[10px] font-medium uppercase tracking-wider ${s === step ? "text-indigo-600" : "text-gray-600"}`}>Step {s}</span>
               </div>
             ))}
           </div>
         </header>
 
         {error && (
-          <div className="mb-8 flex items-start gap-4 p-5 rounded-[24px] bg-rose-50 border border-rose-100 text-rose-700 text-sm font-semibold">
+          <div className="mb-8 flex items-start gap-4 p-5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-sm font-semibold">
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
             <p>{error}</p>
           </div>
@@ -235,27 +235,27 @@ const NewInstitutePage = () => {
                 <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-8">
                   <div className="bg-slate-50/50 p-10 rounded-[44px] border border-slate-100 space-y-8">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-[18px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                      <div className="h-12 w-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
                         <Building2 className="h-6 w-6" />
                       </div>
-                      <h3 className="text-xl font-black text-slate-900">Institute Details</h3>
+                      <h3 className="text-xl font-bold text-slate-900">Institute Details</h3>
                     </div>
 
                     {/* Name */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Institute Name</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Institute Name</label>
                       <input
                         required
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
                         placeholder="e.g. Allen Career Institute"
-                        className="w-full h-14 px-6 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full h-14 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
                       />
                     </div>
 
                     {/* Subdomain */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Subdomain</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Subdomain</label>
                       <div className="relative">
                         <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                         <input
@@ -263,7 +263,7 @@ const NewInstitutePage = () => {
                           value={form.subdomain}
                           onChange={(e) => handleSubdomainChange(e.target.value)}
                           placeholder="allen-kota"
-                          className="w-full h-14 pl-12 pr-36 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                          className="w-full h-14 pl-12 pr-36 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
                         />
                         <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
                           <span className="text-[11px] font-bold text-gray-600">.edva.in</span>
@@ -276,13 +276,13 @@ const NewInstitutePage = () => {
 
                     {/* Plan */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Plan</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Plan</label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {PLANS.map((p) => (
                           <button
                             key={p} type="button"
                             onClick={() => handlePlanChange(p)}
-                            className={`h-12 rounded-[16px] border-2 text-[13px] font-black capitalize transition-all ${
+                            className={`h-12 rounded-[16px] border-2 text-[13px] font-medium capitalize transition-all ${
                               form.plan === p
                                 ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
                                 : "bg-white border-slate-100 text-slate-500 hover:border-indigo-200"
@@ -299,14 +299,14 @@ const NewInstitutePage = () => {
 
                     {/* Trial days */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Trial Period (days)</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Trial Period (days)</label>
                       <input
                         type="number"
                         min={0}
                         max={90}
                         value={form.trialDays}
                         onChange={(e) => setForm({ ...form, trialDays: Number(e.target.value) })}
-                        className="w-full h-14 px-6 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full h-14 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
                       />
                     </div>
                   </div>
@@ -315,7 +315,7 @@ const NewInstitutePage = () => {
                     type="button"
                     onClick={() => setStep(2)}
                     disabled={!canProceedStep1}
-                    className="h-14 px-10 rounded-[20px] bg-white text-gray-900 font-black hover:bg-gray-100 shadow-2xl transition-all"
+                    className="h-14 px-10 rounded-2xl bg-white text-gray-900 font-semibold hover:bg-gray-100 shadow-lg transition-all"
                   >
                     Continue <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -327,15 +327,15 @@ const NewInstitutePage = () => {
                 <motion.div key="step2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-8">
                   <div className="bg-slate-50/50 p-10 rounded-[44px] border border-slate-100 space-y-8">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-[18px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                      <div className="h-12 w-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
                         <ShieldCheck className="h-6 w-6" />
                       </div>
-                      <h3 className="text-xl font-black text-slate-900">Admin Credentials</h3>
+                      <h3 className="text-xl font-bold text-slate-900">Admin Credentials</h3>
                     </div>
 
                     {/* Billing email */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Billing Email</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Billing Email</label>
                       <div className="relative">
                         <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                         <input
@@ -344,16 +344,16 @@ const NewInstitutePage = () => {
                           value={form.billingEmail}
                           onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
                           placeholder="admin@institute.edu"
-                          className="w-full h-14 pl-12 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                          className="w-full h-14 pl-12 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
                         />
                       </div>
                     </div>
 
                     {/* Admin phone + OTP */}
                     <div className="space-y-4">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Admin Phone Number</label>
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Admin Phone Number</label>
                       <div className="flex gap-3">
-                        <div className="h-14 w-16 bg-slate-100 rounded-[20px] flex items-center justify-center font-black text-slate-500 text-sm shrink-0">+91</div>
+                        <div className="h-14 w-16 bg-slate-100 rounded-2xl flex items-center justify-center font-semibold text-slate-500 text-sm shrink-0">+91</div>
                         <input
                           type="tel"
                           required
@@ -362,10 +362,10 @@ const NewInstitutePage = () => {
                           maxLength={10}
                           disabled={otpStep === "verified"}
                           placeholder="9876543210"
-                          className="flex-1 h-14 px-5 bg-white border-2 border-slate-100 rounded-[20px] text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
+                          className="flex-1 h-14 px-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
                         />
                         {otpStep === "verified" && (
-                          <div className="h-14 w-14 bg-emerald-50 text-emerald-500 border-2 border-emerald-100 rounded-[20px] flex items-center justify-center shrink-0">
+                          <div className="h-14 w-14 bg-emerald-50 text-emerald-500 border-2 border-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
                             <ShieldCheck className="w-6 h-6" />
                           </div>
                         )}
@@ -374,7 +374,7 @@ const NewInstitutePage = () => {
                       {otpError && <p className="text-xs text-rose-500 font-bold ml-2">{otpError}</p>}
 
                       {otpStep === "idle" && form.adminPhone.length === 10 && (
-                        <Button type="button" onClick={handleSendOtp} disabled={otpLoading} className="h-12 w-full rounded-[18px] bg-indigo-600 text-white font-black">
+                        <Button type="button" onClick={handleSendOtp} disabled={otpLoading} className="h-12 w-full rounded-xl bg-indigo-600 text-white font-semibold">
                           {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                           Send OTP
                         </Button>
@@ -394,11 +394,11 @@ const NewInstitutePage = () => {
                                 value={digit}
                                 onChange={(e) => handleOtpChange(i, e.target.value)}
                                 onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                className="aspect-square w-full rounded-2xl border-2 border-slate-100 bg-white text-center font-black text-xl focus:border-indigo-600 outline-none transition-all"
+                                className="aspect-square w-full rounded-2xl border border-slate-200 bg-white text-center font-semibold text-xl focus:border-indigo-600 outline-none transition-all"
                               />
                             ))}
                           </div>
-                          <Button type="button" onClick={handleVerifyOtp} disabled={otp.some(d => !d) || otpLoading} className="h-12 w-full rounded-[18px] bg-white text-gray-900 font-black">
+                          <Button type="button" onClick={handleVerifyOtp} disabled={otp.some(d => !d) || otpLoading} className="h-12 w-full rounded-xl bg-white text-gray-900 font-semibold">
                             {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                             Verify OTP
                           </Button>
@@ -419,7 +419,7 @@ const NewInstitutePage = () => {
                           <Sparkles className="h-5 w-5" />
                         </div>
                         <div>
-                          <h3 className="text-base font-black text-slate-900">AI Features</h3>
+                          <h3 className="text-base font-bold text-slate-900">AI Features</h3>
                           <p className="text-[11px] font-semibold text-slate-400">Enable AI-powered learning for this institute</p>
                         </div>
                       </div>
@@ -434,7 +434,7 @@ const NewInstitutePage = () => {
 
                     {aiEnabled && (
                       <div className="grid grid-cols-1 gap-3 pt-2">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Select features to enable:</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1">Select features to enable:</p>
                         {AI_FEATURE_OPTIONS.map((feat) => {
                           const checked = aiFeatures.includes(feat.key);
                           return (
@@ -455,7 +455,7 @@ const NewInstitutePage = () => {
                                 {checked && <Check className="w-3 h-3 text-white stroke-[3]" />}
                               </div>
                               <div>
-                                <p className="text-sm font-black text-slate-900">{feat.label}</p>
+                                <p className="text-sm font-medium text-slate-900">{feat.label}</p>
                                 <p className="text-[11px] font-semibold text-slate-400">{feat.desc}</p>
                               </div>
                             </button>
@@ -464,7 +464,7 @@ const NewInstitutePage = () => {
                         <button
                           type="button"
                           onClick={() => setAiFeatures(AI_FEATURE_OPTIONS.map(f => f.key) as any)}
-                          className="text-[11px] font-black text-indigo-600 hover:underline text-left mt-1"
+                          className="text-[11px] font-medium text-indigo-600 hover:underline text-left mt-1"
                         >
                           Select all features
                         </button>
@@ -473,10 +473,10 @@ const NewInstitutePage = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-14 px-8 rounded-[20px] border-2 border-slate-100 font-black text-slate-600">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-14 px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600">
                       Back
                     </Button>
-                    <Button type="submit" disabled={otpStep !== "verified" || createTenant.isPending} className="h-14 px-10 rounded-[20px] bg-indigo-600 text-white font-black shadow-2xl flex gap-3">
+                    <Button type="submit" disabled={otpStep !== "verified" || createTenant.isPending} className="h-14 px-10 rounded-2xl bg-indigo-600 text-white font-semibold shadow-lg flex gap-3">
                       {createTenant.isPending
                         ? <Loader2 className="w-5 h-5 animate-spin" />
                         : <><Check className="w-5 h-5 stroke-[3]" /> Deploy Institute</>}
@@ -490,13 +490,13 @@ const NewInstitutePage = () => {
 
           {/* Sidebar summary */}
           <div className="space-y-6">
-            <div className="bg-white rounded-[36px] p-8 text-gray-900 sticky top-10 shadow-2xl shadow-slate-900/30 overflow-hidden">
+            <div className="bg-white rounded-[36px] p-8 text-gray-900 sticky top-10 shadow-lg shadow-slate-900/30 overflow-hidden">
               <div className="relative z-10 space-y-6">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">Summary</h4>
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-white/40">Summary</h4>
 
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-400">Name</p>
-                  <p className="text-xl font-black leading-tight">{form.name || "—"}</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-400">Name</p>
+                  <p className="text-xl font-bold leading-tight">{form.name || "—"}</p>
                   <p className="text-xs font-bold text-white/40">{form.subdomain ? `${form.subdomain}.edva.in` : "—"}</p>
                 </div>
 
@@ -504,20 +504,20 @@ const NewInstitutePage = () => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Plan</p>
-                    <p className="text-base font-black capitalize">{form.plan}</p>
+                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Plan</p>
+                    <p className="text-base font-semibold capitalize">{form.plan}</p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Trial</p>
-                    <p className="text-base font-black">{form.trialDays}d</p>
+                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Trial</p>
+                    <p className="text-base font-semibold">{form.trialDays}d</p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Students</p>
-                    <p className="text-base font-black">{form.maxStudents.toLocaleString()}</p>
+                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Students</p>
+                    <p className="text-base font-semibold">{form.maxStudents.toLocaleString()}</p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Teachers</p>
-                    <p className="text-base font-black">{form.maxTeachers}</p>
+                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Teachers</p>
+                    <p className="text-base font-semibold">{form.maxTeachers}</p>
                   </div>
                 </div>
 
@@ -525,7 +525,7 @@ const NewInstitutePage = () => {
 
                 <div className="flex items-center gap-3">
                   <div className={`h-3 w-3 rounded-full transition-all ${otpStep === "verified" ? "bg-emerald-400" : "bg-white/10"}`} />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/50">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-white/50">
                     {otpStep === "verified" ? "Phone Verified" : "Awaiting Verification"}
                   </p>
                 </div>

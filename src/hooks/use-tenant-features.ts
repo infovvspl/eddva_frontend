@@ -7,7 +7,10 @@ export function useTenantFeatures() {
   const { user, tenantType, setAiFeatures } = useAuthStore();
 
   useEffect(() => {
-    if (!user || tenantType !== 'coaching') return;
+    // Skip only for school tenants (the endpoint is coaching-only).
+    // Coaching students may log in via OTP with tenantType left null, so we
+    // fetch whenever it's NOT explicitly 'school'.
+    if (!user || tenantType === 'school') return;
 
     apiClient.get('/auth/tenant/features')
       .then((res) => {

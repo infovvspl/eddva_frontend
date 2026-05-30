@@ -8,7 +8,7 @@ import {
   Users, BarChart3, Trophy, Loader2, Search, Filter,
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
   Youtube, File, ClipboardList, FlaskConical, X, Printer,
-  RotateCcw, ListChecks, Check, Brain, HelpCircle,
+  RotateCcw, ListChecks, Check, Brain, HelpCircle, Sparkles,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
 import CourseFeedbackWidget from "@/components/student/course/CourseFeedbackWidget";
@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 
 const _API_ORIGIN = getApiOrigin();
 
@@ -1799,6 +1800,7 @@ export default function StudentCourseDetailPage() {
   const { batchId = "" } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const studyPlanEnabled = useHasAiFeature("ai_study_plan");
 
   // ── All hooks unconditionally at the top (Rules of Hooks) ────────────────
 
@@ -1970,16 +1972,27 @@ export default function StudentCourseDetailPage() {
             )}
           </div>
         </div>
-        <button
-          onClick={() => {
-            if (nextTopic) navigate(`/student/courses/${batchId}/topics/${nextTopic.id}`);
-            else navigate("/student/lectures");
-          }}
-          className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors text-sm shadow-md"
-        >
-          <Play className="w-3.5 h-3.5 fill-current" />
-          {progress.overallPct > 0 ? "Continue" : "Start"}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {studyPlanEnabled && (
+            <button
+              onClick={() => navigate(`/student/study-plan?batchId=${batchId}`)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-indigo-100 text-indigo-600 font-bold rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">AI Study Plan</span>
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (nextTopic) navigate(`/student/courses/${batchId}/topics/${nextTopic.id}`);
+              else navigate("/student/lectures");
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors text-sm shadow-md"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            {progress.overallPct > 0 ? "Continue" : "Start"}
+          </button>
+        </div>
       </div>
 
       {/* ── MAIN LAYOUT ── */}

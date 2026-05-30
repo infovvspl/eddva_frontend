@@ -16,6 +16,7 @@ import {
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
 import { cn } from "@/lib/utils";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { cleanAiNotesContent } from "@/lib/ai-notes";
 import { apiClient, extractData } from "@/lib/api/client";
 import {
@@ -1229,7 +1230,8 @@ export default function StudentLecturePage() {
 
   const [activeAiTab,  setActiveAiTab]  = useState<AiTabKey>("notes");
   const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
-  const [aiOpen,       setAiOpen]       = useState(true);
+  const aiLectureEnabled = useHasAiFeature("ai_study_assistant");
+  const [aiOpen,       setAiOpen]       = useState(aiLectureEnabled);
   const [mobileAiOpen, setMobileAiOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytPlaybackRef = useRef<ExternalLecturePlayback | null>(null);
@@ -1506,19 +1508,21 @@ export default function StudentLecturePage() {
             </div>
           )}
 
-          {/* AI Tools toggle — desktop only */}
-          <button
-            onClick={() => setAiOpen(v => !v)}
-            className={cn(
-              "hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border shrink-0",
-              aiOpen
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
-            )}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Tools</span>
-          </button>
+          {/* AI Tools toggle — desktop only, AI feature gated */}
+          {aiLectureEnabled && (
+            <button
+              onClick={() => setAiOpen(v => !v)}
+              className={cn(
+                "hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border shrink-0",
+                aiOpen
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Tools</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1606,8 +1610,8 @@ export default function StudentLecturePage() {
             {/* Lecture info card */}
             <LectureInfoCard lecture={lecture} />
 
-            {/* ── Mobile AI Study Tools (collapsible) ── */}
-            <div className="lg:hidden">
+            {/* ── Mobile AI Study Tools (collapsible) — AI feature gated ── */}
+            <div className={cn("lg:hidden", !aiLectureEnabled && "hidden")}>
               <button
                 onClick={() => setMobileAiOpen(v => !v)}
                 className="w-full flex items-center justify-between px-4 py-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm text-sm font-semibold text-slate-700 hover:border-indigo-300 hover:shadow-md transition-all group"
@@ -1752,8 +1756,8 @@ export default function StudentLecturePage() {
             )}
           </div>
 
-          {/* ── RIGHT: AI Panel (desktop sticky) ── */}
-          <aside className={cn("hidden", aiOpen && "lg:block")}>
+          {/* ── RIGHT: AI Panel (desktop sticky) — AI feature gated ── */}
+          <aside className={cn("hidden", aiLectureEnabled && aiOpen && "lg:block")}>
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden sticky top-20">
 
               {/* Panel header */}

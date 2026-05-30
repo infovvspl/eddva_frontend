@@ -1,14 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, Users, GraduationCap, Calendar, Mail, Globe,
   Shield, CreditCard, BookOpen, Ban, ArrowUpCircle,
   Swords, ChevronLeft, Loader2, AlertCircle, Video, ClipboardList,
-  Activity, DollarSign, TrendingUp
+  Activity, DollarSign, TrendingUp, Sparkles, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant } from "@/hooks/use-tenants";
+import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpdateTenant } from "@/hooks/use-tenants";
+import { toast } from "sonner";
+
+const AI_FEATURE_OPTIONS = [
+  { key: "ai_study_assistant",    label: "AI Study Assistant",    desc: "AI tutor & interactive study sessions" },
+  { key: "ai_study_plan",         label: "AI Study Plan",         desc: "Personalized AI study roadmaps" },
+  { key: "ai_battle_arena",       label: "Battle Arena",          desc: "AI adaptive practice battles" },
+  { key: "ai_analytics",          label: "AI Analytics",          desc: "Weak topic detection & insights" },
+  { key: "ai_doubt_resolution",   label: "AI Doubt Resolution",   desc: "Instant AI answers to questions" },
+  { key: "ai_content_generation", label: "AI Content Generation", desc: "Auto-generate questions & quizzes" },
+  { key: "ai_speech_to_text",     label: "Speech-to-Text Notes",  desc: "Transcribe lectures into notes" },
+] as const;
 
 const InstituteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,9 +30,46 @@ const InstituteDetailPage = () => {
   const { data: statsData } = useTenantStats(id || "");
   const suspendMutation = useSuspendTenant();
   const activateMutation = useActivateTenant();
+  const updateMutation = useUpdateTenant();
+
+  // AI feature management local state
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiFeatures, setAiFeatures] = useState<string[]>([]);
+  const [aiDirty, setAiDirty] = useState(false);
+
+  // Sync AI state once tenant data loads (only when not dirty, to avoid clobbering edits)
+  useEffect(() => {
+    const t = (detailData as any)?.tenant || (detailData as any);
+    if (t && !aiDirty) {
+      setAiEnabled(!!t.aiEnabled);
+      setAiFeatures(Array.isArray(t.aiFeatures) ? t.aiFeatures : []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailData]);
+
+  const handleSaveAi = async () => {
+    if (!id) return;
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        aiEnabled,
+        aiFeatures: aiEnabled ? aiFeatures : [],
+      } as any);
+      setAiDirty(false);
+      toast.success("AI features updated successfully");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to update AI features");
+    }
+  };
+
+  const toggleAiFeature = (key: string) => {
+    setAiDirty(true);
+    setAiFeatures((prev) => prev.includes(key) ? prev.filter(f => f !== key) : [...prev, key]);
+  };
 
   const tabs = [
     { id: "overview", label: "Overview" },
+    { id: "ai", label: "AI Features" },
     { id: "stats", label: "Deep Stats" },
     { id: "billing", label: "Billing" },
     { id: "activity", label: "Logs" },
@@ -86,18 +134,18 @@ const InstituteDetailPage = () => {
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
       <header className="max-w-7xl mx-auto mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-[11px] font-black uppercase tracking-[0.2em] mb-5">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-[11px] font-medium uppercase tracking-wider mb-5">
           <ChevronLeft className="w-4 h-4" /> Return to Directory
         </button>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 md:w-18 md:h-18 rounded-[20px] bg-slate-100 flex items-center justify-center text-2xl md:text-[28px] font-black text-slate-400 border border-slate-50 shadow-sm shrink-0">
+            <div className="w-14 h-14 md:w-18 md:h-18 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl md:text-[28px] font-bold text-slate-400 border border-slate-50 shadow-sm shrink-0">
               {(tenant.name || "?")[0]}
             </div>
             <div>
               <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                <h1 className="text-[24px] md:text-[32px] lg:text-[38px] font-black text-slate-900 tracking-tight leading-tight">{tenant.name}</h1>
-                <div className={`text-[10px] font-black px-3 py-1 rounded-full border shadow-sm flex items-center gap-1.5 uppercase tracking-[0.15em] ${statusStyles[status] || statusStyles.active}`}>
+                <h1 className="text-[24px] md:text-[32px] lg:text-[38px] font-bold text-slate-900 tracking-tight leading-tight">{tenant.name}</h1>
+                <div className={`text-[10px] font-medium px-3 py-1 rounded-full border shadow-sm flex items-center gap-1.5 uppercase tracking-wider ${statusStyles[status] || statusStyles.active}`}>
                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
                    {status === 'active' ? 'Operational' : status === 'trial' ? 'Trial Hub' : 'Suspended'}
                 </div>
@@ -108,13 +156,13 @@ const InstituteDetailPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="h-10 md:h-12 px-5 md:px-8 rounded-[20px] border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-sm">
+            <Button variant="outline" className="h-10 md:h-12 px-5 md:px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600 hover:bg-slate-50 transition-all text-sm">
               <ArrowUpCircle className="w-4 h-4 mr-2" /> Upgrade Quota
             </Button>
             <Button
               onClick={handleSuspendToggle}
               disabled={suspendMutation.isPending || activateMutation.isPending}
-              className={`h-10 md:h-12 px-5 md:px-8 rounded-[20px] font-black shadow-2xl transition-all text-sm ${
+              className={`h-10 md:h-12 px-5 md:px-8 rounded-2xl font-semibold shadow-lg transition-all text-sm ${
                 status === "suspended"
                   ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
                   : "bg-white text-gray-900 hover:bg-gray-100 shadow-slate-900/20"
@@ -131,21 +179,21 @@ const InstituteDetailPage = () => {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {statsCards.map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-5 md:p-7 rounded-[24px] md:rounded-[36px] border border-slate-100 shadow-sm relative overflow-hidden group">
+            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-5 md:p-7 rounded-2xl md:rounded-[36px] border border-slate-100 shadow-sm relative overflow-hidden group">
               <div className="flex justify-between items-start mb-4">
                 <div className={`p-3 rounded-[16px] ${s.bg} ${s.color} transition-transform group-hover:scale-110`}><s.icon className="w-5 h-5" /></div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{s.label}</p>
-              <h3 className="text-xl md:text-[28px] font-black text-slate-900 mt-1 leading-none">{s.value}</h3>
+              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{s.label}</p>
+              <h3 className="text-xl md:text-[28px] font-bold text-slate-900 mt-1 leading-none">{s.value}</h3>
               <div className="absolute top-0 right-0 h-24 w-24 bg-indigo-50/30 opacity-0 group-hover:opacity-100 blur-[40px] transition-opacity translate-x-12 -translate-y-12" />
             </motion.div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="bg-slate-50 p-1.5 rounded-[24px] border border-slate-100 inline-flex gap-1">
+        <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 inline-flex gap-1">
           {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-8 py-3.5 rounded-[18px] text-[13px] font-black uppercase tracking-tight transition-all ${activeTab === tab.id ? "bg-white text-gray-900 shadow-xl shadow-slate-900/10" : "text-slate-400 hover:text-slate-900"}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-8 py-3.5 rounded-xl text-[13px] font-medium uppercase tracking-tight transition-all ${activeTab === tab.id ? "bg-white text-gray-900 shadow-md shadow-slate-200" : "text-slate-400 hover:text-slate-900"}`}>
               {tab.label}
             </button>
           ))}
@@ -156,7 +204,7 @@ const InstituteDetailPage = () => {
             {activeTab === "overview" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-7">
                 <div className="lg:col-span-2 bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
-                  <h3 className="text-base md:text-lg font-black text-slate-900 mb-7 flex items-center gap-2">
+                  <h3 className="text-base md:text-lg font-bold text-slate-900 mb-7 flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-indigo-600" /> Administrative Profile
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
@@ -169,23 +217,104 @@ const InstituteDetailPage = () => {
                       { icon: Calendar, label: "Compliance Deadline", value: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' }) : "—" },
                     ].map((item) => (
                       <div key={item.label} className="group">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{item.label}</p>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">{item.label}</p>
                         <div className="flex items-center gap-4">
                           <item.icon className="w-5 h-5 text-gray-800 group-hover:text-indigo-600 transition-colors" />
-                          <span className="text-[16px] font-black text-slate-800">{item.value}</span>
+                          <span className="text-[16px] font-semibold text-slate-800">{item.value}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="bg-white rounded-[28px] md:rounded-[44px] p-5 md:p-8 text-gray-900 shadow-2xl shadow-slate-900/40 relative overflow-hidden">
-                  <h3 className="text-base md:text-lg font-black mb-7 relative z-10">Quota Intelligence</h3>
+                <div className="bg-white rounded-[28px] md:rounded-[44px] p-5 md:p-8 text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden">
+                  <h3 className="text-base md:text-lg font-bold mb-7 relative z-10">Quota Intelligence</h3>
                   <div className="space-y-7 relative z-10">
                     <UsageProgress label="Active Learner Hub" current={studentCount} total={studentLimit} color="bg-indigo-500" inverse />
                     <UsageProgress label="Faculty Hub Slots" current={teacherCount} total={teacherLimit} color="bg-purple-500" inverse />
                   </div>
                   <div className="absolute top-0 right-0 h-32 w-32 bg-indigo-500 opacity-10 blur-[60px] translate-x-12 -translate-y-12" />
                 </div>
+              </div>
+            )}
+
+            {activeTab === "ai" && (
+              <div className="bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                      <Sparkles className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">AI Features</h3>
+                      <p className="text-xs font-semibold text-slate-400">Control AI-powered tools for this institute</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setAiDirty(true); setAiEnabled((v) => { const nv = !v; if (!nv) setAiFeatures([]); return nv; }); }}
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 shrink-0 ${aiEnabled ? "bg-indigo-600" : "bg-slate-200"}`}
+                  >
+                    <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${aiEnabled ? "translate-x-7" : ""}`} />
+                  </button>
+                </div>
+
+                {aiEnabled ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {AI_FEATURE_OPTIONS.map((feat) => {
+                      const checked = aiFeatures.includes(feat.key);
+                      return (
+                        <button
+                          key={feat.key}
+                          type="button"
+                          onClick={() => toggleAiFeature(feat.key)}
+                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
+                            checked ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white hover:border-slate-200"
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${
+                            checked ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
+                          }`}>
+                            {checked && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{feat.label}</p>
+                            <p className="text-[11px] font-semibold text-slate-400">{feat.desc}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center">
+                    <p className="text-sm font-semibold text-slate-400">AI features are disabled for this institute.</p>
+                    <p className="text-xs font-medium text-slate-300 mt-1">Toggle the switch above to enable AI-powered tools.</p>
+                  </div>
+                )}
+
+                {aiDirty && (
+                  <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const t = (detailData as any)?.tenant || (detailData as any);
+                        setAiEnabled(!!t?.aiEnabled);
+                        setAiFeatures(Array.isArray(t?.aiFeatures) ? t.aiFeatures : []);
+                        setAiDirty(false);
+                      }}
+                      className="h-11 px-6 rounded-xl border border-slate-200 font-semibold text-slate-600"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveAi}
+                      disabled={updateMutation.isPending}
+                      className="h-11 px-8 rounded-xl bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-500/20 flex gap-2"
+                    >
+                      {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />}
+                      Save Changes
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -203,8 +332,8 @@ const InstituteDetailPage = () => {
                     <div className={`p-3 rounded-2xl ${s.bg} ${s.color} w-fit mb-4`}>
                       <s.icon className="w-5 h-5" />
                     </div>
-                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{s.label}</p>
-                    <h3 className="text-2xl font-black text-foreground mt-1">{s.value}</h3>
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{s.label}</p>
+                    <h3 className="text-2xl font-bold text-foreground mt-1">{s.value}</h3>
                   </motion.div>
                 ))}
               </div>
@@ -217,16 +346,16 @@ const InstituteDetailPage = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-secondary/50 rounded-2xl p-6">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Current Plan</p>
-                    <p className="text-xl font-black text-foreground capitalize">{tenant.plan}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Current Plan</p>
+                    <p className="text-xl font-bold text-foreground capitalize">{tenant.plan}</p>
                   </div>
                   <div className="bg-secondary/50 rounded-2xl p-6">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Revenue</p>
-                    <p className="text-xl font-black text-foreground">₹{totalRevenue.toLocaleString()}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Total Revenue</p>
+                    <p className="text-xl font-bold text-foreground">₹{totalRevenue.toLocaleString()}</p>
                   </div>
                   <div className="bg-secondary/50 rounded-2xl p-6">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Trial Ends</p>
-                    <p className="text-xl font-black text-foreground">{tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toLocaleDateString("en-IN") : "—"}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Trial Ends</p>
+                    <p className="text-xl font-bold text-foreground">{tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toLocaleDateString("en-IN") : "—"}</p>
                   </div>
                 </div>
               </div>
@@ -249,8 +378,8 @@ const UsageProgress = ({ label, current, total, color, inverse = false }: { labe
   return (
     <div>
       <div className="flex justify-between items-end mb-3">
-        <p className={`text-[11px] font-black uppercase tracking-widest ${inverse ? 'text-white/40' : 'text-slate-400'}`}>{label}</p>
-        <p className={`text-[12px] font-black ${inverse ? 'text-white' : 'text-slate-900'}`}>{current.toLocaleString()} <span className={inverse ? 'text-white/30' : 'text-gray-600'}>/ {total.toLocaleString()}</span></p>
+        <p className={`text-[11px] font-medium uppercase tracking-wider ${inverse ? 'text-white/40' : 'text-slate-400'}`}>{label}</p>
+        <p className={`text-[12px] font-medium ${inverse ? 'text-white' : 'text-slate-900'}`}>{current.toLocaleString()} <span className={inverse ? 'text-white/30' : 'text-gray-600'}>/ {total.toLocaleString()}</span></p>
       </div>
       <div className={`h-2.5 rounded-full overflow-hidden ${inverse ? 'bg-white/5' : 'bg-slate-100'}`}>
         <motion.div initial={{ width: 0 }} animate={{ width: `${percentage}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${color} shadow-[0_0_12px_rgba(0,0,0,0.1)]`} />

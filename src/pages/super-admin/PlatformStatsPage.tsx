@@ -42,8 +42,8 @@ const PlatformStatsPage = () => {
     <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto">
         <header className="mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
-          <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Ecosystem Intelligence</h2>
-          <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-black text-slate-900 tracking-tight leading-tight">Platform Analytics</h1>
+          <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Ecosystem Intelligence</h2>
+          <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Platform Analytics</h1>
           <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Real-time architecture performance and platform health metrics</p>
         </header>
 
@@ -54,12 +54,12 @@ const PlatformStatsPage = () => {
               <div className={`p-3 rounded-[16px] ${s.bg} ${s.color} w-fit mb-4 transition-transform group-hover:scale-110`}>
                 <s.icon className="w-5 h-5" />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{s.label}</p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">{s.label}</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <h3 className="text-xl md:text-[28px] font-black text-slate-900">
+                <h3 className="text-xl md:text-[28px] font-bold text-slate-900">
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : String(s.value)}
                 </h3>
-                <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                <span className="text-[10px] font-medium text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-0.5">
                   {s.trend} <ArrowUpRight className="w-3 h-3 stroke-[3]" />
                 </span>
               </div>
@@ -72,8 +72,8 @@ const PlatformStatsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-6 md:mb-8">
           <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group">
             <div className="flex justify-between items-center mb-6 md:mb-8 relative z-10">
-              <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight">Student Acquisition</h3>
-              <div className="px-3 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full text-[10px] font-black uppercase tracking-[0.15em]">Growth Curve</div>
+              <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">Student Acquisition</h3>
+              <div className="px-3 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full text-[10px] font-medium uppercase tracking-wider">Growth Curve</div>
             </div>
             <ResponsiveContainer width="100%" height={320}>
               <LineChart data={monthlyGrowth}>
@@ -88,8 +88,8 @@ const PlatformStatsPage = () => {
 
           <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group">
             <div className="flex justify-between items-center mb-6 md:mb-8 relative z-10">
-              <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight">Revenue Hub</h3>
-              <div className="px-3 py-1 bg-white text-gray-900 rounded-full text-[10px] font-black uppercase tracking-[0.15em]">MRR Protocol</div>
+              <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">Revenue Hub</h3>
+              <div className="px-3 py-1 bg-white text-gray-900 rounded-full text-[10px] font-medium uppercase tracking-wider">MRR Protocol</div>
             </div>
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={monthlyGrowth}>
@@ -106,7 +106,7 @@ const PlatformStatsPage = () => {
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm flex flex-col items-center">
-            <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight mb-6 self-start w-full text-left">Market Share</h3>
+            <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight mb-6 self-start w-full text-left">Market Share</h3>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie data={planDistribution} innerRadius={70} outerRadius={90} paddingAngle={10} dataKey="value">
@@ -121,14 +121,14 @@ const PlatformStatsPage = () => {
               {planDistribution.map((p) => (
                 <div key={p.name} className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: p.color }} />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">{p.name}</span>
+                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.1em]">{p.name}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm">
-            <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight mb-6">Student Focus</h3>
+            <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight mb-6">Student Focus</h3>
             <div className="space-y-8">
               {[
                 { label: "JEE Main/Adv", value: 62, color: "bg-indigo-600" },
@@ -137,8 +137,8 @@ const PlatformStatsPage = () => {
               ].map((ex) => (
                 <div key={ex.label}>
                   <div className="flex justify-between items-end mb-3">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">{ex.label}</span>
-                    <span className="text-[15px] font-black text-slate-900">{ex.value}%</span>
+                    <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{ex.label}</span>
+                    <span className="text-[15px] font-semibold text-slate-900">{ex.value}%</span>
                   </div>
                   <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${ex.value}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${ex.color} shadow-sm`} />
@@ -148,8 +148,8 @@ const PlatformStatsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] text-gray-900 shadow-2xl shadow-slate-900/40 relative overflow-hidden group">
-            <h3 className="text-base md:text-lg font-black mb-6 relative z-10">System Integrity</h3>
+          <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden group">
+            <h3 className="text-base md:text-lg font-bold mb-6 relative z-10">System Integrity</h3>
             <div className="space-y-4 relative z-10">
               {[
                 { label: "Global Uptime", value: "99.99%", icon: Globe, status: "text-emerald-400" },
@@ -157,12 +157,12 @@ const PlatformStatsPage = () => {
                 { label: "Neural Layer", value: "Shield Active", icon: ShieldCheck, status: "text-indigo-400" },
                 { label: "Error Margin", value: "0.01%", icon: Activity, status: "text-emerald-400" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-5 bg-white/5 border border-gray-200 rounded-[24px] group/item hover:bg-white/10 transition-all cursor-default">
+                <div key={item.label} className="flex items-center justify-between p-5 bg-white/5 border border-gray-200 rounded-2xl group/item hover:bg-white/10 transition-all cursor-default">
                   <div className="flex items-center gap-4">
                     <item.icon className="w-5 h-5 text-white/20 group-hover/item:text-indigo-400 transition-colors" />
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">{item.label}</span>
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-white/40">{item.label}</span>
                   </div>
-                  <span className={`text-[13px] font-black ${item.status}`}>{item.value}</span>
+                  <span className={`text-[13px] font-medium ${item.status}`}>{item.value}</span>
                 </div>
               ))}
             </div>

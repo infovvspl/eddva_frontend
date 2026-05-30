@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { SchoolGuard } from "./components/auth/SchoolGuard";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
+import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
 
@@ -262,7 +263,7 @@ const TeacherRoutes = () => (
       <Route path="/teacher/batches" element={<TeacherBatchesPage />} />
       <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
-      <Route path="/teacher/ai-tools" element={<TeacherAIToolsPage />} />
+      <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
     </Route>
   </>
@@ -281,10 +282,10 @@ const StudentRoutes = () => (
       <Route path="/student/calendar" element={<StudentCalendarPage />} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
-      <Route path="/student/battle" element={<BattleArena />} />
+      <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
       <Route path="/student/doubts" element={<StudentDoubtsPage />} />
       <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
-      <Route path="/student/study-plan" element={<StudentStudyPlanPage />} />
+      <Route path="/student/study-plan" element={<AiFeatureGate feature="ai_study_plan" title="AI Study Plan"><StudentStudyPlanPage /></AiFeatureGate>} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route path="/student/progress" element={<StudentProgressPage />} />
       <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
@@ -292,7 +293,7 @@ const StudentRoutes = () => (
       <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
       <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
-      <Route path="/student/ai-study/:topicId" element={<StudentAiStudyPage />} />
+      <Route path="/student/ai-study/:topicId" element={<AiFeatureGate feature="ai_study_assistant" title="AI Study Assistant"><StudentAiStudyPage /></AiFeatureGate>} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
       <Route path="/student/tests" element={<StudentTestsPage />} />
       <Route path="/student/mock-tests/:id" element={<StudentMockTestPage />} />

@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useStudentMe, useMyCourses, useStudentDashboard, useMyPerformance, useWeeklyActivity } from "@/hooks/use-student";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { IfAiFeature } from "@/components/ai/AiFeatureGate";
 import student from "@/assets/undraw_studying-science_kk9e.svg"
 import StatsGrid from "@/components/student/dashboard/StatsGrid";
 import ContinueLearning from "@/components/student/dashboard/ContinueLearning";
@@ -330,14 +331,16 @@ export default function StudentDashboard() {
         {/* RIGHT — 4 cols */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* Today's Study Plan */}
-          <motion.div variants={fade}>
-            <Card>
-              <Section title="Today's Study Plan" action={() => navigate("/student/study-plan")}>
-                <TodayStudyPlan />
-              </Section>
-            </Card>
-          </motion.div>
+          {/* Today's Study Plan — AI feature */}
+          <IfAiFeature feature="ai_study_plan">
+            <motion.div variants={fade}>
+              <Card>
+                <Section title="Today's Study Plan" action={() => navigate("/student/study-plan")}>
+                  <TodayStudyPlan />
+                </Section>
+              </Card>
+            </motion.div>
+          </IfAiFeature>
 
           {/* Leaderboard */}
           <motion.div variants={fade}>

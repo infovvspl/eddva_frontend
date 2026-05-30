@@ -34,6 +34,7 @@ import * as adminApi from "@/lib/api/admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { IfAiFeature } from "@/components/ai/AiFeatureGate";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { MAX_MATERIAL_FILE_SIZE_MB } from "@/lib/upload-limits";
@@ -603,10 +604,12 @@ function ResourceWorkspace({
             style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
             <Plus className="w-4 h-4" /> Add Resource
           </button>
-          <button onClick={onOpenAi}
-            className="flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-black bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors">
-            <Sparkles className="w-4 h-4" /> AI Generate
-          </button>
+          <IfAiFeature feature="ai_content_generation">
+            <button onClick={onOpenAi}
+              className="flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-black bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors">
+              <Sparkles className="w-4 h-4" /> AI Generate
+            </button>
+          </IfAiFeature>
           <button onClick={onNavigateToLectures}
             className="flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-black bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors ml-auto">
             <Play className="w-4 h-4 text-rose-400" /> Lectures

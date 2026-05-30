@@ -15,6 +15,7 @@ import {
 import { useSubjects, useChapters, useTopics } from "@/hooks/use-admin";
 import { useMyBatches } from "@/hooks/use-teacher";
 import { useAuthStore } from "@/lib/auth-store";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { UnverifiedPYQ } from "@/lib/api/admin";
@@ -502,6 +503,8 @@ function ReviewTab() {
 export default function PYQManagementPage() {
   const { user } = useAuthStore();
   const isTeacher = user?.role === "teacher";
+  const aiContentEnabled = useHasAiFeature("ai_content_generation");
+  const defaultTab = isTeacher ? (aiContentEnabled ? "generate" : "review") : "stats";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -516,12 +519,14 @@ export default function PYQManagementPage() {
         </p>
       </div>
 
-      <Tabs defaultValue={isTeacher ? "generate" : "stats"}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList className="flex-wrap h-auto">
           {!isTeacher && (
             <TabsTrigger value="stats"><BarChart2 className="h-4 w-4 mr-1.5" />Overview</TabsTrigger>
           )}
-          <TabsTrigger value="generate"><Sparkles className="h-4 w-4 mr-1.5" />AI Generate</TabsTrigger>
+          {aiContentEnabled && (
+            <TabsTrigger value="generate"><Sparkles className="h-4 w-4 mr-1.5" />AI Generate</TabsTrigger>
+          )}
           {!isTeacher && (
             <TabsTrigger value="import"><Upload className="h-4 w-4 mr-1.5" />Import CSV</TabsTrigger>
           )}
@@ -529,7 +534,7 @@ export default function PYQManagementPage() {
         </TabsList>
 
         {!isTeacher && <TabsContent value="stats" className="mt-6"><StatsOverview /></TabsContent>}
-        <TabsContent value="generate" className="mt-6"><GenerateTab /></TabsContent>
+        {aiContentEnabled && <TabsContent value="generate" className="mt-6"><GenerateTab /></TabsContent>}
         {!isTeacher && <TabsContent value="import" className="mt-6"><ImportTab /></TabsContent>}
         <TabsContent value="review" className="mt-6"><ReviewTab /></TabsContent>
       </Tabs>

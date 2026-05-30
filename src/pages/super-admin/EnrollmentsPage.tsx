@@ -22,7 +22,7 @@ function ExamPill({ target }: { target?: string }) {
   const key = target.toLowerCase();
   const cls = examColor[key] ?? "bg-slate-50 text-slate-600 border-slate-100";
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[9px] font-black uppercase tracking-wider ${cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[9px] font-medium uppercase tracking-wider ${cls}`}>
       {target.toUpperCase()}
     </span>
   );
@@ -40,7 +40,7 @@ function StatusPill({ status }: { status?: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <div className={`w-1.5 h-1.5 rounded-full ${s === "active" ? "bg-emerald-500" : s === "dropped" ? "bg-rose-500" : "bg-slate-400"}`} />
-      <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${s === "active" ? "text-emerald-600" : s === "dropped" ? "text-rose-600" : "text-slate-500"}`}>
+      <span className={`text-[9px] font-medium uppercase tracking-wider ${s === "active" ? "text-emerald-600" : s === "dropped" ? "text-rose-600" : "text-slate-500"}`}>
         {s === "active" ? "Active" : s === "dropped" ? "Dropped" : s}
       </span>
     </div>
@@ -53,7 +53,7 @@ function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
   const initials = name.split(" ").map(w => w[0]?.toUpperCase() ?? "").slice(0, 2).join("");
   const dim = size === "sm" ? "w-8 h-8 text-[10px]" : "w-10 h-10 text-xs";
   return (
-    <div className={`${dim} rounded-[14px] bg-indigo-600 flex items-center justify-center font-black text-white shrink-0 group-hover:scale-105 transition-transform`}>
+    <div className={`${dim} rounded-xl bg-indigo-600 flex items-center justify-center font-semibold text-white shrink-0 group-hover:scale-105 transition-transform`}>
       {initials}
     </div>
   );
@@ -114,8 +114,8 @@ const EnrollmentsPage = () => {
         {/* ── Header ── */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
-            <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Platform Control</p>
-            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-black text-slate-900 tracking-tight leading-tight">
+            <p className="text-[10px] md:text-[11px] font-medium uppercase tracking-wider text-indigo-600 mb-2">Platform Control</p>
+            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">
               Student Enrollments
             </h1>
             <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">
@@ -124,7 +124,7 @@ const EnrollmentsPage = () => {
           </div>
           <div className="flex gap-3 shrink-0">
             <Button variant="outline"
-              className="h-10 md:h-12 px-5 md:px-8 rounded-2xl border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-sm">
+              className="h-10 md:h-12 px-5 md:px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600 hover:bg-slate-50 transition-all text-sm">
               <Download className="w-4 h-4 mr-2" /> Export CSV
             </Button>
           </div>
@@ -144,7 +144,7 @@ const EnrollmentsPage = () => {
                   <Icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xl font-black text-slate-900 leading-none">{s.value}</p>
+                  <p className="text-xl font-bold text-slate-900 leading-none">{s.value}</p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{s.label}</p>
                 </div>
               </div>
@@ -153,7 +153,7 @@ const EnrollmentsPage = () => {
         </div>
 
         {/* ── Search + filter bar ── */}
-        <div className="bg-slate-50/50 p-4 md:p-5 rounded-[24px] border border-slate-100 space-y-3">
+        <div className="bg-slate-50/50 p-4 md:p-5 rounded-2xl border border-slate-100 space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative flex-1 min-w-[220px]">
@@ -170,7 +170,7 @@ const EnrollmentsPage = () => {
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(v => !v)}
-              className={`h-11 px-4 flex items-center gap-2 rounded-2xl border text-sm font-black transition-all ${showFilters ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50"}`}
+              className={`h-11 px-4 flex items-center gap-2 rounded-2xl border text-sm font-medium transition-all ${showFilters ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50"}`}
             >
               <Filter className="w-4 h-4" />
               Filters
@@ -181,7 +181,7 @@ const EnrollmentsPage = () => {
 
             {hasFilters && (
               <button onClick={clearFilters}
-                className="h-11 px-4 flex items-center gap-1.5 rounded-2xl border border-rose-100 bg-rose-50 text-rose-600 text-sm font-black hover:bg-rose-100 transition-colors">
+                className="h-11 px-4 flex items-center gap-1.5 rounded-2xl border border-rose-100 bg-rose-50 text-rose-600 text-sm font-medium hover:bg-rose-100 transition-colors">
                 <X className="w-3.5 h-3.5" /> Clear
               </button>
             )}
@@ -197,7 +197,7 @@ const EnrollmentsPage = () => {
                 <div className="pt-2 flex flex-wrap gap-3">
                   {/* Institute filter */}
                   <div className="flex-1 min-w-[200px]">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">
+                    <label className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">
                       Filter by Institute
                     </label>
                     <select
@@ -214,7 +214,7 @@ const EnrollmentsPage = () => {
 
                   {/* Batch ID filter */}
                   <div className="flex-1 min-w-[200px]">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">
+                    <label className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">
                       Filter by Batch ID
                     </label>
                     <input
@@ -258,12 +258,12 @@ const EnrollmentsPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60">
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Student</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Contact</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Course / Batch</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Institute</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Enrolled On</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Status</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Student</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Contact</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Course / Batch</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Institute</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Enrolled On</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -281,7 +281,7 @@ const EnrollmentsPage = () => {
                           <div className="flex items-center gap-3">
                             <Avatar name={e.studentName || "?"} />
                             <div>
-                              <p className="text-sm font-black text-slate-900 leading-tight">{e.studentName || "—"}</p>
+                              <p className="text-sm font-medium text-slate-900 leading-tight">{e.studentName || "—"}</p>
                               <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">
                                 ID: {e.studentId?.slice(0, 8)}…
                               </p>
@@ -300,7 +300,7 @@ const EnrollmentsPage = () => {
                           <div className="flex items-center gap-2">
                             <BookOpen className="w-4 h-4 text-slate-300 shrink-0" />
                             <div>
-                              <p className="text-sm font-black text-slate-800 leading-tight">{e.batchName || "—"}</p>
+                              <p className="text-sm font-medium text-slate-800 leading-tight">{e.batchName || "—"}</p>
                               {e.examTarget && (
                                 <div className="mt-1"><ExamPill target={e.examTarget} /></div>
                               )}
@@ -364,7 +364,7 @@ const EnrollmentsPage = () => {
                   <button
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
-                    className={`h-9 min-w-[36px] px-3 flex items-center justify-center rounded-xl text-xs font-black transition-all ${
+                    className={`h-9 min-w-[36px] px-3 flex items-center justify-center rounded-xl text-xs font-medium transition-all ${
                       pageNum === page
                         ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
                         : "border border-slate-100 bg-white text-slate-500 hover:bg-slate-50"

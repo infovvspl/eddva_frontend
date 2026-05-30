@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
+import { IfAiFeature } from "@/components/ai/AiFeatureGate";
 import {
   useMockTests, useCreateMockTest, useDeleteMockTest, usePublishMockTest,
   useMockTestDetail, useUpdateMockTest, useRemoveQuestionFromMockTest, useBatches,
@@ -2436,6 +2438,8 @@ function CreateTestModal({
       : [blankQuestion("mcq_single", "comp_mcq")]
   );
   const [activeTab, setActiveTab] = useState<"manual" | "ai" | "csv">("manual");
+  const aiContentEnabled = useHasAiFeature("ai_content_generation");
+  const questionTabs = (aiContentEnabled ? ["manual", "ai", "csv"] : ["manual", "csv"]) as const;
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -3065,7 +3069,7 @@ function CreateTestModal({
             <div className="px-4 pt-4 pb-3 border-b border-slate-100">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Add Questions</p>
               <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                {(["manual", "ai", "csv"] as const).map(tab => (
+                {questionTabs.map(tab => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
                     className={cn("flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all",
                       activeTab === tab ? "bg-white text-[#013889] shadow-sm" : "text-slate-500 hover:text-slate-700")}>
@@ -3735,10 +3739,12 @@ const MockTestsPage = () => {
           </p>
           {examFilter === "all" && (
             <div className="flex gap-2 justify-center mt-5">
-              <Button className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}
-                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-                <Sparkles className="w-3.5 h-3.5" /> Create with AI
-              </Button>
+              <IfAiFeature feature="ai_content_generation">
+                <Button className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}
+                  style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                  <Sparkles className="w-3.5 h-3.5" /> Create with AI
+                </Button>
+              </IfAiFeature>
               <Button variant="outline" className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}>
                 <Plus className="w-3.5 h-3.5" /> Add Manually
               </Button>

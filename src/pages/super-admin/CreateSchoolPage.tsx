@@ -45,7 +45,7 @@ const CreateSchoolPage = () => {
     label: string; field: keyof typeof form; type?: string; required?: boolean
   }) => (
     <div>
-      <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+      <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1.5">
         {label}{required && <span className="text-rose-500 ml-0.5">*</span>}
       </label>
       <input
@@ -67,7 +67,7 @@ const CreateSchoolPage = () => {
         </button>
 
         <div className="border border-slate-100 rounded-2xl p-6">
-          <h1 className="text-2xl font-black text-slate-900 mb-1">Register School</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Register School</h1>
           <p className="text-slate-400 text-sm mb-6">Creates the institute and a default admin account (status: PENDING).</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -86,7 +86,7 @@ const CreateSchoolPage = () => {
 
             <div className="pt-2">
               <button type="submit" disabled={loading}
-                className="flex items-center gap-2 h-11 px-8 rounded-xl bg-blue-600 text-white font-black text-sm disabled:opacity-50 hover:bg-blue-700 transition-colors">
+                className="flex items-center gap-2 h-11 px-8 rounded-xl bg-blue-600 text-white font-semibold text-sm disabled:opacity-50 hover:bg-blue-700 transition-colors">
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Registering…</> : "Register School Institute"}
               </button>
             </div>
