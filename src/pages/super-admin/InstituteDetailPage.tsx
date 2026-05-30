@@ -5,10 +5,11 @@ import {
   Building2, Users, GraduationCap, Calendar, Mail, Globe,
   Shield, CreditCard, BookOpen, Ban, ArrowUpCircle,
   Swords, ChevronLeft, Loader2, AlertCircle, Video, ClipboardList,
-  Activity, DollarSign, TrendingUp
+  Activity, DollarSign, TrendingUp, Edit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant } from "@/hooks/use-tenants";
+import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpdateTenant } from "@/hooks/use-tenants";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const InstituteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,48 @@ const InstituteDetailPage = () => {
   const { data: statsData } = useTenantStats(id || "");
   const suspendMutation = useSuspendTenant();
   const activateMutation = useActivateTenant();
+  const updateMutation = useUpdateTenant();
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    billingEmail: "",
+    plan: "",
+    maxStudents: 0,
+    maxTeachers: 0,
+  });
+
+  const openEditDialog = () => {
+    const detail = detailData as any;
+    const tenantObj = detail?.tenant || detail;
+    if (!tenantObj) return;
+    setEditForm({
+      name: tenantObj.name || "",
+      billingEmail: tenantObj.billingEmail || "",
+      plan: tenantObj.plan || "starter",
+      maxStudents: tenantObj.maxStudents || 500,
+      maxTeachers: tenantObj.maxTeachers || 20,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        name: editForm.name,
+        billingEmail: editForm.billingEmail,
+        plan: editForm.plan,
+        maxStudents: Number(editForm.maxStudents),
+        maxTeachers: Number(editForm.maxTeachers),
+      });
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to update tenant", error);
+    }
+  };
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -108,8 +151,8 @@ const InstituteDetailPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="h-10 md:h-12 px-5 md:px-8 rounded-[20px] border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-sm">
-              <ArrowUpCircle className="w-4 h-4 mr-2" /> Upgrade Quota
+            <Button variant="outline" onClick={openEditDialog} className="h-10 md:h-12 px-5 md:px-8 rounded-[20px] border-2 border-slate-100 font-black text-slate-600 hover:bg-slate-50 transition-all text-sm">
+              <Edit className="w-4 h-4 mr-2" /> Edit Details
             </Button>
             <Button
               onClick={handleSuspendToggle}
@@ -240,6 +283,82 @@ const InstituteDetailPage = () => {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-[32px] p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">Edit Institute Details</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Name</label>
+              <input
+                required
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Billing Email</label>
+              <input
+                type="email"
+                required
+                value={editForm.billingEmail}
+                onChange={(e) => setEditForm({ ...editForm, billingEmail: e.target.value })}
+                className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Plan</label>
+                <select
+                  value={editForm.plan}
+                  onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
+                  className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                >
+                  <option value="starter">Starter</option>
+                  <option value="growth">Growth</option>
+                  <option value="scale">Scale</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Max Students</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={editForm.maxStudents}
+                  onChange={(e) => setEditForm({ ...editForm, maxStudents: Number(e.target.value) })}
+                  className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Max Teachers</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={editForm.maxTeachers}
+                  onChange={(e) => setEditForm({ ...editForm, maxTeachers: Number(e.target.value) })}
+                  className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending} className="rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700">
+                {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

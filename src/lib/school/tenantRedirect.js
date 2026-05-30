@@ -32,7 +32,7 @@ export function getPortalType(hostname = window.location.hostname) {
 }
 
 export function getPortalLoginPath(portalType = getPortalType()) {
-  if (portalType === 'SUPER_ADMIN') return '/super-admin/login';
+  if (portalType === 'SUPER_ADMIN') return '/login';
   if (portalType === 'INSTITUTE') return '/login';
   if (portalType === 'STUDENT') return '/login';
   if (portalType === 'PARENT') return '/login';

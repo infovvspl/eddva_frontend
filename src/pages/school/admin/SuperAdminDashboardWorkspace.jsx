@@ -509,10 +509,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             <h3 className="mb-4 font-display text-lg font-extrabold text-slate-950 dark:text-white">Quick Actions</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: 'Add Institute', icon: Building2, action: () => navigate('/admin/institutes') },
-                { label: 'Approve Institutes', icon: CheckCircle2, action: () => navigate('/admin/institutes') },
-                { label: 'View Analytics', icon: TrendingUp, action: () => navigate('/admin/analytics') },
-                { label: 'Manage Users', icon: Users, action: () => navigate('/admin/settings') },
+                { label: 'Add Institute', icon: Building2, action: () => navigate('/school/admin/institutes') },
+                { label: 'Approve Institutes', icon: CheckCircle2, action: () => navigate('/school/admin/institutes') },
+                { label: 'View Analytics', icon: TrendingUp, action: () => navigate('/school/admin/analytics') },
+                { label: 'Manage Users', icon: Users, action: () => navigate('/school/admin/settings') },
               ].map((action) => (
                 <button
                   key={action.label}
