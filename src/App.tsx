@@ -137,6 +137,8 @@ const SchoolAiInsights        = lazy(() => import("./pages/school/admin/AiInsigh
 const SchoolStudentPerformance = lazy(() => import("./pages/school/admin/StudentPerformance"));
 const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/AttendanceAnalytics"));
 const SchoolCustomReports     = lazy(() => import("./pages/school/admin/CustomReports"));
+const SchoolInstitutes        = lazy(() => import("./pages/school/admin/Institutes"));
+const SchoolAdminUsers        = lazy(() => import("./pages/school/admin/Users"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
 const SchoolTeacherLayout       = lazy(() => import("./components/school/admin/Layout"));
@@ -312,6 +314,9 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["INSTITUTE_ADMIN", "SUPER_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolAdminDashboard />} />
+      {/* School super-admin only */}
+      <Route path="institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolInstitutes /></SchoolGuard>} />
+      <Route path="users"      element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
       <Route path="teachers" element={<SchoolTeachers />} />

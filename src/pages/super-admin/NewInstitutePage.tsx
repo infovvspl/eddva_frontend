@@ -14,6 +14,16 @@ const PLAN_LIMITS: Record<string, { students: number; teachers: number }> = {
   enterprise: { students: 5000, teachers: 200 },
 };
 
+const AI_FEATURE_OPTIONS = [
+  { key: "ai_study_assistant",    label: "AI Study Assistant",       desc: "AI tutor & interactive study sessions for students" },
+  { key: "ai_study_plan",         label: "AI Study Plan",            desc: "Personalized AI-generated study roadmaps" },
+  { key: "ai_battle_arena",       label: "Battle Arena",             desc: "AI-powered adaptive practice battles" },
+  { key: "ai_analytics",          label: "AI Analytics",             desc: "Weak topic detection & performance insights" },
+  { key: "ai_doubt_resolution",   label: "AI Doubt Resolution",      desc: "Instant AI answers to student questions" },
+  { key: "ai_content_generation", label: "AI Content Generation",    desc: "Auto-generate questions & quizzes for teachers" },
+  { key: "ai_speech_to_text",     label: "Speech-to-Text Notes",     desc: "Transcribe lectures into notes automatically" },
+] as const;
+
 const NewInstitutePage = () => {
   const navigate = useNavigate();
   const createTenant = useCreateTenant();
@@ -23,6 +33,8 @@ const NewInstitutePage = () => {
     name: "", subdomain: "", plan: "starter", billingEmail: "",
     maxStudents: 500, maxTeachers: 20, adminPhone: "", trialDays: 14,
   });
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiFeatures, setAiFeatures] = useState<string[]>([]);
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -121,7 +133,9 @@ const NewInstitutePage = () => {
         maxTeachers: form.maxTeachers,
         adminPhone: fullAdminPhone,
         trialDays: form.trialDays,
-      });
+        aiEnabled,
+        aiFeatures: aiEnabled ? aiFeatures : [],
+      } as any);
       setResult(data);
       setSubmitted(true);
     } catch (err: unknown) {
@@ -395,6 +409,67 @@ const NewInstitutePage = () => {
                         </motion.div>
                       )}
                     </div>
+                  </div>
+
+                  {/* ── AI Features Section ── */}
+                  <div className="bg-slate-50/50 p-8 rounded-[36px] border border-slate-100 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                          <Sparkles className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black text-slate-900">AI Features</h3>
+                          <p className="text-[11px] font-semibold text-slate-400">Enable AI-powered learning for this institute</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setAiEnabled(!aiEnabled); if (aiEnabled) setAiFeatures([]); }}
+                        className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${aiEnabled ? "bg-indigo-600" : "bg-slate-200"}`}
+                      >
+                        <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${aiEnabled ? "translate-x-7" : ""}`} />
+                      </button>
+                    </div>
+
+                    {aiEnabled && (
+                      <div className="grid grid-cols-1 gap-3 pt-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Select features to enable:</p>
+                        {AI_FEATURE_OPTIONS.map((feat) => {
+                          const checked = aiFeatures.includes(feat.key);
+                          return (
+                            <button
+                              key={feat.key}
+                              type="button"
+                              onClick={() => setAiFeatures(checked
+                                ? aiFeatures.filter(f => f !== feat.key)
+                                : [...aiFeatures, feat.key]
+                              )}
+                              className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
+                                checked ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white hover:border-slate-200"
+                              }`}
+                            >
+                              <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                checked ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
+                              }`}>
+                                {checked && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                              </div>
+                              <div>
+                                <p className="text-sm font-black text-slate-900">{feat.label}</p>
+                                <p className="text-[11px] font-semibold text-slate-400">{feat.desc}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setAiFeatures(AI_FEATURE_OPTIONS.map(f => f.key) as any)}
+                          className="text-[11px] font-black text-indigo-600 hover:underline text-left mt-1"
+                        >
+                          Select all features
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-4">

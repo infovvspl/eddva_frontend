@@ -51,7 +51,7 @@ export default function Users() {
     try {
       setLoading(true);
       setError('');
-      const res = await api.get('/school/admin/users', {
+      const res = await api.get('/admin/users', {
         params: {
           search: debouncedSearch || undefined,
           role: roleFilter || undefined,

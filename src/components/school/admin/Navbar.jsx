@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
   LogOut,
@@ -39,8 +39,8 @@ export default function Navbar({ onMenuClick }) {
   const roleName = isTeacher ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';
   const workspaceName = isTeacher ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
   const workspaceLabel = isTeacher ? 'Teaching Workspace' : isInstitute ? 'Active Workspace' : 'Super Admin Console';
-  const messagesPath = isTeacher ? '/school/teacher/chat' : '/school/admin/communications';
-  const profilePath = isTeacher ? '/school/teacher/profile' : '/school/admin/settings';
+  const messagesPath = isTeacher ? '/teacher/chat' : '/admin/communications';
+  const profilePath = isTeacher ? '/teacher/profile' : '/admin/settings';
 
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
   const [quickOpen, setQuickOpen] = useState(false);
@@ -99,39 +99,39 @@ export default function Navbar({ onMenuClick }) {
     try {
       // Internal page matching
       const teacherPages = [
-        { name: 'Dashboard', path: '/school/teacher', icon: Sparkles },
-        { name: 'Course Content', path: '/school/teacher/topics', icon: GraduationCap },
-        { name: 'My Schedule', path: '/school/teacher/classes', icon: Users },
-        { name: 'Assignments', path: '/school/teacher/assignments', icon: SettingsIcon },
-        { name: 'Assessments', path: '/school/teacher/assessments', icon: SettingsIcon },
-        { name: 'Reports', path: '/school/teacher/reports', icon: SettingsIcon },
+        { name: 'Dashboard', path: '/teacher', icon: Sparkles },
+        { name: 'Course Content', path: '/teacher/topics', icon: GraduationCap },
+        { name: 'My Schedule', path: '/teacher/classes', icon: Users },
+        { name: 'Assignments', path: '/teacher/assignments', icon: SettingsIcon },
+        { name: 'Assessments', path: '/teacher/assessments', icon: SettingsIcon },
+        { name: 'Reports', path: '/teacher/reports', icon: SettingsIcon },
       ];
       const adminPages = [
-        { name: 'Dashboard', path: '/school/admin', icon: Sparkles },
-        { name: 'Students List', path: '/school/admin/students', icon: GraduationCap },
-        { name: 'Teachers Directory', path: '/school/admin/teachers', icon: Users },
-        { name: 'Fees Management', path: '/school/admin/fees', icon: SettingsIcon },
-        { name: 'System Settings', path: '/school/admin/settings', icon: SettingsIcon },
-        { name: 'Academics & Classes', path: '/school/admin/academics', icon: SettingsIcon },
-        { name: 'Subjects', path: '/school/admin/subjects', icon: SettingsIcon },
-        { name: 'Assignments & Homework', path: '/school/admin/assignments', icon: SettingsIcon },
-        { name: 'Study Materials', path: '/school/admin/study-materials', icon: SettingsIcon },
-        { name: 'Syllabus Tracking', path: '/school/admin/syllabus', icon: SettingsIcon },
-        { name: 'Exams', path: '/school/admin/exams', icon: SettingsIcon },
-        { name: 'Question Bank', path: '/school/admin/question-bank', icon: SettingsIcon },
-        { name: 'Marks Entry', path: '/school/admin/marks-entry', icon: SettingsIcon },
-        { name: 'Results', path: '/school/admin/results', icon: SettingsIcon },
-        { name: 'Report Cards', path: '/school/admin/report-cards', icon: SettingsIcon },
-        { name: 'Payment Collection', path: '/school/admin/payment-collection', icon: SettingsIcon },
-        { name: 'Payment History', path: '/school/admin/payment-history', icon: SettingsIcon },
-        { name: 'Fee Defaulters', path: '/school/admin/fee-defaulters', icon: SettingsIcon },
-        { name: 'Notifications Center', path: '/school/admin/notifications-center', icon: SettingsIcon },
-        { name: 'SMS Center', path: '/school/admin/sms-center', icon: SettingsIcon },
-        { name: 'Email Center', path: '/school/admin/email-center', icon: SettingsIcon },
-        { name: 'AI Insights', path: '/school/admin/ai-insights', icon: SettingsIcon },
-        { name: 'Student Performance Analytics', path: '/school/admin/student-performance', icon: SettingsIcon },
-        { name: 'Attendance Analytics', path: '/school/admin/attendance-analytics', icon: SettingsIcon },
-        { name: 'Custom Reports', path: '/school/admin/custom-reports', icon: SettingsIcon },
+        { name: 'Dashboard', path: '/admin', icon: Sparkles },
+        { name: 'Students List', path: '/admin/students', icon: GraduationCap },
+        { name: 'Teachers Directory', path: '/admin/teachers', icon: Users },
+        { name: 'Fees Management', path: '/admin/fees', icon: SettingsIcon },
+        { name: 'System Settings', path: '/admin/settings', icon: SettingsIcon },
+        { name: 'Academics & Classes', path: '/admin/academics', icon: SettingsIcon },
+        { name: 'Subjects', path: '/admin/subjects', icon: SettingsIcon },
+        { name: 'Assignments & Homework', path: '/admin/assignments', icon: SettingsIcon },
+        { name: 'Study Materials', path: '/admin/study-materials', icon: SettingsIcon },
+        { name: 'Syllabus Tracking', path: '/admin/syllabus', icon: SettingsIcon },
+        { name: 'Exams', path: '/admin/exams', icon: SettingsIcon },
+        { name: 'Question Bank', path: '/admin/question-bank', icon: SettingsIcon },
+        { name: 'Marks Entry', path: '/admin/marks-entry', icon: SettingsIcon },
+        { name: 'Results', path: '/admin/results', icon: SettingsIcon },
+        { name: 'Report Cards', path: '/admin/report-cards', icon: SettingsIcon },
+        { name: 'Payment Collection', path: '/admin/payment-collection', icon: SettingsIcon },
+        { name: 'Payment History', path: '/admin/payment-history', icon: SettingsIcon },
+        { name: 'Fee Defaulters', path: '/admin/fee-defaulters', icon: SettingsIcon },
+        { name: 'Notifications Center', path: '/admin/notifications-center', icon: SettingsIcon },
+        { name: 'SMS Center', path: '/admin/sms-center', icon: SettingsIcon },
+        { name: 'Email Center', path: '/admin/email-center', icon: SettingsIcon },
+        { name: 'AI Insights', path: '/admin/ai-insights', icon: SettingsIcon },
+        { name: 'Student Performance Analytics', path: '/admin/student-performance', icon: SettingsIcon },
+        { name: 'Attendance Analytics', path: '/admin/attendance-analytics', icon: SettingsIcon },
+        { name: 'Custom Reports', path: '/admin/custom-reports', icon: SettingsIcon },
       ];
       const pages = (isTeacher ? teacherPages : adminPages).filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -235,7 +235,7 @@ export default function Navbar({ onMenuClick }) {
                     <div className="mb-4">
                       <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Students</p>
                       {searchResults.students.map(s => (
-                        <Link key={s.id} to="/school/admin/students" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
+                        <Link key={s.id} to="/admin/students" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
                           <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">
                             {s.photo ? <img src={s.photo} className="w-full h-full object-cover rounded-xl" /> : s.name[0]}
                           </div>
@@ -252,7 +252,7 @@ export default function Navbar({ onMenuClick }) {
                     <div className="mb-4">
                       <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Teachers</p>
                       {searchResults.teachers.map(t => (
-                        <Link key={t.id} to="/school/admin/teachers" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
+                        <Link key={t.id} to="/admin/teachers" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
                           <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">
                             {t.photo ? <img src={t.photo} className="w-full h-full object-cover rounded-xl" /> : t.name[0]}
                           </div>
@@ -289,20 +289,20 @@ export default function Navbar({ onMenuClick }) {
             </button>
             {quickOpen && (
               <div className="absolute right-0 z-50 mt-4 w-56 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                <Link to={isTeacher ? '/school/teacher/assignments' : '/school/admin/students'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
+                <Link to={isTeacher ? '/teacher/assignments' : '/admin/students'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
                   <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
                     <GraduationCap size={16} />
                   </div>
                   {isTeacher ? 'Add assignment' : 'Add student'}
                 </Link>
-                <Link to={isTeacher ? '/school/teacher/assessments' : '/school/admin/teachers'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
+                <Link to={isTeacher ? '/teacher/assessments' : '/admin/teachers'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
                   <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
                     <Users size={16} />
                   </div>
                   {isTeacher ? 'Create assessment' : 'Add teacher'}
                 </Link>
                 <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
-                <Link to={isTeacher ? '/school/teacher/creator' : '/school/admin/notices'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
+                <Link to={isTeacher ? '/teacher/creator' : '/admin/notices'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
                   <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
                     <MessageCircle size={16} />
                   </div>

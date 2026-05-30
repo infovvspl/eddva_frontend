@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit2, Trash2, Eye } from 'lucide-react';
 import api from '@/lib/api/school-client';

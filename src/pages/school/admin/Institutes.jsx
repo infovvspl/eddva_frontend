@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
+import { formatTenantUrl } from '@/lib/school/tenantRedirect';
 
 const emptyForm = {
   instituteName: '',

@@ -2,13 +2,25 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User, UserRole } from "./types";
 
+export type AiFeatureKey =
+  | 'ai_study_assistant'
+  | 'ai_study_plan'
+  | 'ai_battle_arena'
+  | 'ai_analytics'
+  | 'ai_doubt_resolution'
+  | 'ai_content_generation'
+  | 'ai_speech_to_text';
+
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   tenantType: 'coaching' | 'school' | null;
+  aiEnabled: boolean;
+  aiFeatures: AiFeatureKey[];
   setUser: (user: User) => void;
   clearAuth: () => void;
   setTenantType: (type: 'coaching' | 'school' | null) => void;
+  setAiFeatures: (aiEnabled: boolean, aiFeatures: AiFeatureKey[]) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -17,9 +29,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       tenantType: null,
+      aiEnabled: false,
+      aiFeatures: [],
       setUser: (user) => set({ user, isAuthenticated: true }),
-      clearAuth: () => set({ user: null, isAuthenticated: false, tenantType: null }),
+      clearAuth: () => set({ user: null, isAuthenticated: false, tenantType: null, aiEnabled: false, aiFeatures: [] }),
       setTenantType: (type) => set({ tenantType: type }),
+      setAiFeatures: (aiEnabled, aiFeatures) => set({ aiEnabled, aiFeatures }),
     }),
     {
       name: "eddva_auth",

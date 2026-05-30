@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Send, Users, User, Headphones, Smile, Paperclip, MoreVertical, Phone, Video } from 'lucide-react';
 import SearchBar from '@/components/school/SearchBar';
 import Tabs from '@/components/school/Tabs';

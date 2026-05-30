@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CircleDollarSign, Download, Filter, Plus, Search, 
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { cn } from '@/components/school/admin/Skeleton';
 import Modal from '@/components/school/admin/Modal';
-import { notifyDataChanged } from '@/lib/school/apiData';
+import { notifyDataChanged } from '@/lib/school/apiData.js';
 
 export default function Fees() {
   const [fees, setFees] = useState([]);

@@ -128,18 +128,20 @@ const LoginPage = () => {
   const redirectUser = (user: User, tenantType: "coaching" | "school") => {
     setTenantType(tenantType);
     setUser(user);
-    if (user.role === "super_admin") {
-      navigate("/super-admin/dashboard");
-      return;
-    }
     if (tenantType === "school") {
       const schoolPaths: Record<string, string> = {
+        super_admin:     "/school/admin",  // school-level super admin → school panel
         institute_admin: "/school/admin",
         teacher: "/school/teacher",
         student: "/school/student",
         parent: "/school/parent",
       };
       navigate(schoolPaths[user.role] || "/school/student");
+      return;
+    }
+    // Coaching
+    if (user.role === "super_admin") {
+      navigate("/super-admin/dashboard");
       return;
     }
     const paths: Record<string, string> = {
@@ -178,7 +180,7 @@ const LoginPage = () => {
       } catch (coachingErr: any) {
         const status = coachingErr?.response?.status;
         // Fall through to school login only on auth failures with email input
-        if (isEmail && (status === 401 || status === 404 || status === 400)) {
+        if (isEmail && (status === 401 || status === 404 || status === 400 || status === 500)) {
           coachingFailed = true;
           coachingErrMsg = coachingErr?.response?.data?.message || "";
         } else {

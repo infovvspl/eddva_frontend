@@ -8,7 +8,7 @@ import {
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
-import { exportToPDF } from "../../../lib/school/pdfExport";
+import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -40,7 +40,7 @@ const DetailItem = ({ label, value, icon: Icon }) => (
       {Icon && <Icon size={12} />}
       {label}
     </div>
-    <div className="text-sm font-bold text-slate-900 dark:text-white">{value || 'â€”'}</div>
+    <div className="text-sm font-bold text-slate-900 dark:text-white">{value || '—'}</div>
   </div>
 );
 
@@ -174,14 +174,14 @@ export default function StudentProfile() {
                 <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">Active</span>
               </div>
               <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-500">
-                <div className="flex items-center gap-2"><GraduationCap size={18} className="text-blue-500" /> Class {profile.section?.class?.name || 'â€”'} - {profile.section?.name || 'â€”'}</div>
-                <div className="flex items-center gap-2"><Smartphone size={18} className="text-blue-500" /> {student.phone || 'â€”'}</div>
+                <div className="flex items-center gap-2"><GraduationCap size={18} className="text-blue-500" /> Class {profile.section?.class?.name || '—'} - {profile.section?.name || '—'}</div>
+                <div className="flex items-center gap-2"><Smartphone size={18} className="text-blue-500" /> {student.phone || '—'}</div>
                 <div className="flex items-center gap-2"><Mail size={18} className="text-blue-500" /> {student.email}</div>
               </div>
             </div>
             <div className="pb-4 hidden lg:block text-right">
               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Enrollment No</div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{profile.enrollmentNo || 'â€”'}</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{profile.enrollmentNo || '—'}</div>
             </div>
           </div>
 
@@ -208,7 +208,7 @@ export default function StudentProfile() {
                       <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Identity Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Full Name" value={student.name} icon={User} />
-                        <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : 'â€”'} icon={Calendar} />
+                        <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : '—'} icon={Calendar} />
                         <DetailItem label="Gender" value={profile.gender} icon={User} />
                         <DetailItem label="Blood Group" value={profile.bloodGroup} icon={HeartPulse} />
                         <DetailItem label="National ID" value={profile.nationalId || 'Verified'} icon={CheckCircle} />
@@ -243,7 +243,7 @@ export default function StudentProfile() {
                         {profile.medicalConditions || 'No significant medical conditions reported.'}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-black uppercase">Blood: {profile.bloodGroup || 'â€”'}</span>
+                        <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-black uppercase">Blood: {profile.bloodGroup || '—'}</span>
                         <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-black uppercase">Allergy: {profile.allergies || 'None'}</span>
                       </div>
                     </div>
@@ -254,10 +254,10 @@ export default function StudentProfile() {
               {activeTab === 'academic' && (
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <DetailItem label="Current Class" value={profile.section?.class?.name || 'â€”'} icon={GraduationCap} />
-                    <DetailItem label="Section" value={profile.section?.name || 'â€”'} />
-                    <DetailItem label="Roll Number" value={profile.rollNo || 'â€”'} />
-                    <DetailItem label="Admission Date" value={profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : 'â€”'} icon={Clock} />
+                    <DetailItem label="Current Class" value={profile.section?.class?.name || '—'} icon={GraduationCap} />
+                    <DetailItem label="Section" value={profile.section?.name || '—'} />
+                    <DetailItem label="Roll Number" value={profile.rollNo || '—'} />
+                    <DetailItem label="Admission Date" value={profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : '—'} icon={Clock} />
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Subject Performance Overview</h3>
@@ -366,7 +366,7 @@ export default function StudentProfile() {
                   <div className="p-8 rounded-[2.5rem] bg-indigo-600 text-white flex flex-col md:flex-row items-center justify-between gap-8">
                     <div>
                       <div className="text-xs font-black uppercase tracking-widest opacity-70 mb-1">Total Outstanding</div>
-                      <div className="text-5xl font-black tracking-tighter">â‚¹ 12,500</div>
+                      <div className="text-5xl font-black tracking-tighter">₹ 12,500</div>
                     </div>
                     <button className="px-8 py-4 rounded-2xl bg-white text-indigo-600 font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
                       Pay Now
@@ -387,7 +387,7 @@ export default function StudentProfile() {
                           <tr key={i}>
                             <td className="p-4 text-slate-900">#INV-2026-00{i}</td>
                             <td className="p-4 text-slate-500">June 15, 2026</td>
-                            <td className="p-4 text-slate-900">â‚¹ 4,500</td>
+                            <td className="p-4 text-slate-900">₹ 4,500</td>
                             <td className="p-4">
                               <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i === 1 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-600'}`}>
                                 {i === 1 ? 'Pending' : 'Paid'}

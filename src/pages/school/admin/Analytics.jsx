@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie } from 'recharts';
 import { Building2, Users, LifeBuoy, TrendingUp, Calendar, CalendarDays, CalendarRange, UserCheck, UserCog, UserSquare2, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api/school-client';
@@ -15,7 +15,7 @@ export default function Analytics() {
   async function loadStats() {
     try {
       // Use the new Super Admin stats endpoint
-      const res = await api.get('/school/admin/stats');
+      const res = await api.get('/admin/stats');
       setStats(res.data?.data || res.data);
     } catch (err) {
       console.error(err);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import GlassCard from '@/components/school/GlassCard';
@@ -88,7 +88,7 @@ const Register: React.FC = () => {
           <InputField
             label="Password"
             type="password"
-            placeholder="••••••••"
+            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required

@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useEffect } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { mapTeacherFormToApi } from '@/lib/school/onboardPayload';
+import { getTenantLoginUrl } from '@/lib/school/tenantRedirect';
 import { useAuth } from '@/context/SchoolAuthContext';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';

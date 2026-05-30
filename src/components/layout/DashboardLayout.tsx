@@ -15,6 +15,7 @@ import {
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
+import { useTenantFeatures } from "@/hooks/use-tenant-features";
 import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
@@ -66,7 +67,6 @@ const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Overview",           path: "/super-admin",               icon: Home       },
     { label: "Institutes",         path: "/super-admin/tenants",        icon: Building2  },
-    { label: "School Institutes",  path: "/super-admin/school",         icon: GraduationCap },
     { label: "Users",              path: "/super-admin/users",          icon: Users      },
     { label: "Enrollments",        path: "/super-admin/enrollments",    icon: BarChart3  },
     { label: "Announcements",      path: "/super-admin/announcements",  icon: Megaphone  },
@@ -172,6 +172,7 @@ const DashboardLayout = () => {
   }, [mobileSidebarOpen]);
 
   usePresenceHeartbeat();
+  useTenantFeatures(); // fetch + cache AI feature flags for this tenant
 
   const isStudent      = user?.role === "student";
   const isInstAdmin    = user?.role === "institute_admin";
@@ -374,7 +375,21 @@ const DashboardLayout = () => {
     }
   }
 
-  const navItems = navByRole[user.role];
+  const { aiEnabled, aiFeatures } = useAuthStore();
+
+  // AI nav paths that require specific feature flags
+  const AI_NAV_GATES: Record<string, string> = {
+    "/student/study-plan":  "ai_study_plan",
+    "/student/battle":      "ai_battle_arena",
+    "/teacher/ai-tools":    "ai_content_generation",
+  };
+
+  const navItems = navByRole[user.role].filter((item) => {
+    const requiredFeature = AI_NAV_GATES[item.path];
+    if (!requiredFeature) return true; // non-AI item always shown
+    return aiEnabled && aiFeatures.includes(requiredFeature as any);
+  });
+
   const section = sectionLabels[user.role];
 
   const handleLogout = () => {
