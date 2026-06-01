@@ -1,21 +1,18 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, Layout, Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import ClassForm from '@/components/school/admin/forms/ClassForm';
-import SubjectForm from '@/components/school/admin/forms/SubjectForm';
 import SectionForm from '@/components/school/admin/forms/SectionForm';
 import { Layers } from 'lucide-react';
 
 export default function Academics() {
   const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
-  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -25,14 +22,9 @@ export default function Academics() {
 
   const fetchData = async () => {
     try {
-        const [classRes, subRes] = await Promise.all([
-          api.get('/academic/classes'),
-          api.get('/academic/subjects')
-        ]);
+      const classRes = await api.get('/academic/classes');
       const classPayload = classRes.data?.data ?? classRes.data;
-      const subPayload = subRes.data?.data ?? subRes.data;
       setClasses(Array.isArray(classPayload) ? classPayload : []);
-      setSubjects(Array.isArray(subPayload) ? subPayload : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -61,26 +53,6 @@ export default function Academics() {
     }
   };
 
-  const handleAddSubject = () => {
-    setSelectedSubject(null);
-    setIsSubjectModalOpen(true);
-  };
-
-  const handleEditSubject = (subject) => {
-    setSelectedSubject(subject);
-    setIsSubjectModalOpen(true);
-  };
-
-  const handleDeleteSubject = async (id) => {
-    if (confirm('Are you sure you want to delete this subject?')) {
-      try {
-        await api.delete(`/academic/subjects/${id}`);
-        setSubjects(subjects.filter(s => s.id !== id));
-      } catch (error) {
-        alert('Failed to delete subject');
-      }
-    }
-  };
 
   const handleClassSubmit = async (formData) => {
     setIsSubmitting(true);
@@ -143,34 +115,17 @@ export default function Academics() {
     }
   };
 
-  const handleSubjectSubmit = async (formData) => {
-    setIsSubmitting(true);
-    try {
-      if (selectedSubject) {
-        const res = await api.put(`/academic/subjects/${selectedSubject.id}`, formData);
-        const savedSubject = res.data?.data ?? res.data;
-        setSubjects(subjects.map(s => s.id === selectedSubject.id ? savedSubject : s));
-      } else {
-        const res = await api.post('/academic/subjects', formData);
-        const savedSubject = res.data?.data ?? res.data;
-        setSubjects([...subjects, savedSubject]);
-      }
-      setIsSubjectModalOpen(false);
-      setSelectedSubject(null);
-    } catch (error) {
-      alert('Failed to save subject');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
 
   if (loading) return <div className="p-8">Loading...</div>;
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-extrabold text-surface-950">Academics</h1>
-        <p className="mt-2 text-sm text-surface-500">Manage classes, sections, and subjects.</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-surface-950">Academics</h1>
+          <p className="mt-2 text-sm text-surface-500">Manage classes and sections.</p>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -241,7 +196,7 @@ export default function Academics() {
             <div className="space-y-4">
               {classes.filter(c => (c.sections || []).length > 0).map(c => (
                 <div key={c.id}>
-                  <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-surface-400">{c.name}</h3>
+                  <h3 className="mb-2 text-xs font-bold tracking-tight uppercase tracking-widest text-surface-400">{c.name}</h3>
                   <ul className="space-y-2">
                     {(c.sections || []).map(sec => (
                       <li key={sec.id} className="flex items-center justify-between rounded-md border border-surface-100 bg-surface-50/50 p-2 text-sm">
@@ -269,50 +224,6 @@ export default function Academics() {
           )}
         </div>
 
-        {/* Subjects Section */}
-        <div className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm md:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-6 w-6 text-brand-600" />
-              <h2 className="text-xl font-bold">Subjects</h2>
-            </div>
-            <button 
-              onClick={handleAddSubject}
-              className="rounded-lg bg-brand-600 p-2 text-white hover:bg-brand-700"
-              title="Add Subject"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          </div>
-          
-          {subjects.length === 0 ? (
-            <p className="text-sm text-surface-500">No subjects configured.</p>
-          ) : (
-            <ul className="space-y-3">
-              {subjects.map(s => (
-                <li key={s.id} className="flex items-center justify-between rounded-md bg-surface-50 p-3">
-                  <span className="text-sm font-semibold">
-                    {s.name} ({s.code || 'N/A'})
-                  </span>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleEditSubject(s)}
-                      className="rounded p-1 text-surface-500 hover:bg-surface-200 hover:text-brand-600"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteSubject(s.id)}
-                      className="rounded p-1 text-surface-500 hover:bg-red-50 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
 
       {/* Class Modal */}
@@ -330,20 +241,7 @@ export default function Academics() {
         />
       </Modal>
 
-      {/* Subject Modal */}
-      <Modal 
-        isOpen={isSubjectModalOpen}
-        title={selectedSubject ? 'Edit Subject' : 'Add New Subject'}
-        onClose={() => setIsSubjectModalOpen(false)}
-        size="md"
-      >
-        <SubjectForm 
-          subject={selectedSubject}
-          onSubmit={handleSubjectSubmit}
-          onCancel={() => setIsSubjectModalOpen(false)}
-          isLoading={isSubmitting}
-        />
-      </Modal>
+
 
       {/* Section Modal */}
       <Modal 

@@ -96,18 +96,18 @@ export default function Fees() {
     <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Fees Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Fees Management</h1>
           <p className="text-sm font-bold text-slate-500 mt-1">Track collections, invoices, and pending dues with real-time sync.</p>
         </div>
         <div className="flex gap-3">
           <button 
             onClick={() => setIsRecordModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all"
+            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-bold tracking-tight text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all"
           >
             <Plus size={18} />
             Record Payment
           </button>
-          <button className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">
+          <button className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold tracking-tight text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">
             <Download size={18} />
             Export CSV
           </button>
@@ -131,7 +131,7 @@ export default function Fees() {
                     key={f}
                     onClick={() => setFilter(f)}
                     className={cn(
-                      "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      "px-5 py-2.5 rounded-xl text-[10px] font-bold tracking-tight uppercase tracking-widest transition-all",
                       filter === f ? "bg-slate-900 text-white shadow-xl scale-105" : "bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400"
                     )}
                   >
@@ -154,7 +154,7 @@ export default function Fees() {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-slate-50 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <tr className="border-b border-slate-50 dark:border-slate-800 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">
                     <th className="pb-4 pl-4">Student Identity</th>
                     <th className="pb-4">Target Amount</th>
                     <th className="pb-4">Paid</th>
@@ -167,21 +167,21 @@ export default function Fees() {
                     <tr key={fee.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-all">
                       <td className="py-5 pl-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-blue-600/10 text-blue-600 flex items-center justify-center font-black text-lg border border-blue-600/5">
+                          <div className="w-12 h-12 rounded-2xl bg-blue-600/10 text-blue-600 flex items-center justify-center font-bold tracking-tight text-lg border border-blue-600/5">
                             {fee.student?.user?.name?.charAt(0) || 'S'}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-slate-900 dark:text-white">{fee.student?.user?.name || 'Unknown Student'}</p>
+                            <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{fee.student?.user?.name || 'Unknown Student'}</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{fee.student?.enrollmentNo || 'No ID'}</p>
                           </div>
                         </div>
                       </td>
                       <td className="py-5">
-                        <p className="text-sm font-black text-slate-900 dark:text-white">₹{fee.amount.toLocaleString()}</p>
+                        <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">₹{fee.amount.toLocaleString()}</p>
                         <p className="text-[10px] font-bold text-slate-400 mt-0.5">Due: {new Date(fee.dueDate).toLocaleDateString()}</p>
                       </td>
                       <td className="py-5">
-                        <p className="text-sm font-black text-emerald-600">₹{fee.paidAmount.toLocaleString()}</p>
+                        <p className="text-sm font-bold tracking-tight text-emerald-600">₹{fee.paidAmount.toLocaleString()}</p>
                         <div className="mt-1.5 w-24 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-emerald-500 rounded-full" 
@@ -191,7 +191,7 @@ export default function Fees() {
                       </td>
                       <td className="py-5">
                         <span className={cn(
-                          "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border",
+                          "px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-tight uppercase tracking-wider border",
                           fee.status === 'PAID' ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20" :
                           fee.status === 'PARTIAL' ? "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20" :
                           fee.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20" :
@@ -203,7 +203,7 @@ export default function Fees() {
                       <td className="py-5 pr-4 text-right">
                         <button 
                           onClick={() => handleRecordPayment(fee)}
-                          className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                          className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold tracking-tight uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
                         >
                           Record
                         </button>
@@ -229,16 +229,16 @@ export default function Fees() {
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-6">
                 <Sparkles className="h-4 w-4 text-blue-400" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">AI Collections Pulse</span>
+                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-blue-400">AI Collections Pulse</span>
               </div>
-              <h4 className="text-xl font-black mb-2">Revenue Forecast</h4>
+              <h4 className="text-xl font-bold tracking-tight mb-2">Revenue Forecast</h4>
               <p className="text-sm text-slate-400 font-medium mb-8 leading-relaxed">System predicts ₹{(summary.totalRevenue * 0.92).toLocaleString()} collection this quarter based on historic student behavior.</p>
               
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Collected %</span>
-                    <span className="text-lg font-black text-white">{Math.round((summary.totalCollected / summary.totalRevenue) * 100 || 0)}%</span>
+                    <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-500">Collected %</span>
+                    <span className="text-lg font-bold tracking-tight text-white">{Math.round((summary.totalCollected / summary.totalRevenue) * 100 || 0)}%</span>
                   </div>
                   <div className="h-2.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
                     <motion.div 
@@ -252,12 +252,12 @@ export default function Fees() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Avg. Delay</p>
-                    <p className="text-lg font-black mt-1">4.2 Days</p>
+                    <p className="text-[9px] font-bold tracking-tight uppercase tracking-widest text-slate-500">Avg. Delay</p>
+                    <p className="text-lg font-bold tracking-tight mt-1">4.2 Days</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Risk Factor</p>
-                    <p className="text-lg font-black mt-1 text-emerald-400">Low</p>
+                    <p className="text-[9px] font-bold tracking-tight uppercase tracking-widest text-slate-500">Risk Factor</p>
+                    <p className="text-lg font-bold tracking-tight mt-1 text-emerald-400">Low</p>
                   </div>
                 </div>
               </div>
@@ -266,8 +266,8 @@ export default function Fees() {
 
           <div className="p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm">
             <div className="flex items-center justify-between mb-8">
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Recent Activity</h4>
-              <button className="text-[10px] font-black text-blue-600 uppercase hover:underline">Clear</button>
+              <h4 className="text-[11px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Recent Activity</h4>
+              <button className="text-[10px] font-bold tracking-tight text-blue-600 uppercase hover:underline">Clear</button>
             </div>
             <div className="space-y-6">
               {fees.filter(f => f.status === 'PAID').slice(0, 4).map(f => (
@@ -276,7 +276,7 @@ export default function Fees() {
                     <Receipt size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">{f.student?.user?.name}</p>
+                    <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">{f.student?.user?.name}</p>
                       <p className="text-[10px] font-bold text-slate-400">₹{f.paidAmount.toLocaleString()} · {new Date(f.latestTransaction?.paymentDate || f.paymentDate || f.updatedAt).toLocaleDateString()}</p>
                   </div>
                   <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
@@ -308,13 +308,13 @@ function KpiCard({ title, value, icon: Icon, color, bg, trend, isCount }) {
         <div className={cn("w-14 h-14 rounded-[1.25rem] flex items-center justify-center shadow-lg", bg, color)}>
           <Icon size={28} />
         </div>
-        <span className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1", trend.startsWith('+') ? "text-emerald-600" : "text-rose-600")}>
+        <span className={cn("text-[10px] font-bold tracking-tight uppercase tracking-widest flex items-center gap-1", trend.startsWith('+') ? "text-emerald-600" : "text-rose-600")}>
           <TrendingUp size={12} />
           {trend}
         </span>
       </div>
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{title}</p>
-      <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">
+      <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-[0.2em]">{title}</p>
+      <h3 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1 tracking-tight">
         {isCount ? value : `₹${value.toLocaleString()}`}
       </h3>
     </div>
@@ -376,7 +376,7 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {!fee && (
           <div className="relative">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Search Student / Fee Record</label>
+            <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Search Student / Fee Record</label>
             <input 
               type="text"
               value={formData.feeId ? (fees.find(f => f.id === formData.feeId)?.student?.user?.name || '') + ' - ' + (fees.find(f => f.id === formData.feeId)?.title || '') : searchTerm}
@@ -391,7 +391,7 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5"
             />
             {showDropdown && (
-              <div className="absolute z-50 mt-2 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 custom-scrollbar">
+              <div className="absolute z-50 mt-2 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl p-2 custom-scrollbar">
                 {filteredSearchFees.length === 0 ? (
                   <div className="p-4 text-center text-sm font-bold text-slate-400">No matching pending fees.</div>
                 ) : (
@@ -407,12 +407,12 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
                       className="w-full text-left p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex justify-between items-center group"
                     >
                       <div>
-                        <p className="text-sm font-black text-slate-900 dark:text-white">{f.student?.user?.name || 'Unknown'} <span className="text-slate-400 font-semibold mx-1">—</span> {f.title}</p>
+                        <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{f.student?.user?.name || 'Unknown'} <span className="text-slate-400 font-semibold mx-1">—</span> {f.title}</p>
                         <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
                           Class {f.student?.studentProfile?.section?.class?.name || '-'} / {f.student?.studentProfile?.section?.name || '-'} · Roll {f.student?.rollNo || f.student?.studentProfile?.rollNo || '-'}
                         </p>
                       </div>
-                      <span className="text-sm font-black text-rose-500 group-hover:scale-110 transition-transform">₹{(f.remainingBalance || (f.amount - f.paidAmount)).toLocaleString()}</span>
+                      <span className="text-sm font-bold tracking-tight text-rose-500 group-hover:scale-110 transition-transform">₹{(f.remainingBalance || (f.amount - f.paidAmount)).toLocaleString()}</span>
                     </button>
                   ))
                 )}
@@ -426,7 +426,7 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Amount Paid (₹)</label>
+            <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Amount Paid (₹)</label>
             <div className="relative">
               <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
               <input 
@@ -439,7 +439,7 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Date</label>
+            <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Date</label>
             <div className="relative">
               <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input 
@@ -454,7 +454,7 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
         </div>
 
         <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-3 block">Payment Method</label>
+          <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-3 block">Payment Method</label>
           <div className="grid grid-cols-3 gap-3">
             {[
               { id: 'CASH', label: 'Cash', icon: Banknote },
@@ -473,14 +473,14 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
                 )}
               >
                 <method.icon size={20} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{method.label}</span>
+                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest">{method.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Internal Notes</label>
+          <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Internal Notes</label>
           <textarea 
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -493,14 +493,14 @@ function RecordPaymentModal({ isOpen, onClose, fee, fees, onSuccess }) {
           <button 
             type="button" 
             onClick={onClose}
-            className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+            className="flex-1 px-6 py-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold tracking-tight text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
           >
             Cancel
           </button>
           <button 
             type="submit"
             disabled={isSubmitting}
-            className="flex-[2] px-6 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-xs uppercase tracking-widest shadow-xl transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+            className="flex-[2] px-6 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold tracking-tight text-xs uppercase tracking-widest shadow-xl transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
           >
             {isSubmitting ? 'Processing...' : 'Confirm Payment'}
           </button>

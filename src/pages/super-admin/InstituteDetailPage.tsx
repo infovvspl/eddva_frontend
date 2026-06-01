@@ -5,7 +5,7 @@ import {
   Building2, Users, GraduationCap, Calendar, Mail, Globe,
   Shield, CreditCard, BookOpen, Ban, ArrowUpCircle,
   Swords, ChevronLeft, Loader2, AlertCircle, Video, ClipboardList,
-  Activity, DollarSign, TrendingUp, Sparkles, Check
+  Activity, DollarSign, TrendingUp, Sparkles, Check, MapPin, Palette, LayoutDashboard, MonitorPlay
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpdateTenant } from "@/hooks/use-tenants";
@@ -69,6 +69,7 @@ const InstituteDetailPage = () => {
 
   const tabs = [
     { id: "overview", label: "Overview" },
+    { id: "courses", label: "Course Analytics" },
     { id: "ai", label: "AI Features" },
     { id: "stats", label: "Deep Stats" },
     { id: "billing", label: "Billing" },
@@ -145,10 +146,6 @@ const InstituteDetailPage = () => {
             <div>
               <div className="flex items-center gap-3 mb-1.5 flex-wrap">
                 <h1 className="text-[24px] md:text-[32px] lg:text-[38px] font-bold text-slate-900 tracking-tight leading-tight">{tenant.name}</h1>
-                <div className={`text-[10px] font-medium px-3 py-1 rounded-full border shadow-sm flex items-center gap-1.5 uppercase tracking-wider ${statusStyles[status] || statusStyles.active}`}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                  {status === 'active' ? 'Operational' : status === 'trial' ? 'Trial Hub' : 'Suspended'}
-                </div>
               </div>
               <p className="text-slate-400 font-bold text-sm uppercase tracking-tight flex items-center gap-2">
                 <Globe className="w-3.5 h-3.5 text-indigo-500" /> {tenant.subdomain}<span className="opacity-40">.edva.in</span>
@@ -156,15 +153,13 @@ const InstituteDetailPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="h-10 md:h-12 px-5 md:px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600 hover:bg-slate-50 transition-all text-sm">
-              <ArrowUpCircle className="w-4 h-4 mr-2" /> Upgrade Quota
-            </Button>
+
             <Button
               onClick={handleSuspendToggle}
               disabled={suspendMutation.isPending || activateMutation.isPending}
               className={`h-10 md:h-12 px-5 md:px-8 rounded-2xl font-semibold shadow-lg transition-all text-sm ${status === "suspended"
-                  ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
-                  : "bg-white text-gray-900 hover:bg-gray-100 shadow-slate-900/20"
+                ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
+                : "bg-white text-gray-900 hover:bg-gray-100 shadow-slate-900/20"
                 }`}
             >
               {status === "suspended" ? <Shield className="w-4 h-4 mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
@@ -202,37 +197,162 @@ const InstituteDetailPage = () => {
           <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
             {activeTab === "overview" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-7">
-                <div className="lg:col-span-2 bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
-                  <h3 className="text-base md:text-lg font-bold text-slate-900 mb-7 flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-indigo-600" /> Administrative Profile
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
-                    {[
-                      { icon: Mail, label: "Master Billing", value: tenant.billingEmail || "—" },
-                      { icon: Shield, label: "Governance Contact", value: detail?.adminPhone || "—" },
-                      { icon: CreditCard, label: "Platform Tier", value: `${(tenant.plan || "").charAt(0).toUpperCase() + (tenant.plan || "").slice(1).toLowerCase()} Tier` },
-                      { icon: Calendar, label: "Deployment Date", value: tenant.createdAt ? new Date(tenant.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' }) : "—" },
-                      { icon: Globe, label: "Access Hub", value: `${tenant.subdomain}.edva.in` },
-                      { icon: Calendar, label: "Compliance Deadline", value: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' }) : "—" },
-                    ].map((item) => (
-                      <div key={item.label} className="group">
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">{item.label}</p>
-                        <div className="flex items-center gap-4">
-                          <item.icon className="w-5 h-5 text-gray-800 group-hover:text-indigo-600 transition-colors" />
-                          <span className="text-[16px] font-semibold text-slate-800">{item.value}</span>
+                <div className="lg:col-span-2 space-y-5 md:space-y-7">
+                  {/* Administrative Profile */}
+                  <div className="bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
+                    <h3 className="text-base md:text-lg font-bold text-slate-900 mb-7 flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-indigo-600" /> Administrative Profile
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                      {[
+                        { icon: Mail, label: "Master Billing", value: tenant.billingEmail || "—" },
+                        { icon: Shield, label: "Governance Contact", value: detail?.adminPhone || "—" },
+                        { icon: Globe, label: "Access Hub", value: `${tenant.subdomain}.edva.in` },
+                        { icon: Calendar, label: "Deployment Date", value: tenant.createdAt ? new Date(tenant.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' }) : "—" },
+                        { icon: LayoutDashboard, label: "Institute Type", value: tenant.type ? tenant.type.charAt(0).toUpperCase() + tenant.type.slice(1) : "—" },
+                      ].map((item) => (
+                        <div key={item.label} className="group">
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">{item.label}</p>
+                          <div className="flex items-center gap-4">
+                            <item.icon className="w-5 h-5 text-gray-800 group-hover:text-indigo-600 transition-colors" />
+                            <span className="text-[16px] font-semibold text-slate-800">{item.value}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Location & Customization Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-7">
+                    <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm p-6">
+                      <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-emerald-500" /> Location Details
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Address</p>
+                          <p className="text-sm font-semibold text-slate-800">{tenant.address || "—"}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">City</p>
+                            <p className="text-sm font-semibold text-slate-800 capitalize">{tenant.city || "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">State</p>
+                            <p className="text-sm font-semibold text-slate-800 capitalize">{tenant.state || "—"}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Pincode</p>
+                          <p className="text-sm font-semibold text-slate-800">{tenant.pincode || "—"}</p>
                         </div>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm p-6">
+                      <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">
+                        <Palette className="w-4 h-4 text-amber-500" /> Branding & Onboarding
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">Brand Color</p>
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md shadow-sm border border-slate-200" style={{ backgroundColor: tenant.brandColor || '#F97316' }} />
+                            <p className="text-sm font-semibold text-slate-800">{tenant.brandColor || "Default (Orange)"}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Logo Status</p>
+                          <p className="text-sm font-semibold text-slate-800">{tenant.logoUrl ? "Custom Logo Uploaded" : "No Custom Logo"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Onboarding Status</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className={`w-2 h-2 rounded-full ${tenant.onboardingComplete ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                            <p className="text-sm font-semibold text-slate-800">{tenant.onboardingComplete ? "Completed" : "Pending"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-white rounded-[28px] md:rounded-[44px] p-5 md:p-8 text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden">
-                  <h3 className="text-base md:text-lg font-bold mb-7 relative z-10">Quota Intelligence</h3>
-                  <div className="space-y-7 relative z-10">
-                    <UsageProgress label="Active Learner Hub" current={studentCount} total={studentLimit} color="bg-indigo-500" inverse />
-                    <UsageProgress label="Faculty Hub Slots" current={teacherCount} total={teacherLimit} color="bg-purple-500" inverse />
+
+                <div className="space-y-5 md:space-y-7">
+                  {status === "suspended" && tenant.suspensionReason && (
+                    <div className="bg-rose-50 rounded-[28px] p-6 border border-rose-100">
+                      <h3 className="text-sm font-bold text-rose-900 mb-2 flex items-center gap-2">
+                        <Ban className="w-4 h-4 text-rose-600" /> Suspension Reason
+                      </h3>
+                      <p className="text-sm text-rose-800 font-medium leading-relaxed">{tenant.suspensionReason}</p>
+                    </div>
+                  )}
+
+                  <div className="bg-white rounded-[28px] md:rounded-[44px] p-5 md:p-8 text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden">
+                    <h3 className="text-base md:text-lg font-bold mb-7 relative z-10">Quota Intelligence</h3>
+                    <div className="space-y-7 relative z-10">
+                      <UsageProgress label="Active Learner Hub" current={studentCount} total={studentLimit} color="bg-indigo-500" inverse />
+                      <UsageProgress label="Faculty Hub Slots" current={teacherCount} total={teacherLimit} color="bg-purple-500" inverse />
+                    </div>
+                    <div className="absolute top-0 right-0 h-32 w-32 bg-indigo-500 opacity-10 blur-[60px] translate-x-12 -translate-y-12" />
                   </div>
-                  <div className="absolute top-0 right-0 h-32 w-32 bg-indigo-500 opacity-10 blur-[60px] translate-x-12 -translate-y-12" />
                 </div>
+              </div>
+            )}
+
+            {activeTab === "courses" && (
+              <div className="bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                  <MonitorPlay className="w-5 h-5 text-indigo-600" /> Course-Wise Analytics
+                </h3>
+
+                {(!detail?.courseAnalytics || detail.courseAnalytics.length === 0) ? (
+                  <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                    <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm font-semibold text-slate-500">No courses found for this institute.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100">
+                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Course Name</th>
+                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Enrollments</th>
+                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Live Classes</th>
+                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detail.courseAnalytics.map((course: any) => (
+                          <tr
+                            key={course.batch_id}
+                            onClick={() => navigate(`/super-admin/tenants/${id}/courses/${course.batch_id}`)}
+                            className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                          >
+                            <td className="py-4 px-4 relative">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">{course.course_name}</p>
+                              <p className="text-[10px] text-slate-400 font-medium">ID: {course.batch_id.split('-')[0]}</p>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
+                                {course.enrollments.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold">
+                                {course.live_classes.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <p className="text-sm font-bold text-emerald-600">₹{Number(course.revenue).toLocaleString()}</p>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

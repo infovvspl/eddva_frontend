@@ -49,12 +49,12 @@ const FloatingInput = React.memo(function FloatingInput({ label, icon: Icon, typ
   if (isDateField) {
     return (
       <div className="relative group">
-        <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-blue-600">
+        <label className="mb-2 block text-[10px] font-bold tracking-tight uppercase tracking-widest text-blue-600">
           {label}
         </label>
         <div className={`
           relative flex items-center rounded-2xl border-2 transition-all duration-300
-          ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-slate-700'}
+          ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700'}
           ${error ? 'border-red-500' : ''}
           bg-white dark:bg-slate-900
         `}>
@@ -84,7 +84,7 @@ const FloatingInput = React.memo(function FloatingInput({ label, icon: Icon, typ
     <div className="relative group">
       <div className={`
         relative flex items-center transition-all duration-300 rounded-2xl border-2 
-        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-slate-700'}
+        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700'}
         ${error ? 'border-red-500' : ''}
         bg-white dark:bg-slate-900
       `}>
@@ -126,7 +126,7 @@ const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, 
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full h-[54px] rounded-2xl border-2 border-slate-200 bg-white px-4 pt-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+        className="w-full h-[54px] rounded-2xl border-2 border-slate-100 bg-white px-4 pt-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
       >
         {options.map((option) => (
           <option key={option || 'blank'} value={option}>
@@ -134,7 +134,7 @@ const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, 
           </option>
         ))}
       </select>
-      <label className="absolute left-4 top-1.5 text-[10px] font-black uppercase text-blue-600">{label}</label>
+      <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight uppercase text-blue-600">{label}</label>
     </div>
   );
 });
@@ -143,9 +143,9 @@ const SectionHeader = React.memo(function SectionHeader({ title, description, ba
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-1">
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{title}</h2>
         {badge && (
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-blue-500/20">
             {badge}
           </span>
         )}
@@ -166,7 +166,7 @@ const AIAssistantCard = React.memo(function AIAssistantCard({ message }) {
         <Sparkles className="text-white" size={20} />
       </div>
       <div>
-        <h4 className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
+        <h4 className="text-sm font-bold tracking-tight text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
       </div>
     </motion.div>
@@ -181,9 +181,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
 const TeacherSidebar = React.memo(function TeacherSidebar({ currentStep, onStepSelect }) {
   return (
-    <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800 p-8 hidden lg:flex flex-col">
+    <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-8 hidden lg:flex flex-col">
       <div className="mb-10">
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter flex items-center gap-2">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tighter flex items-center gap-2">
            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
               <Sparkles className="text-white" size={16} />
            </div>
@@ -214,7 +214,7 @@ const TeacherSidebar = React.memo(function TeacherSidebar({ currentStep, onStepS
                 {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
               </div>
               <div>
-                <h4 className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
+                <h4 className={`text-xs font-bold tracking-tight uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
                 <p className="text-[10px] font-bold text-slate-400 leading-tight">{step.description}</p>
               </div>
             </button>
@@ -223,10 +223,10 @@ const TeacherSidebar = React.memo(function TeacherSidebar({ currentStep, onStepS
       </div>
 
       <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">System Status</p>
+         <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-slate-500 mb-2">System Status</p>
          <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-black">AI CORE ACTIVE</span>
+            <span className="text-xs font-bold tracking-tight">AI CORE ACTIVE</span>
          </div>
       </div>
     </div>
@@ -242,11 +242,11 @@ const TeacherFooter = React.memo(function TeacherFooter({
   onSubmit,
 }) {
   return (
-    <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 flex items-center justify-between z-10">
+    <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex items-center justify-between z-10">
       <button
         type="button"
         onClick={onCancel}
-        className="px-6 py-3 rounded-2xl text-sm font-black text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+        className="px-6 py-3 rounded-2xl text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
       >
         CANCEL
       </button>
@@ -254,7 +254,7 @@ const TeacherFooter = React.memo(function TeacherFooter({
       <div className="flex gap-3">
         <button
           type="button"
-          className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-2"
+          className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold tracking-tight uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-2"
         >
           <Save size={16} /> Save Draft
         </button>
@@ -263,7 +263,7 @@ const TeacherFooter = React.memo(function TeacherFooter({
           <button
             type="button"
             onClick={onBack}
-            className="px-6 py-3 rounded-2xl border-2 border-slate-200 dark:border-slate-800 text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-300"
+            className="px-6 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2 hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-300"
           >
             <ChevronLeft size={16} /> Back
           </button>
@@ -273,7 +273,7 @@ const TeacherFooter = React.memo(function TeacherFooter({
           <button
             type="button"
             onClick={onNext}
-            className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+            className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
           >
             Next Step <ChevronRight size={16} />
           </button>
@@ -282,7 +282,7 @@ const TeacherFooter = React.memo(function TeacherFooter({
             type="button"
             disabled={isLoading}
             onClick={onSubmit}
-            className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+            className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-emerald-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
             Deploy Teacher
@@ -459,7 +459,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
             ) : (
               <>
                 <Camera className="text-slate-400 group-hover:text-blue-500 transition-colors" size={32} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Upload Photo</span>
+                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400 mt-2">Upload Photo</span>
               </>
             )}
             <input 
@@ -513,14 +513,14 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
             name="gender" 
             value={formData.gender} 
             onChange={handleChange}
-            className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
+            className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
           >
             <option value="">Select Gender</option>
             <option value="MALE">Male</option>
             <option value="FEMALE">Female</option>
             <option value="OTHER">Other</option>
           </select>
-          <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Gender</label>
+          <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
         </div>
         <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
         <FloatingSelect label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} options={MARITAL_STATUS_OPTIONS} />
@@ -545,10 +545,10 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
         <FloatingInput label="Subject Specialization" name="specialization" value={formData.specialization} onChange={handleChange} icon={Sparkles} />
         <FloatingInput label="Languages Known" name="languages" value={formData.languages} onChange={handleChange} icon={Globe} />
       </div>
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h5 className="text-xs font-black uppercase tracking-widest text-slate-500">Education History</h5>
+            <h5 className="text-xs font-bold tracking-tight uppercase tracking-widest text-slate-500">Education History</h5>
             <p className="mt-1 text-xs font-semibold text-slate-400">Add multiple degrees, diplomas, and certifications.</p>
           </div>
           <button
@@ -557,7 +557,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
               ...prev,
               educationDetails: [...(prev.educationDetails || []), { qualification: '', institute: '', year: '', grade: '' }]
             }))}
-            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white"
+            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-xs font-bold tracking-tight uppercase tracking-widest text-white"
           >
             <Plus size={14} /> Add Education
           </button>
@@ -565,29 +565,29 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
         <div className="space-y-3">
           {(formData.educationDetails || []).map((item, index) => (
             <div key={index} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800 md:grid-cols-[1fr_1fr_110px_110px_40px]">
-              <input value={item.qualification || ''} onChange={(e) => updateEducationDetail(index, 'qualification', e.target.value)} placeholder="Degree / Course" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
-              <input value={item.institute || ''} onChange={(e) => updateEducationDetail(index, 'institute', e.target.value)} placeholder="Institute" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
-              <input value={item.year || ''} onChange={(e) => updateEducationDetail(index, 'year', e.target.value)} placeholder="Year" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
-              <input value={item.grade || ''} onChange={(e) => updateEducationDetail(index, 'grade', e.target.value)} placeholder="Grade" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input value={item.qualification || ''} onChange={(e) => updateEducationDetail(index, 'qualification', e.target.value)} placeholder="Degree / Course" className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input value={item.institute || ''} onChange={(e) => updateEducationDetail(index, 'institute', e.target.value)} placeholder="Institute" className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input value={item.year || ''} onChange={(e) => updateEducationDetail(index, 'year', e.target.value)} placeholder="Year" className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input value={item.grade || ''} onChange={(e) => updateEducationDetail(index, 'grade', e.target.value)} placeholder="Grade" className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
               <button type="button" onClick={() => setFormData(prev => ({ ...prev, educationDetails: prev.educationDetails.filter((_, idx) => idx !== index) }))} className="grid h-10 w-10 place-items-center rounded-xl text-rose-500 hover:bg-rose-50">
                 <Trash2 size={16} />
               </button>
             </div>
           ))}
           {(formData.educationDetails || []).length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-400 dark:border-slate-800">
+            <div className="rounded-2xl border border-dashed border-slate-100 p-5 text-center text-xs font-bold text-slate-400 dark:border-slate-800">
               No education rows added yet.
             </div>
           )}
         </div>
       </div>
       <div className="grid grid-cols-1 gap-5">
-        <div className="relative flex items-start transition-all duration-300 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4">
+        <div className="relative flex items-start transition-all duration-300 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4">
               <textarea 
             name="achievements" 
             value={formData.achievements} 
             onChange={handleChange}
-                className="w-full bg-white dark:bg-slate-900 outline-none text-sm font-semibold resize-none h-24 rounded-2xl px-4 py-3 border-2 border-slate-200 dark:border-slate-700"
+                className="w-full bg-white dark:bg-slate-900 outline-none text-sm font-semibold resize-none h-24 rounded-2xl px-4 py-3 border-2 border-slate-100 dark:border-slate-700"
             placeholder="Academic Achievements & Awards..."
           />
           <label className="absolute left-4 -top-2.5 px-2 bg-white dark:bg-slate-900 text-xs text-blue-600 font-bold">Achievements</label>
@@ -611,7 +611,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
           <button 
             type="button"
             onClick={generateTeacherId}
-            className="px-6 rounded-2xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
+            className="px-6 rounded-2xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-bold tracking-tight uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
           >
             {idLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
             Auto-Generate
@@ -623,10 +623,10 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
         <FloatingInput label="Experience (Years)" name="experience" value={formData.experience} onChange={handleChange} icon={Clock} />
       </div>
 
-      <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="mb-8 rounded-3xl border border-slate-100 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h5 className="text-xs font-black uppercase tracking-widest text-slate-500">Experience History</h5>
+            <h5 className="text-xs font-bold tracking-tight uppercase tracking-widest text-slate-500">Experience History</h5>
             <p className="mt-1 text-xs font-semibold text-slate-400">Add previous organizations, roles, and durations.</p>
           </div>
           <button
@@ -635,7 +635,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
               ...prev,
               experienceDetails: [...(prev.experienceDetails || []), { organization: '', role: '', from: '', to: '', description: '' }]
             }))}
-            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white"
+            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-xs font-bold tracking-tight uppercase tracking-widest text-white"
           >
             <Plus size={14} /> Add Experience
           </button>
@@ -643,18 +643,18 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
         <div className="space-y-3">
           {(formData.experienceDetails || []).map((item, index) => (
             <div key={index} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800 md:grid-cols-[1fr_1fr_120px_120px_40px]">
-              <input value={item.organization || ''} onChange={(e) => updateExperienceDetail(index, 'organization', e.target.value)} placeholder="Organization" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
-              <input value={item.role || ''} onChange={(e) => updateExperienceDetail(index, 'role', e.target.value)} placeholder="Role" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
-              <input type="date" value={item.from || ''} onChange={(e) => updateExperienceDetail(index, 'from', e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
-              <input type="date" value={item.to || ''} onChange={(e) => updateExperienceDetail(index, 'to', e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input value={item.organization || ''} onChange={(e) => updateExperienceDetail(index, 'organization', e.target.value)} placeholder="Organization" className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input value={item.role || ''} onChange={(e) => updateExperienceDetail(index, 'role', e.target.value)} placeholder="Role" className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input type="date" value={item.from || ''} onChange={(e) => updateExperienceDetail(index, 'from', e.target.value)} className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
+              <input type="date" value={item.to || ''} onChange={(e) => updateExperienceDetail(index, 'to', e.target.value)} className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900" />
               <button type="button" onClick={() => setFormData(prev => ({ ...prev, experienceDetails: prev.experienceDetails.filter((_, idx) => idx !== index) }))} className="grid h-10 w-10 place-items-center rounded-xl text-rose-500 hover:bg-rose-50">
                 <Trash2 size={16} />
               </button>
-              <textarea value={item.description || ''} onChange={(e) => updateExperienceDetail(index, 'description', e.target.value)} placeholder="Responsibilities / achievements" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 md:col-span-5" rows={2} />
+              <textarea value={item.description || ''} onChange={(e) => updateExperienceDetail(index, 'description', e.target.value)} placeholder="Responsibilities / achievements" className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 md:col-span-5" rows={2} />
             </div>
           ))}
           {(formData.experienceDetails || []).length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-400 dark:border-slate-800">
+            <div className="rounded-2xl border border-dashed border-slate-100 p-5 text-center text-xs font-bold text-slate-400 dark:border-slate-800">
               No experience rows added yet.
             </div>
           )}
@@ -662,7 +662,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
       </div>
 
       <div className="mb-8 rounded-2xl border border-blue-200/60 bg-blue-50/60 p-4 dark:border-blue-900/40 dark:bg-blue-900/10">
-        <p className="text-xs font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Academic Sync Active</p>
+        <p className="text-xs font-bold tracking-tight uppercase tracking-widest text-blue-700 dark:text-blue-300">Academic Sync Active</p>
         <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           Class and section mappings are now auto-managed from Academic Settings. Assign subject expertise below and the latest classes, sections, and subjects stay synced in real time.
         </p>
@@ -671,8 +671,8 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
       <AIAssistantCard message={`I've analyzed the current class schedules. The teacher is assigned to ${(formData.assignedSections || []).length} sections. Recommended subjects based on expertise: Physics, Mathematics.`} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Subject Expertise</h5>
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+          <h5 className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-4">Subject Expertise</h5>
           <div className="flex flex-wrap gap-2">
             {availableSubjects.length > 0 ? (
               availableSubjects.map(sub => {
@@ -703,8 +703,8 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
             )}
           </div>
         </div>
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Shift & Availability</h5>
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+          <h5 className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-4">Shift & Availability</h5>
           <div className="space-y-3">
             {['Morning Shift (8 AM - 2 PM)', 'Regular Shift (9 AM - 4 PM)'].map(shift => (
               <label key={shift} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all">
@@ -729,7 +729,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
       />
       <div className="space-y-6">
         <div>
-          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Current Address</h5>
+          <h5 className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-3 ml-1">Current Address</h5>
           <FloatingInput label="Street / Area" name="currentAddress" value={formData.currentAddress} onChange={handleChange} icon={MapPin} />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} />
@@ -741,8 +741,8 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
 
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-4">
-            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Medical Information</h5>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase">
+            <h5 className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1">Medical Information</h5>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold tracking-tight uppercase">
               <HeartPulse size={12} /> Critical Info
             </div>
           </div>
@@ -771,11 +771,11 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
           { label: 'Degree Certificates', type: 'degree' },
           { label: 'Joining Documents', type: 'joining' }
         ].map(doc => (
-          <div key={doc.type} className="p-8 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer">
+          <div key={doc.type} className="p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer">
             <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Upload className="text-blue-500" size={24} />
             </div>
-            <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc.label}</h6>
+            <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc.label}</h6>
             <p className="text-xs font-bold text-slate-400">PDF, JPG or PNG up to 5MB</p>
           </div>
         ))}
@@ -803,7 +803,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
              </div>
           </div>
           <div>
-            <h3 className="text-3xl font-black tracking-tight mb-2">{formData.name || 'New Teacher'}</h3>
+            <h3 className="text-3xl font-bold tracking-tight tracking-tight mb-2">{formData.name || 'New Teacher'}</h3>
             <div className="flex flex-wrap gap-4 text-sm font-bold text-white/80">
               <div className="flex items-center gap-2"><Mail size={16} /> {formData.email || '—'}</div>
               <div className="flex items-center gap-2"><Smartphone size={16} /> {formData.phone || '—'}</div>
@@ -821,8 +821,8 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
           { title: 'Academic Profile', data: [`Degree: ${formData.degree || '—'}`, `Univ: ${formData.institute || '—'}`, `Spec: ${formData.specialization || '—'}`] },
           { title: 'Professional Info', data: [`Dept: ${formData.department || '—'}`, `Role: ${formData.role || '—'}`, `Exp: ${formData.experience || '—'} Yrs`] },
         ].map(card => (
-          <div key={card.title} className="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">{card.title}</h5>
+          <div key={card.title} className="p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <h5 className="text-[10px] font-bold tracking-tight text-blue-600 uppercase tracking-widest mb-4">{card.title}</h5>
             <div className="space-y-2">
               {card.data.map((d, i) => <p key={i} className="text-sm font-bold text-slate-700 dark:text-slate-300">{d}</p>)}
             </div>
@@ -835,7 +835,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
           <CheckCircle className="text-white" size={20} />
         </div>
         <div>
-          <h4 className="text-sm font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Ready for Deployment</h4>
+          <h4 className="text-sm font-bold tracking-tight text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Ready for Deployment</h4>
           <p className="text-xs font-bold text-slate-600 dark:text-slate-400">All mandatory fields are filled and validated by AI.</p>
         </div>
       </div>
@@ -843,7 +843,7 @@ function TeacherFormWizard({ teacher, onSubmit, onCancel, isLoading }) {
   );
 
   return (
-    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800">
+    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
       <TeacherSidebar currentStep={currentStep} onStepSelect={handleStepSelect} />
 
       {/* Main Content Area */}

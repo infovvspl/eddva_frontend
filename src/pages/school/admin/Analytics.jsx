@@ -74,7 +74,7 @@ export default function Analytics() {
   return (
     <div className="space-y-10 pb-12">
       <div>
-        <h1 className="font-display text-3xl font-extrabold text-surface-950">Super Admin Analytics</h1>
+        <h1 className="font-display text-3xl font-bold text-surface-950">Super Admin Analytics</h1>
         <p className="mt-2 text-sm font-medium text-surface-500">Platform-wide insights into institutes, users, and support.</p>
       </div>
 
@@ -88,7 +88,7 @@ export default function Analytics() {
                 <item.icon className={`h-6 w-6 ${item.color}`} />
               </div>
               <p className="text-sm font-bold text-surface-500">{item.label}</p>
-              <p className="mt-1 font-display text-3xl font-extrabold text-surface-950">{number(item.value)}</p>
+              <p className="mt-1 font-display text-3xl font-bold text-surface-950">{number(item.value)}</p>
             </div>
           ))}
         </div>
@@ -104,7 +104,7 @@ export default function Analytics() {
                 <item.icon className={`h-6 w-6 ${item.color}`} />
               </div>
               <p className="text-sm font-bold text-surface-500">{item.label}</p>
-              <p className="mt-1 font-display text-3xl font-extrabold text-surface-950">{number(item.value)}</p>
+              <p className="mt-1 font-display text-3xl font-bold text-surface-950">{number(item.value)}</p>
             </div>
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function Analytics() {
                 <div key={item.label} className={`rounded-lg border border-surface-200 p-5 ${item.bg}`}>
                   <div className="mb-2"><item.icon className={`h-6 w-6 ${item.color}`} /></div>
                   <p className="text-sm font-bold text-surface-600">{item.label}</p>
-                  <p className={`mt-1 font-display text-3xl font-extrabold ${item.color}`}>{number(item.value)}</p>
+                  <p className={`mt-1 font-display text-3xl font-bold ${item.color}`}>{number(item.value)}</p>
                 </div>
               ))}
             </div>

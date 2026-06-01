@@ -72,6 +72,9 @@ export default function Dashboard() {
           <div className="bubble"></div>
           <div className="bubble"></div>
         </div>
+        <div className="absolute -right-4 -bottom-6 w-56 h-56 pointer-events-none hidden md:block">
+          <img src="/images/student_avatar.png" alt="Student" className="w-full h-full object-contain mix-blend-multiply drop-shadow-2xl animate-float" />
+        </div>
         
         <div className="relative z-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           <div className="col-span-1 lg:col-span-2">
@@ -115,8 +118,8 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="hidden items-center justify-center md:flex">
-            <div className="text-6xl animate-bounce">🎓✨</div>
+          <div className="hidden items-center justify-center md:flex relative select-none pointer-events-none">
+            <img src="/assets/student_cartoon.png" alt="Student Illustration" className="h-44 object-contain animate-float drop-shadow-2xl" />
           </div>
         </div>
         

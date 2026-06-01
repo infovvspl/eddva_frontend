@@ -170,12 +170,12 @@ export default function Teachers() {
     <div className="mx-auto max-w-6xl px-2 sm:px-4">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-3xl font-extrabold text-slate-950 dark:text-white">Teachers</h1>
+          <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white">Teachers</h1>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Manage teaching staff and assignments.</p>
         </div>
         <button
           onClick={handleAddClick}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
         >
           <Plus className="h-5 w-5" />
           Add Teacher
@@ -219,7 +219,7 @@ export default function Teachers() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{card.title}</p>
-                <p className="mt-2 font-display text-3xl font-extrabold text-slate-950 dark:text-white">
+                <p className="mt-2 font-display text-3xl font-bold text-slate-950 dark:text-white">
                   {formatNumber(card.value)}
                 </p>
                 <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{card.subtitle}</p>
@@ -263,7 +263,7 @@ export default function Teachers() {
 
             <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="h-4 w-4 text-slate-400" />
-              <select 
+              <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 className="bg-transparent outline-none"
@@ -271,11 +271,11 @@ export default function Teachers() {
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            
+
             <button
               type="button"
               onClick={exportCsv}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2.5 text-sm font-extrabold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <Download className="h-4 w-4" />
               Export
@@ -310,13 +310,13 @@ export default function Teachers() {
                           {teacher.photo ? (
                             <img src={teacher.photo} alt={teacher.name} className="h-full w-full object-cover" />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-black text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                            <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
                               {(teacher.name || 'T').slice(0, 1).toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-slate-900 dark:text-white">{teacher.name}</p>
+                          <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{teacher.name}</p>
                           <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile?.designation || '—'}</p>
                         </div>
                       </div>
@@ -325,9 +325,8 @@ export default function Teachers() {
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.teacherProfile?.department || '-'}</td>
                     <td className="px-5 py-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold ${
-                          teacher.isActive ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
-                        }`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${teacher.isActive ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                          }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${teacher.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         {teacher.isActive ? 'Active' : 'Inactive'}
@@ -336,15 +335,15 @@ export default function Teachers() {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
-                          to={`/school/admin/teachers/${teacher.id}`}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          to={`/admin/teachers/${teacher.id}`}
+                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Eye className="h-4 w-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                         </Link>
                         <button
                           onClick={() => handleEdit(teacher)}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Edit teacher"
                         >
                           <Edit2 className="h-4 w-4" />
@@ -352,7 +351,7 @@ export default function Teachers() {
                         </button>
                         <button
                           onClick={() => handleDelete(teacher.id)}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Delete teacher"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -372,26 +371,26 @@ export default function Teachers() {
             Showing 1 to {filtered.length} of {teachers.length} teacher{teachers.length === 1 ? '' : 's'}
           </p>
           <div className="flex items-center gap-2">
-            <button type="button" className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <button type="button" className="rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               ‹
             </button>
-            <button type="button" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-sky-200">
+            <button type="button" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-sky-200">
               1
             </button>
-            <button type="button" className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <button type="button" className="rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               ›
             </button>
           </div>
         </div>
       </div>
 
-      <Modal 
+      <Modal
         isOpen={isModalOpen}
         title={selectedTeacher ? 'Edit Teacher Profile' : 'Register New Teacher'}
         onClose={() => setIsModalOpen(false)}
         size="full"
       >
-        <AddTeacherMultiStep 
+        <AddTeacherMultiStep
           teacher={selectedTeacher}
           onSubmit={handleSubmit}
           onCancel={() => setIsModalOpen(false)}

@@ -49,8 +49,8 @@ function percent(collected, total) {
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-slate-800 dark:bg-slate-950">
-      <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{label}</p>
+    <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-xl dark:border-slate-800 dark:bg-slate-950">
+      <p className="mb-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-slate-400">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} className="flex items-center gap-2 text-sm font-bold" style={{ color: entry.color }}>
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
@@ -68,13 +68,13 @@ function StatCard({ title, value, icon: Icon, tone, helper, positive = true }) {
         <div className={cn('grid h-12 w-12 place-items-center rounded-2xl', tone)}>
           <Icon className="h-6 w-6" />
         </div>
-        <span className={cn('inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em]', positive ? 'text-emerald-600' : 'text-rose-600')}>
+        <span className={cn('inline-flex items-center gap-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.25em]', positive ? 'text-emerald-600' : 'text-rose-600')}>
           {positive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
           Live
         </span>
       </div>
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{title}</p>
-      <h3 className="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-white">{value}</h3>
+      <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">{title}</p>
+      <h3 className="mt-1 text-3xl font-bold tracking-tight tracking-tight text-slate-950 dark:text-white">{value}</h3>
       <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">{helper}</p>
     </div>
   );
@@ -140,19 +140,19 @@ export default function Finance() {
     <div className="mx-auto max-w-7xl space-y-8 px-4 pb-12 sm:px-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Finance Overview</h1>
+          <h1 className="text-3xl font-bold tracking-tight tracking-tight text-slate-950 dark:text-white">Finance Overview</h1>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
             Real-time collections, dues, trends, and payment status from the school database.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className={cn('rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.25em]', refreshing ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300')}>
+          <span className={cn('rounded-full px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.25em]', refreshing ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300')}>
             {refreshing ? 'Refreshing' : 'Live'}
           </span>
           <button
             type="button"
             onClick={loadAnalytics}
-            className="rounded-2xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-white transition hover:brightness-110 dark:bg-white dark:text-slate-950"
+            className="rounded-2xl bg-slate-950 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-white transition hover:brightness-110 dark:bg-white dark:text-slate-950"
           >
             Refresh
           </button>
@@ -196,7 +196,7 @@ export default function Finance() {
         <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 xl:col-span-2">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-black text-slate-950 dark:text-white">Monthly Collections</h3>
+              <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">Monthly Collections</h3>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Payment flow from transaction history</p>
             </div>
             <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
@@ -226,7 +226,7 @@ export default function Finance() {
         <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-black text-slate-950 dark:text-white">Class-wise Collections</h3>
+              <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">Class-wise Collections</h3>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Revenue split by class</p>
             </div>
             <Landmark className="h-5 w-5 text-blue-600" />
@@ -251,7 +251,7 @@ export default function Finance() {
         <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 xl:col-span-2">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-black text-slate-950 dark:text-white">Student Payment Status</h3>
+              <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">Student Payment Status</h3>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Live balances by student</p>
             </div>
             <Users className="h-5 w-5 text-emerald-600" />
@@ -260,7 +260,7 @@ export default function Finance() {
             <div className="max-h-[420px] overflow-auto">
               <table className="w-full text-left">
                 <thead className="sticky top-0 bg-slate-50 dark:bg-slate-950">
-                  <tr className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
+                  <tr className="text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400">
                     <th className="px-4 py-4">Student</th>
                     <th className="px-4 py-4">Class</th>
                     <th className="px-4 py-4 text-right">Due</th>
@@ -273,7 +273,7 @@ export default function Finance() {
                     <tr key={row.studentId} className="text-sm">
                       <td className="px-4 py-4">
                         <p className="font-bold text-slate-950 dark:text-white">{row.studentName}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{row.enrollmentNo}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-widest tracking-[0.2em] text-slate-400">{row.enrollmentNo}</p>
                       </td>
                       <td className="px-4 py-4 text-slate-600 dark:text-slate-300">{row.className}</td>
                       <td className="px-4 py-4 text-right font-bold text-slate-900 dark:text-white">{formatInr(row.totalDue)}</td>
@@ -298,7 +298,7 @@ export default function Finance() {
           <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-black text-slate-950 dark:text-white">Fee Defaulters</h3>
+                <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">Fee Defaulters</h3>
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Open dues needing follow-up</p>
               </div>
               <FileText className="h-5 w-5 text-rose-600" />
@@ -309,9 +309,9 @@ export default function Finance() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-bold text-slate-950 dark:text-white">{row.studentName}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{row.enrollmentNo}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-widest tracking-[0.2em] text-slate-400">{row.enrollmentNo}</p>
                     </div>
-                    <span className="rounded-full bg-rose-500/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-rose-600">
+                    <span className="rounded-full bg-rose-500/10 px-2 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-rose-600">
                       {row.status}
                     </span>
                   </div>
@@ -323,7 +323,7 @@ export default function Finance() {
                 </div>
               ))}
               {defaulters.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm font-semibold text-slate-400 dark:border-slate-700">
+                <div className="rounded-2xl border border-dashed border-slate-100 px-4 py-10 text-center text-sm font-semibold text-slate-400 dark:border-slate-700">
                   No current defaulters.
                 </div>
               )}
@@ -331,7 +331,7 @@ export default function Finance() {
           </div>
 
           <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-lg font-black text-slate-950 dark:text-white">Payment Trends</h3>
+            <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">Payment Trends</h3>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Collections vs pending pressure</p>
             <div className="mt-5 h-64">
               <ResponsiveContainer width="100%" height="100%">

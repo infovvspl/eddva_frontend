@@ -25,7 +25,7 @@ export default function RolesPage() {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-2xl font-extrabold">Roles & Permissions</h1>
+        <h1 className="font-display text-2xl font-bold">Roles & Permissions</h1>
         <p className="text-sm text-surface-600">Manage roles, assign permissions, and view role assignments.</p>
       </div>
 

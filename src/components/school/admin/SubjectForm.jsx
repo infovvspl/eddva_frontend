@@ -25,7 +25,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
     <div className="relative group">
       <div className={`
         relative flex items-center transition-all duration-300 rounded-2xl border-2 
-        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-slate-700'}
+        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700'}
         ${error ? 'border-red-500' : ''}
         bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm
       `}>
@@ -63,9 +63,9 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
 const SectionHeader = ({ title, description, badge }) => (
   <div className="mb-8">
     <div className="flex items-center gap-3 mb-1">
-      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{title}</h2>
       {badge && (
-        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-blue-500/20">
           {badge}
         </span>
       )}
@@ -84,7 +84,7 @@ const AIAssistantCard = ({ message }) => (
       <Sparkles className="text-white" size={20} />
     </div>
     <div>
-      <h4 className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
+      <h4 className="text-sm font-bold tracking-tight text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
     </div>
   </motion.div>
@@ -218,13 +218,13 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
               <div className="relative">
-                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none">
+                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none">
                   <option value="">Select Gender</option>
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
                   <option value="OTHER">Other</option>
                 </select>
-                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Gender</label>
+                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
               </div>
               <FloatingInput label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
             </div>
@@ -237,7 +237,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
               <div className="flex gap-2">
                 <div className="flex-1"><FloatingInput label="Enrollment No" name="enrollmentNo" value={formData.enrollmentNo} readOnly icon={Fingerprint} /></div>
-                <button type="button" onClick={generateEnrollmentNo} className="px-4 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:brightness-110 flex items-center gap-2">
+                <button type="button" onClick={generateEnrollmentNo} className="px-4 rounded-2xl bg-slate-900 text-white text-xs font-bold tracking-tight uppercase tracking-widest hover:brightness-110 flex items-center gap-2">
                   {idLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                 </button>
               </div>
@@ -251,14 +251,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   name="classId" 
                   value={formData.classId} 
                   onChange={handleChange}
-                  className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
+                  className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
                 >
                   <option value="">Select Class</option>
                   {classes.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Class</label>
+                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Class</label>
               </div>
 
               <div className="relative">
@@ -267,14 +267,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   value={formData.sectionId} 
                   onChange={handleChange}
                   disabled={!formData.classId}
-                  className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none disabled:opacity-50"
+                  className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none disabled:opacity-50"
                 >
                   <option value="">Select Section</option>
                   {sections.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
-                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Section</label>
+                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Section</label>
               </div>
             </div>
 
@@ -320,7 +320,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               {['Birth Certificate', 'Aadhar Card', 'Previous Marksheet', 'Transfer Certificate'].map(doc => {
                 const hasDoc = formData.documents?.[doc];
                 return (
-                  <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
+                  <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
                     <input 
                       type="file" 
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -330,7 +330,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     {hasDoc ? (
                       <div className="flex flex-col items-center">
                         <CheckCircle className="text-emerald-500 mb-2" size={32} />
-                        <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
+                        <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
                         <div className="flex gap-2 mt-2 relative z-20">
                           <button 
                             type="button"
@@ -348,7 +348,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     ) : (
                       <>
                         <Upload className="text-blue-500 mb-4 group-hover:scale-110 transition-transform" size={24} />
-                        <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc}</h6>
+                        <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc}</h6>
                         <p className="text-xs font-bold text-slate-400">PDF, DOC, JPG up to 5MB</p>
                       </>
                     )}
@@ -368,7 +368,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                    {formData.photo ? <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
-                  <h3 className="text-3xl font-black mb-2">{formData.name || 'New Student'}</h3>
+                  <h3 className="text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>
                   <div className="flex flex-wrap gap-4 text-sm font-bold text-white/80">
                     <div>{formData.enrollmentNo || 'No Enrollment'}</div>
                     <div>{formData.email || 'No Email'}</div>
@@ -387,9 +387,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   };
 
   return (
-    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800">
-      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800 p-8 hidden lg:flex flex-col">
-        <div className="mb-10 font-black text-2xl tracking-tighter">EDDVA <span className="text-blue-600">STUDENT</span></div>
+    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
+      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-8 hidden lg:flex flex-col">
+        <div className="mb-10 font-bold tracking-tight text-2xl tracking-tighter">EDDVA <span className="text-blue-600">STUDENT</span></div>
         <div className="flex-1 space-y-2">
           {STEPS.map(step => {
             const Icon = step.icon;
@@ -401,7 +401,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
                 </div>
                 <div className="text-left">
-                  <h4 className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
+                  <h4 className={`text-xs font-bold tracking-tight uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
                   <p className="text-[10px] font-bold text-slate-400">{step.description}</p>
                 </div>
               </button>
@@ -416,14 +416,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
           <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
         </div>
-        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-between">
-          <button onClick={onCancel} className="text-sm font-black text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
+        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 flex items-center justify-between">
+          <button onClick={onCancel} className="text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
           <div className="flex gap-3">
-            {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-200 text-xs font-black uppercase tracking-widest flex items-center gap-2">Back</button>}
+            {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-100 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2">Back</button>}
             <button 
               onClick={currentStep < STEPS.length ? () => setCurrentStep(s => s + 1) : () => onSubmit(formData)} 
               disabled={isLoading}
-              className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
+              className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
             >
               {currentStep < STEPS.length ? (
                 <>Next Step <ChevronRight size={16} /></>
@@ -472,7 +472,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
     <div className="relative group">
       <div className={`
         relative flex items-center transition-all duration-300 rounded-2xl border-2 
-        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-slate-700'}
+        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700'}
         ${error ? 'border-red-500' : ''}
         bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm
       `}>
@@ -510,9 +510,9 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
 const SectionHeader = ({ title, description, badge }) => (
   <div className="mb-8">
     <div className="flex items-center gap-3 mb-1">
-      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{title}</h2>
       {badge && (
-        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-blue-500/20">
           {badge}
         </span>
       )}
@@ -531,7 +531,7 @@ const AIAssistantCard = ({ message }) => (
       <Sparkles className="text-white" size={20} />
     </div>
     <div>
-      <h4 className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
+      <h4 className="text-sm font-bold tracking-tight text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
     </div>
   </motion.div>
@@ -662,7 +662,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             ) : (
               <>
                 <Camera className="text-slate-400 group-hover:text-blue-500 transition-colors" size={32} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Upload Photo</span>
+                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400 mt-2">Upload Photo</span>
               </>
             )}
             <input 
@@ -716,14 +716,14 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             name="gender" 
             value={formData.gender} 
             onChange={handleChange}
-            className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
+            className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
           >
             <option value="">Select Gender</option>
             <option value="MALE">Male</option>
             <option value="FEMALE">Female</option>
             <option value="OTHER">Other</option>
           </select>
-          <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Gender</label>
+          <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
         </div>
         <FloatingInput label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
         <FloatingInput label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} />
@@ -749,7 +749,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         <FloatingInput label="Languages Known" name="languages" value={formData.languages} onChange={handleChange} icon={Globe} />
       </div>
       <div className="grid grid-cols-1 gap-5">
-        <div className="relative flex items-start transition-all duration-300 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4">
+        <div className="relative flex items-start transition-all duration-300 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4">
           <textarea 
             name="achievements" 
             value={formData.achievements} 
@@ -778,7 +778,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <button 
             type="button"
             onClick={generateTeacherId}
-            className="px-6 rounded-2xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
+            className="px-6 rounded-2xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-bold tracking-tight uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
           >
             {idLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
             Auto-Generate
@@ -791,11 +791,11 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       </div>
 
       <div className="mb-8">
-        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-1">Class & Section Assignments</h5>
+        <h5 className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-4 ml-1">Class & Section Assignments</h5>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {classes.map(cls => (
-            <div key={cls.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50">
-              <h6 className="text-xs font-black text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+            <div key={cls.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50">
+              <h6 className="text-xs font-bold tracking-tight text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                 {cls.name}
               </h6>
@@ -812,7 +812,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                         setFormData(prev => ({ ...prev, sectionIds: next }));
                       }}
                       className={`
-                        px-3 py-1.5 rounded-xl text-[10px] font-black transition-all
+                        px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-tight transition-all
                         ${isSelected 
                           ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}
@@ -831,8 +831,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <AIAssistantCard message={`I've analyzed the current class schedules. The teacher is assigned to ${(formData.assignedSections || []).length} sections. Recommended subjects based on expertise: Physics, Mathematics.`} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Subject Expertise</h5>
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+          <h5 className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-4">Subject Expertise</h5>
           <div className="flex flex-wrap gap-2">
             {availableSubjects.length > 0 ? (
               availableSubjects.map(sub => {
@@ -863,8 +863,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             )}
           </div>
         </div>
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Shift & Availability</h5>
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+          <h5 className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-4">Shift & Availability</h5>
           <div className="space-y-3">
             {['Morning Shift (8 AM - 2 PM)', 'Regular Shift (9 AM - 4 PM)'].map(shift => (
               <label key={shift} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all">
@@ -889,7 +889,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       />
       <div className="space-y-6">
         <div>
-          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Current Address</h5>
+          <h5 className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-3 ml-1">Current Address</h5>
           <FloatingInput label="Street / Area" name="currentAddress" value={formData.currentAddress} onChange={handleChange} icon={MapPin} />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} />
@@ -901,8 +901,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-4">
-            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Medical Information</h5>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase">
+            <h5 className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1">Medical Information</h5>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold tracking-tight uppercase">
               <HeartPulse size={12} /> Critical Info
             </div>
           </div>
@@ -931,11 +931,11 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           { label: 'Degree Certificates', type: 'degree' },
           { label: 'Joining Documents', type: 'joining' }
         ].map(doc => (
-          <div key={doc.type} className="p-8 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer">
+          <div key={doc.type} className="p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer">
             <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Upload className="text-blue-500" size={24} />
             </div>
-            <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc.label}</h6>
+            <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc.label}</h6>
             <p className="text-xs font-bold text-slate-400">PDF, JPG or PNG up to 5MB</p>
           </div>
         ))}
@@ -963,7 +963,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
              </div>
           </div>
           <div>
-            <h3 className="text-3xl font-black tracking-tight mb-2">{formData.name || 'New Teacher'}</h3>
+            <h3 className="text-3xl font-bold tracking-tight tracking-tight mb-2">{formData.name || 'New Teacher'}</h3>
             <div className="flex flex-wrap gap-4 text-sm font-bold text-white/80">
               <div className="flex items-center gap-2"><Mail size={16} /> {formData.email || '—'}</div>
               <div className="flex items-center gap-2"><Smartphone size={16} /> {formData.phone || '—'}</div>
@@ -981,8 +981,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           { title: 'Academic Profile', data: [`Degree: ${formData.degree || '—'}`, `Univ: ${formData.institute || '—'}`, `Spec: ${formData.specialization || '—'}`] },
           { title: 'Professional Info', data: [`Dept: ${formData.department || '—'}`, `Role: ${formData.role || '—'}`, `Exp: ${formData.experience || '—'} Yrs`] },
         ].map(card => (
-          <div key={card.title} className="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">{card.title}</h5>
+          <div key={card.title} className="p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <h5 className="text-[10px] font-bold tracking-tight text-blue-600 uppercase tracking-widest mb-4">{card.title}</h5>
             <div className="space-y-2">
               {card.data.map((d, i) => <p key={i} className="text-sm font-bold text-slate-700 dark:text-slate-300">{d}</p>)}
             </div>
@@ -995,7 +995,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <CheckCircle className="text-white" size={20} />
         </div>
         <div>
-          <h4 className="text-sm font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Ready for Deployment</h4>
+          <h4 className="text-sm font-bold tracking-tight text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Ready for Deployment</h4>
           <p className="text-xs font-bold text-slate-600 dark:text-slate-400">All mandatory fields are filled and validated by AI.</p>
         </div>
       </div>
@@ -1015,11 +1015,11 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   };
 
   return (
-    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800">
+    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
       {/* Sidebar Navigation */}
-      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800 p-8 hidden lg:flex flex-col">
+      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-8 hidden lg:flex flex-col">
         <div className="mb-10">
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tighter flex items-center gap-2">
              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                 <Sparkles className="text-white" size={16} />
              </div>
@@ -1049,7 +1049,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                   {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
                 </div>
                 <div>
-                  <h4 className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
+                  <h4 className={`text-xs font-bold tracking-tight uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
                   <p className="text-[10px] font-bold text-slate-400 leading-tight">{step.description}</p>
                 </div>
               </button>
@@ -1058,10 +1058,10 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         </div>
 
         <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">System Status</p>
+           <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-slate-500 mb-2">System Status</p>
            <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-black">AI CORE ACTIVE</span>
+              <span className="text-xs font-bold tracking-tight">AI CORE ACTIVE</span>
            </div>
         </div>
       </div>
@@ -1085,11 +1085,11 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 flex items-center justify-between z-10">
+        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex items-center justify-between z-10">
           <button 
             type="button" 
             onClick={onCancel}
-            className="px-6 py-3 rounded-2xl text-sm font-black text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+            className="px-6 py-3 rounded-2xl text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             CANCEL
           </button>
@@ -1097,7 +1097,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <div className="flex gap-3">
             <button 
               type="button"
-              className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-2"
+              className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold tracking-tight uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-2"
             >
               <Save size={16} /> Save Draft
             </button>
@@ -1106,7 +1106,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
               <button 
                 type="button" 
                 onClick={handleBack}
-                className="px-6 py-3 rounded-2xl border-2 border-slate-200 dark:border-slate-800 text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-300"
+                className="px-6 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2 hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-300"
               >
                 <ChevronLeft size={16} /> Back
               </button>
@@ -1116,7 +1116,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
               <button 
                 type="button" 
                 onClick={handleNext}
-                className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
               >
                 Next Step <ChevronRight size={16} />
               </button>
@@ -1125,7 +1125,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                 type="button" 
                 disabled={isLoading}
                 onClick={() => onSubmit(formData)}
-                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-emerald-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
               >
                 {isLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
                 Deploy Teacher
@@ -1290,7 +1290,7 @@ export function EddvaLogo({ compact = false, className }) {
       </div>
       {!compact && (
         <div className="leading-none">
-          <p className="font-display text-2xl font-extrabold text-surface-950">EDDVA</p>
+          <p className="font-display text-2xl font-bold text-surface-950">EDDVA</p>
           <p className="mt-1 text-[11px] font-bold uppercase text-brand-700">Learn with AI</p>
         </div>
       )}
@@ -1696,10 +1696,10 @@ export default function Navbar({ onMenuClick }) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex flex-col">
-            <p className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter">
+            <p className="text-[11px] font-bold tracking-tight text-blue-600 dark:text-blue-400 uppercase tracking-tighter">
               {isInstitute ? (institute?.name || 'Eddva Institute') : 'EDDVA HQ'}
             </p>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">
+            <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest opacity-60">
               {isInstitute ? 'Active Workspace' : 'Super Admin Console'}
             </p>
           </div>
@@ -1719,7 +1719,7 @@ export default function Navbar({ onMenuClick }) {
               }}
               onFocus={() => setSearchOpen(true)}
             />
-            <kbd className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-400 md:inline dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
+            <kbd className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-lg border border-slate-100 bg-white px-2 py-1 text-[10px] font-bold tracking-tight text-slate-400 md:inline dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
               Ctrl K
             </kbd>
 
@@ -1733,7 +1733,7 @@ export default function Navbar({ onMenuClick }) {
                   
                   {searchResults.pages.length > 0 && (
                     <div className="mb-4">
-                      <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Navigation</p>
+                      <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Navigation</p>
                       {searchResults.pages.map(page => (
                         <Link key={page.path} to={page.path} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
                           <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
@@ -1748,10 +1748,10 @@ export default function Navbar({ onMenuClick }) {
 
                   {searchResults.students.length > 0 && (
                     <div className="mb-4">
-                      <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Students</p>
+                      <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Students</p>
                       {searchResults.students.map(s => (
                         <Link key={s.id} to={`/students/${s.id}`} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">
+                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
                             {s.photo ? <img src={s.photo} className="w-full h-full object-cover rounded-xl" /> : s.name[0]}
                           </div>
                           <div className="flex flex-col">
@@ -1835,7 +1835,7 @@ export default function Navbar({ onMenuClick }) {
                 aria-label="Notifications"
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute right-2.5 top-2.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white border-2 border-white dark:border-slate-950">
+                <span className="absolute right-2.5 top-2.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold tracking-tight text-white border-2 border-white dark:border-slate-950">
                   5
                 </span>
               </button>
@@ -1843,7 +1843,7 @@ export default function Navbar({ onMenuClick }) {
                 <div className="absolute right-0 z-50 mt-4 w-80 overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                   <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">5 Unread</span>
+                    <span className="text-[10px] font-bold tracking-tight text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">5 Unread</span>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer border-b border-slate-50 dark:border-slate-800/50">
@@ -1867,13 +1867,13 @@ export default function Navbar({ onMenuClick }) {
 
           <div className="flex items-center gap-3 border-l border-slate-100 pl-4 dark:border-slate-800">
             <div className="relative">
-              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-black text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                 {(user?.name || 'A').charAt(0).toUpperCase()}
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
             </div>
             <div className="hidden min-w-0 sm:block">
-              <p className="truncate text-xs font-black text-slate-950 dark:text-white leading-tight">{user?.name || 'Admin'}</p>
+              <p className="truncate text-xs font-bold tracking-tight text-slate-950 dark:text-white leading-tight">{user?.name || 'Admin'}</p>
               <p className="truncate text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 opacity-60">
                 {isInstitute ? 'Institute Admin' : 'Super Admin'}
               </p>
@@ -2329,7 +2329,7 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:static',
+          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:static',
           collapsed && isInstitute ? 'md:w-[80px]' : 'md:w-[280px]',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
@@ -2349,7 +2349,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
             {!isInstitute && (
               <>
-                <p className="mb-3 px-3 text-[10px] font-extrabold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+                <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-widest tracking-[0.22em] text-slate-400 dark:text-slate-500">
                   Super Admin
                 </p>
                 <nav className="space-y-1">
@@ -2381,7 +2381,7 @@ export default function Sidebar({ open, onClose }) {
                       <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-display text-base font-extrabold text-slate-950 dark:text-white">EDDVA AI Assistant</p>
+                      <p className="font-display text-base font-bold text-slate-950 dark:text-white">EDDVA AI Assistant</p>
                       <p className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                         Your smart admin assistant
                       </p>
@@ -2389,7 +2389,7 @@ export default function Sidebar({ open, onClose }) {
                   </div>
                   <button
                     type="button"
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110"
                   >
                     Ask EDDVA AI
                     <ArrowRight className="h-5 w-5" />
@@ -2403,7 +2403,7 @@ export default function Sidebar({ open, onClose }) {
                 <div key={group.heading} className="mb-6">
                   <p
                     className={cn(
-                      'mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500',
+                      'mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest tracking-widest text-slate-400 dark:text-slate-500',
                       collapsed && 'md:hidden'
                     )}
                   >

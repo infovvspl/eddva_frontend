@@ -31,7 +31,7 @@ interface SchoolAuthContextType {
   user: SchoolUser | null;
   institute: SchoolInstitute | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<unknown>;
+  login: (identifier: string, password: string) => Promise<unknown>;
   register: (data: unknown) => Promise<unknown>;
   setAuthSession: (data: {
     token: string;
@@ -45,19 +45,27 @@ interface SchoolAuthContextType {
 
 // ── Role normalization ──────────────────────────────────────────────────────
 
-function zustandRoleToSchool(role: UserRole): SchoolUser['role'] {
+function zustandRoleToSchool(role: UserRole | string): SchoolUser['role'] {
+  if (!role) return 'STUDENT';
+  const r = role.toLowerCase();
   const map: Record<string, SchoolUser['role']> = {
     super_admin: 'SUPER_ADMIN',
     institute_admin: 'INSTITUTE_ADMIN',
+    admin: 'INSTITUTE_ADMIN',
     teacher: 'TEACHER',
     student: 'STUDENT',
     parent: 'PARENT',
   };
-  return map[role] ?? 'STUDENT';
+  return map[r] ?? 'STUDENT';
 }
 
 function schoolRoleToZustand(role: string): UserRole {
-  return role.toLowerCase().replace('admin', 'admin') as UserRole;
+  const r = role.toLowerCase();
+  if (r === 'institute_admin' || r === 'admin') return 'institute_admin';
+  if (r === 'super_admin') return 'super_admin';
+  if (r === 'teacher') return 'teacher';
+  if (r === 'parent') return 'parent';
+  return 'student';
 }
 
 // ── Context ─────────────────────────────────────────────────────────────────
@@ -103,8 +111,16 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await authApi.loginSchoolWithPassword({ email, password });
+  const login = async (identifier: string, password: string) => {
+    const isEmail = identifier.includes('@');
+    const rawPhone = identifier.trim().replace(/[^\d+]/g, '');
+    const formattedPhone = rawPhone.startsWith('+') ? rawPhone : `+91${rawPhone}`;
+
+    const schoolPayload = isEmail
+      ? { email: identifier.trim(), password }
+      : { phone: formattedPhone, password };
+
+    const res = await authApi.loginSchoolWithPassword(schoolPayload);
     const u = res.user;
     const inst = res.institute;
 

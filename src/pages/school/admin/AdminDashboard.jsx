@@ -60,7 +60,7 @@ function StatCard({ title, value, icon: Icon, tone, delay, onClick }) {
         </div>
       </div>
       <p className="text-sm font-bold text-surface-500">{title}</p>
-      <p className="mt-1 font-display text-3xl font-extrabold text-surface-950">{formatNumber(value)}</p>
+      <p className="mt-1 font-display text-3xl font-bold text-surface-950">{formatNumber(value)}</p>
     </motion.div>
   );
 }

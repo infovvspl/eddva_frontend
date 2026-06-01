@@ -25,7 +25,7 @@ export default function AuditLogsPage() {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-2xl font-extrabold">Audit Logs</h1>
+        <h1 className="font-display text-2xl font-bold">Audit Logs</h1>
         <p className="text-sm text-surface-600">Search and review platform activities and security events.</p>
       </div>
 

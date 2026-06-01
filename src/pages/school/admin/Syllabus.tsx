@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GraduationCap, Plus, Search, Trash2, Edit } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import DataTable from '@/components/school/DataTable';
@@ -33,7 +33,7 @@ export default function Syllabus() {
   const fetchSyllabus = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/content/chapters');
+      const res = await api.get('/topics/chapters');
       if (Array.isArray(res.data)) {
         setSyllabusList(res.data);
       } else if (res.data && Array.isArray(res.data.data)) {
@@ -51,7 +51,7 @@ export default function Syllabus() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await api.get('/content/subjects');
+      const res = await api.get('/subjects');
       if (Array.isArray(res.data)) setSubjects(res.data);
       else if (res.data?.data) setSubjects(res.data.data);
     } catch (err) {}
@@ -94,10 +94,10 @@ export default function Syllabus() {
         status 
       };
       if (editingSyllabus) {
-        await api.patch(`/content/chapters/${editingSyllabus.id}`, payload);
+        await api.patch(`/topics/chapters/${editingSyllabus.id}`, payload);
         toast.success('Chapter updated successfully');
       } else {
-        await api.post('/content/chapters', payload);
+        await api.post('/topics/chapters', payload);
         toast.success('Chapter created successfully');
       }
       setIsModalOpen(false);
@@ -110,7 +110,7 @@ export default function Syllabus() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this syllabus entry?')) return;
     try {
-      await api.delete(`/content/chapters/${id}`);
+      await api.delete(`/topics/chapters/${id}`);
       toast.success('Syllabus entry deleted successfully');
       fetchSyllabus();
     } catch (err: any) {
@@ -178,7 +178,7 @@ export default function Syllabus() {
         </Button>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 max-w-md relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -187,7 +187,7 @@ export default function Syllabus() {
               placeholder="Search chapters..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-slate-100 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -258,7 +258,7 @@ export default function Syllabus() {
               ]}
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>

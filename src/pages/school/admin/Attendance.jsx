@@ -118,7 +118,7 @@ export default function Attendance() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold text-surface-950">Attendance</h1>
+          <h1 className="font-display text-3xl font-bold text-surface-950">Attendance</h1>
           <p className="mt-2 text-sm text-surface-500">Track student and teacher attendance.</p>
         </div>
         <button 

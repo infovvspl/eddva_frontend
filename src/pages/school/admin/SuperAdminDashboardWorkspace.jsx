@@ -71,7 +71,7 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
     <div className={`rounded-2xl border ${colorClass} p-4`}>
       <p className="text-xs font-semibold uppercase tracking-wider opacity-75">{label}</p>
       <div className="mt-2 flex items-end justify-between">
-        <p className="font-display text-2xl font-extrabold">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
+        <p className="font-display text-2xl font-bold">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
         <div className={`inline-flex items-center gap-0.5 rounded-full ${trend === 'up' ? 'bg-emerald-100' : 'bg-red-100'} px-2 py-1`}>
           <TrendIcon className={`h-3.5 w-3.5 ${trendClass}`} />
           <span className={`text-xs font-bold ${trendClass}`}>{trendValue}%</span>
@@ -96,16 +96,16 @@ function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, fo
       <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100" style={{ background: `linear-gradient(135deg, ${gradient[0]}20, ${gradient[1]}20)` }} />
       <div className="relative">
         <div className="flex items-start justify-between gap-3">
-          <div className={`grid h-12 w-12 place-items-center rounded-2xl ${gradient[2]} text-white shadow-md`}>
+          <div className={`grid h-12 w-12 place-items-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100`}>
             <Icon className="h-6 w-6" />
           </div>
-          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold ring-1 ${trendValue >= 0 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800' : 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-800'}`}>
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${trendValue >= 0 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800' : 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-800'}`}>
             <TrendIcon className="h-3 w-3" />
             {trendText}
           </span>
         </div>
         <p className="mt-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{title}</p>
-        <p className="mt-1 font-display text-3xl font-extrabold text-slate-950 dark:text-white">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
+        <p className="mt-1 font-display text-3xl font-bold text-slate-950 dark:text-white">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
         {subtext && <p className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">{subtext}</p>}
       </div>
     </motion.div>
@@ -176,7 +176,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
-              <h1 className="font-display text-4xl font-extrabold leading-tight">
+              <h1 className="font-display text-4xl font-bold leading-tight">
                 Welcome back, Super Admin 👋
               </h1>
               <p className="mt-4 text-lg font-medium text-white/90">
@@ -187,15 +187,15 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur">
                 <p className="text-xs font-bold uppercase tracking-wider text-white/70">Pending</p>
-                <p className="mt-2 font-display text-2xl font-extrabold">{stats?.pendingApprovals || 0}</p>
+                <p className="mt-2 font-display text-2xl font-bold">{stats?.pendingApprovals || 0}</p>
               </div>
               <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur">
                 <p className="text-xs font-bold uppercase tracking-wider text-white/70">Active</p>
-                <p className="mt-2 font-display text-2xl font-extrabold">{stats?.activeUsers || 0}</p>
+                <p className="mt-2 font-display text-2xl font-bold">{stats?.activeUsers || 0}</p>
               </div>
               <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur">
                 <p className="text-xs font-bold uppercase tracking-wider text-white/70">Revenue</p>
-                <p className="mt-2 font-display text-2xl font-extrabold">{formatCurrency(totalRevenue)}</p>
+                <p className="mt-2 font-display text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
               </div>
             </div>
           </div>
@@ -277,7 +277,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">User Growth Trend</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">User Growth Trend</h3>
               <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Active users over the last 6 months</p>
             </div>
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:ring-blue-800">
@@ -303,7 +303,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">Institute Registrations</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Institute Registrations</h3>
               <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">New institutes registered per week</p>
             </div>
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800">
@@ -337,7 +337,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">Revenue Trend</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Revenue Trend</h3>
               <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Monthly revenue and projections</p>
             </div>
             <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-800">
@@ -363,7 +363,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">AI Usage Trend</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">AI Usage Trend</h3>
               <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">API requests by hour</p>
             </div>
             <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-800">
@@ -401,7 +401,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         <div className="rounded-3xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="border-b border-slate-100 p-6 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">Recent Registrations</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
               <button className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View All</button>
             </div>
           </div>
@@ -427,7 +427,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         <div className="rounded-3xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="border-b border-slate-100 p-6 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">Support Tickets</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
               <button className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View All</button>
             </div>
           </div>
@@ -455,7 +455,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         <div className="rounded-3xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="border-b border-slate-100 p-6 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">Top Institutes</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
               <button className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View All</button>
             </div>
           </div>
@@ -506,7 +506,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
       >
         <div className="lg:col-span-2">
           <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <h3 className="mb-4 font-display text-lg font-extrabold text-slate-950 dark:text-white">Quick Actions</h3>
+            <h3 className="mb-4 font-display text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { label: 'Add Institute', icon: Building2, action: () => navigate('/school/admin/institutes') },
@@ -535,7 +535,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
               <Sparkles className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-display text-lg font-extrabold text-slate-950 dark:text-white">EDDVA AI Assistant</h3>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">EDDVA AI Assistant</h3>
               <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">Your intelligent admin companion</p>
               <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition hover:brightness-110">
                 Ask EDDVA AI

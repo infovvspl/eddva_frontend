@@ -43,7 +43,7 @@ export default function Settings() {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl font-extrabold text-surface-950">System Settings</h1>
+        <h1 className="font-display text-3xl font-bold text-surface-950">System Settings</h1>
         <p className="mt-2 text-sm font-medium text-surface-500">
           {isInstituteAdmin ? 'Review your tenant workspace and account controls.' : 'Configure the internal multi-tenant Super Admin console.'}
         </p>

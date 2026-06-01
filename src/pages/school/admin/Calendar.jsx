@@ -121,7 +121,7 @@ export default function Calendar() {
     <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Institutional Calendar</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Institutional Calendar</h1>
           <p className="text-sm font-bold text-slate-500 mt-1">Unified view for exams, meetings, and academic milestones.</p>
         </div>
         <div className="flex gap-3">
@@ -129,7 +129,7 @@ export default function Calendar() {
             <button onClick={prevMonth} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">
               <ChevronLeft size={20} className="text-slate-600 dark:text-slate-400" />
             </button>
-            <div className="px-6 flex items-center font-black text-xs uppercase tracking-widest text-slate-900 dark:text-white">
+            <div className="px-6 flex items-center font-bold tracking-tight text-xs uppercase tracking-widest text-slate-900 dark:text-white">
               {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </div>
             <button onClick={nextMonth} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">
@@ -138,7 +138,7 @@ export default function Calendar() {
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
+            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-bold tracking-tight text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
           >
             <Plus size={18} />
             Schedule Event
@@ -157,7 +157,7 @@ export default function Calendar() {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
-                    "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                    "px-5 py-2.5 rounded-xl text-[10px] font-bold tracking-tight uppercase tracking-widest transition-all",
                     selectedCategory === cat 
                       ? "bg-slate-900 text-white shadow-xl scale-105" 
                       : "bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-400"
@@ -170,7 +170,7 @@ export default function Calendar() {
 
             <div className="grid grid-cols-7 gap-4">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                <div key={day} className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest pb-4">{day}</div>
+                <div key={day} className="text-center text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest pb-4">{day}</div>
               ))}
               
               {calendarDays.map((day, idx) => {
@@ -190,7 +190,7 @@ export default function Calendar() {
                   >
                     <div className="flex justify-between items-center mb-3">
                       <span className={cn(
-                        "text-xs font-black",
+                        "text-xs font-bold tracking-tight",
                         isToday ? "text-blue-600" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
                       )}>{day.getDate()}</span>
                       {dayEvents.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />}
@@ -209,7 +209,7 @@ export default function Calendar() {
                         </div>
                       ))}
                       {dayEvents.length > 3 && (
-                        <p className="text-[9px] font-black text-slate-400 text-center">+{dayEvents.length - 3} more</p>
+                        <p className="text-[9px] font-bold tracking-tight text-slate-400 text-center">+{dayEvents.length - 3} more</p>
                       )}
                     </div>
                   </div>
@@ -222,7 +222,7 @@ export default function Calendar() {
         <div className="space-y-6">
           <div className="p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Upcoming Agenda</h3>
+              <h3 className="text-[11px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Upcoming Agenda</h3>
               <Clock className="text-slate-300" size={16} />
             </div>
 
@@ -233,10 +233,10 @@ export default function Calendar() {
                     "absolute left-0 top-1 w-1.5 h-full rounded-full",
                     ev.priority === 'HIGH' ? "bg-rose-500" : "bg-blue-500"
                   )} />
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                  <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
                     {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{ev.title}</h4>
+                  <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{ev.title}</h4>
                   <div className="mt-2 flex items-center gap-3">
                     {ev.location && (
                       <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
@@ -245,7 +245,7 @@ export default function Calendar() {
                       </div>
                     )}
                     <span className={cn(
-                      "px-2 py-0.5 rounded-md text-[9px] font-black uppercase",
+                      "px-2 py-0.5 rounded-md text-[9px] font-bold tracking-tight uppercase",
                       categoryStyles[ev.category]
                     )}>{ev.category}</span>
                   </div>
@@ -265,11 +265,11 @@ export default function Calendar() {
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={16} className="text-amber-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Academic Focus</span>
+                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-amber-500">Academic Focus</span>
               </div>
-              <h3 className="text-lg font-black mb-2">Final Exams Sync</h3>
+              <h3 className="text-lg font-bold tracking-tight mb-2">Final Exams Sync</h3>
               <p className="text-xs text-slate-400 font-medium leading-relaxed mb-6">Automated exam scheduling is active. Ensure all faculty meetings are cleared before the 24th.</p>
-              <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all">View Exam Rules</button>
+              <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest border border-white/10 transition-all">View Exam Rules</button>
             </div>
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function Calendar() {
         <form onSubmit={handleAddEvent} className="space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Event Title</label>
+              <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Event Title</label>
               <input 
                 type="text" 
                 required
@@ -292,7 +292,7 @@ export default function Calendar() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Start Time</label>
+                <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Start Time</label>
                 <input 
                   type="datetime-local"
                   required
@@ -302,7 +302,7 @@ export default function Calendar() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">End Time</label>
+                <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">End Time</label>
                 <input 
                   type="datetime-local"
                   required
@@ -315,7 +315,7 @@ export default function Calendar() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Category</label>
+                <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Category</label>
                 <select 
                   value={formData.category}
                   onChange={e => setFormData({...formData, category: e.target.value})}
@@ -327,7 +327,7 @@ export default function Calendar() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Priority</label>
+                <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Priority</label>
                 <select 
                   value={formData.priority}
                   onChange={e => setFormData({...formData, priority: e.target.value})}
@@ -342,7 +342,7 @@ export default function Calendar() {
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Location</label>
+              <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Location</label>
               <input 
                 type="text"
                 value={formData.location}
@@ -353,7 +353,7 @@ export default function Calendar() {
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Details</label>
+              <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Details</label>
               <textarea 
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
@@ -363,8 +363,8 @@ export default function Calendar() {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">Cancel</button>
-            <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-xs uppercase tracking-widest shadow-xl transition-all hover:brightness-110 active:scale-95">Save Event</button>
+            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold tracking-tight text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">Cancel</button>
+            <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold tracking-tight text-xs uppercase tracking-widest shadow-xl transition-all hover:brightness-110 active:scale-95">Save Event</button>
           </div>
         </form>
       </Modal>
