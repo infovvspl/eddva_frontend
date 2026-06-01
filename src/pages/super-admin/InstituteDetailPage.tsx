@@ -12,13 +12,13 @@ import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpda
 import { toast } from "sonner";
 
 const AI_FEATURE_OPTIONS = [
-  { key: "ai_study_assistant",    label: "AI Study Assistant",    desc: "AI tutor & interactive study sessions" },
-  { key: "ai_study_plan",         label: "AI Study Plan",         desc: "Personalized AI study roadmaps" },
-  { key: "ai_battle_arena",       label: "Battle Arena",          desc: "AI adaptive practice battles" },
-  { key: "ai_analytics",          label: "AI Analytics",          desc: "Weak topic detection & insights" },
-  { key: "ai_doubt_resolution",   label: "AI Doubt Resolution",   desc: "Instant AI answers to questions" },
+  { key: "ai_study_assistant", label: "AI Study Assistant", desc: "AI tutor & interactive study sessions" },
+  { key: "ai_study_plan", label: "AI Study Plan", desc: "Personalized AI study roadmaps" },
+  { key: "ai_battle_arena", label: "Battle Arena", desc: "AI adaptive practice battles" },
+  { key: "ai_analytics", label: "AI Analytics", desc: "Weak topic detection & insights" },
+  { key: "ai_doubt_resolution", label: "AI Doubt Resolution", desc: "Instant AI answers to questions" },
   { key: "ai_content_generation", label: "AI Content Generation", desc: "Auto-generate questions & quizzes" },
-  { key: "ai_speech_to_text",     label: "Speech-to-Text Notes",  desc: "Transcribe lectures into notes" },
+  { key: "ai_speech_to_text", label: "Speech-to-Text Notes", desc: "Transcribe lectures into notes" },
 ] as const;
 
 const InstituteDetailPage = () => {
@@ -157,11 +157,10 @@ const InstituteDetailPage = () => {
             <Button
               onClick={handleSuspendToggle}
               disabled={suspendMutation.isPending || activateMutation.isPending}
-              className={`h-10 md:h-12 px-5 md:px-8 rounded-2xl font-semibold shadow-lg transition-all text-sm ${
-                status === "suspended"
-                  ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
-                  : "bg-white text-gray-900 hover:bg-gray-100 shadow-slate-900/20"
-              }`}
+              className={`h-10 md:h-12 px-5 md:px-8 rounded-2xl font-semibold shadow-lg transition-all text-sm ${status === "suspended"
+                ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
+                : "bg-white text-gray-900 hover:bg-gray-100 shadow-slate-900/20"
+                }`}
             >
               {status === "suspended" ? <Shield className="w-4 h-4 mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
               {status === "suspended" ? "Reinstate Hub" : "Revoke Access"}
@@ -306,7 +305,7 @@ const InstituteDetailPage = () => {
                 <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <MonitorPlay className="w-5 h-5 text-indigo-600" /> Course-Wise Analytics
                 </h3>
-                
+
                 {(!detail?.courseAnalytics || detail.courseAnalytics.length === 0) ? (
                   <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-3xl">
                     <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-3" />
@@ -325,8 +324,8 @@ const InstituteDetailPage = () => {
                       </thead>
                       <tbody>
                         {detail.courseAnalytics.map((course: any) => (
-                          <tr 
-                            key={course.batch_id} 
+                          <tr
+                            key={course.batch_id}
                             onClick={() => navigate(`/super-admin/tenants/${id}/courses/${course.batch_id}`)}
                             className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
                           >
@@ -387,13 +386,11 @@ const InstituteDetailPage = () => {
                           key={feat.key}
                           type="button"
                           onClick={() => toggleAiFeature(feat.key)}
-                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
-                            checked ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white hover:border-slate-200"
-                          }`}
+                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${checked ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white hover:border-slate-200"
+                            }`}
                         >
-                          <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${
-                            checked ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
-                          }`}>
+                          <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
+                            }`}>
                             {checked && <Check className="w-3 h-3 text-white stroke-[3]" />}
                           </div>
                           <div>

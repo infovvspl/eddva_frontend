@@ -132,8 +132,8 @@ export default function Sidebar({ open, onClose }) {
                 collapsed && 'md:justify-center md:p-2'
               )}
             >
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-xs font-black text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                {(user?.name || 'S').charAt(0).toUpperCase()}
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-indigo-50 border border-indigo-200">
+                <img src="/images/student_avatar.png" alt="Student Avatar" className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal" />
               </div>
               <div className={cn('min-w-0 flex-1', collapsed && 'md:hidden')}>
                 <p className="truncate text-xs font-bold text-slate-950 dark:text-white">{user?.name || 'Student'}</p>

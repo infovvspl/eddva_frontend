@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Search, Trash2, Edit } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import DataTable from '@/components/school/DataTable';
@@ -28,7 +28,7 @@ export default function Subjects() {
   const fetchSubjects = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/content/subjects');
+      const res = await api.get('/subjects');
       if (Array.isArray(res.data)) {
         setSubjects(res.data);
       } else if (res.data && Array.isArray(res.data.data)) {
@@ -66,10 +66,10 @@ export default function Subjects() {
     try {
       const payload = { name, code, description, type };
       if (editingSubject) {
-        await api.patch(`/content/subjects/${editingSubject.id}`, payload);
+        await api.put(`/subjects/${editingSubject.id}`, payload);
         toast.success('Subject updated successfully');
       } else {
-        await api.post('/content/subjects', payload);
+        await api.post('/subjects', payload);
         toast.success('Subject created successfully');
       }
       setIsModalOpen(false);
@@ -82,7 +82,7 @@ export default function Subjects() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this subject?')) return;
     try {
-      await api.delete(`/content/subjects/${id}`);
+      await api.delete(`/subjects/${id}`);
       toast.success('Subject deleted successfully');
       fetchSubjects();
     } catch (err: any) {

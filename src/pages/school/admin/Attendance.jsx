@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit2, Trash2, Eye } from 'lucide-react';
 import api from '@/lib/api/school-client';
@@ -250,7 +250,7 @@ export default function Attendance() {
                     <div className="flex gap-2">
                       {record.user?.id ? (
                         <Link
-                          to={record.user.role === 'STUDENT' ? `/admin/students/${record.user.id}` : `/admin/teachers/${record.user.id}`}
+                          to={record.user.role === 'STUDENT' ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
                           className="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
                         >
                           <Eye className="h-4 w-4" />

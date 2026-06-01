@@ -19,9 +19,21 @@ const SchoolDetailPage = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/super-admin/school/institutes/${id}`);
+      const res = await apiClient.get(`/school/institutes/${id}`);
       const data = (res.data as any)?.data ?? res.data;
-      setInstitute(data);
+      if (data.name) {
+        setInstitute(data);
+      } else if (data.tenant) {
+        setInstitute({
+          ...data.tenant,
+          email: data.adminEmail || data.tenant.billingEmail,
+          phone: data.adminPhone,
+          tenant_domain: data.tenant.subdomain,
+          created_at: data.tenant.createdAt,
+        });
+      } else {
+        setInstitute(data);
+      }
     } catch {
       toast.error("Failed to load institute details");
     } finally {
@@ -33,7 +45,7 @@ const SchoolDetailPage = () => {
 
   const approve = async () => {
     try {
-      await apiClient.put(`/super-admin/school/institutes/${id}/approve`);
+      await apiClient.put(`/school/institutes/${id}/approve`);
       toast.success("Institute approved");
       load();
     } catch { toast.error("Failed to approve"); }
@@ -41,7 +53,7 @@ const SchoolDetailPage = () => {
 
   const reject = async () => {
     try {
-      await apiClient.put(`/super-admin/school/institutes/${id}/reject`);
+      await apiClient.put(`/school/institutes/${id}/reject`);
       toast.success("Institute suspended");
       load();
     } catch { toast.error("Failed to suspend"); }
@@ -50,7 +62,7 @@ const SchoolDetailPage = () => {
   const remove = async () => {
     if (!confirm("Delete this school institute? This action cannot be undone.")) return;
     try {
-      await apiClient.delete(`/super-admin/school/institutes/${id}`);
+      await apiClient.delete(`/school/institutes/${id}`);
       toast.success("Institute deleted");
       navigate("/super-admin/school");
     } catch { toast.error("Failed to delete"); }
