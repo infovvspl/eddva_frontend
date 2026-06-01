@@ -11,8 +11,8 @@ export default function SecurityCenterPage() {
     async function load() {
       try {
         const [scoreRes, sessionsRes] = await Promise.all([
-          api.get('/school/admin/security/score').catch(() => ({ data: { data: { score: 85 } } })),
-          api.get('/school/admin/security/sessions').catch(() => ({ data: { data: [] } })),
+          api.get('/admin/security/score').catch(() => ({ data: { data: { score: 85 } } })),
+          api.get('/admin/security/sessions').catch(() => ({ data: { data: [] } })),
         ]);
         setSummary(scoreRes.data?.data || scoreRes.data || { score: 0 });
         setSessions(sessionsRes.data?.data || sessionsRes.data || []);

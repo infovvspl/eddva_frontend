@@ -69,17 +69,17 @@ const SuperAdminDashboard = () => {
   };
 
   const metrics = [
-    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2,     color: "bg-indigo-500",  trend: "+12.5%", path: "/super-admin/tenants"     },
-    { label: "Active Faculty",     value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500",  trend: "+5.2%",  path: "/super-admin/users"        },
-    { label: "Global Students",    value: statsLoading ? "—" : formatCount(platformStats?.totalStudents),  icon: Users,         color: "bg-blue-500",    trend: "+18.4%", path: "/super-admin/enrollments"  },
-    { label: "Platform Revenue",   value: statsLoading ? "—" : formatCurrency(platformStats?.monthlyRevenue || platformStats?.platformMrr || platformStats?.mrrEstimate), icon: TrendingUp,    color: "bg-emerald-500", trend: "+22.1%", path: "/super-admin/stats"        },
+    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-500", trend: "+12.5%", path: "/super-admin/tenants" },
+    { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500", trend: "+5.2%", path: "/super-admin/users" },
+    { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-blue-500", trend: "+18.4%", path: "/super-admin/enrollments" },
+    { label: "Platform Revenue", value: statsLoading ? "—" : formatCurrency(platformStats?.monthlyRevenue || platformStats?.platformMrr || platformStats?.mrrEstimate), icon: TrendingUp, color: "bg-emerald-500", trend: "+22.1%", path: "/super-admin/stats" },
   ];
 
   const quickActions = [
-    { label: "Add New Institute",    icon: Building2, path: "/super-admin/tenants/new",    color: "bg-indigo-500" },
-    { label: "Manage Users",         icon: Users,     path: "/super-admin/users",           color: "bg-purple-500" },
-    { label: "Announcements",        icon: Megaphone, path: "/super-admin/announcements",   color: "bg-amber-500"  },
-    { label: "Platform Stats",       icon: Server,    path: "/super-admin/stats",           color: "bg-slate-700"  },
+    { label: "Add New Institute", icon: Building2, path: "/super-admin/school/new", color: "bg-indigo-500" },
+    { label: "Manage Users", icon: Users, path: "/super-admin/users", color: "bg-purple-500" },
+    { label: "Announcements", icon: Megaphone, path: "/super-admin/announcements", color: "bg-amber-500" },
+    { label: "Platform Stats", icon: Server, path: "/super-admin/stats", color: "bg-slate-700" },
   ];
 
   return (
@@ -106,7 +106,7 @@ const SuperAdminDashboard = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate("/super-admin/tenants/new")}
+          onClick={() => navigate("/super-admin/school/new")}
           className="flex items-center gap-2 h-11 px-6 rounded-xl bg-blue-600 text-white font-medium text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
         >
           <Plus className="w-4 h-4" /> Deploy New Institute
@@ -153,7 +153,7 @@ const SuperAdminDashboard = () => {
               <p className="text-sm text-slate-500 mt-1">Newly onboarded educational partners</p>
             </div>
             <button
-              onClick={() => navigate("/super-admin/tenants")}
+              onClick={() => navigate("/super-admin/school")}
               className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
             >
               VIEW ALL <ChevronRight className="w-3.5 h-3.5" />
@@ -265,8 +265,8 @@ const SuperAdminDashboard = () => {
             </div>
             <div className="space-y-4">
               {[
-                { label: "Institutes",  value: statsLoading ? "—" : String(platformStats?.totalTenants ?? 0), color: "bg-indigo-500" },
-                { label: "Students",    value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), color: "bg-blue-500"   },
+                { label: "Institutes", value: statsLoading ? "—" : String(platformStats?.totalTenants ?? 0), color: "bg-indigo-500" },
+                { label: "Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), color: "bg-blue-500" },
                 { label: "Enrollments", value: statsLoading ? "—" : formatCount(platformStats?.totalEnrollments), color: "bg-emerald-500" },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between">

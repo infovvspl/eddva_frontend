@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClipboardList, Plus, Search, Trash2, Edit } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import DataTable from '@/components/school/DataTable';
@@ -52,7 +52,7 @@ export default function Assignments() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await api.get('/content/subjects');
+      const res = await api.get('/subjects');
       if (Array.isArray(res.data)) setSubjects(res.data);
       else if (res.data?.data) setSubjects(res.data.data);
     } catch (err) {}

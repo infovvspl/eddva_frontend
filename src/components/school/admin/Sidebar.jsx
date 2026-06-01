@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Bell,
@@ -265,8 +265,14 @@ export default function Sidebar({ open, onClose }) {
                   collapsed && 'md:justify-center md:p-2'
                 )}
               >
-                {isInstitute ? (
-                  <InstituteLogo institute={institute} size="sm" />
+                {isTeacher ? (
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-emerald-50 border border-emerald-200">
+                    <img src="/images/teacher_avatar.png" alt="Teacher Avatar" className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
+                ) : isInstitute ? (
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-blue-50 border border-blue-200">
+                    <img src="/images/admin_avatar.png" alt="Admin Avatar" className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
                 ) : (
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-xs font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                     {(user?.name || 'T').charAt(0).toUpperCase()}

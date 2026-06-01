@@ -9,7 +9,7 @@ export default function RolesPage() {
     let mounted = true;
     async function load() {
       try {
-        const res = await api.get('/school/admin/roles');
+        const res = await api.get('/admin/roles');
         setRoles(res.data?.data || res.data || []);
       } catch (err) {
         console.error(err);

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle } from 'lucide-react';
 import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';
@@ -6,6 +6,7 @@ import Badge from '@/components/school/Badge';
 import ProgressBar from '@/components/school/ProgressBar';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
+import { useAuth } from '@/context/SchoolAuthContext';
 import './Dashboard.css';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -16,6 +17,7 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [upcomingClasses, setUpcomingClasses] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -130,6 +132,23 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-8 text-white shadow-xl shadow-teal-900/10 mb-2">
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight">Welcome back, {user?.name || 'Teacher'}! 👩‍🏫✨</h1>
+            <p className="mt-2 max-w-xl text-teal-50 font-medium leading-relaxed font-sans">
+              Empower your students with structured learning, live classes, and instant performance tracking.
+            </p>
+          </div>
+          <div className="relative shrink-0 select-none pointer-events-none drop-shadow-2xl">
+            <img src="/images/teacher_avatar.png" alt="Teacher Illustration" className="h-40 object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
+          </div>
+        </div>
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
+      </div>
+
       <div className="dashboard__stats">
         {dashboardStats.map((stat, idx) => (
           <StatCard
@@ -148,8 +167,8 @@ const Dashboard: React.FC = () => {
         <div className="dashboard__main">
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Attendance Summary</h3>
-              <Badge variant="info">This Week</Badge>
+              <h3>Attendance Summary 📊</h3>
+              <Badge variant="info">This Week 📅</Badge>
             </div>
             <div className="dashboard__attendance-list">
               {attendanceSummary.map((item) => (
@@ -167,8 +186,8 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Performance Trend</h3>
-              <Badge variant="success">Improving</Badge>
+              <h3>Performance Trend 📈</h3>
+              <Badge variant="success">Improving 🚀</Badge>
             </div>
             <div className="dashboard__chart-placeholder">
               <div className="dashboard__mini-chart">
@@ -191,8 +210,8 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Institute Updates</h3>
-              <Badge variant="purple">Live sync</Badge>
+              <h3>Institute Updates 📢</h3>
+              <Badge variant="purple">Live sync 🔄</Badge>
             </div>
             <div className="dashboard__updates-list">
               {liveUpdates.length > 0 ? liveUpdates.map((item) => (
@@ -216,8 +235,8 @@ const Dashboard: React.FC = () => {
         <div className="dashboard__side">
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Upcoming Classes</h3>
-              <Badge variant="purple">4 today</Badge>
+              <h3>Upcoming Classes 🏫</h3>
+              <Badge variant="purple">4 today ⏰</Badge>
             </div>
             <div className="dashboard__classes-list">
               {upcomingClasses.map((cls) => (
@@ -240,8 +259,8 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Notifications</h3>
-              <Badge variant="error">3 new</Badge>
+              <h3>Notifications 🔔</h3>
+              <Badge variant="error">3 new ⚡</Badge>
             </div>
             <div className="dashboard__notifications-list">
               {notifications.slice(0, 4).map((n) => (
@@ -260,13 +279,13 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Student Activity</h3>
+              <h3>Student Activity 🧑‍🎓</h3>
             </div>
             <div className="dashboard__activity-list">
               {studentActivityFeed.map((activity) => (
                 <div key={activity.id} className="dashboard__activity-item">
-                  <div className="dashboard__activity-avatar">
-                    {activity.student.split(' ').map((n: string) => n[0]).join('')}
+                  <div className="dashboard__activity-avatar overflow-hidden bg-indigo-50 border border-indigo-200">
+                    <img src="/assets/student_cartoon.png" alt="Student avatar" className="h-full w-full object-cover object-top scale-110" />
                   </div>
                   <div className="dashboard__activity-content">
                     <p><strong>{activity.student}</strong> {activity.action} <span className="dashboard__activity-target">{activity.target}</span></p>

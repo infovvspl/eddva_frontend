@@ -161,10 +161,10 @@ export default function Institutes() {
           search: search || undefined,
         },
       });
-      
+
       const data = res.data?.data;
       const rawList = Array.isArray(data) ? data : (data?.items || res.data?.items || []);
-      
+
       const mappedList = rawList.map(item => ({
         ...item,
         tenantDomain: item.tenantDomain || item.tenant_domain,
@@ -179,7 +179,7 @@ export default function Institutes() {
         adminEmail: item.adminEmail || item.admin_email,
         modulesPermissions: item.modulesPermissions || item.modules_permissions,
       }));
-      
+
       setList(mappedList);
     } catch (err) {
       console.error(err);
@@ -354,10 +354,10 @@ export default function Institutes() {
         pinCode: createForm.pinCode,
         logo: createForm.logo,
       });
-      
+
       let newInstitute = res.data?.institute || res.data?.data || res.data;
       if (Array.isArray(newInstitute)) newInstitute = newInstitute[0];
-      
+
       // 2. Immediately approve it since the user wants it auto-approved
       if (newInstitute?.id) {
         await api.put(`/institutes/${newInstitute.id}/approve`).catch(e => console.error("Auto-approve failed:", e));
@@ -736,13 +736,12 @@ export default function Institutes() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Confirm password"
-                          className={`${inputClass} pr-10 ${
-                            confirmPassword.length > 0
+                          className={`${inputClass} pr-10 ${confirmPassword.length > 0
                               ? createForm.adminPassword === confirmPassword
                                 ? 'border-emerald-400 focus:border-emerald-400 focus:ring-emerald-100'
                                 : 'border-red-400 focus:border-red-400 focus:ring-red-100'
                               : ''
-                          }`}
+                            }`}
                         />
                         <button
                           type="button"
@@ -753,9 +752,8 @@ export default function Institutes() {
                         </button>
                       </div>
                       {confirmPassword.length > 0 && (
-                        <p className={`text-xs font-semibold flex items-center gap-1.5 col-span-2 -mt-2 ${
-                          createForm.adminPassword === confirmPassword ? 'text-emerald-600' : 'text-red-500'
-                        }`}>
+                        <p className={`text-xs font-semibold flex items-center gap-1.5 col-span-2 -mt-2 ${createForm.adminPassword === confirmPassword ? 'text-emerald-600' : 'text-red-500'
+                          }`}>
                           {createForm.adminPassword === confirmPassword
                             ? <><CheckCircle className="h-3.5 w-3.5" /> Passwords match</>
                             : <><XCircle className="h-3.5 w-3.5" /> Passwords do not match</>

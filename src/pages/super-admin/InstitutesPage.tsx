@@ -1,9 +1,9 @@
-﻿import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronLeft, ChevronRight, MoreVertical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTenants } from "@/hooks/use-tenants";
+import { apiClient } from "@/lib/api/client";
 
 const InstitutesPage = () => {
   const navigate = useNavigate();
@@ -11,19 +11,38 @@ const InstitutesPage = () => {
   const [planFilter, setPlanFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [allInstitutes, setAllInstitutes] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
   const perPage = 8;
 
-  const { data: tenantsData, isLoading, error } = useTenants({
-    search: search || undefined,
-    plan: planFilter !== "all" ? planFilter : undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    page,
-    limit: perPage,
-  });
+  useEffect(() => {
+    let mounted = true;
+    setIsLoading(true);
+    const fetchInstitutes = async () => {
+      try {
+        const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
+        if (search) params.set("search", search);
+        if (statusFilter !== "all") params.set("status", statusFilter.toUpperCase());
+        const res = await apiClient.get(`/school/institutes?${params}`);
+        const responseData = res.data?.data?.data !== undefined ? res.data.data : res.data;
+        if (mounted) {
+          setAllInstitutes(responseData.data ?? responseData.items ?? []);
+          setTotalCount(responseData.total ?? responseData.meta?.total ?? 0);
+          setError(false);
+        }
+      } catch (err) {
+        if (mounted) setError(true);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+    fetchInstitutes();
+    return () => { mounted = false; };
+  }, [page, search, statusFilter]);
 
-  const allInstitutes = (tenantsData as any)?.items || (Array.isArray(tenantsData) ? tenantsData : []);
-  const totalCount = (tenantsData as any)?.meta?.total || allInstitutes.length;
-  const totalPages = (tenantsData as any)?.meta?.totalPages || Math.max(1, Math.ceil(totalCount / perPage));
+  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
 
   const planStyles: Record<string, string> = {
     starter: "bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
@@ -152,7 +171,7 @@ const InstitutesPage = () => {
                             </div>
                           </td>
                           <td className="px-5 md:px-7 py-4 text-xs font-medium text-slate-400 tracking-tight">
-                            {inst.subdomain}<span className="opacity-40">.edva.in</span>
+                            {inst.tenant_domain || inst.subdomain || "—"}<span className="opacity-40">.edva.in</span>
                           </td>
                           <td className="px-5 md:px-7 py-4">
                             <span className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg border ${planStyles[plan] || planStyles.growth}`}>

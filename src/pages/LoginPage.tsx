@@ -10,6 +10,7 @@ import * as authApi from "@/lib/api/auth";
 import type { SchoolLoginResponse } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
+import { getSubdomain } from "@/lib/tenant";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
@@ -55,7 +56,7 @@ const LoginPage = () => {
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
     let strictSubdomain = null;
-    
+
     if (parts.length === 2 && parts[1] === "localhost") {
       strictSubdomain = parts[0];
     } else if (parts.length >= 3 && !["localhost", "edva.in", "www"].includes(parts[0])) {
@@ -68,59 +69,59 @@ const LoginPage = () => {
   }, []);
 
   /* login state */
-  const [identifier,    setIdentifier]    = useState("");   // email or phone
-  const [password,      setPassword]      = useState("");
-  const [showPassword,  setShowPassword]  = useState(false);
-  const [loginLoading,  setLoginLoading]  = useState(false);
+  const [identifier, setIdentifier] = useState("");   // email or phone
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   /* forgot state */
-  const [forgotEmail,   setForgotEmail]   = useState("");
-  const [resetToken,    setResetToken]    = useState("");
-  const [newPassword,   setNewPassword]   = useState("");
-  const [confirmPw,     setConfirmPw]     = useState("");
-  const [showNew,       setShowNew]       = useState(false);
-  const [showConfirm,   setShowConfirm]   = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
 
   const [error, setError] = useState("");
 
   /* set-password state (first login) */
-  const [pendingUser,    setPendingUser]    = useState<User | null>(null);
-  const [setPwNew,       setSetPwNew]       = useState("");
-  const [setPwConfirm,   setSetPwConfirm]   = useState("");
-  const [showSetNew,     setShowSetNew]     = useState(false);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [setPwNew, setSetPwNew] = useState("");
+  const [setPwConfirm, setSetPwConfirm] = useState("");
+  const [showSetNew, setShowSetNew] = useState(false);
   const [showSetConfirm, setShowSetConfirm] = useState(false);
-  const [setPwLoading,   setSetPwLoading]   = useState(false);
+  const [setPwLoading, setSetPwLoading] = useState(false);
 
   const inputClass =
     "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-600 focus:bg-white focus:border-blue-400 focus:ring-8 focus:ring-blue-500/5 disabled:opacity-50 shadow-sm";
 
   /* ── helpers ── */
   const buildUser = (meData: any, loginMeta?: { onboardingRequired?: boolean }) => {
-    const profile    = meData.user;
+    const profile = meData.user;
     const studentRaw = (meData as any).student as any | undefined;
     return {
-      id:                 profile.id,
-      name:               profile.fullName || profile.name || "",
-      phone:              profile.phoneNumber || profile.phone || "",
-      email:              profile.email,
-      role:               profile.role as "super_admin" | "institute_admin" | "teacher" | "student",
-      avatar:             profile.avatar,
-      tenantId:           profile.tenantId,
-      tenantName:         profile.tenant?.name || profile.tenantName || "",
-      isFirstLogin:       profile.isFirstLogin ?? false,
+      id: profile.id,
+      name: profile.fullName || profile.name || "",
+      phone: profile.phoneNumber || profile.phone || "",
+      email: profile.email,
+      role: profile.role as "super_admin" | "institute_admin" | "teacher" | "student",
+      avatar: profile.avatar,
+      tenantId: profile.tenantId,
+      tenantName: profile.tenant?.name || profile.tenantName || "",
+      isFirstLogin: profile.isFirstLogin ?? false,
       onboardingRequired: loginMeta?.onboardingRequired ?? false,
-      teacherProfile:     meData.teacherProfile ?? null,
-      studentProfile:     studentRaw ? {
-        id:                    studentRaw.id ?? "",
-        batchId:               studentRaw.batchId,
-        examTarget:            studentRaw.examTarget ?? "",
-        currentClass:          studentRaw.currentClass ?? "",
-        examYear:              studentRaw.examYear,
-        diagnosticCompleted:   studentRaw.diagnosticCompleted ?? false,
-        streakDays:            studentRaw.streakDays ?? 0,
-        xpPoints:              studentRaw.xpPoints ?? 0,
-        currentEloTier:        studentRaw.currentEloTier,
+      teacherProfile: meData.teacherProfile ?? null,
+      studentProfile: studentRaw ? {
+        id: studentRaw.id ?? "",
+        batchId: studentRaw.batchId,
+        examTarget: studentRaw.examTarget ?? "",
+        currentClass: studentRaw.currentClass ?? "",
+        examYear: studentRaw.examYear,
+        diagnosticCompleted: studentRaw.diagnosticCompleted ?? false,
+        streakDays: studentRaw.streakDays ?? 0,
+        xpPoints: studentRaw.xpPoints ?? 0,
+        currentEloTier: studentRaw.currentEloTier,
       } : null,
     };
   };
@@ -144,18 +145,29 @@ const LoginPage = () => {
     };
   };
 
-  const redirectUser = (user: User, tenantType: "coaching" | "school") => {
+  const redirectUser = (user: User, tenantType: "coaching" | "school", targetTenantDomain?: string) => {
     setTenantType(tenantType);
     setUser(user);
     if (tenantType === "school") {
       const schoolPaths: Record<string, string> = {
-        super_admin:     "/school/admin",  // school-level super admin → school panel
+        super_admin: "/school/admin",
         institute_admin: "/school/admin",
-        teacher:         "/school/teacher",
-        student:         "/school/student",
-        parent:          "/school/parent",
+        teacher: "/school/teacher",
+        student: "/school/student",
+        parent: "/school/parent",
       };
-      navigate(schoolPaths[user.role] || "/school/student");
+
+      const targetPath = schoolPaths[user.role] || "/school/student";
+
+      if (targetTenantDomain && targetTenantDomain !== getSubdomain()) {
+        const protocol = window.location.protocol;
+        const host = window.location.host;
+        const baseHost = getSubdomain() ? host.replace(`${getSubdomain()}.`, "") : host;
+        window.location.href = `${protocol}//${targetTenantDomain}.${baseHost}${targetPath}`;
+        return;
+      }
+
+      navigate(targetPath);
       return;
     }
     // Coaching
@@ -165,8 +177,8 @@ const LoginPage = () => {
     }
     const paths: Record<string, string> = {
       institute_admin: "/admin",
-      teacher:         "/teacher",
-      student:         "/student",
+      teacher: "/teacher",
+      student: "/student",
     };
     navigate(returnTo || paths[user.role] || "/student");
   };
@@ -233,7 +245,7 @@ const LoginPage = () => {
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (setPwNew !== setPwConfirm) { setError("Passwords do not match."); return; }
-    if (setPwNew.length < 8)       { setError("Password must be at least 8 characters."); return; }
+    if (setPwNew.length < 8) { setError("Password must be at least 8 characters."); return; }
     setError(""); setSetPwLoading(true);
     try {
       await authApi.setPassword(setPwNew);
@@ -269,7 +281,7 @@ const LoginPage = () => {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPw) { setError("Passwords do not match."); return; }
-    if (newPassword.length < 8)    { setError("Password must be at least 8 characters."); return; }
+    if (newPassword.length < 8) { setError("Password must be at least 8 characters."); return; }
     setError(""); setForgotLoading(true);
     try {
       await authApi.resetPassword(resetToken, newPassword);
@@ -630,13 +642,13 @@ const LoginPage = () => {
           <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, -90, 0] }}
             transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 2 }}
             className="absolute bottom-[-20%] -left-32 h-[700px] w-[700px] rounded-full opacity-[0.06] blur-[100px]" style={{ background: P }} />
-          
+
           {/* dot grid pattern */}
           <div className="absolute inset-0 opacity-[0.4]"
-            style={{ 
-              backgroundImage: `radial-gradient(#CBD5E1 1px, transparent 1px)`, 
-              backgroundSize: "32px 32px" 
-            }} 
+            style={{
+              backgroundImage: `radial-gradient(#CBD5E1 1px, transparent 1px)`,
+              backgroundSize: "32px 32px"
+            }}
           />
         </div>
 

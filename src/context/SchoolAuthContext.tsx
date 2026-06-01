@@ -49,12 +49,12 @@ function zustandRoleToSchool(role: UserRole | string): SchoolUser['role'] {
   if (!role) return 'STUDENT';
   const r = role.toLowerCase();
   const map: Record<string, SchoolUser['role']> = {
-    super_admin:    'SUPER_ADMIN',
-    institute_admin:'INSTITUTE_ADMIN',
-    admin:          'INSTITUTE_ADMIN',
-    teacher:        'TEACHER',
-    student:        'STUDENT',
-    parent:         'PARENT',
+    super_admin: 'SUPER_ADMIN',
+    institute_admin: 'INSTITUTE_ADMIN',
+    admin: 'INSTITUTE_ADMIN',
+    teacher: 'TEACHER',
+    student: 'STUDENT',
+    parent: 'PARENT',
   };
   return map[r] ?? 'STUDENT';
 }
@@ -81,30 +81,30 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     clearAuth,
   } = useAuthStore();
 
-  const [loading, setLoading]       = useState(true);
-  const [institute, setInstitute]   = useState<SchoolInstitute | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [institute, setInstitute] = useState<SchoolInstitute | null>(null);
 
   // Derive the school-shaped user from Zustand
   const schoolUser: SchoolUser | null =
-    storeUser && tenantType === 'school'
+    storeUser && (tenantType === 'school' || storeUser.role === 'super_admin')
       ? {
-          id:          storeUser.id,
-          name:        storeUser.name,
-          email:       storeUser.email ?? '',
-          role:        zustandRoleToSchool(storeUser.role),
-          instituteId: storeUser.tenantId ?? null,
-          photo:       storeUser.avatar ?? null,
-          phone:       storeUser.phone ?? null,
-          isActive:    true,
-          institute,
-        }
+        id: storeUser.id,
+        name: storeUser.name,
+        email: storeUser.email ?? '',
+        role: zustandRoleToSchool(storeUser.role),
+        instituteId: storeUser.tenantId ?? null,
+        photo: storeUser.avatar ?? null,
+        phone: storeUser.phone ?? null,
+        isActive: true,
+        institute,
+      }
       : null;
 
   useEffect(() => {
     const token = tokenStorage.getAccess();
     if (token && storeUser && tenantType === 'school' && storeUser.tenantId) {
       setInstitute({
-        id:   storeUser.tenantId,
+        id: storeUser.tenantId,
         name: storeUser.tenantName ?? '',
       });
     }
@@ -121,30 +121,30 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       : { phone: formattedPhone, password };
 
     const res = await authApi.loginSchoolWithPassword(schoolPayload);
-    const u    = res.user;
+    const u = res.user;
     const inst = res.institute;
 
     setStoreUser({
-      id:                 u.id,
-      name:               u.name,
-      phone:              u.phone ?? '',
-      email:              u.email,
-      role:               (u.role.toLowerCase()) as UserRole,
-      avatar:             u.photo ?? undefined,
-      tenantId:           u.instituteId ?? undefined,
-      tenantName:         inst?.name ?? undefined,
-      isFirstLogin:       false,
+      id: u.id,
+      name: u.name,
+      phone: u.phone ?? '',
+      email: u.email,
+      role: (u.role.toLowerCase()) as UserRole,
+      avatar: u.photo ?? undefined,
+      tenantId: u.instituteId ?? undefined,
+      tenantName: inst?.name ?? undefined,
+      isFirstLogin: false,
       onboardingRequired: false,
-      teacherProfile:     null,
-      studentProfile:     null,
+      teacherProfile: null,
+      studentProfile: null,
     });
     setTenantType('school');
 
     if (inst) {
       setInstitute({
-        id:           inst.id,
-        name:         inst.name,
-        logo:         inst.logo ?? null,
+        id: inst.id,
+        name: inst.name,
+        logo: inst.logo ?? null,
         tenantDomain: inst.tenantDomain ?? null,
       });
     }
@@ -169,18 +169,18 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }) => {
     tokenStorage.setAccess(token);
     setStoreUser({
-      id:                 userData.id,
-      name:               userData.name,
-      phone:              userData.phone ?? '',
-      email:              userData.email,
-      role:               schoolRoleToZustand(userData.role),
-      avatar:             userData.photo ?? undefined,
-      tenantId:           userData.instituteId ?? undefined,
-      tenantName:         instData?.name ?? undefined,
-      isFirstLogin:       false,
+      id: userData.id,
+      name: userData.name,
+      phone: userData.phone ?? '',
+      email: userData.email,
+      role: schoolRoleToZustand(userData.role),
+      avatar: userData.photo ?? undefined,
+      tenantId: userData.instituteId ?? undefined,
+      tenantName: instData?.name ?? undefined,
+      isFirstLogin: false,
       onboardingRequired: false,
-      teacherProfile:     null,
-      studentProfile:     null,
+      teacherProfile: null,
+      studentProfile: null,
     });
     setTenantType('school');
     if (instData) setInstitute(instData);

@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
@@ -54,7 +54,7 @@ export default function Students() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
-  
+
   const years = ['ALL', '2023', '2024', '2025', '2026', '2027'];
 
   async function fetchStudents() {
@@ -147,12 +147,12 @@ export default function Students() {
             ? true
             : (s.createdAt ? new Date(s.createdAt).getFullYear().toString() === selectedYear : false);
         if (!q) return matchesYear;
-        
+
         const enrollment = s.studentProfile?.enrollmentNo || '';
         const cls = s.studentProfile?.section?.class?.name || '';
         const sec = s.studentProfile?.section?.name || '';
         const matchesQuery = [s.name, s.email, enrollment, cls, sec].some((v) => String(v || '').toLowerCase().includes(q));
-        
+
         return matchesYear && matchesQuery;
       });
   }, [searchQuery, statusFilter, students, selectedYear]);
@@ -269,7 +269,7 @@ export default function Students() {
             </div>
             <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="h-4 w-4 text-slate-400" />
-              <select 
+              <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 className="bg-transparent outline-none"
@@ -334,9 +334,8 @@ export default function Students() {
                     </td>
                     <td className="px-5 py-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${
-                          student.isActive ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
-                        }`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${student.isActive ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                          }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${student.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         {student.isActive ? 'Active' : 'Inactive'}
@@ -392,13 +391,13 @@ export default function Students() {
         </div>
       </div>
 
-      <Modal 
+      <Modal
         isOpen={isModalOpen}
         title={selectedStudent ? 'Edit Student Profile' : 'Register New Student'}
         onClose={() => setIsModalOpen(false)}
         size="full"
       >
-        <AddStudentMultiStep 
+        <AddStudentMultiStep
           student={selectedStudent}
           onSubmit={handleSubmit}
           onCancel={() => setIsModalOpen(false)}

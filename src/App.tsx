@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -28,7 +28,7 @@ const UsersPage = lazy(() => import("./pages/super-admin/UsersPage"));
 const AnnouncementsPage = lazy(() => import("./pages/super-admin/AnnouncementsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
-const SuperAdminLoginPage = lazy(() => import("./pages/super-admin/SuperAdminLoginPage"));
+
 const EnrollmentsPage = lazy(() => import("./pages/super-admin/EnrollmentsPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const BatchesPage = lazy(() => import("./pages/admin/BatchesPage"));
@@ -409,7 +409,7 @@ const SchoolRoutes = () => (
 // super-admin visiting on localhost (with a stored tenant subdomain) doesn't get 404.
 const SuperAdminRoutes = () => (
   <>
-    <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+    <Route path="/super-admin/login" element={<Navigate to="/login" replace />} />
     <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/super-admin" element={<SuperAdminDashboard />} />
       <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
