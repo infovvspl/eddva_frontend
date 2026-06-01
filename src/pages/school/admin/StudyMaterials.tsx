@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookMarked, Plus, Search, Trash2, Edit, Download } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import DataTable from '@/components/school/DataTable';
@@ -32,7 +32,7 @@ export default function StudyMaterials() {
   const fetchMaterials = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/school/admin/study-materials');
+      const res = await api.get('/materials');
       if (Array.isArray(res.data)) {
         setMaterials(res.data);
       } else if (res.data && Array.isArray(res.data.data)) {
@@ -61,8 +61,8 @@ export default function StudyMaterials() {
       setEditingMaterial(material);
       setTitle(material.title);
       setDescription(material.description || '');
-      setCategory(material.category);
-      setSubjectId(material.subjectId);
+      setCategory(material.fileType || material.category || 'Notes');
+      setSubjectId(material.subjectId || '');
       setFileUrl(material.fileUrl || '');
       setFileName(material.fileName || '');
     } else {
@@ -82,17 +82,17 @@ export default function StudyMaterials() {
     try {
       const payload = { 
         title, 
-        description, 
-        type: category.toLowerCase() === 'notes' ? 'notes' : 'dpp', // Match StudyMaterialType enum
-        exam: 'jee', // default mapping
-        subject: subjectId, // use subjectId from state
-        s3Key: fileUrl || 'placeholder/key',
+        fileName,
+        fileUrl,
+        fileType: category,
+        fileSize: 0,
+        chapterId: null
       };
       if (editingMaterial) {
-        await api.patch(`/admin/study-materials/${editingMaterial.id}`, payload);
+        await api.put(`/materials/${editingMaterial.id}`, payload);
         toast.success('Study material updated successfully');
       } else {
-        await api.post('/school/admin/study-materials', payload);
+        await api.post('/materials', payload);
         toast.success('Study material uploaded successfully');
       }
       setIsModalOpen(false);
@@ -105,7 +105,7 @@ export default function StudyMaterials() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this material?')) return;
     try {
-      await api.delete(`/admin/study-materials/${id}`);
+      await api.delete(`/materials/${id}`);
       toast.success('Study material deleted successfully');
       fetchMaterials();
     } catch (err: any) {
@@ -119,25 +119,34 @@ export default function StudyMaterials() {
 
   const columns = [
     { key: 'title', title: 'Title', width: '25%' },
-    { key: 'category', title: 'Category', width: '15%' },
+    { 
+      key: 'file_type', 
+      title: 'Category', 
+      width: '15%',
+      render: (val: any, row: any) => val || row.fileType || row.category || '-'
+    },
     { 
       key: 'subjectId', 
       title: 'Subject', 
       width: '20%',
       render: (val: any) => {
         const sub = subjects.find(s => s.id === val);
-        return sub ? sub.name : val;
+        return sub ? sub.name : (val || '-');
       }
     },
     { 
-      key: 'fileName', 
+      key: 'file_name', 
       title: 'File', 
       width: '20%',
-      render: (val: any, row: any) => val ? (
-        <a href={row.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-          <Download size={14} /> {val}
-        </a>
-      ) : 'No File'
+      render: (val: any, row: any) => {
+        const name = val || row.fileName;
+        const url = row.file_url || row.fileUrl;
+        return name ? (
+          <a href={url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+            <Download size={14} /> {name}
+          </a>
+        ) : 'No File';
+      }
     },
     {
       key: 'actions',

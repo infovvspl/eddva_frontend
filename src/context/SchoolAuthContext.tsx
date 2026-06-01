@@ -78,7 +78,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Derive the school-shaped user from Zustand
   const schoolUser: SchoolUser | null =
-    storeUser && tenantType === 'school'
+    storeUser && (tenantType === 'school' || storeUser.role === 'super_admin')
       ? {
         id: storeUser.id,
         name: storeUser.name,

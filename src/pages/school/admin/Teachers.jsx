@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
@@ -336,7 +336,7 @@ export default function Teachers() {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
-                          to={`/admin/teachers/${teacher.id}`}
+                          to={`/school/admin/teachers/${teacher.id}`}
                           className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Eye className="h-4 w-4" />

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -375,12 +375,12 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           <h3 className="mb-6 font-display text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
           <div className="grid grid-cols-3 gap-6">
             {[
-              { label: 'Add Student', icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50', to: '/admin/students' },
-              { label: 'Add Teacher', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', to: '/admin/teachers' },
-              { label: 'Schedule Live Class', icon: CalendarDays, color: 'text-amber-600', bg: 'bg-amber-50', to: '/admin/timetable' },
-              { label: 'Mark Attendance', icon: ClipboardList, color: 'text-violet-600', bg: 'bg-violet-50', to: '/admin/attendance' },
-              { label: 'Collect Fees', icon: CircleDollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', to: '/admin/fees' },
-              { label: 'Send Notice', icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', to: '/admin/notices' },
+              { label: 'Add Student', icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50', to: '/school/admin/students' },
+              { label: 'Add Teacher', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', to: '/school/admin/teachers' },
+              { label: 'Schedule Live Class', icon: CalendarDays, color: 'text-amber-600', bg: 'bg-amber-50', to: '/school/admin/timetable' },
+              { label: 'Mark Attendance', icon: ClipboardList, color: 'text-violet-600', bg: 'bg-violet-50', to: '/school/admin/attendance' },
+              { label: 'Collect Fees', icon: CircleDollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', to: '/school/admin/fees' },
+              { label: 'Send Notice', icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', to: '/school/admin/notices' },
             ].map((action) => (
               <button 
                 key={action.label} 
@@ -409,7 +409,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           color="bg-violet-100 text-violet-600"
           delay={0.02}
           sparklineData={sparkStudents}
-          onClick={() => navigate('/admin/students')}
+          onClick={() => navigate('/school/admin/students')}
         />
         <KpiCard
           title="Total Teachers"
@@ -419,7 +419,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           color="bg-emerald-100 text-emerald-600"
           delay={0.06}
           sparklineData={sparkTeachers}
-          onClick={() => navigate('/admin/teachers')}
+          onClick={() => navigate('/school/admin/teachers')}
         />
         <KpiCard
           title="Live Classes"
@@ -429,7 +429,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           color="bg-blue-100 text-blue-600"
           delay={0.1}
           sparklineData={[{v:10},{v:15},{v:12},{v:18},{v:14},{v:20},{v:16}]}
-          onClick={() => navigate('/admin/timetable')}
+          onClick={() => navigate('/school/admin/timetable')}
         />
         <KpiCard
           title="Attendance Today"
@@ -440,7 +440,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           color="bg-emerald-100 text-emerald-600"
           delay={0.14}
           sparklineData={attendanceSeries.map(s => ({v: s.att}))}
-          onClick={() => navigate('/admin/attendance')}
+          onClick={() => navigate('/school/admin/attendance')}
         />
         <KpiCard
           title="Fees Collected"
@@ -450,7 +450,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           color="bg-orange-100 text-orange-600"
           delay={0.18}
           sparklineData={feesSeries.map(s => ({v: s.collected}))}
-          onClick={() => navigate('/admin/reports')}
+          onClick={() => navigate('/school/admin/reports')}
         />
         <KpiCard
           title="Online Now"
@@ -460,7 +460,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           color="bg-emerald-100 text-emerald-600"
           delay={0.22}
           sparklineData={[{v:5},{v:8},{v:12},{v:7},{v:15},{v:10},{v:18}]}
-          onClick={() => navigate('/admin/communications')}
+          onClick={() => navigate('/school/admin/communications')}
         />
       </div>
 
@@ -628,7 +628,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                       </p>
                     </div>
                     <button 
-                      onClick={() => navigate('/admin/students')}
+                      onClick={() => navigate('/school/admin/students')}
                       className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-100 transition-colors"
                     >
                       View
@@ -763,7 +763,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           </ul>
           <button
             type="button"
-            onClick={() => navigate('/admin/notices')}
+            onClick={() => navigate('/school/admin/notices')}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(37,99,235,0.15)] py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-50 dark:border-slate-600 dark:text-sky-300 dark:hover:bg-slate-800"
           >
             Open notices

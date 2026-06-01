@@ -29,18 +29,18 @@ function StatCard({
       )}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300", color)}>
+        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300 shadow-sm", color)}>
           <Icon className="w-5 h-5 text-white" />
         </div>
         {trend && (
-          <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+          <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full ring-1 ring-emerald-600/10">
             {trend}
           </span>
         )}
       </div>
-      <h4 className="text-2xl font-black text-slate-900 tracking-tight">{value}</h4>
-      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">{label}</p>
-      {onClick && <ChevronRight className="absolute top-5 right-4 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />}
+      <h4 className="text-3xl font-bold text-slate-800 tracking-tight">{value}</h4>
+      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mt-1">{label}</p>
+      {onClick && <ChevronRight className="absolute top-6 right-5 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />}
     </motion.div>
   );
 }
@@ -61,14 +61,14 @@ const SuperAdminDashboard = () => {
   };
 
   const metrics = [
-    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2,     color: "bg-indigo-500",  trend: "+12.5%", path: "/super-admin/tenants"     },
+    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2,     color: "bg-indigo-500",  trend: "+12.5%", path: "/super-admin/school"     },
     { label: "Active Faculty",     value: "1.2K",                                                         icon: GraduationCap, color: "bg-purple-500",  trend: "+5.2%",  path: "/super-admin/users"        },
     { label: "Global Students",    value: statsLoading ? "—" : formatCount(platformStats?.totalStudents),  icon: Users,         color: "bg-blue-500",    trend: "+18.4%", path: "/super-admin/enrollments"  },
     { label: "Platform Revenue",   value: "₹42.8L",                                                       icon: TrendingUp,    color: "bg-emerald-500", trend: "+22.1%", path: "/super-admin/stats"        },
   ];
 
   const quickActions = [
-    { label: "Add New Institute",    icon: Building2, path: "/super-admin/tenants/new",    color: "bg-indigo-500" },
+    { label: "Add New Institute",    icon: Building2, path: "/super-admin/school/new",    color: "bg-indigo-500" },
     { label: "Manage Users",         icon: Users,     path: "/super-admin/users",           color: "bg-purple-500" },
     { label: "Announcements",        icon: Megaphone, path: "/super-admin/announcements",   color: "bg-amber-500"  },
     { label: "Platform Stats",       icon: Server,    path: "/super-admin/stats",           color: "bg-slate-700"  },
@@ -84,22 +84,22 @@ const SuperAdminDashboard = () => {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.25em] text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
-              <Activity className="w-3 h-3" /> Real-Time Analytics
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 ring-1 ring-blue-500/20 px-3 py-1 rounded-full">
+              <Activity className="w-3.5 h-3.5" /> Real-Time Analytics
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-800">
             Welcome,{" "}
             <span className="text-blue-600">{user?.name || "Super Admin"}</span>
           </h1>
-          <p className="text-sm font-semibold text-slate-400 mt-1">
+          <p className="text-base text-slate-500 mt-2">
             Managing global edtech infrastructure and institute growth.
           </p>
         </div>
         <button
-          onClick={() => navigate("/super-admin/tenants/new")}
-          className="flex items-center gap-2 h-11 px-6 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all"
+          onClick={() => navigate("/super-admin/school/new")}
+          className="flex items-center gap-2 h-11 px-6 rounded-xl bg-blue-600 text-white font-medium text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
         >
           <Plus className="w-4 h-4" /> Deploy New Institute
         </button>
@@ -141,12 +141,12 @@ const SuperAdminDashboard = () => {
         >
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <h3 className="font-black text-lg text-slate-900">Recent Deployments</h3>
-              <p className="text-xs font-semibold text-slate-400">Newly onboarded educational partners</p>
+              <h3 className="font-bold text-lg text-slate-800">Recent Deployments</h3>
+              <p className="text-sm text-slate-500 mt-1">Newly onboarded educational partners</p>
             </div>
             <button
-              onClick={() => navigate("/super-admin/tenants")}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-xl border-2 border-slate-100 text-xs font-black text-slate-600 hover:bg-slate-50 transition-all"
+              onClick={() => navigate("/super-admin/school")}
+              className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
             >
               VIEW ALL <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -156,9 +156,9 @@ const SuperAdminDashboard = () => {
             <table className="w-full text-left min-w-[480px]">
               <thead>
                 <tr className="bg-slate-50/60">
-                  <th className="px-6 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Institute</th>
-                  <th className="px-6 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan</th>
-                  <th className="px-6 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Students</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Institute</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+                  <th className="px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Students</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -182,24 +182,24 @@ const SuperAdminDashboard = () => {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                        <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">
                           {(inst.name || "?")[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-slate-900">{inst.name}</p>
-                          <p className="text-[10px] font-semibold text-slate-400">{inst.subdomain}.edva.in</p>
+                          <p className="text-sm font-semibold text-slate-800">{inst.name}</p>
+                          <p className="text-xs text-slate-500">{inst.subdomain}.edva.in</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-600">
+                      <span className="text-[11px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-600">
                         {inst.plan || "Starter"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="text-sm font-black text-slate-900">
+                      <p className="text-sm font-medium text-slate-800">
                         {(inst.studentCount ?? 0).toLocaleString()}
-                        <span className="text-slate-400 font-semibold"> / {(inst.maxStudents ?? 500).toLocaleString()}</span>
+                        <span className="text-slate-400"> / {(inst.maxStudents ?? 500).toLocaleString()}</span>
                       </p>
                       <div className="mt-1.5 h-1.5 w-20 ml-auto bg-slate-100 rounded-full overflow-hidden">
                         <div
@@ -223,50 +223,50 @@ const SuperAdminDashboard = () => {
           className="space-y-4"
         >
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Control Hub</h4>
-            <div className="space-y-2.5">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">Control Hub</h4>
+            <div className="space-y-3">
               {quickActions.map((act) => (
                 <button
                   key={act.label}
                   onClick={() => navigate(act.path)}
-                  className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all group"
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 hover:shadow-sm transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm", act.color)}>
+                    <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm", act.color)}>
                       <act.icon className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-black text-slate-700 group-hover:text-slate-900 uppercase tracking-tight">
+                    <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
                       {act.label}
                     </span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
                 </button>
               ))}
             </div>
           </div>
 
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-blue-600" />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs font-black text-slate-900">Platform Health</p>
-                <p className="text-[10px] font-semibold text-emerald-500">All systems operational</p>
+                <p className="text-sm font-semibold text-slate-800">Platform Health</p>
+                <p className="text-xs text-emerald-600 font-medium">All systems operational</p>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {[
                 { label: "Institutes",  value: statsLoading ? "—" : String(platformStats?.totalTenants ?? 0), color: "bg-indigo-500" },
                 { label: "Students",    value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), color: "bg-blue-500"   },
                 { label: "Enrollments", value: statsLoading ? "—" : formatCount(platformStats?.totalEnrollments), color: "bg-emerald-500" },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <div className={cn("w-2 h-2 rounded-full", row.color)} />
-                    <span className="text-xs font-semibold text-slate-500">{row.label}</span>
+                    <span className="text-sm text-slate-600">{row.label}</span>
                   </div>
-                  <span className="text-xs font-black text-slate-900">{row.value}</span>
+                  <span className="text-sm font-medium text-slate-800">{row.value}</span>
                 </div>
               ))}
             </div>

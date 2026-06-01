@@ -36,10 +36,10 @@ const SchoolPage = () => {
       const params = new URLSearchParams({ page: String(page), limit: "15" });
       if (search)       params.set("search", search);
       if (statusFilter) params.set("status", statusFilter.toLowerCase());
-      const res = await apiClient.get(`/admin/tenants?${params}`);
-      const data = (res.data as any)?.data ?? res.data;
-      setInstitutes(data.items ?? data.data ?? []);
-      setTotal(data.meta?.total ?? data.total ?? 0);
+      const res = await apiClient.get(`/school/institutes?${params}`);
+      const responseData = res.data?.data?.data !== undefined ? res.data.data : res.data;
+      setInstitutes(responseData.data ?? responseData.items ?? []);
+      setTotal(responseData.total ?? responseData.meta?.total ?? 0);
     } catch {
       toast.error("Failed to load school institutes");
     } finally {
@@ -51,7 +51,7 @@ const SchoolPage = () => {
 
   const approve = async (id: string) => {
     try {
-      await apiClient.patch(`/admin/tenants/${id}`, { status: "active" });
+      await apiClient.put(`/school/institutes/${id}/approve`);
       toast.success("Institute approved");
       load();
     } catch { toast.error("Failed to approve"); }
@@ -59,7 +59,7 @@ const SchoolPage = () => {
 
   const reject = async (id: string) => {
     try {
-      await apiClient.patch(`/admin/tenants/${id}`, { status: "suspended" });
+      await apiClient.put(`/school/institutes/${id}/reject`);
       toast.success("Institute suspended");
       load();
     } catch { toast.error("Failed to reject"); }
@@ -68,7 +68,7 @@ const SchoolPage = () => {
   const remove = async (id: string) => {
     if (!confirm("Delete this school institute?")) return;
     try {
-      await apiClient.delete(`/admin/tenants/${id}`);
+      await apiClient.delete(`/school/institutes/${id}`);
       toast.success("Institute deleted");
       load();
     } catch { toast.error("Failed to delete"); }
@@ -79,7 +79,7 @@ const SchoolPage = () => {
       <div className="max-w-6xl mx-auto">
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-6">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">School Institutes</h1>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">School Institutes</h1>
             <p className="text-slate-400 text-sm font-semibold mt-1">Manage all registered school tenants</p>
           </div>
           <Button onClick={() => navigate("/super-admin/school/new")} className="flex items-center gap-2 font-bold">
@@ -117,7 +117,7 @@ const SchoolPage = () => {
         ) : (
           <div className="rounded-2xl border border-slate-100 overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-black uppercase tracking-wider">
+              <thead className="bg-slate-50 text-slate-500 text-xs font-medium uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-3 text-left">Institute</th>
                   <th className="px-4 py-3 text-left">Email</th>

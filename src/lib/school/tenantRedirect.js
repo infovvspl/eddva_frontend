@@ -121,60 +121,28 @@ export function readTenantAuthPayload(search = window.location.search) {
 
 /** Post-login navigation for merged school_platform routes */
 export function finishAuthRedirect(tenantDomain, navigate, role) {
-  const onTenant = isTenantHost();
-
   if (role === 'SUPER_ADMIN') {
-    if (onTenant) {
-      window.location.replace(`${getBaseAppUrl()}/super-admin/dashboard`);
-      return;
-    }
     navigate('/super-admin/dashboard', { replace: true });
     return;
   }
 
   if (role === 'INSTITUTE_ADMIN') {
-    if (!onTenant && tenantDomain) {
-      const handoff = buildTenantAuthCompleteUrl(tenantDomain, {
-        token: localStorage.getItem('token'),
-        user: JSON.parse(localStorage.getItem('user') || 'null'),
-        institute: JSON.parse(localStorage.getItem('institute') || 'null'),
-        tenantDomain,
-      });
-      if (handoff) {
-        window.location.replace(handoff);
-        return;
-      }
-    }
-    navigate('/admin', { replace: true });
+    navigate('/school/admin', { replace: true });
     return;
   }
 
   if (role === 'TEACHER') {
-    if (!onTenant && tenantDomain) {
-      const tenantTeacherUrl = `${formatTenantUrl(tenantDomain)}/teacher`;
-      if (tenantTeacherUrl) {
-        window.location.replace(tenantTeacherUrl);
-        return;
-      }
-    }
-    navigate('/teacher', { replace: true });
+    navigate('/school/teacher', { replace: true });
     return;
   }
 
   if (role === 'STUDENT') {
-    if (!onTenant && tenantDomain) {
-      const tenantStudentUrl = `${formatTenantUrl(tenantDomain)}/student`;
-      if (tenantStudentUrl) {
-        window.location.replace(tenantStudentUrl);
-        return;
-      }
-    }
-    navigate('/student', { replace: true });
+    navigate('/school/student', { replace: true });
     return;
   }
 
   if (role === 'PARENT') {
-    navigate('/login', { replace: true });
+    navigate('/school/parent', { replace: true });
     return;
   }
 

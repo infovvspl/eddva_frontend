@@ -15,6 +15,7 @@ import {
 } from "@/hooks/use-admin";
 import type { Subject, Chapter, Topic } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { toast } from "sonner";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 import { isYouTubeUrl, isValidYouTubeLectureUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
@@ -529,6 +530,7 @@ function RecordedDetailsForm({
   courseId: string;
 }) {
   const [source, setSource] = useState<"upload" | "youtube">("upload");
+  const sttEnabled = useHasAiFeature("ai_speech_to_text");
   const set = (k: keyof typeof value) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange({ ...value, [k]: e.target.value });
 
@@ -536,7 +538,11 @@ function RecordedDetailsForm({
     <div className="px-6 pt-5 pb-4 space-y-4">
       <div>
         <p className="text-sm font-black text-slate-700 mb-1">Upload a Recorded Lecture</p>
-        <p className="text-xs text-slate-400">Upload a video or paste YouTube — AI uses speech-to-text or captions for notes and quizzes.</p>
+        <p className="text-xs text-slate-400">
+          {sttEnabled
+            ? "Upload a video or paste YouTube — AI uses speech-to-text or captions for notes and quizzes."
+            : "Upload a video or paste a YouTube link for students to watch."}
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -594,8 +600,12 @@ function RecordedDetailsForm({
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-[11px] leading-relaxed text-amber-700">
             {source === "youtube"
-              ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} Use topic resources for playback-only links.`
-              : "Large files upload to your storage, then run the same AI pipeline as teachers."}
+              ? (sttEnabled
+                  ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} Use topic resources for playback-only links.`
+                  : "Use topic resources for playback-only links.")
+              : (sttEnabled
+                  ? "Large files upload to your storage, then run the same AI pipeline as teachers."
+                  : "Large files upload to your storage for students to watch.")}
           </p>
         </div>
 
@@ -636,7 +646,11 @@ function RecordedDetailsForm({
         </div>
         <div>
           <p className="text-xs font-black text-blue-700">Recorded Lecture</p>
-          <p className="text-[11px] text-blue-500 mt-0.5">File uploads or YouTube links enable AI notes, in-video quizzes, and progress tracking.</p>
+          <p className="text-[11px] text-blue-500 mt-0.5">
+            {sttEnabled
+              ? "File uploads or YouTube links enable AI notes, in-video quizzes, and progress tracking."
+              : "File uploads or YouTube links let students watch with progress tracking."}
+          </p>
         </div>
       </div>
     </div>

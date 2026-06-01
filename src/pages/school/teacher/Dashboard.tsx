@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle } from 'lucide-react';
 import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';
@@ -148,8 +148,8 @@ const Dashboard: React.FC = () => {
         <div className="dashboard__main">
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Attendance Summary</h3>
-              <Badge variant="info">This Week</Badge>
+              <h3>Attendance Summary 📊</h3>
+              <Badge variant="info">This Week 📅</Badge>
             </div>
             <div className="dashboard__attendance-list">
               {attendanceSummary.map((item) => (
@@ -167,8 +167,8 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Performance Trend</h3>
-              <Badge variant="success">Improving</Badge>
+              <h3>Performance Trend 📈</h3>
+              <Badge variant="success">Improving 🚀</Badge>
             </div>
             <div className="dashboard__chart-placeholder">
               <div className="dashboard__mini-chart">
@@ -191,8 +191,8 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Institute Updates</h3>
-              <Badge variant="purple">Live sync</Badge>
+              <h3>Institute Updates 📢</h3>
+              <Badge variant="purple">Live sync 🔄</Badge>
             </div>
             <div className="dashboard__updates-list">
               {liveUpdates.length > 0 ? liveUpdates.map((item) => (
@@ -216,8 +216,8 @@ const Dashboard: React.FC = () => {
         <div className="dashboard__side">
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Upcoming Classes</h3>
-              <Badge variant="purple">4 today</Badge>
+              <h3>Upcoming Classes 🏫</h3>
+              <Badge variant="purple">4 today ⏰</Badge>
             </div>
             <div className="dashboard__classes-list">
               {upcomingClasses.map((cls) => (
@@ -240,8 +240,8 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Notifications</h3>
-              <Badge variant="error">3 new</Badge>
+              <h3>Notifications 🔔</h3>
+              <Badge variant="error">3 new ⚡</Badge>
             </div>
             <div className="dashboard__notifications-list">
               {notifications.slice(0, 4).map((n) => (
@@ -260,7 +260,7 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>Student Activity</h3>
+              <h3>Student Activity 🧑‍🎓</h3>
             </div>
             <div className="dashboard__activity-list">
               {studentActivityFeed.map((activity) => (

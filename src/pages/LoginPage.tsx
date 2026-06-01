@@ -10,6 +10,7 @@ import * as authApi from "@/lib/api/auth";
 import type { SchoolLoginResponse } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
+import { getSubdomain } from "@/lib/tenant";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 
@@ -125,18 +126,29 @@ const LoginPage = () => {
     };
   };
 
-  const redirectUser = (user: User, tenantType: "coaching" | "school") => {
+  const redirectUser = (user: User, tenantType: "coaching" | "school", targetTenantDomain?: string) => {
     setTenantType(tenantType);
     setUser(user);
     if (tenantType === "school") {
       const schoolPaths: Record<string, string> = {
-        super_admin:     "/school/admin",  // school-level super admin → school panel
+        super_admin:     "/school/admin",
         institute_admin: "/school/admin",
         teacher: "/school/teacher",
         student: "/school/student",
         parent: "/school/parent",
       };
-      navigate(schoolPaths[user.role] || "/school/student");
+      
+      const targetPath = schoolPaths[user.role] || "/school/student";
+
+      if (targetTenantDomain && targetTenantDomain !== getSubdomain()) {
+        const protocol = window.location.protocol;
+        const host = window.location.host;
+        const baseHost = getSubdomain() ? host.replace(`${getSubdomain()}.`, "") : host;
+        window.location.href = `${protocol}//${targetTenantDomain}.${baseHost}${targetPath}`;
+        return;
+      }
+      
+      navigate(targetPath);
       return;
     }
     // Coaching
@@ -159,10 +171,24 @@ const LoginPage = () => {
     setError(""); setLoginLoading(true);
     try {
       const isEmail = identifier.includes("@");
+      
+      // If logging in with email, prioritize school login first
+      if (isEmail) {
+        try {
+          const schoolRes = await authApi.loginSchoolWithPassword({ email: identifier.trim(), password });
+          const schoolUser = buildSchoolUser(schoolRes);
+          redirectUser(schoolUser, "school", schoolRes.tenantDomain);
+          return;
+        } catch (schoolErr: any) {
+          const status = schoolErr?.response?.status;
+          if (status !== 401 && status !== 404 && status !== 400 && status !== 500) {
+            throw schoolErr;
+          }
+          // If school login fails, fall through to coaching login
+        }
+      }
 
-      // Try coaching login first
-      let coachingFailed = false;
-      let coachingErrMsg = "";
+      // Try coaching login
       try {
         const loginRes = await authApi.loginWithPassword(
           isEmail
@@ -178,26 +204,7 @@ const LoginPage = () => {
         }
         return;
       } catch (coachingErr: any) {
-        const status = coachingErr?.response?.status;
-        // Fall through to school login only on auth failures with email input
-        if (isEmail && (status === 401 || status === 404 || status === 400 || status === 500)) {
-          coachingFailed = true;
-          coachingErrMsg = coachingErr?.response?.data?.message || "";
-        } else {
-          throw coachingErr;
-        }
-      }
-
-      if (!coachingFailed) return;
-
-      // School login fallback (email only)
-      try {
-        const schoolRes = await authApi.loginSchoolWithPassword({ email: identifier.trim(), password });
-        const schoolUser = buildSchoolUser(schoolRes);
-        redirectUser(schoolUser, "school");
-      } catch (schoolErr: any) {
-        const schoolMsg = schoolErr?.response?.data?.message || "";
-        setError(schoolMsg || coachingErrMsg || "Invalid credentials. Please try again.");
+        setError(coachingErr?.response?.data?.message || coachingErr?.message || "Invalid credentials. Please try again.");
       }
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || "Invalid credentials. Please try again.");

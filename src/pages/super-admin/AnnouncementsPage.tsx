@@ -57,14 +57,14 @@ const AnnouncementsPage = () => {
       <div className="max-w-4xl mx-auto">
         <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
-            <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 mb-2">Platform Communication</h2>
-            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-black text-slate-900 tracking-tight leading-tight">Broadcast Hub</h1>
+            <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Platform Communication</h2>
+            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Broadcast Hub</h1>
             <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing global announcements and system alerts</p>
           </div>
           <Button
             onClick={() => setShowForm(!showForm)}
-            className={`h-10 md:h-12 px-6 md:px-8 rounded-2xl font-black flex gap-2 transition-all active:scale-95 text-sm shadow-2xl ${
-              showForm ? "bg-white border-2 border-slate-100 text-slate-400 hover:text-slate-900 shadow-none" : "bg-white text-gray-900 hover:bg-gray-100"
+            className={`h-10 md:h-12 px-6 md:px-8 rounded-2xl font-semibold flex gap-2 transition-all active:scale-95 text-sm shadow-lg ${
+              showForm ? "bg-white border border-slate-200 text-slate-400 hover:text-slate-900 shadow-none" : "bg-white text-gray-900 hover:bg-gray-100"
             }`}
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4 stroke-[3]" />}
@@ -81,7 +81,7 @@ const AnnouncementsPage = () => {
                   <div className="h-10 w-10 md:h-12 md:w-12 rounded-[16px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
                     <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
                   </div>
-                  <h3 className="text-lg md:text-xl font-black">Draft Broadcast Message</h3>
+                  <h3 className="text-lg md:text-xl font-bold">Draft Broadcast Message</h3>
                 </div>
 
                 {error && (
@@ -92,13 +92,13 @@ const AnnouncementsPage = () => {
 
                 <div className="space-y-8">
                   <div className="space-y-3">
-                    <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Broadcast Headline</label>
-                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Scheduled Infrastructure Maintenance" className="w-full h-16 px-6 bg-white border-2 border-slate-100 rounded-[24px] text-[16px] font-bold text-slate-900 focus:border-indigo-600 outline-none transition-all shadow-sm" />
+                    <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Headline</label>
+                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Scheduled Infrastructure Maintenance" className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[16px] font-bold text-slate-900 focus:border-indigo-600 outline-none transition-all shadow-sm" />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Target Audience</label>
-                      <select value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} className="w-full h-16 px-6 bg-white border-2 border-slate-100 rounded-[24px] text-[15px] font-black text-slate-600 outline-none cursor-pointer shadow-sm">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Target Audience</label>
+                      <select value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-600 outline-none cursor-pointer shadow-sm">
                         <option value="all">Global Ecosystem</option>
                         <option value="student">Academic Hub (Students)</option>
                         <option value="teacher">Faculty Hub (Teachers)</option>
@@ -106,16 +106,16 @@ const AnnouncementsPage = () => {
                       </select>
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Expiration Protocol</label>
-                      <input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} className="w-full h-16 px-6 bg-white border-2 border-slate-100 rounded-[24px] text-[15px] font-bold text-slate-900 outline-none shadow-sm" />
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Expiration Protocol</label>
+                      <input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-bold text-slate-900 outline-none shadow-sm" />
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Broadcast Content</label>
-                    <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Detailed announcement details..." rows={5} className="w-full px-6 py-5 bg-white border-2 border-slate-100 rounded-[32px] text-[16px] font-semibold text-slate-900 focus:border-indigo-600 outline-none transition-all resize-none shadow-sm" />
+                    <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Content</label>
+                    <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Detailed announcement details..." rows={5} className="w-full px-6 py-5 bg-white border border-slate-200 rounded-[32px] text-[16px] font-semibold text-slate-900 focus:border-indigo-600 outline-none transition-all resize-none shadow-sm" />
                   </div>
                   <div className="flex justify-end pt-4">
-                    <Button onClick={handlePublish} disabled={createAnnouncement.isPending || !form.title || !form.body} className="h-16 px-10 bg-white text-gray-900 rounded-[24px] font-black text-[16px] hover:bg-gray-100 shadow-2xl transition-all flex gap-3">
+                    <Button onClick={handlePublish} disabled={createAnnouncement.isPending || !form.title || !form.body} className="h-16 px-10 bg-white text-gray-900 rounded-2xl font-semibold text-[16px] hover:bg-gray-100 shadow-lg transition-all flex gap-3">
                       {createAnnouncement.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-5 h-5 stroke-[2.5]" />}
                       Execute Broadcast
                     </Button>
@@ -132,7 +132,7 @@ const AnnouncementsPage = () => {
             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-900 scale-75">
                <Filter className="w-4 h-4" />
             </div>
-            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Governance Feed</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Governance Feed</span>
           </div>
         </div>
 
@@ -146,7 +146,7 @@ const AnnouncementsPage = () => {
         ) : (
           <div className="space-y-6">
             {announcementList.map((a: any, i: number) => (
-              <motion.div key={a.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="group bg-white p-5 md:p-7 rounded-[24px] md:rounded-[44px] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all relative overflow-hidden">
+              <motion.div key={a.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="group bg-white p-5 md:p-7 rounded-2xl md:rounded-[44px] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all relative overflow-hidden">
                 <div className="flex items-start justify-between relative z-10">
                   <div className="flex items-start gap-4">
                     <div className="w-11 h-11 rounded-[16px] bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors">
@@ -154,8 +154,8 @@ const AnnouncementsPage = () => {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h4 className="text-base md:text-[17px] font-black text-slate-900 tracking-tight leading-tight">{a.title}</h4>
-                        <span className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border ${getBadgeColor(a.targetRole || "all")}`}>
+                        <h4 className="text-base md:text-[17px] font-bold text-slate-900 tracking-tight leading-tight">{a.title}</h4>
+                        <span className={`px-4 py-1.5 rounded-lg text-[10px] font-medium uppercase tracking-wider border ${getBadgeColor(a.targetRole || "all")}`}>
                           {a.targetRole || "Global Access"}
                         </span>
                       </div>
@@ -163,12 +163,12 @@ const AnnouncementsPage = () => {
                       <div className="flex items-center gap-8 pt-2">
                         <div className="flex items-center gap-2 text-slate-400">
                           <Calendar className="w-4 h-4" />
-                          <span className="text-[11px] font-black uppercase tracking-tight">{a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>
+                          <span className="text-[11px] font-medium uppercase tracking-tight">{a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>
                         </div>
                         {(a.sentCount != null || a.readCount != null) && (
                           <div className="flex items-center gap-2 text-slate-400">
                             <Eye className="w-4 h-4" />
-                            <span className="text-[11px] font-black uppercase tracking-tight">{(a.sentCount ?? a.readCount ?? 0).toLocaleString()} Verified Reach</span>
+                            <span className="text-[11px] font-medium uppercase tracking-tight">{(a.sentCount ?? a.readCount ?? 0).toLocaleString()} Verified Reach</span>
                           </div>
                         )}
                       </div>
@@ -177,7 +177,7 @@ const AnnouncementsPage = () => {
                   <button
                     onClick={() => handleDelete(a.id)}
                     disabled={deleteAnnouncement.isPending}
-                    className="p-3 text-gray-800 hover:text-rose-600 hover:bg-rose-50 rounded-[14px] transition-all"
+                    className="p-3 text-gray-800 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                   >
                     <Trash2 className="w-6 h-6" />
                   </button>
@@ -189,7 +189,7 @@ const AnnouncementsPage = () => {
         )}
 
         <div className="mt-16 p-8 rounded-[36px] bg-slate-50 border border-slate-100 flex items-center gap-6">
-          <div className="w-12 h-12 rounded-[18px] bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-sm">
             <Info className="w-6 h-6" />
           </div>
           <p className="text-xs font-bold text-slate-500 leading-relaxed italic">

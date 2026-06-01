@@ -1,9 +1,9 @@
-﻿import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronLeft, ChevronRight, MoreVertical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTenants } from "@/hooks/use-tenants";
+import { apiClient } from "@/lib/api/client";
 
 const InstitutesPage = () => {
   const navigate = useNavigate();
@@ -11,19 +11,38 @@ const InstitutesPage = () => {
   const [planFilter, setPlanFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [allInstitutes, setAllInstitutes] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
   const perPage = 8;
 
-  const { data: tenantsData, isLoading, error } = useTenants({
-    search: search || undefined,
-    plan: planFilter !== "all" ? planFilter : undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    page,
-    limit: perPage,
-  });
+  useEffect(() => {
+    let mounted = true;
+    setIsLoading(true);
+    const fetchInstitutes = async () => {
+      try {
+        const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
+        if (search) params.set("search", search);
+        if (statusFilter !== "all") params.set("status", statusFilter.toUpperCase());
+        const res = await apiClient.get(`/school/institutes?${params}`);
+        const responseData = res.data?.data?.data !== undefined ? res.data.data : res.data;
+        if (mounted) {
+          setAllInstitutes(responseData.data ?? responseData.items ?? []);
+          setTotalCount(responseData.total ?? responseData.meta?.total ?? 0);
+          setError(false);
+        }
+      } catch (err) {
+        if (mounted) setError(true);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+    fetchInstitutes();
+    return () => { mounted = false; };
+  }, [page, search, statusFilter]);
 
-  const allInstitutes = (tenantsData as any)?.items || (Array.isArray(tenantsData) ? tenantsData : []);
-  const totalCount = (tenantsData as any)?.meta?.total || allInstitutes.length;
-  const totalPages = (tenantsData as any)?.meta?.totalPages || Math.max(1, Math.ceil(totalCount / perPage));
+  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
 
   const planStyles: Record<string, string> = {
     starter: "bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
@@ -47,19 +66,19 @@ const InstitutesPage = () => {
       <div className="max-w-7xl mx-auto">
         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
           <div>
-            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-black text-slate-900 tracking-tight leading-tight">Institute Directory</h1>
+            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Institute Directory</h1>
             <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold uppercase tracking-tight">Active Governance & Compliance Monitoring</p>
           </div>
           <Button
             onClick={() => navigate("/super-admin/tenants/new")}
-            className="h-10 md:h-12 px-6 md:px-10 rounded-[20px] bg-white hover:bg-gray-100 text-gray-900 font-black shadow-2xl transition-all text-sm flex gap-2"
+            className="h-10 md:h-12 px-6 md:px-10 rounded-2xl bg-white hover:bg-gray-100 text-gray-900 font-semibold shadow-lg transition-all text-sm flex gap-2"
           >
             <Plus className="w-4 h-4 md:w-5 md:h-5 stroke-[3]" /> Deploy New Institute
           </Button>
         </header>
 
         {/* Filters */}
-        <div className="bg-slate-50/50 p-4 md:p-5 rounded-[24px] md:rounded-[32px] border border-slate-100 mb-6 flex flex-wrap items-center gap-4">
+        <div className="bg-slate-50/50 p-4 md:p-5 rounded-2xl md:rounded-[32px] border border-slate-100 mb-6 flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
             <input
@@ -74,7 +93,7 @@ const InstitutesPage = () => {
             <select
               value={planFilter}
               onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}
-              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-black text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
+              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-medium text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
             >
               <option value="all">Global Pricing</option>
               <option value="STARTER">Starter Tier</option>
@@ -85,7 +104,7 @@ const InstitutesPage = () => {
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-black text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
+              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-medium text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
             >
               <option value="all">Platform Status</option>
               <option value="active">Operational</option>
@@ -114,12 +133,12 @@ const InstitutesPage = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-secondary/50">
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Institute</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Subdomain</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Plan</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Capacity</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-widest text-right">Actions</th>
+                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Institute</th>
+                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Subdomain</th>
+                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Plan</th>
+                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Capacity</th>
+                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Status</th>
+                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -140,28 +159,28 @@ const InstitutesPage = () => {
                         >
                           <td className="px-5 md:px-7 py-4">
                             <div className="flex items-center gap-3 md:gap-4">
-                              <div className="w-10 h-10 rounded-[14px] bg-slate-100 flex items-center justify-center text-slate-400 font-black group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm shrink-0">
+                              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-semibold group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm shrink-0">
                                 {(inst.name || "?")[0]}
                               </div>
                               <div>
-                                <p className="text-sm font-black text-slate-900 leading-tight mb-0.5">{inst.name}</p>
+                                <p className="text-sm font-medium text-slate-900 leading-tight mb-0.5">{inst.name}</p>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                   {inst.createdAt ? `Partnered ${new Date(inst.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` : "Onboarding"}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-5 md:px-7 py-4 text-xs font-black text-slate-400 tracking-tight">
-                            {inst.subdomain}<span className="opacity-40">.edva.in</span>
+                          <td className="px-5 md:px-7 py-4 text-xs font-medium text-slate-400 tracking-tight">
+                            {inst.tenant_domain || inst.subdomain || "—"}<span className="opacity-40">.edva.in</span>
                           </td>
                           <td className="px-5 md:px-7 py-4">
-                            <span className={`text-[10px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-lg border ${planStyles[plan] || planStyles.growth}`}>
+                            <span className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg border ${planStyles[plan] || planStyles.growth}`}>
                               {plan}
                             </span>
                           </td>
                           <td className="px-5 md:px-7 py-4">
                             <div className="flex flex-col gap-1.5 w-32 md:w-36">
-                              <div className="flex justify-between text-[11px] font-black text-slate-900 tracking-tight">
+                              <div className="flex justify-between text-[11px] font-medium text-slate-900 tracking-tight">
                                 <span>{students.toLocaleString()}</span>
                                 <span className="text-gray-600">/ {limit.toLocaleString()}</span>
                               </div>
@@ -175,7 +194,7 @@ const InstitutesPage = () => {
                             </div>
                           </td>
                           <td className="px-5 md:px-7 py-4">
-                            <div className={`text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 w-fit px-3 py-1 rounded-full border shadow-sm ${statusStyles[status] || statusStyles.active}`}>
+                            <div className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-1.5 w-fit px-3 py-1 rounded-full border shadow-sm ${statusStyles[status] || statusStyles.active}`}>
                               <div className="w-1.5 h-1.5 rounded-full bg-current" />
                               {status === 'active' ? 'Operational' : status === 'trial' ? 'Trial Hub' : 'Suspended'}
                             </div>
@@ -200,7 +219,7 @@ const InstitutesPage = () => {
           {/* Pagination */}
           {!isLoading && allInstitutes.length > 0 && (
             <div className="px-8 py-6 bg-secondary/30 flex items-center justify-between border-t border-border">
-              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Showing <span className="text-foreground">{(page - 1) * perPage + 1}</span> to{" "}
                 <span className="text-foreground">{Math.min(page * perPage, totalCount)}</span> of {totalCount}
               </p>

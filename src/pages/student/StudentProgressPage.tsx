@@ -30,6 +30,7 @@ import {
   type WeakTopic,
 } from "@/lib/api/student";
 import { useProgressReport } from "@/hooks/use-student";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdvancedMetricCard } from "@/components/teacher/AdvancedMetricCard";
@@ -86,6 +87,10 @@ export default function StudentProgressPage() {
   const navigate = useNavigate();
   const batchId = searchParams.get("batchId") ?? undefined;
   const [activeTab, setActiveTab] = useState("performance");
+  const aiPlanEnabled = useHasAiFeature("ai_study_plan");
+  const progressTabs = aiPlanEnabled
+    ? ["performance", "engagement", "study-plan", "syllabus"]
+    : ["performance", "engagement", "syllabus"];
   const [timeRange, setTimeRange] = useState("week");
 
   // Custom Tooltip for Charts
@@ -218,7 +223,7 @@ export default function StudentProgressPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center border-b border-border">
           <TabsList className="bg-transparent h-auto p-0 gap-8">
-            {["performance", "engagement", "study-plan", "syllabus"].map((t) => (
+            {progressTabs.map((t) => (
               <TabsTrigger 
                 key={t} 
                 value={t} 
@@ -340,7 +345,7 @@ export default function StudentProgressPage() {
                     {consistency > 0 && <> Your consistency score is <span className="font-bold text-foreground">{consistency}%</span>.</>}
                   </p>
                   <div className="flex flex-wrap gap-3 pt-1">
-                    {weakCount > 0 && (
+                    {weakCount > 0 && aiPlanEnabled && (
                       <button onClick={() => navigate("/student/study-plan")}
                         className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow shadow-primary/20 hover:scale-105 transition-transform">
                         Fix Weak Topics

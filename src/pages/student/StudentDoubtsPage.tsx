@@ -17,6 +17,7 @@ import {
 import { StudentDoubt, DoubtStatus } from "@/lib/api/student";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 import { cn } from "@/lib/utils";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { toast } from "sonner";
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -115,7 +116,8 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
   const parsedAi = parseAiAnswer(doubt.aiExplanation);
 
   const s = STATUS[doubt.status];
-  const canAskAi = doubt.status === "open" || doubt.status === "escalated";
+  const aiDoubtEnabled = useHasAiFeature("ai_doubt_resolution");
+  const canAskAi = aiDoubtEnabled && (doubt.status === "open" || doubt.status === "escalated");
 
   return (
     <div className={cn(

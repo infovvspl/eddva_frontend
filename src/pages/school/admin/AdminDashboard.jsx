@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Area,
@@ -103,14 +103,14 @@ export default function Dashboard() {
   const handleCardClick = (cardTitle) => {
     if (isInstituteAdmin) {
       if (cardTitle === 'Total Teachers') {
-        navigate('/admin/teachers');
+        navigate('/school/admin/teachers');
       } else if (cardTitle === 'Total Students') {
-        navigate('/admin/students');
+        navigate('/school/admin/students');
       } else if (cardTitle === 'Student Attendance %') {
-        navigate('/admin/reports');
+        navigate('/school/admin/reports');
         localStorage.setItem('selectedReport', 'Student Attendance');
       } else if (cardTitle === 'Teacher Attendance %') {
-        navigate('/admin/reports');
+        navigate('/school/admin/reports');
         localStorage.setItem('selectedReport', 'Teacher Attendance');
       }
     }

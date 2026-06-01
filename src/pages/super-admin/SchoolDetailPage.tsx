@@ -19,9 +19,11 @@ const SchoolDetailPage = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/admin/tenants/${id}`);
+      const res = await apiClient.get(`/school/institutes/${id}`);
       const data = (res.data as any)?.data ?? res.data;
-      if (data.tenant) {
+      if (data.name) {
+        setInstitute(data);
+      } else if (data.tenant) {
         setInstitute({
           ...data.tenant,
           email: data.adminEmail || data.tenant.billingEmail,
@@ -43,7 +45,7 @@ const SchoolDetailPage = () => {
 
   const approve = async () => {
     try {
-      await apiClient.patch(`/admin/tenants/${id}`, { status: "active" });
+      await apiClient.put(`/school/institutes/${id}/approve`);
       toast.success("Institute approved");
       load();
     } catch { toast.error("Failed to approve"); }
@@ -51,7 +53,7 @@ const SchoolDetailPage = () => {
 
   const reject = async () => {
     try {
-      await apiClient.patch(`/admin/tenants/${id}`, { status: "suspended" });
+      await apiClient.put(`/school/institutes/${id}/reject`);
       toast.success("Institute suspended");
       load();
     } catch { toast.error("Failed to suspend"); }
@@ -60,7 +62,7 @@ const SchoolDetailPage = () => {
   const remove = async () => {
     if (!confirm("Delete this school institute? This action cannot be undone.")) return;
     try {
-      await apiClient.delete(`/admin/tenants/${id}`);
+      await apiClient.delete(`/school/institutes/${id}`);
       toast.success("Institute deleted");
       navigate("/super-admin/school");
     } catch { toast.error("Failed to delete"); }
@@ -85,7 +87,7 @@ const SchoolDetailPage = () => {
         <div className="rounded-2xl border border-slate-100 p-6">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-black text-slate-900">{institute.name}</h1>
+              <h1 className="text-2xl font-bold text-slate-900">{institute.name}</h1>
               <span className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${STATUS_STYLES[institute.status] ?? ""}`}>
                 {institute.status}
               </span>
@@ -123,7 +125,7 @@ const SchoolDetailPage = () => {
               ["Registered",    institute.created_at ? new Date(institute.created_at).toLocaleDateString() : "—"],
             ].map(([label, value]) => (
               <div key={label} className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-1">{label}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">{label}</p>
                 <p className="text-sm font-semibold text-slate-900 break-all">{value}</p>
               </div>
             ))}

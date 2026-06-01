@@ -9,7 +9,7 @@ export default function AuditLogsPage() {
     let mounted = true;
     async function load() {
       try {
-        const res = await api.get('/school/admin/audit-logs');
+        const res = await api.get('/admin/audit-logs');
         setLogs(res.data?.data || res.data || []);
       } catch (err) {
         console.error(err);
@@ -54,13 +54,13 @@ export default function AuditLogsPage() {
                 )}
                 {logs.map((l) => (
                   <tr key={l.id} className="border-t">
-                    <td className="px-2 py-3">{new Date(l.createdAt).toLocaleString()}</td>
-                    <td className="px-2 py-3">{l.userName || l.user || 'System'}</td>
-                    <td className="px-2 py-3">{l.role || '-'}</td>
-                    <td className="px-2 py-3">{l.module}</td>
-                    <td className="px-2 py-3">{l.action}</td>
+                    <td className="px-2 py-3">{new Date(l.created_at || l.createdAt).toLocaleString()}</td>
+                    <td className="px-2 py-3 font-semibold">{l.user_name || l.userName || 'System'}</td>
+                    <td className="px-2 py-3"><span className="rounded-full bg-blue-100 text-blue-800 px-2 py-1 text-xs font-bold">{l.user_role || l.role || '-'}</span></td>
+                    <td className="px-2 py-3 text-xs font-mono text-gray-500">{l.action.split('_').slice(1).join('_') || 'SYSTEM'}</td>
+                    <td className="px-2 py-3 font-bold text-slate-700">{l.action.split('_')[0]}</td>
                     <td className="px-2 py-3">{l.ipAddress || '-'}</td>
-                    <td className="px-2 py-3">{l.status || 'OK'}</td>
+                    <td className="px-2 py-3"><span className="text-emerald-600 font-bold">✓ Success</span></td>
                   </tr>
                 ))}
               </tbody>

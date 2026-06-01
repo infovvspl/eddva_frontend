@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   CheckCircle,
@@ -154,7 +154,7 @@ export default function Institutes() {
           search: search || undefined,
         },
       });
-      setList(res.data?.data?.items || res.data?.items || []);
+      setList(res.data?.data?.items || res.data?.items || res.data?.data || []);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load institutes.');

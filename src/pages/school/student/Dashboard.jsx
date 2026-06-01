@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import './Dashboard.css';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -62,11 +63,21 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Welcome Banner */}
       <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-8 text-white shadow-xl shadow-blue-900/20">
+        <div className="bubbles-container">
+          <div className="bubble"></div>
+          <div className="bubble"></div>
+          <div className="bubble"></div>
+          <div className="bubble"></div>
+          <div className="bubble"></div>
+          <div className="bubble"></div>
+          <div className="bubble"></div>
+        </div>
+        
         <div className="relative z-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           <div className="col-span-1 lg:col-span-2">
-            <h1 className="text-3xl font-black tracking-tight">Welcome back, {user?.name}! 👋</h1>
+            <h1 className="text-3xl font-black tracking-tight">Welcome back, {user?.name}! 👋🌟</h1>
             <p className="mt-2 max-w-xl text-blue-100 font-medium leading-relaxed">
-              You're on a {currentStreak}-day learning streak. Keep up the momentum! You have {pendingLectures} lectures pending and have attempted {testsAttempted} tests so far.
+              You're on a {currentStreak}-day learning streak! 🔥 Keep up the awesome momentum! 🚀 You have {pendingLectures} lectures pending 📚 and have attempted {testsAttempted} tests so far 🏆.
             </p>
             
             <div className="mt-8 flex flex-wrap gap-4">
@@ -85,7 +96,7 @@ export default function Dashboard() {
                   <Star size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Total XP</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Total XP 🦄</p>
                   <p className="text-lg font-bold">{xpTotal} XP</p>
                 </div>
               </div>
@@ -96,7 +107,7 @@ export default function Dashboard() {
                     <Trophy size={20} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Global Rank</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Global Rank 👑</p>
                     <p className="text-lg font-bold">#{globalRank}</p>
                   </div>
                 </div>
@@ -105,7 +116,7 @@ export default function Dashboard() {
           </div>
           
           <div className="hidden items-center justify-center md:flex">
-            {/* Can add 3D illustration or character here */}
+            <div className="text-6xl animate-bounce">🎓✨</div>
           </div>
         </div>
         
