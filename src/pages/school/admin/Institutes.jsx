@@ -1,7 +1,9 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   CheckCircle,
+  Eye,
+  EyeOff,
   ExternalLink,
   ImagePlus,
   Mail,
@@ -12,9 +14,11 @@ import {
   UploadCloud,
   X,
   XCircle,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { formatTenantUrl } from '@/lib/school/tenantRedirect';
@@ -94,6 +98,9 @@ export default function Institutes() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyForm);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -144,9 +151,9 @@ export default function Institutes() {
     };
   }
 
-  async function loadInstitutes() {
+  async function loadInstitutes(showLoader = true) {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
       const res = await api.get('/institutes', {
         params: {
           perPage: 1000,
@@ -154,19 +161,36 @@ export default function Institutes() {
           search: search || undefined,
         },
       });
-      setList(res.data?.data?.items || res.data?.items || []);
+      
+      const data = res.data?.data;
+      const rawList = Array.isArray(data) ? data : (data?.items || res.data?.items || []);
+      
+      const mappedList = rawList.map(item => ({
+        ...item,
+        tenantDomain: item.tenantDomain || item.tenant_domain,
+        principalName: item.principalName || item.principal_name,
+        registrationNo: item.registrationNo || item.registration_no,
+        plotNo: item.plotNo || item.plot_no,
+        streetName: item.streetName || item.street_name,
+        landMark: item.landMark || item.land_mark,
+        pinCode: item.pinCode || item.pin_code,
+        academicSession: item.academicSession || item.academic_session,
+        adminName: item.adminName || item.admin_name,
+        adminEmail: item.adminEmail || item.admin_email,
+        modulesPermissions: item.modulesPermissions || item.modules_permissions,
+      }));
+      
+      setList(mappedList);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load institutes.');
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadInstitutes();
-    const interval = setInterval(loadInstitutes, 30000);
-    return () => clearInterval(interval);
+    loadInstitutes(true);
   }, [statusFilter]);
 
   const filteredList = useMemo(() => {
@@ -194,6 +218,26 @@ export default function Institutes() {
       await loadInstitutes();
     } catch (err) {
       const message = err.response?.data?.message || err.response?.data?.error || 'Unable to update institute.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteInstitute(instituteId) {
+    if (!window.confirm("Are you sure you want to permanently delete this institute? This action cannot be undone.")) return;
+    try {
+      setSaving(true);
+      await api.delete(`/institutes/${instituteId}`);
+      toast.success("Institute deleted successfully");
+      dispatchDataChanged('institutes');
+      if (selectedInstitute?.id === instituteId) {
+        setSelectedInstitute(null);
+      }
+      await loadInstitutes();
+    } catch (err) {
+      const message = err.response?.data?.message || err.response?.data?.error || 'Unable to delete institute.';
       setError(message);
       toast.error(message);
     } finally {
@@ -272,16 +316,81 @@ export default function Institutes() {
 
   async function createInstitute(event) {
     event.preventDefault();
-    setSaving(true);
     setError('');
 
+    if (!createForm.adminPassword) {
+      setError('Please enter a temporary password.');
+      return;
+    }
+    if (createForm.adminPassword.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (createForm.adminPassword !== confirmPassword) {
+      setError('Passwords do not match. Please check and try again.');
+      return;
+    }
+
+    setSaving(true);
     try {
-      await api.post('/institutes', { ...createForm, status: 'ACTIVE' });
+      // 1. Create the institute using the Auth Registration endpoint
+      // This is REQUIRED so the backend properly hashes the adminPassword!
+      const res = await apiClient.post('/school/auth/register', {
+        instituteName: createForm.instituteName || createForm.name,
+        name: createForm.principalName || createForm.name || 'Admin',
+        email: createForm.email,
+        password: createForm.adminPassword,
+        tenantDomain: createForm.tenantDomain,
+        tenant_domain: createForm.tenantDomain, // Send both just to be safe
+        phone: createForm.phone,
+        alternatePhone: createForm.alternatePhone,
+        registrationNo: createForm.registrationNo,
+        plotNo: createForm.plotNo,
+        streetName: createForm.streetName,
+        landMark: createForm.landMark,
+        city: createForm.city,
+        district: createForm.district,
+        state: createForm.state,
+        pinCode: createForm.pinCode,
+        logo: createForm.logo,
+      });
+      
+      let newInstitute = res.data?.institute || res.data?.data || res.data;
+      if (Array.isArray(newInstitute)) newInstitute = newInstitute[0];
+      
+      // 2. Immediately approve it since the user wants it auto-approved
+      if (newInstitute?.id) {
+        await api.put(`/institutes/${newInstitute.id}/approve`).catch(e => console.error("Auto-approve failed:", e));
+      }
+
+      toast.success('Institute created successfully!');
+      dispatchDataChanged('institutes');
       setCreateForm(emptyForm);
+      setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
       setCreateOpen(false);
       await loadInstitutes();
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Unable to create institute.');
+      const rawMsg = err.response?.data?.message || err.response?.data?.error || '';
+
+      // Map known DB / backend constraint errors to human-friendly messages
+      let friendlyMsg = 'Unable to create institute. Please try again.';
+      if (rawMsg.includes('tenant_domain') || rawMsg.includes('tenantDomain') || rawMsg.includes('subdomain')) {
+        friendlyMsg = 'This subdomain / tenant domain is already taken. Please choose a different one.';
+      } else if (rawMsg.includes('email') && rawMsg.includes('duplicate')) {
+        friendlyMsg = 'An institute with this email already exists. Please use a different email.';
+      } else if (rawMsg.includes('duplicate key') || rawMsg.includes('unique constraint')) {
+        // Generic unique constraint — try to find which field
+        const match = rawMsg.match(/\"institutes_(.+?)_key\"/);
+        const field = match ? match[1].replace(/_/g, ' ') : 'field';
+        friendlyMsg = `A duplicate value was found for "${field}". Please update and try again.`;
+      } else if (rawMsg) {
+        friendlyMsg = rawMsg;
+      }
+
+      setError(friendlyMsg);
+      toast.error(friendlyMsg, { duration: 5000 });
     } finally {
       setSaving(false);
     }
@@ -306,7 +415,7 @@ export default function Institutes() {
     <div className="space-y-6 pb-12">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold text-surface-950">Institute Management</h1>
+          <h1 className="font-display text-3xl font-bold text-surface-950">Institute Management</h1>
           <p className="mt-2 text-sm font-medium text-surface-500">Approve registrations, create internal institutes, and open tenant workspaces.</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -320,7 +429,7 @@ export default function Institutes() {
               className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
           </div>
-          <button onClick={() => setCreateOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-eddva-gradient px-4 py-2.5 text-sm font-bold text-white shadow-blue">
+          <button onClick={() => setCreateOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
             <Plus className="h-4 w-4" />
             Add Institute
           </button>
@@ -329,24 +438,11 @@ export default function Institutes() {
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'All Institutes', value: 'ALL', count: stats.total },
-          { label: 'Approved', value: 'ACTIVE', count: stats.active },
-          { label: 'Pending', value: 'PENDING', count: stats.pending },
-          { label: 'Suspended', value: 'SUSPENDED', count: stats.suspended },
-        ].map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setStatusFilter(tab.value)}
-            className={`rounded-lg border p-4 text-left transition ${
-              statusFilter === tab.value ? 'border-brand-300 bg-brand-50 text-brand-800 shadow-sm' : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'
-            }`}
-          >
-            <p className="text-sm font-bold">{tab.label}</p>
-            <p className="mt-1 font-display text-3xl font-extrabold">{tab.count}</p>
-          </button>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-1 xl:grid-cols-4">
+        <div className="rounded-lg border border-brand-300 bg-brand-50 text-brand-800 shadow-sm p-4 text-left">
+          <p className="text-sm font-bold">All Institutes</p>
+          <p className="mt-1 font-display text-3xl font-bold">{stats.total}</p>
+        </div>
       </div>
 
       <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
@@ -358,7 +454,6 @@ export default function Institutes() {
                 <th className="p-4">Contact</th>
                 <th className="p-4">Tenant</th>
                 <th className="p-4">Users</th>
-                <th className="p-4">Status</th>
                 <th className="p-4 text-right">Action</th>
               </tr>
             </thead>
@@ -370,7 +465,6 @@ export default function Institutes() {
                     <td className="p-4"><Skeleton className="h-8 w-40" /></td>
                     <td className="p-4"><Skeleton className="h-8 w-36" /></td>
                     <td className="p-4"><Skeleton className="h-8 w-12" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-24" /></td>
                     <td className="p-4"><Skeleton className="ml-auto h-8 w-20" /></td>
                   </tr>
                 ))
@@ -398,7 +492,6 @@ export default function Institutes() {
                     </td>
                     <td className="p-4 font-mono text-sm font-bold text-brand-700">{item.tenantDomain}.localhost</td>
                     <td className="p-4 text-sm font-bold text-surface-700">{item._count?.users || 0}</td>
-                    <td className="p-4"><StatusBadge status={item.status} /></td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -406,19 +499,28 @@ export default function Institutes() {
                             event.stopPropagation();
                             openEdit(item);
                           }}
-                          className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100"
+                          className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            openWorkspace(item.tenantDomain);
+                            setSelectedInstitute(item);
+                            setEditMode(false);
                           }}
-                          className="inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 hover:border-brand-200 hover:text-brand-700"
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
                         >
-                          Open
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            deleteInstitute(item.id);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100 transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" /> Delete
                         </button>
                       </div>
                     </td>
@@ -444,7 +546,7 @@ export default function Institutes() {
               <div className="flex items-center justify-between border-b border-surface-200 p-5">
                 <h2 className="font-display text-xl font-bold text-surface-950">Institute Details</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => { setEditForm(toEditForm(selectedInstitute)); setEditMode((value) => !value); }} className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100">
+                  <button onClick={() => { setEditForm(toEditForm(selectedInstitute)); setEditMode((value) => !value); }} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
                     {editMode ? 'View Profile' : 'Edit Institute'}
                   </button>
                   <button onClick={() => setSelectedInstitute(null)} className="rounded-lg p-2 text-surface-500 hover:bg-surface-100">
@@ -457,8 +559,7 @@ export default function Institutes() {
                 <div className="mb-8 flex items-center gap-4">
                   <InstituteLogo institute={selectedInstitute} size="lg" />
                   <div className="min-w-0">
-                    <h3 className="font-display text-2xl font-extrabold text-surface-950">{selectedInstitute.name}</h3>
-                    <div className="mt-2"><StatusBadge status={selectedInstitute.status} /></div>
+                    <h3 className="font-display text-2xl font-bold text-surface-950">{selectedInstitute.name}</h3>
                   </div>
                 </div>
 
@@ -476,15 +577,9 @@ export default function Institutes() {
                       <input className={inputClass} value={editForm.timezone} onChange={(e) => setEditForm({ ...editForm, timezone: e.target.value })} placeholder="Timezone" />
                       <input className={inputClass} value={editForm.language} onChange={(e) => setEditForm({ ...editForm, language: e.target.value })} placeholder="Language" />
                       <input className={inputClass} value={editForm.currency} onChange={(e) => setEditForm({ ...editForm, currency: e.target.value })} placeholder="Currency" />
-                      <input className={inputClass} value={editForm.subscriptionPlan} onChange={(e) => setEditForm({ ...editForm, subscriptionPlan: e.target.value })} placeholder="Subscription plan" />
                       <input className={inputClass} value={editForm.adminEmail} onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })} placeholder="Admin email" />
                       <input className={inputClass} value={editForm.adminName} onChange={(e) => setEditForm({ ...editForm, adminName: e.target.value })} placeholder="Admin name" />
                       <input className={inputClass} type="password" value={editForm.adminPassword} onChange={(e) => setEditForm({ ...editForm, adminPassword: e.target.value })} placeholder="Reset admin password" />
-                      <select className={inputClass} value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="PENDING">PENDING</option>
-                        <option value="SUSPENDED">SUSPENDED</option>
-                      </select>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -503,7 +598,7 @@ export default function Institutes() {
                         {moduleOptions.map(([key, label]) => {
                           const active = !!editForm.modulesPermissions?.[key];
                           return (
-                            <button key={key} type="button" onClick={() => toggleModulePermission(key)} className={`rounded-full border px-3 py-2 text-xs font-bold transition ${active ? 'border-brand-600 bg-brand-600 text-white' : 'border-surface-200 bg-white text-surface-600 hover:border-brand-200 hover:text-brand-700'}`}>
+                            <button key={key} type="button" onClick={() => toggleModulePermission(key)} className={`rounded-full border px-3 py-2 text-xs font-bold transition ${active ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'}`}>
                               {label}
                             </button>
                           );
@@ -530,7 +625,7 @@ export default function Institutes() {
                       <button type="button" onClick={() => setEditMode(false)} className="rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-100">
                         Cancel
                       </button>
-                      <button disabled={saving} className="rounded-lg bg-eddva-gradient px-4 py-2.5 text-sm font-bold text-white shadow-blue disabled:opacity-60">
+                      <button disabled={saving} className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-60">
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
                     </div>
@@ -561,43 +656,15 @@ export default function Institutes() {
                       <p className="text-xs font-bold uppercase text-brand-700">Tenant Workspace</p>
                       <p className="mt-1 font-mono text-sm font-bold text-surface-950">{selectedInstitute.tenantDomain}.localhost:8080</p>
                     </div>
-
-                    <div className="rounded-lg border border-surface-200 bg-white p-4">
-                      <p className="mb-3 text-xs font-bold uppercase text-surface-500">Status & Subscription</p>
-                      <div className="grid gap-3 sm:grid-cols-2 text-sm font-medium text-surface-700">
-                        <p>Status: {selectedInstitute.status}</p>
-                        <p>Plan: {selectedInstitute.subscriptionPlan || 'FREE'}</p>
-                        <p>Timezone: {selectedInstitute.timezone || 'Asia/Kolkata'}</p>
-                        <p>Academic Session: {selectedInstitute.academicSession || 'Not set'}</p>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="grid gap-3 border-t border-surface-200 bg-surface-50 p-5 sm:grid-cols-2">
-                {selectedInstitute.status === 'PENDING' ? (
-                  <>
-                    <button disabled={saving} onClick={() => setStatus(selectedInstitute.id, 'reject')} className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">
-                      <XCircle className="h-5 w-5" />
-                      Suspend
-                    </button>
-                    <button disabled={saving} onClick={() => setStatus(selectedInstitute.id, 'approve')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-eddva-gradient px-4 py-3 font-bold text-white shadow-blue disabled:opacity-60">
-                      <CheckCircle className="h-5 w-5" />
-                      Approve
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => setStatus(selectedInstitute.id, selectedInstitute.status === 'ACTIVE' ? 'reject' : 'approve')} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-3 font-bold text-surface-700 hover:bg-surface-100 disabled:opacity-60">
-                      {selectedInstitute.status === 'ACTIVE' ? 'Suspend' : 'Reactivate'}
-                    </button>
-                    <button onClick={() => openWorkspace(selectedInstitute.tenantDomain)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-eddva-gradient px-4 py-3 font-bold text-white shadow-blue">
-                      Open Workspace
-                      <ExternalLink className="h-5 w-5" />
-                    </button>
-                  </>
-                )}
+              <div className="grid gap-3 border-t border-surface-200 bg-surface-50 p-5 sm:grid-cols-1">
+                <button onClick={() => openWorkspace(selectedInstitute.tenantDomain)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-bold text-white shadow-md hover:bg-indigo-700 transition-colors">
+                  Open Workspace
+                  <ExternalLink className="h-5 w-5" />
+                </button>
               </div>
             </motion.aside>
           </>
@@ -635,9 +702,66 @@ export default function Institutes() {
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <input required className={inputClass} name="instituteName" value={createForm.instituteName} onChange={(e) => setCreateForm({ ...createForm, instituteName: e.target.value })} placeholder="Institute name" />
+                      <div className="relative">
+                        <input required className={inputClass + ' pr-24'} name="tenantDomain" value={createForm.tenantDomain} onChange={(e) => setCreateForm({ ...createForm, tenantDomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} placeholder="Subdomain" />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">.localhost</span>
+                      </div>
                       <input required className={inputClass} name="principalName" value={createForm.principalName} onChange={(e) => setCreateForm({ ...createForm, principalName: e.target.value })} placeholder="Principal / Admin name" />
                       <input required className={inputClass} name="email" type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="Admin email" />
-                      <input required className={inputClass} name="adminPassword" type="password" value={createForm.adminPassword} onChange={(e) => setCreateForm({ ...createForm, adminPassword: e.target.value })} placeholder="Temporary password" />
+                      {/* Temporary Password with show/hide */}
+                      <div className="relative">
+                        <input
+                          required
+                          name="adminPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          value={createForm.adminPassword}
+                          onChange={(e) => setCreateForm({ ...createForm, adminPassword: e.target.value })}
+                          placeholder="Temporary password"
+                          className={inputClass + ' pr-10'}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {/* Confirm Password with match indicator */}
+                      <div className="relative">
+                        <input
+                          required
+                          name="confirmPassword"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm password"
+                          className={`${inputClass} pr-10 ${
+                            confirmPassword.length > 0
+                              ? createForm.adminPassword === confirmPassword
+                                ? 'border-emerald-400 focus:border-emerald-400 focus:ring-emerald-100'
+                                : 'border-red-400 focus:border-red-400 focus:ring-red-100'
+                              : ''
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {confirmPassword.length > 0 && (
+                        <p className={`text-xs font-semibold flex items-center gap-1.5 col-span-2 -mt-2 ${
+                          createForm.adminPassword === confirmPassword ? 'text-emerald-600' : 'text-red-500'
+                        }`}>
+                          {createForm.adminPassword === confirmPassword
+                            ? <><CheckCircle className="h-3.5 w-3.5" /> Passwords match</>
+                            : <><XCircle className="h-3.5 w-3.5" /> Passwords do not match</>
+                          }
+                        </p>
+                      )}
                       <input className={inputClass} name="phone" value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} placeholder="Phone" />
                       <input className={inputClass} name="registrationNo" value={createForm.registrationNo} onChange={(e) => setCreateForm({ ...createForm, registrationNo: e.target.value })} placeholder="Registration no." />
                     </div>
@@ -663,7 +787,7 @@ export default function Institutes() {
                   <button type="button" onClick={() => setCreateOpen(false)} className="rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-100">
                     Cancel
                   </button>
-                  <button disabled={saving} className="rounded-lg bg-eddva-gradient px-4 py-2.5 text-sm font-bold text-white shadow-blue disabled:opacity-60">
+                  <button disabled={saving} className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-60">
                     {saving ? 'Creating...' : 'Create and Approve'}
                   </button>
                 </div>

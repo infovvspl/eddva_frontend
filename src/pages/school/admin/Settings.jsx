@@ -69,7 +69,7 @@ export default function Settings() {
               </div>
             </div>
             <div>
-              <h1 className="text-4xl font-black tracking-tight">{institute?.name || 'Eddva Institute'}</h1>
+              <h1 className="text-4xl font-bold tracking-tight tracking-tight">{institute?.name || 'Eddva Institute'}</h1>
               <div className="mt-2 flex items-center gap-3">
                 <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Workspace Settings</span>
                 <div className="h-1 w-1 rounded-full bg-slate-600" />
@@ -81,7 +81,7 @@ export default function Settings() {
           <button 
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold tracking-tight text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50"
           >
             {isSaving ? (
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -103,7 +103,7 @@ export default function Settings() {
                 "w-full flex items-center gap-4 p-5 rounded-3xl transition-all duration-300 border text-left group",
                 activeTab === tab.id 
                   ? "border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-600/20 translate-x-2" 
-                  : "border-transparent bg-white/70 dark:bg-slate-900/60 text-slate-500 hover:border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "border-transparent bg-white/70 dark:bg-slate-900/60 text-slate-500 hover:border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
               )}
             >
               <div className={cn(
@@ -116,7 +116,7 @@ export default function Settings() {
               </div>
               <div className="min-w-0">
                 <p className={cn(
-                  "font-black text-xs uppercase tracking-widest",
+                  "font-bold tracking-tight text-xs uppercase tracking-widest",
                   activeTab === tab.id ? "text-slate-900 dark:text-white" : "text-slate-500"
                 )}>
                   {tab.label}
@@ -152,7 +152,7 @@ export default function Settings() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="absolute bottom-8 right-8 flex items-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest shadow-2xl shadow-emerald-500/20"
+              className="absolute bottom-8 right-8 flex items-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500 text-white font-bold tracking-tight text-xs uppercase tracking-widest shadow-2xl shadow-emerald-500/20"
             >
               <Zap size={16} />
               Settings Updated Successfully
@@ -168,8 +168,8 @@ function WorkspaceTab({ institute }) {
   return (
     <div className="space-y-10">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Workspace Identity</h2>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-[10px] font-black uppercase tracking-widest">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Workspace Identity</h2>
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-[10px] font-bold tracking-tight uppercase tracking-widest">
           <Globe size={14} />
           {institute?.tenantDomain}.eddva.io
         </div>
@@ -191,7 +191,7 @@ function WorkspaceTab({ institute }) {
             <Cloud size={20} />
           </div>
           <div>
-            <h3 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">Cloud Deployment</h3>
+            <h3 className="font-bold tracking-tight text-slate-900 dark:text-white text-sm uppercase tracking-widest">Cloud Deployment</h3>
             <p className="text-xs text-slate-400 font-medium">Server location and network status</p>
           </div>
         </div>
@@ -209,14 +209,14 @@ function WorkspaceTab({ institute }) {
 function ProfileTab({ user }) {
   return (
     <div className="space-y-10">
-      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Personal Information</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Personal Information</h2>
       <div className="flex items-center gap-8 mb-10 p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
         <div className="relative group">
           <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
             {user?.photo ? (
               <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white text-3xl font-black">
+              <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white text-3xl font-bold tracking-tight">
                 {user?.name?.[0].toUpperCase()}
               </div>
             )}
@@ -226,11 +226,11 @@ function ProfileTab({ user }) {
           </button>
         </div>
         <div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-white">{user?.name}</h3>
+          <h3 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">{user?.name}</h3>
           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">{user?.role?.replace('_', ' ')}</p>
           <div className="mt-4 flex gap-2">
-            <button className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20">Change Photo</button>
-            <button className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest">Remove</button>
+            <button className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/20">Change Photo</button>
+            <button className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold tracking-tight uppercase tracking-widest">Remove</button>
           </div>
         </div>
       </div>
@@ -248,7 +248,7 @@ function ProfileTab({ user }) {
 function SecurityTab() {
   return (
     <div className="space-y-10">
-      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Security & Privacy</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Security & Privacy</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 space-y-6">
@@ -256,10 +256,10 @@ function SecurityTab() {
             <Lock size={24} />
           </div>
           <div>
-            <h3 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">Password Management</h3>
+            <h3 className="font-bold tracking-tight text-slate-900 dark:text-white text-sm uppercase tracking-widest">Password Management</h3>
             <p className="text-xs text-slate-400 font-medium mt-1">Change your login credentials</p>
           </div>
-          <button className="w-full py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black uppercase tracking-widest">Update Password</button>
+          <button className="w-full py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold tracking-tight uppercase tracking-widest">Update Password</button>
         </div>
 
         <div className="p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 space-y-6">
@@ -267,10 +267,10 @@ function SecurityTab() {
             <Shield size={24} />
           </div>
           <div>
-            <h3 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">2FA Authentication</h3>
+            <h3 className="font-bold tracking-tight text-slate-900 dark:text-white text-sm uppercase tracking-widest">2FA Authentication</h3>
             <p className="text-xs text-slate-400 font-medium mt-1">Add an extra layer of security</p>
           </div>
-          <button className="w-full py-4 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-600/20">Enable Two-Factor</button>
+          <button className="w-full py-4 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-xl shadow-blue-600/20">Enable Two-Factor</button>
         </div>
       </div>
     </div>
@@ -280,7 +280,7 @@ function SecurityTab() {
 function NotificationsTab() {
   return (
     <div className="space-y-10">
-      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Notification Alerts</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Notification Alerts</h2>
       <div className="space-y-4">
         <ToggleField title="Email Notifications" description="Receive daily reports and emergency alerts via email" checked />
         <ToggleField title="SMS Alerts" description="Get instant SMS for critical infrastructure updates" />
@@ -295,8 +295,8 @@ function AiTab() {
   return (
     <div className="space-y-10">
       <div className="flex items-center gap-4">
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">AI Intelligence Hub</h2>
-        <div className="px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest animate-pulse">Enterprise</div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">AI Intelligence Hub</h2>
+        <div className="px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest animate-pulse">Enterprise</div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -325,26 +325,26 @@ function AiTab() {
 function BillingTab() {
   return (
     <div className="space-y-10">
-      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Financial & Subscription</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Financial & Subscription</h2>
       
       <div className="p-10 rounded-[3rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
         <div className="relative z-10 flex flex-col md:flex-row justify-between gap-8">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] opacity-60">Current Plan</p>
-            <h3 className="text-4xl font-black mt-2">Enterprise Pro</h3>
+            <p className="text-xs font-bold tracking-tight uppercase tracking-[0.2em] opacity-60">Current Plan</p>
+            <h3 className="text-4xl font-bold tracking-tight mt-2">Enterprise Pro</h3>
             <p className="mt-4 text-blue-100 font-medium">Valid until Dec 2026 · Unlimited users & AI modules</p>
           </div>
           <div className="flex flex-col items-end">
-            <p className="text-xs font-black uppercase tracking-[0.2em] opacity-60">Annual Payment</p>
-            <h3 className="text-4xl font-black mt-2">₹1,45,000</h3>
-            <button className="mt-6 px-8 py-3 rounded-2xl bg-white text-blue-700 font-black text-xs uppercase tracking-widest shadow-xl transition-transform active:scale-95">Upgrade Plan</button>
+            <p className="text-xs font-bold tracking-tight uppercase tracking-[0.2em] opacity-60">Annual Payment</p>
+            <h3 className="text-4xl font-bold tracking-tight mt-2">₹1,45,000</h3>
+            <button className="mt-6 px-8 py-3 rounded-2xl bg-white text-blue-700 font-bold tracking-tight text-xs uppercase tracking-widest shadow-xl transition-transform active:scale-95">Upgrade Plan</button>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest px-2">Recent Invoices</h3>
+        <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest px-2">Recent Invoices</h3>
         {[
           { id: 'INV-2024-001', date: 'May 10, 2024', amount: '₹12,400', status: 'PAID' },
           { id: 'INV-2024-002', date: 'Apr 10, 2024', amount: '₹12,400', status: 'PAID' },
@@ -355,13 +355,13 @@ function BillingTab() {
                 <CreditCard size={18} />
               </div>
               <div>
-                <p className="text-sm font-black text-slate-900 dark:text-white">{inv.id}</p>
+                <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{inv.id}</p>
                 <p className="text-xs font-medium text-slate-400">{inv.date}</p>
               </div>
             </div>
             <div className="flex items-center gap-6">
-              <p className="text-sm font-black text-slate-900 dark:text-white">{inv.amount}</p>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black">{inv.status}</span>
+              <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{inv.amount}</p>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold tracking-tight">{inv.status}</span>
             </div>
           </div>
         ))}
@@ -373,7 +373,7 @@ function BillingTab() {
 function SettingsField({ label, value, suffix, isTextarea }) {
   return (
     <div className="space-y-2">
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+      <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1">{label}</label>
       <div className="relative">
         {isTextarea ? (
           <textarea 
@@ -387,7 +387,7 @@ function SettingsField({ label, value, suffix, isTextarea }) {
               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5"
             />
             {suffix && (
-              <span className="absolute right-5 text-xs font-black text-slate-400 uppercase tracking-widest">{suffix}</span>
+              <span className="absolute right-5 text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest">{suffix}</span>
             )}
           </div>
         )}
@@ -399,9 +399,9 @@ function SettingsField({ label, value, suffix, isTextarea }) {
 function StatusIndicator({ label, status, isPositive }) {
   return (
     <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-50 dark:border-slate-700">
-      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+      <p className="text-[9px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">{label}</p>
       <p className={cn(
-        "text-xs font-black mt-1",
+        "text-xs font-bold tracking-tight mt-1",
         isPositive ? "text-emerald-600" : "text-slate-900 dark:text-white"
       )}>{status}</p>
     </div>
@@ -412,7 +412,7 @@ function ToggleField({ title, description, checked }) {
   return (
     <div className="flex items-center justify-between p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
       <div>
-        <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{title}</p>
+        <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-tight">{title}</p>
         <p className="text-xs font-medium text-slate-400 mt-0.5">{description}</p>
       </div>
       <button className={cn(
@@ -442,14 +442,14 @@ function AiFeatureCard({ title, description, icon: Icon, enabled }) {
       </div>
       <div className="flex-1">
         <div className="flex items-center justify-between">
-          <h3 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">{title}</h3>
+          <h3 className="font-bold tracking-tight text-slate-900 dark:text-white text-sm uppercase tracking-widest">{title}</h3>
           <span className={cn(
-            "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+            "text-[9px] font-bold tracking-tight uppercase tracking-widest px-3 py-1 rounded-full",
             enabled ? "bg-emerald-500/10 text-emerald-600" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
           )}>{enabled ? 'Active' : 'Disabled'}</span>
         </div>
         <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{description}</p>
-        <button className="mt-6 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline transition-all">Configure Parameters</button>
+        <button className="mt-6 text-[10px] font-bold tracking-tight text-blue-600 uppercase tracking-widest hover:underline transition-all">Configure Parameters</button>
       </div>
     </div>
   );

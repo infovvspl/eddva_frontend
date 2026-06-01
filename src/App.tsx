@@ -180,6 +180,7 @@ const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Prof
 const SuperAdminSchoolPage      = lazy(() => import("./pages/super-admin/SchoolPage"));
 const SuperAdminSchoolDetailPage = lazy(() => import("./pages/super-admin/SchoolDetailPage"));
 const CreateSchoolPage          = lazy(() => import("./pages/super-admin/CreateSchoolPage"));
+const SuperAdminCourseDetailPage = lazy(() => import("./pages/super-admin/CourseDetailPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -415,6 +416,7 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/tenants" element={<InstitutesPage />} />
       <Route path="/super-admin/tenants/new" element={<NewInstitutePage />} />
       <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
+      <Route path="/super-admin/tenants/:id/courses/:courseId" element={<SuperAdminCourseDetailPage />} />
       <Route path="/super-admin/users" element={<UsersPage />} />
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
@@ -430,7 +432,7 @@ const SuperAdminRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<Index />} />
+    <Route path="/" element={<LoginPage />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />

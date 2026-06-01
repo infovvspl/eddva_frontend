@@ -396,8 +396,8 @@ export default function AcademicCalendar() {
         onDragStart={() => setDragId(event.id)}
         onClick={() => openEdit(event)}
         className={cn(
-          'group flex w-full items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-left text-xs font-bold shadow-sm transition hover:shadow-md',
-          categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-200'
+          'group flex w-full items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-left text-xs font-bold shadow-sm transition hover:shadow-sm ring-1 ring-slate-100',
+          categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100'
         )}
       >
         <span className="min-w-0 flex-1 truncate">{event.title}</span>
@@ -414,19 +414,19 @@ export default function AcademicCalendar() {
         <div className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm">
           <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-r from-white via-sky-50/60 to-white p-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.25em] text-blue-700"><Sparkles className="h-3.5 w-3.5" /> Academic Calendar</p>
-              <h1 className="mt-3 text-3xl font-extrabold text-slate-950">{title}</h1>
+              <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-blue-700"><Sparkles className="h-3.5 w-3.5" /> Academic Calendar</p>
+              <h1 className="mt-3 text-3xl font-bold text-slate-950">{title}</h1>
               <p className="mt-2 text-sm text-slate-500">Month, week, day and agenda planning for academic events, exams, holidays and live classes.</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                 {['month', 'week', 'day', 'agenda'].map((item) => (
                   <button
                     key={item}
                     onClick={() => setView(item)}
                     className={cn(
-                      'inline-flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] transition',
+                      'inline-flex items-center gap-2 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] transition',
                       view === item ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-50'
                     )}
                   >
@@ -439,11 +439,11 @@ export default function AcademicCalendar() {
                 ))}
               </div>
 
-              <button onClick={() => setSelectedDate(new Date())} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-700 hover:bg-slate-50">
+              <button onClick={() => setSelectedDate(new Date())} className="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 hover:bg-slate-50">
                 Today
               </button>
 
-              <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-eddva-gradient px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-blue">
+              <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-eddva-gradient px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-blue">
                 <Plus className="h-4 w-4" />
                 Add Event
               </button>
@@ -453,11 +453,11 @@ export default function AcademicCalendar() {
           <div className="grid gap-4 border-b border-slate-100 p-5 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
             <div className="relative">
               <Filter className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-bold text-slate-700 outline-none">
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-2xl border border-slate-100 bg-white py-3 pl-11 pr-4 text-sm font-bold text-slate-700 outline-none">
                 {categories.map((item) => <option key={item} value={item}>{item.replace('_', ' ')}</option>)}
               </select>
             </div>
-            <select value={classFilter} onChange={(e) => { setClassFilter(e.target.value); setSectionFilter(''); }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none">
+            <select value={classFilter} onChange={(e) => { setClassFilter(e.target.value); setSectionFilter(''); }} className="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none">
               <option value="">All Classes</option>
               {classes.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -465,7 +465,7 @@ export default function AcademicCalendar() {
                 </option>
               ))}
             </select>
-            <select value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none">
+            <select value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} className="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none">
               <option value="">All Sections</option>
               {availableSections.map((section) => (
                 <option key={section.id} value={section.id}>
@@ -473,9 +473,9 @@ export default function AcademicCalendar() {
                 </option>
               ))}
             </select>
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-              <button type="button" onClick={goPrevious} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50">Prev</button>
-              <button type="button" onClick={goNext} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50">Next</button>
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold tracking-tight uppercase tracking-[0.18em] text-slate-500">
+              <button type="button" onClick={goPrevious} className="rounded-2xl border border-slate-100 bg-white px-4 py-3 hover:bg-slate-50">Prev</button>
+              <button type="button" onClick={goNext} className="rounded-2xl border border-slate-100 bg-white px-4 py-3 hover:bg-slate-50">Next</button>
             </div>
           </div>
 
@@ -485,7 +485,7 @@ export default function AcademicCalendar() {
                 <div className="p-8 text-sm text-slate-500">Loading calendar...</div>
               ) : view === 'month' ? (
                 <div className="p-5">
-                  <div className="grid grid-cols-7 gap-3 text-center text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
+                  <div className="grid grid-cols-7 gap-3 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400">
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <div key={day} className="py-2">{day}</div>)}
                   </div>
                   <div className="grid grid-cols-7 gap-3">
@@ -502,12 +502,12 @@ export default function AcademicCalendar() {
                           className={cn('min-h-40 rounded-3xl border p-3 transition hover:shadow-lg', isToday ? 'border-blue-200 bg-blue-50/60' : 'border-slate-100 bg-white')}
                         >
                           <div className="mb-3 flex items-center justify-between">
-                            <span className={cn('text-xs font-black', isToday ? 'text-blue-700' : 'text-slate-400')}>{day.getDate()}</span>
+                            <span className={cn('text-xs font-bold tracking-tight', isToday ? 'text-blue-700' : 'text-slate-400')}>{day.getDate()}</span>
                             {dayEvents.length > 0 && <span className="h-2 w-2 rounded-full bg-blue-600" />}
                           </div>
                           <div className="space-y-2">
                             {dayEvents.slice(0, 3).map(renderEventChip)}
-                            {dayEvents.length > 3 && <p className="text-center text-[10px] font-black text-slate-400">+{dayEvents.length - 3} more</p>}
+                            {dayEvents.length > 3 && <p className="text-center text-[10px] font-bold tracking-tight text-slate-400">+{dayEvents.length - 3} more</p>}
                           </div>
                         </div>
                       );
@@ -522,8 +522,8 @@ export default function AcademicCalendar() {
                     return (
                       <div key={dateKey(day)} onDragOver={(e) => e.preventDefault()} onDrop={() => dragId && dropToDay(day, dragId)} className="border-r border-slate-100 p-3 last:border-r-0">
                         <div className={cn('mb-3 rounded-2xl px-3 py-2 text-center', isToday ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-600')}>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em]">{day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                          <p className="text-2xl font-extrabold">{day.getDate()}</p>
+                          <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em]">{day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                          <p className="text-2xl font-bold">{day.getDate()}</p>
                         </div>
                         <div className="space-y-2">
                           {dayEvents.map(renderEventChip)}
@@ -535,22 +535,22 @@ export default function AcademicCalendar() {
               ) : view === 'day' ? (
                 <div className="p-5">
                   <div className="mb-4 rounded-3xl bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Selected Day</p>
-                    <p className="mt-1 text-xl font-extrabold text-slate-950">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400">Selected Day</p>
+                    <p className="mt-1 text-xl font-bold text-slate-950">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                   </div>
                   <div className="space-y-3">
                     {selectedDayEvents.map((event) => (
                       <div key={event.id} draggable onDragStart={() => setDragId(event.id)} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-lg">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <div className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-200')}>
+                            <div className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.2em]', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>
                               {event.category.replace('_', ' ')}
                             </div>
-                            <h3 className="mt-3 text-lg font-extrabold text-slate-950">{event.title}</h3>
+                            <h3 className="mt-3 text-lg font-bold text-slate-950">{event.title}</h3>
                             <p className="mt-2 text-sm text-slate-500">{event.description || 'No description'}</p>
                           </div>
                           <div className="flex gap-2">
-                            <button onClick={() => openEdit(event)} className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-600 hover:bg-slate-50"><Edit3 className="h-4 w-4" /></button>
+                            <button onClick={() => openEdit(event)} className="rounded-2xl border border-slate-100 bg-white p-3 text-slate-600 hover:bg-slate-50"><Edit3 className="h-4 w-4" /></button>
                             <button onClick={() => removeEvent(event.id)} className="rounded-2xl border border-red-200 bg-white p-3 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         </div>
@@ -572,8 +572,8 @@ export default function AcademicCalendar() {
                       return (
                         <div key={dateKey(day)} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
                           <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-extrabold text-slate-950">{day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
-                            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{dayEvents.length} events</span>
+                            <h3 className="text-sm font-bold text-slate-950">{day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
+                            <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em] text-slate-400">{dayEvents.length} events</span>
                           </div>
                           <div className="space-y-2">
                             {dayEvents.map((event) => (
@@ -582,7 +582,7 @@ export default function AcademicCalendar() {
                                   <p className="text-sm font-bold text-slate-950">{event.title}</p>
                                   <p className="text-xs text-slate-500">{new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {event.location || 'No location'}</p>
                                 </div>
-                                <span className={cn('rounded-full border px-3 py-1 text-[10px] font-black uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-200')}>{event.category.replace('_', ' ')}</span>
+                                <span className={cn('rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>{event.category.replace('_', ' ')}</span>
                               </button>
                             ))}
                           </div>
@@ -597,7 +597,7 @@ export default function AcademicCalendar() {
             <aside className="space-y-4 bg-slate-50/50 p-5">
               <div className="rounded-[2rem] bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Upcoming Events</h3>
+                  <h3 className="text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Events</h3>
                   <BellRing className="h-4 w-4 text-slate-300" />
                 </div>
                 <div className="space-y-3">
@@ -605,10 +605,10 @@ export default function AcademicCalendar() {
                     <button key={event.id} onClick={() => openEdit(event)} className="w-full rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left transition hover:bg-white">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-sm font-extrabold text-slate-950">{event.title}</p>
+                          <p className="text-sm font-bold text-slate-950">{event.title}</p>
                           <p className="mt-1 text-xs text-slate-500">{new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
-                        <span className={cn('rounded-full border px-2 py-1 text-[9px] font-black uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-200')}>{event.category.replace('_', ' ')}</span>
+                        <span className={cn('rounded-full border px-2 py-1 text-[9px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>{event.category.replace('_', ' ')}</span>
                       </div>
                     </button>
                   ))}
@@ -619,20 +619,20 @@ export default function AcademicCalendar() {
               <div className="rounded-[2rem] bg-gradient-to-br from-slate-950 to-slate-800 p-5 text-white shadow-xl">
                 <div className="flex items-center gap-2 text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em]">Quick Actions</span>
+                  <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.24em]">Quick Actions</span>
                 </div>
-                <h3 className="mt-3 text-lg font-extrabold">Live Class + Zoom / Meet</h3>
+                <h3 className="mt-3 text-lg font-bold">Live Class + Zoom / Meet</h3>
                 <p className="mt-2 text-sm text-slate-300">Plan live classes, attach meeting links, assign teachers and subjects, and keep upcoming events synced with dashboard widgets.</p>
-                <button onClick={() => openNew()} className="mt-4 w-full rounded-2xl bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-950">Schedule Live Class</button>
+                <button onClick={() => openNew()} className="mt-4 w-full rounded-2xl bg-white px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-slate-950">Schedule Live Class</button>
               </div>
 
               <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Summary</h3>
+                <h3 className="text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Summary</h3>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   {categories.filter((item) => item !== 'All').map((item) => (
                     <div key={item} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{item.replace('_', ' ')}</p>
-                      <p className="mt-2 text-2xl font-extrabold text-slate-950">{summary[item] || 0}</p>
+                      <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.18em] text-slate-400">{item.replace('_', ' ')}</p>
+                      <p className="mt-2 text-2xl font-bold text-slate-950">{summary[item] || 0}</p>
                     </div>
                   ))}
                 </div>
@@ -649,20 +649,20 @@ export default function AcademicCalendar() {
             <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="fixed inset-x-4 top-6 z-50 mx-auto max-h-[calc(100vh-3rem)] max-w-3xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 p-5">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Event</p>
-                  <h2 className="mt-1 text-xl font-extrabold text-slate-950">{editingEvent ? 'Edit Event' : 'Add Event'}</h2>
+                  <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Academic Event</p>
+                  <h2 className="mt-1 text-xl font-bold text-slate-950">{editingEvent ? 'Edit Event' : 'Add Event'}</h2>
                 </div>
                 <button onClick={() => setModalOpen(false)} className="rounded-2xl p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
               </div>
               <form onSubmit={saveEvent} className="space-y-5 p-5">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none">
+                  <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
+                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none">
                     {categories.filter((item) => item !== 'All').map((item) => <option key={item} value={item}>{item.replace('_', ' ')}</option>)}
                   </select>
-                  <input type="datetime-local" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
-                  <input type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
-                  <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none">
+                  <input type="datetime-local" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
+                  <input type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
+                  <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none">
                     <option value="LOW">Low</option>
                     <option value="NORMAL">Normal</option>
                     <option value="HIGH">High</option>
@@ -673,7 +673,7 @@ export default function AcademicCalendar() {
                   <select
                     value={form.classId}
                     onChange={(e) => setForm({ ...form, classId: e.target.value, sectionId: '' })}
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none"
+                    className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none"
                   >
                     <option value="">Select class</option>
                     {classes.map((item) => (
@@ -684,7 +684,7 @@ export default function AcademicCalendar() {
                     value={form.sectionId}
                     onChange={(e) => setForm({ ...form, sectionId: e.target.value })}
                     disabled={!form.classId || !formSections.length}
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
                   >
                     <option value="">{form.classId ? 'Select section' : 'Select class first'}</option>
                     {formSections.map((section) => (
@@ -694,7 +694,7 @@ export default function AcademicCalendar() {
                   <select
                     value={form.subjectId}
                     onChange={(e) => setForm({ ...form, subjectId: e.target.value })}
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none"
+                    className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none"
                   >
                     <option value="">Select subject</option>
                     {subjects.map((subject) => (
@@ -704,7 +704,7 @@ export default function AcademicCalendar() {
                   <select
                     value={form.teacherId}
                     onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none"
+                    className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none"
                   >
                     <option value="">Select teacher</option>
                     {teachers.map((teacher) => (
@@ -713,25 +713,25 @@ export default function AcademicCalendar() {
                       </option>
                     ))}
                   </select>
-                  <input value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="Zoom / Meet link" className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
-                  <input value={form.meetingPlatform} onChange={(e) => setForm({ ...form, meetingPlatform: e.target.value })} placeholder="Meeting platform" className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
-                  <input value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder="Recurrence rule" className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
-                  <input type="number" min="0" value={form.reminderMinutes} onChange={(e) => setForm({ ...form, reminderMinutes: e.target.value })} placeholder="Reminder minutes" className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
+                  <input value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="Zoom / Meet link" className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
+                  <input value={form.meetingPlatform} onChange={(e) => setForm({ ...form, meetingPlatform: e.target.value })} placeholder="Meeting platform" className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
+                  <input value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder="Recurrence rule" className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
+                  <input type="number" min="0" value={form.reminderMinutes} onChange={(e) => setForm({ ...form, reminderMinutes: e.target.value })} placeholder="Reminder minutes" className="rounded-2xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
                 </div>
-                <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                <label className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
                   <input type="checkbox" checked={form.isAllDay} onChange={(e) => setForm({ ...form, isAllDay: e.target.checked })} />
                   All day event
                 </label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Event description" className="h-28 w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none" />
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Event description" className="h-28 w-full rounded-3xl border border-slate-100 px-4 py-3 text-sm font-semibold outline-none" />
                 <div className="flex gap-3">
                   {editingEvent && (
-                    <button type="button" onClick={() => { removeEvent(editingEvent.id); setModalOpen(false); }} className="rounded-2xl border border-red-200 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-red-600">
+                    <button type="button" onClick={() => { removeEvent(editingEvent.id); setModalOpen(false); }} className="rounded-2xl border border-red-200 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-red-600">
                       Delete
                     </button>
                   )}
                   <div className="ml-auto flex gap-3">
-                    <button type="button" onClick={() => setModalOpen(false)} className="rounded-2xl border border-slate-200 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-700">Cancel</button>
-                    <button type="submit" className="rounded-2xl bg-eddva-gradient px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-white shadow-blue">{editingEvent ? 'Update Event' : 'Save Event'}</button>
+                    <button type="button" onClick={() => setModalOpen(false)} className="rounded-2xl border border-slate-100 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-slate-700">Cancel</button>
+                    <button type="submit" className="rounded-2xl bg-eddva-gradient px-6 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-white shadow-blue">{editingEvent ? 'Update Event' : 'Save Event'}</button>
                   </div>
                 </div>
               </form>

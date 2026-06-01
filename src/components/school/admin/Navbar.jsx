@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
   LogOut,
@@ -180,13 +180,7 @@ export default function Navbar({ onMenuClick }) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex flex-col">
-            <p className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter">
-              {workspaceName}
-            </p>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">
-              {workspaceLabel}
-            </p>
-            <h1 className="mt-0.5 text-lg font-black leading-tight text-slate-950 dark:text-white">{title}</h1>
+            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-950 dark:text-white">{title}</h1>
           </div>
         </div>
 
@@ -204,7 +198,7 @@ export default function Navbar({ onMenuClick }) {
               }}
               onFocus={() => setSearchOpen(true)}
             />
-            <kbd className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-400 md:inline dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
+            <kbd className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-lg border border-slate-100 bg-white px-2 py-1 text-[10px] font-bold tracking-tight text-slate-400 md:inline dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
               Ctrl K
             </kbd>
 
@@ -218,7 +212,7 @@ export default function Navbar({ onMenuClick }) {
                   
                   {searchResults.pages.length > 0 && (
                     <div className="mb-4">
-                      <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Navigation</p>
+                      <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Navigation</p>
                       {searchResults.pages.map(page => (
                         <Link key={page.path} to={page.path} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
                           <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
@@ -233,10 +227,10 @@ export default function Navbar({ onMenuClick }) {
 
                   {searchResults.students.length > 0 && (
                     <div className="mb-4">
-                      <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Students</p>
+                      <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Students</p>
                       {searchResults.students.map(s => (
                         <Link key={s.id} to="/admin/students" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">
+                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
                             {s.photo ? <img src={s.photo} className="w-full h-full object-cover rounded-xl" /> : s.name[0]}
                           </div>
                           <div className="flex flex-col">
@@ -250,10 +244,10 @@ export default function Navbar({ onMenuClick }) {
 
                   {searchResults.teachers.length > 0 && (
                     <div className="mb-4">
-                      <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Teachers</p>
+                      <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Teachers</p>
                       {searchResults.teachers.map(t => (
                         <Link key={t.id} to="/admin/teachers" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">
+                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
                             {t.photo ? <img src={t.photo} className="w-full h-full object-cover rounded-xl" /> : t.name[0]}
                           </div>
                           <div className="flex flex-col">
@@ -337,7 +331,7 @@ export default function Navbar({ onMenuClick }) {
                 aria-label="Notifications"
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute right-2.5 top-2.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white border-2 border-white dark:border-slate-950">
+                <span className="absolute right-2.5 top-2.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold tracking-tight text-white border-2 border-white dark:border-slate-950">
                   5
                 </span>
               </button>
@@ -345,7 +339,7 @@ export default function Navbar({ onMenuClick }) {
                 <div className="absolute right-0 z-50 mt-4 w-80 overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                   <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">5 Unread</span>
+                    <span className="text-[10px] font-bold tracking-tight text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">5 Unread</span>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer border-b border-slate-50 dark:border-slate-800/50">
@@ -369,17 +363,12 @@ export default function Navbar({ onMenuClick }) {
 
           <Link to={profilePath} className="flex items-center gap-3 border-l border-slate-100 pl-4 dark:border-slate-800">
             <div className="relative">
-              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-black text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                 {(user?.name || 'A').charAt(0).toUpperCase()}
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
             </div>
-            <div className="hidden min-w-0 sm:block">
-              <p className="truncate text-xs font-black text-slate-950 dark:text-white leading-tight">{user?.name || 'Admin'}</p>
-              <p className="truncate text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 opacity-60">
-                {roleName}
-              </p>
-            </div>
+
           </Link>
           <button onClick={logout} className="ml-2 rounded-2xl p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition-colors" aria-label="Logout">
             <LogOut className="h-5 w-5" />

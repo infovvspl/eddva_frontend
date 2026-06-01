@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,6 +12,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
+import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
 
 const B = "#3B82F6"; // Softer Blue
 const P = "#A855F7"; // Softer Purple
@@ -47,6 +48,24 @@ const LoginPage = () => {
   const { setUser, setTenantType } = useAuthStore();
 
   const [view, setView] = useState<View>("login");
+  const [tenantInfo, setTenantInfo] = useState<PublicTenantInfo | null>(null);
+
+  useEffect(() => {
+    // Strictly check the URL hostname so localhost:8080 doesn't get affected
+    const hostname = window.location.hostname;
+    const parts = hostname.split(".");
+    let strictSubdomain = null;
+    
+    if (parts.length === 2 && parts[1] === "localhost") {
+      strictSubdomain = parts[0];
+    } else if (parts.length >= 3 && !["localhost", "edva.in", "www"].includes(parts[0])) {
+      strictSubdomain = parts[0];
+    }
+
+    if (strictSubdomain) {
+      resolveTenant(strictSubdomain).then(setTenantInfo).catch(console.error);
+    }
+  }, []);
 
   /* login state */
   const [identifier,    setIdentifier]    = useState("");   // email or phone
@@ -159,15 +178,18 @@ const LoginPage = () => {
     setError(""); setLoginLoading(true);
     try {
       const isEmail = identifier.includes("@");
+      // Format phone: strip non-digits then prepend +91 if not already international
+      const rawPhone = identifier.trim().replace(/[^\d+]/g, "");
+      const formattedPhone = rawPhone.startsWith("+") ? rawPhone : `+91${rawPhone}`;
 
-      // Try coaching login first
+      // Step 1 — Try coaching (Eddva main) login
       let coachingFailed = false;
       let coachingErrMsg = "";
       try {
         const loginRes = await authApi.loginWithPassword(
           isEmail
             ? { email: identifier.trim(), password }
-            : { phoneNumber: identifier.trim().startsWith("+") ? identifier.trim() : `+91${identifier.trim()}`, password }
+            : { phoneNumber: formattedPhone, password }
         );
         const user = buildUser(await authApi.getMe(), { onboardingRequired: loginRes.onboardingRequired });
         if (user.isFirstLogin) {
@@ -179,8 +201,8 @@ const LoginPage = () => {
         return;
       } catch (coachingErr: any) {
         const status = coachingErr?.response?.status;
-        // Fall through to school login only on auth failures with email input
-        if (isEmail && (status === 401 || status === 404 || status === 400 || status === 500)) {
+        // Fall through to school login on any auth failure (works for both email AND phone)
+        if (status === 401 || status === 404 || status === 400 || status === 500) {
           coachingFailed = true;
           coachingErrMsg = coachingErr?.response?.data?.message || "";
         } else {
@@ -190,9 +212,12 @@ const LoginPage = () => {
 
       if (!coachingFailed) return;
 
-      // School login fallback (email only)
+      // Step 2 — School login fallback (works for both email and phone)
       try {
-        const schoolRes = await authApi.loginSchoolWithPassword({ email: identifier.trim(), password });
+        const schoolPayload = isEmail
+          ? { email: identifier.trim(), password }
+          : { phone: formattedPhone, password };
+        const schoolRes = await authApi.loginSchoolWithPassword(schoolPayload);
         const schoolUser = buildSchoolUser(schoolRes);
         redirectUser(schoolUser, "school");
       } catch (schoolErr: any) {
@@ -277,7 +302,13 @@ const LoginPage = () => {
         >
           {/* Logo */}
           <div className="mb-10">
-            <EddvaLogo className="" />
+            {tenantInfo?.logoUrl ? (
+              <img src={tenantInfo.logoUrl} alt={tenantInfo.name} className="h-10 object-contain" />
+            ) : tenantInfo?.name ? (
+              <h1 className="text-2xl font-black text-slate-900">{tenantInfo.name}</h1>
+            ) : (
+              <EddvaLogo className="" />
+            )}
           </div>
 
           {/* Error banner */}
@@ -304,8 +335,12 @@ const LoginPage = () => {
                 className="space-y-6">
 
                 <div>
-                  <h1 className="text-[36px] font-black tracking-tight text-slate-900 leading-tight mb-2">Welcome back</h1>
-                  <p className="text-[16px] font-semibold text-slate-400">Continue your journey of excellence.</p>
+                  <h1 className="text-[32px] font-black tracking-tight text-slate-900 leading-tight mb-2">
+                    {tenantInfo?.name ? `Welcome to ${tenantInfo.name}` : "Welcome back"}
+                  </h1>
+                  <p className="text-[16px] font-semibold text-slate-400">
+                    {tenantInfo?.name ? "Sign in to access your portal." : "Continue your journey of excellence."}
+                  </p>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">

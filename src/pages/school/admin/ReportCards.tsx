@@ -70,7 +70,7 @@ export default function ReportCards() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStudents.map(student => (
-            <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-md transition-shadow">
+            <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-sm ring-1 ring-slate-100 transition-shadow">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-lg mr-4">
                   {student.user?.name?.charAt(0) || '?'}

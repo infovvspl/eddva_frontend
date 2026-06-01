@@ -60,11 +60,19 @@ const SuperAdminDashboard = () => {
     return String(n);
   };
 
+  const formatCurrency = (n: number | undefined) => {
+    if (n == null) return "₹0";
+    if (n >= 100_00_000) return `₹${(n / 100_00_000).toFixed(2)}Cr`;
+    if (n >= 1_00_000) return `₹${(n / 1_00_000).toFixed(1)}L`;
+    if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
+    return `₹${n}`;
+  };
+
   const metrics = [
     { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2,     color: "bg-indigo-500",  trend: "+12.5%", path: "/super-admin/tenants"     },
-    { label: "Active Faculty",     value: "1.2K",                                                         icon: GraduationCap, color: "bg-purple-500",  trend: "+5.2%",  path: "/super-admin/users"        },
+    { label: "Active Faculty",     value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500",  trend: "+5.2%",  path: "/super-admin/users"        },
     { label: "Global Students",    value: statsLoading ? "—" : formatCount(platformStats?.totalStudents),  icon: Users,         color: "bg-blue-500",    trend: "+18.4%", path: "/super-admin/enrollments"  },
-    { label: "Platform Revenue",   value: "₹42.8L",                                                       icon: TrendingUp,    color: "bg-emerald-500", trend: "+22.1%", path: "/super-admin/stats"        },
+    { label: "Platform Revenue",   value: statsLoading ? "—" : formatCurrency(platformStats?.monthlyRevenue || platformStats?.platformMrr || platformStats?.mrrEstimate), icon: TrendingUp,    color: "bg-emerald-500", trend: "+22.1%", path: "/super-admin/stats"        },
   ];
 
   const quickActions = [

@@ -6,13 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { sendOnboardingOtp, verifyOnboardingOtp } from "@/lib/api/public-tenant";
 
-const PLANS = ["starter", "growth", "scale", "enterprise"] as const;
-const PLAN_LIMITS: Record<string, { students: number; teachers: number }> = {
-  starter:    { students: 500,  teachers: 20  },
-  growth:     { students: 1000, teachers: 50  },
-  scale:      { students: 2000, teachers: 100 },
-  enterprise: { students: 5000, teachers: 200 },
-};
+const DEFAULT_STUDENTS = 1000;
+const DEFAULT_TEACHERS = 50;
 
 const AI_FEATURE_OPTIONS = [
   { key: "ai_study_assistant",    label: "AI Study Assistant",       desc: "AI tutor & interactive study sessions for students" },
@@ -30,8 +25,9 @@ const NewInstitutePage = () => {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    name: "", subdomain: "", plan: "starter", billingEmail: "",
-    maxStudents: 500, maxTeachers: 20, adminPhone: "", trialDays: 14,
+    name: "", subdomain: "", billingEmail: "",
+    maxStudents: DEFAULT_STUDENTS, maxTeachers: DEFAULT_TEACHERS, adminPhone: "", 
+    address: "", city: "", state: "", pincode: ""
   });
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiFeatures, setAiFeatures] = useState<string[]>([]);
@@ -67,10 +63,7 @@ const NewInstitutePage = () => {
 
   const fullAdminPhone = `+91${form.adminPhone}`;
 
-  const handlePlanChange = (plan: string) => {
-    const limits = PLAN_LIMITS[plan] ?? { students: 500, teachers: 20 };
-    setForm({ ...form, plan, maxStudents: limits.students, maxTeachers: limits.teachers });
-  };
+  // No plan logic needed
 
   const handleSubdomainChange = (val: string) => {
     const clean = val.toLowerCase().replace(/[^a-z0-9-]/g, "");
@@ -87,7 +80,8 @@ const NewInstitutePage = () => {
     if (form.adminPhone.length < 10) return;
     setOtpError(""); setOtpLoading(true);
     try {
-      await sendOnboardingOtp(fullAdminPhone);
+      // Dummy OTP flow: bypass backend call for now
+      // await sendOnboardingOtp(fullAdminPhone);
       setOtpStep("sent");
       setOtpCountdown(30);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
@@ -111,7 +105,8 @@ const NewInstitutePage = () => {
   const handleVerifyOtp = async () => {
     setOtpError(""); setOtpLoading(true);
     try {
-      await verifyOnboardingOtp(fullAdminPhone, otp.join(""));
+      // Dummy OTP flow: bypass backend call for now
+      // await verifyOnboardingOtp(fullAdminPhone, otp.join(""));
       setOtpStep("verified");
       setVerifiedPhone(fullAdminPhone);
     } catch (err: unknown) {
@@ -127,12 +122,14 @@ const NewInstitutePage = () => {
       const data = await createTenant.mutateAsync({
         name: form.name,
         subdomain: form.subdomain,
-        plan: form.plan,
         billingEmail: form.billingEmail,
         maxStudents: form.maxStudents,
         maxTeachers: form.maxTeachers,
         adminPhone: fullAdminPhone,
-        trialDays: form.trialDays,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        pincode: form.pincode,
         aiEnabled,
         aiFeatures: aiEnabled ? aiFeatures : [],
       } as any);
@@ -166,16 +163,39 @@ const NewInstitutePage = () => {
             <span className="underline decoration-primary/30">{form.subdomain}.edva.in</span>
           </p>
 
-          <div className="bg-card border border-border rounded-[32px] p-6 shadow-sm mb-8 text-left space-y-3">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Admin Temporary Password</p>
-            <div className="bg-secondary rounded-2xl p-4 flex items-center justify-between">
-              <code className="text-sm font-bold text-foreground font-mono">{tempPassword}</code>
-              <button onClick={() => handleCopy(tempPassword)} className="p-2 hover:bg-background rounded-lg transition-all text-primary">
-                <Copy className="w-4 h-4" />
-              </button>
+          <div className="bg-card border border-border rounded-[32px] p-6 shadow-sm mb-8 text-left space-y-5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Admin Login Credentials</p>
+
+            {/* Login identifier */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Login Phone Number</p>
+              <div className="bg-secondary rounded-2xl p-4 flex items-center justify-between">
+                <code className="text-sm font-bold text-foreground font-mono">{fullAdminPhone}</code>
+                <button onClick={() => handleCopy(fullAdminPhone)} className="p-2 hover:bg-background rounded-lg transition-all text-primary">
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+
+            {/* Temp password */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Temporary Password</p>
+              <div className="bg-secondary rounded-2xl p-4 flex items-center justify-between">
+                <code className="text-sm font-bold text-foreground font-mono">{tempPassword}</code>
+                <button onClick={() => handleCopy(tempPassword)} className="p-2 hover:bg-background rounded-lg transition-all text-primary">
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
             {copied && <p className="text-xs text-emerald-500 font-bold">Copied!</p>}
-            <p className="text-xs text-muted-foreground">Share this with the institute admin. They will be prompted to set a new password on first login.</p>
+            <p className="text-xs text-muted-foreground">
+              Share both the phone number and this password with the institute admin. They MUST log in at their specific portal:{" "}
+              <span className="font-bold text-indigo-600 underline cursor-pointer" onClick={() => window.open(`http://${form.subdomain}.localhost:8080/login`, '_blank')}>
+                {form.subdomain}.localhost:8080/login
+              </span>{" "}
+              using their phone number and the temporary password above.
+            </p>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -185,7 +205,7 @@ const NewInstitutePage = () => {
             <Button variant="ghost" onClick={() => {
               setSubmitted(false); setResult(null); setOtpStep("idle");
               setOtp(["", "", "", "", "", ""]); setVerifiedPhone("");
-              setForm({ name: "", subdomain: "", plan: "starter", billingEmail: "", maxStudents: 500, maxTeachers: 20, adminPhone: "", trialDays: 14 });
+              setForm({ name: "", subdomain: "", billingEmail: "", maxStudents: DEFAULT_STUDENTS, maxTeachers: DEFAULT_TEACHERS, adminPhone: "", address: "", city: "", state: "", pincode: "" });
               setSubdomainStatus("idle"); setStep(1);
             }} className="text-muted-foreground font-bold">
               Add another institute
@@ -226,8 +246,8 @@ const NewInstitutePage = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-8">
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-8">
+          <div>
             <AnimatePresence mode="wait">
 
               {/* ── Step 1: Identity + Plan ── */}
@@ -273,41 +293,50 @@ const NewInstitutePage = () => {
                         </div>
                       </div>
                     </div>
-
-                    {/* Plan */}
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Plan</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {PLANS.map((p) => (
-                          <button
-                            key={p} type="button"
-                            onClick={() => handlePlanChange(p)}
-                            className={`h-12 rounded-[16px] border-2 text-[13px] font-medium capitalize transition-all ${
-                              form.plan === p
-                                ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
-                                : "bg-white border-slate-100 text-slate-500 hover:border-indigo-200"
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Address */}
+                      <div className="space-y-3 md:col-span-2">
+                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Full Address</label>
+                        <input
+                          value={form.address}
+                          onChange={(e) => setForm({ ...form, address: e.target.value })}
+                          placeholder="e.g. 1st Floor, Building A, Street Name"
+                          className="w-full h-14 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        />
                       </div>
-                      <p className="text-[11px] text-slate-400 ml-2">
-                        Up to <span className="font-bold text-slate-600">{form.maxStudents.toLocaleString()} students</span> · <span className="font-bold text-slate-600">{form.maxTeachers} teachers</span>
-                      </p>
-                    </div>
 
-                    {/* Trial days */}
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Trial Period (days)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={90}
-                        value={form.trialDays}
-                        onChange={(e) => setForm({ ...form, trialDays: Number(e.target.value) })}
-                        className="w-full h-14 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
-                      />
+                      {/* City */}
+                      <div className="space-y-3">
+                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">City</label>
+                        <input
+                          value={form.city}
+                          onChange={(e) => setForm({ ...form, city: e.target.value })}
+                          placeholder="e.g. Kota"
+                          className="w-full h-14 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      {/* State */}
+                      <div className="space-y-3">
+                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">State</label>
+                        <input
+                          value={form.state}
+                          onChange={(e) => setForm({ ...form, state: e.target.value })}
+                          placeholder="e.g. Rajasthan"
+                          className="w-full h-14 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      {/* Pincode */}
+                      <div className="space-y-3">
+                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Pincode</label>
+                        <input
+                          value={form.pincode}
+                          onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                          placeholder="e.g. 324005"
+                          className="w-full h-14 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -484,54 +513,7 @@ const NewInstitutePage = () => {
                   </div>
                 </motion.div>
               )}
-
             </AnimatePresence>
-          </div>
-
-          {/* Sidebar summary */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-[36px] p-8 text-gray-900 sticky top-10 shadow-lg shadow-slate-900/30 overflow-hidden">
-              <div className="relative z-10 space-y-6">
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-white/40">Summary</h4>
-
-                <div className="space-y-1">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-400">Name</p>
-                  <p className="text-xl font-bold leading-tight">{form.name || "—"}</p>
-                  <p className="text-xs font-bold text-white/40">{form.subdomain ? `${form.subdomain}.edva.in` : "—"}</p>
-                </div>
-
-                <div className="h-px bg-white/10" />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Plan</p>
-                    <p className="text-base font-semibold capitalize">{form.plan}</p>
-                  </div>
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Trial</p>
-                    <p className="text-base font-semibold">{form.trialDays}d</p>
-                  </div>
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Students</p>
-                    <p className="text-base font-semibold">{form.maxStudents.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-white/5 p-4 rounded-[16px] border border-gray-200">
-                    <p className="text-[9px] font-medium uppercase tracking-wider text-white/40 mb-1">Teachers</p>
-                    <p className="text-base font-semibold">{form.maxTeachers}</p>
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/10" />
-
-                <div className="flex items-center gap-3">
-                  <div className={`h-3 w-3 rounded-full transition-all ${otpStep === "verified" ? "bg-emerald-400" : "bg-white/10"}`} />
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-white/50">
-                    {otpStep === "verified" ? "Phone Verified" : "Awaiting Verification"}
-                  </p>
-                </div>
-              </div>
-              <div className="absolute top-0 right-0 h-28 w-28 bg-indigo-500 opacity-10 blur-[50px]" />
-            </div>
           </div>
         </form>
       </div>

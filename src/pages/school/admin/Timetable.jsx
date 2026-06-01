@@ -88,7 +88,7 @@ export default function Timetable() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold text-surface-950">Timetable</h1>
+          <h1 className="font-display text-3xl font-bold text-surface-950">Timetable</h1>
           <p className="mt-2 text-sm text-surface-500">Manage class schedules and teacher assignments.</p>
         </div>
         <button onClick={handleAddClick} className="rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700">Add Slot</button>

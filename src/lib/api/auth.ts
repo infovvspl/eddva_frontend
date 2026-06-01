@@ -141,7 +141,7 @@ export interface SchoolLoginResponse {
 }
 
 /** Login via school backend — returns token (not accessToken) */
-export async function loginSchoolWithPassword(payload: { email: string; password: string }): Promise<SchoolLoginResponse> {
+export async function loginSchoolWithPassword(payload: { email?: string; phone?: string; password: string }): Promise<SchoolLoginResponse> {
   tokenStorage.clear();
   const res = await apiClient.post("/school/auth/login", payload);
   const data = extractData<SchoolLoginResponse>(res);

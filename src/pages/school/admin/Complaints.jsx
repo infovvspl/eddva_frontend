@@ -81,7 +81,7 @@ export default function Complaints() {
     <div className="space-y-6 pb-12">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold text-surface-950">Support Operations</h1>
+          <h1 className="font-display text-3xl font-bold text-surface-950">Support Operations</h1>
           <p className="mt-2 text-sm font-medium text-surface-500">
             {user?.role === 'SUPER_ADMIN' ? 'Monitor tenant support activity across institutes.' : 'Create and track support tickets for your institute.'}
           </p>
@@ -103,7 +103,7 @@ export default function Complaints() {
         ].map(([label, value, tone]) => (
           <div key={label} className="glass-panel rounded-lg p-5 shadow-soft">
             <div className={`mb-3 inline-flex rounded-lg px-3 py-2 text-sm font-bold ${tone}`}>{label}</div>
-            <p className="font-display text-3xl font-extrabold text-surface-950">{value}</p>
+            <p className="font-display text-3xl font-bold text-surface-950">{value}</p>
           </div>
         ))}
       </div>

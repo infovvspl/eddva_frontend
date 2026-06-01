@@ -82,7 +82,7 @@ export default function Notices() {
     <div className="mx-auto max-w-6xl px-2 sm:px-4">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-3xl font-extrabold text-surface-950">Public Notice Panel</h1>
+          <h1 className="font-display text-3xl font-bold text-surface-950">Public Notice Panel</h1>
           <p className="mt-2 text-sm text-surface-500">Manage school notices with clean responsive spacing across all devices.</p>
         </div>
         <button 

@@ -74,7 +74,7 @@ export default function Reports() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-extrabold text-surface-950">Reports & Analytics</h1>
+        <h1 className="font-display text-3xl font-bold text-surface-950">Reports & Analytics</h1>
         <p className="mt-2 text-sm text-surface-500">View attendance, teacher performance, student performance, and exam reports. Click a card to open the full report view.</p>
       </div>
 
@@ -83,7 +83,7 @@ export default function Reports() {
           <div 
             key={report.title} 
             onClick={() => setSelectedReport(report.title)}
-            className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm hover:border-brand-300 hover:shadow-md transition-all cursor-pointer hover:scale-105"
+            className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm hover:border-brand-300 hover:shadow-sm ring-1 ring-slate-100 transition-all cursor-pointer hover:scale-105"
           >
             <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${report.accent}`}>
               <report.icon className="h-6 w-6" />

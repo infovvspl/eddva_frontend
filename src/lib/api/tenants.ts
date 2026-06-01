@@ -6,12 +6,14 @@ import { apiClient, extractData } from "./client";
 export interface TenantCreatePayload {
   name: string;
   subdomain: string;
-  plan: string;
-  billingEmail: string;
-  maxStudents: number;
-  maxTeachers: number;
+  billingEmail?: string;
+  maxStudents?: number;
+  maxTeachers?: number;
   adminPhone: string;
-  trialDays?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   aiEnabled?: boolean;
   aiFeatures?: string[];
 }

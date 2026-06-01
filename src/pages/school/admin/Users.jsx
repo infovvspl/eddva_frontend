@@ -107,7 +107,7 @@ export default function Users() {
     <div className="space-y-6 pb-12">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold text-surface-950">Registered Users</h1>
+          <h1 className="font-display text-3xl font-bold text-surface-950">Registered Users</h1>
           <p className="mt-2 text-sm font-medium text-surface-500">
             View and manage all registered users across the platform.
           </p>
@@ -197,7 +197,7 @@ export default function Users() {
                   <tr key={item.id} className="border-t border-surface-100 transition hover:bg-surface-50">
                     <td className="p-4 pl-5">
                       <div className="flex items-center gap-3">
-                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-sm font-black text-brand-700">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-sm font-bold tracking-tight text-brand-700">
                           {(item.name || 'U').charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -296,11 +296,11 @@ export default function Users() {
 
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="mb-8 flex items-center gap-4">
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-brand-100 text-2xl font-black text-brand-700">
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-brand-100 text-2xl font-bold tracking-tight text-brand-700">
                     {(selectedUser.name || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-display text-2xl font-extrabold text-surface-950">{selectedUser.name}</h3>
+                    <h3 className="font-display text-2xl font-bold text-surface-950">{selectedUser.name}</h3>
                     <div className="mt-2"><StatusBadge status={selectedUser.status || 'ACTIVE'} /></div>
                   </div>
                 </div>

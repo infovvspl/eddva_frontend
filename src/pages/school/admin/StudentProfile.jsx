@@ -26,7 +26,7 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
       flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200
       ${active 
         ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' 
-        : 'border-transparent bg-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900/70 dark:hover:text-white'}
+        : 'border-transparent bg-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900/70 dark:hover:text-white'}
     `}
   >
     <Icon size={18} />
@@ -36,7 +36,7 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
 
 const DetailItem = ({ label, value, icon: Icon }) => (
   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+    <div className="flex items-center gap-2 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
       {Icon && <Icon size={12} />}
       {label}
     </div>
@@ -90,7 +90,7 @@ export default function StudentProfile() {
       <div className="p-12 text-center">
         <div className="max-w-md mx-auto p-8 rounded-3xl bg-red-50 border border-red-100 shadow-xl shadow-red-200/20">
           <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
-          <h2 className="text-xl font-black text-red-900 mb-2">Student Not Found</h2>
+          <h2 className="text-xl font-bold tracking-tight text-red-900 mb-2">Student Not Found</h2>
           <p className="text-sm font-bold text-red-600 mb-6">{student?.error || "We couldn't find the student profile you're looking for."}</p>
           <button 
             onClick={() => navigate(-1)}
@@ -120,7 +120,7 @@ export default function StudentProfile() {
           <button 
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all disabled:opacity-50"
           >
             {exporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
             Export PDF
@@ -163,15 +163,15 @@ export default function StudentProfile() {
               {student.photo ? (
                 <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-4xl font-black text-blue-700">
+                <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-4xl font-bold tracking-tight text-blue-700">
                   {getInitials(student.name)}
                 </div>
               )}
             </div>
             <div className="flex-1 pb-4">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{student.name}</h1>
-                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">Active</span>
+                <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{student.name}</h1>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-emerald-500/20">Active</span>
               </div>
               <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-500">
                 <div className="flex items-center gap-2"><GraduationCap size={18} className="text-blue-500" /> Class {profile.section?.class?.name || '—'} - {profile.section?.name || '—'}</div>
@@ -180,8 +180,8 @@ export default function StudentProfile() {
               </div>
             </div>
             <div className="pb-4 hidden lg:block text-right">
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Enrollment No</div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{profile.enrollmentNo || '—'}</div>
+              <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Enrollment No</div>
+              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tighter">{profile.enrollmentNo || '—'}</div>
             </div>
           </div>
 
@@ -205,7 +205,7 @@ export default function StudentProfile() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="md:col-span-2 space-y-8">
                     <div>
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Identity Details</h3>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Identity Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Full Name" value={student.name} icon={User} />
                         <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : '—'} icon={Calendar} />
@@ -215,7 +215,7 @@ export default function StudentProfile() {
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Contact Information</h3>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Contact Information</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Primary Email" value={student.email} icon={Mail} />
                         <DetailItem label="Phone Number" value={student.phone} icon={Smartphone} />
@@ -223,7 +223,7 @@ export default function StudentProfile() {
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Parent / Guardian Details</h3>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Parent / Guardian Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Father's Name" value={profile.fatherName} />
                         <DetailItem label="Mother's Name" value={profile.motherName} />
@@ -236,15 +236,15 @@ export default function StudentProfile() {
                   <div className="space-y-6">
                     <div className="p-6 rounded-3xl bg-blue-600 text-white shadow-xl shadow-blue-600/20">
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-xs font-black uppercase tracking-widest opacity-80">Medical Alert</h4>
+                        <h4 className="text-xs font-bold tracking-tight uppercase tracking-widest opacity-80">Medical Alert</h4>
                         <AlertCircle size={20} />
                       </div>
                       <p className="text-sm font-bold leading-relaxed mb-4">
                         {profile.medicalConditions || 'No significant medical conditions reported.'}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-black uppercase">Blood: {profile.bloodGroup || '—'}</span>
-                        <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-black uppercase">Allergy: {profile.allergies || 'None'}</span>
+                        <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-bold tracking-tight uppercase">Blood: {profile.bloodGroup || '—'}</span>
+                        <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-bold tracking-tight uppercase">Allergy: {profile.allergies || 'None'}</span>
                       </div>
                     </div>
                   </div>
@@ -260,7 +260,7 @@ export default function StudentProfile() {
                     <DetailItem label="Admission Date" value={profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : '—'} icon={Clock} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Subject Performance Overview</h3>
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Subject Performance Overview</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {['Mathematics', 'Physics', 'Chemistry', 'English', 'History'].map(sub => (
                         <div key={sub} className="p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
@@ -271,8 +271,8 @@ export default function StudentProfile() {
                             <div className="text-sm font-bold text-slate-700">{sub}</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-[10px] font-black text-slate-400 uppercase">Grade</div>
-                            <div className="text-sm font-black text-blue-600">A+</div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Grade</div>
+                            <div className="text-sm font-bold tracking-tight text-blue-600">A+</div>
                           </div>
                         </div>
                       ))}
@@ -285,25 +285,25 @@ export default function StudentProfile() {
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 text-center">
-                      <div className="text-5xl font-black text-blue-600 mb-2">94%</div>
-                      <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Attendance Average</div>
+                      <div className="text-5xl font-bold tracking-tight text-blue-600 mb-2">94%</div>
+                      <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest">Attendance Average</div>
                     </div>
                     <div className="p-8 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
-                      <div className="text-5xl font-black mb-2">172</div>
-                      <div className="text-xs font-black uppercase tracking-widest">Days Present</div>
+                      <div className="text-5xl font-bold tracking-tight mb-2">172</div>
+                      <div className="text-xs font-bold tracking-tight uppercase tracking-widest">Days Present</div>
                     </div>
                     <div className="p-8 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
-                      <div className="text-5xl font-black mb-2">12</div>
-                      <div className="text-xs font-black uppercase tracking-widest">Days Absent</div>
+                      <div className="text-5xl font-bold tracking-tight mb-2">12</div>
+                      <div className="text-xs font-bold tracking-tight uppercase tracking-widest">Days Absent</div>
                     </div>
                   </div>
                   <div className="rounded-3xl border border-slate-100 overflow-hidden">
                     <table className="w-full text-left">
                       <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
-                          <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                          <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                          <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Remarks</th>
+                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
+                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
+                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 text-sm">
@@ -311,7 +311,7 @@ export default function StudentProfile() {
                           <tr key={i}>
                             <td className="p-4 font-bold text-slate-600">May {12-i}, 2026</td>
                             <td className="p-4">
-                              <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase">Present</span>
+                              <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-bold tracking-tight uppercase">Present</span>
                             </td>
                             <td className="p-4 text-slate-400">On Time</td>
                           </tr>
@@ -326,7 +326,7 @@ export default function StudentProfile() {
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-8 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-100/50">
-                      <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <h4 className="text-sm font-bold tracking-tight text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
                         <TrendingUp size={18} className="text-blue-600" />
                         GPA Trend
                       </h4>
@@ -334,26 +334,26 @@ export default function StudentProfile() {
                         {[60, 80, 75, 90, 85, 95].map((h, i) => (
                           <div key={i} className="flex-1 bg-blue-100 rounded-t-xl relative group">
                             <div className="absolute inset-0 bg-blue-600 rounded-t-xl transition-all duration-500" style={{ height: `${h}%` }} />
-                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400">Term {i+1}</div>
+                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-tight text-slate-400">Term {i+1}</div>
                           </div>
                         ))}
                       </div>
                     </div>
                     <div className="space-y-4">
                       <div className="p-6 rounded-3xl bg-slate-900 text-white">
-                        <h5 className="text-xs font-black uppercase tracking-widest opacity-60 mb-2">Teacher's Remark</h5>
+                        <h5 className="text-xs font-bold tracking-tight uppercase tracking-widest opacity-60 mb-2">Teacher's Remark</h5>
                         <p className="text-sm font-bold italic">
                           "Deepak has shown exceptional growth in logical reasoning this term. He consistently helps his peers during lab sessions."
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-2xl bg-slate-50 text-center border border-slate-100">
-                          <div className="text-2xl font-black text-blue-600">3.8</div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase">Current GPA</div>
+                          <div className="text-2xl font-bold tracking-tight text-blue-600">3.8</div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Current GPA</div>
                         </div>
                         <div className="p-4 rounded-2xl bg-slate-50 text-center border border-slate-100">
-                          <div className="text-2xl font-black text-emerald-600">Top 5%</div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase">Class Rank</div>
+                          <div className="text-2xl font-bold tracking-tight text-emerald-600">Top 5%</div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Class Rank</div>
                         </div>
                       </div>
                     </div>
@@ -365,10 +365,10 @@ export default function StudentProfile() {
                 <div className="space-y-8">
                   <div className="p-8 rounded-[2.5rem] bg-indigo-600 text-white flex flex-col md:flex-row items-center justify-between gap-8">
                     <div>
-                      <div className="text-xs font-black uppercase tracking-widest opacity-70 mb-1">Total Outstanding</div>
-                      <div className="text-5xl font-black tracking-tighter">₹ 12,500</div>
+                      <div className="text-xs font-bold tracking-tight uppercase tracking-widest opacity-70 mb-1">Total Outstanding</div>
+                      <div className="text-5xl font-bold tracking-tight tracking-tighter">₹ 12,500</div>
                     </div>
-                    <button className="px-8 py-4 rounded-2xl bg-white text-indigo-600 font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
+                    <button className="px-8 py-4 rounded-2xl bg-white text-indigo-600 font-bold tracking-tight uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
                       Pay Now
                     </button>
                   </div>
@@ -376,10 +376,10 @@ export default function StudentProfile() {
                     <table className="w-full text-left">
                       <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
-                          <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Invoice</th>
-                          <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Due Date</th>
-                          <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
-                          <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Invoice</th>
+                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Due Date</th>
+                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Amount</th>
+                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 text-sm font-bold">
@@ -389,7 +389,7 @@ export default function StudentProfile() {
                             <td className="p-4 text-slate-500">June 15, 2026</td>
                             <td className="p-4 text-slate-900">₹ 4,500</td>
                             <td className="p-4">
-                              <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i === 1 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                              <span className={`px-2 py-1 rounded-lg text-[10px] font-bold tracking-tight uppercase ${i === 1 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-600'}`}>
                                 {i === 1 ? 'Pending' : 'Paid'}
                               </span>
                             </td>

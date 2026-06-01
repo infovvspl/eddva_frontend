@@ -29,22 +29,22 @@ export default function SecurityCenterPage() {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-2xl font-extrabold">Security Center</h1>
+        <h1 className="font-display text-2xl font-bold">Security Center</h1>
         <p className="text-sm text-surface-600">Monitor sessions, failed logins, and security alerts.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm font-bold">Security Score</p>
-          <p className="mt-2 text-3xl font-extrabold">{summary?.score ?? '--'}</p>
+          <p className="mt-2 text-3xl font-bold">{summary?.score ?? '--'}</p>
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm font-bold">Active Sessions</p>
-          <p className="mt-2 text-3xl font-extrabold">{sessions.length}</p>
+          <p className="mt-2 text-3xl font-bold">{sessions.length}</p>
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm font-bold">Failed Logins</p>
-          <p className="mt-2 text-3xl font-extrabold">0</p>
+          <p className="mt-2 text-3xl font-bold">0</p>
         </div>
       </div>
 

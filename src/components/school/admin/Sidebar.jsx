@@ -175,7 +175,7 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:static',
+          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:static',
           collapsed && canCollapse ? 'md:w-[80px]' : 'md:w-[280px]',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
@@ -207,7 +207,7 @@ export default function Sidebar({ open, onClose }) {
                 <div key={group.heading} className="mb-6">
                   <p
                     className={cn(
-                      'mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500',
+                      'mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest tracking-widest text-slate-400 dark:text-slate-500',
                       collapsed && canCollapse && 'md:hidden'
                     )}
                   >
@@ -268,7 +268,7 @@ export default function Sidebar({ open, onClose }) {
                 {isInstitute ? (
                   <InstituteLogo institute={institute} size="sm" />
                 ) : (
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-xs font-black text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-xs font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                     {(user?.name || 'T').charAt(0).toUpperCase()}
                   </div>
                 )}

@@ -169,7 +169,7 @@ export default function Academics() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-extrabold text-surface-950">Academics</h1>
+        <h1 className="font-display text-3xl font-bold text-surface-950">Academics</h1>
         <p className="mt-2 text-sm text-surface-500">Manage classes, sections, and subjects.</p>
       </div>
 
@@ -241,7 +241,7 @@ export default function Academics() {
             <div className="space-y-4">
               {classes.filter(c => (c.sections || []).length > 0).map(c => (
                 <div key={c.id}>
-                  <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-surface-400">{c.name}</h3>
+                  <h3 className="mb-2 text-xs font-bold tracking-tight uppercase tracking-widest text-surface-400">{c.name}</h3>
                   <ul className="space-y-2">
                     {(c.sections || []).map(sec => (
                       <li key={sec.id} className="flex items-center justify-between rounded-md border border-surface-100 bg-surface-50/50 p-2 text-sm">

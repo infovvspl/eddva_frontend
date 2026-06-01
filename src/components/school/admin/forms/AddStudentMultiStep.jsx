@@ -45,7 +45,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
     <div className="relative group">
       <div className={`
         relative flex items-center transition-all duration-300 rounded-2xl border-2 
-        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-slate-700'}
+        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700'}
         ${error ? 'border-red-500' : ''}
         bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm
       `}>
@@ -86,7 +86,7 @@ const FloatingSelect = ({ label, name, value, onChange, options }) => (
       name={name}
       value={value}
       onChange={onChange}
-      className="w-full h-[54px] rounded-2xl border-2 border-slate-200 bg-white/50 px-4 pt-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white"
+      className="w-full h-[54px] rounded-2xl border-2 border-slate-100 bg-white/50 px-4 pt-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white"
     >
       {options.map((option) => (
         <option key={option || 'blank'} value={option}>
@@ -94,16 +94,16 @@ const FloatingSelect = ({ label, name, value, onChange, options }) => (
         </option>
       ))}
     </select>
-    <label className="absolute left-4 top-1.5 text-[10px] font-black uppercase text-blue-600">{label}</label>
+    <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight uppercase text-blue-600">{label}</label>
   </div>
 );
 
 const SectionHeader = ({ title, description, badge }) => (
   <div className="mb-8">
     <div className="flex items-center gap-3 mb-1">
-      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{title}</h2>
       {badge && (
-        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-blue-500/20">
           {badge}
         </span>
       )}
@@ -122,7 +122,7 @@ const AIAssistantCard = ({ message }) => (
       <Sparkles className="text-white" size={20} />
     </div>
     <div>
-      <h4 className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
+      <h4 className="text-sm font-bold tracking-tight text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
     </div>
   </motion.div>
@@ -303,13 +303,13 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
               <div className="relative">
-                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none">
+                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none">
                   <option value="">Select Gender</option>
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
                   <option value="OTHER">Other</option>
                 </select>
-                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Gender</label>
+                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
               </div>
               <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
               <FloatingSelect label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} options={MARITAL_STATUS_OPTIONS} />
@@ -323,7 +323,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
               <div className="flex gap-2">
                 <div className="flex-1"><FloatingInput label="Enrollment No" name="enrollmentNo" value={formData.enrollmentNo} readOnly icon={Fingerprint} /></div>
-                <button type="button" onClick={generateEnrollmentNo} className="px-4 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:brightness-110 flex items-center gap-2">
+                <button type="button" onClick={generateEnrollmentNo} className="px-4 rounded-2xl bg-slate-900 text-white text-xs font-bold tracking-tight uppercase tracking-widest hover:brightness-110 flex items-center gap-2">
                   {idLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                 </button>
               </div>
@@ -337,14 +337,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   name="classId" 
                   value={formData.classId} 
                   onChange={handleChange}
-                  className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
+                  className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
                 >
                   <option value="">Select Class</option>
                   {classes.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Class</label>
+                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Class</label>
               </div>
 
               <div className="relative">
@@ -353,14 +353,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   value={formData.sectionId} 
                   onChange={handleChange}
                   disabled={!formData.classId}
-                  className="w-full h-[54px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none disabled:opacity-50"
+                  className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none disabled:opacity-50"
                 >
                   <option value="">Select Section</option>
                   {sections.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
-                <label className="absolute left-4 top-1.5 text-[10px] font-black text-blue-600 uppercase">Section</label>
+                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Section</label>
               </div>
             </div>
 
@@ -406,7 +406,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               {['Birth Certificate', 'Aadhar Card', 'Previous Marksheet', 'Transfer Certificate'].map(doc => {
                 const hasDoc = formData.documents?.[doc];
                 return (
-                  <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
+                  <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
                     <input 
                       type="file" 
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -416,7 +416,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     {hasDoc ? (
                       <div className="flex flex-col items-center">
                         <CheckCircle className="text-emerald-500 mb-2" size={32} />
-                        <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
+                        <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
                         <div className="flex gap-2 mt-2 relative z-20">
                           <button 
                             type="button"
@@ -434,7 +434,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     ) : (
                       <>
                         <Upload className="text-blue-500 mb-4 group-hover:scale-110 transition-transform" size={24} />
-                        <h6 className="text-sm font-black text-slate-900 dark:text-white mb-1">{doc}</h6>
+                        <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc}</h6>
                         <p className="text-xs font-bold text-slate-400">PDF, DOC, JPG up to 5MB</p>
                       </>
                     )}
@@ -454,7 +454,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                    {formData.photo ? <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
-                  <h3 className="text-3xl font-black mb-2">{formData.name || 'New Student'}</h3>
+                  <h3 className="text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>
                   <div className="flex flex-wrap gap-4 text-sm font-bold text-white/80">
                     <div>{formData.enrollmentNo || 'No Enrollment'}</div>
                     <div>{formData.email || 'No Email'}</div>
@@ -473,9 +473,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   };
 
   return (
-    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800">
-      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800 p-8 hidden lg:flex flex-col">
-        <div className="mb-10 font-black text-2xl tracking-tighter">EDDVA <span className="text-blue-600">STUDENT</span></div>
+    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
+      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-8 hidden lg:flex flex-col">
+        <div className="mb-10 font-bold tracking-tight text-2xl tracking-tighter">EDDVA <span className="text-blue-600">STUDENT</span></div>
         <div className="flex-1 space-y-2">
           {STEPS.map(step => {
             const Icon = step.icon;
@@ -487,7 +487,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
                 </div>
                 <div className="text-left">
-                  <h4 className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
+                  <h4 className={`text-xs font-bold tracking-tight uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
                   <p className="text-[10px] font-bold text-slate-400">{step.description}</p>
                 </div>
               </button>
@@ -502,14 +502,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
           <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
         </div>
-        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-between">
-          <button onClick={onCancel} className="text-sm font-black text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
+        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 flex items-center justify-between">
+          <button onClick={onCancel} className="text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
           <div className="flex gap-3">
-            {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-200 text-xs font-black uppercase tracking-widest flex items-center gap-2">Back</button>}
+            {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-100 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2">Back</button>}
             <button 
               onClick={currentStep < STEPS.length ? () => setCurrentStep(s => s + 1) : () => onSubmit(formData)} 
               disabled={isLoading}
-              className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
+              className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
             >
               {currentStep < STEPS.length ? (
                 <>Next Step <ChevronRight size={16} /></>
