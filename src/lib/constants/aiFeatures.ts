@@ -1,0 +1,58 @@
+export const AI_FEATURES = [
+  {
+    key: 'ai_doubt_solver',
+    label: 'AI Doubt Solver',
+    description: 'Students can ask doubts and get AI answers',
+    icon: 'MessageCircleQuestion',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_notes_generator',
+    label: 'AI Notes Generator',
+    description: 'Auto-generate study notes from lectures',
+    icon: 'FileText',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_quiz_generator',
+    label: 'AI Quiz Generator',
+    description: 'Generate MCQ quizzes from lesson content',
+    icon: 'ClipboardList',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_study_planner',
+    label: 'AI Study Planner',
+    description: 'Personalized study plans for students',
+    icon: 'CalendarCheck',
+    defaultEnabled: false,
+  },
+  {
+    key: 'ai_homework_checker',
+    label: 'AI Homework Checker',
+    description: 'AI checks and grades homework submissions',
+    icon: 'CheckSquare',
+    defaultEnabled: false,
+  },
+  {
+    key: 'ai_attendance_insights',
+    label: 'AI Attendance Insights',
+    description: 'Smart attendance pattern analysis',
+    icon: 'TrendingUp',
+    defaultEnabled: false,
+  },
+  {
+    key: 'ai_parent_reports',
+    label: 'AI Parent Reports',
+    description: 'Auto-generate parent progress reports',
+    icon: 'FileBarChart',
+    defaultEnabled: false,
+  },
+  {
+    key: 'ai_content_recommend',
+    label: 'AI Content Recommendations',
+    description: 'Suggest relevant content to students',
+    icon: 'Sparkles',
+    defaultEnabled: false,
+  },
+];

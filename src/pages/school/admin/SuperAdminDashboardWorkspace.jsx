@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
   Area,
@@ -35,6 +35,7 @@ import {
   Ticket,
   GraduationCap,
   BookOpen,
+  BarChart3,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -180,7 +181,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
                 Welcome back, Super Admin 👋
               </h1>
               <p className="mt-4 text-lg font-medium text-white/90">
-                Monitor platform performance, institute onboarding, and operational metrics in real-time.
+                Monitor school performance, onboarding, and operational metrics in real-time.
               </p>
             </div>
             
@@ -210,10 +211,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-6"
       >
         <KpiCard
-          title="Total Institutes"
+          title="Total Schools"
           value={stats?.totalInstitutes || 0}
           icon={Building2}
-          subtext="Live institute count"
+          subtext="Registered schools"
           trend={instituteTrend}
           gradient={['#2563EB', '#60A5FA', 'bg-gradient-to-br from-blue-600 to-blue-500']}
           delay={0.12}
@@ -237,7 +238,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           delay={0.16}
         />
         <KpiCard
-          title="Total Faculty"
+          title="Total Teachers"
           value={stats?.totalTeachers || 0}
           icon={BookOpen}
           subtext="Registered teachers"
@@ -264,6 +265,24 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           gradient={['#EC4899', '#F472B6', 'bg-gradient-to-br from-rose-600 to-pink-500']}
           delay={0.22}
         />
+        <KpiCard
+          title="Total Parents"
+          value={stats?.totalParents || 0}
+          icon={Users}
+          subtext="Registered parent accounts"
+          trend={userTrend}
+          gradient={['#F43F5E', '#FB7185', 'bg-gradient-to-br from-rose-500 to-rose-400']}
+          delay={0.24}
+        />
+        <KpiCard
+          title="Active Schools"
+          value={stats?.activeSchools || 0}
+          icon={Building2}
+          subtext="Currently active schools"
+          trend={instituteTrend}
+          gradient={['#14B8A6', '#2DD4BF', 'bg-gradient-to-br from-teal-500 to-teal-400']}
+          delay={0.26}
+        />
       </motion.div>
 
       {/* Analytics Section */}
@@ -285,43 +304,59 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             </span>
           </div>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={userGrowthData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
-                <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
-                <RechartsTooltip content={<ChartTooltip />} />
-                <Legend />
-                <Line type="monotone" dataKey="users" stroke="#2563EB" strokeWidth={3} dot={{ fill: '#2563EB', r: 5 }} />
-                <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} dot={{ fill: '#10B981', r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {!userGrowthData?.length ? (
+              <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+                <BarChart3 className="mb-3 h-10 w-10 text-slate-200 dark:text-slate-800" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">No data yet</h3>
+                <p className="mt-1 text-xs font-medium text-slate-500">Data will appear as schools onboard</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={userGrowthData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                  <RechartsTooltip content={<ChartTooltip />} />
+                  <Legend />
+                  <Line type="monotone" dataKey="users" stroke="#2563EB" strokeWidth={3} dot={{ fill: '#2563EB', r: 5 }} />
+                  <Line type="monotone" dataKey="active" stroke="#10B981" strokeWidth={3} dot={{ fill: '#10B981', r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        {/* Institute Registration Chart */}
+        {/* School Registration Chart */}
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Institute Registrations</h3>
-              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">New institutes registered per week</p>
+              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">School Registrations</h3>
+              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">New schools registered per week</p>
             </div>
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800">
               This Month
             </span>
           </div>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={instituteGrowthData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
-                <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
-                <RechartsTooltip content={<ChartTooltip />} />
-                <Legend />
-                <Bar dataKey="institutes" fill="#2563EB" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="approved" fill="#10B981" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {!instituteGrowthData?.length ? (
+              <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+                <BarChart3 className="mb-3 h-10 w-10 text-slate-200 dark:text-slate-800" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">No data yet</h3>
+                <p className="mt-1 text-xs font-medium text-slate-500">Data will appear as schools onboard</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={instituteGrowthData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                  <RechartsTooltip content={<ChartTooltip />} />
+                  <Legend />
+                  <Bar dataKey="institutes" fill="#2563EB" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="approved" fill="#10B981" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </motion.div>

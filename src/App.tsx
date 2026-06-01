@@ -26,6 +26,17 @@ const NewInstitutePage = lazy(() => import("./pages/super-admin/NewInstitutePage
 const InstituteDetailPage = lazy(() => import("./pages/super-admin/InstituteDetailPage"));
 const UsersPage = lazy(() => import("./pages/super-admin/UsersPage"));
 const AnnouncementsPage = lazy(() => import("./pages/super-admin/AnnouncementsPage"));
+const SuperAdminTeachersPage = lazy(() => import("./pages/super-admin/TeachersPage"));
+const SuperAdminStudentsPage = lazy(() => import("./pages/super-admin/StudentsPage"));
+const SuperAdminParentsPage = lazy(() => import("./pages/super-admin/ParentsPage"));
+const SuperAdminCurriculumPage = lazy(() => import("./pages/super-admin/CurriculumPage"));
+const SuperAdminContentLibraryPage = lazy(() => import("./pages/super-admin/ContentLibraryPage"));
+const SuperAdminExamCalendarPage = lazy(() => import("./pages/super-admin/ExamCalendarPage"));
+const SuperAdminFeeOverviewPage = lazy(() => import("./pages/super-admin/FeeOverviewPage"));
+const SuperAdminPaymentsPage = lazy(() => import("./pages/super-admin/PaymentsPage"));
+const SuperAdminRevenueReportsPage = lazy(() => import("./pages/super-admin/RevenueReportsPage"));
+const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/AttendanceReportsPage"));
+const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
 const SuperAdminLoginPage = lazy(() => import("./pages/super-admin/SuperAdminLoginPage"));
@@ -421,6 +432,17 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
       <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
+      <Route path="/super-admin/teachers" element={<SuperAdminTeachersPage />} />
+      <Route path="/super-admin/students" element={<SuperAdminStudentsPage />} />
+      <Route path="/super-admin/parents" element={<SuperAdminParentsPage />} />
+      <Route path="/super-admin/curriculum" element={<SuperAdminCurriculumPage />} />
+      <Route path="/super-admin/content-library" element={<SuperAdminContentLibraryPage />} />
+      <Route path="/super-admin/exam-calendar" element={<SuperAdminExamCalendarPage />} />
+      <Route path="/super-admin/fees" element={<SuperAdminFeeOverviewPage />} />
+      <Route path="/super-admin/payments" element={<SuperAdminPaymentsPage />} />
+      <Route path="/super-admin/revenue" element={<SuperAdminRevenueReportsPage />} />
+      <Route path="/super-admin/attendance-reports" element={<SuperAdminAttendanceReportsPage />} />
+      <Route path="/super-admin/feature-flags" element={<SuperAdminFeatureFlagsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />
       <Route path="/super-admin/school" element={<SuperAdminSchoolPage />} />
       <Route path="/super-admin/school/new" element={<CreateSchoolPage />} />
