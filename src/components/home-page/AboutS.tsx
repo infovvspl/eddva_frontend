@@ -3,7 +3,7 @@ import { motion, type Variants, type MotionProps } from "framer-motion";
 import { FiArrowUpRight, FiZap, FiAward, FiShield } from "react-icons/fi";
 
 // Mock image placeholders - replace these with your actual asset paths
-import AboutImg1 from '../../assets/H5.png';
+import AboutImg1 from '../../assets/h5.png';
 import AboutImg2 from '../../assets/h9.png';
 import AboutImg3 from '../../assets/h2.png';
 
