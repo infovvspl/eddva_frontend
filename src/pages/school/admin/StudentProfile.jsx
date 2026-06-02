@@ -474,11 +474,26 @@ export default function StudentProfile() {
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-3">
-                      <div className="flex items-center gap-3 mb-6">
-                        <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Primary Contact Information</h3>
-                        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold tracking-tight uppercase border border-blue-200 capitalize">
-                          {parents.primaryContact || 'Father'}
-                        </span>
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Primary Contact Information</h3>
+                          <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold tracking-tight uppercase border border-blue-200 capitalize">
+                            {parents.primaryContact || 'Father'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSendCredsForm({
+                              parentEmail: parents.email || profile.parentEmail || student.email || '',
+                              tempPassword: '',
+                            });
+                            setSendCredsOpen(true);
+                          }}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all"
+                        >
+                          <Send size={14} />
+                          Send Credentials
+                        </button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <DetailItem label="Parent Email" value={parents.email || profile.parentEmail || student.email} icon={Mail} />

@@ -187,6 +187,16 @@ const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feed
 const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
 
+// ── School parent pages ──────────────────────────────────────────────────────
+const SchoolParentLayout        = lazy(() => import("./components/school/parent/ParentLayout"));
+const SchoolParentAuthGuard     = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
+const SchoolParentLogin         = lazy(() => import("./pages/school/parent/Login"));
+const SchoolParentDashboard     = lazy(() => import("./pages/school/parent/Dashboard"));
+const SchoolParentChild         = lazy(() => import("./pages/school/parent/Child"));
+const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
+const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notifications"));
+const SchoolParentProfile       = lazy(() => import("./pages/school/parent/Profile"));
+
 // ── Super-admin school pages ─────────────────────────────────────────────────
 const SuperAdminSchoolPage      = lazy(() => import("./pages/super-admin/SchoolPage"));
 const SuperAdminSchoolDetailPage = lazy(() => import("./pages/super-admin/SchoolDetailPage"));
@@ -412,6 +422,20 @@ const SchoolRoutes = () => (
       <Route path="feedback" element={<SchoolStudentFeedback />} />
       <Route path="chat" element={<SchoolStudentChat />} />
       <Route path="profile" element={<SchoolStudentProfile />} />
+    </Route>
+
+    {/* School Parent */}
+    <Route path="/school/parent/login" element={<SchoolParentLogin />} />
+    <Route
+      path="/school/parent"
+      element={<SchoolParentAuthGuard><SchoolParentLayout /></SchoolParentAuthGuard>}
+    >
+      <Route index element={<Navigate to="dashboard" replace />} />
+      <Route path="dashboard" element={<SchoolParentDashboard />} />
+      <Route path="child" element={<SchoolParentChild />} />
+      <Route path="communication" element={<SchoolParentCommunication />} />
+      <Route path="notifications" element={<SchoolParentNotifications />} />
+      <Route path="profile" element={<SchoolParentProfile />} />
     </Route>
   </>
 );
