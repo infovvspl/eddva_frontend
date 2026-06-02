@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, GraduationCap, Users, MapPin, FileText, CheckCircle, 
@@ -135,7 +135,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     name: '', email: '', password: '', confirmPassword: '', phone: '',
     dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', photo: null,
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
-    fatherName: '', motherName: '', parentPhone: '', parentEmail: '', parentOccupation: '',
+    primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
     allergies: '', medicalConditions: '', documents: {},
   });
@@ -143,6 +143,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const [idLoading, setIdLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showGuardian, setShowGuardian] = useState(false);
+  const [errors, setErrors] = useState({});
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
 
@@ -183,12 +185,50 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     }
   }, [student, classes]);
 
+  const updateField = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    updateField(name, type === 'checkbox' ? checked : value);
+  };
+
+  const validateStep3 = () => {
+    const errs = {};
+    const phoneRegex = /^\d{10}$/;
+
+    if (formData.primaryContact === 'father') {
+      if (!formData.fatherName?.trim()) errs.fatherName = "Required";
+      if (!formData.fatherPhone || !phoneRegex.test(formData.fatherPhone)) errs.fatherPhone = "Valid 10-digit number required";
+    } else if (formData.primaryContact === 'mother') {
+      if (!formData.motherName?.trim()) errs.motherName = "Required";
+      if (!formData.motherPhone || !phoneRegex.test(formData.motherPhone)) errs.motherPhone = "Valid 10-digit number required";
+    } else if (formData.primaryContact === 'guardian') {
+      if (!formData.guardianName?.trim()) errs.guardianName = "Required";
+      if (!formData.guardianPhone || !phoneRegex.test(formData.guardianPhone)) errs.guardianPhone = "Valid 10-digit number required";
+      if (!formData.guardianRelation?.trim()) errs.guardianRelation = "Required";
+    }
+
+    if (formData.fatherPhone && !phoneRegex.test(formData.fatherPhone) && formData.primaryContact !== 'father') errs.fatherPhone = "Valid 10-digit number required";
+    if (formData.motherPhone && !phoneRegex.test(formData.motherPhone) && formData.primaryContact !== 'mother') errs.motherPhone = "Valid 10-digit number required";
+    if (formData.guardianPhone && !phoneRegex.test(formData.guardianPhone) && formData.primaryContact !== 'guardian') errs.guardianPhone = "Valid 10-digit number required";
+    if (formData.whatsappNumber && !phoneRegex.test(formData.whatsappNumber)) errs.whatsappNumber = "Valid 10-digit number required";
+
+    if (formData.parentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parentEmail)) {
+      errs.parentEmail = "Invalid email format";
+    }
+
+    if (formData.createParentLogin) {
+      if (!formData.sendViaSms && !formData.sendViaEmail) {
+        errs.sendViaSms = "Select at least one delivery method";
+      }
+      if (formData.sendViaEmail && !formData.parentEmail) {
+        errs.parentEmail = "Email required for delivery";
+      }
+    }
+
+    return errs;
   };
 
   const generateEnrollmentNo = async () => {
@@ -371,13 +411,150 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <SectionHeader title="Parent Details" description="Guardian contact information." badge="Guardian" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <FloatingInput label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} icon={User} />
-              <FloatingInput label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} icon={User} />
-              <FloatingInput label="Parent Phone" name="parentPhone" value={formData.parentPhone} onChange={handleChange} icon={Smartphone} />
-              <FloatingInput label="Parent Email" name="parentEmail" value={formData.parentEmail} onChange={handleChange} icon={Mail} />
-              <FloatingInput label="Parent Occupation" name="parentOccupation" value={formData.parentOccupation} onChange={handleChange} icon={Briefcase} />
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+                Primary Contact
+              </label>
+              <p className="text-xs text-slate-500 mb-3">
+                Login credentials and notifications will be sent to the primary contact
+              </p>
+              <div className="flex gap-4">
+                {['Father', 'Mother', 'Guardian'].map(option => (
+                  <label
+                    key={option}
+                    className={`flex items-center gap-2 px-4 py-2.5
+                      rounded-lg border cursor-pointer transition-colors
+                      ${formData.primaryContact === option.toLowerCase()
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600'
+                      }`}
+                  >
+                    <input
+                      type="radio"
+                      name="primaryContact"
+                      value={option.toLowerCase()}
+                      checked={formData.primaryContact === option.toLowerCase()}
+                      onChange={handleChange}
+                      className="hidden"
+                    />
+                    <span className="text-sm font-medium">{option}</span>
+                  </label>
+                ))}
+              </div>
             </div>
+
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                Father's Details
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <FloatingInput label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} error={errors.fatherName} icon={User} />
+                <FloatingInput label="Father's Phone" name="fatherPhone" value={formData.fatherPhone} onChange={handleChange} error={errors.fatherPhone} icon={Smartphone} />
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                Mother's Details
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <FloatingInput label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} error={errors.motherName} icon={User} />
+                <FloatingInput label="Mother's Phone" name="motherPhone" value={formData.motherPhone} onChange={handleChange} error={errors.motherPhone} icon={Smartphone} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <FloatingInput label="Parent Email" name="parentEmail" value={formData.parentEmail} onChange={handleChange} error={errors.parentEmail} icon={Mail} />
+              <FloatingInput label="WhatsApp Number" name="whatsappNumber" placeholder="WhatsApp number (for notifications)" value={formData.whatsappNumber} onChange={handleChange} error={errors.whatsappNumber} icon={Smartphone} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <FloatingInput label="Parent Occupation" name="parentOccupation" value={formData.parentOccupation} onChange={handleChange} icon={Briefcase} />
+              <FloatingInput label="Annual Income (Optional)" name="annualIncome" placeholder="Annual income (optional)" type="text" value={formData.annualIncome} onChange={handleChange} />
+            </div>
+
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Guardian Details
+                  <span className="text-slate-400 font-normal ml-1">
+                    (if applicable)
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowGuardian(!showGuardian)}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  {showGuardian || formData.primaryContact === 'guardian' ? 'Hide' : 'Add Guardian'}
+                </button>
+              </div>
+
+              {(showGuardian || formData.primaryContact === 'guardian') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <FloatingInput label="Guardian Name" name="guardianName" value={formData.guardianName} onChange={handleChange} error={errors.guardianName} icon={User} />
+                  <FloatingSelect 
+                    label="Relation to Student" 
+                    name="guardianRelation" 
+                    value={formData.guardianRelation} 
+                    onChange={handleChange} 
+                    error={errors.guardianRelation}
+                    options={['', 'Uncle', 'Aunt', 'Grandparent', 'Elder Sibling', 'Other']} 
+                  />
+                  <FloatingInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} error={errors.guardianPhone} icon={Smartphone} />
+                  <div/>
+                </div>
+              )}
+            </div>
+
+            <div className="border border-blue-100 dark:border-blue-500/20 rounded-xl p-4 bg-blue-50 dark:bg-blue-500/10 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    Create Parent Login Account
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Send login credentials to the primary contact
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" checked={formData.createParentLogin} onChange={(e) => updateField('createParentLogin', e.target.checked)} />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {formData.createParentLogin && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    Credentials will be sent via:
+                    {errors.sendViaSms && <span className="ml-2 text-red-500">{errors.sendViaSms}</span>}
+                  </p>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                      <input
+                        type="checkbox"
+                        checked={formData.sendViaSms}
+                        onChange={e => updateField('sendViaSms', e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      SMS to primary phone
+                    </label>
+                    <label className={`flex items-center gap-2 text-xs ${!formData.parentEmail ? 'text-slate-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                      <input
+                        type="checkbox"
+                        checked={formData.sendViaEmail}
+                        onChange={e => updateField('sendViaEmail', e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        disabled={!formData.parentEmail}
+                      />
+                      Email {!formData.parentEmail && '(add email above)'}
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </motion.div>
         );
       case 4:
@@ -462,9 +639,56 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/20">
+            <div className="flex items-center gap-4 p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 mb-8">
               <CheckCircle className="text-emerald-500" size={20} />
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Information verified and ready for enrollment.</p>
+            </div>
+            
+            <div className="grid gap-6">
+              <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <Users size={16} className="text-blue-500" /> Parent Details Summary
+                </h4>
+                <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Primary Contact</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 capitalize">{formData.primaryContact}</span>
+                  </div>
+                  {formData.fatherName && (
+                    <div>
+                      <span className="text-slate-500 block text-xs mb-1">Father</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.fatherName} • {formData.fatherPhone}</span>
+                    </div>
+                  )}
+                  {formData.motherName && (
+                    <div>
+                      <span className="text-slate-500 block text-xs mb-1">Mother</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.motherName} • {formData.motherPhone}</span>
+                    </div>
+                  )}
+                  {formData.primaryContact === 'guardian' && formData.guardianName && (
+                    <div>
+                      <span className="text-slate-500 block text-xs mb-1">Guardian ({formData.guardianRelation})</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.guardianName} • {formData.guardianPhone}</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Communication</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {formData.parentEmail || 'No Email'}
+                      {formData.whatsappNumber ? ` • WhatsApp: ${formData.whatsappNumber}` : ''}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Parent Login</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {formData.createParentLogin 
+                        ? `Yes (via ${[formData.sendViaSms && 'SMS', formData.sendViaEmail && 'Email'].filter(Boolean).join(' & ')})` 
+                        : 'No'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
         );
@@ -507,7 +731,21 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
           <div className="flex gap-3">
             {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-100 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2">Back</button>}
             <button 
-              onClick={currentStep < STEPS.length ? () => setCurrentStep(s => s + 1) : () => onSubmit(formData)} 
+              onClick={() => {
+                if (currentStep === 3) {
+                  const errs = validateStep3();
+                  if (Object.keys(errs).length > 0) {
+                    setErrors(errs);
+                    return;
+                  }
+                  setErrors({});
+                }
+                if (currentStep < STEPS.length) {
+                  setCurrentStep(s => s + 1);
+                } else {
+                  onSubmit(formData);
+                }
+              }} 
               disabled={isLoading}
               className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
             >

@@ -1,13 +1,14 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
-  Mail, Smartphone, MapPin, ArrowLeft, Download, 
-  Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2
+  Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
+  Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
+import { mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,10 +53,44 @@ export default function StudentProfile() {
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [sendCredsOpen, setSendCredsOpen] = useState(false);
+  const [sendCredsForm, setSendCredsForm] = useState({ parentEmail: '', tempPassword: '' });
+  const [isSendingCreds, setIsSendingCreds] = useState(false);
+  const [attendance, setAttendance] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceMonth, setAttendanceMonth] = useState(
+    new Date().toISOString().slice(0, 7) // YYYY-MM
+  );
 
   useEffect(() => {
     fetchStudent();
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === 'attendance' && student?.id) {
+      fetchAttendance();
+    }
+  }, [activeTab, attendanceMonth, student?.id]);
+
+  const fetchAttendance = async () => {
+    setAttendanceLoading(true);
+    try {
+      const [year, month] = attendanceMonth.split('-');
+      const startDate = `${year}-${month}-01`;
+      const lastDay = new Date(Number(year), Number(month), 0).getDate();
+      const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      const res = await api.get('/attendance', {
+        params: { userId: student.id, startDate, endDate },
+      });
+      const list = res.data?.data ?? res.data ?? [];
+      setAttendance(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Attendance fetch error:', err);
+      setAttendance([]);
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
 
   const [exporting, setExporting] = useState(false);
 
@@ -72,10 +107,67 @@ export default function StudentProfile() {
     }
   };
 
+  /** The backend returns flat snake_case fields — normalize to camelCase for the UI */
+  const normalizeStudent = (raw) => {
+    if (!raw) return raw;
+    return {
+      ...raw,
+      // top-level camelCase aliases
+      isActive: raw.is_active,
+      createdAt: raw.created_at,
+      // build the studentProfile object the UI expects
+      studentProfile: {
+        enrollmentNo:      raw.enrollment_no    ?? raw.enrollmentNo,
+        rollNo:            raw.roll_no          ?? raw.rollNo,
+        sectionId:         raw.section_id       ?? raw.sectionId,
+        dob:               raw.dob,
+        gender:            raw.gender,
+        bloodGroup:        raw.blood_group      ?? raw.bloodGroup,
+        maritalStatus:     raw.marital_status   ?? raw.maritalStatus,
+        nationalId:        raw.national_id      ?? raw.nationalId,
+        fatherName:        raw.father_name      ?? raw.fatherName,
+        motherName:        raw.mother_name      ?? raw.motherName,
+        parentPhone:       raw.parent_phone     ?? raw.parentPhone,
+        parentEmail:       raw.parent_email     ?? raw.parentEmail,
+        parentOccupation:  raw.parent_occupation ?? raw.parentOccupation,
+        admissionDate:     raw.admission_date   ?? raw.admissionDate,
+        medicalConditions: raw.medical_conditions ?? raw.medicalConditions,
+        allergies:         raw.allergies,
+        address:           raw.address,
+        city:              raw.city,
+        state:             raw.state,
+        pinCode:           raw.pin_code         ?? raw.pinCode,
+        documents:         raw.documents,
+        section: {
+          name:  raw.section_name ?? raw.studentProfile?.section?.name,
+          class: { name: raw.class_name ?? raw.studentProfile?.section?.class?.name },
+        },
+      },
+      // build parentDetails from flat fields if not returned as nested
+      parentDetails: raw.parent_details ?? raw.parentDetails ?? {
+        primaryContact:  raw.primary_contact   ?? 'father',
+        fatherName:      raw.father_name        ?? raw.fatherName,
+        fatherPhone:     raw.father_phone       ?? raw.fatherPhone,
+        motherName:      raw.mother_name        ?? raw.motherName,
+        motherPhone:     raw.mother_phone       ?? raw.motherPhone,
+        email:           raw.parent_email       ?? raw.parentEmail,
+        whatsappNumber:  raw.whatsapp_number    ?? raw.whatsappNumber,
+        occupation:      raw.parent_occupation  ?? raw.parentOccupation,
+        guardianName:    raw.guardian_name      ?? raw.guardianName,
+        guardianRelation:raw.guardian_relation  ?? raw.guardianRelation,
+        guardianPhone:   raw.guardian_phone     ?? raw.guardianPhone,
+        createLogin:     raw.create_login       ?? raw.createLogin,
+        sendViaSms:      raw.send_via_sms       ?? raw.sendViaSms,
+        sendViaEmail:    raw.send_via_email     ?? raw.sendViaEmail,
+      },
+    };
+  };
+
   const fetchStudent = async () => {
     try {
       const res = await api.get(`/students/${id}`);
-      setStudent(res.data?.data ?? res.data);
+      const raw = res.data?.data ?? res.data;
+      setStudent(normalizeStudent(raw));
     } catch (err) {
       console.error(err);
       setStudent({ error: err.response?.data?.error || "Student not found." });
@@ -103,7 +195,33 @@ export default function StudentProfile() {
     );
   }
 
+  const handleSendCredentials = async () => {
+    const parentEmail = sendCredsForm.parentEmail || student.parent_email || student.parentEmail;
+    if (!parentEmail) {
+      toast.error('No parent email found. Please set parent email first.');
+      return;
+    }
+    setIsSendingCreds(true);
+    try {
+      const payload = {
+        parentEmail,
+        tempPassword: sendCredsForm.tempPassword || undefined,
+        loginUrl: window.location.origin + '/login',
+      };
+      await api.post(`/students/${student.id}/send-credentials`, payload);
+      toast.success('Credentials sent successfully to parent!');
+      setSendCredsOpen(false);
+      setSendCredsForm({ parentEmail: '', tempPassword: '' });
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to send credentials');
+    } finally {
+      setIsSendingCreds(false);
+    }
+  };
+
   const profile = student.studentProfile || {};
+  const parents = student.parentDetails || {};
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
@@ -125,12 +243,121 @@ export default function StudentProfile() {
             {exporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
             Export PDF
           </button>
+          <button
+            onClick={() => {
+              setSendCredsForm({
+                parentEmail: student.parent_email || student.parentEmail || '',
+                tempPassword: '',
+              });
+              setSendCredsOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-sm hover:bg-indigo-100 transition-all"
+          >
+            <Send size={18} />
+            Send Credentials
+          </button>
           <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all">
             <Edit2 size={18} />
             Edit Profile
           </button>
         </div>
       </div>
+
+      {/* Send Credentials Modal */}
+      {sendCredsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Send size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Send Parent Credentials</h3>
+                    <p className="text-xs text-indigo-200 font-bold">Email login details to the parent</p>
+                  </div>
+                </div>
+                <button onClick={() => setSendCredsOpen(false)} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 space-y-5">
+              {/* Student info card */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold">
+                  {getInitials(student.name)}
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 dark:text-white">{student.name}</div>
+                  <div className="text-xs font-bold text-slate-400">{student.email}</div>
+                </div>
+              </div>
+
+              {/* Parent email */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  <Mail size={12} className="inline mr-1" /> Parent Email
+                </label>
+                <input
+                  type="email"
+                  value={sendCredsForm.parentEmail}
+                  onChange={e => setSendCredsForm(f => ({ ...f, parentEmail: e.target.value }))}
+                  placeholder="parent@example.com"
+                  className="w-full rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
+                />
+                {!sendCredsForm.parentEmail && (
+                  <p className="mt-1.5 text-[10px] font-bold text-amber-500 uppercase">⚠ No parent email on record — enter one above</p>
+                )}
+              </div>
+
+              {/* Temp password */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  <Key size={12} className="inline mr-1" /> Temporary Password
+                </label>
+                <input
+                  type="text"
+                  value={sendCredsForm.tempPassword}
+                  onChange={e => setSendCredsForm(f => ({ ...f, tempPassword: e.target.value }))}
+                  placeholder="Leave blank to auto-generate"
+                  className="w-full rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
+                />
+                <p className="mt-1.5 text-[10px] font-bold text-slate-400 uppercase">Leave blank to auto-generate a secure password</p>
+              </div>
+
+              {/* Info box */}
+              <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 leading-relaxed">
+                  📧 A beautiful welcome email will be sent to the parent with their login credentials and a link to the parent portal.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setSendCredsOpen(false)}
+                  className="flex-1 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendCredentials}
+                  disabled={isSendingCreds || !sendCredsForm.parentEmail}
+                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSendingCreds ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  {isSendingCreds ? 'Sending...' : 'Send Email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Student" size="full">
         <StudentForm
@@ -140,7 +367,8 @@ export default function StudentProfile() {
           onSubmit={async (formData) => {
             setIsSaving(true);
             try {
-              await api.put(`/students/${student.id}`, formData);
+              const payload = mapStudentFormToApiUpdate(formData);
+              await api.put(`/students/${student.id}`, payload);
               toast.success('Profile updated');
               await fetchStudent();
               setIsEditOpen(false);
@@ -187,6 +415,7 @@ export default function StudentProfile() {
 
           <div className="flex flex-wrap gap-3 border-b border-slate-100 dark:border-slate-800 -mx-12 mb-8 px-12 pb-6 overflow-x-auto no-scrollbar">
             <TabButton active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} icon={User} label="Personal" />
+            <TabButton active={activeTab === 'family'} onClick={() => setActiveTab('family')} icon={Users} label="Family Details" />
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
             <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
@@ -222,16 +451,6 @@ export default function StudentProfile() {
                         <DetailItem label="Address" value={profile.address} icon={MapPin} className="col-span-2" />
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Parent / Guardian Details</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <DetailItem label="Father's Name" value={profile.fatherName} />
-                        <DetailItem label="Mother's Name" value={profile.motherName} />
-                        <DetailItem label="Guardian Phone" value={profile.parentPhone} icon={Smartphone} />
-                        <DetailItem label="Guardian Email" value={profile.parentEmail} icon={Mail} />
-                        <DetailItem label="Occupation" value={profile.parentOccupation} icon={Briefcase} />
-                      </div>
-                    </div>
                   </div>
                   <div className="space-y-6">
                     <div className="p-6 rounded-3xl bg-blue-600 text-white shadow-xl shadow-blue-600/20">
@@ -248,6 +467,99 @@ export default function StudentProfile() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'family' && (
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-3">
+                      <div className="flex items-center gap-3 mb-6">
+                        <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Primary Contact Information</h3>
+                        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold tracking-tight uppercase border border-blue-200 capitalize">
+                          {parents.primaryContact || 'Father'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <DetailItem label="Parent Email" value={parents.email || profile.parentEmail || student.email} icon={Mail} />
+                        <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || parents.fatherPhone || profile.parentPhone || student.phone} icon={Phone} />
+                        <DetailItem label="Primary Occupation" value={parents.occupation || profile.parentOccupation} icon={Briefcase} />
+                      </div>
+                    </div>
+
+                    <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                          <User size={20} />
+                        </div>
+                        <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Name</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.fatherName || profile.fatherName || profile.parentName || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.fatherPhone || profile.parentPhone || student.phone || '—'}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
+                          <User size={20} />
+                        </div>
+                        <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Name</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.motherName || profile.motherName || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.motherPhone || profile.parentPhone || student.phone || '—'}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {(parents.guardianName || parents.primaryContact === 'guardian' || profile.guardianName || (!profile.fatherName && !profile.motherName && profile.parentName)) && (
+                      <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <Shield size={20} />
+                          </div>
+                          <h4 className="font-bold text-slate-900 dark:text-white">Guardian's Details</h4>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Name & Relation</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.guardianName || profile.guardianName || profile.parentName || '—'} ({parents.guardianRelation || '—'})</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.guardianPhone || profile.guardianPhone || profile.parentPhone || '—'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {parents.createLogin && (
+                    <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                        <Smartphone size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-300">Parent App Access Enabled</h4>
+                        <p className="text-xs font-bold text-indigo-700/70 dark:text-indigo-400/70 mt-0.5">
+                          Login credentials have been sent via {[parents.sendViaSms && 'SMS', parents.sendViaEmail && 'Email'].filter(Boolean).join(' and ') || 'SMS'}.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -282,43 +594,110 @@ export default function StudentProfile() {
               )}
 
               {activeTab === 'attendance' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 text-center">
-                      <div className="text-5xl font-bold tracking-tight text-blue-600 mb-2">94%</div>
-                      <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest">Attendance Average</div>
-                    </div>
-                    <div className="p-8 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
-                      <div className="text-5xl font-bold tracking-tight mb-2">172</div>
-                      <div className="text-xs font-bold tracking-tight uppercase tracking-widest">Days Present</div>
-                    </div>
-                    <div className="p-8 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
-                      <div className="text-5xl font-bold tracking-tight mb-2">12</div>
-                      <div className="text-xs font-bold tracking-tight uppercase tracking-widest">Days Absent</div>
+                <div className="space-y-6">
+                  {/* Month Picker */}
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Attendance Record</h3>
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs font-bold text-slate-400 uppercase">Month</label>
+                      <input
+                        type="month"
+                        value={attendanceMonth}
+                        onChange={(e) => setAttendanceMonth(e.target.value)}
+                        className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                      />
                     </div>
                   </div>
-                  <div className="rounded-3xl border border-slate-100 overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
-                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
-                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50 text-sm">
-                        {[1, 2, 3, 4, 5].map(i => (
-                          <tr key={i}>
-                            <td className="p-4 font-bold text-slate-600">May {12-i}, 2026</td>
-                            <td className="p-4">
-                              <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-bold tracking-tight uppercase">Present</span>
-                            </td>
-                            <td className="p-4 text-slate-400">On Time</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+
+                  {attendanceLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <Loader2 size={32} className="animate-spin text-blue-500" />
+                    </div>
+                  ) : (() => {
+                    const total   = attendance.length;
+                    const present = attendance.filter(r => (r.status || '').toUpperCase() === 'PRESENT').length;
+                    const absent  = attendance.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
+                    const late    = attendance.filter(r => (r.status || '').toUpperCase() === 'LATE').length;
+                    const pct     = total > 0 ? Math.round((present / total) * 100) : 0;
+
+                    const statusStyle = (status) => {
+                      const s = (status || '').toUpperCase();
+                      if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600';
+                      if (s === 'ABSENT')  return 'bg-red-500/10 text-red-500';
+                      if (s === 'LATE')    return 'bg-amber-400/10 text-amber-600';
+                      if (s === 'LEAVE')   return 'bg-blue-500/10 text-blue-600';
+                      return 'bg-slate-100 text-slate-500';
+                    };
+
+                    return (
+                      <>
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className={`text-4xl font-bold tracking-tight mb-1 ${pct >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{total > 0 ? `${pct}%` : '—'}</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
+                          </div>
+                          <div className="p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
+                            <div className="text-4xl font-bold tracking-tight mb-1">{present}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Present</div>
+                          </div>
+                          <div className="p-6 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
+                            <div className="text-4xl font-bold tracking-tight mb-1">{absent}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Absent</div>
+                          </div>
+                          <div className="p-6 rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
+                            <div className="text-4xl font-bold tracking-tight mb-1">{late}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Late</div>
+                          </div>
+                        </div>
+
+                        {/* Records Table */}
+                        <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                          <table className="w-full text-left">
+                            <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                              <tr>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</th>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                              {attendance.length === 0 ? (
+                                <tr>
+                                  <td colSpan={4} className="p-10 text-center text-slate-400 font-bold">
+                                    No attendance records for this month.
+                                  </td>
+                                </tr>
+                              ) : (
+                                [...attendance]
+                                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                                  .map((record, i) => {
+                                    const d = new Date(record.date);
+                                    return (
+                                      <tr key={record.id || i} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                                        <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
+                                          {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        <td className="p-4 font-bold text-slate-400">
+                                          {d.toLocaleDateString('en-IN', { weekday: 'short' })}
+                                        </td>
+                                        <td className="p-4">
+                                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusStyle(record.status)}`}>
+                                            {record.status || 'Unknown'}
+                                          </span>
+                                        </td>
+                                        <td className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</td>
+                                      </tr>
+                                    );
+                                  })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 

@@ -454,7 +454,7 @@ const SuperAdminRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<LoginPage />} />
+    <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />
