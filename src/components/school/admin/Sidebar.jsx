@@ -24,6 +24,14 @@ import {
   Video,
   Wallet,
   Landmark,
+  CreditCard,
+  Heart,
+  IndianRupee,
+  Library,
+  Megaphone,
+  Ticket,
+  ToggleRight,
+  TrendingUp,
   X,
 } from 'lucide-react';
 import { cn } from './Skeleton';
@@ -35,9 +43,34 @@ const superAdminGroups = [
     heading: 'Overview',
     items: [
       { to: '/school/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/school/admin/institutes', label: 'Institutes', icon: Building2 },
-      { to: '/school/admin/users', label: 'Registered Users', icon: Users },
-      { to: '/school/admin/complaints', label: 'Tickets', icon: AlertCircle },
+      { to: '/school/admin/institutes', label: 'Schools', icon: Building2 },
+      { to: '/super-admin/teachers', label: 'Teachers', icon: GraduationCap },
+      { to: '/super-admin/students', label: 'Students', icon: Users },
+      { to: '/super-admin/parents', label: 'Parents', icon: Heart },
+      { to: '/school/admin/complaints', label: 'Support Tickets', icon: Ticket },
+    ],
+  },
+  {
+    heading: 'Academic',
+    items: [
+      { to: '/super-admin/curriculum', label: 'Curriculum', icon: BookOpen },
+      { to: '/super-admin/content-library', label: 'Content Library', icon: Library },
+      { to: '/super-admin/exam-calendar', label: 'Exam Calendar', icon: CalendarDays },
+    ],
+  },
+  {
+    heading: 'Financial',
+    items: [
+      { to: '/super-admin/fees', label: 'Fee Overview', icon: IndianRupee },
+      { to: '/super-admin/payments', label: 'Payments', icon: CreditCard },
+      { to: '/super-admin/revenue', label: 'Revenue Reports', icon: TrendingUp },
+    ],
+  },
+  {
+    heading: 'Communication',
+    items: [
+      { to: '/super-admin/announcements', label: 'Announcements', icon: Megaphone },
+      { to: '/school/admin/notifications-center', label: 'Notifications', icon: Bell },
     ],
   },
   {
@@ -45,12 +78,13 @@ const superAdminGroups = [
     items: [
       { to: '/school/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { to: '/school/admin/finance', label: 'Subscriptions', icon: Wallet },
-      { to: '/school/admin/reports', label: 'Report & Analytics', icon: Sparkles },
+      { to: '/super-admin/attendance-reports', label: 'Attendance Reports', icon: ClipboardList },
     ],
   },
   {
     heading: 'Governance',
     items: [
+      { to: '/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/security', label: 'Security Center', icon: Shield },
       { to: '/school/admin/settings', label: 'Settings', icon: SettingsIcon },
@@ -143,7 +177,7 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:static',
+          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:sticky md:top-0 md:h-screen',
           collapsed && canCollapse ? 'md:w-[80px]' : 'md:w-[280px]',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}

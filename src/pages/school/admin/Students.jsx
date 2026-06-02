@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
 import api from '@/lib/api/school-client';
-import { mapStudentFormToApi } from '@/lib/school/onboardPayload';
+import { mapStudentFormToApi, mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
@@ -229,10 +229,13 @@ export default function Students() {
     setIsSubmitting(true);
     try {
       if (selectedStudent) {
-        await api.put(`/students/${selectedStudent.id}`, formData);
+        const payload = mapStudentFormToApiUpdate(formData);
+        console.log('=== UPDATE PAYLOAD ===', payload);
+        await api.put(`/students/${selectedStudent.id}`, payload);
         toast.success('Student updated successfully');
       } else {
         const payload = mapStudentFormToApi(formData);
+        console.log('=== CREATE PAYLOAD ===', payload);
         await api.post('/students', payload);
         toast.success('Student created successfully');
       }
