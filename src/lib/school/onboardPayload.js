@@ -28,6 +28,12 @@ export function mapTeacherFormToApi(form) {
     educationDetails: Array.isArray(form.educationDetails) ? form.educationDetails : [],
     experienceDetails: Array.isArray(form.experienceDetails) ? form.experienceDetails : [],
     subjectIds: Array.isArray(form.subjectIds) ? form.subjectIds : [],
+    assignments: Array.isArray(form.assignments) ? form.assignments.map(a => ({
+      classId: a.classId,
+      sectionId: a.sectionId,
+      subjectId: a.subjectId || null,
+      isClassTeacher: !!a.isClassTeacher
+    })) : [],
   };
 }
 
