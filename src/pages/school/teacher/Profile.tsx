@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Camera, Mail, Phone, Shield, BookOpen } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import "./Profile.css";
@@ -17,6 +17,13 @@ const Profile: React.FC = () => {
   });
   const [avatarUrl, setAvatarUrl] = useState<string>(localStorage.getItem("teacher_avatar") || "");
 
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [academicData, setAcademicData] = useState<any>({
+    classes: [],
+    sections: [],
+    subjects: []
+  });
+
   useEffect(() => {
     if (user) {
       setProfile({
@@ -27,6 +34,27 @@ const Profile: React.FC = () => {
         department: localStorage.getItem("teacher_department") || "",
         bio: localStorage.getItem("teacher_bio") || "",
       });
+
+      // Fetch teacher specific details (classes, sections, subjects)
+      api.get(`/teachers/${user.id}`)
+        .then(res => {
+          const data = res.data?.data || res.data;
+          if (data) {
+            setAcademicData({
+              classes: data.classes || [],
+              sections: data.sections || [],
+              subjects: data.subjects || []
+            });
+            if (data.teacherProfile?.assignments) {
+              setAssignments(data.teacherProfile.assignments);
+            }
+            // Update department if it exists from DB
+            if (data.teacherProfile?.department) {
+              setProfile(p => ({ ...p, department: data.teacherProfile.department }));
+            }
+          }
+        })
+        .catch(err => console.error("Failed to fetch academic data", err));
     }
   }, [user]);
 
@@ -145,36 +173,57 @@ const Profile: React.FC = () => {
           </button>
         </div>
 
-        <div className="profile-stats">
-          <div className="profile-stat-card">
-            <BookOpen size={22} />
-            <div>
-              <h3>24</h3>
-              <p>Topics Created</p>
+        <div className="profile-side-column">
+          <div className="profile-card mb-6">
+            <h2>Academic Assignments</h2>
+            <div className="space-y-3 mt-4">
+              {assignments.length > 0 ? (
+                assignments.map((ass: any, i: number) => (
+                  <div key={i} className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-xs flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-slate-850 dark:text-slate-200">
+                        {ass.className} - Section {ass.sectionName}
+                      </p>
+                      <p className="text-slate-500 font-semibold mt-0.5">
+                        Subject: <span className="text-blue-600 dark:text-sky-400 font-bold">{ass.subjectName || 'General'}</span>
+                      </p>
+                    </div>
+                    {ass.isClassTeacher && (
+                      <span className="bg-emerald-500/10 text-emerald-700 dark:text-sky-400 border border-emerald-500/20 px-1.5 py-0.5 rounded text-[8px] uppercase font-black tracking-widest shrink-0">
+                        Class Teacher
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 font-semibold py-2">No active assignments found.</p>
+              )}
             </div>
           </div>
 
-          <div className="profile-stat-card">
-            <Shield size={22} />
-            <div>
-              <h3>98%</h3>
-              <p>Attendance Rate</p>
+          <div className="profile-stats">
+            <div className="profile-stat-card">
+              <BookOpen size={22} />
+              <div>
+                <h3>{academicData.subjects.length || 0}</h3>
+                <p>Subjects</p>
+              </div>
             </div>
-          </div>
 
-          <div className="profile-stat-card">
-            <Mail size={22} />
-            <div>
-              <h3>156</h3>
-              <p>Assignments Reviewed</p>
+            <div className="profile-stat-card">
+              <Shield size={22} />
+              <div>
+                <h3>98%</h3>
+                <p>Attendance Rate</p>
+              </div>
             </div>
-          </div>
 
-          <div className="profile-stat-card">
-            <Phone size={22} />
-            <div>
-              <h3>12</h3>
-              <p>Classes Managed</p>
+            <div className="profile-stat-card">
+              <Phone size={22} />
+              <div>
+                <h3>{academicData.classes.length || 0}</h3>
+                <p>Classes Managed</p>
+              </div>
             </div>
           </div>
         </div>

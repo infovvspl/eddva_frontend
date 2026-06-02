@@ -6,9 +6,11 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    classIds: []
+    classId: '',
+    sectionId: ''
   });
   const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -16,11 +18,29 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
       setFormData({
         name: subject.name || '',
         code: subject.code || '',
-        classIds: subject.classes?.map(c => c.id) || []
+        classId: subject.class_id || '',
+        sectionId: subject.section_id || ''
       });
     }
     fetchClasses();
   }, [subject]);
+
+  useEffect(() => {
+    if (formData.classId) {
+      fetchSections(formData.classId);
+    } else {
+      setSections([]);
+    }
+  }, [formData.classId]);
+
+  const fetchSections = async (classId) => {
+    try {
+      const res = await api.get(`/academic/sections?classId=${classId}`);
+      setSections(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+    }
+  };
 
   const fetchClasses = async () => {
     try {
@@ -33,15 +53,11 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleClassToggle = (classId) => {
-    setFormData(prev => ({
-      ...prev,
-      classIds: prev.classIds.includes(classId)
-        ? prev.classIds.filter(id => id !== classId)
-        : [...prev.classIds, classId]
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: value,
+      // Reset section if class changes
+      ...(name === 'classId' ? { sectionId: '' } : {})
     }));
   };
 
@@ -93,20 +109,36 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-surface-700 mb-3">Assign to Classes</label>
-          <div className="grid gap-2 md:grid-cols-2">
-            {classes.map(cls => (
-              <label key={cls.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.classIds.includes(cls.id)}
-                  onChange={() => handleClassToggle(cls.id)}
-                  className="h-4 w-4 rounded border-surface-300 accent-brand-600"
-                />
-                <span className="text-sm text-surface-700">{cls.name}</span>
-              </label>
-            ))}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Class</label>
+            <select
+              name="classId"
+              value={formData.classId}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            >
+              <option value="">Select Class</option>
+              {classes.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Section</label>
+            <select
+              name="sectionId"
+              value={formData.sectionId}
+              onChange={handleChange}
+              disabled={!formData.classId}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:opacity-50"
+            >
+              <option value="">Select Section</option>
+              {sections.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
