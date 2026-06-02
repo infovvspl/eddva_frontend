@@ -235,8 +235,36 @@ const Dashboard: React.FC = () => {
         <div className="dashboard__side">
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
+              <h3>My Academic Assignments 🎓</h3>
+            </div>
+            <div className="dashboard__classes-list space-y-4">
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Classes & Sections</h4>
+                <div className="flex flex-wrap gap-2">
+                  {stats?.teacherData?.classes?.length > 0 ? stats.teacherData.classes.map((c: any) => (
+                    <span key={`c-${c.id}`} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded">{c.name}</span>
+                  )) : null}
+                  {stats?.teacherData?.sections?.length > 0 ? stats.teacherData.sections.map((s: any) => (
+                    <span key={`s-${s.id}`} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded">{s.name}</span>
+                  )) : null}
+                  {(!stats?.teacherData?.classes?.length && !stats?.teacherData?.sections?.length) && <span className="text-xs text-slate-500">None</span>}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Subjects</h4>
+                <div className="flex flex-wrap gap-2">
+                  {stats?.teacherData?.subjects?.length > 0 ? stats.teacherData.subjects.map((s: any) => (
+                    <span key={`sub-${s.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-bold rounded">{s.name}</span>
+                  )) : <span className="text-xs text-slate-500">None</span>}
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="dashboard__card">
+            <div className="dashboard__card-header">
               <h3>Upcoming Classes 🏫</h3>
-              <Badge variant="purple">4 today ⏰</Badge>
+              <Badge variant="purple">{upcomingClasses.length} Scheduled ⏰</Badge>
             </div>
             <div className="dashboard__classes-list">
               {upcomingClasses.map((cls) => (
@@ -254,6 +282,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {upcomingClasses.length === 0 && <p className="text-sm text-slate-500 py-4 text-center">No upcoming classes today.</p>}
             </div>
           </GlassCard>
 

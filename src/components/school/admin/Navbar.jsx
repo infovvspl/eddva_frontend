@@ -12,7 +12,9 @@ import {
   GraduationCap,
   Users,
   Settings as SettingsIcon,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  Shield
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -39,20 +41,18 @@ export default function Navbar({ onMenuClick }) {
   const roleName = isTeacher ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';
   const workspaceName = isTeacher ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
   const workspaceLabel = isTeacher ? 'Teaching Workspace' : isInstitute ? 'Active Workspace' : 'Super Admin Console';
-  const messagesPath = isTeacher ? '/teacher/chat' : '/admin/communications';
-  const profilePath = isTeacher ? '/teacher/profile' : '/admin/settings';
+  const messagesPath = isTeacher ? '/school/teacher/chat' : '/school/admin/communications';
+  const profilePath = isTeacher ? '/school/teacher/profile' : '/school/admin/settings';
 
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
-  const [quickOpen, setQuickOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState({ students: [], teachers: [], pages: [] });
   const [isSearching, setIsSearching] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   
-  const quickRef = useRef(null);
   const searchRef = useRef(null);
-  const notifRef = useRef(null);
+  const profileRef = useRef(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -63,9 +63,8 @@ export default function Navbar({ onMenuClick }) {
 
   useEffect(() => {
     function onDocClick(e) {
-      if (!quickRef.current?.contains(e.target)) setQuickOpen(false);
       if (!searchRef.current?.contains(e.target)) setSearchOpen(false);
-      if (!notifRef.current?.contains(e.target)) setNotifOpen(false);
+      if (!profileRef.current?.contains(e.target)) setProfileOpen(false);
     }
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
@@ -107,31 +106,19 @@ export default function Navbar({ onMenuClick }) {
         { name: 'Reports', path: '/teacher/reports', icon: SettingsIcon },
       ];
       const adminPages = [
-        { name: 'Dashboard', path: '/admin', icon: Sparkles },
-        { name: 'Students List', path: '/admin/students', icon: GraduationCap },
-        { name: 'Teachers Directory', path: '/admin/teachers', icon: Users },
-        { name: 'Fees Management', path: '/admin/fees', icon: SettingsIcon },
-        { name: 'System Settings', path: '/admin/settings', icon: SettingsIcon },
-        { name: 'Academics & Classes', path: '/admin/academics', icon: SettingsIcon },
-        { name: 'Subjects', path: '/admin/subjects', icon: SettingsIcon },
-        { name: 'Assignments & Homework', path: '/admin/assignments', icon: SettingsIcon },
-        { name: 'Study Materials', path: '/admin/study-materials', icon: SettingsIcon },
-        { name: 'Syllabus Tracking', path: '/admin/syllabus', icon: SettingsIcon },
-        { name: 'Exams', path: '/admin/exams', icon: SettingsIcon },
-        { name: 'Question Bank', path: '/admin/question-bank', icon: SettingsIcon },
-        { name: 'Marks Entry', path: '/admin/marks-entry', icon: SettingsIcon },
-        { name: 'Results', path: '/admin/results', icon: SettingsIcon },
-        { name: 'Report Cards', path: '/admin/report-cards', icon: SettingsIcon },
-        { name: 'Payment Collection', path: '/admin/payment-collection', icon: SettingsIcon },
-        { name: 'Payment History', path: '/admin/payment-history', icon: SettingsIcon },
-        { name: 'Fee Defaulters', path: '/admin/fee-defaulters', icon: SettingsIcon },
-        { name: 'Notifications Center', path: '/admin/notifications-center', icon: SettingsIcon },
-        { name: 'SMS Center', path: '/admin/sms-center', icon: SettingsIcon },
-        { name: 'Email Center', path: '/admin/email-center', icon: SettingsIcon },
-        { name: 'AI Insights', path: '/admin/ai-insights', icon: SettingsIcon },
-        { name: 'Student Performance Analytics', path: '/admin/student-performance', icon: SettingsIcon },
-        { name: 'Attendance Analytics', path: '/admin/attendance-analytics', icon: SettingsIcon },
-        { name: 'Custom Reports', path: '/admin/custom-reports', icon: SettingsIcon },
+        { name: 'Dashboard', path: '/school/admin', icon: Sparkles },
+        { name: 'Students List', path: '/school/admin/students', icon: GraduationCap },
+        { name: 'Teachers Directory', path: '/school/admin/teachers', icon: Users },
+        { name: 'System Settings', path: '/school/admin/settings', icon: SettingsIcon },
+        { name: 'Academics & Classes', path: '/school/admin/academics', icon: SettingsIcon },
+        { name: 'Subjects', path: '/school/admin/subjects', icon: SettingsIcon },
+        { name: 'Notifications Center', path: '/school/admin/notifications-center', icon: SettingsIcon },
+        { name: 'SMS Center', path: '/school/admin/sms-center', icon: SettingsIcon },
+        { name: 'Email Center', path: '/school/admin/email-center', icon: SettingsIcon },
+        { name: 'User Management', path: '/school/admin/users', icon: Users },
+        { name: 'Roles & Permissions', path: '/school/admin/roles', icon: Shield },
+        { name: 'Audit Logs', path: '/school/admin/audit-logs', icon: FileText },
+        { name: 'Support Tickets', path: '/school/admin/complaints', icon: Shield },
       ];
       const pages = (isTeacher ? teacherPages : adminPages).filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -229,7 +216,7 @@ export default function Navbar({ onMenuClick }) {
                     <div className="mb-4">
                       <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Students</p>
                       {searchResults.students.map(s => (
-                        <Link key={s.id} to="/admin/students" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
+                        <Link key={s.id} to={`/school/admin/students/${s.id}`} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
                           <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
                             {s.photo ? <img src={s.photo} className="w-full h-full object-cover rounded-xl" /> : s.name[0]}
                           </div>
@@ -246,7 +233,7 @@ export default function Navbar({ onMenuClick }) {
                     <div className="mb-4">
                       <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Teachers</p>
                       {searchResults.teachers.map(t => (
-                        <Link key={t.id} to="/admin/teachers" onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
+                        <Link key={t.id} to={`/school/admin/teachers/${t.id}`} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
                           <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
                             {t.photo ? <img src={t.photo} className="w-full h-full object-cover rounded-xl" /> : t.name[0]}
                           </div>
@@ -272,107 +259,86 @@ export default function Navbar({ onMenuClick }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative" ref={quickRef}>
-            <button
-              type="button"
-              onClick={() => setQuickOpen((o) => !o)}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 transition hover:scale-105 active:scale-95"
-              aria-label="Quick create"
-            >
-              <Plus className={cn('h-6 w-6 transition-transform duration-300', quickOpen && 'rotate-45')} />
-            </button>
-            {quickOpen && (
-              <div className="absolute right-0 z-50 mt-4 w-56 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                <Link to={isTeacher ? '/teacher/assignments' : '/admin/students'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                    <GraduationCap size={16} />
-                  </div>
-                  {isTeacher ? 'Add assignment' : 'Add student'}
-                </Link>
-                <Link to={isTeacher ? '/teacher/assessments' : '/admin/teachers'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
-                    <Users size={16} />
-                  </div>
-                  {isTeacher ? 'Create assessment' : 'Add teacher'}
-                </Link>
-                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
-                <Link to={isTeacher ? '/teacher/creator' : '/admin/notices'} className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
-                    <MessageCircle size={16} />
-                  </div>
-                  {isTeacher ? 'Open creator' : 'Publish notice'}
-                </Link>
-              </div>
-            )}
-          </div>
-
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-              className="h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(messagesPath)}
+              onClick={() => navigate(isTeacher ? '/school/teacher/notifications' : '/school/admin/notifications-center')}
               className="relative h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-              aria-label="Messages"
+              aria-label="Notifications"
             >
-              <MessageCircle className="h-5 w-5" />
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-2.5 top-2.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold tracking-tight text-white border-2 border-white dark:border-slate-950">
+                5
+              </span>
             </button>
-            <div className="relative" ref={notifRef}>
-              <button
-                type="button"
-                onClick={() => setNotifOpen((o) => !o)}
-                className="relative h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute right-2.5 top-2.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold tracking-tight text-white border-2 border-white dark:border-slate-950">
-                  5
-                </span>
-              </button>
-              {notifOpen && (
-                <div className="absolute right-0 z-50 mt-4 w-80 overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                  <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <span className="text-[10px] font-bold tracking-tight text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">5 Unread</span>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer border-b border-slate-50 dark:border-slate-800/50">
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">New Institute Registered</p>
-                      <p className="text-xs text-slate-500 mt-1">Delhi Public School just registered on the platform.</p>
-                      <p className="text-[10px] text-slate-400 mt-2">2 minutes ago</p>
-                    </div>
-                    <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer border-b border-slate-50 dark:border-slate-800/50">
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">System Update</p>
-                      <p className="text-xs text-slate-500 mt-1">Version 2.4.1 has been deployed successfully.</p>
-                      <p className="text-[10px] text-slate-400 mt-2">1 hour ago</p>
-                    </div>
-                  </div>
-                  <div className="p-3 border-t border-slate-100 dark:border-slate-800 text-center">
-                    <button className="text-xs font-bold text-blue-600 hover:text-blue-700">Mark all as read</button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
 
-          <Link to={profilePath} className="flex items-center gap-3 border-l border-slate-100 pl-4 dark:border-slate-800">
-            <div className="relative">
-              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                {(user?.name || 'A').charAt(0).toUpperCase()}
+          <div className="relative border-l border-slate-100 pl-4 dark:border-slate-800" ref={profileRef}>
+            <button
+              onClick={() => setProfileOpen((o) => !o)}
+              className="flex items-center gap-2 outline-none"
+              aria-label="User Profile menu"
+            >
+              <div className="relative">
+                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                  {(user?.name || 'A').charAt(0).toUpperCase()}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
-            </div>
+            </button>
 
-          </Link>
-          <button onClick={logout} className="ml-2 rounded-2xl p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition-colors" aria-label="Logout">
-            <LogOut className="h-5 w-5" />
-          </button>
+            {profileOpen && (
+              <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                {/* Profile Header */}
+                <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Admin'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{roleName}</p>
+                </div>
+                
+                {/* Settings link */}
+                <Link
+                  to={profilePath}
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                    <SettingsIcon size={16} />
+                  </div>
+                  Settings
+                </Link>
+
+                {/* Dark Mode toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+                  }}
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800 text-left"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                  </div>
+                  <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
+
+                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
+
+                {/* Logout button */}
+                <button
+                  onClick={() => {
+                    setProfileOpen(false);
+                    logout();
+                  }}
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
+                    <LogOut size={16} />
+                  </div>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

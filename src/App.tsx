@@ -347,38 +347,19 @@ const SchoolRoutes = () => (
       <Route path="attendance" element={<SchoolAttendance />} />
       <Route path="academics" element={<SchoolAcademics />} />
       <Route path="notices" element={<SchoolNotices />} />
-      <Route path="fees" element={<SchoolFees />} />
       <Route path="calendar" element={<SchoolAcademicCalendar />} />
       <Route path="complaints" element={<SchoolComplaints />} />
-      <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="timetable" element={<SchoolTimetable />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="reports" element={<SchoolReports />} />
-      <Route path="finance" element={<SchoolFinance />} />
       <Route path="communications" element={<SchoolCommunications />} />
       <Route path="roles" element={<SchoolRoles />} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
-      <Route path="assignments" element={<SchoolAssignments />} />
-      <Route path="study-materials" element={<SchoolStudyMaterials />} />
-      <Route path="syllabus" element={<SchoolSyllabus />} />
-      <Route path="exams" element={<SchoolExams />} />
-      <Route path="question-bank" element={<SchoolQuestionBank />} />
-      <Route path="marks-entry" element={<SchoolMarksEntry />} />
-      <Route path="results" element={<SchoolResults />} />
-      <Route path="report-cards" element={<SchoolReportCards />} />
-      <Route path="fee-structures" element={<SchoolFeeStructures />} />
-      <Route path="payment-collection" element={<SchoolPaymentCollection />} />
-      <Route path="payment-history" element={<SchoolPaymentHistory />} />
-      <Route path="fee-defaulters" element={<SchoolFeeDefaulters />} />
       <Route path="notifications-center" element={<SchoolNotificationsCenter />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
       <Route path="email-center" element={<SchoolEmailCenter />} />
-      <Route path="ai-insights" element={<SchoolAiInsights />} />
-      <Route path="student-performance" element={<SchoolStudentPerformance />} />
-      <Route path="attendance-analytics" element={<SchoolAttendanceAnalytics />} />
-      <Route path="custom-reports" element={<SchoolCustomReports />} />
     </Route>
 
     {/* School Teacher */}

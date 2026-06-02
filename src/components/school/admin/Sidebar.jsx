@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import {
   Bell,
   AlertCircle,
@@ -102,19 +102,6 @@ const instituteGroups = [
       { to: '/school/admin/teachers', label: 'Teachers', icon: Users },
       { to: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
       { to: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
-      { to: '/school/admin/assignments', label: 'Assignments & Homework', icon: ClipboardList },
-      { to: '/school/admin/study-materials', label: 'Study Materials', icon: BookOpen },
-      { to: '/school/admin/syllabus', label: 'Syllabus Tracking', icon: GraduationCap },
-    ],
-  },
-  {
-    heading: 'Examinations',
-    items: [
-      { to: '/school/admin/exams', label: 'Exams', icon: FileText },
-      { to: '/school/admin/question-bank', label: 'Question Bank', icon: ClipboardList },
-      { to: '/school/admin/marks-entry', label: 'Marks Entry', icon: FileText },
-      { to: '/school/admin/results', label: 'Results', icon: Sparkles },
-      { to: '/school/admin/report-cards', label: 'Report Cards', icon: FileText },
     ],
   },
   {
@@ -126,16 +113,6 @@ const instituteGroups = [
     ],
   },
   {
-    heading: 'Finance',
-    items: [
-      { to: '/school/admin/fees', label: 'Fees Management', icon: Wallet },
-      { to: '/school/admin/payment-collection', label: 'Payment Collection', icon: Landmark },
-      { to: '/school/admin/payment-history', label: 'Payment History', icon: FileText },
-      { to: '/school/admin/fee-defaulters', label: 'Fee Defaulters', icon: AlertCircle },
-      { to: '/school/admin/finance', label: 'Finance & Analytics', icon: Landmark },
-    ],
-  },
-  {
     heading: 'Communication',
     items: [
       { to: '/school/admin/notices', label: 'Notices & Announcements', icon: AlertCircle },
@@ -143,15 +120,6 @@ const instituteGroups = [
       { to: '/school/admin/notifications-center', label: 'Notifications', icon: Bell },
       { to: '/school/admin/sms-center', label: 'SMS Center', icon: MessageSquare },
       { to: '/school/admin/email-center', label: 'Email Center', icon: MessageSquare },
-    ],
-  },
-  {
-    heading: 'AI & Analytics',
-    items: [
-      { to: '/school/admin/ai-insights', label: 'AI Insights', icon: Sparkles },
-      { to: '/school/admin/student-performance', label: 'Student Performance Analytics', icon: BarChart3 },
-      { to: '/school/admin/attendance-analytics', label: 'Attendance Analytics', icon: BarChart3 },
-      { to: '/school/admin/custom-reports', label: 'Custom Reports', icon: FileText },
     ],
   },
   {
@@ -217,7 +185,9 @@ export default function Sidebar({ open, onClose }) {
         <div className="flex h-full flex-col overflow-hidden">
           <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6 dark:border-slate-800">
             <div className={cn('min-w-0 transition-opacity', collapsed && canCollapse && 'md:opacity-0 md:pointer-events-none md:w-0 md:overflow-hidden')}>
-              <EddvaLogo />
+              <Link to={isTeacher ? '/school/teacher' : '/school/admin'}>
+                <EddvaLogo />
+              </Link>
             </div>
             <div className="flex items-center gap-1">
               {canCollapse && (

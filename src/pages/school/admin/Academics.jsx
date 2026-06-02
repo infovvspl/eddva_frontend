@@ -99,11 +99,12 @@ export default function Academics() {
   const handleSectionSubmit = async (formData) => {
     setIsSubmitting(true);
     try {
-      const { classId, ...data } = formData;
+      const { classId, classTeacherId, ...data } = formData;
+      const payload = { ...data, classId, teacherId: classTeacherId };
       if (selectedSection) {
-        await api.put(`/academic/sections/${selectedSection.id}`, data);
+        await api.put(`/academic/sections/${selectedSection.id}`, payload);
       } else {
-        await api.post(`/academic/classes/${classId}/sections`, data);
+        await api.post(`/academic/sections`, payload);
       }
       setIsSectionModalOpen(false);
       setSelectedSection(null);
