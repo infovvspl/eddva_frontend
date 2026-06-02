@@ -8,10 +8,10 @@ import {
 } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FiArrowUpRight, FiPlay } from "react-icons/fi";
-import H1 from '../../assets/H1.png';
+import H1 from '../../assets/h1.png';
 import H2 from '../../assets/h7.png';
 import H3 from '../../assets/h8.png';
-import H4 from '../../assets/H4.png';
+import H4 from '../../assets/h4.png';
 
 // ─── Particle field ───────────────────────────────────────────────────────────
 function ParticleField() {
