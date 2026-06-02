@@ -10,6 +10,7 @@ import { Layers } from 'lucide-react';
 export default function Academics() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [academicYear, setAcademicYear] = useState('2025-2026');
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -18,11 +19,12 @@ export default function Academics() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [academicYear]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const classRes = await api.get('/academic/classes');
+      const classRes = await api.get('/academic/classes', { params: { academicYear } });
       const classPayload = classRes.data?.data ?? classRes.data;
       setClasses(Array.isArray(classPayload) ? classPayload : []);
     } catch (error) {
@@ -116,26 +118,36 @@ export default function Academics() {
     }
   };
 
-
-
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (loading) return <div className="p-8 dark:text-white">Loading...</div>;
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-surface-950">Academics</h1>
-          <p className="mt-2 text-sm text-surface-500">Manage classes and sections.</p>
+          <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">Academics</h1>
+          <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">Manage classes and sections.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-semibold text-surface-700 dark:text-surface-300">Academic Year:</label>
+          <select
+            value={academicYear}
+            onChange={(e) => setAcademicYear(e.target.value)}
+            className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
+          >
+            <option value="2024-2025">2024-2025</option>
+            <option value="2025-2026">2025-2026</option>
+            <option value="2026-2027">2026-2027</option>
+          </select>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Classes Section */}
-        <div className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Layout className="h-6 w-6 text-brand-600" />
-              <h2 className="text-xl font-bold">Classes & Sections</h2>
+              <h2 className="text-xl font-bold text-surface-950 dark:text-white">Classes & Sections</h2>
             </div>
             <button 
               onClick={handleAddClass}
@@ -147,24 +159,24 @@ export default function Academics() {
           </div>
           
           {classes.length === 0 ? (
-            <p className="text-sm text-surface-500">No classes configured.</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">No classes configured for this academic year.</p>
           ) : (
             <ul className="space-y-3">
               {classes.map(c => (
-                <li key={c.id} className="flex items-center justify-between rounded-md bg-surface-50 p-3">
-                  <span className="text-sm font-semibold">
+                <li key={c.id} className="flex items-center justify-between rounded-md bg-surface-55 dark:bg-surface-800 p-3">
+                  <span className="text-sm font-semibold text-surface-950 dark:text-white">
                     {c.name} - {(c.sections || []).length} Sections
                   </span>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleEditClass(c)}
-                      className="rounded p-1 text-surface-500 hover:bg-surface-200 hover:text-brand-600"
+                      className="rounded p-1 text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700 hover:text-brand-600"
                     >
                       <Edit2 className="h-4 w-4" />
                     </button>
                     <button 
                       onClick={() => handleDeleteClass(c.id)}
-                      className="rounded p-1 text-surface-500 hover:bg-red-50 hover:text-red-600"
+                      className="rounded p-1 text-surface-500 dark:text-surface-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -176,11 +188,11 @@ export default function Academics() {
         </div>
 
         {/* Sections Section */}
-        <div className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Layers className="h-6 w-6 text-brand-600" />
-              <h2 className="text-xl font-bold">All Sections</h2>
+              <h2 className="text-xl font-bold text-surface-950 dark:text-white">All Sections</h2>
             </div>
             <button 
               onClick={handleAddSection}
@@ -192,26 +204,26 @@ export default function Academics() {
           </div>
           
           {classes.every(c => (c.sections || []).length === 0) ? (
-            <p className="text-sm text-surface-500">No sections configured.</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">No sections configured for this academic year.</p>
           ) : (
             <div className="space-y-4">
               {classes.filter(c => (c.sections || []).length > 0).map(c => (
                 <div key={c.id}>
-                  <h3 className="mb-2 text-xs font-bold tracking-tight uppercase tracking-widest text-surface-400">{c.name}</h3>
+                  <h3 className="mb-2 text-xs font-bold tracking-tight uppercase tracking-widest text-surface-400 dark:text-surface-500">{c.name}</h3>
                   <ul className="space-y-2">
                     {(c.sections || []).map(sec => (
-                      <li key={sec.id} className="flex items-center justify-between rounded-md border border-surface-100 bg-surface-50/50 p-2 text-sm">
-                        <span className="font-semibold">Section {sec.name}</span>
+                      <li key={sec.id} className="flex items-center justify-between rounded-md border border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-800/50 p-2 text-sm">
+                        <span className="font-semibold text-surface-900 dark:text-surface-200">Section {sec.name}</span>
                         <div className="flex gap-1">
                           <button 
                             onClick={() => handleEditSection({...sec, classId: c.id})}
-                            className="rounded p-1 text-surface-400 hover:bg-surface-200 hover:text-brand-600"
+                            className="rounded p-1 text-surface-400 dark:text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-700 hover:text-brand-600"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button 
                             onClick={() => handleDeleteSection(sec.id)}
-                            className="rounded p-1 text-surface-400 hover:bg-red-50 hover:text-red-600"
+                            className="rounded p-1 text-surface-400 dark:text-surface-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -239,10 +251,9 @@ export default function Academics() {
           onSubmit={handleClassSubmit}
           onCancel={() => setIsClassModalOpen(false)}
           isLoading={isSubmitting}
+          defaultAcademicYear={academicYear}
         />
       </Modal>
-
-
 
       {/* Section Modal */}
       <Modal 
@@ -257,6 +268,7 @@ export default function Academics() {
           onSubmit={handleSectionSubmit}
           onCancel={() => setIsSectionModalOpen(false)}
           isLoading={isSubmitting}
+          defaultAcademicYear={academicYear}
         />
       </Modal>
     </div>
