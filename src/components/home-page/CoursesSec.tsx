@@ -1,8 +1,7 @@
 import React from "react";
-import { motion, Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
 
-// Refactored structure blueprint focusing on core course information
 interface CourseItem {
   id: number;
   title: string;
@@ -12,7 +11,6 @@ interface CourseItem {
   badge: string;
 }
 
-// Cleaned up mock data aligned with your new card elements
 const coursesData: CourseItem[] = [
   {
     id: 1,
@@ -41,23 +39,26 @@ const coursesData: CourseItem[] = [
 ];
 
 export default function CoursesSection() {
-  // Shared fluid ease curve from your Hero Section
   const fluidEase = [0.16, 1, 0.3, 1] as const;
 
-  const fadeInUp: Variants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
+  const fadeUp: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i: number = 0) => ({
       opacity: 1,
       y: 0,
-      transition: { duration: 0.8, ease: fluidEase },
-    },
+      transition: {
+        duration: 0.8,
+        delay: i * 0.12,
+        ease: fluidEase,
+      },
+    }),
   };
 
   const cardContainerVariant: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.15 },
+      transition: { staggerChildren: 0.12, delayChildren: 0.1 },
     },
   };
 
@@ -71,97 +72,194 @@ export default function CoursesSection() {
   };
 
   return (
-    <section className="relative w-full bg-white text-slate-900 py-24 px-6 sm:px-12 overflow-hidden">
-      
-      {/* Background Decorative Grid - Seamless Continuity */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem] [mask-image:radial-gradient(ellipse_70%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-40 pointer-events-none" />
+    <section
+      style={{
+        position: "relative",
+        width: "100%",
+        background: "#ffffff",
+        overflow: "hidden",
+        padding: "80px 24px",
+        boxSizing: "border-box",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      {/* Light subtle gradient ambient glow background */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        <div style={{
+          position: "absolute", width: "700px", height: "700px",
+          borderRadius: "50%", bottom: "10%", right: "-10%",
+          background: "radial-gradient(circle, rgba(0,166,255,0.05) 0%, transparent 65%)",
+        }} />
+        <div style={{
+          position: "absolute", width: "600px", height: "600px",
+          borderRadius: "50%", top: "-5%", left: "-5%",
+          background: "radial-gradient(circle, rgba(0,68,153,0.04) 0%, transparent 70%)",
+        }} />
+      </div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      {/* Tech Blueprint Grid Lines matching parent frameworks */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
+        backgroundImage: `linear-gradient(rgba(0,68,153,0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,68,153,0.02) 1px, transparent 1px)`,
+        backgroundSize: "50px 50px",
+      }} />
+
+      <div style={{ position: "relative", zIndex: 10, maxWidth: "1200px", width: "100%" }}>
         
-        {/* SECTION HEADER */}
+        {/* ─── SECTION HEADER ─── */}
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-          className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: "32px",
+            marginBottom: "72px",
+            width: "100%"
+          }}
         >
-          <div className="max-w-xl">
-            {/* Title */}
+          <div style={{ maxWidth: "540px" }}>
             <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-[1.1]"
+              variants={fadeUp} custom={0}
+              style={{
+                fontSize: "clamp(36px, 4.5vw, 52px)",
+                fontWeight: 900,
+                lineHeight: 1.1,
+                color: "#002966",
+                margin: 0,
+                letterSpacing: "-0.03em",
+                fontFamily: "'Syne', sans-serif",
+              }}
             >
               Choose Your <br />
-              <span className="font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
-                Exam Path
+              <span style={{
+                background: "linear-gradient(90deg, #004499, #00a6ff)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
+              }}>
+                Exam Path.
               </span>
             </motion.h2>
           </div>
 
-          {/* Subtitle / CTA combo */}
-          <motion.div variants={fadeInUp} className="flex flex-col items-start md:items-end gap-3">
-            <p className="text-base text-slate-500 font-medium max-w-xs md:text-right leading-relaxed">
-              Comprehensive preparation for various tiers. Pick your goal and we'll build your personalized path.
+          <motion.div variants={fadeUp} custom={1} style={{ maxWidth: "380px" }}>
+            <p style={{ fontSize: "16px", color: "#475569", lineHeight: 1.6, margin: 0, fontWeight: 400 }}>
+              Comprehensive preparation matrices designed for top tier results. Select your focal point and engineer your personalized dashboard map.
             </p>
           </motion.div>
         </motion.div>
 
-        {/* COURSES CARD GRID */}
+        {/* ─── COURSES CARD MATRIX GRID ─── */}
         <motion.div
           variants={cardContainerVariant}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: "40px 32px",
+            width: "100%"
+          }}
         >
           {coursesData.map((course) => (
             <motion.div
               key={course.id}
               variants={cardVariant}
-              whileHover={{ y: -8, transition: { duration: 0.3, ease: fluidEase } }}
-              className="group relative bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-blue-500/5 transition-shadow duration-300 flex flex-col h-full"
+              whileHover={{ y: -8, boxShadow: "0 30px 60px rgba(0,41,102,0.12)" }}
+              style={{
+                background: "#ffffff",
+                border: "1px solid rgba(0,68,153,0.1)",
+                borderRadius: "24px",
+                overflow: "hidden",
+                boxShadow: "0 10px 30px rgba(0,41,102,0.03)",
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                transition: "box-shadow 0.4s, transform 0.4s",
+              }}
+              className="course-card-group"
             >
-              {/* Image & Badge Container */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+              {/* Image Visual Container Frame */}
+              <div style={{ position: "relative", aspectRatio: "16/10", width: "100%", overflow: "hidden", background: "#f8fafc" }}>
                 <img
                   src={course.image}
                   alt={course.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)" }}
+                  className="course-img-layer"
                 />
                 
-                {/* Custom Card Badge */}
-                <span className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-white/95 backdrop-blur-sm border border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-800 shadow-sm">
+                {/* Float Absolute Status Pill Badge */}
+                <span style={{
+                  position: "absolute", top: "20px", left: "20px", zIndex: 10,
+                  padding: "6px 14px", borderRadius: "999px",
+                  background: "rgba(255,255,255,0.92)", backdropFilter: "blur(8px)",
+                  border: "1px solid rgba(0,68,153,0.08)",
+                  fontSize: "11px", fontWeight: 700,
+                  letterSpacing: "0.06em", color: "#002966", textTransform: "uppercase",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.04)"
+                }}>
                   {course.badge}
                 </span>
                 
-                {/* Dark Vignette Overlay on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Tech Dark Vignette Film Overlay */}
+                <div 
+                  style={{
+                    position: "absolute", inset: 0,
+                    background: "linear-gradient(to top, rgba(0,41,102,0.2) 0%, transparent 60%)",
+                    opacity: 0, transition: "opacity 0.4s"
+                  }} 
+                  className="course-vignette-layer"
+                />
               </div>
 
-              {/* Card Body */}
-              <div className="p-6 flex flex-col flex-1">
-                {/* Meta details / Category */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#0066cc] bg-blue-50 px-2.5 py-1 rounded-md">
+              {/* Dynamic Content Structure Block */}
+              <div style={{ padding: "32px", display: "flex", flexDirection: "column", flex: "1" }}>
+                
+                {/* Meta details / Category Pill */}
+                <div style={{ display: "flex", marginBottom: "16px" }}>
+                  <span style={{
+                    fontSize: "11px", fontWeight: 700, textTransform: "uppercase",
+                    letterSpacing: "0.08em", color: "#0066cc",
+                    background: "rgba(0,102,204,0.06)", padding: "4px 12px", borderRadius: "8px"
+                  }}>
                     {course.category}
                   </span>
                 </div>
 
-                {/* Course Title */}
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-[#0066cc] transition-colors duration-200">
+                {/* Main Component Title */}
+                <h3 
+                  style={{
+                    margin: "0 0 12px", fontSize: "22px", fontWeight: 800,
+                    color: "#002966", letterSpacing: "-0.01em", fontFamily: "'Syne', sans-serif",
+                    transition: "color 0.3s"
+                  }}
+                  className="course-title-layer"
+                >
                   {course.title}
                 </h3>
 
-                {/* Course Description */}
-                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">
+                {/* Summary Meta Description paragraph */}
+                <p style={{ margin: "0 0 32px", fontSize: "14px", color: "#64748b", lineHeight: 1.6, fontWeight: 400 }}>
                   {course.description}
                 </p>
 
-                {/* Full Width Elegant Explore Path Button */}
-                <button className="w-full mt-auto flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-slate-700 text-sm font-bold tracking-tight transition-all duration-300 group-hover:bg-gradient-to-tr group-hover:from-[#004499] group-hover:to-[#0066cc] group-hover:border-transparent group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-500/20">
-                  <span>Explore</span>
-                  <FiArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                {/* Full Width Micro-Interactive Target Action Button */}
+                <button style={{
+                  width: "100%", marginTop: "auto", display: "flex", alignItems: "center",
+                  justifyContent: "center", gap: "8px", padding: "14px 24px", borderRadius: "14px",
+                  background: "rgba(0,68,153,0.04)", border: "1px solid rgba(0,68,153,0.08)",
+                  color: "#475569", fontSize: "14px", fontWeight: 700, cursor: "pointer",
+                  transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+                }}
+                className="course-action-btn"
+                >
+                  <span>Explore Path</span>
+                  <FiArrowRight style={{ width: "16px", height: "16px", transition: "transform 0.3s" }} className="course-arrow-icon" />
                 </button>
 
               </div>
@@ -169,6 +267,28 @@ export default function CoursesSection() {
           ))}
         </motion.div>
       </div>
+
+      {/* Global Style overrides to track internal nesting classes cleanly */}
+      <style>{`
+        .course-card-group:hover .course-img-layer {
+          transform: scale(1.04);
+        }
+        .course-card-group:hover .course-vignette-layer {
+          opacity: 1 !important;
+        }
+        .course-card-group:hover .course-title-layer {
+          color: #0066cc !important;
+        }
+        .course-card-group:hover .course-action-btn {
+          background: linear-gradient(135deg, #002966 0%, #004499 100%) !important;
+          border-color: transparent !important;
+          color: #ffffff !important;
+          box-shadow: 0 12px 24px rgba(0,68,153,0.15) !important;
+        }
+        .course-card-group:hover .course-arrow-icon {
+          transform: translateX(4px);
+        }
+      `}</style>
     </section>
   );
 }

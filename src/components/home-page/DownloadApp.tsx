@@ -83,7 +83,7 @@ export default function DownloadAppSection() {
   };
 
   return (
-    <section className="relative w-full bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900 py-28 sm:py-36 px-6 sm:px-12 overflow-hidden">
+    <section className="relative w-full bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900 py-20 sm:py-20 px-6 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none" />
 
       <div className="max-w-7xl mx-auto w-full relative z-10">
@@ -111,7 +111,7 @@ export default function DownloadAppSection() {
             {/* Subtitle */}
             <motion.p
               variants={fadeInUp}
-              className="text-lg text-slate-600 font-medium leading-relaxed"
+              className="text-md text-slate-600 font-medium leading-relaxed"
             >
               Take your courses anywhere with zero friction. Offline video
               syncing, interactive sandboxes, and instant notifications from
