@@ -7,8 +7,14 @@ import Button from '@/components/school/Button';
 import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/SchoolAuthContext';
+import { useAcademicStore } from '@/lib/academic-store';
 
 export default function StudyMaterials() {
+  const { user } = useAuth();
+  const { assignments, activeAcademicContext } = useAcademicStore();
+  const isTeacher = user?.role === 'TEACHER';
+
   const [materials, setMaterials] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,13 +27,38 @@ export default function StudyMaterials() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Notes');
   const [subjectId, setSubjectId] = useState('');
+  const [chapterId, setChapterId] = useState('');
+  const [topicId, setTopicId] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
+
+  const [chaptersList, setChaptersList] = useState<any[]>([]);
+  const [topicsList, setTopicsList] = useState<any[]>([]);
 
   useEffect(() => {
     fetchMaterials();
     fetchSubjects();
   }, []);
+
+  useEffect(() => {
+    if (subjectId) {
+      fetchChapters(subjectId);
+    } else {
+      setChaptersList([]);
+      setChapterId('');
+      setTopicsList([]);
+      setTopicId('');
+    }
+  }, [subjectId]);
+
+  useEffect(() => {
+    if (chapterId) {
+      fetchTopics(chapterId);
+    } else {
+      setTopicsList([]);
+      setTopicId('');
+    }
+  }, [chapterId]);
 
   const fetchMaterials = async () => {
     try {
@@ -50,10 +81,50 @@ export default function StudyMaterials() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await api.get('/subjects');
-      if (Array.isArray(res.data)) setSubjects(res.data);
-      else if (res.data?.data) setSubjects(res.data.data);
+      if (isTeacher) {
+        let currentAssignments = assignments;
+        if (currentAssignments.length === 0) {
+          const statsRes = await api.get('/dashboard/stats');
+          const tData = statsRes.data?.data?.teacherData || statsRes.data?.teacherData || {};
+          if (tData.assignments) {
+            useAcademicStore.getState().setAssignments(tData.assignments);
+            currentAssignments = tData.assignments;
+          }
+        }
+        const teacherSubjects = currentAssignments.map((a: any) => ({
+          id: a.subjectId,
+          name: `${a.className} - ${a.sectionName} - ${a.subjectName}`
+        }));
+        const uniqueSubjects = Array.from(new Map(teacherSubjects.map(item => [item.id, item])).values());
+        setSubjects(uniqueSubjects);
+        
+        if (activeAcademicContext && uniqueSubjects.find(s => s.id === activeAcademicContext.subjectId)) {
+          setSubjectId(activeAcademicContext.subjectId);
+        }
+      } else {
+        const res = await api.get('/academic/subjects');
+        const list = res.data?.data || res.data || [];
+        setSubjects(list);
+      }
     } catch (err) {}
+  };
+
+  const fetchChapters = async (subId: string) => {
+    try {
+      const res = await api.get(`/topics/chapters?subjectId=${subId}`);
+      setChaptersList(res.data?.data || res.data || []);
+    } catch (err) {
+      setChaptersList([]);
+    }
+  };
+
+  const fetchTopics = async (chapId: string) => {
+    try {
+      const res = await api.get(`/topics?chapterId=${chapId}`);
+      setTopicsList(res.data?.data || res.data || []);
+    } catch (err) {
+      setTopicsList([]);
+    }
   };
 
   const handleOpenModal = (material?: any) => {
@@ -62,7 +133,9 @@ export default function StudyMaterials() {
       setTitle(material.title);
       setDescription(material.description || '');
       setCategory(material.fileType || material.category || 'Notes');
-      setSubjectId(material.subjectId || '');
+      setSubjectId(material.subjectIdFk || material.subjectId || '');
+      setChapterId(material.chapterId || '');
+      setTopicId(material.topicId || '');
       setFileUrl(material.fileUrl || '');
       setFileName(material.fileName || '');
     } else {
@@ -70,7 +143,13 @@ export default function StudyMaterials() {
       setTitle('');
       setDescription('');
       setCategory('Notes');
-      setSubjectId('');
+      if (isTeacher && activeAcademicContext) {
+        setSubjectId(activeAcademicContext.subjectId);
+      } else {
+        setSubjectId('');
+      }
+      setChapterId('');
+      setTopicId('');
       setFileUrl('');
       setFileName('');
     }
@@ -86,8 +165,10 @@ export default function StudyMaterials() {
         fileUrl,
         fileType: category,
         fileSize: 0,
-        chapterId: null,
-        subjectId,
+        subjectId, // legacy fallback
+        subjectIdFk: subjectId,
+        chapterId: chapterId || null,
+        topicId: topicId || null,
         description
       };
       if (editingMaterial) {
@@ -131,8 +212,9 @@ export default function StudyMaterials() {
       key: 'subjectId', 
       title: 'Subject', 
       width: '20%',
-      render: (val: any) => {
-        const sub = subjects.find(s => s.id === val);
+      render: (val: any, row: any) => {
+        const targetId = row.subjectIdFk || val;
+        const sub = subjects.find(s => s.id === targetId);
         return sub ? sub.name : (val || '-');
       }
     },
@@ -242,6 +324,29 @@ export default function StudyMaterials() {
               ...subjects.map(s => ({ value: s.id, label: s.name }))
             ]}
           />
+          
+          <SelectField
+            label="Chapter"
+            value={chapterId}
+            onChange={(e) => setChapterId(e.target.value)}
+            options={[
+              { value: '', label: 'Select Chapter' },
+              ...chaptersList.map(c => ({ value: c.id, label: c.name }))
+            ]}
+            disabled={!subjectId}
+          />
+
+          <SelectField
+            label="Topic"
+            value={topicId}
+            onChange={(e) => setTopicId(e.target.value)}
+            options={[
+              { value: '', label: 'Select Topic' },
+              ...topicsList.map(t => ({ value: t.id, label: t.name }))
+            ]}
+            disabled={!chapterId}
+          />
+
           <InputField
             label="Description"
             value={description}
