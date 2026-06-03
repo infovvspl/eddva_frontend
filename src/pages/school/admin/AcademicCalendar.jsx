@@ -443,7 +443,7 @@ export default function AcademicCalendar() {
                 Today
               </button>
 
-              <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-eddva-gradient px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-blue">
+              <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
                 <Plus className="h-4 w-4" />
                 Add Event
               </button>
@@ -735,7 +735,7 @@ export default function AcademicCalendar() {
                   )}
                   <div className="ml-auto flex gap-3">
                     <button type="button" onClick={() => setModalOpen(false)} className="rounded-2xl border border-slate-100 dark:border-slate-800 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Cancel</button>
-                    <button type="submit" className="rounded-2xl bg-eddva-gradient px-6 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-white shadow-blue">{editingEvent ? 'Update Event' : 'Save Event'}</button>
+                    <button type="submit" className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">{editingEvent ? 'Update Event' : 'Save Event'}</button>
                   </div>
                 </div>
               </form>

@@ -185,7 +185,6 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const [showPassword, setShowPassword] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [showGuardian, setShowGuardian] = useState(false);
-  const [errors, setErrors] = useState({});
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
 
