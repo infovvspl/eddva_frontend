@@ -216,7 +216,8 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         const res = await api.get('/events', {
           params: { from: from.toISOString(), to: to.toISOString() }
         });
-        setWeekEvents(Array.isArray(res.data) ? res.data : []);
+        const data = res.data?.data ?? res.data;
+        setWeekEvents(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to fetch weekly events', err);
       }

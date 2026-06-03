@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle, Clock, Plus, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '@/lib/api/school-client';
@@ -114,7 +114,7 @@ export default function Complaints() {
           <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.3fr_auto]">
             <input required value={newTicket.title} onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })} className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" placeholder="Ticket title" />
             <input required value={newTicket.description} onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })} className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" placeholder="Describe the issue" />
-            <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-eddva-gradient px-5 py-3 text-sm font-bold text-white shadow-blue">
+            <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
               <Plus className="h-4 w-4" />
               Create
             </button>

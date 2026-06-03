@@ -3,6 +3,8 @@ import { FileText, Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/Modal';
+import { useConfirm } from '@/context/ConfirmContext';
+import { handleApiError } from '@/lib/school/errorHandler';
 
 export default function Exams() {
   const [exams, setExams] = useState<any[]>([]);
@@ -10,6 +12,8 @@ export default function Exams() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<any>(null);
+
+  const confirm = useConfirm();
 
   // Form state
   const [title, setTitle] = useState('');
@@ -49,18 +53,24 @@ export default function Exams() {
       setIsModalOpen(false);
       fetchExams();
     } catch (err) {
-      toast.error('Failed to save exam');
+      handleApiError(err, 'Failed to save exam');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this exam?')) return;
+    const ok = await confirm({
+      title: 'Delete Exam',
+      message: 'Are you sure you want to delete this exam?',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel'
+    });
+    if (!ok) return;
     try {
       await api.delete(`/assessments/mock-tests/${id}`);
       toast.success('Exam deleted');
       fetchExams();
     } catch (err) {
-      toast.error('Failed to delete exam');
+      handleApiError(err, 'Failed to delete exam');
     }
   };
 

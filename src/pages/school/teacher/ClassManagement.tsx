@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Video, Calendar, Users, Clock, Plus, Radio } from 'lucide-react';
 import Button from '@/components/school/Button';
 import Badge from '@/components/school/Badge';
@@ -201,14 +201,25 @@ const ClassManagement: React.FC = () => {
                   {day}
                 </span>
 
-                {events.map((event: any) => (
-                  <div
-                    key={event.id}
-                    className="class__calendar-event"
-                  >
-                    {event.subject_name}
-                  </div>
-                ))}
+                {events.map((event: any) => {
+                  const type = (event.type || 'class').toLowerCase();
+                  let modifier = 'class__calendar-event--deadline';
+                  if (type === 'live' || type === 'class') {
+                    modifier = 'class__calendar-event--class';
+                  } else if (type === 'exam') {
+                    modifier = 'class__calendar-event--exam';
+                  } else if (type === 'meeting') {
+                    modifier = 'class__calendar-event--meeting';
+                  }
+                  return (
+                    <div
+                      key={event.id}
+                      className={`class__calendar-event ${modifier}`}
+                    >
+                      {event.subject_name || event.title || 'Class'}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

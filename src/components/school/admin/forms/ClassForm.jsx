@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 
-export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) {
+export default function ClassForm({ classData, onSubmit, onCancel, isLoading, defaultAcademicYear = '2025-2026' }) {
   const [formData, setFormData] = useState({
     name: '',
     level: '',
     section: '',
-    building: ''
+    building: '',
+    academicYear: defaultAcademicYear
   });
   const [error, setError] = useState('');
 
@@ -17,10 +18,16 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
         name: classData.name || '',
         level: classData.level?.toString() || '',
         section: (classData.sections || []).map(s => s.name).join(', ') || '',
-        building: classData.building || ''
+        building: classData.building || '',
+        academicYear: classData.academic_year || classData.academicYear || defaultAcademicYear
       });
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        academicYear: defaultAcademicYear
+      }));
     }
-  }, [classData]);
+  }, [classData, defaultAcademicYear]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,29 +56,45 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
       )}
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-semibold text-surface-700 mb-2">Class Name *</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            placeholder="Class 10-A"
-          />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Class Name *</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="Class 10-A"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Academic Year *</label>
+            <select
+              name="academicYear"
+              value={formData.academicYear}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            >
+              <option value="2024-2025">2024-2025</option>
+              <option value="2025-2026">2025-2026</option>
+              <option value="2026-2027">2026-2027</option>
+            </select>
+          </div>
         </div>
         
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-          <label className="block text-sm font-semibold text-surface-700 mb-2">Level</label>
-          <input
-            type="number"
-            name="level"
-            value={formData.level}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            placeholder="10"
-          />
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Level</label>
+            <input
+              type="number"
+              name="level"
+              value={formData.level}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="10"
+            />
           </div>
 
           <div>
@@ -101,11 +124,11 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {classData ? 'Update Class' : 'Add Class'}
@@ -113,7 +136,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-lg border border-surface-200 px-4 py-2 font-semibold text-surface-700 hover:bg-surface-50"
+          className="flex-1 rounded-xl border border-surface-200 px-4 py-2.5 font-semibold text-surface-700 hover:bg-surface-50 active:scale-[0.98] transition-all duration-200 text-center"
         >
           Cancel
         </button>

@@ -61,6 +61,25 @@ export default function StudentProfile() {
   const [attendanceMonth, setAttendanceMonth] = useState(
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const toggleActiveStatus = async () => {
+    setUpdatingStatus(true);
+    try {
+      const newActive = !student.isActive;
+      await api.put(`/students/${student.id}`, { 
+        name: student.name,
+        isActive: newActive 
+      });
+      setStudent(prev => ({ ...prev, isActive: newActive }));
+      toast.success(`Student account ${newActive ? 'activated' : 'deactivated'} successfully`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || 'Failed to update student status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   useEffect(() => {
     fetchStudent();
@@ -110,55 +129,58 @@ export default function StudentProfile() {
   /** The backend returns flat snake_case fields — normalize to camelCase for the UI */
   const normalizeStudent = (raw) => {
     if (!raw) return raw;
+    const nestedProfile = raw.studentProfile || {};
     return {
       ...raw,
       // top-level camelCase aliases
-      isActive: raw.is_active,
-      createdAt: raw.created_at,
+      isActive: raw.is_active ?? raw.isActive,
+      createdAt: raw.created_at ?? raw.createdAt,
       // build the studentProfile object the UI expects
       studentProfile: {
-        enrollmentNo:      raw.enrollment_no    ?? raw.enrollmentNo,
-        rollNo:            raw.roll_no          ?? raw.rollNo,
-        sectionId:         raw.section_id       ?? raw.sectionId,
-        dob:               raw.dob,
-        gender:            raw.gender,
-        bloodGroup:        raw.blood_group      ?? raw.bloodGroup,
-        maritalStatus:     raw.marital_status   ?? raw.maritalStatus,
-        nationalId:        raw.national_id      ?? raw.nationalId,
-        fatherName:        raw.father_name      ?? raw.fatherName,
-        motherName:        raw.mother_name      ?? raw.motherName,
-        parentPhone:       raw.parent_phone     ?? raw.parentPhone,
-        parentEmail:       raw.parent_email     ?? raw.parentEmail,
-        parentOccupation:  raw.parent_occupation ?? raw.parentOccupation,
-        admissionDate:     raw.admission_date   ?? raw.admissionDate,
-        medicalConditions: raw.medical_conditions ?? raw.medicalConditions,
-        allergies:         raw.allergies,
-        address:           raw.address,
-        city:              raw.city,
-        state:             raw.state,
-        pinCode:           raw.pin_code         ?? raw.pinCode,
-        documents:         raw.documents,
-        section: {
-          name:  raw.section_name ?? raw.studentProfile?.section?.name,
-          class: { name: raw.class_name ?? raw.studentProfile?.section?.class?.name },
+        ...nestedProfile,
+        id:              nestedProfile.id ?? raw.profile_id ?? raw.id,
+        enrollmentNo:      nestedProfile.enrollmentNo ?? nestedProfile.enrollment_no ?? raw.enrollment_no ?? raw.enrollmentNo,
+        rollNo:            nestedProfile.rollNo ?? nestedProfile.roll_no ?? raw.roll_no ?? raw.rollNo,
+        sectionId:         nestedProfile.sectionId ?? nestedProfile.section_id ?? raw.section_id ?? raw.sectionId,
+        dob:               nestedProfile.dob ?? raw.dob,
+        gender:            nestedProfile.gender ?? raw.gender,
+        bloodGroup:        nestedProfile.bloodGroup ?? nestedProfile.blood_group ?? raw.blood_group ?? raw.bloodGroup,
+        maritalStatus:     nestedProfile.maritalStatus ?? nestedProfile.marital_status ?? raw.marital_status ?? raw.maritalStatus,
+        nationalId:        nestedProfile.nationalId ?? nestedProfile.national_id ?? raw.national_id ?? raw.nationalId,
+        fatherName:        nestedProfile.fatherName ?? nestedProfile.father_name ?? raw.father_name ?? raw.fatherName,
+        motherName:        nestedProfile.motherName ?? nestedProfile.mother_name ?? raw.mother_name ?? raw.motherName,
+        parentPhone:       nestedProfile.parentPhone ?? nestedProfile.parent_phone ?? raw.parent_phone ?? raw.parentPhone,
+        parentEmail:       nestedProfile.parentEmail ?? nestedProfile.parent_email ?? raw.parent_email ?? raw.parentEmail,
+        parentOccupation:  nestedProfile.parentOccupation ?? nestedProfile.parent_occupation ?? raw.parent_occupation ?? raw.parentOccupation,
+        admissionDate:     nestedProfile.admissionDate ?? nestedProfile.admission_date ?? raw.admission_date ?? raw.admissionDate,
+        medicalConditions: nestedProfile.medicalConditions ?? nestedProfile.medical_conditions ?? raw.medical_conditions ?? raw.medicalConditions,
+        allergies:         nestedProfile.allergies ?? raw.allergies,
+        address:           nestedProfile.address ?? raw.address,
+        city:              nestedProfile.city ?? raw.city,
+        state:             nestedProfile.state ?? raw.state,
+        pinCode:           nestedProfile.pinCode ?? nestedProfile.pin_code ?? raw.pin_code ?? raw.pinCode,
+        documents:         nestedProfile.documents ?? raw.documents,
+        section: nestedProfile.section || {
+          name:  raw.section_name ?? nestedProfile.section?.name,
+          class: { name: raw.class_name ?? nestedProfile.section?.class?.name },
         },
       },
       // build parentDetails from flat fields if not returned as nested
-      parentDetails: raw.parent_details ?? raw.parentDetails ?? {
-        primaryContact:  raw.primary_contact   ?? 'father',
-        fatherName:      raw.father_name        ?? raw.fatherName,
-        fatherPhone:     raw.father_phone       ?? raw.fatherPhone,
-        motherName:      raw.mother_name        ?? raw.motherName,
-        motherPhone:     raw.mother_phone       ?? raw.motherPhone,
-        email:           raw.parent_email       ?? raw.parentEmail,
-        whatsappNumber:  raw.whatsapp_number    ?? raw.whatsappNumber,
-        occupation:      raw.parent_occupation  ?? raw.parentOccupation,
-        guardianName:    raw.guardian_name      ?? raw.guardianName,
-        guardianRelation:raw.guardian_relation  ?? raw.guardianRelation,
-        guardianPhone:   raw.guardian_phone     ?? raw.guardianPhone,
-        createLogin:     raw.create_login       ?? raw.createLogin,
-        sendViaSms:      raw.send_via_sms       ?? raw.sendViaSms,
-        sendViaEmail:    raw.send_via_email     ?? raw.sendViaEmail,
+      parentDetails: raw.parentDetails ?? raw.parent_details ?? nestedProfile.parentDetails ?? {
+        primaryContact:  nestedProfile.primaryContact ?? raw.primary_contact   ?? 'father',
+        fatherName:      nestedProfile.fatherName ?? raw.father_name        ?? raw.fatherName,
+        fatherPhone:     nestedProfile.fatherPhone ?? raw.father_phone       ?? raw.fatherPhone,
+        motherName:      nestedProfile.motherName ?? raw.mother_name        ?? raw.motherName,
+        motherPhone:     nestedProfile.motherPhone ?? raw.mother_phone       ?? raw.motherPhone,
+        email:           nestedProfile.parentEmail ?? raw.parent_email       ?? raw.parentEmail,
+        whatsappNumber:  nestedProfile.whatsappNumber ?? raw.whatsapp_number    ?? raw.whatsappNumber,
+        occupation:      nestedProfile.parentOccupation ?? raw.parent_occupation  ?? raw.parentOccupation,
+        guardianName:    nestedProfile.guardianName ?? raw.guardian_name      ?? raw.guardianName,
+        guardianRelation:nestedProfile.guardianRelation ?? raw.guardian_relation  ?? raw.guardianRelation,
+        guardianPhone:   nestedProfile.guardianPhone ?? raw.guardian_phone     ?? raw.guardianPhone,
+        createLogin:     nestedProfile.createLogin ?? raw.create_login       ?? raw.createLogin,
+        sendViaSms:      nestedProfile.sendViaSms ?? raw.send_via_sms       ?? raw.sendViaSms,
+        sendViaEmail:    nestedProfile.sendViaEmail ?? raw.send_via_email     ?? raw.sendViaEmail,
       },
     };
   };
@@ -255,10 +277,6 @@ export default function StudentProfile() {
           >
             <Send size={18} />
             Send Credentials
-          </button>
-          <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all">
-            <Edit2 size={18} />
-            Edit Profile
           </button>
         </div>
       </div>
@@ -397,9 +415,32 @@ export default function StudentProfile() {
               )}
             </div>
             <div className="flex-1 pb-4">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-4 mb-2 flex-wrap">
                 <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{student.name}</h1>
-                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-emerald-500/20">Active</span>
+                <button
+                  onClick={toggleActiveStatus}
+                  disabled={updatingStatus}
+                  className="flex items-center gap-2 outline-none group cursor-pointer"
+                  title="Click to toggle account status"
+                >
+                  <div className={cn(
+                    "relative w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-1 border",
+                    student.isActive 
+                      ? "bg-emerald-500 border-emerald-600" 
+                      : "bg-slate-300 border-slate-400 dark:bg-slate-800 dark:border-slate-700"
+                  )}>
+                    <div className={cn(
+                      "w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-md",
+                      student.isActive ? "translate-x-5" : "translate-x-0"
+                    )} />
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-bold tracking-tight uppercase tracking-widest",
+                    student.isActive ? "text-emerald-600" : "text-slate-400"
+                  )}>
+                    {student.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </button>
               </div>
               <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-500">
                 <div className="flex items-center gap-2"><GraduationCap size={18} className="text-blue-500" /> Class {profile.section?.class?.name || '—'} - {profile.section?.name || '—'}</div>
@@ -453,6 +494,23 @@ export default function StudentProfile() {
                     </div>
                   </div>
                   <div className="space-y-6">
+                    {/* Credentials Card */}
+                    <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <h4 className="text-xs font-bold tracking-tight uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                        <Key size={14} className="text-blue-500" />
+                        Login Credentials
+                      </h4>
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Username / Email</span>
+                          <div className="text-sm font-extrabold text-slate-700 dark:text-slate-200 mt-1 select-all">{student.email}</div>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/30 text-[10px] font-bold text-blue-600 leading-relaxed mt-2">
+                          🔒 Password can be reset by sending a reset link or updating via user management.
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="p-6 rounded-3xl bg-blue-600 text-white shadow-xl shadow-blue-600/20">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-xs font-bold tracking-tight uppercase tracking-widest opacity-80">Medical Alert</h4>
@@ -484,7 +542,7 @@ export default function StudentProfile() {
                         <button
                           onClick={() => {
                             setSendCredsForm({
-                              parentEmail: parents.email || profile.parentEmail || student.email || '',
+                              parentEmail: parents.email || profile.parentEmail || '',
                               tempPassword: '',
                             });
                             setSendCredsOpen(true);
@@ -496,8 +554,8 @@ export default function StudentProfile() {
                         </button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <DetailItem label="Parent Email" value={parents.email || profile.parentEmail || student.email} icon={Mail} />
-                        <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || parents.fatherPhone || profile.parentPhone || student.phone} icon={Phone} />
+                        <DetailItem label="Parent Email" value={parents.email || profile.parentEmail} icon={Mail} />
+                        <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || parents.fatherPhone || profile.parentPhone} icon={Phone} />
                         <DetailItem label="Primary Occupation" value={parents.occupation || profile.parentOccupation} icon={Briefcase} />
                       </div>
                     </div>
@@ -512,11 +570,11 @@ export default function StudentProfile() {
                       <div className="space-y-4">
                         <div>
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Name</div>
-                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.fatherName || profile.fatherName || profile.parentName || '—'}</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.fatherName || profile.fatherName || '—'}</div>
                         </div>
                         <div>
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
-                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.fatherPhone || profile.parentPhone || student.phone || '—'}</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.fatherPhone || '—'}</div>
                         </div>
                       </div>
                     </div>
@@ -535,12 +593,12 @@ export default function StudentProfile() {
                         </div>
                         <div>
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
-                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.motherPhone || profile.parentPhone || student.phone || '—'}</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.motherPhone || '—'}</div>
                         </div>
                       </div>
                     </div>
 
-                    {(parents.guardianName || parents.primaryContact === 'guardian' || profile.guardianName || (!profile.fatherName && !profile.motherName && profile.parentName)) && (
+                    {(parents.guardianName || parents.primaryContact === 'guardian' || profile.guardianName) && (
                       <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
@@ -551,11 +609,11 @@ export default function StudentProfile() {
                         <div className="space-y-4">
                           <div>
                             <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Name & Relation</div>
-                            <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.guardianName || profile.guardianName || profile.parentName || '—'} ({parents.guardianRelation || '—'})</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.guardianName || profile.guardianName || '—'} ({parents.guardianRelation || '—'})</div>
                           </div>
                           <div>
                             <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
-                            <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.guardianPhone || profile.guardianPhone || profile.parentPhone || '—'}</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.guardianPhone || '—'}</div>
                           </div>
                         </div>
                       </div>
@@ -716,44 +774,91 @@ export default function StudentProfile() {
                 </div>
               )}
 
-              {activeTab === 'performance' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-8 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-100/50">
-                      <h4 className="text-sm font-bold tracking-tight text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <TrendingUp size={18} className="text-blue-600" />
-                        GPA Trend
-                      </h4>
-                      <div className="h-48 flex items-end justify-between gap-2">
-                        {[60, 80, 75, 90, 85, 95].map((h, i) => (
-                          <div key={i} className="flex-1 bg-blue-100 rounded-t-xl relative group">
-                            <div className="absolute inset-0 bg-blue-600 rounded-t-xl transition-all duration-500" style={{ height: `${h}%` }} />
-                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-tight text-slate-400">Term {i+1}</div>
-                          </div>
-                        ))}
+              {activeTab === 'performance' && (() => {
+                const sessions = student.performance || [];
+                const totalSessions = sessions.length;
+                const avgAccuracy = totalSessions > 0
+                  ? Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / totalSessions)
+                  : 0;
+
+                return (
+                  <div className="space-y-8">
+                    {/* Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                        <div className="text-4xl font-bold tracking-tight text-blue-600 mb-1">{totalSessions}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed Assessments</div>
+                      </div>
+                      <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                        <div className="text-4xl font-bold tracking-tight text-emerald-500 mb-1">{totalSessions > 0 ? `${avgAccuracy}%` : '—'}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Accuracy</div>
+                      </div>
+                      <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                        <div className="text-4xl font-bold tracking-tight text-indigo-600 mb-1">
+                          {totalSessions > 0 ? (sessions.reduce((sum, s) => sum + (s.score || 0), 0) / totalSessions).toFixed(1) : '—'}
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Score</div>
                       </div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="p-6 rounded-3xl bg-slate-900 text-white">
-                        <h5 className="text-xs font-bold tracking-tight uppercase tracking-widest opacity-60 mb-2">Teacher's Remark</h5>
-                        <p className="text-sm font-bold italic">
-                          "Deepak has shown exceptional growth in logical reasoning this term. He consistently helps his peers during lab sessions."
-                        </p>
+
+                    {/* Test Sessions Table */}
+                    <div className="rounded-[2rem] border border-slate-100 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
+                      <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Assessment History</h4>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-slate-50 text-center border border-slate-100">
-                          <div className="text-2xl font-bold tracking-tight text-blue-600">3.8</div>
-                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Current GPA</div>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-slate-50 text-center border border-slate-100">
-                          <div className="text-2xl font-bold tracking-tight text-emerald-600">Top 5%</div>
-                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Class Rank</div>
-                        </div>
-                      </div>
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                          <tr>
+                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Mock Test Name</th>
+                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Submitted Date</th>
+                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Accuracy</th>
+                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Score</th>
+                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Correct/Wrong</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800/40 text-sm">
+                          {sessions.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="p-10 text-center text-slate-400 font-bold">
+                                No test sessions completed yet.
+                              </td>
+                            </tr>
+                          ) : (
+                            sessions.map((s, idx) => (
+                              <tr key={s.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors font-bold text-slate-700 dark:text-slate-200">
+                                <td className="p-4 text-slate-900 dark:text-white font-extrabold">{s.mockTestTitle || '—'}</td>
+                                <td className="p-4 text-slate-400">
+                                  {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  }) : '—'}
+                                </td>
+                                <td className="p-4 text-center">
+                                  <span className={cn(
+                                    "px-2 py-1 rounded-lg text-xs font-extrabold",
+                                    (s.accuracy || 0) >= 80 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" :
+                                    (s.accuracy || 0) >= 50 ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" :
+                                    "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                                  )}>
+                                    {s.accuracy ? `${Math.round(s.accuracy)}%` : '0%'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-center font-extrabold text-blue-600 dark:text-blue-400">{s.score ?? 0}</td>
+                                <td className="p-4 text-center text-[11px]">
+                                  <span className="text-emerald-600 dark:text-emerald-400">{s.correctCount ?? 0} ✅</span>
+                                  <span className="mx-1.5 text-slate-300">/</span>
+                                  <span className="text-rose-600 dark:text-rose-400">{s.wrongCount ?? 0} ❌</span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {activeTab === 'fees' && (
                 <div className="space-y-8">
