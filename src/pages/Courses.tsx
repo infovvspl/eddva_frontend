@@ -46,7 +46,7 @@ interface Feature {
 const courses: Course[] = [
   {
     id: 1,
-    title: "Full-Stack Web Engineering",
+    title: "Maha Sangam",
     category: "Engineering",
     level: "Intermediate to Advanced",
     duration: "12 Weeks",
@@ -55,7 +55,7 @@ const courses: Course[] = [
     description:
       "Master React, Node.js, and system architecture. Build production-ready, scalable applications from scratch.",
     image:
-      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=600",
+      "	https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=1200",
     icon: <FiCode className="w-5 h-5" />,
     color: "from-blue-500 to-cyan-400",
     bg: "bg-blue-50",
@@ -63,7 +63,7 @@ const courses: Course[] = [
   },
   {
     id: 2,
-    title: "Advanced UI/UX Design",
+    title: "NEET 2027",
     category: "Design",
     level: "All Levels",
     duration: "8 Weeks",
@@ -72,7 +72,7 @@ const courses: Course[] = [
     description:
       "Go beyond the basics. Learn design systems, micro-interactions, and psychological principles of user flow.",
     image:
-      "https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=600",
+      "	https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=1200",
     icon: <FiMonitor className="w-5 h-5" />,
     color: "from-violet-500 to-fuchsia-400",
     bg: "bg-violet-50",
@@ -80,7 +80,7 @@ const courses: Course[] = [
   },
   {
     id: 3,
-    title: "Backend Architecture & DevOps",
+    title: "Sankalp 1.0",
     category: "Engineering",
     level: "Advanced",
     duration: "10 Weeks",
@@ -89,7 +89,7 @@ const courses: Course[] = [
     description:
       "Design robust APIs, manage microservices, and deploy pipelines using Docker, Kubernetes, and AWS.",
     image:
-      "https://images.unsplash.com/photo-1618401471353-b98a520d9c1a?q=80&w=600",
+      "https://eddva.s3.ap-south-1.amazonaws.com/tenants/…8-76ae3b3da213/thumbnail/1776961795350-AYUSH.jpeg",
     icon: <FiTerminal className="w-5 h-5" />,
     color: "from-emerald-500 to-teal-400",
     bg: "bg-emerald-50",
@@ -97,7 +97,7 @@ const courses: Course[] = [
   },
   {
     id: 4,
-    title: "Product Management Mastery",
+    title: "JEE Advance2027",
     category: "Business",
     level: "Intermediate",
     duration: "6 Weeks",
@@ -106,7 +106,7 @@ const courses: Course[] = [
     description:
       "Learn how to define product vision, manage roadmaps, and lead cross-functional teams to launch successful products.",
     image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=600",
+      "	https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1200",
     icon: <FiLayers className="w-5 h-5" />,
     color: "from-amber-500 to-orange-400",
     bg: "bg-amber-50",
@@ -202,9 +202,7 @@ export default function CoursesPage() {
             transition={{ duration: 0.8, ease, delay: 0.2 }}
             className="text-slate-400 text-lg leading-relaxed max-w-md mb-10 font-medium"
           >
-            Industry-aligned curriculum designed to take you from fundamentals
-            to mastery. No fluff, just high-impact skills that employers
-            actually want.
+            Programs from partner institutes. Create an account to enroll; paid courses are available after sign-in.
           </motion.p>
 
           <motion.div
@@ -299,7 +297,7 @@ export default function CoursesPage() {
             </motion.div>
 
             {/* Tabs */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -319,7 +317,7 @@ export default function CoursesPage() {
                   {cat}
                 </button>
               ))}
-            </motion.div>
+            </motion.div> */}
           </div>
 
           {/* Grid Container */}
@@ -342,11 +340,6 @@ export default function CoursesPage() {
                   />
 
                   {/* Overlay Badges */}
-                  <div className="absolute top-5 left-5 flex gap-2">
-                    <span className="px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm text-xs font-black uppercase tracking-wider text-slate-900 shadow-sm">
-                      {course.category}
-                    </span>
-                  </div>
                   <div className="absolute bottom-5 right-5 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm">
                     <FiStar className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                     {course.rating} ({course.reviews})

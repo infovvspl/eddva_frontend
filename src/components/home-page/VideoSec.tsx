@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { motion, Variants, AnimatePresence } from "framer-motion";
+import { motion, type Variants, type MotionProps, AnimatePresence } from "framer-motion";
 import { FiPlay, FiX, FiSliders, FiLayers, FiActivity, FiCpu } from "react-icons/fi";
 import Intro from '../../assets/intro.mp4';
 
@@ -16,195 +16,347 @@ export default function VideoSection() {
     }
   }, [isOpen]);
 
-  // Animation Variants matching your AboutUs / Hero easing
-  const fadeInUp: Variants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
+  // Animation Variants matching Hero / AboutUs structures
+  const fadeUp: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i: number = 0) => ({
       opacity: 1,
       y: 0,
-      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-    },
+      transition: {
+        duration: 0.8,
+        delay: i * 0.12,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    }),
   };
 
   const staggerContainer: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+      transition: { staggerChildren: 0.12, delayChildren: 0.1 },
     },
   };
 
   return (
-    <section className="relative w-full bg-slate-50 text-slate-900 py-24 sm:py-32 px-6 sm:px-12 overflow-hidden">
-      {/* Background Subtle Dot Matrix */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:2rem_2rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-70 pointer-events-none" />
+    <section
+      className="video-section-wrapper"
+      style={{
+        position: "relative",
+        width: "100%",
+        background: "#ffffff",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      {/* Dynamic responsive CSS rules */}
+      <style>{`
+        .video-section-wrapper {
+          padding: 80px 24px;
+        }
+        .video-grid-container {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 80px;
+        }
+        .video-card-canvas {
+          height: 460px;
+        }
+        .video-feature-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .play-btn-hover:hover {
+          background: #004499 !important;
+          color: #ffffff !important;
+        }
 
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        {/* Reordered Grid: Video first on mobile/desktop, text follows */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 items-center">
-          
-          {/* LEFT: INTERACTIVE AUTO-PLAYING CARD */}
-          <div className="lg:col-span-7 order-2 lg:order-1 relative w-full h-[320px] sm:h-[440px] flex items-center justify-center select-none">
-            {/* Arch Blur Glow background layer */}
-            <div className="absolute w-[90%] h-[90%] bg-gradient-to-tr from-blue-200/20 to-purple-200/20 rounded-[40px] blur-3xl -z-10" />
+        @media (max-width: 991px) {
+          .video-section-wrapper {
+            padding: 60px 20px;
+          }
+          .video-grid-container {
+            grid-template-columns: 1fr !important;
+            gap: 50px !important;
+          }
+          .video-card-canvas {
+            height: 340px !important;
+            max-width: 580px;
+            margin: 0 auto;
+          }
+          .tech-outer-circle-bg {
+            width: 360px !important;
+            height: 360px !important;
+          }
+        }
 
-            {/* Video Inline Card Wrapper */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 30 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-              onClick={() => setIsOpen(true)}
-              className="group relative w-full h-full rounded-2xl shadow-2xl border border-slate-200/50 overflow-hidden bg-slate-900 cursor-pointer"
-            >
-              {/* Native Continuous Local Background Loop Video */}
-              <video
-                src={Intro}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover opacity-80 group-hover:scale-[1.03] transition-transform duration-700 ease-[0.16, 1, 0.3, 1]"
-              />
+        @media (max-width: 540px) {
+          .video-card-canvas {
+            height: 240px !important;
+          }
+          .video-feature-grid {
+            grid-template-columns: 1fr !important;
+            gap: 28px !important;
+          }
+          .tech-outer-circle-bg {
+            width: 260px !important;
+            height: 260px !important;
+          }
+        }
+      `}</style>
 
-              {/* Tint overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-slate-950/10 to-transparent animate-fade-in" />
-
-              {/* Centered Pulse Play Button overlay */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative flex items-center justify-center">
-                  {/* Pulse Ring 1 */}
-                  <div className="absolute w-20 h-20 bg-blue-500/30 rounded-full animate-ping [animation-duration:2s]" />
-                  {/* Pulse Ring 2 */}
-                  <div className="absolute w-16 h-16 bg-white/20 rounded-full group-hover:scale-110 transition-transform duration-300" />
-                  
-                  {/* Button Content */}
-                  <button className="relative w-16 h-16 flex items-center justify-center bg-white text-blue-600 rounded-full shadow-lg group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                    <FiPlay className="w-6 h-6 ml-1 transition-transform group-hover:scale-110" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* RIGHT: CONTENT & COPY */}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-            className="lg:col-span-5 order-1 lg:order-2 space-y-6"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-[1.15]"
-            >
-              Built for precision, <br />
-              <span className="font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
-                 clarity, and results
-              </span>
-            </motion.h2>
-
-            <motion.p
-              variants={fadeInUp}
-              className="text-base sm:text-lg text-slate-500 font-medium leading-relaxed max-w-md"
-            >
-              A learning journey that understands you before it guides you—curated, measurable, and always within reach when doubt appears.
-            </motion.p>
-
-            {/* Micro Stats Row */}
-            <motion.div 
-              variants={fadeInUp}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8 border-t border-slate-200/60 pt-8"
-            >
-              {/* Pillar 1: Adaptive Learning */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 shadow-sm border border-blue-100/40">
-                    <FiSliders className="w-4 h-4" />
-                  </div>
-                  <h4 className="font-bold text-slate-900 tracking-tight">Adaptive Learning</h4>
-                </div>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                  A system that learns how you think before it teaches. Eddva adapts to your pace and patterns, shaping a journey that feels natural.
-                </p>
-              </div>
-
-              {/* Pillar 2: Intelligent Recommendations */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600 shadow-sm border border-purple-100/40">
-                    <FiLayers className="w-4 h-4" />
-                  </div>
-                  <h4 className="font-bold text-slate-900 tracking-tight">Intelligent Recommendations</h4>
-                </div>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                  Curated, not crowded. Access a refined selection of videos, notes, assessments, and mock tests aligned with your goals.
-                </p>
-              </div>
-
-              {/* Pillar 3: Performance Intelligence */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 shadow-sm border border-emerald-100/40">
-                    <FiActivity className="w-4 h-4" />
-                  </div>
-                  <h4 className="font-bold text-slate-900 tracking-tight">Performance Intelligence</h4>
-                </div>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                  Measure what truly matters. Track your progress through insightful analytics, competitive rankings, and performance indicators.
-                </p>
-              </div>
-
-              {/* Pillar 4: Always-On Clarity */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600 shadow-sm border border-amber-100/40">
-                    <FiCpu className="w-4 h-4" />
-                  </div>
-                  <h4 className="font-bold text-slate-900 tracking-tight">Always-On Clarity</h4>
-                </div>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                  Uninterrupted understanding. With instant AI-powered doubt resolution and contextual support, clarity is never delayed.
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-
-        </div>
+      {/* Light subtle gradient ambient glow background matching premium vibe */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        <div style={{
+          position: "absolute", width: "700px", height: "700px",
+          borderRadius: "50%", top: "20%", right: "-10%",
+          background: "radial-gradient(circle, rgba(0,166,255,0.05) 0%, transparent 65%)",
+        }} />
+        <div style={{
+          position: "absolute", width: "600px", height: "600px",
+          borderRadius: "50%", bottom: "-5%", left: "-5%",
+          background: "radial-gradient(circle, rgba(0,68,153,0.04) 0%, transparent 70%)",
+        }} />
       </div>
 
-      {/* LIGHTBOX VIDEO EXPAND MODAL */}
+      {/* Tech Blueprint Grid Lines */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
+        backgroundImage: `linear-gradient(rgba(0,68,153,0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,68,153,0.02) 1px, transparent 1px)`,
+        backgroundSize: "50px 50px",
+      }} />
+
+      <div 
+        className="video-grid-container"
+        style={{
+          position: "relative",
+          zIndex: 10,
+          maxWidth: "1200px",
+          width: "100%",
+          display: "grid",
+          alignItems: "center",
+        }}
+      >
+        
+        {/* ─── LEFT COLUMN: INTERACTIVE AUTO-PLAYING VIDEO CARD ─── */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="video-card-canvas"
+          style={{
+            position: "relative",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Decorative Backdrops: Tech Outer Circle */}
+          <div 
+            className="tech-outer-circle-bg"
+            style={{
+              position: "absolute", width: "480px", height: "480px",
+              borderRadius: "50%", border: "1px dashed rgba(0,102,204,0.12)",
+              zIndex: 1,
+            }} 
+          />
+
+          {/* Interactive Cinematic Video Card Block */}
+          <motion.div
+            variants={fadeUp} custom={1}
+            onClick={() => setIsOpen(true)}
+            whileHover={{ y: -6, boxShadow: "0 30px 60px rgba(0,41,102,0.16)" }}
+            style={{
+              position: "relative",
+              zIndex: 5,
+              width: "100%",
+              height: "100%",
+              borderRadius: "24px",
+              overflow: "hidden",
+              boxShadow: "0 20px 50px rgba(0,41,102,0.1)",
+              border: "1px solid rgba(0,68,153,0.12)",
+              background: "#001a40",
+              cursor: "pointer",
+              transition: "box-shadow 0.4s, transform 0.4s",
+            }}
+          >
+            <video
+              src={Intro}
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                opacity: 0.75,
+              }}
+            />
+
+            {/* Premium Deep Tint Overlay Matrix */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to top, rgba(0,41,102,0.5) 0%, rgba(0,0,0,0) 60%)",
+            }} />
+
+            {/* Central High-Tech Pulsing Trigger Overlay */}
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <motion.div 
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ position: "absolute", width: "88px", height: "88px", background: "rgba(0,166,255,0.25)", borderRadius: "50%" }}
+                />
+                <div style={{
+                  width: "68px", height: "68px", borderRadius: "50%",
+                  background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: "0 8px 24px rgba(0,41,102,0.15)", color: "#004499",
+                  transition: "background 0.3s, color 0.3s",
+                }}
+                className="play-btn-hover"
+                >
+                  <FiPlay style={{ width: "22px", height: "22px", marginLeft: "4px", fill: "currentColor" }} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* ─── RIGHT COLUMN: GRID CONTENT & COPY MATRIX ─── */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={staggerContainer}
+          style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}
+        >
+          {/* Main Title Structure */}
+          <motion.h2
+            variants={fadeUp} custom={0}
+            style={{
+              fontSize: "clamp(32px, 4vw, 52px)",
+              fontWeight: 900,
+              lineHeight: 1.1,
+              color: "#002966",
+              margin: "0 0 20px",
+              letterSpacing: "-0.03em",
+              fontFamily: "'Syne', sans-serif",
+            }}
+          >
+            Built for precision,<br />
+            <span style={{
+              background: "linear-gradient(90deg, #004499, #00a6ff)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
+            }}>
+              clarity, and results.
+            </span>
+          </motion.h2>
+
+          {/* Editorial Subtitle Description */}
+          <motion.p
+            variants={fadeUp} custom={1}
+            style={{
+              fontSize: "16px", color: "#475569", lineHeight: 1.7,
+              margin: "0 0 44px", fontWeight: 400, maxWidth: "480px"
+            }}
+          >
+            A learning journey that understands you before it guides you—curated, measurable, and always within reach when doubt appears.
+          </motion.p>
+
+          {/* Core Feature Matrix Grid Blocks */}
+          <div 
+            className="video-feature-grid"
+            style={{
+              display: "grid",
+              gap: "36px 28px",
+              width: "100%",
+              borderTop: "1px solid rgba(0, 68, 153, 0.08)",
+              paddingTop: "40px"
+            }}
+          >
+            {[
+              { icon: FiSliders, color: "#004499", bg: "rgba(0,68,153,0.06)", title: "Adaptive Learning", desc: "A system that learns how you think before it teaches. Eddva adapts to your pace and patterns, shaping a journey that feels natural." },
+              { icon: FiLayers, color: "#8b5cf6", bg: "rgba(139,92,246,0.06)", title: "Intelligent Recom.", desc: "Curated, not crowded. Access a refined selection of videos, notes, assessments, and mock tests aligned with your goals." },
+              { icon: FiActivity, color: "#10b981", bg: "rgba(16,185,129,0.06)", title: "Performance Intel.", desc: "Measure what truly matters. Track your progress through insightful analytics, competitive rankings, and performance indicators." },
+              { icon: FiCpu, color: "#f59e0b", bg: "rgba(245,158,11,0.06)", title: "Always-On Clarity", desc: "Uninterrupted understanding. With instant AI-powered doubt resolution and contextual support, clarity is never delayed." }
+            ].map((pillar, idx) => (
+              <motion.div
+                key={idx}
+                variants={fadeUp}
+                custom={2 + idx}
+                style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "12px" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{
+                    padding: "10px", borderRadius: "10px", background: pillar.bg,
+                    color: pillar.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                  }}>
+                    <pillar.icon style={{ width: "16px", height: "16px" }} />
+                  </div>
+                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#002966", fontFamily: "'Syne', sans-serif", letterSpacing: "-0.01em" }}>
+                    {pillar.title}
+                  </h4>
+                </div>
+                <p style={{ margin: 0, fontSize: "13px", color: "#64748b", lineHeight: 1.6, fontWeight: 400 }}>
+                  {pillar.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+
+        </motion.div>
+      </div>
+
+      {/* ─── LIGHTBOX VIDEO EXPAND MODAL ─── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+            style={{
+              position: "fixed", inset: 0, zIndex: 9999,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "16px", background: "rgba(0, 15, 40, 0.85)", backdropFilter: "blur(16px)",
+            }}
             onClick={() => setIsOpen(false)}
           >
-            {/* Close button */}
-            <button 
-              className="absolute top-6 right-6 p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            {/* Action Frame Close Button */}
+            <button
               onClick={() => setIsOpen(false)}
+              style={{
+                position: "absolute", top: "16px", right: "16px", padding: "12px",
+                background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                color: "#ffffff", borderRadius: "50%", display: "flex", cursor: "pointer",
+                transition: "background 0.2s, color 0.2s", zIndex: 10
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
             >
-              <FiX className="w-6 h-6" />
+              <FiX style={{ width: "20px", height: "20px" }} />
             </button>
 
-            {/* Interactive Expanded Frame */}
+            {/* Scaled Interactive Canvas Container Frame */}
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="relative w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: "relative", width: "100%", maxWidth: "1040px",
+                aspectRatio: "16/9", background: "#000000", borderRadius: "16px",
+                overflow: "hidden", boxShadow: "0 30px 70px rgba(0,0,0,0.5)",
+                border: "1px solid rgba(255,255,255,0.15)",
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               <video
                 ref={modalVideoRef}
                 src={Intro}
-                className="w-full h-full"
+                style={{ width: "100%", height: "100%", display: "block" }}
                 controls
                 playsInline
               >

@@ -12,28 +12,28 @@ interface FAQItem {
 const faqData: FAQItem[] = [
   {
     id: 1,
-    question: "How do the masterclasses work?",
-    answer: "Our masterclasses are self-paced, high-production video courses accompanied by interactive code sandboxes, curated reading materials, and downloadable assets. Once you enroll, you gain lifetime access to the materials and any future updates.",
+    question: "What is EDDVA?",
+    answer: "EDDVA is an innovative education platform dedicated to enhancing learning experiences through technology, providing students, educators, and institutions with tools and resources that support effective learning and growth.",
   },
   {
     id: 2,
-    question: "Is there a community component to the platform?",
-    answer: "Absolutely. Every course includes access to an exclusive, moderated space within our premium network. You can discuss assignments, collaborate on projects, and network with over 50,000 active global learners and mentors.",
+    question: "Who can use EDDVA?",
+    answer: "EDDVA is designed for students, teachers, educational institutions, and lifelong learners looking to improve their learning journey through modern and accessible educational solutions.",
   },
   {
     id: 3,
-    question: "Can I get a certificate after completing a course?",
-    answer: "Yes, upon successfully finishing all modules, projects, and assessments of a masterclass, you will receive a verified, cryptographically shareable digital certificate to display on your LinkedIn profile or resume.",
+    question: "How does EDDVA help learners?",
+    answer: "EDDVA offers engaging learning experiences, personalized resources, and technology-driven solutions that help learners develop skills, gain knowledge, and achieve their academic or professional goals.",
   },
   {
     id: 4,
-    question: "What is your refund policy?",
-    answer: "We offer a 14-day, no-questions-asked money-back guarantee. If you feel the masterclass isn't the perfect fit for your learning goals, simply request a refund from your account settings page within the first two weeks.",
+    question: "Is EDDVA accessible online?",
+    answer: "Yes, EDDVA is designed to be accessible online, allowing users to learn, collaborate, and access educational resources anytime and from anywhere with an internet connection.",
   },
   {
     id: 5,
-    question: "Are there any prerequisites for advanced tracks?",
-    answer: "While some advanced courses benefit from foundational knowledge, each track includes a 'Warm-up' module designed to get you up to speed. Prerequisites are always explicitly listed on individual course description pages.",
+    question: "How can I get support or contact EDDVA?",
+    answer: "You can reach our support team through the Contact Us page on our website. We are committed to assisting users with their questions, feedback, and technical support needs.",
   },
 ];
 
