@@ -7,6 +7,8 @@ import ProgressBar from '@/components/school/ProgressBar';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useAcademicStore } from '@/lib/academic-store';
+import { toast } from 'sonner';
 import './Dashboard.css';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -18,6 +20,8 @@ const iconMap: Record<string, React.ReactNode> = {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { activeAcademicContext, setActiveAcademicContext, setAssignments } = useAcademicStore();
+  
   const [stats, setStats] = useState<any>(null);
   const [upcomingClasses, setUpcomingClasses] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -36,6 +40,11 @@ const Dashboard: React.FC = () => {
       if (statsRes.status === 'fulfilled') {
         const data = statsRes.value.data?.data || statsRes.value.data || {};
         setStats(data);
+        
+        if (data.teacherData?.assignments) {
+          setAssignments(data.teacherData.assignments);
+        }
+
         setUpcomingClasses((data.upcomingClasses || data.batches || []).map((item: any) => ({
           id: item.id,
           time: `${item.start_time || item.startTime || item.schedule || '--'}`,
@@ -235,29 +244,31 @@ const Dashboard: React.FC = () => {
         <div className="dashboard__side">
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>My Academic Assignments 🎓</h3>
+              <h3>My Subjects 🎓</h3>
             </div>
-            <div className="dashboard__classes-list space-y-4">
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Classes & Sections</h4>
-                <div className="flex flex-wrap gap-2">
-                  {stats?.teacherData?.classes?.length > 0 ? stats.teacherData.classes.map((c: any) => (
-                    <span key={`c-${c.id}`} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded">{c.name}</span>
-                  )) : null}
-                  {stats?.teacherData?.sections?.length > 0 ? stats.teacherData.sections.map((s: any) => (
-                    <span key={`s-${s.id}`} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded">{s.name}</span>
-                  )) : null}
-                  {(!stats?.teacherData?.classes?.length && !stats?.teacherData?.sections?.length) && <span className="text-xs text-slate-500">None</span>}
-                </div>
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Subjects</h4>
-                <div className="flex flex-wrap gap-2">
-                  {stats?.teacherData?.subjects?.length > 0 ? stats.teacherData.subjects.map((s: any) => (
-                    <span key={`sub-${s.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-bold rounded">{s.name}</span>
-                  )) : <span className="text-xs text-slate-500">None</span>}
-                </div>
-              </div>
+            <div className="dashboard__classes-list space-y-3">
+              {stats?.teacherData?.assignments?.length > 0 ? (
+                stats.teacherData.assignments.map((assignment: any, idx: number) => {
+                  const isActive = activeAcademicContext?.subjectId === assignment.subjectId && activeAcademicContext?.classId === assignment.classId;
+                  return (
+                    <div 
+                      key={idx} 
+                      onClick={() => {
+                        setActiveAcademicContext(assignment);
+                        toast.success(`Active context set to ${assignment.className} - ${assignment.sectionName} - ${assignment.subjectName}`);
+                      }}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${isActive ? 'bg-brand-50 border-brand-500 shadow-sm' : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 hover:border-brand-300'}`}
+                    >
+                      <h4 className={`text-sm font-bold ${isActive ? 'text-brand-700' : 'text-surface-900 dark:text-white'}`}>
+                        {assignment.className} - {assignment.sectionName} - {assignment.subjectName}
+                      </h4>
+                      <p className="text-xs text-surface-500 mt-1">Click to set as active context</p>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-slate-500 text-center py-4">No subjects assigned.</p>
+              )}
             </div>
           </GlassCard>
 

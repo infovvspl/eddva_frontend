@@ -7,9 +7,15 @@ import Button from '@/components/school/Button';
 import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
 import ProgressBar from '@/components/school/ProgressBar';
+import { useAuth } from '@/context/SchoolAuthContext';
+import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 
 export default function Syllabus() {
+  const { user } = useAuth();
+  const { assignments, activeAcademicContext } = useAcademicStore();
+  const isTeacher = user?.role === 'TEACHER';
+
   const [syllabusList, setSyllabusList] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,21 +57,40 @@ export default function Syllabus() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await api.get('/subjects');
-      if (Array.isArray(res.data)) setSubjects(res.data);
-      else if (res.data?.data) setSubjects(res.data.data);
+      if (isTeacher) {
+        let currentAssignments = assignments;
+        if (currentAssignments.length === 0) {
+          const statsRes = await api.get('/dashboard/stats');
+          const tData = statsRes.data?.data?.teacherData || statsRes.data?.teacherData || {};
+          if (tData.assignments) {
+            useAcademicStore.getState().setAssignments(tData.assignments);
+            currentAssignments = tData.assignments;
+          }
+        }
+
+        const teacherSubjects = currentAssignments.map((a: any) => ({
+          id: a.subjectId,
+          name: `${a.className} - ${a.sectionName} - ${a.subjectName}`
+        }));
+        const uniqueSubjects = Array.from(new Map(teacherSubjects.map(item => [item.id, item])).values());
+        setSubjects(uniqueSubjects);
+      } else {
+        const res = await api.get('/academic/subjects');
+        if (Array.isArray(res.data)) setSubjects(res.data);
+        else if (res.data?.data) setSubjects(res.data.data);
+      }
     } catch (err) {}
   };
 
   const handleOpenModal = (syllabus?: any) => {
     if (syllabus) {
       setEditingSyllabus(syllabus);
-      setClassId(syllabus.classId);
-      setSubjectId(syllabus.subjectId);
-      setChapterName(syllabus.chapterName);
+      setClassId(syllabus.classId || '');
+      setSubjectId(syllabus.subject_id || syllabus.subjectId);
+      setChapterName(syllabus.name || syllabus.chapterName);
       setDescription(syllabus.description || '');
-      setCompletionPercentage(syllabus.completionPercentage);
-      setStatus(syllabus.status);
+      setCompletionPercentage(syllabus.progress || syllabus.completionPercentage || 0);
+      setStatus(syllabus.status || 'Not Started');
     } else {
       setEditingSyllabus(null);
       setClassId('');
@@ -90,7 +115,7 @@ export default function Syllabus() {
         subjectId, 
         name: chapterName, 
         description, 
-        completionPercentage: Number(completionPercentage), 
+        progress: Number(completionPercentage), 
         status 
       };
       if (editingSyllabus) {
@@ -108,37 +133,37 @@ export default function Syllabus() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this syllabus entry?')) return;
+    if (!confirm('Are you sure you want to delete this chapter?')) return;
     try {
       await api.delete(`/topics/chapters/${id}`);
-      toast.success('Syllabus entry deleted successfully');
+      toast.success('Chapter deleted successfully');
       fetchSyllabus();
     } catch (err: any) {
-      toast.error('Failed to delete syllabus entry');
+      toast.error('Failed to delete chapter');
     }
   };
 
   const filteredSyllabus = syllabusList.filter(
-    (s) => s.chapterName.toLowerCase().includes(searchQuery.toLowerCase())
+    (s) => (s.name || s.chapterName || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const columns = [
-    { key: 'chapterName', title: 'Chapter', width: '25%' },
+    { key: 'name', title: 'Chapter', width: '25%' },
     { 
-      key: 'subjectId', 
+      key: 'subject_id', 
       title: 'Subject', 
       width: '15%',
-      render: (val: any) => {
-        const sub = subjects.find(s => s.id === val);
-        return sub ? sub.name : val;
+      render: (val: any, row: any) => {
+        const id = val || row.subjectId;
+        const sub = subjects.find(s => s.id === id);
+        return sub ? sub.name : id;
       }
     },
-    { key: 'classId', title: 'Class', width: '15%' },
     { 
-      key: 'completionPercentage', 
+      key: 'progress', 
       title: 'Progress', 
       width: '20%',
-      render: (val: any) => <ProgressBar progress={val} showLabel />
+      render: (val: any, row: any) => <ProgressBar progress={val || row.completionPercentage || 0} showLabel />
     },
     { key: 'status', title: 'Status', width: '15%' },
     {
@@ -171,7 +196,7 @@ export default function Syllabus() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <GraduationCap className="text-blue-600" /> Syllabus Tracking
           </h1>
-          <p className="text-slate-500 dark:text-slate-400">Track curriculum progress across classes.</p>
+          <p className="text-slate-500 dark:text-slate-400">Track curriculum progress across subjects.</p>
         </div>
         <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
           <Plus size={20} /> Add Chapter
@@ -206,13 +231,6 @@ export default function Syllabus() {
       >
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <InputField
-              label="Class"
-              value={classId}
-              onChange={(e) => setClassId(e.target.value)}
-              required
-              placeholder="e.g. Class 10A"
-            />
             <SelectField
               label="Subject"
               value={subjectId}
