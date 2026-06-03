@@ -10,6 +10,9 @@ import Modal from '@/components/school/admin/Modal';
 import AddStudentMultiStep from '@/components/school/admin/forms/AddStudentMultiStep';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useConfirm } from '@/context/ConfirmContext';
+import { handleApiError } from '@/lib/school/errorHandler';
+import { cn } from '@/components/school/admin/Skeleton';
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -155,16 +158,24 @@ export default function Students() {
     setIsModalOpen(true);
   };
 
+  const confirm = useConfirm();
+
   const handleDeleteClick = async (id) => {
-    if (confirm('Are you sure you want to delete this student?')) {
+    const ok = await confirm({
+      title: 'Delete Student Profile',
+      subtitle: 'Danger Zone',
+      message: 'Are you sure you want to permanently delete this student record? This will revoke login credentials and erase all profile history.',
+      confirmLabel: 'Delete Student',
+      cancelLabel: 'Keep Student'
+    });
+    if (ok) {
       try {
         await api.delete(`/students/${id}`);
         setStudents(students.filter(s => s.id !== id));
         notifyDataChanged('students');
         toast.success('Student deleted successfully');
       } catch (error) {
-        console.error(error);
-        toast.error('Failed to delete student');
+        handleApiError(error, 'Failed to delete student');
       }
     }
   };
@@ -481,13 +492,38 @@ export default function Students() {
                         : '-'}
                     </td>
                     <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${student.isActive ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
-                          }`}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const newActive = !student.isActive;
+                            await api.put(`/students/${student.id}`, { name: student.name, isActive: newActive });
+                            setStudents(prev => prev.map(s => s.id === student.id ? { ...s, isActive: newActive } : s));
+                            toast.success(`Student ${newActive ? 'activated' : 'deactivated'} successfully`);
+                          } catch (err) {
+                            handleApiError(err, 'Failed to toggle status');
+                          }
+                        }}
+                        className="flex items-center gap-1.5 outline-none group cursor-pointer"
+                        title="Click to toggle status"
                       >
-                        <span className={`h-1.5 w-1.5 rounded-full ${student.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                        {student.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                        <div className={cn(
+                          "relative w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 border",
+                          student.isActive 
+                            ? "bg-emerald-500 border-emerald-600" 
+                            : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
+                        )}>
+                          <div className={cn(
+                            "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                            student.isActive ? "translate-x-4" : "translate-x-0"
+                          )} />
+                        </div>
+                        <span className={cn(
+                          "text-[11px] font-bold tracking-tight",
+                          student.isActive ? "text-emerald-600" : "text-slate-400"
+                        )}>
+                          {student.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </button>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">

@@ -4,6 +4,8 @@ import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
 import TimetableForm from '@/components/school/admin/forms/TimetableForm';
+import { useConfirm } from '@/context/ConfirmContext';
+import { handleApiError } from '@/lib/school/errorHandler';
 
 export default function Timetable() {
   const [timetables, setTimetables] = useState([]);
@@ -14,6 +16,8 @@ export default function Timetable() {
   const [filterTeacher, setFilterTeacher] = useState('');
   const [filterClass, setFilterClass] = useState('');
   const [activeDay, setActiveDay] = useState('MONDAY');
+
+  const confirm = useConfirm();
 
   useEffect(() => { fetchTimetables(); }, []);
 
@@ -30,12 +34,21 @@ export default function Timetable() {
 
   const handleAddClick = () => { setSelectedTimetable(null); setIsModalOpen(true); };
   const handleEditClick = (t) => { setSelectedTimetable(t); setIsModalOpen(true); };
+  
   const handleDeleteClick = async (id) => {
-    if (!confirm('Are you sure you want to delete this timetable entry?')) return;
+    const ok = await confirm({
+      title: 'Delete Timetable Slot',
+      message: 'Are you sure you want to delete this timetable entry?',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel'
+    });
+    if (!ok) return;
     try {
       await api.delete(`/timetable/${id}`);
       setTimetables((prev) => prev.filter((x) => x.id !== id));
-    } catch (err) { alert('Failed to delete timetable entry'); }
+    } catch (err) {
+      handleApiError(err, 'Failed to delete timetable entry');
+    }
   };
 
   const handleSubmit = async (formData) => {
@@ -51,7 +64,7 @@ export default function Timetable() {
       setIsModalOpen(false);
       setSelectedTimetable(null);
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to save timetable');
+      handleApiError(err, 'Failed to save timetable');
     } finally { setIsSubmitting(false); }
   };
 

@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Bell, Globe, Save, Shield, SlidersHorizontal, User } from 'lucide-react';
 import { EddvaLogo, InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { useAuth } from '@/context/SchoolAuthContext';
+import { formatTenantUrl, getBaseAppUrl } from '@/lib/school/tenantRedirect';
 
 const tabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe },
@@ -10,8 +12,7 @@ const tabs = [
 ];
 
 export default function Settings() {
-  const user = getStoredUser();
-  const institute = getStoredInstitute();
+  const { user, institute } = useAuth();
   const [activeTab, setActiveTab] = useState('workspace');
   const [saved, setSaved] = useState(false);
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';

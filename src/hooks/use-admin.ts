@@ -441,6 +441,23 @@ export function useUnpublishLecture() {
   });
 }
 
+export function useUpdateLecture() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...dto }: { id: string } & Partial<adminApi.CreateLecturePayload & { status?: string }>) =>
+      adminApi.updateLecture(id, dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.lectures }),
+  });
+}
+
+export function useDeleteLecture() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.deleteLecture,
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.lectures }),
+  });
+}
+
 export function useLectureStats(id: string) {
   return useQuery({
     queryKey: ["admin", "lecture-stats", id],

@@ -1,22 +1,11 @@
-/** Map AddTeacherMultiStep form → API body for POST /teachers */
-export function mapTeacherFormToApi(form) {
-  if (!form?.name?.trim()) throw new Error('Teacher name is required');
-  if (!form?.email?.trim()) throw new Error('Email is required');
-  if (!form?.password?.trim()) {
-    throw new Error('Password is required so the teacher can log in at /login');
-  }
-  if (form.password !== form.confirmPassword) {
-    throw new Error('Password and confirm password do not match');
-  }
-
+export function mapTeacherFormToApiUpdate(form) {
   const qualifications = [form.qualification, form.degree, form.specialization]
     .filter(Boolean)
     .join(' | ');
 
   return {
-    name: form.name.trim(),
-    email: form.email.trim().toLowerCase(),
-    password: form.password,
+    name: form.name?.trim() || null,
+    email: form.email?.trim().toLowerCase() || null,
     phone: form.phone || form.altPhone || null,
     photo: typeof form.photo === 'string' ? form.photo : null,
     employeeId: form.employeeId || form.employeeCode || null,
@@ -34,6 +23,43 @@ export function mapTeacherFormToApi(form) {
       subjectId: a.subjectId || null,
       isClassTeacher: !!a.isClassTeacher
     })) : [],
+    dob: form.dob || null,
+    gender: form.gender || null,
+    nationalId: form.nationalId || null,
+    role: form.role || null,
+    salary: form.salary || null,
+    experience: form.experience || null,
+    shift: form.shift || null,
+    weekdays: Array.isArray(form.weekdays) ? form.weekdays : [],
+    officeHoursStart: form.officeHoursStart || null,
+    officeHoursEnd: form.officeHoursEnd || null,
+    maxHoursPerWeek: form.maxHoursPerWeek || null,
+    currentAddress: form.currentAddress || null,
+    permanentAddress: form.permanentAddress || null,
+    emergencyContact: form.emergencyContact || null,
+    guardianContact: form.guardianContact || null,
+    allergies: form.allergies || null,
+    medicalConditions: form.medicalConditions || null,
+    disability: form.disability || null,
+    emergencyDoctor: form.emergencyDoctor || null,
+    docs: form.docs || {},
+  };
+}
+
+/** Map AddTeacherMultiStep form → API body for POST /teachers */
+export function mapTeacherFormToApi(form) {
+  if (!form?.name?.trim()) throw new Error('Teacher name is required');
+  if (!form?.email?.trim()) throw new Error('Email is required');
+  if (!form?.password?.trim()) {
+    throw new Error('Password is required so the teacher can log in at /login');
+  }
+  if (form.password !== form.confirmPassword) {
+    throw new Error('Password and confirm password do not match');
+  }
+
+  return {
+    ...mapTeacherFormToApiUpdate(form),
+    password: form.password,
   };
 }
 

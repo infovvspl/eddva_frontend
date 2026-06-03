@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
 import api from '@/lib/api/school-client';
-import { mapTeacherFormToApi } from '@/lib/school/onboardPayload';
+import { mapTeacherFormToApi, mapTeacherFormToApiUpdate } from '@/lib/school/onboardPayload';
 import { getTenantLoginUrl } from '@/lib/school/tenantRedirect';
 import { useAuth } from '@/context/SchoolAuthContext';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
@@ -11,6 +11,9 @@ import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
 import AddTeacherMultiStep from '@/components/school/admin/forms/AddTeacherMultiStep';
 import { toast } from 'sonner';
+import { useConfirm } from '@/context/ConfirmContext';
+import { handleApiError } from '@/lib/school/errorHandler';
+import { cn } from '@/components/school/admin/Skeleton';
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -49,7 +52,7 @@ function parseCsv(text) {
   const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   if (lines.length === 0) return [];
   const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
-  
+
   const records = [];
   const headerMap = {
     'name': 'name',
@@ -155,7 +158,7 @@ export default function Teachers() {
         const response = await api.post('/teachers/bulk-import', { records });
         const result = response.data?.data ?? response.data;
         setImportResult(result);
-        
+
         if (result.importedCount > 0) {
           toast.success(`Successfully imported ${result.importedCount} teacher(s)`);
           await fetchTeachers();
@@ -199,16 +202,24 @@ export default function Teachers() {
     setIsModalOpen(true);
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this teacher?')) {
+    const ok = await confirm({
+      title: 'Delete Teacher Profile',
+      subtitle: 'Danger Zone',
+      message: 'Are you sure you want to permanently delete this teacher record? This will revoke system credentials and erase all profile history.',
+      confirmLabel: 'Delete Teacher',
+      cancelLabel: 'Keep Teacher'
+    });
+    if (ok) {
       try {
         await api.delete(`/teachers/${id}`);
         setTeachers(teachers.filter(t => t.id !== id));
         notifyDataChanged('teachers');
         toast.success('Teacher deleted successfully');
       } catch (error) {
-        console.error(error);
-        toast.error('Failed to delete teacher');
+        handleApiError(error, 'Failed to delete teacher');
       }
     }
   };
@@ -217,7 +228,8 @@ export default function Teachers() {
     setIsSubmitting(true);
     try {
       if (selectedTeacher) {
-        await api.put(`/teachers/${selectedTeacher.id}`, formData);
+        const payload = mapTeacherFormToApiUpdate(formData);
+        await api.put(`/teachers/${selectedTeacher.id}`, payload);
         toast.success('Teacher updated successfully');
       } else {
         const payload = mapTeacherFormToApi(formData);
@@ -468,13 +480,38 @@ export default function Teachers() {
                       {(teacher.subjects || []).map(s => s.name).join(', ') || '-'}
                     </td>
                     <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${teacher.isActive ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
-                          }`}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const newActive = !teacher.isActive;
+                            await api.put(`/teachers/${teacher.id}`, { name: teacher.name, isActive: newActive });
+                            setTeachers(prev => prev.map(t => t.id === teacher.id ? { ...t, isActive: newActive } : t));
+                            toast.success(`Teacher ${newActive ? 'activated' : 'deactivated'} successfully`);
+                          } catch (err) {
+                            handleApiError(err, 'Failed to toggle status');
+                          }
+                        }}
+                        className="flex items-center gap-1.5 outline-none group cursor-pointer"
+                        title="Click to toggle status"
                       >
-                        <span className={`h-1.5 w-1.5 rounded-full ${teacher.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                        {teacher.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                        <div className={cn(
+                          "relative w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 border",
+                          teacher.isActive 
+                            ? "bg-emerald-500 border-emerald-600" 
+                            : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
+                        )}>
+                          <div className={cn(
+                            "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                            teacher.isActive ? "translate-x-4" : "translate-x-0"
+                          )} />
+                        </div>
+                        <span className={cn(
+                          "text-[11px] font-bold tracking-tight",
+                          teacher.isActive ? "text-emerald-600" : "text-slate-400"
+                        )}>
+                          {teacher.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </button>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">

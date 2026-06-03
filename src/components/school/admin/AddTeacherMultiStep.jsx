@@ -741,24 +741,28 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
           <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} icon={User} />
           <FloatingInput label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} icon={Mail} />
-          <div className="relative">
-            <FloatingInput 
-              label="Password" 
-              type={showPassword ? 'text' : 'password'} 
-              name="password" 
-              value={formData.password} 
-              onChange={handleChange} 
-              icon={Shield} 
-            />
-            <button 
-              type="button" 
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-blue-500 transition-colors"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          <FloatingInput label="Confirm Password" type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} icon={Shield} />
+          {!teacher && (
+            <>
+              <div className="relative">
+                <FloatingInput 
+                  label="Password" 
+                  type={showPassword ? 'text' : 'password'} 
+                  name="password" 
+                  value={formData.password} 
+                  onChange={handleChange} 
+                  icon={Shield} 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-4 text-slate-400 hover:text-blue-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <FloatingInput label="Confirm Password" type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} icon={Shield} />
+            </>
+          )}
           <FloatingInput label="Mobile Number" name="phone" value={formData.phone} onChange={handleChange} icon={Smartphone} />
           <FloatingInput label="Aadhar / National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} icon={CheckCircle} />
         </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Layout, Plus, Edit2, Trash2 } from 'lucide-react';
+import { BookOpen, Layout, Plus, Edit2, Trash2, Layers } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import ClassForm from '@/components/school/admin/forms/ClassForm';
 import SectionForm from '@/components/school/admin/forms/SectionForm';
-import { Layers } from 'lucide-react';
+import { useConfirm } from '@/context/ConfirmContext';
+import { handleApiError } from '@/lib/school/errorHandler';
 
 export default function Academics() {
   const [classes, setClasses] = useState([]);
@@ -16,6 +17,8 @@ export default function Academics() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchData();
@@ -45,12 +48,18 @@ export default function Academics() {
   };
 
   const handleDeleteClass = async (id) => {
-    if (confirm('Are you sure? All associated sections will be deleted.')) {
+    const ok = await confirm({
+      title: 'Delete Class',
+      message: 'Are you sure? All associated sections will be deleted.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel'
+    });
+    if (ok) {
       try {
         await api.delete(`/academic/classes/${id}`);
         setClasses(classes.filter(c => c.id !== id));
       } catch (error) {
-        alert('Failed to delete class');
+        handleApiError(error, 'Failed to delete class');
       }
     }
   };
@@ -71,7 +80,7 @@ export default function Academics() {
       setIsClassModalOpen(false);
       setSelectedClass(null);
     } catch (error) {
-      alert('Failed to save class');
+      handleApiError(error, 'Failed to save class');
     } finally {
       setIsSubmitting(false);
     }
@@ -88,12 +97,18 @@ export default function Academics() {
   };
 
   const handleDeleteSection = async (id) => {
-    if (confirm('Are you sure you want to delete this section?')) {
+    const ok = await confirm({
+      title: 'Delete Section',
+      message: 'Are you sure you want to delete this section?',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel'
+    });
+    if (ok) {
       try {
         await api.delete(`/academic/sections/${id}`);
         fetchData(); // Refresh to get updated class/section counts
       } catch (error) {
-        alert('Failed to delete section');
+        handleApiError(error, 'Failed to delete section');
       }
     }
   };
@@ -112,7 +127,7 @@ export default function Academics() {
       setSelectedSection(null);
       fetchData();
     } catch (error) {
-      alert('Failed to save section');
+      handleApiError(error, 'Failed to save section');
     } finally {
       setIsSubmitting(false);
     }

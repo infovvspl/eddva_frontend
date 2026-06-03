@@ -31,6 +31,7 @@ const categories = [
   'ACADEMIC',
   'EXAM',
   'HOLIDAY',
+  'VACATION',
   'ASSIGNMENT',
   'PARENT_MEETING',
   'TEACHER_MEETING',
@@ -43,6 +44,7 @@ const categoryStyles = {
   ACADEMIC: 'bg-blue-50 text-blue-700 border-blue-200',
   EXAM: 'bg-amber-50 text-amber-700 border-amber-200',
   HOLIDAY: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  VACATION: 'bg-amber-50 text-amber-700 border-amber-200',
   ASSIGNMENT: 'bg-violet-50 text-violet-700 border-violet-200',
   PARENT_MEETING: 'bg-sky-50 text-sky-700 border-sky-200',
   TEACHER_MEETING: 'bg-cyan-50 text-cyan-700 border-cyan-200',
@@ -70,10 +72,17 @@ const defaultForm = {
 };
 
 function dateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  if (!date) return '';
+  if (date instanceof Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  if (typeof date === 'string') {
+    return date.split('T')[0];
+  }
+  return '';
 }
 
 function localDateTime(value) {
@@ -105,13 +114,13 @@ function addMonths(date, amount) {
 }
 
 function sameDay(a, b) {
-  return a && b && dateKey(new Date(a)) === dateKey(new Date(b));
+  return a && b && dateKey(a) === dateKey(b);
 }
 
 function isWithinRange(event, date) {
   const target = dateKey(date);
-  const start = dateKey(new Date(event.startTime));
-  const end = dateKey(new Date(event.endTime));
+  const start = dateKey(event.startTime);
+  const end = dateKey(event.endTime || event.startTime);
   return target >= start && target <= end;
 }
 
@@ -140,7 +149,8 @@ export default function AcademicCalendar() {
     try {
       setLoading(true);
       const res = await api.get('/events', { params: category === 'All' ? undefined : { category } });
-      setEvents(Array.isArray(res.data) ? res.data : []);
+      const data = res.data?.data ?? res.data;
+      setEvents(Array.isArray(data) ? data : []);
     } catch {
       toast.error('Failed to sync calendar');
     } finally {
@@ -151,7 +161,7 @@ export default function AcademicCalendar() {
   async function loadClasses() {
     try {
       const res = await api.get('/academic/classes');
-      setClasses(Array.isArray(res.data) ? res.data : []);
+      setClasses(Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : []);
     } catch {
       toast.error('Failed to load class list');
     }
@@ -169,7 +179,7 @@ export default function AcademicCalendar() {
   async function loadSubjects() {
     try {
       const res = await api.get('/academic/subjects');
-      setSubjects(Array.isArray(res.data) ? res.data : []);
+      setSubjects(Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : []);
     } catch {
       toast.error('Failed to load subject list');
     }

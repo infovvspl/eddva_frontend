@@ -216,11 +216,24 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       const sectionId = student.studentProfile?.section?.id || student.studentProfile?.sectionId || '';
       const inferredClass = classes.find((cls) => (cls.sections || []).some((sec) => sec.id === sectionId));
       const studentClassId = student.studentProfile?.section?.classId || student.classId || inferredClass?.id || '';
+      const profile = student.studentProfile || {};
+
+      const formatInputDate = (d) => {
+        if (!d) return '';
+        try {
+          return new Date(d).toISOString().split('T')[0];
+        } catch {
+          return '';
+        }
+      };
+
       setFormData(prev => ({
         ...prev,
         ...student,
-        ...(student.studentProfile || {}),
+        ...profile,
         classId: studentClassId,
+        dob: formatInputDate(profile.dob || student.dob),
+        admissionDate: formatInputDate(profile.admissionDate || student.admissionDate),
       }));
     }
   }, [student, classes]);

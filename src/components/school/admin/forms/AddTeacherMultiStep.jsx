@@ -277,6 +277,28 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
       const qualificationsArr = String(profile.qualifications || '').split(' | ');
 
+      const parseJsonArray = (val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        try {
+          const parsed = JSON.parse(val);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const parseJsonObject = (val) => {
+        if (!val) return {};
+        if (typeof val === 'object' && !Array.isArray(val)) return val;
+        try {
+          const parsed = JSON.parse(val);
+          return typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+        } catch {
+          return {};
+        }
+      };
+
       setFormData(prev => ({
         ...prev,
         ...teacher,
@@ -286,8 +308,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         specialization: qualificationsArr[2] || '',
         employeeCode: profile.employeeId || profile.employeeCode || teacher.employeeId || '',
         joinDate: profile.joiningDate ? new Date(profile.joiningDate).toISOString().split('T')[0] : '',
-        educationDetails: Array.isArray(profile.educationDetails) ? profile.educationDetails : [],
-        experienceDetails: Array.isArray(profile.experienceDetails) ? profile.experienceDetails : [],
+        dob: profile.dob ? new Date(profile.dob).toISOString().split('T')[0] : '',
+        educationDetails: parseJsonArray(profile.educationDetails),
+        experienceDetails: parseJsonArray(profile.experienceDetails),
         assignedRows: assignedRows.length > 0 ? assignedRows : [{ id: 'init', classId: '', sectionId: '', subjectIds: [], isClassTeacher: false }],
         // availability
         shift: profile.shift || prev.shift,
@@ -304,7 +327,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         medicalConditions: profile.medicalConditions || prev.medicalConditions,
         disability: profile.disability || prev.disability,
         emergencyDoctor: profile.emergencyDoctor || prev.emergencyDoctor,
-        docs: profile.docs || {}
+        docs: parseJsonObject(profile.docs)
       }));
     }
   }, [teacher]);
@@ -339,7 +362,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const generateTeacherId = useCallback(async () => {
     setIdLoading(true);
     try {
-      const res = await api.get('/school/teachers');
+      const res = await api.get('/teachers');
       const list = res.data?.data ?? res.data;
       const count = Array.isArray(list) ? list.length : 0;
       setFormData(prev => ({ ...prev, employeeCode: getScopedId(institute?.name, count) }));
@@ -437,7 +460,14 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       medicalConditions: formData.medicalConditions || null,
       disability: formData.disability || null,
       emergencyDoctor: formData.emergencyDoctor || null,
-      docs: formData.docs
+      docs: formData.docs,
+      // missing fields
+      dob: formData.dob || null,
+      gender: formData.gender || null,
+      nationalId: formData.nationalId || null,
+      role: formData.role || null,
+      salary: formData.salary || null,
+      experience: formData.experience || null
     };
 
     onSubmit(payload);

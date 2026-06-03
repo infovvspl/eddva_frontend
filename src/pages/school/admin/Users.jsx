@@ -1,16 +1,7 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Download,
   Search,
-  User as UserIcon,
-  X,
-  Building2,
-  Mail,
-  Phone,
-  Calendar,
-  Clock,
-  ShieldCheck,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -35,7 +26,6 @@ export default function Users() {
   const [totalItems, setTotalItems] = useState(0);
   const limit = 50;
 
-  const [selectedUser, setSelectedUser] = useState(null);
   const [error, setError] = useState('');
 
   // Debounce search
@@ -88,7 +78,7 @@ export default function Users() {
           `"${u.email || ''}"`,
           `"${u.phone || ''}"`,
           `"${u.role || ''}"`,
-          `"${u.tenant?.name || 'Eddva HQ'}"`,
+          `"${u.institute_name || u.tenant?.name || 'Eddva HQ'}"`,
           `"${new Date(u.createdAt).toLocaleDateString()}"`,
           `"${u.status || 'ACTIVE'}"`,
           `"${u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never'}"`,
@@ -144,9 +134,6 @@ export default function Users() {
             >
               <option value="">All Roles</option>
               <option value="INSTITUTE_ADMIN">Institute Admin</option>
-              <option value="TEACHER">Teacher</option>
-              <option value="STUDENT">Student</option>
-              <option value="PARENT">Parent</option>
               <option value="SUPER_ADMIN">Super Admin</option>
             </select>
             <select
@@ -171,8 +158,7 @@ export default function Users() {
                 <th className="p-4">Contact</th>
                 <th className="p-4">Registered</th>
                 <th className="p-4">Status</th>
-                <th className="p-4 text-right">Action</th>
-              </tr>
+                <th className="p-4">IP Address</th>
             </thead>
             <tbody>
               {loading ? (
@@ -211,8 +197,8 @@ export default function Users() {
                         <span className="inline-flex w-fit items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
                           {item.role?.replace('_', ' ')}
                         </span>
-                        <p className="text-xs font-semibold text-surface-600 truncate max-w-[200px]" title={item.tenant?.name || 'Eddva HQ'}>
-                          {item.tenant?.name || 'Eddva HQ'}
+                        <p className="text-xs font-semibold text-surface-600 truncate max-w-[200px]" title={item.institute_name || item.tenant?.name || 'Eddva HQ'}>
+                          {item.institute_name || item.tenant?.name || 'Eddva HQ'}
                         </p>
                       </div>
                     </td>
@@ -225,13 +211,8 @@ export default function Users() {
                     <td className="p-4">
                       <StatusBadge status={item.status || 'ACTIVE'} />
                     </td>
-                    <td className="p-4 text-right">
-                      <button
-                        onClick={() => setSelectedUser(item)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 transition hover:border-brand-200 hover:text-brand-700"
-                      >
-                        View Details
-                      </button>
+                    <td className="p-4">
+                      <p className="text-sm font-medium text-surface-700">{item.ip_address || 'N/A'}</p>
                     </td>
                   </tr>
                 ))
@@ -269,77 +250,6 @@ export default function Users() {
         )}
       </div>
 
-      <AnimatePresence>
-        {selectedUser && (
-          <>
-            <motion.button 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => setSelectedUser(null)} 
-              className="fixed inset-0 z-40 bg-surface-950/40 backdrop-blur-sm" 
-              aria-label="Close user details" 
-            />
-            <motion.aside
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', bounce: 0, duration: 0.36 }}
-              className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-surface-200 bg-white shadow-2xl"
-            >
-              <div className="flex items-center justify-between border-b border-surface-200 p-5">
-                <h2 className="font-display text-xl font-bold text-surface-950">User Details</h2>
-                <button onClick={() => setSelectedUser(null)} className="rounded-lg p-2 text-surface-500 hover:bg-surface-100">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="mb-8 flex items-center gap-4">
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-brand-100 text-2xl font-bold tracking-tight text-brand-700">
-                    {(selectedUser.name || 'U').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-display text-2xl font-bold text-surface-950">{selectedUser.name}</h3>
-                    <div className="mt-2"><StatusBadge status={selectedUser.status || 'ACTIVE'} /></div>
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
-                    <p className="mb-3 text-xs font-bold uppercase text-surface-500">Role & Organization</p>
-                    <div className="space-y-3 text-sm font-medium text-surface-700">
-                      <p className="flex items-center gap-3"><ShieldCheck className="h-4 w-4 text-brand-600" /> {selectedUser.role?.replace('_', ' ')}</p>
-                      <p className="flex items-center gap-3"><Building2 className="h-4 w-4 text-brand-600" /> {selectedUser.tenant?.name || 'Eddva HQ'}</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
-                    <p className="mb-3 text-xs font-bold uppercase text-surface-500">Contact Details</p>
-                    <div className="space-y-3 text-sm font-medium text-surface-700">
-                      <p className="flex items-center gap-3"><Mail className="h-4 w-4 text-brand-600" /> {selectedUser.email}</p>
-                      <p className="flex items-center gap-3"><Phone className="h-4 w-4 text-brand-600" /> {selectedUser.phone || 'Not provided'}</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
-                    <p className="mb-3 text-xs font-bold uppercase text-surface-500">Account Activity</p>
-                    <div className="space-y-3 text-sm font-medium text-surface-700">
-                      <p className="flex items-center gap-3"><Calendar className="h-4 w-4 text-brand-600" /> Registered: {new Date(selectedUser.createdAt).toLocaleDateString()}</p>
-                      <p className="flex items-center gap-3"><Clock className="h-4 w-4 text-brand-600" /> Last Login: {selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleString() : 'Never'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="border-t border-surface-200 bg-surface-50 p-5 flex justify-end">
-                <button onClick={() => setSelectedUser(null)} className="rounded-lg bg-surface-200 px-4 py-2 text-sm font-bold text-surface-800 hover:bg-surface-300 transition">
-                  Close
-                </button>
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
