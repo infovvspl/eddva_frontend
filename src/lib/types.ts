@@ -14,6 +14,36 @@ export interface StudentProfile {
   dailyStudyHours?: number;
 }
 
+export interface StudentParentDetails {
+  primaryContact: "father" | "mother" | "guardian";
+  fatherName?: string;
+  fatherPhone?: string;
+  motherName?: string;
+  motherPhone?: string;
+  email?: string;
+  whatsappNumber?: string;
+  occupation?: string;
+  annualIncome?: string;
+  guardianName?: string;
+  guardianRelation?: string;
+  guardianPhone?: string;
+  createLogin?: boolean;
+  sendViaSms?: boolean;
+  sendViaEmail?: boolean;
+}
+
+export interface Student {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  photo?: string;
+  parentDetails?: StudentParentDetails;
+  studentProfile?: StudentProfile | null;
+}
+
 export interface User {
   id: string;
   name: string;

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, BookOpen, Calendar, BarChart2, Briefcase, 
@@ -194,34 +194,50 @@ export default function TeacherProfile() {
 
               {activeTab === 'academic' && (
                 <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Assigned Subjects</h3>
-                      <div className="space-y-3">
-                        {['Advanced Physics', 'Quantum Mechanics', 'Thermodynamics'].map(sub => (
-                          <div key={sub} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Assignments</h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {profile.assignments && profile.assignments.length > 0 ? (
+                        profile.assignments.map((ass, i) => (
+                          <div key={i} className="p-5 rounded-2xl border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shadow-sm">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0">
                                 <BookOpen size={20} />
                               </div>
-                              <span className="text-sm font-bold text-slate-700">{sub}</span>
+                              <div>
+                                <span className="block text-sm font-bold text-slate-900 dark:text-white">
+                                  {ass.className || '—'} &rarr; Section {ass.sectionName || '—'}
+                                </span>
+                                <span className="block text-xs font-semibold text-slate-500 mt-0.5">
+                                  Subject: <strong className="text-blue-600 dark:text-sky-400 font-bold">{ass.subjectName || 'No Specific Subject'}</strong>
+                                </span>
+                              </div>
                             </div>
-                            <span className="px-2 py-1 rounded-lg bg-blue-500/10 text-blue-600 text-[10px] font-bold tracking-tight uppercase">Active</span>
+                            {ass.isClassTeacher && (
+                              <span className="bg-emerald-500/10 text-emerald-700 dark:text-sky-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-widest">
+                                Class Teacher
+                              </span>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-sm font-semibold text-slate-400 border border-dashed border-slate-100 dark:border-slate-850 rounded-2xl md:col-span-2">
+                          No active academic assignments found.
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Class Management</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl border border-slate-100 text-center">
-                          <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Assigned Classes</div>
-                          <div className="text-3xl font-bold tracking-tight text-slate-900">12</div>
-                        </div>
-                        <div className="p-4 rounded-2xl border border-slate-100 text-center">
-                          <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Active Sections</div>
-                          <div className="text-3xl font-bold tracking-tight text-slate-900">24</div>
-                        </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Class Management Summary</h3>
+                    <div className="grid grid-cols-2 gap-4 max-w-md">
+                      <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+                        <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Unique Classes</div>
+                        <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{teacher.classes?.length || 0}</div>
+                      </div>
+                      <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+                        <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Unique Sections</div>
+                        <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{teacher.sections?.length || 0}</div>
                       </div>
                     </div>
                   </div>

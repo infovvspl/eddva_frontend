@@ -79,7 +79,7 @@ export default function CTASection() {
   };
 
   return (
-    <section className="relative w-full bg-white text-slate-900 py-24 px-6 sm:px-12 overflow-hidden border-t border-slate-100 flex flex-col items-center justify-center">
+    <section className="relative w-full bg-white text-slate-900 py-20 px-6 sm:px-12 overflow-hidden border-t border-slate-100 flex flex-col items-center justify-center">
       {/* Background Decorative Grid matching the Hero pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_100%,#000_70%,transparent_100%)] opacity-60 pointer-events-none" />
 
@@ -95,9 +95,9 @@ export default function CTASection() {
           transition={{ duration: 0.6, ease: fluidEase }}
           className="text-4xl sm:text-6xl font-black tracking-tight text-slate-900 leading-[1.1]"
         >
-          Ready to rewrite your <br />
-          <span className="font-spicy block sm:inline bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
-            technical trajectory?
+          Ready to ace your <br />
+          <span className="font-spicy block sm:inline bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent pr-1">
+             exam?
           </span>
         </motion.h2>
 
@@ -109,9 +109,7 @@ export default function CTASection() {
           transition={{ duration: 0.6, delay: 0.1, ease: fluidEase }}
           className="text-base sm:text-lg text-slate-500 font-medium max-w-xl mx-auto leading-relaxed"
         >
-          Join Eddva today. Secure your seat in our upcoming masterclasses,
-          unlock elite workspace sandboxes, and accelerate your engineering
-          skills.
+          Start your free plan today .
         </motion.p>
 
         {/* Action Buttons matching Hero Weights */}

@@ -20,10 +20,23 @@ export default function Subjects() {
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState('Theory');
+  const [classId, setClassId] = useState('');
+  const [sectionId, setSectionId] = useState('');
+  const [classes, setClasses] = useState<any[]>([]);
 
   useEffect(() => {
     fetchSubjects();
+    fetchClasses();
   }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const res = await api.get('/academic/classes');
+      setClasses(res.data?.data || res.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchSubjects = async () => {
     try {
@@ -51,12 +64,16 @@ export default function Subjects() {
       setCode(subject.code);
       setDescription(subject.description || '');
       setType(subject.type || 'Theory');
+      setClassId(subject.class_id || '');
+      setSectionId(subject.section_id || '');
     } else {
       setEditingSubject(null);
       setName('');
       setCode('');
       setDescription('');
       setType('Theory');
+      setClassId('');
+      setSectionId('');
     }
     setIsModalOpen(true);
   };
@@ -64,7 +81,7 @@ export default function Subjects() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { name, code, description, type };
+      const payload = { name, code, description, type, classId, sectionId };
       if (editingSubject) {
         await api.put(`/subjects/${editingSubject.id}`, payload);
         toast.success('Subject updated successfully');
@@ -97,10 +114,12 @@ export default function Subjects() {
   );
 
   const columns = [
-    { key: 'code', title: 'Code', width: '15%' },
-    { key: 'name', title: 'Subject Name', width: '30%' },
-    { key: 'type', title: 'Type', width: '15%' },
-    { key: 'description', title: 'Description', width: '25%' },
+    { key: 'code', title: 'Code', width: '10%' },
+    { key: 'name', title: 'Subject Name', width: '20%' },
+    { key: 'class_name', title: 'Class', width: '15%', render: (_: any, row: any) => row.class_name || '-' },
+    { key: 'section_name', title: 'Section', width: '15%', render: (_: any, row: any) => row.section_name || '-' },
+    { key: 'type', title: 'Type', width: '10%' },
+    { key: 'description', title: 'Description', width: '15%' },
     {
       key: 'actions',
       title: 'Actions',
@@ -186,6 +205,27 @@ export default function Subjects() {
             options={[
               { value: 'Theory', label: 'Theory' },
               { value: 'Practical', label: 'Practical' },
+            ]}
+          />
+          <SelectField
+            label="Class"
+            value={classId}
+            onChange={(e) => {
+              setClassId(e.target.value);
+              setSectionId('');
+            }}
+            options={[
+              { value: '', label: 'Select Class' },
+              ...classes.map(c => ({ value: c.id, label: c.name }))
+            ]}
+          />
+          <SelectField
+            label="Section"
+            value={sectionId}
+            onChange={(e) => setSectionId(e.target.value)}
+            options={[
+              { value: '', label: 'Select Section' },
+              ...(classes.find(c => c.id === classId)?.sections || []).map((s: any) => ({ value: s.id, label: s.name }))
             ]}
           />
           <InputField

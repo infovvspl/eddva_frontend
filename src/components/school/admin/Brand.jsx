@@ -1,11 +1,12 @@
-﻿import React from 'react';
+import React from 'react';
 import { BrainCircuit, GraduationCap } from 'lucide-react';
 import { cn } from './Skeleton';
+import logoUrl from '@/assets/eddva-logo.svg';
 
 export function EddvaLogo({ compact = false, className }) {
   return (
     <div className={cn('flex items-center', className)}>
-      <img src="/logo.png" alt="Eddva Logo" className={cn("object-contain", compact ? "h-8" : "h-11")} />
+      <img src={logoUrl} alt="Eddva Logo" className={cn("object-contain", compact ? "h-8" : "h-11")} />
     </div>
   );
 }

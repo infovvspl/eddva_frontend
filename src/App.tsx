@@ -26,6 +26,17 @@ const NewInstitutePage = lazy(() => import("./pages/super-admin/NewInstitutePage
 const InstituteDetailPage = lazy(() => import("./pages/super-admin/InstituteDetailPage"));
 const UsersPage = lazy(() => import("./pages/super-admin/UsersPage"));
 const AnnouncementsPage = lazy(() => import("./pages/super-admin/AnnouncementsPage"));
+const SuperAdminTeachersPage = lazy(() => import("./pages/super-admin/TeachersPage"));
+const SuperAdminStudentsPage = lazy(() => import("./pages/super-admin/StudentsPage"));
+const SuperAdminParentsPage = lazy(() => import("./pages/super-admin/ParentsPage"));
+const SuperAdminCurriculumPage = lazy(() => import("./pages/super-admin/CurriculumPage"));
+const SuperAdminContentLibraryPage = lazy(() => import("./pages/super-admin/ContentLibraryPage"));
+const SuperAdminExamCalendarPage = lazy(() => import("./pages/super-admin/ExamCalendarPage"));
+const SuperAdminFeeOverviewPage = lazy(() => import("./pages/super-admin/FeeOverviewPage"));
+const SuperAdminPaymentsPage = lazy(() => import("./pages/super-admin/PaymentsPage"));
+const SuperAdminRevenueReportsPage = lazy(() => import("./pages/super-admin/RevenueReportsPage"));
+const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/AttendanceReportsPage"));
+const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
 
@@ -175,6 +186,16 @@ const SchoolStudentAnalytics    = lazy(() => import("./pages/school/student/Anal
 const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feedback"));
 const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
+
+// ── School parent pages ──────────────────────────────────────────────────────
+const SchoolParentLayout        = lazy(() => import("./components/school/parent/ParentLayout"));
+const SchoolParentAuthGuard     = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
+const SchoolParentLogin         = lazy(() => import("./pages/school/parent/Login"));
+const SchoolParentDashboard     = lazy(() => import("./pages/school/parent/Dashboard"));
+const SchoolParentChild         = lazy(() => import("./pages/school/parent/Child"));
+const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
+const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notifications"));
+const SchoolParentProfile       = lazy(() => import("./pages/school/parent/Profile"));
 
 // ── Super-admin school pages ─────────────────────────────────────────────────
 const SuperAdminSchoolPage      = lazy(() => import("./pages/super-admin/SchoolPage"));
@@ -326,38 +347,19 @@ const SchoolRoutes = () => (
       <Route path="attendance" element={<SchoolAttendance />} />
       <Route path="academics" element={<SchoolAcademics />} />
       <Route path="notices" element={<SchoolNotices />} />
-      <Route path="fees" element={<SchoolFees />} />
       <Route path="calendar" element={<SchoolAcademicCalendar />} />
       <Route path="complaints" element={<SchoolComplaints />} />
-      <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="timetable" element={<SchoolTimetable />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="reports" element={<SchoolReports />} />
-      <Route path="finance" element={<SchoolFinance />} />
       <Route path="communications" element={<SchoolCommunications />} />
       <Route path="roles" element={<SchoolRoles />} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
-      <Route path="assignments" element={<SchoolAssignments />} />
-      <Route path="study-materials" element={<SchoolStudyMaterials />} />
-      <Route path="syllabus" element={<SchoolSyllabus />} />
-      <Route path="exams" element={<SchoolExams />} />
-      <Route path="question-bank" element={<SchoolQuestionBank />} />
-      <Route path="marks-entry" element={<SchoolMarksEntry />} />
-      <Route path="results" element={<SchoolResults />} />
-      <Route path="report-cards" element={<SchoolReportCards />} />
-      <Route path="fee-structures" element={<SchoolFeeStructures />} />
-      <Route path="payment-collection" element={<SchoolPaymentCollection />} />
-      <Route path="payment-history" element={<SchoolPaymentHistory />} />
-      <Route path="fee-defaulters" element={<SchoolFeeDefaulters />} />
       <Route path="notifications-center" element={<SchoolNotificationsCenter />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
       <Route path="email-center" element={<SchoolEmailCenter />} />
-      <Route path="ai-insights" element={<SchoolAiInsights />} />
-      <Route path="student-performance" element={<SchoolStudentPerformance />} />
-      <Route path="attendance-analytics" element={<SchoolAttendanceAnalytics />} />
-      <Route path="custom-reports" element={<SchoolCustomReports />} />
     </Route>
 
     {/* School Teacher */}
@@ -402,6 +404,20 @@ const SchoolRoutes = () => (
       <Route path="chat" element={<SchoolStudentChat />} />
       <Route path="profile" element={<SchoolStudentProfile />} />
     </Route>
+
+    {/* School Parent */}
+    <Route path="/school/parent/login" element={<SchoolParentLogin />} />
+    <Route
+      path="/school/parent"
+      element={<SchoolParentAuthGuard><SchoolParentLayout /></SchoolParentAuthGuard>}
+    >
+      <Route index element={<Navigate to="dashboard" replace />} />
+      <Route path="dashboard" element={<SchoolParentDashboard />} />
+      <Route path="child" element={<SchoolParentChild />} />
+      <Route path="communication" element={<SchoolParentCommunication />} />
+      <Route path="notifications" element={<SchoolParentNotifications />} />
+      <Route path="profile" element={<SchoolParentProfile />} />
+    </Route>
   </>
 );
 
@@ -421,6 +437,17 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
       <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
+      <Route path="/super-admin/teachers" element={<SuperAdminTeachersPage />} />
+      <Route path="/super-admin/students" element={<SuperAdminStudentsPage />} />
+      <Route path="/super-admin/parents" element={<SuperAdminParentsPage />} />
+      <Route path="/super-admin/curriculum" element={<SuperAdminCurriculumPage />} />
+      <Route path="/super-admin/content-library" element={<SuperAdminContentLibraryPage />} />
+      <Route path="/super-admin/exam-calendar" element={<SuperAdminExamCalendarPage />} />
+      <Route path="/super-admin/fees" element={<SuperAdminFeeOverviewPage />} />
+      <Route path="/super-admin/payments" element={<SuperAdminPaymentsPage />} />
+      <Route path="/super-admin/revenue" element={<SuperAdminRevenueReportsPage />} />
+      <Route path="/super-admin/attendance-reports" element={<SuperAdminAttendanceReportsPage />} />
+      <Route path="/super-admin/feature-flags" element={<SuperAdminFeatureFlagsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />
       <Route path="/super-admin/school" element={<SuperAdminSchoolPage />} />
       <Route path="/super-admin/school/new" element={<CreateSchoolPage />} />
@@ -432,7 +459,7 @@ const SuperAdminRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<LoginPage />} />
+    <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />

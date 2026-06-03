@@ -1,186 +1,271 @@
 import React from "react";
-import { motion, Variants } from "framer-motion";
-import { FiArrowUpRight, FiCheckCircle, FiTarget, FiEye } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { motion, type Variants, type MotionProps } from "framer-motion";
+import { FiArrowUpRight, FiZap, FiAward, FiShield } from "react-icons/fi";
 
-export default function AboutUsSection() {
-  // Animation Variants matching Hero easing with strict type definitions
-  const fadeInUp: Variants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
+// Mock image placeholders - replace these with your actual asset paths
+import AboutImg1 from '../../assets/h5.png';
+import AboutImg2 from '../../assets/h9.png';
+import AboutImg3 from '../../assets/h2.png';
+
+export default function CreativeAboutSection() {
+  const fadeUp: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i: number = 0) => ({
       opacity: 1,
       y: 0,
-      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-    },
+      transition: {
+        duration: 0.8,
+        delay: i * 0.12,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    }),
   };
 
-  const staggerContainer: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+  const floatAnimation = (yDelta: number, duration: number): MotionProps => ({
+    animate: {
+      y: [0, yDelta, 0],
     },
-  };
+    transition: {
+      duration: duration,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  });
 
   return (
-    <section className="relative w-full bg-white text-slate-900 py-24 sm:py-32 px-6 sm:px-12 overflow-hidden">
-      {/* Background Subtle Dot/Grid Matrix Effect */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:2rem_2rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-70 pointer-events-none" />
+    <section
+      className="creative-about-section"
+      style={{
+        position: "relative",
+        width: "100%",
+        background: "#ffffff",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      {/* Injecting media queries cleanly without changing desktop styles */}
+      <style>{`
+        .creative-about-section {
+          padding: 80px 24px;
+        }
+        .about-grid-container {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .about-visual-canvas {
+          height: 550px;
+        }
+        
+        @media (max-width: 968px) {
+          .creative-about-section {
+            padding: 60px 16px;
+          }
+          .about-grid-container {
+            grid-template-columns: 1fr !important;
+            gap: 60px !important;
+          }
+          .about-visual-canvas {
+            height: 420px !important;
+            max-width: 500px;
+            margin: 0 auto;
+          }
+          /* Scaling down absolute positioning to fit mobile viewports nicely */
+          .img-layer-1 {
+            width: 60% !important;
+            height: 180px !important;
+            top: 0% !important;
+            left: 10% !important;
+          }
+          .img-layer-2 {
+            width: 50% !important;
+            height: 150px !important;
+            bottom: 5% !important;
+            right: 5% !important;
+          }
+          .img-layer-3 {
+            width: 32% !important;
+            height: 110px !important;
+            top: 50% !important;
+            right: 65% !important;
+          }
+          .tech-outer-ring {
+            width: 300px !important;
+            height: 300px !important;
+          }
+        }
+      `}</style>
 
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8 items-center">
-          {/* LEFT: CONTENT & MISSION */}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-            className="lg:col-span-6 space-y-8"
+      {/* Light subtle gradient ambient glow background */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        <div style={{
+          position: "absolute", width: "800px", height: "800px",
+          borderRadius: "50%", top: "10%", left: "-10%",
+          background: "radial-gradient(circle, rgba(0,166,255,0.06) 0%, transparent 65%)",
+        }} />
+        <div style={{
+          position: "absolute", width: "600px", height: "600px",
+          borderRadius: "50%", bottom: "10%", right: "-5%",
+          background: "radial-gradient(circle, rgba(0,68,153,0.05) 0%, transparent 70%)",
+        }} />
+      </div>
+
+      {/* Tech Blueprint Grid Lines matching the Hero section */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
+        backgroundImage: `linear-gradient(rgba(0,68,153,0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,68,153,0.02) 1px, transparent 1px)`,
+        backgroundSize: "50px 50px",
+      }} />
+
+      <div 
+        className="about-grid-container"
+        style={{
+          position: "relative",
+          zIndex: 10,
+          maxWidth: "1200px",
+          width: "100%",
+          display: "grid",
+          gap: "40px",
+          alignItems: "center",
+        }}
+      >
+        
+        {/* ─── LEFT COLUMN: TEXT CONTENT ─── */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}
+        >
+          {/* Main Creative Title */}
+          <motion.h2
+            variants={fadeUp} custom={1}
+            style={{
+              fontSize: "clamp(32px, 4vw, 54px)",
+              fontWeight: 900,
+              lineHeight: 1.1,
+              color: "#002966",
+              margin: "0 0 24px",
+              letterSpacing: "-0.03em",
+              fontFamily: "'Syne', sans-serif",
+            }}
           >
-            {/* Section H2 Heading */}
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-[1.15]"
-            >
-              We bridge the gap between <br />
-              <span className="font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
-                Ambition and Mastery.
-              </span>
-            </motion.h2>
+            Empowering Learning Through<br />
+            <span style={{
+              background: "linear-gradient(90deg, #004499, #00a6ff)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
+            }}>
+              Innovation.
+            </span>
+          </motion.h2>
 
-            {/* Paragraph Text */}
-            <motion.p
-              variants={fadeInUp}
-              className="text-base sm:text-lg text-slate-500 font-medium leading-relaxed max-w-xl"
-            >
-              Founded by industry veterans, our platform was built on a simple
-              conviction: premium education shouldn't be passive. We design
-              structured learning tracks that transform complex theories into
-              actionable career superpowers.
-            </motion.p>
+          {/* Core Body Paragraph */}
+          <motion.p
+            variants={fadeUp} custom={2}
+            style={{
+              fontSize: "17px", color: "#475569", lineHeight: 1.7,
+              margin: "0 0 40px", fontWeight: 400, maxWidth: "520px"
+            }}
+          >
+            EDDVA is dedicated to transforming education through technology-driven solutions. We help learners and institutions unlock their full potential with innovative tools, practical learning experiences, and a student-first approach. Our goal is to make quality education more accessible, efficient, and empowering for the next generation.
+          </motion.p>
 
-            {/* Core Value Pillars */}
-            <motion.div
-              variants={fadeInUp}
-              className="space-y-4 border-t border-slate-100 pt-6"
-            >
-              <div className="flex items-start gap-3">
-                <div className="mt-1 p-1 rounded-md bg-emerald-50 text-emerald-600">
-                  <FiTarget className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900">
-                    Curated Excellence
-                  </h4>
-                  <p className="text-sm text-slate-500 font-medium">
-                    No fluff. Only highly polished, battle-tested knowledge from
-                    global architects.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="mt-1 p-1 rounded-md bg-blue-50 text-blue-600">
-                  <FiEye className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900">
-                    Community-First Growth
-                  </h4>
-                  <p className="text-sm text-slate-500 font-medium">
-                    Connect and build with an elite tier of high-achieving peer
-                    networks.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Action CTA Button */}
-            <motion.div variants={fadeInUp} className="pt-4">
-              <Link
-                to="/about"
-                className="group relative inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#004499] to-[#0066cc] text-white px-8 py-4 rounded-xl font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/20 overflow-hidden"
+          {/* Micro-Features Row */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", marginBottom: "28px" }}>
+            {[
+              { icon: FiAward, title: "Hyper-Personalized Curations", desc: "No generic modules. Your dashboard reshapes dynamically based on actual goal performance indexes." },
+              { icon: FiShield, title: "Cognitive Fatigue Mitigation", desc: "Our machine intelligence notes friction spikes and switches styles to optimize sustained analytical retention." }
+            ].map((item, idx) => (
+              <motion.div 
+                key={idx} 
+                variants={fadeUp} 
+                custom={3 + idx}
+                style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}
               >
-                <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div style={{
+                  padding: "12px", borderRadius: "14px", background: "rgba(0,166,255,0.08)",
+                  color: "#004499", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                }}>
+                  <item.icon style={{ width: "20px", height: "20px" }} />
+                </div>
+                <div>
+                  <h4 style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: 700, color: "#002966", fontFamily: "'Syne', sans-serif" }}>{item.title}</h4>
+                  <p style={{ margin: 0, fontSize: "14px", color: "#64748b", lineHeight: 1.5, maxWidth: "420px" }}>{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
-                <span className="relative z-10">More about us</span>
+        {/* ─── RIGHT COLUMN: INTERACTIVE VISUAL CANVAS ─── */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="about-visual-canvas"
+          style={{
+            position: "relative",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Decorative Backdrops: Tech Outer Ring */}
+          <div 
+            className="tech-outer-ring"
+            style={{
+              position: "absolute", width: "420px", height: "420px",
+              borderRadius: "50%", border: "1px dashed rgba(0, 102, 204, 0.37)",
+              zIndex: 1,
+            }} 
+          />
 
-                <FiArrowUpRight className="relative z-10 w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </Link>
-            </motion.div>
+          {/* Image Layer 1 */}
+          <motion.div
+            {...floatAnimation(-12, 7)}
+            className="img-layer-1"
+            style={{
+              position: "absolute", zIndex: 3, width: "320px", height: "240px",
+              borderRadius: "20px", overflow: "hidden", top: "5%", left: "20%",
+              boxShadow: "0 20px 50px rgba(0,41,102,0.12)",
+              border: "1px solid rgba(0,68,153,0.1)", background: "#ffffff"
+            }}
+          >
+            <img src={AboutImg1} alt="Platform Node Interface" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </motion.div>
 
-          {/* RIGHT: PREMIUM INTERACTIVE GALLERY BENTO */}
-          <div className="lg:col-span-6 relative w-full h-[500px] flex items-center justify-center mt-12 lg:mt-0 select-none">
-            {/* Background Arch-like Frame Glow */}
-            <div className="absolute w-[80%] h-[80%] bg-gradient-to-tr from-blue-100/30 to-purple-100/20 rounded-[40px] blur-3xl -z-10" />
+          {/* Image Layer 2 */}
+          <motion.div
+            {...floatAnimation(15, 6)}
+            className="img-layer-2"
+            style={{
+              position: "absolute", zIndex: 5, width: "260px", height: "200px",
+              borderRadius: "20px", overflow: "hidden", bottom: "12%", right: "8%",
+              boxShadow: "0 30px 60px rgba(0,41,102,0.16)",
+              border: "1px solid rgba(0,166,255,0.15)", background: "#ffffff"
+            }}
+          >
+            <img src={AboutImg2} alt="AI Analytics Progress Matrix" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </motion.div>
 
-            {/* Bento Card 1: Large Base Image */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, rotate: "-2deg", x: -20 }}
-              whileInView={{ opacity: 1, scale: 1, rotate: "-4deg", x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-              whileHover={{ scale: 1.04, rotate: "-1deg", zIndex: 30 }}
-              className="absolute left-8 top-12 w-64 h-80 rounded-2xl shadow-xl border border-slate-100 overflow-hidden bg-white"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600"
-                alt="Our Workspace"
-                className="w-full h-full object-cover transition-all duration-300"
-              />
-            </motion.div>
+          {/* Image Layer 3 */}
+          <motion.div
+            {...floatAnimation(-18, 5)}
+            className="img-layer-3"
+            style={{
+              position: "absolute", zIndex: 6, width: "160px", height: "160px",
+              borderRadius: "16px", overflow: "hidden", top: "65%", right: "62%",
+              boxShadow: "0 15px 35px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(0,68,153,0.08)", background: "#ffffff"
+            }}
+          >
+            <img src={AboutImg3} alt="Metric Node Overlay" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </motion.div>
+        </motion.div>
 
-            {/* Bento Card 2: Micro Metric Gradient Card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, rotate: "8deg", x: 40 }}
-              whileInView={{ opacity: 1, scale: 1, rotate: "6deg", x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-              whileHover={{ scale: 1.1, rotate: "2deg", zIndex: 30 }}
-              className="absolute right-4 top-4 w-48 p-6 rounded-2xl shadow-xl bg-gradient-to-br from-purple-100 to-indigo-50 border border-purple-200/40 text-left"
-            >
-              <div className="p-2 w-fit rounded-lg bg-white shadow-sm text-purple-600 mb-4">
-                <FiCheckCircle className="w-5 h-5" />
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                100%
-              </h3>
-              <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">
-                Best in class
-              </p>
-            </motion.div>
-
-            {/* Bento Card 3: Landscape Foreground Image */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 60 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-              whileHover={{ scale: 1.05, y: -5, zIndex: 30 }}
-              className="absolute bottom-6 right-12 w-72 h-48 rounded-2xl shadow-2xl border border-slate-100 overflow-hidden bg-white"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1531538606174-0f90ff5dce83?q=80&w=600"
-                alt="Collaborative Session"
-                className="w-full h-full object-cover transition-all duration-300"
-              />
-            </motion.div>
-
-            {/* Bento Card 4: Micro Accent Abstract Gradient Blob */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5, rotate: "-15deg" }}
-              whileInView={{ opacity: 0.9, scale: 1, rotate: "-12deg" }}
-              viewport={{ once: true }}
-              transition={{
-                duration: 1.2,
-                ease: [0.16, 1, 0.3, 1],
-                delay: 0.4,
-              }}
-              className="absolute left-4 bottom-14 w-20 h-24 rounded-2xl bg-gradient-to-tr from-amber-100 to-orange-50 border border-amber-200/30 shadow-md hidden sm:block"
-            />
-          </div>
-        </div>
       </div>
     </section>
   );

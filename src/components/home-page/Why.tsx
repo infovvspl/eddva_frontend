@@ -91,7 +91,7 @@ export default function WhyChooseUsSection() {
   };
 
   return (
-    <section className="relative w-full bg-white text-slate-900 py-28 sm:py-36 px-6 sm:px-12 overflow-hidden">
+    <section className="relative w-full bg-white text-slate-900 py-24 sm:py-20 px-6 sm:px-12 overflow-hidden">
       {/* Background with original color scheme */}
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#f8fafc_1px,transparent_1px)] bg-[size:auto_6rem] pointer-events-none" />
       
@@ -113,7 +113,7 @@ export default function WhyChooseUsSection() {
           {/* Main Headline */}
           <motion.h2 
             variants={fadeInUp}
-            className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-[1.1] mb-6"
+            className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#002966] leading-[1.1] mb-6"
           >
             Why industry leaders
             <span className="font-spicy block bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
@@ -124,7 +124,7 @@ export default function WhyChooseUsSection() {
           {/* Subtitle */}
           <motion.p 
             variants={fadeInUp}
-            className="text-lg sm:text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-10"
+            className="text-md sm:text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-10"
           >
             We don't do bootcamps, and we don't do boring multi-hour lecture dumps. Our ecosystem is custom-tuned for high-impact knowledge synthesis and rapid technical execution.
           </motion.p>

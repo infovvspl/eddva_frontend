@@ -234,9 +234,13 @@ const LoginPage = () => {
         redirectUser(schoolUser, "school");
       } catch (schoolErr: any) {
         const schoolMsg = schoolErr?.response?.data?.message || "";
+        console.error("School login error details:", schoolErr, schoolErr?.response?.data);
+        alert(`School login error: ${schoolErr?.message} | Data: ${JSON.stringify(schoolErr?.response?.data)}`);
         setError(schoolMsg || coachingErrMsg || "Invalid credentials. Please try again.");
       }
     } catch (err: any) {
+      console.error("Outer login error:", err);
+      alert(`Outer login error: ${err?.message}`);
       setError(err?.response?.data?.message || err?.message || "Invalid credentials. Please try again.");
     } finally { setLoginLoading(false); }
   };

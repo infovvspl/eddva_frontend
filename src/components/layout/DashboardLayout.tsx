@@ -405,7 +405,7 @@ const DashboardLayout = () => {
       </div>
 
       {/* ── Nav ── */}
-      <nav className="flex-1 py-6 px-4 overflow-y-auto space-y-1 scrollbar-none relative z-10">
+      <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
         {sidebarOpen && (
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
             {section.main}

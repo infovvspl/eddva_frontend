@@ -151,15 +151,21 @@ export default function Teachers() {
             : (t.createdAt ? new Date(t.createdAt).getFullYear().toString() === selectedYear : false);
         if (!q) return matchesYear;
         const dept = t.teacherProfile?.department || '';
-        const matchesQuery = [t.name, t.email, dept].some((v) => String(v || '').toLowerCase().includes(q));
+        const matchesQuery = [t.name, t.email].some((v) => String(v || '').toLowerCase().includes(q));
         return matchesYear && matchesQuery;
       });
   }, [searchQuery, statusFilter, teachers, selectedYear]);
 
   const exportCsv = () => {
     const rows = [
-      ['Teacher Name', 'Email', 'Department', 'Status'],
-      ...filtered.map((t) => [t.name || '-', t.email || '-', t.teacherProfile?.department || '-', t.isActive ? 'Active' : 'Inactive']),
+      ['Teacher Name', 'Email', 'Sections', 'Subjects', 'Status'],
+      ...teachers.map((t) => [
+        t.name || '-',
+        t.email || '-',
+        (t.sections || []).map(s => s.name).join(', ') || '-',
+        (t.subjects || []).map(s => s.name).join(', ') || '-',
+        t.isActive ? 'Active' : 'Inactive'
+      ]),
     ];
     downloadCsv('eddva-teachers.csv', rows);
   };
@@ -289,7 +295,8 @@ export default function Teachers() {
               <tr>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Teacher Name</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Email</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Department</th>
+                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Sections</th>
+                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Subjects</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Status</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Actions</th>
               </tr>
@@ -322,7 +329,12 @@ export default function Teachers() {
                       </div>
                     </td>
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.teacherProfile?.department || '-'}</td>
+                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[150px]">
+                      {(teacher.sections || []).map(s => s.name).join(', ') || '-'}
+                    </td>
+                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[200px]">
+                      {(teacher.subjects || []).map(s => s.name).join(', ') || '-'}
+                    </td>
                     <td className="px-5 py-4">
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${teacher.isActive ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
@@ -335,7 +347,7 @@ export default function Teachers() {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
-                          to={`/admin/teachers/${teacher.id}`}
+                          to={`/school/admin/teachers/${teacher.id}`}
                           className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Eye className="h-4 w-4" />
