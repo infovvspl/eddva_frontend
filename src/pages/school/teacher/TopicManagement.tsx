@@ -871,7 +871,6 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
 
 function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; name: string; chapterId: string }; onClose: () => void; onSaved: () => void }) {
   const [typeId, setTypeId] = useState('dpp');
-  const [examTarget, setExamTarget] = useState('jee');
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -888,7 +887,6 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
       const res = await schoolContent.generateAiContent({
         topicId: topic.id,
         contentType: typeId,
-        examTarget,
         questionCount: isQuestionType ? questionCount : undefined,
         extraContext: extraContext.trim() || undefined,
       });
@@ -953,17 +951,6 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
 
           <p className="mb-3 mt-6 text-[11px] font-black uppercase tracking-wider text-surface-400">2 · Settings</p>
           <div className="space-y-4">
-            <div>
-              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Exam Target</p>
-              <div className="flex gap-2">
-                {['jee', 'neet'].map((e) => (
-                  <button key={e} onClick={() => setExamTarget(e)}
-                    className={`rounded-xl border-2 px-4 py-1.5 text-sm font-bold uppercase transition-colors ${examTarget === e ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </div>
             {isQuestionType && (
               <div>
                 <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Number of Questions</p>
