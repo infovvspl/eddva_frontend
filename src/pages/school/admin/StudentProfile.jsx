@@ -62,6 +62,7 @@ export default function StudentProfile() {
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [teachingMap, setTeachingMap] = useState(null);
 
   const toggleActiveStatus = async () => {
     setUpdatingStatus(true);
@@ -90,6 +91,17 @@ export default function StudentProfile() {
       fetchAttendance();
     }
   }, [activeTab, attendanceMonth, student?.id]);
+
+  useEffect(() => {
+    const sectionId = student?.studentProfile?.sectionId || student?.studentProfile?.section?.id;
+    if (activeTab !== 'academic' || !sectionId) {
+      setTeachingMap(null);
+      return;
+    }
+    api.get(`/academic/sections/${sectionId}/teaching-map`)
+      .then((res) => setTeachingMap(res.data?.data ?? res.data))
+      .catch(() => setTeachingMap(null));
+  }, [activeTab, student?.studentProfile?.sectionId, student?.studentProfile?.section?.id]);
 
   const fetchAttendance = async () => {
     setAttendanceLoading(true);
@@ -645,23 +657,32 @@ export default function StudentProfile() {
                     <DetailItem label="Admission Date" value={profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : '—'} icon={Clock} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Subject Performance Overview</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {['Mathematics', 'Physics', 'Chemistry', 'English', 'History'].map(sub => (
-                        <div key={sub} className="p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-bold text-blue-600">
-                              {sub.charAt(0)}
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">
+                      Subjects & assigned teachers
+                    </h3>
+                    {teachingMap?.subjects?.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {teachingMap.subjects.map((row) => (
+                          <div key={row.subjectId || row.subjectName} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-bold text-blue-600 shrink-0">
+                                {(row.subjectName || '?').charAt(0)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{row.subjectName}</div>
+                                <div className="text-xs font-medium text-slate-500 truncate">
+                                  {row.teachers?.length
+                                    ? row.teachers.map((t) => t.name).join(', ')
+                                    : 'No teacher assigned'}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-sm font-bold text-slate-700">{sub}</div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Grade</div>
-                            <div className="text-sm font-bold tracking-tight text-blue-600">A+</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">No subject–teacher mapping for this section yet.</p>
+                    )}
                   </div>
                 </div>
               )}

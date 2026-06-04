@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { ChevronLeft, BookOpen, PlayCircle, FileText, CheckCircle2, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 
@@ -15,9 +15,10 @@ export default function ClassDetails() {
     const fetchCourse = async () => {
       try {
         const res = await api.get(`/students/courses/${id}`);
-        setCourse(res.data);
-        if (res.data?.curriculum?.length > 0) {
-          setExpandedSubject(res.data.curriculum[0].id);
+        const data = unwrapSchoolData(res, null);
+        setCourse(data);
+        if (data?.curriculum?.length > 0) {
+          setExpandedSubject(data.curriculum[0].id);
         }
       } catch (error) {
         console.error('Failed to fetch course details:', error);
@@ -87,7 +88,13 @@ export default function ClassDetails() {
       <div className="space-y-4">
         <h2 className="text-lg font-black text-slate-900 dark:text-white">Curriculum Overview</h2>
         
-        {curriculum.map(subject => (
+        {(!curriculum || curriculum.length === 0) ? (
+          <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
+            <BookOpen className="mx-auto h-10 w-10 text-slate-300" />
+            <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">No curriculum published for your subjects yet.</p>
+            <p className="mt-1 text-xs text-slate-500">When your teachers add chapters and topics under Course Content, they will appear here.</p>
+          </div>
+        ) : curriculum.map(subject => (
           <div key={subject.id} className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <button
               onClick={() => setExpandedSubject(expandedSubject === subject.id ? null : subject.id)}

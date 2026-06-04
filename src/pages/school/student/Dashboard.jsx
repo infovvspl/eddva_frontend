@@ -2,13 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { motion } from 'framer-motion';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import { readStudentDashboardCache, writeStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 import {
   Bell,
   BookOpen,
   Calendar,
   ChevronRight,
   ClipboardList,
+  HelpCircle,
   FileText,
   GraduationCap,
   Megaphone,
@@ -17,6 +19,7 @@ import {
   CalendarDays,
   Flame,
   Star,
+  UserCheck,
 } from 'lucide-react';
 
 const tones = {
@@ -97,16 +100,20 @@ function EmptyMini({ icon: Icon, title, text }) {
 
 export default function Dashboard() {
   const { user, institute } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState(null);
-  const [assignments, setAssignments] = useState([]);
-  const [mockTests, setMockTests] = useState([]);
-  const [notices, setNotices] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [weekEvents, setWeekEvents] = useState([]);
+  const initialCache = readStudentDashboardCache();
+  const [loading, setLoading] = useState(!initialCache);
+  const [refreshing, setRefreshing] = useState(false);
+  const [dashboardData, setDashboardData] = useState(initialCache?.dashboardData ?? null);
+  const [assignments, setAssignments] = useState(initialCache?.assignments ?? []);
+  const [mockTests, setMockTests] = useState(initialCache?.mockTests ?? []);
+  const [notices, setNotices] = useState(initialCache?.notices ?? []);
+  const [courses, setCourses] = useState(initialCache?.courses ?? []);
+  const [weekEvents, setWeekEvents] = useState(initialCache?.weekEvents ?? []);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!initialCache) setLoading(true);
+      else setRefreshing(true);
       try {
         const now = new Date();
         const dayNum = now.getDay();
@@ -126,18 +133,38 @@ export default function Dashboard() {
           api.get('/events', { params: { from: from.toISOString(), to: to.toISOString() } }).catch(() => ({ data: { data: [] } })),
         ]);
 
-        setDashboardData(dashRes.data || null);
-        setAssignments(assignRes.data || []);
-        setMockTests(testRes.data?.data || testRes.data || []);
-        setNotices(noticeRes.data?.data || noticeRes.data || []);
-        setCourses(courseRes.data || []);
-        
+        const nextDashboard = unwrapSchoolData(dashRes, null);
+        const nextAssignments = unwrapSchoolList(assignRes);
+        const nextMockTests = testRes.data?.data || testRes.data || [];
+        const nextNotices = noticeRes.data?.data || noticeRes.data || [];
+        const nextCourses = Array.isArray(courseRes.data?.data)
+          ? courseRes.data.data
+          : Array.isArray(courseRes.data)
+            ? courseRes.data
+            : [];
         const eventData = eventRes.data?.data ?? eventRes.data;
-        setWeekEvents(Array.isArray(eventData) ? eventData : []);
+        const nextWeekEvents = Array.isArray(eventData) ? eventData : [];
+
+        setDashboardData(nextDashboard);
+        setAssignments(nextAssignments);
+        setMockTests(nextMockTests);
+        setNotices(nextNotices);
+        setCourses(nextCourses);
+        setWeekEvents(nextWeekEvents);
+
+        writeStudentDashboardCache({
+          dashboardData: nextDashboard,
+          assignments: nextAssignments,
+          mockTests: nextMockTests,
+          notices: nextNotices,
+          courses: nextCourses,
+          weekEvents: nextWeekEvents,
+        });
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
     };
 
@@ -145,7 +172,10 @@ export default function Dashboard() {
   }, []);
 
   const todayPlan = dashboardData?.todayPlan || [];
-  const attendancePct = pct(dashboardData?.attendancePercentage ?? dashboardData?.attendance?.percentage ?? 85);
+  const rawAttendance =
+    dashboardData?.attendancePercentage ?? dashboardData?.attendance?.percentage ?? null;
+  const hasAttendance = rawAttendance != null && Number.isFinite(Number(rawAttendance));
+  const attendancePct = hasAttendance ? pct(rawAttendance) : null;
   const todayClassesCount = dashboardData?.todayClasses ?? dashboardData?.classesToday ?? todayPlan.length ?? 0;
   
   const pendingAssignments = assignments.filter(
@@ -155,8 +185,18 @@ export default function Dashboard() {
   const upcomingExamsCount = mockTests.length;
 
   const profile = user?.studentProfile || user?.profile || dashboardData?.student || {};
-  const className = profile.className || profile.class || user?.className || dashboardData?.student?.class || 'Class 10';
-  const sectionName = profile.sectionName || profile.section || user?.sectionName || dashboardData?.student?.section || 'A';
+  const className =
+    profile.className ||
+    profile.class ||
+    dashboardData?.student?.className ||
+    dashboardData?.student?.class ||
+    null;
+  const sectionName =
+    profile.sectionName ||
+    profile.section ||
+    dashboardData?.student?.sectionName ||
+    dashboardData?.student?.section ||
+    null;
 
   const calendarWeek = useMemo(() => {
     const monday = new Date();
@@ -178,6 +218,7 @@ export default function Dashboard() {
   const quickActions = [
     { label: 'Join Live Class', to: '/school/student/live-classes', icon: Radio, tone: 'blue' },
     { label: 'View Notes', to: '/school/student/study-materials', icon: FileText, tone: 'emerald' },
+    { label: 'My Doubts', to: '/school/student/doubts', icon: HelpCircle, tone: 'violet' },
     { label: 'View Assignments', to: '/school/student/assignments', icon: ClipboardList, tone: 'amber' },
     { label: 'Take Test', to: '/school/student/assessments', icon: Target, tone: 'rose' },
   ];
@@ -192,6 +233,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {refreshing && (
+        <div className="flex items-center justify-end gap-2 text-xs font-semibold text-slate-400">
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          Updating…
+        </div>
+      )}
       {/* Top Grid for Welcome Card and Smart Calendar */}
       <div className="grid gap-6 lg:grid-cols-4 items-stretch">
         {/* Welcome Card Wrapper */}
@@ -219,10 +266,17 @@ export default function Dashboard() {
                   Welcome back, {user?.name || 'Student'}! 👋 🌟
                 </h1>
                 <p className="mt-2 text-white/90 font-medium text-sm">
-                  You're on a {user?.currentStreak || dashboardData?.currentStreak || 0}-day learning streak! 🔥 Keep up the awesome momentum! 🚀
+                  {className && sectionName
+                    ? `${className} · Section ${sectionName}`
+                    : className || 'Your class schedule loads from your section assignment.'}
                 </p>
                 <p className="mt-1 text-white/90 font-medium text-sm">
-                  You have {dashboardData?.pendingLectures || 0} lectures pending 📚 and have attempted {dashboardData?.testsAttempted || 0} tests so far 🏆.
+                  {todayClassesCount > 0
+                    ? `You have ${todayClassesCount} class${todayClassesCount === 1 ? '' : 'es'} scheduled today.`
+                    : 'No classes scheduled for today.'}
+                  {pendingAssignmentsCount > 0
+                    ? ` ${pendingAssignmentsCount} assignment${pendingAssignmentsCount === 1 ? '' : 's'} pending.`
+                    : ''}
                 </p>
               </div>
 
@@ -323,14 +377,19 @@ export default function Dashboard() {
             <div className="mt-5 space-y-4">
               {todayPlan.length > 0 ? (
                 todayPlan.slice(0, 5).map((item, index) => (
-                  <div key={`${item.title}-${index}`} className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                  <div key={`${item.id || item.subject || item.title}-${index}`} className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30">
                       <Radio className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">{item.title}</p>
+                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                        {item.subject || item.title || 'Class'}
+                      </p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {item.type || 'Class'} {item.durationMinutes ? `• ${item.durationMinutes} min` : ''}
+                        {item.startTime
+                          ? new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : item.type || 'Scheduled'}
+                        {item.room ? ` · ${item.room}` : ''}
                       </p>
                     </div>
                     <Link to="/school/student/live-classes" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
@@ -362,7 +421,9 @@ export default function Dashboard() {
                     <div className="min-w-0 flex-1 pr-4">
                       <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{assignment.title}</h4>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
-                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                        Due: {assignment.dueDate || assignment.due_date
+                          ? new Date(assignment.dueDate || assignment.due_date).toLocaleDateString()
+                          : '—'}
                       </p>
                     </div>
                     <Link to="/school/student/assignments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
@@ -385,19 +446,25 @@ export default function Dashboard() {
           <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <SectionHeader title="Attendance Summary" />
             <div className="mt-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Attendance Rate</span>
-                <span className="text-lg font-black text-slate-950 dark:text-white">{attendancePct}%</span>
-              </div>
-              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div 
-                  className={`h-full rounded-full ${attendancePct < 75 ? 'bg-rose-500' : 'bg-emerald-500'}`} 
-                  style={{ width: `${attendancePct}%` }}
-                />
-              </div>
-              <p className="text-xs font-semibold text-slate-500">
-                {attendancePct < 75 ? 'Warning: Attendance is below 75% requirement!' : 'Status: On track'}
-              </p>
+              {hasAttendance ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Attendance Rate</span>
+                    <span className="text-lg font-black text-slate-950 dark:text-white">{attendancePct}%</span>
+                  </div>
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div
+                      className={`h-full rounded-full ${attendancePct < 75 ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${attendancePct}%` }}
+                    />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500">
+                    {attendancePct < 75 ? 'Warning: Attendance is below 75% requirement!' : 'Status: On track'}
+                  </p>
+                </>
+              ) : (
+                <EmptyMini icon={UserCheck} title="No attendance yet" text="Records appear once your school marks attendance." />
+              )}
             </div>
           </div>
 

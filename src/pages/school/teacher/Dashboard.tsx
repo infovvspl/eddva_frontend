@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle, MessageSquare } from 'lucide-react';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
@@ -28,6 +30,7 @@ const Dashboard: React.FC = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
+  const [pendingDoubts, setPendingDoubts] = useState(0);
 
   const loadDashboard = async () => {
     try {
@@ -71,6 +74,18 @@ const Dashboard: React.FC = () => {
         setNotifications(Array.isArray(list) ? list : []);
       } catch {
         setNotifications([]);
+      }
+
+      try {
+        const doubtRes = await api.get('/doubts', { params: { status: 'pending' } });
+        const list = unwrapSchoolList(doubtRes);
+        setPendingDoubts(
+          list.filter((d: { status?: string }) =>
+            ['escalated', 'open', 'ai_answered'].includes(d.status || ''),
+          ).length,
+        );
+      } catch {
+        setPendingDoubts(0);
       }
     } catch (error) {
       console.error('Failed to load teacher dashboard:', error);
@@ -295,6 +310,25 @@ const Dashboard: React.FC = () => {
               ))}
               {upcomingClasses.length === 0 && <p className="text-sm text-slate-500 py-4 text-center">No upcoming classes today.</p>}
             </div>
+          </GlassCard>
+
+          <GlassCard className="dashboard__card">
+            <div className="dashboard__card-header">
+              <h3>Student Doubts 💬</h3>
+              <Badge variant={pendingDoubts > 0 ? 'error' : 'success'}>
+                {pendingDoubts > 0 ? `${pendingDoubts} pending` : 'Clear'}
+              </Badge>
+            </div>
+            <p className="mb-4 text-sm text-slate-500">
+              Students in your classes can ask AI or escalate to you from Ask a Doubt.
+            </p>
+            <Link
+              to="/school/teacher/doubts"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-black text-white hover:bg-blue-700"
+            >
+              <MessageSquare size={18} />
+              Open doubt panel
+            </Link>
           </GlassCard>
 
           <GlassCard className="dashboard__card">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { FileText, Calendar, CheckCircle2, AlertCircle, UploadCloud, MessageSquare, History, Sparkles } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 
@@ -12,7 +12,7 @@ export default function Assignments() {
     const fetchAssignments = async () => {
       try {
         const response = await api.get('/assignments');
-        setAssignments(response.data || []);
+        setAssignments(unwrapSchoolList(response));
       } catch (error) {
         console.error('Failed to fetch assignments:', error);
       } finally {
@@ -31,7 +31,7 @@ export default function Assignments() {
     );
   }
 
-  const assignmentView = assignments.map((assignment) => {
+  const assignmentView = (Array.isArray(assignments) ? assignments : []).map((assignment) => {
     const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
     const isLate = dueDate && dueDate < new Date() && assignment.status !== 'completed';
     const evaluated = assignment.status === 'evaluated' || assignment.feedback || assignment.marksObtained !== undefined;

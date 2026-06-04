@@ -15,6 +15,18 @@ export interface SchoolInstitute {
   status?: string;
 }
 
+export interface SchoolStudentProfile {
+  id?: string;
+  sectionId?: string;
+  sectionName?: string;
+  classId?: string;
+  className?: string;
+  enrollmentNo?: string;
+  rollNo?: string;
+  currentClass?: string;
+  subjects?: string[];
+}
+
 export interface SchoolUser {
   id: string;
   name: string;
@@ -25,6 +37,7 @@ export interface SchoolUser {
   photo?: string | null;
   phone?: string | null;
   isActive?: boolean;
+  studentProfile?: SchoolStudentProfile | null;
 }
 
 interface SchoolAuthContextType {
@@ -97,18 +110,63 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         phone: storeUser.phone ?? null,
         isActive: true,
         institute,
+        studentProfile: storeUser.studentProfile
+          ? {
+              id: storeUser.studentProfile.id,
+              sectionId: storeUser.studentProfile.sectionId,
+              sectionName: storeUser.studentProfile.sectionName,
+              classId: storeUser.studentProfile.classId,
+              className: storeUser.studentProfile.className,
+              enrollmentNo: storeUser.studentProfile.enrollmentNo,
+              rollNo: storeUser.studentProfile.rollNo,
+              currentClass: storeUser.studentProfile.currentClass,
+              subjects: storeUser.studentProfile.subjects,
+            }
+          : null,
       }
       : null;
 
   useEffect(() => {
     const token = tokenStorage.getAccess();
-    if (token && storeUser && tenantType === 'school' && storeUser.tenantId) {
-      setInstitute({
-        id: storeUser.tenantId,
-        name: storeUser.tenantName ?? '',
-      });
-    }
-    setLoading(false);
+    const hydrate = async () => {
+      if (token && storeUser && tenantType === 'school' && storeUser.tenantId) {
+        setInstitute({
+          id: storeUser.tenantId,
+          name: storeUser.tenantName ?? '',
+        });
+      }
+      if (token && storeUser && tenantType === 'school' && storeUser.role === 'student') {
+        try {
+          const res = await apiClient.get('/school/auth/me');
+          const me = res.data?.data ?? res.data;
+          const sp = me?.studentProfile;
+          if (sp) {
+            setStoreUser({
+              ...storeUser,
+              studentProfile: {
+                id: sp.id,
+                sectionId: sp.sectionId,
+                sectionName: sp.sectionName,
+                classId: sp.classId,
+                className: sp.className,
+                enrollmentNo: sp.enrollmentNo,
+                rollNo: sp.rollNo,
+                subjects: sp.subjects ?? storeUser.studentProfile?.subjects,
+                currentClass:
+                  sp.currentClass ??
+                  (sp.className && sp.sectionName ? `${sp.className} · ${sp.sectionName}` : sp.className),
+                examTarget: storeUser.studentProfile?.examTarget ?? '',
+                diagnosticCompleted: storeUser.studentProfile?.diagnosticCompleted ?? true,
+              },
+            });
+          }
+        } catch {
+          /* keep existing session */
+        }
+      }
+      setLoading(false);
+    };
+    hydrate();
   }, []);
 
   const login = async (identifier: string, password: string) => {
@@ -124,6 +182,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const u = res.user;
     const inst = res.institute;
 
+    const sp = u.studentProfile;
     setStoreUser({
       id: u.id,
       name: u.name,
@@ -136,7 +195,23 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       isFirstLogin: false,
       onboardingRequired: false,
       teacherProfile: null,
-      studentProfile: null,
+      studentProfile: sp
+        ? {
+            id: sp.id ?? u.id,
+            examTarget: '',
+            currentClass:
+              sp.currentClass ??
+              (sp.className && sp.sectionName ? `${sp.className} · ${sp.sectionName}` : sp.className ?? ''),
+            sectionId: sp.sectionId,
+            sectionName: sp.sectionName,
+            classId: sp.classId,
+            className: sp.className,
+            enrollmentNo: sp.enrollmentNo,
+            rollNo: sp.rollNo,
+            subjects: sp.subjects,
+            diagnosticCompleted: true,
+          }
+        : null,
     });
     setTenantType('school');
 

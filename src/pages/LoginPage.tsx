@@ -141,6 +141,7 @@ const LoginPage = () => {
   const buildSchoolUser = (loginData: SchoolLoginResponse): User => {
     const u = loginData.user;
     const inst = loginData.institute;
+    const sp = u.studentProfile;
     return {
       id: u.id,
       name: u.name,
@@ -153,7 +154,21 @@ const LoginPage = () => {
       isFirstLogin: false,
       onboardingRequired: false,
       teacherProfile: null,
-      studentProfile: null,
+      studentProfile: sp
+        ? {
+            id: sp.id ?? u.id,
+            examTarget: "",
+            currentClass: sp.currentClass ?? (sp.className && sp.sectionName ? `${sp.className} · ${sp.sectionName}` : sp.className ?? ""),
+            sectionId: sp.sectionId,
+            sectionName: sp.sectionName,
+            classId: sp.classId,
+            className: sp.className,
+            enrollmentNo: sp.enrollmentNo,
+            rollNo: sp.rollNo,
+            subjects: sp.subjects,
+            diagnosticCompleted: true,
+          }
+        : null,
     };
   };
 
@@ -206,10 +221,17 @@ const LoginPage = () => {
       const rawPhone = identifier.trim().replace(/[^\d+]/g, "");
       const formattedPhone = rawPhone.startsWith("+") ? rawPhone : `+91${rawPhone}`;
 
-      // Step 1 — Try coaching (Eddva main) login
-      let coachingFailed = false;
-      let coachingErrMsg = "";
-      try {
+      const schoolPayload = isEmail
+        ? { email: identifier.trim(), password }
+        : { phone: formattedPhone, password };
+
+      const trySchoolLogin = async () => {
+        const schoolRes = await authApi.loginSchoolWithPassword(schoolPayload);
+        const schoolUser = buildSchoolUser(schoolRes);
+        redirectUser(schoolUser, "school");
+      };
+
+      const tryCoachingLogin = async () => {
         const loginRes = await authApi.loginWithPassword(
           isEmail
             ? { email: identifier.trim(), password }
@@ -222,32 +244,46 @@ const LoginPage = () => {
         } else {
           redirectUser(user as User, "coaching");
         }
-        return;
-      } catch (coachingErr: any) {
-        const status = coachingErr?.response?.status;
-        // Fall through to school login on any auth failure (works for both email AND phone)
-        if (status === 401 || status === 404 || status === 400 || status === 500) {
-          coachingFailed = true;
-          coachingErrMsg = loginErrorMessage(coachingErr, "Invalid credentials");
-        } else {
-          throw coachingErr;
+      };
+
+      // On institute subdomains (e.g. odm.localhost), try school DB first
+      const schoolFirst = !!getSubdomainFromHost();
+      let primaryErr = "";
+      let fallbackErr = "";
+
+      if (schoolFirst) {
+        try {
+          await trySchoolLogin();
+          return;
+        } catch (e: any) {
+          primaryErr = loginErrorMessage(e, "School login failed");
+        }
+        try {
+          await tryCoachingLogin();
+          return;
+        } catch (e: any) {
+          fallbackErr = loginErrorMessage(e, "Coaching login failed");
+        }
+      } else {
+        try {
+          await tryCoachingLogin();
+          return;
+        } catch (e: any) {
+          primaryErr = loginErrorMessage(e, "Coaching login failed");
+        }
+        try {
+          await trySchoolLogin();
+          return;
+        } catch (e: any) {
+          fallbackErr = loginErrorMessage(e, "School login failed");
         }
       }
 
-      if (!coachingFailed) return;
-
-      // Step 2 — School login fallback (works for both email and phone)
-      try {
-        const schoolPayload = isEmail
-          ? { email: identifier.trim(), password }
-          : { phone: formattedPhone, password };
-        const schoolRes = await authApi.loginSchoolWithPassword(schoolPayload);
-        const schoolUser = buildSchoolUser(schoolRes);
-        redirectUser(schoolUser, "school");
-      } catch (schoolErr: any) {
-        const schoolMsg = loginErrorMessage(schoolErr, "Invalid credentials");
-        setError(schoolMsg || coachingErrMsg || "Invalid credentials. Please try again.");
-      }
+      setError(
+        primaryErr && fallbackErr
+          ? `${primaryErr}. ${fallbackErr}.`
+          : primaryErr || fallbackErr || "Invalid credentials.",
+      );
     } catch (err: any) {
       setError(loginErrorMessage(err, "Invalid credentials. Please try again."));
     } finally { setLoginLoading(false); }

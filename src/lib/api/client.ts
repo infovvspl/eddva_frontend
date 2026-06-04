@@ -69,14 +69,23 @@ const PUBLIC_FRAGMENTS = [
 const isPublicEndpoint = (url = "") =>
   PUBLIC_FRAGMENTS.some((p) => (url || "").replace(/^\//, "").includes(p));
 
+/** School auth must not send tenant subdomain — login uses school DB only */
+const isSchoolAuthEndpoint = (url = "") => {
+  const path = (url || "").replace(/^\//, "");
+  return path.startsWith("school/auth/");
+};
+
 // ---------------------------------------------------------------------------
 // Request interceptor — attach token
 // ---------------------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Login/register: only send subdomain from the URL (e.g. odm.localhost), not
-    // stale localStorage — otherwise bare localhost logins get scoped to the wrong tenant.
-    const subdomain = isPublicEndpoint(config.url) ? getSubdomainFromHost() : getSubdomain();
+    // School login/register: no tenant header. Coaching public auth: host subdomain only.
+    const path = (config.url || "").replace(/^\//, "");
+    let subdomain: string | null = null;
+    if (!isSchoolAuthEndpoint(path)) {
+      subdomain = isPublicEndpoint(config.url) ? getSubdomainFromHost() : getSubdomain();
+    }
     if (subdomain && config.headers) {
       config.headers["X-Tenant-Subdomain"] = subdomain;
     }

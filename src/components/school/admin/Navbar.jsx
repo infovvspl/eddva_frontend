@@ -9,6 +9,7 @@ import {
   Sparkles,
   Sun,
   MessageCircle,
+  MessageSquare,
   GraduationCap,
   Users,
   Settings as SettingsIcon,
@@ -173,12 +174,13 @@ export default function Navbar({ onMenuClick }) {
     setIsSearching(true);
     try {
       const teacherPages = [
-        { name: 'Dashboard', path: '/teacher', icon: Sparkles },
-        { name: 'Course Content', path: '/teacher/topics', icon: GraduationCap },
-        { name: 'My Schedule', path: '/teacher/classes', icon: Users },
-        { name: 'Assignments', path: '/teacher/assignments', icon: SettingsIcon },
-        { name: 'Assessments', path: '/teacher/assessments', icon: SettingsIcon },
-        { name: 'Reports', path: '/teacher/reports', icon: SettingsIcon },
+        { name: 'Dashboard', path: '/school/teacher', icon: Sparkles },
+        { name: 'Course Content', path: '/school/teacher/course-content', icon: GraduationCap },
+        { name: 'Student Doubts', path: '/school/teacher/doubts', icon: MessageSquare },
+        { name: 'My Schedule', path: '/school/teacher/classes', icon: Users },
+        { name: 'Assignments', path: '/school/teacher/assignments', icon: SettingsIcon },
+        { name: 'Assessments', path: '/school/teacher/assessments', icon: SettingsIcon },
+        { name: 'Reports', path: '/school/teacher/reports', icon: SettingsIcon },
       ];
       const adminPages = [
         { name: 'Dashboard', path: '/school/admin', icon: Sparkles },
