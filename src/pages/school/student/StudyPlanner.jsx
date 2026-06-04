@@ -161,7 +161,7 @@ export default function StudyPlanner() {
                 <p className="mt-2 text-sm font-medium text-indigo-100">
                   {nextAction.type === 'lecture' ? 'Watch Lecture' : 
                    nextAction.type === 'practice' ? 'Practice Questions' : 'Review Topic'} 
-                  • {nextAction.durationMinutes} mins
+                  - {nextAction.durationMinutes} mins
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-indigo-600 transition hover:bg-indigo-50">
@@ -179,7 +179,7 @@ export default function StudyPlanner() {
               
               <div className="space-y-4">
                 {todayTasks.length === 0 ? (
-                  <p className="text-center text-sm text-slate-500 py-4">You've completed all tasks for today! Great job! 🎉</p>
+                  <p className="text-center text-sm text-slate-500 py-4">You've completed all tasks for today. Great job!</p>
                 ) : (
                   todayTasks.map(task => (
                     <div key={task.id} className="flex flex-col gap-4 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/50">
@@ -200,11 +200,11 @@ export default function StudyPlanner() {
                           </h4>
                           <div className="mt-1 flex items-center gap-3 text-xs font-semibold text-slate-500">
                             <span className="uppercase tracking-wider">{task.type}</span>
-                            <span>•</span>
+                            <span>-</span>
                             <span>{task.durationMinutes} mins</span>
                             {task.xpReward > 0 && (
                               <>
-                                <span>•</span>
+                                <span>-</span>
                                 <span className="text-amber-500">+{task.xpReward} XP</span>
                               </>
                             )}

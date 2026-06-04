@@ -25,7 +25,7 @@ export default function TestEngine() {
         const sessionData = res.data;
         
         if (sessionData.status === 'submitted' || sessionData.status === 'auto_submitted') {
-          navigate(`/student/assessments`);
+          navigate(`/school/student/assessments`);
           return;
         }
 

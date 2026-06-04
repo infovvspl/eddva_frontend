@@ -99,7 +99,7 @@ export default function ClassDetails() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">{subject.name}</h3>
-                  <p className="text-xs font-semibold text-slate-500">{subject.chapters.length} Chapters • Teacher: {subject.teacher?.name || 'TBA'}</p>
+                  <p className="text-xs font-semibold text-slate-500">{subject.chapters.length} Chapters - Teacher: {subject.teacher?.name || 'TBA'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -128,7 +128,7 @@ export default function ClassDetails() {
                           {chapter.topics.map(topic => (
                             <Link
                               key={topic.id}
-                              to={`/student/classes/${batch.id}/topics/${topic.id}`}
+                              to={`/school/student/classes/${batch.id}/topics/${topic.id}`}
                               className="group flex items-center justify-between rounded-xl p-3 transition hover:bg-white dark:hover:bg-slate-800"
                             >
                               <div className="flex items-center gap-3">
