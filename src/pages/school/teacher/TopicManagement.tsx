@@ -21,6 +21,8 @@ import SelectField from '@/components/school/SelectField';
 import Tabs from '@/components/school/Tabs';
 
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
+import axios from 'axios';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
@@ -41,6 +43,7 @@ const TopicManagement: React.FC = () => {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [topicsList, setTopicsList] = useState<any[]>([]);
+  const [materialsList, setMaterialsList] = useState<any[]>([]);
 
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
@@ -64,11 +67,18 @@ const TopicManagement: React.FC = () => {
     orderIndex: 1,
   });
 
-  const [newMaterial, setNewMaterial] = useState({ 
+  const [newMaterial, setNewMaterial] = useState<{
+    title: string;
+    category: string;
+    fileUrl: string;
+    fileName: string;
+    fileObject: File | null;
+  }>({ 
     title: '', 
     category: 'Notes', 
     fileUrl: '', 
-    fileName: '' 
+    fileName: '',
+    fileObject: null
   });
 
   // =====================================
@@ -150,12 +160,22 @@ const TopicManagement: React.FC = () => {
     }
   };
 
+  const fetchMaterials = async () => {
+    try {
+      const res = await api.get('/materials');
+      setMaterialsList(res.data?.data || res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch materials', err);
+    }
+  };
+
   // =====================================
   // INITIAL LOAD
   // =====================================
 
   useEffect(() => {
     fetchSubjects();
+    fetchMaterials();
   }, []);
 
   useEffect(() => {
@@ -240,28 +260,65 @@ const TopicManagement: React.FC = () => {
 
   const handleUploadMaterial = async () => {
     try {
-      if (!newMaterial.title.trim() || !newMaterial.fileName.trim() || !newMaterial.fileUrl.trim()) {
-        toast.warning('Please fill all required fields');
+      if (!newMaterial.title.trim() || !newMaterial.fileName.trim() || !newMaterial.fileObject) {
+        toast.warning('Please select a file and fill all required fields');
         return;
       }
+      
+      toast.info('Requesting secure upload URL...');
+      
+      // Request presigned URL from existing upload module
+      const uploadUrlRes = await apiClient.post('/upload-url', {
+        type: 'study-material', // Maps to UploadType.STUDY_MATERIAL
+        fileName: newMaterial.fileObject.name,
+        contentType: newMaterial.fileObject.type || 'application/pdf', // fallback if empty
+        fileSize: newMaterial.fileObject.size
+      });
+
+      const { url, key } = uploadUrlRes.data?.data || uploadUrlRes.data;
+
+      if (!url || !key) {
+        throw new Error('Failed to generate upload URL');
+      }
+
+      toast.info('Uploading file to S3...');
+
+      // Upload file directly to S3
+      await axios.put(url, newMaterial.fileObject, {
+        headers: {
+          'Content-Type': newMaterial.fileObject.type || 'application/pdf'
+        }
+      });
+
+      toast.success('File uploaded to S3 successfully!');
+
+      // Store returned S3 key in state only
+      setNewMaterial(prev => ({ ...prev, fileUrl: key }));
+      console.log('Phase 3 Complete: S3 Key stored in state ->', key);
+
+      // Phase 4: Create the material record
       await api.post('/materials', {
         title: newMaterial.title,
         fileName: newMaterial.fileName,
-        fileUrl: newMaterial.fileUrl,
+        fileUrl: key, // Use the S3 key obtained from the upload
         fileType: newMaterial.category,
-        fileSize: 0,
+        fileSize: newMaterial.fileObject.size,
         subjectId: selectedSubject,
         subjectIdFk: selectedSubject,
         chapterId: selectedChapter,
         topicId: uploadTopicId,
         description: ''
       });
+
       setShowMaterialModal(false);
-      setNewMaterial({ title: '', category: 'Notes', fileUrl: '', fileName: '' });
-      toast.success('Material uploaded successfully');
+      setNewMaterial({ title: '', category: 'Notes', fileUrl: '', fileName: '', fileObject: null });
+      toast.success('Material created successfully!');
+      
+      // Phase 5: Refresh materials list
+      fetchMaterials();
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to upload material');
+      console.error('Upload Error:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to upload material');
     }
   };
 
@@ -397,38 +454,71 @@ const TopicManagement: React.FC = () => {
             <p className="text-surface-500">No topics found in this chapter.</p>
           </div>
         ) : (
-          topicsList.map((topic) => (
-            <div
-              key={topic.id}
-              className="flex items-center justify-between p-4 bg-white dark:bg-surface-800 rounded-xl shadow-sm border border-surface-100 dark:border-surface-700 hover:border-brand-300 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 font-semibold text-sm">
-                  {topic.sort_order || 0}
-                </div>
-                <div>
-                  <h4 className="font-medium text-surface-900 dark:text-white">
-                    {topic.name}
-                  </h4>
-                  {topic.description && (
-                    <p className="text-sm text-surface-500 mt-1">{topic.description}</p>
+          topicsList.map((topic) => {
+            const topicMaterials = materialsList.filter(m => m.topicId === topic.id);
+            return (
+              <div
+                key={topic.id}
+                className="flex flex-col p-4 bg-white dark:bg-surface-800 rounded-xl shadow-sm border border-surface-100 dark:border-surface-700 hover:border-brand-300 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 font-semibold text-sm">
+                      {topic.sort_order || 0}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-surface-900 dark:text-white">
+                        {topic.name}
+                      </h4>
+                      {topic.description && (
+                        <p className="text-sm text-surface-500 mt-1">{topic.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  {canEditCurriculum && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => { 
+                        setUploadTopicId(topic.id); 
+                        setShowMaterialModal(true); 
+                      }}
+                    >
+                      Upload Material
+                    </Button>
                   )}
                 </div>
+
+                {/* Display Materials under the topic */}
+                {topicMaterials.length > 0 && (
+                  <div className="mt-4 pl-12 space-y-2 border-t border-surface-100 dark:border-surface-700 pt-3">
+                    {topicMaterials.map(mat => (
+                      <div 
+                        key={mat.id} 
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-700/50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          const url = mat.fileUrl?.startsWith('http') 
+                            ? mat.fileUrl 
+                            : `https://eddva.s3.ap-south-1.amazonaws.com/${mat.fileUrl}`;
+                          window.open(url, '_blank');
+                        }}
+                      >
+                        <File size={16} className="text-brand-500" />
+                        <span className="text-sm font-medium text-surface-700 dark:text-surface-200 flex-1">
+                          {mat.title || mat.fileName}
+                        </span>
+                        {mat.fileType && (
+                          <Badge variant="info" className="capitalize text-xs px-2 py-0.5">
+                            {mat.fileType}
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              {canEditCurriculum && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => { 
-                    setUploadTopicId(topic.id); 
-                    setShowMaterialModal(true); 
-                  }}
-                >
-                  Upload Material
-                </Button>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -551,12 +641,35 @@ const TopicManagement: React.FC = () => {
                 onChange={(e) => setNewMaterial({ ...newMaterial, fileName: e.target.value })}
                 placeholder="e.g. notes.pdf"
               />
-              <InputField
-                label="File URL"
-                value={newMaterial.fileUrl}
-                onChange={(e) => setNewMaterial({ ...newMaterial, fileUrl: e.target.value })}
-                placeholder="e.g. https://..."
-              />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-[var(--color-textSecondary)]">
+                  Select File
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setNewMaterial({
+                        ...newMaterial,
+                        fileObject: file,
+                        fileName: file.name
+                      });
+                    }
+                  }}
+                  className="w-full text-sm text-[var(--color-text)]
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-medium
+                    file:bg-[var(--color-surfaceHover)] file:text-[var(--color-text)]
+                    hover:file:bg-[var(--color-border)] cursor-pointer border border-[var(--color-border)] rounded-md p-1.5"
+                />
+                {newMaterial.fileObject && (
+                  <p className="text-xs text-[var(--color-textSecondary)] mt-1">
+                    Selected: {newMaterial.fileObject.name}
+                  </p>
+                )}
+              </div>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="outline" onClick={() => setShowMaterialModal(false)}>
                   Cancel
