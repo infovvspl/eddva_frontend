@@ -1,6 +1,30 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { User, UserRole } from "./types";
+
+/**
+ * localStorage wrapper that never throws on write.
+ *
+ * A base64 avatar or other large field can push the `eddva_auth` blob past the
+ * ~5MB origin quota, and an unhandled QuotaExceededError during persist would
+ * crash login. Here we drop the stale key and retry once, then give up quietly.
+ */
+const safeLocalStorage = {
+  getItem: (name: string) => localStorage.getItem(name),
+  setItem: (name: string, value: string) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch {
+      try {
+        localStorage.removeItem(name);
+        localStorage.setItem(name, value);
+      } catch {
+        console.error(`[auth-store] Skipped persisting "${name}" — storage quota exceeded.`);
+      }
+    }
+  },
+  removeItem: (name: string) => localStorage.removeItem(name),
+};
 
 export type AiFeatureKey =
   | 'ai_study_assistant'
@@ -38,6 +62,21 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "eddva_auth",
+      storage: createJSONStorage(() => safeLocalStorage),
+      // Never persist an inline base64 avatar — it can blow the storage quota.
+      // It stays available in memory for the current session via setUser.
+      partialize: (state) => ({
+        user: state.user
+          ? {
+              ...state.user,
+              avatar: state.user.avatar?.startsWith("data:") ? undefined : state.user.avatar,
+            }
+          : null,
+        isAuthenticated: state.isAuthenticated,
+        tenantType: state.tenantType,
+        aiEnabled: state.aiEnabled,
+        aiFeatures: state.aiFeatures,
+      }),
     },
   ),
 );

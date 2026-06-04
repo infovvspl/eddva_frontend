@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
@@ -44,7 +44,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       const allSections = [];
       getResponseList(secRes).forEach(cls => {
         (cls.sections || []).forEach(section => {
-          allSections.push({ ...section, className: cls.name });
+          allSections.push({ ...section, className: cls.name, classId: cls.id });
         });
       });
       
@@ -55,6 +55,37 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       console.error('Failed to load timetable data:', error);
     }
   };
+
+  const selectedSection = sections.find(sec => String(sec.id) === String(formData.sectionId));
+  const classId = selectedSection?.classId;
+
+  const filteredTeachers = useMemo(() => {
+    if (!formData.sectionId || !formData.subjectId || sections.length === 0 || teachers.length === 0) {
+      return [];
+    }
+    return teachers.filter(teacher => {
+      const assignments = teacher.teacherProfile?.assignments || [];
+      return assignments.some(a => 
+        String(a.classId) === String(classId) &&
+        String(a.sectionId) === String(formData.sectionId) &&
+        String(a.subjectId) === String(formData.subjectId)
+      );
+    });
+  }, [teachers, formData.sectionId, formData.subjectId, classId, sections.length]);
+
+  useEffect(() => {
+    if (sections.length === 0 || teachers.length === 0) return;
+    if (formData.sectionId && formData.subjectId) {
+      const isValid = filteredTeachers.some(t => String(t.teacherProfile?.id) === String(formData.teacherId));
+      if (!isValid && formData.teacherId !== '') {
+        setFormData(prev => ({ ...prev, teacherId: '' }));
+      }
+    } else {
+      if (formData.teacherId !== '') {
+        setFormData(prev => ({ ...prev, teacherId: '' }));
+      }
+    }
+  }, [formData.sectionId, formData.subjectId, filteredTeachers, sections.length, teachers.length]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,14 +108,20 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       setError('Please select a teacher');
       return;
     }
+    if (formData.startTime >= formData.endTime) {
+      setError('Start time must be before end time');
+      return;
+    }
 
     await onSubmit(formData);
   };
 
+  const isSubmitDisabled = isLoading || (formData.sectionId && formData.subjectId && filteredTeachers.length === 0);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+        <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
           <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
@@ -144,19 +181,26 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher</label>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
             <select
               name="teacherId"
               value={formData.teacherId}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              disabled={!formData.sectionId || !formData.subjectId}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
             >
-              <option value="">Select Teacher</option>
-              {teachers.map(teacher => (
-                <option key={teacher.teacherProfile?.id || teacher.id} value={teacher.teacherProfile?.id || teacher.id}>
-                  {teacher.name}
-                </option>
-              ))}
+              {!formData.sectionId || !formData.subjectId ? (
+                <option value="">Select Section and Subject first</option>
+              ) : (
+                <>
+                  <option value="">Select Teacher</option>
+                  {filteredTeachers.map(teacher => (
+                    <option key={teacher.teacherProfile?.id} value={teacher.teacherProfile?.id}>
+                      {teacher.name}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
 
@@ -196,11 +240,23 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
+      {formData.sectionId && formData.subjectId && filteredTeachers.length === 0 && (
+        <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+            No teacher is assigned to this subject/class/section combination.
+            <p className="text-xs font-normal text-amber-700/80 dark:text-amber-400/80 mt-1">
+              Please assign a teacher to this combination under Teachers Directory &rarr; Edit Profile &rarr; Academic Assignments before scheduling this timetable slot.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <button
           type="submit"
-          disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          disabled={isSubmitDisabled}
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {timetable ? 'Update Timetable' : 'Add Timetable'}
@@ -208,7 +264,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-lg border border-surface-200 px-4 py-2 font-semibold text-surface-700 hover:bg-surface-50"
+          className="flex-1 rounded-xl border border-surface-200 px-4 py-2.5 font-semibold text-surface-700 hover:bg-surface-50 active:scale-[0.98] transition-all duration-200 text-center"
         >
           Cancel
         </button>

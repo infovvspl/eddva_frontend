@@ -13,14 +13,18 @@ const categoryStyles = {
   ACADEMIC: 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300',
   EXAM: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300',
   HOLIDAY: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300',
+  VACATION: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300',
   MEETING: 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:border-sky-800 dark:text-sky-300',
   LIVE_CLASS: 'border-violet-200 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:border-violet-800 dark:text-violet-300',
 };
 
-const categoryOptions = ['ACADEMIC', 'EXAM', 'HOLIDAY', 'MEETING', 'LIVE_CLASS', 'All'];
+const categoryOptions = ['ACADEMIC', 'EXAM', 'HOLIDAY', 'VACATION', 'MEETING', 'LIVE_CLASS', 'All'];
 
 function toDateKey(date) {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export default function Calendar() {
@@ -49,7 +53,8 @@ export default function Calendar() {
       const res = await api.get('/events', {
         params: { category: selectedCategory }
       });
-      setEvents(res.data);
+      const data = res.data?.data ?? res.data;
+      setEvents(Array.isArray(data) ? data : []);
     } catch (err) {
       toast.error('Failed to sync calendar');
     } finally {
@@ -74,10 +79,20 @@ export default function Calendar() {
 
   const eventsByDate = useMemo(() => {
     const map = new Map();
+    if (!Array.isArray(events)) return map;
     events.forEach((event) => {
-      const key = event.startTime.split('T')[0];
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(event);
+      if (!event.startTime) return;
+      const startStr = event.startTime.split('T')[0];
+      const endStr = event.endTime ? event.endTime.split('T')[0] : startStr;
+      
+      let current = new Date(startStr + 'T00:00:00.000Z');
+      const end = new Date(endStr + 'T00:00:00.000Z');
+      while (current.getTime() <= end.getTime()) {
+        const key = current.toISOString().split('T')[0];
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(event);
+        current.setUTCDate(current.getUTCDate() + 1);
+      }
     });
     return map;
   }, [events]);
@@ -234,7 +249,9 @@ export default function Calendar() {
                     ev.priority === 'HIGH' ? "bg-rose-500" : "bg-blue-500"
                   )} />
                   <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
-                    {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {ev.endTime && ev.endTime.split('T')[0] !== ev.startTime.split('T')[0] ? ` - ${new Date(ev.endTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                    {ev.isAllDay ? '' : ` · ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                   </p>
                   <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{ev.title}</h4>
                   <div className="mt-2 flex items-center gap-3">

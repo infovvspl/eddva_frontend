@@ -155,7 +155,9 @@
     --gray-600: #475569;
     --gray-700: #334155;
     --gray-800: #1e293b;
+    --gray-850: #0a0f1d;
     --gray-900: #0f172a;
+    --gray-950: #020617;
 
     /* Primaries and Gradients */
     --primary-500: #6366f1;
@@ -196,6 +198,7 @@
     --gray-700: #f8fafc;
     --gray-800: #ffffff;
     --gray-900: #ffffff;
+    --gray-950: #ffffff;
 
     --glass-bg: rgba(15, 23, 42, 0.65);
     --glass-border: rgba(255, 255, 255, 0.08);
@@ -399,5 +402,21 @@
   .font-poppins b,
   .font-poppins strong {
     font-weight: 500;
+  }
+
+  .glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-premium {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 }

@@ -70,7 +70,6 @@ const superAdminGroups = [
     heading: 'Communication',
     items: [
       { to: '/super-admin/announcements', label: 'Announcements', icon: Megaphone },
-      { to: '/school/admin/notifications-center', label: 'Notifications', icon: Bell },
     ],
   },
   {
@@ -117,19 +116,14 @@ const instituteGroups = [
     items: [
       { to: '/school/admin/notices', label: 'Notices & Announcements', icon: AlertCircle },
       { to: '/school/admin/communications', label: 'Messages & Parent Connect', icon: MessageSquare },
-      { to: '/school/admin/notifications-center', label: 'Notifications', icon: Bell },
-      { to: '/school/admin/sms-center', label: 'SMS Center', icon: MessageSquare },
-      { to: '/school/admin/email-center', label: 'Email Center', icon: MessageSquare },
     ],
   },
   {
     heading: 'Administration',
     items: [
       { to: '/school/admin/users', label: 'User Management', icon: Users },
-      { to: '/school/admin/roles', label: 'Roles & Permissions', icon: Shield },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
-      { to: '/school/admin/settings', label: 'Settings & Security', icon: SettingsIcon },
     ],
   },
 ];
@@ -139,7 +133,7 @@ const teacherGroups = [
     heading: 'Teaching',
     items: [
       { to: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/school/teacher/topics', label: 'Course Content', icon: BookOpen },
+      { to: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
       { to: '/school/teacher/classes', label: 'My Schedule', icon: Video },
       { to: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
     ],

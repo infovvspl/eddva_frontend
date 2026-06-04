@@ -768,10 +768,21 @@ export interface CreateLecturePayload {
   videoUrl?: string;
   scheduledAt?: string;
   liveMeetingUrl?: string;
+  teacherId?: string;
 }
 
 export async function createLecture(dto: CreateLecturePayload) {
   const res = await apiClient.post("/content/lectures", dto);
+  return extractData<any>(res);
+}
+
+export async function updateLecture(id: string, dto: Partial<CreateLecturePayload & { status?: string }>) {
+  const res = await apiClient.patch(`/content/lectures/${id}`, dto);
+  return extractData<any>(res);
+}
+
+export async function deleteLecture(id: string) {
+  const res = await apiClient.delete(`/content/lectures/${id}`);
   return extractData<any>(res);
 }
 
