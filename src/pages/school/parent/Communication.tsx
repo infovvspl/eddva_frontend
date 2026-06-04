@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, Calendar, AlertTriangle, Send, X, CheckCircle2, Clock } from "lucide-react";
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
+import { useAuthStore } from "@/lib/auth-store";
+import { createChatSocket } from "@/lib/chat-socket";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ParentCommunication() {
@@ -45,116 +47,147 @@ export default function ParentCommunication() {
 }
 
 function MessagesTab() {
-  const [activeTeacherId, setActiveTeacherId] = useState<string | null>(null);
+  const { user } = useAuthStore();
+  const [activePeerId, setActivePeerId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [socketConnected, setSocketConnected] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { data: teachers, isLoading: isLoadingTeachers } = useQuery({
-    queryKey: ['parent-teachers'],
-    queryFn: () => parentClient.getTeachers(),
+  const { data: contacts, isLoading: isLoadingContacts } = useQuery({
+    queryKey: ['parent-chat-contacts'],
+    queryFn: () => parentClient.getChatContacts(),
   });
 
-  const { data: chatData, isLoading: isLoadingChat } = useQuery({
-    queryKey: ['parent-chat', activeTeacherId],
-    queryFn: () => activeTeacherId ? parentClient.getChatMessages(activeTeacherId) : null,
-    enabled: !!activeTeacherId,
-    refetchInterval: 30000,
+  const { data: thread, isLoading: isLoadingChat } = useQuery({
+    queryKey: ['parent-chat-thread', activePeerId],
+    queryFn: () => activePeerId ? parentClient.getChatThread(activePeerId) : null,
+    enabled: !!activePeerId,
+    // Only poll when realtime is unavailable; the socket pushes updates otherwise.
+    refetchInterval: socketConnected ? false : 5000,
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: (msg: string) => parentClient.sendMessage(activeTeacherId!, msg),
+    mutationFn: (msg: string) => parentClient.sendChatMessage(activePeerId!, msg),
     onSuccess: () => {
       setMessage("");
-      queryClient.invalidateQueries({ queryKey: ['parent-chat', activeTeacherId] });
+      queryClient.invalidateQueries({ queryKey: ['parent-chat-thread', activePeerId] });
     }
   });
 
+  const openContact = (id: string) => {
+    setActivePeerId(id);
+    void parentClient.markChatRead(id).catch(() => {});
+  };
+
+  const messages: any[] = Array.isArray(thread) ? thread : [];
+  const activeContact = contacts?.find((c: any) => c.id === activePeerId);
+  const roleLabel = (role?: string) =>
+    role && role.toUpperCase().includes('ADMIN') ? 'Administration' : 'Teacher';
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatData]);
+  }, [thread]);
+
+  // Realtime: refresh the open thread + contacts when a message arrives.
+  const activePeerRef = useRef<string | null>(null);
+  useEffect(() => { activePeerRef.current = activePeerId; }, [activePeerId]);
+  useEffect(() => {
+    if (!user?.id) return;
+    const socket = createChatSocket();
+    const join = () => socket.emit('join_user', user.id);
+    socket.on('connect', () => { join(); setSocketConnected(true); });
+    socket.on('disconnect', () => setSocketConnected(false));
+    join();
+    socket.on('direct_message', (msg: { sender_id?: string; receiver_id?: string }) => {
+      const peer = activePeerRef.current;
+      if (peer && (msg.sender_id === peer || msg.receiver_id === peer)) {
+        queryClient.invalidateQueries({ queryKey: ['parent-chat-thread', peer] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['parent-chat-contacts'] });
+    });
+    return () => { socket.disconnect(); };
+  }, [user?.id, queryClient]);
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Left Panel - Teachers List */}
-      <div className={`w-full border-r border-slate-100 bg-slate-50/50 md:w-80 md:flex flex-col ${activeTeacherId ? 'hidden md:flex' : 'flex'}`}>
+      {/* Left Panel - Staff List */}
+      <div className={`w-full border-r border-slate-100 bg-slate-50/50 md:w-80 md:flex flex-col ${activePeerId ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-slate-100 bg-white">
-          <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Teachers</h3>
+          <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Teachers & Admin</h3>
         </div>
         <div className="flex-1 overflow-y-auto p-2">
-          {isLoadingTeachers ? (
+          {isLoadingContacts ? (
             <div className="space-y-2 p-2">
               <Skeleton className="h-16 w-full rounded-xl" />
               <Skeleton className="h-16 w-full rounded-xl" />
             </div>
-          ) : teachers?.length > 0 ? (
-            teachers.map((t: any) => (
+          ) : contacts?.length > 0 ? (
+            contacts.map((c: any) => (
               <button
-                key={t.id}
-                onClick={() => setActiveTeacherId(t.id)}
+                key={c.id}
+                onClick={() => openContact(c.id)}
                 className={`w-full flex items-center gap-3 rounded-xl p-3 text-left transition-colors ${
-                  activeTeacherId === t.id ? "bg-white shadow-sm ring-1 ring-slate-200" : "hover:bg-slate-100"
+                  activePeerId === c.id ? "bg-white shadow-sm ring-1 ring-slate-200" : "hover:bg-slate-100"
                 }`}
               >
-                <div className="relative">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
-                    {t.name.charAt(0).toUpperCase()}
-                  </div>
-                  {t.unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
-                      {t.unreadCount}
-                    </span>
-                  )}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                  {(c.name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-bold text-slate-900 truncate">{t.name}</p>
-                  <p className="text-[10px] font-black uppercase text-slate-400 truncate">{t.subject}</p>
-                  <p className="text-xs font-semibold text-slate-500 truncate mt-0.5">{t.lastMessage}</p>
+                  <p className="text-sm font-bold text-slate-900 truncate">{c.name}</p>
+                  <p className="text-[10px] font-black uppercase text-slate-400 truncate">{roleLabel(c.role)}</p>
+                  <p className="text-xs font-semibold text-slate-500 truncate mt-0.5">{c.email}</p>
                 </div>
               </button>
             ))
           ) : (
             <div className="text-center py-8">
-              <p className="text-sm font-bold text-slate-500">No teachers found</p>
+              <p className="text-sm font-bold text-slate-500">No staff found</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Right Panel - Chat Area */}
-      <div className={`flex-1 flex flex-col bg-white ${!activeTeacherId ? 'hidden md:flex' : 'flex'}`}>
-        {activeTeacherId ? (
+      <div className={`flex-1 flex flex-col bg-white ${!activePeerId ? 'hidden md:flex' : 'flex'}`}>
+        {activePeerId ? (
           <>
             <div className="flex items-center gap-3 p-4 border-b border-slate-100 shrink-0">
-              <button className="md:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100" onClick={() => setActiveTeacherId(null)}>
+              <button className="md:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100" onClick={() => setActivePeerId(null)}>
                 <X className="h-5 w-5 text-slate-500" />
               </button>
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
-                {teachers?.find((t: any) => t.id === activeTeacherId)?.name.charAt(0).toUpperCase() || 'T'}
+                {(activeContact?.name || 'S').charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900">{teachers?.find((t: any) => t.id === activeTeacherId)?.name}</p>
-                <p className="text-xs font-semibold text-slate-500">{teachers?.find((t: any) => t.id === activeTeacherId)?.subject}</p>
+                <p className="text-sm font-bold text-slate-900">{activeContact?.name}</p>
+                <p className="text-xs font-semibold text-slate-500">{roleLabel(activeContact?.role)}</p>
               </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {isLoadingChat ? (
                 <div className="space-y-4">
                   <Skeleton className="h-12 w-2/3 rounded-2xl rounded-tl-sm bg-slate-100" />
                   <Skeleton className="h-12 w-2/3 ml-auto rounded-2xl rounded-tr-sm bg-blue-50" />
                 </div>
-              ) : chatData?.messages?.length > 0 ? (
-                chatData.messages.map((msg: any, i: number) => (
-                  <div key={i} className={`flex ${msg.isParent ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-2xl p-3 ${
-                      msg.isParent ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-100 text-slate-900 rounded-tl-sm'
-                    }`}>
-                      <p className="text-sm font-medium">{msg.text}</p>
-                      <p className={`text-[10px] font-bold mt-1 text-right ${msg.isParent ? 'text-blue-200' : 'text-slate-400'}`}>{msg.time}</p>
+              ) : messages.length > 0 ? (
+                messages.map((msg: any, i: number) => {
+                  const mine = msg.sender_id === user?.id;
+                  return (
+                    <div key={msg.id ?? i} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl p-3 ${
+                        mine ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-100 text-slate-900 rounded-tl-sm'
+                      }`}>
+                        <p className="text-sm font-medium whitespace-pre-wrap break-words">{msg.content ?? msg.text}</p>
+                        <p className={`text-[10px] font-bold mt-1 text-right ${mine ? 'text-blue-200' : 'text-slate-400'}`}>
+                          {msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="flex h-full flex-col items-center justify-center opacity-50">
                   <MessageCircle className="h-10 w-10 text-slate-400 mb-2" />
@@ -165,7 +198,7 @@ function MessagesTab() {
             </div>
 
             <div className="p-4 border-t border-slate-100 shrink-0 bg-slate-50/50">
-              <form 
+              <form
                 onSubmit={(e) => { e.preventDefault(); if (message.trim()) sendMessageMutation.mutate(message); }}
                 className="flex gap-2"
               >
@@ -189,7 +222,7 @@ function MessagesTab() {
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center opacity-50 bg-slate-50/50">
             <MessageCircle className="h-12 w-12 text-slate-400 mb-3" />
-            <p className="text-sm font-bold text-slate-600">Select a teacher to view messages</p>
+            <p className="text-sm font-bold text-slate-600">Select a teacher or admin to view messages</p>
           </div>
         )}
       </div>

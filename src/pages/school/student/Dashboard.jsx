@@ -1,36 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { motion } from 'framer-motion';
 import api from '@/lib/api/school-client';
 import {
-  AlertCircle,
-  Award,
-  BarChart3,
   Bell,
   BookOpen,
-  Bot,
   Calendar,
-  CheckCircle2,
   ChevronRight,
   ClipboardList,
-  Clock,
   FileText,
   GraduationCap,
-  LineChart,
-  Medal,
-  MessageSquare,
-  PlayCircle,
+  Megaphone,
   Radio,
-  Sparkles,
-  Star,
   Target,
-  TrendingUp,
-  Trophy,
-  UploadCloud,
-  UserCheck,
-  Video,
+  CalendarDays,
+  Flame,
+  Star,
 } from 'lucide-react';
-import './Dashboard.css';
 
 const tones = {
   blue: {
@@ -75,44 +62,10 @@ function SectionHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h2 className="text-base font-black text-slate-950 dark:text-white">{title}</h2>
+        <h2 className="text-base font-bold text-slate-950 dark:text-white">{title}</h2>
         {subtitle && <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {action}
-    </div>
-  );
-}
-
-function MetricCard({ icon: Icon, label, value, detail, tone = 'slate' }) {
-  const palette = tones[tone] || tones.slate;
-  return (
-    <div className={`rounded-lg border p-4 shadow-sm ${palette.card}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${palette.icon}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <ChevronRight className="mt-1 h-4 w-4 opacity-50" />
-      </div>
-      <p className="mt-4 text-[11px] font-black uppercase tracking-widest opacity-70">{label}</p>
-      <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{value}</p>
-      {detail && <p className="mt-1 text-xs font-semibold opacity-80">{detail}</p>}
-    </div>
-  );
-}
-
-function ProgressLine({ label, value, detail, tone = 'blue' }) {
-  const palette = tones[tone] || tones.blue;
-  const progress = pct(value);
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-3 text-sm font-bold">
-        <span className="truncate text-slate-700 dark:text-slate-300">{label}</span>
-        <span className="shrink-0 text-slate-950 dark:text-white">{progress}%</span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-        <div className={`h-full rounded-full ${palette.bar}`} style={{ width: `${progress}%` }} />
-      </div>
-      {detail && <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{detail}</p>}
     </div>
   );
 }
@@ -122,9 +75,9 @@ function QuickAction({ to, icon: Icon, label, tone = 'slate' }) {
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-black text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
     >
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${palette.icon}`}>
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${palette.icon}`}>
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 truncate">{label}</span>
@@ -134,9 +87,9 @@ function QuickAction({ to, icon: Icon, label, tone = 'slate' }) {
 
 function EmptyMini({ icon: Icon, title, text }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-800 dark:bg-slate-900/50">
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-800 dark:bg-slate-900/50">
       <Icon className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-700" />
-      <p className="mt-3 text-sm font-black text-slate-900 dark:text-white">{title}</p>
+      <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{title}</p>
       <p className="mt-1 text-xs font-medium text-slate-500">{text}</p>
     </div>
   );
@@ -146,21 +99,41 @@ export default function Dashboard() {
   const { user, institute } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
-  const [continueLearning, setContinueLearning] = useState(null);
-  const [activity, setActivity] = useState(null);
+  const [assignments, setAssignments] = useState([]);
+  const [mockTests, setMockTests] = useState([]);
+  const [notices, setNotices] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [weekEvents, setWeekEvents] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dashRes, contRes, actRes] = await Promise.all([
+        const now = new Date();
+        const dayNum = now.getDay();
+        const diff = (dayNum + 6) % 7;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - diff);
+        const from = new Date(monday);
+        const to = new Date(monday);
+        to.setDate(monday.getDate() + 6);
+
+        const [dashRes, assignRes, testRes, noticeRes, courseRes, eventRes] = await Promise.all([
           api.get('/students/dashboard'),
-          api.get('/students/continue-learning').catch(() => ({ data: null })),
-          api.get('/students/activity/weekly').catch(() => ({ data: null })),
+          api.get('/assignments').catch(() => ({ data: [] })),
+          api.get('/assessments/mock-tests?status=published').catch(() => ({ data: { data: [] } })),
+          api.get('/notices').catch(() => ({ data: [] })),
+          api.get('/students/courses/my').catch(() => ({ data: [] })),
+          api.get('/events', { params: { from: from.toISOString(), to: to.toISOString() } }).catch(() => ({ data: { data: [] } })),
         ]);
 
         setDashboardData(dashRes.data || null);
-        setContinueLearning(contRes.data || null);
-        setActivity(actRes.data || null);
+        setAssignments(assignRes.data || []);
+        setMockTests(testRes.data?.data || testRes.data || []);
+        setNotices(noticeRes.data?.data || noticeRes.data || []);
+        setCourses(courseRes.data || []);
+        
+        const eventData = eventRes.data?.data ?? eventRes.data;
+        setWeekEvents(Array.isArray(eventData) ? eventData : []);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {
@@ -171,95 +144,42 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  const {
-    overallAccuracy = 0,
-    currentStreak = 0,
-    xpTotal = 0,
-    globalRank,
-    pendingLectures = 0,
-    testsAttempted = 0,
-    weakTopics = [],
-    recommendations = [],
-    todayPlan = [],
-  } = dashboardData || {};
+  const todayPlan = dashboardData?.todayPlan || [];
+  const attendancePct = pct(dashboardData?.attendancePercentage ?? dashboardData?.attendance?.percentage ?? 85);
+  const todayClassesCount = dashboardData?.todayClasses ?? dashboardData?.classesToday ?? todayPlan.length ?? 0;
+  
+  const pendingAssignments = assignments.filter(
+    (a) => a.status !== 'completed' && a.status !== 'submitted' && a.status !== 'evaluated'
+  );
+  const pendingAssignmentsCount = pendingAssignments.length;
+  const upcomingExamsCount = mockTests.length;
 
-  const subjectProgress = useMemo(() => {
-    const subjects =
-      dashboardData?.subjectProgress ||
-      dashboardData?.subjectWiseProgress ||
-      dashboardData?.subjects ||
-      [];
+  const profile = user?.studentProfile || user?.profile || dashboardData?.student || {};
+  const className = profile.className || profile.class || user?.className || dashboardData?.student?.class || 'Class 10';
+  const sectionName = profile.sectionName || profile.section || user?.sectionName || dashboardData?.student?.section || 'A';
 
-    return subjects
-      .map((subject) => ({
-        name: subject.subjectName || subject.name || subject.title || 'Subject',
-        progress: pct(subject.progress ?? subject.accuracy ?? subject.percentage ?? subject.score),
-        detail: subject.teacherName || subject.chapterName || subject.status || '',
-      }))
-      .filter((subject) => subject.name);
-  }, [dashboardData]);
+  const calendarWeek = useMemo(() => {
+    const monday = new Date();
+    const day = monday.getDay();
+    const diff = (day + 6) % 7;
+    monday.setDate(monday.getDate() - diff);
 
-  const notifications = dashboardData?.notifications || [];
-  const attendancePct = pct(dashboardData?.attendancePercentage ?? dashboardData?.attendance?.percentage);
-  const assignmentCounts = dashboardData?.assignments || {};
-  const examCounts = dashboardData?.exams || {};
-  const weeklyMinutes = activity?.totalMinutes ?? dashboardData?.weeklyLearningMinutes ?? 0;
-  const weeklyHours = Math.floor(Number(weeklyMinutes || 0) / 60);
-  const weeklyRemainder = Number(weeklyMinutes || 0) % 60;
-  const aiScore = pct(dashboardData?.aiLearningScore ?? dashboardData?.aiScore ?? overallAccuracy);
-  const performanceScore = pct(dashboardData?.overallPerformanceScore ?? overallAccuracy);
-
-  const academicSummary = [
-    {
-      label: "Today's Classes",
-      value: dashboardData?.todayClasses ?? dashboardData?.classesToday ?? 0,
-      detail: 'Live and scheduled sessions',
-      icon: Radio,
-      tone: 'blue',
-    },
-    {
-      label: 'Upcoming Classes',
-      value: dashboardData?.upcomingClasses ?? 0,
-      detail: 'Next timetable items',
-      icon: Video,
-      tone: 'violet',
-    },
-    {
-      label: 'Attendance',
-      value: `${attendancePct}%`,
-      detail: attendancePct < 75 ? 'Needs attention' : 'On track',
-      icon: UserCheck,
-      tone: attendancePct < 75 ? 'rose' : 'emerald',
-    },
-    {
-      label: 'Assignment Status',
-      value: assignmentCounts.submitted ?? dashboardData?.submittedAssignments ?? 0,
-      detail: 'Submitted work',
-      icon: CheckCircle2,
-      tone: 'emerald',
-    },
-    {
-      label: 'Pending Homework',
-      value: assignmentCounts.pending ?? dashboardData?.pendingHomework ?? 0,
-      detail: 'Needs submission',
-      icon: ClipboardList,
-      tone: 'amber',
-    },
-    {
-      label: 'Upcoming Exams',
-      value: examCounts.upcoming ?? dashboardData?.upcomingExams ?? 0,
-      detail: 'Assessment calendar',
-      icon: Calendar,
-      tone: 'rose',
-    },
-  ];
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      const events = weekEvents
+        .filter(ev => ev.startTime && ev.startTime.split('T')[0] === key)
+        .map(ev => ({ t: ev.title || 'Event', tone: ev.priority === 'HIGH' ? 'bg-rose-500' : 'bg-blue-500' }));
+      return { day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i], events };
+    });
+  }, [weekEvents]);
 
   const quickActions = [
     { label: 'Join Live Class', to: '/school/student/live-classes', icon: Radio, tone: 'blue' },
-    { label: 'View Homework', to: '/school/student/assignments', icon: ClipboardList, tone: 'amber' },
-    { label: 'Take Test', to: '/school/student/assessments', icon: Target, tone: 'rose' },
-    { label: 'Ask AI Doubt', to: '/school/student/ai-assistant', icon: Bot, tone: 'violet' },
     { label: 'View Notes', to: '/school/student/study-materials', icon: FileText, tone: 'emerald' },
+    { label: 'View Assignments', to: '/school/student/assignments', icon: ClipboardList, tone: 'amber' },
+    { label: 'Take Test', to: '/school/student/assessments', icon: Target, tone: 'rose' },
   ];
 
   if (loading) {
@@ -271,289 +191,242 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="student-dashboard space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                Student Dashboard
-              </span>
-              <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                School Module
-              </span>
-            </div>
-            <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 dark:text-white md:text-3xl">
-              Welcome back, {user?.name || 'Student'}
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-600 dark:text-slate-300">
-              Your academics, AI assistance, homework, attendance, performance, communication, and growth tools are in one place for {institute?.name || 'EDDVA'}.
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricCard icon={TrendingUp} label="Performance Score" value={`${performanceScore}%`} detail="Overall progress" tone="blue" />
-              <MetricCard icon={Sparkles} label="AI Learning Score" value={`${aiScore}%`} detail="Personalized coaching" tone="violet" />
-              <MetricCard icon={Star} label="Total XP" value={xpTotal} detail={`${currentStreak} day streak`} tone="amber" />
-              <MetricCard icon={Trophy} label="Rank" value={globalRank ? `#${globalRank}` : '-'} detail="Class leaderboard" tone="emerald" />
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
-            <div className="flex items-center justify-between gap-3">
+    <div className="space-y-6">
+      {/* Top Grid for Welcome Card and Smart Calendar */}
+      <div className="grid gap-6 lg:grid-cols-4 items-stretch">
+        {/* Welcome Card Wrapper */}
+        <div className="lg:col-span-3 relative flex flex-col justify-between">
+          <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+            
+            {/* Elegant bubble style translucent overlays matching the screenshot */}
+            <div className="absolute top-[20px] left-[320px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute top-[-30px] right-[280px] w-28 h-28 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            
+            <div className="relative z-10 flex h-full flex-col justify-between space-y-6">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">This Week</p>
-                <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
-                  {weeklyHours}h {weeklyRemainder}m
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
+                    Student Dashboard
+                  </span>
+                  <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
+                    School Module
+                  </span>
+                </div>
+                <h1 className="font-display text-2xl font-black md:text-3xl text-white">
+                  Welcome back, {user?.name || 'Student'}! 👋 🌟
+                </h1>
+                <p className="mt-2 text-white/90 font-medium text-sm">
+                  You're on a {user?.currentStreak || dashboardData?.currentStreak || 0}-day learning streak! 🔥 Keep up the awesome momentum! 🚀
+                </p>
+                <p className="mt-1 text-white/90 font-medium text-sm">
+                  You have {dashboardData?.pendingLectures || 0} lectures pending 📚 and have attempted {dashboardData?.testsAttempted || 0} tests so far 🏆.
                 </p>
               </div>
-              <LineChart className="h-8 w-8 text-blue-600" />
+
+              <div className="flex flex-wrap gap-4">
+                {/* Current Streak Badge */}
+                <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f97316] shadow-sm">
+                    <Flame className="h-5 w-5 text-white fill-white" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Current Streak</p>
+                    <p className="text-sm font-black text-white">{user?.currentStreak || dashboardData?.currentStreak || 0} Days</p>
+                  </div>
+                </div>
+
+                {/* Total XP Badge */}
+                <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
+                    <Star className="h-5 w-5 text-white fill-white" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
+                    <p className="text-sm font-black text-white">{dashboardData?.xpTotal || user?.xpTotal || 0} XP</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="mt-5 space-y-3">
-              <ProgressLine label="Weekly learning report" value={activity?.completionPct ?? dashboardData?.weeklyCompletion ?? 0} tone="blue" />
-              <ProgressLine label="Attendance impact" value={attendancePct} tone={attendancePct < 75 ? 'rose' : 'emerald'} />
-              <ProgressLine label="Tests attempted" value={testsAttempted ? Math.min(100, testsAttempted * 10) : 0} detail={`${testsAttempted} completed`} tone="amber" />
+          </section>
+
+          {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
+          <motion.div 
+            className="absolute -right-6 -bottom-6 w-[360px] h-[225px] pointer-events-none hidden md:block z-20"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <img 
+              src="/images/student_illustration.png" 
+              alt="Student Illustration" 
+              className="w-full h-full object-contain" 
+            />
+          </motion.div>
+        </div>
+
+        {/* Smart Calendar (matching Institute Admin Panel exactly) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 14 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
+        >
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold text-surface-950 dark:text-white">Smart calendar</h3>
+              <CalendarDays className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-widest text-surface-400 dark:text-slate-500">
+              {calendarWeek.map((d) => (
+                <div key={d.day}>{d.day}</div>
+              ))}
+            </div>
+            <div className="mt-2 grid min-h-[180px] grid-cols-7 gap-2">
+              {calendarWeek.map((d) => (
+                <div key={d.day} className="rounded-lg border border-[rgba(37,99,235,0.08)] bg-white/50 p-1.5 dark:border-slate-700 dark:bg-slate-800/40">
+                  {d.events.map((ev, idx) => (
+                    <div key={`${ev.t}-${idx}`} className={`mb-1 truncate rounded px-1 py-0.5 text-[9px] font-bold text-white ${ev.tone}`}>
+                      {ev.t}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </motion.div>
+      </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {/* Quick Actions */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {quickActions.map((action) => (
           <QuickAction key={action.label} {...action} />
         ))}
       </section>
 
-      <section className="space-y-4">
-        <SectionHeader
-          title="Academic Summary"
-          subtitle="Classes, attendance, homework, and exams at a glance."
-        />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          {academicSummary.map((item) => (
-            <MetricCard key={item.label} {...item} />
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
+      {/* Simplified Widgets */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
+        {/* Left main widgets */}
         <div className="space-y-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          
+          {/* Today's Classes */}
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <SectionHeader
-              title="My Learning"
-              subtitle="Live classes, recorded lessons, materials, and subject explorer."
+              title="Today's Classes"
+              subtitle="Your schedule and live classes for today."
               action={
-                <Link to="/school/student/classes" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                  Open explorer
+                <Link to="/school/student/live-classes" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                  Join live
                 </Link>
               }
             />
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <Link to="/school/student/live-classes" className="rounded-lg border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-800 dark:hover:bg-blue-950/20">
-                <Radio className="h-7 w-7 text-blue-600" />
-                <h3 className="mt-4 text-sm font-black text-slate-950 dark:text-white">Live Classes</h3>
-                <p className="mt-1 text-xs font-medium text-slate-500">Join sessions, auto attendance, raise hand, polls, and quizzes.</p>
-              </Link>
-              <Link to="/school/student/recorded-classes" className="rounded-lg border border-slate-200 p-4 transition hover:border-violet-300 hover:bg-violet-50 dark:border-slate-800 dark:hover:bg-violet-950/20">
-                <PlayCircle className="h-7 w-7 text-violet-600" />
-                <h3 className="mt-4 text-sm font-black text-slate-950 dark:text-white">Recorded Classes</h3>
-                <p className="mt-1 text-xs font-medium text-slate-500">Track watch progress and resume from the last point.</p>
-              </Link>
-              <Link to="/school/student/study-materials" className="rounded-lg border border-slate-200 p-4 transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-slate-800 dark:hover:bg-emerald-950/20">
-                <BookOpen className="h-7 w-7 text-emerald-600" />
-                <h3 className="mt-4 text-sm font-black text-slate-950 dark:text-white">Study Materials</h3>
-                <p className="mt-1 text-xs font-medium text-slate-500">Notes, PDFs, PPTs, videos, and question banks by subject.</p>
-              </Link>
-            </div>
-
-            <div className="mt-5">
-              {continueLearning ? (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="flex h-20 w-full shrink-0 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-800 md:w-28">
-                      {continueLearning.thumbnailUrl ? (
-                        <img src={continueLearning.thumbnailUrl} alt={continueLearning.lectureTitle} className="h-full w-full rounded-lg object-cover" />
-                      ) : (
-                        <Video className="h-8 w-8 text-slate-400" />
-                      )}
+            <div className="mt-5 space-y-4">
+              {todayPlan.length > 0 ? (
+                todayPlan.slice(0, 5).map((item, index) => (
+                  <div key={`${item.title}-${index}`} className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30">
+                      <Radio className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                        Continue Learning
-                      </p>
-                      <h3 className="mt-1 truncate text-base font-black text-slate-950 dark:text-white">{continueLearning.lectureTitle}</h3>
+                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">{item.title}</p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {continueLearning.subjectName || 'Subject'} - {continueLearning.chapterName || 'Chapter'}
+                        {item.type || 'Class'} {item.durationMinutes ? `• ${item.durationMinutes} min` : ''}
                       </p>
-                      <div className="mt-3">
-                        <ProgressLine label="Watch progress" value={continueLearning.watchPercentage} tone="blue" />
-                      </div>
                     </div>
-                    <Link to="/school/student/classes" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-700">
-                      Resume
-                      <ChevronRight className="h-4 w-4" />
+                    <Link to="/school/student/live-classes" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
+                      Join
                     </Link>
                   </div>
-                </div>
+                ))
               ) : (
-                <EmptyMini icon={BookOpen} title="No lesson in progress" text="Open a class to start tracking your study journey." />
+                <EmptyMini icon={Radio} title="No classes scheduled" text="You are all caught up for today!" />
               )}
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <SectionHeader title="Performance Snapshot" subtitle="Subject progress, weak areas, and AI guidance." />
-            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <div className="space-y-4">
-                {subjectProgress.length > 0 ? (
-                  subjectProgress.slice(0, 5).map((subject, index) => (
-                    <ProgressLine
-                      key={`${subject.name}-${index}`}
-                      label={subject.name}
-                      value={subject.progress}
-                      detail={subject.detail}
-                      tone={['blue', 'emerald', 'amber', 'violet', 'rose'][index % 5]}
-                    />
-                  ))
-                ) : (
-                  <EmptyMini icon={BarChart3} title="Subject progress will appear here" text="Complete classes and tests to unlock reports." />
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <MetricCard icon={Target} label="Accuracy Rate" value={`${pct(overallAccuracy)}%`} detail="Across assessments" tone="emerald" />
-                <MetricCard icon={AlertCircle} label="Weak Areas" value={weakTopics.length} detail="Topics to revise" tone={weakTopics.length ? 'rose' : 'slate'} />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <SectionHeader
-                title="Homework & Assignments"
-                subtitle="Pending, submitted, evaluated, and overdue work."
-                action={<Link to="/school/student/assignments" className="text-sm font-black text-blue-600">View all</Link>}
-              />
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <MetricCard icon={ClipboardList} label="Pending" value={assignmentCounts.pending ?? 0} detail="Due soon" tone="amber" />
-                <MetricCard icon={UploadCloud} label="Submitted" value={assignmentCounts.submitted ?? 0} detail="Awaiting review" tone="blue" />
-                <MetricCard icon={CheckCircle2} label="Evaluated" value={assignmentCounts.evaluated ?? 0} detail="Feedback ready" tone="emerald" />
-                <MetricCard icon={AlertCircle} label="Overdue" value={assignmentCounts.overdue ?? 0} detail="Needs action" tone="rose" />
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <SectionHeader
-                title="Assessments & Exams"
-                subtitle="Practice, topic, unit, subject, mock, and final exams."
-                action={<Link to="/school/student/assessments" className="text-sm font-black text-blue-600">Take test</Link>}
-              />
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <MetricCard icon={Target} label="Practice Tests" value={examCounts.practice ?? 0} detail="Open now" tone="blue" />
-                <MetricCard icon={ClipboardList} label="Topic Tests" value={examCounts.topic ?? 0} detail="Adaptive checks" tone="violet" />
-                <MetricCard icon={GraduationCap} label="Mock Exams" value={examCounts.mock ?? 0} detail="Timed exams" tone="amber" />
-                <MetricCard icon={Award} label="Final Exams" value={examCounts.final ?? 0} detail="Upcoming" tone="rose" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <aside className="space-y-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <SectionHeader title="Today's Plan" subtitle="Daily study plan and smart revision." />
+          {/* Upcoming Assignments */}
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <SectionHeader
+              title="Upcoming Assignments"
+              subtitle="Pending homework and project submissions."
+              action={
+                <Link to="/school/student/assignments" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                  View all
+                </Link>
+              }
+            />
             <div className="mt-5 space-y-4">
-              {todayPlan?.length > 0 ? (
-                todayPlan.slice(0, 5).map((item, index) => (
-                  <div key={`${item.title}-${index}`} className="flex gap-3">
-                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300">
-                      <Clock className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-black text-slate-950 dark:text-white">{item.title}</p>
+              {pendingAssignmentsCount > 0 ? (
+                pendingAssignments.slice(0, 3).map((assignment) => (
+                  <div key={assignment.id} className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                    <div className="min-w-0 flex-1 pr-4">
+                      <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{assignment.title}</h4>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {item.type || 'Study'} - {item.durationMinutes || 0} min
+                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
                       </p>
                     </div>
+                    <Link to="/school/student/assignments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
+                      Submit
+                    </Link>
                   </div>
                 ))
               ) : (
-                <EmptyMini icon={Calendar} title="No plan for today" text="Generate a study plan to get daily targets." />
-              )}
-              <Link to="/school/student/planner" className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-3 text-sm font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
-                Open Planner
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <SectionHeader title="AI Performance Coach" subtitle="Learning gaps and next steps." />
-            <div className="mt-5 space-y-3">
-              {recommendations?.length > 0 ? (
-                recommendations.slice(0, 4).map((recommendation, index) => (
-                  <div key={`${recommendation}-${index}`} className="flex gap-3 rounded-lg bg-violet-50 p-3 dark:bg-violet-950/20">
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" />
-                    <p className="text-sm font-semibold leading-5 text-slate-700 dark:text-slate-300">{recommendation}</p>
-                  </div>
-                ))
-              ) : (
-                <EmptyMini icon={Sparkles} title="AI recommendations are warming up" text="More activity will unlock personalized suggestions." />
+                <EmptyMini icon={FileText} title="No pending assignments" text="Good job! You have submitted all homework." />
               )}
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <SectionHeader title="Gamification Center" subtitle="XP, level, rewards, and ranks." />
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <MetricCard icon={Star} label="XP" value={xpTotal} detail="Earned" tone="amber" />
-              <MetricCard icon={Medal} label="Level" value={dashboardData?.level || 'Learner'} detail="Current stage" tone="violet" />
-              <MetricCard icon={Award} label="Badges" value={dashboardData?.badges ?? 0} detail="Achievements" tone="emerald" />
-              <MetricCard icon={Trophy} label="Rank" value={globalRank ? `#${globalRank}` : '-'} detail="Leaderboard" tone="blue" />
+        </div>
+
+        {/* Right side widgets */}
+        <div className="space-y-6">
+          
+          {/* Attendance Summary */}
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <SectionHeader title="Attendance Summary" />
+            <div className="mt-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Attendance Rate</span>
+                <span className="text-lg font-black text-slate-950 dark:text-white">{attendancePct}%</span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div 
+                  className={`h-full rounded-full ${attendancePct < 75 ? 'bg-rose-500' : 'bg-emerald-500'}`} 
+                  style={{ width: `${attendancePct}%` }}
+                />
+              </div>
+              <p className="text-xs font-semibold text-slate-500">
+                {attendancePct < 75 ? 'Warning: Attendance is below 75% requirement!' : 'Status: On track'}
+              </p>
             </div>
-            <Link to="/school/student/gamification" className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800">
-              View rewards
-              <ChevronRight className="h-4 w-4" />
-            </Link>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <SectionHeader title="Recent Notifications" subtitle="Assignments, notices, exams, and messages." />
-            <div className="mt-5 space-y-3">
-              {notifications.length > 0 ? (
-                notifications.slice(0, 5).map((note, index) => (
-                  <div key={note.id || index} className="flex gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-                    <Bell className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-slate-950 dark:text-white">{note.title || note.message}</p>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">{note.type || 'Notification'}</p>
-                    </div>
+          {/* Recent Announcements */}
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <SectionHeader
+              title="Recent Announcements"
+              action={
+                <Link to="/school/student/announcements" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                  View all
+                </Link>
+              }
+            />
+            <div className="mt-5 space-y-4">
+              {notices.length > 0 ? (
+                notices.slice(0, 3).map((notice) => (
+                  <div key={notice.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0 dark:border-slate-800">
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">{notice.title}</p>
+                    <p className="mt-1 text-xs text-slate-500 line-clamp-2 leading-relaxed">{notice.content}</p>
                   </div>
                 ))
               ) : (
-                <>
-                  <EmptyMini icon={Bell} title="No new notifications" text="New assignments, notices, exam alerts, and teacher messages will appear here." />
-                  <div className="grid grid-cols-2 gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500">
-                    <Link to="/school/student/assignments" className="rounded-md bg-slate-100 px-3 py-2 text-center dark:bg-slate-800">Assignments</Link>
-                    <Link to="/school/student/announcements" className="rounded-md bg-slate-100 px-3 py-2 text-center dark:bg-slate-800">Notices</Link>
-                    <Link to="/school/student/assessments" className="rounded-md bg-slate-100 px-3 py-2 text-center dark:bg-slate-800">Exams</Link>
-                    <Link to="/school/student/chat" className="rounded-md bg-slate-100 px-3 py-2 text-center dark:bg-slate-800">Messages</Link>
-                  </div>
-                </>
+                <EmptyMini icon={Megaphone} title="No announcements" text="No new notices from the school administration." />
               )}
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <Link to="/school/student/attendance" className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800">
-              <UserCheck className="h-5 w-5 text-emerald-600" />
-              <span className="text-sm font-black text-slate-800 dark:text-white">Attendance Center</span>
-            </Link>
-            <Link to="/school/student/chat" className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800">
-              <MessageSquare className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-black text-slate-800 dark:text-white">Communication Center</span>
-            </Link>
-          </div>
-        </aside>
-      </section>
+        </div>
+      </div>
     </div>
   );
 }

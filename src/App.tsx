@@ -370,7 +370,8 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
-      <Route path="topics" element={<SchoolTopicManagement />} />
+      <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolAssignmentManagement />} />

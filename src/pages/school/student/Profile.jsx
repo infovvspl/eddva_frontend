@@ -19,9 +19,21 @@ export default function Profile() {
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <div className="grid h-20 w-20 shrink-0 place-items-center rounded-lg bg-blue-100 text-2xl font-black text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-            {(user?.name || 'S').charAt(0).toUpperCase()}
-          </div>
+          {user?.photo ? (
+            <img 
+              src={user.photo} 
+              alt={user?.name || 'Student'} 
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentNode.innerHTML = `<div class="grid h-20 w-20 shrink-0 place-items-center rounded-lg bg-blue-100 text-2xl font-black text-blue-700 dark:bg-blue-950 dark:text-blue-300">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
+              }}
+              className="h-20 w-20 shrink-0 rounded-lg border border-slate-200 object-cover" 
+            />
+          ) : (
+            <div className="grid h-20 w-20 shrink-0 place-items-center rounded-lg bg-blue-100 text-2xl font-black text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              {(user?.name || 'S').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Student Profile</p>
             <h1 className="mt-1 truncate text-2xl font-black text-slate-950 dark:text-white">{user?.name || 'Student'}</h1>
