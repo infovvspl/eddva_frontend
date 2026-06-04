@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api/school-client';
-import { ClipboardList, Clock, BrainCircuit, PlayCircle, CheckCircle2, Trophy, BarChart3, ChevronRight } from 'lucide-react';
+import { ClipboardList, Clock, BrainCircuit, PlayCircle, CheckCircle2, Trophy, BarChart3, ChevronRight, Save, ShieldCheck, Timer } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -34,7 +34,7 @@ export default function Assessments() {
   const handleStartTest = async (mockTestId) => {
     try {
       const res = await api.post('/assessments/sessions/start', { mockTestId });
-      navigate(`/student/assessments/${res.data.id}/take`);
+      navigate(`/school/student/assessments/${res.data.id}/take`);
     } catch (error) {
       console.error('Failed to start test session:', error);
       alert('Could not start test session. Please try again.');
@@ -44,7 +44,7 @@ export default function Assessments() {
   const handleGenerateDiagnostic = async () => {
     try {
       const res = await api.post('/assessments/diagnostic/generate');
-      navigate(`/student/assessments/${res.data.id}/take`);
+      navigate(`/school/student/assessments/${res.data.id}/take`);
     } catch (error) {
       console.error('Failed to generate diagnostic test:', error);
       alert('Could not generate diagnostic test. Please try again.');
@@ -64,7 +64,36 @@ export default function Assessments() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white">Assessments</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">Test your knowledge and track your progress.</p>
+          <p className="mt-1 text-sm font-medium text-slate-500">Practice tests, topic tests, unit tests, subject tests, mock exams, and final exams.</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        {['Practice', 'Topic', 'Unit', 'Subject', 'Mock', 'Final'].map((label) => (
+          <div key={label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <ClipboardList className="h-5 w-5 text-blue-600" />
+            <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">{label} Tests</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">Available when published.</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
+          <Timer className="h-5 w-5 text-blue-600" />
+          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Real-Time Timer</p>
+        </div>
+        <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+          <Save className="h-5 w-5 text-emerald-600" />
+          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Auto Save</p>
+        </div>
+        <div className="rounded-lg border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+          <ShieldCheck className="h-5 w-5 text-amber-600" />
+          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Anti-Cheat Monitoring</p>
+        </div>
+        <div className="rounded-lg border border-violet-100 bg-violet-50 p-4 dark:border-violet-900/40 dark:bg-violet-950/20">
+          <BarChart3 className="h-5 w-5 text-violet-600" />
+          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Instant Result</p>
         </div>
       </div>
 
@@ -190,7 +219,7 @@ export default function Assessments() {
                   
                   <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
                     <Link 
-                      to={`/student/assessments/${session.id}`}
+                      to={`/school/student/assessments/${session.id}`}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       <BarChart3 size={16} />

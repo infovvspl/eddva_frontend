@@ -111,10 +111,8 @@ export default function Calendar() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-        <div className="glass-premium rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] -mr-48 -mt-48" />
-          
-          <div className="relative z-10">
+        <div className="glass-premium rounded-lg p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+          <div>
             <div className="flex flex-wrap gap-2 mb-8">
               {categoryOptions.map(cat => (
                 <button
@@ -207,7 +205,7 @@ export default function Calendar() {
                   <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
                     {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {ev.endTime && ev.endTime.split('T')[0] !== ev.startTime.split('T')[0] ? ` - ${new Date(ev.endTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-                    {ev.isAllDay ? '' : ` · ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                    {ev.isAllDay ? '' : ` - ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                   </p>
                   <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{ev.title}</h4>
                   <div className="mt-2 flex items-center gap-3">
@@ -233,9 +231,8 @@ export default function Calendar() {
             </div>
           </div>
 
-          <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
-            <div className="relative z-10">
+          <div className="p-8 rounded-lg bg-slate-900 text-white shadow-xl relative overflow-hidden">
+            <div>
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={16} className="text-amber-500" />
                 <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-amber-500">Academic Focus</span>

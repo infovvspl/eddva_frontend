@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api/school-client';
-import { Swords, Trophy, Users, Star, Flame, Crown, PlayCircle } from 'lucide-react';
+import { Bot, Swords, Trophy, Users, Star, Flame, Crown, PlayCircle } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 
 export default function BattleArena() {
