@@ -7,8 +7,11 @@ import Button from '@/components/school/Button';
 import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
 import { toast } from 'sonner';
+import { useConfirm } from '@/context/ConfirmContext';
+import { handleApiError } from '@/lib/school/errorHandler';
 
 export default function Subjects() {
+  const confirm = useConfirm();
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,18 +95,24 @@ export default function Subjects() {
       setIsModalOpen(false);
       fetchSubjects();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error saving subject');
+      handleApiError(err, 'Error saving subject');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this subject?')) return;
+    const ok = await confirm({
+      title: 'Delete Subject',
+      message: 'Are you sure you want to delete this subject?',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel'
+    });
+    if (!ok) return;
     try {
       await api.delete(`/subjects/${id}`);
       toast.success('Subject deleted successfully');
       fetchSubjects();
     } catch (err: any) {
-      toast.error('Failed to delete subject');
+      handleApiError(err, 'Failed to delete subject');
     }
   };
 

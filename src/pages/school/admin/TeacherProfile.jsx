@@ -10,6 +10,7 @@ import api from '@/lib/api/school-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
+import { cn } from '@/components/school/admin/Skeleton';
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
   <button
@@ -43,9 +44,62 @@ export default function TeacherProfile() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
 
+  // Attendance states
+  const [attendance, setAttendance] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceMonth, setAttendanceMonth] = useState(
+    new Date().toISOString().slice(0, 7) // YYYY-MM
+  );
+
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const toggleActiveStatus = async () => {
+    setUpdatingStatus(true);
+    try {
+      const newActive = !teacher.isActive;
+      await api.put(`/teachers/${teacher.id}`, { 
+        name: teacher.name,
+        isActive: newActive 
+      });
+      setTeacher(prev => ({ ...prev, isActive: newActive }));
+      toast.success(`Teacher account ${newActive ? 'activated' : 'deactivated'} successfully`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || 'Failed to update teacher status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   useEffect(() => {
     fetchTeacher();
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === 'attendance' && teacher?.id) {
+      fetchAttendance();
+    }
+  }, [activeTab, attendanceMonth, teacher?.id]);
+
+  const fetchAttendance = async () => {
+    setAttendanceLoading(true);
+    try {
+      const [year, month] = attendanceMonth.split('-');
+      const startDate = `${year}-${month}-01`;
+      const lastDay = new Date(Number(year), Number(month), 0).getDate();
+      const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      const res = await api.get('/attendance', {
+        params: { userId: teacher.id, startDate, endDate },
+      });
+      const list = res.data?.data ?? res.data ?? [];
+      setAttendance(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Attendance fetch error:', err);
+      setAttendance([]);
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
 
   const fetchTeacher = async () => {
     try {
@@ -123,9 +177,32 @@ export default function TeacherProfile() {
               )}
             </div>
             <div className="flex-1 pb-4">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-4 mb-2 flex-wrap">
                 <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{teacher.name}</h1>
-                <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-blue-500/20">Permanent</span>
+                <button
+                  onClick={toggleActiveStatus}
+                  disabled={updatingStatus}
+                  className="flex items-center gap-2 outline-none group cursor-pointer"
+                  title="Click to toggle account status"
+                >
+                  <div className={cn(
+                    "relative w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-1 border",
+                    teacher.isActive 
+                      ? "bg-emerald-500 border-emerald-600" 
+                      : "bg-slate-300 border-slate-400 dark:bg-slate-800 dark:border-slate-700"
+                  )}>
+                    <div className={cn(
+                      "w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-md",
+                      teacher.isActive ? "translate-x-5" : "translate-x-0"
+                    )} />
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-bold tracking-tight uppercase tracking-widest",
+                    teacher.isActive ? "text-emerald-600" : "text-slate-400"
+                  )}>
+                    {teacher.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </button>
               </div>
               <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-500">
                 <div className="flex items-center gap-2"><Briefcase size={18} className="text-blue-500" /> {profile.role || 'Senior Teacher'}</div>
@@ -245,67 +322,158 @@ export default function TeacherProfile() {
               )}
 
               {activeTab === 'attendance' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 text-center">
-                      <div className="text-3xl font-bold tracking-tight text-blue-600">98%</div>
-                      <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Efficiency</div>
-                    </div>
-                    <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-                      <div className="text-3xl font-bold tracking-tight text-emerald-600">22</div>
-                      <div className="text-[10px] font-bold tracking-tight uppercase tracking-widest">Days Present</div>
-                    </div>
-                    <div className="p-6 rounded-3xl bg-red-500/10 border border-red-500/20 text-center">
-                      <div className="text-3xl font-bold tracking-tight text-red-500">1</div>
-                      <div className="text-[10px] font-bold tracking-tight uppercase tracking-widest">Sick Leave</div>
-                    </div>
-                    <div className="p-6 rounded-3xl bg-orange-500/10 border border-orange-500/20 text-center">
-                      <div className="text-3xl font-bold tracking-tight text-orange-500">0</div>
-                      <div className="text-[10px] font-bold tracking-tight uppercase tracking-widest">Late Arrivals</div>
+                <div className="space-y-6">
+                  {/* Month Picker */}
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Attendance Record</h3>
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs font-bold text-slate-400 uppercase">Month</label>
+                      <input
+                        type="month"
+                        value={attendanceMonth}
+                        onChange={(e) => setAttendanceMonth(e.target.value)}
+                        className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                      />
                     </div>
                   </div>
+
+                  {attendanceLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <Loader2 size={32} className="animate-spin text-blue-500" />
+                    </div>
+                  ) : (() => {
+                    const total   = attendance.length;
+                    const present = attendance.filter(r => (r.status || '').toUpperCase() === 'PRESENT').length;
+                    const absent  = attendance.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
+                    const late    = attendance.filter(r => (r.status || '').toUpperCase() === 'LATE').length;
+                    const pct     = total > 0 ? Math.round((present / total) * 100) : 0;
+
+                    const statusStyle = (status) => {
+                      const s = (status || '').toUpperCase();
+                      if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600';
+                      if (s === 'ABSENT')  return 'bg-red-500/10 text-red-500';
+                      if (s === 'LATE')    return 'bg-amber-400/10 text-amber-600';
+                      if (s === 'LEAVE')   return 'bg-blue-500/10 text-blue-600';
+                      return 'bg-slate-100 text-slate-500';
+                    };
+
+                    return (
+                      <>
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className={`text-4xl font-bold tracking-tight mb-1 ${pct >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{total > 0 ? `${pct}%` : '—'}</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
+                          </div>
+                          <div className="p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
+                            <div className="text-4xl font-bold tracking-tight mb-1">{present}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Present</div>
+                          </div>
+                          <div className="p-6 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
+                            <div className="text-4xl font-bold tracking-tight mb-1">{absent}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Absent</div>
+                          </div>
+                          <div className="p-6 rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
+                            <div className="text-4xl font-bold tracking-tight mb-1">{late}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Late</div>
+                          </div>
+                        </div>
+
+                        {/* Records Table */}
+                        <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                          <table className="w-full text-left">
+                            <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                              <tr>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</th>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
+                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                              {attendance.length === 0 ? (
+                                <tr>
+                                  <td colSpan={4} className="p-10 text-center text-slate-400 font-bold">
+                                    No attendance records for this month.
+                                  </td>
+                                </tr>
+                              ) : (
+                                [...attendance]
+                                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                                  .map((record, i) => {
+                                    const d = new Date(record.date);
+                                    return (
+                                      <tr key={record.id || i} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                                        <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
+                                          {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        <td className="p-4 font-bold text-slate-400">
+                                          {d.toLocaleDateString('en-IN', { weekday: 'short' })}
+                                        </td>
+                                        <td className="p-4">
+                                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusStyle(record.status)}`}>
+                                            {record.status || 'Unknown'}
+                                          </span>
+                                        </td>
+                                        <td className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</td>
+                                      </tr>
+                                    );
+                                  })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
-              {activeTab === 'performance' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl">
-                      <h4 className="text-sm font-bold tracking-tight text-slate-900 uppercase tracking-widest mb-6">Student Success Rate</h4>
-                      <div className="flex items-center gap-12">
-                        <div className="relative w-40 h-40 flex items-center justify-center">
-                           <svg className="w-full h-full -rotate-90">
-                              <circle cx="80" cy="80" r="70" fill="none" stroke="#f1f5f9" strokeWidth="20" />
-                              <circle cx="80" cy="80" r="70" fill="none" stroke="#2563eb" strokeWidth="20" strokeDasharray="440" strokeDashoffset="44" strokeLinecap="round" />
-                           </svg>
-                           <div className="absolute text-center">
-                              <div className="text-3xl font-bold tracking-tight text-slate-900">90%</div>
-                              <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Avg Pass</div>
-                           </div>
-                        </div>
-                        <div className="flex-1 space-y-4">
-                           <div className="flex items-center justify-between">
-                              <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Teaching Quality</span>
-                              <span className="text-sm font-bold tracking-tight text-blue-600">4.9/5.0</span>
-                           </div>
-                           <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-600 w-[98%]" />
-                           </div>
-                           <div className="flex items-center justify-between">
-                              <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Curriculum Pacing</span>
-                              <span className="text-sm font-bold tracking-tight text-emerald-600">Optimal</span>
-                           </div>
+              {activeTab === 'performance' && (() => {
+                const pct = teacher.performance?.avgStudentScore || 90;
+                const totalTests = teacher.performance?.totalTestsCount || 0;
+                const strokeDashoffset = 440 - (440 * pct) / 100;
+
+                return (
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 shadow-xl">
+                        <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Student Success Rate</h4>
+                        <div className="flex items-center gap-12 flex-wrap md:flex-nowrap">
+                          <div className="relative w-40 h-40 flex items-center justify-center shrink-0">
+                             <svg className="w-full h-full -rotate-90">
+                                <circle cx="80" cy="80" r="70" fill="none" stroke="#f1f5f9" strokeWidth="20" className="dark:stroke-slate-800" />
+                                <circle cx="80" cy="80" r="70" fill="none" stroke="#2563eb" strokeWidth="20" strokeDasharray="440" strokeDashoffset={strokeDashoffset} strokeLinecap="round" />
+                             </svg>
+                             <div className="absolute text-center">
+                                <div className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{pct}%</div>
+                                <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Avg Accuracy</div>
+                             </div>
+                          </div>
+                          <div className="flex-1 space-y-4 min-w-[200px]">
+                             <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Average Performance</span>
+                                <span className="text-sm font-bold tracking-tight text-blue-600 dark:text-blue-400">{pct}%</span>
+                             </div>
+                             <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-600" style={{ width: `${pct}%` }} />
+                             </div>
+                             <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Evaluated Sessions</span>
+                                <span className="text-sm font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{totalTests}</span>
+                             </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="p-8 rounded-[2.5rem] bg-blue-600 text-white text-center flex flex-col justify-center">
-                       <Award size={48} className="mx-auto mb-4 opacity-40" />
-                       <h4 className="text-xl font-bold tracking-tight mb-1">Teacher of the Month</h4>
-                       <p className="text-xs font-bold opacity-70 uppercase tracking-widest">April 2026</p>
+                      <div className="p-8 rounded-[2.5rem] bg-blue-600 text-white text-center flex flex-col justify-center shadow-xl shadow-blue-600/20">
+                         <Award size={48} className="mx-auto mb-4 opacity-40" />
+                         <h4 className="text-xl font-bold tracking-tight mb-1">Excellent Pacing</h4>
+                         <p className="text-xs font-bold opacity-70 uppercase tracking-widest">Active Academic Year</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </motion.div>
           </AnimatePresence>
         </div>

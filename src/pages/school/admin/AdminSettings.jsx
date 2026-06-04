@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Bell, Globe, Save, Shield, SlidersHorizontal, User } from 'lucide-react';
 import { EddvaLogo, InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { useAuth } from '@/context/SchoolAuthContext';
+import { formatTenantUrl, getBaseAppUrl } from '@/lib/school/tenantRedirect';
 
 const tabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe },
@@ -10,8 +12,7 @@ const tabs = [
 ];
 
 export default function Settings() {
-  const user = getStoredUser();
-  const institute = getStoredInstitute();
+  const { user, institute } = useAuth();
   const [activeTab, setActiveTab] = useState('workspace');
   const [saved, setSaved] = useState(false);
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
@@ -142,7 +143,7 @@ export default function Settings() {
           )}
 
           <div className="mt-8 flex justify-end border-t border-surface-200 pt-5">
-            <button className="inline-flex items-center gap-2 rounded-lg bg-eddva-gradient px-5 py-2.5 text-sm font-bold text-white shadow-blue">
+            <button className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
               <Save className="h-4 w-4" />
               Save Settings
             </button>

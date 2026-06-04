@@ -11,7 +11,7 @@ import {
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
   useLectures, useUnpublishLecture, useLectureStats, useCreateLecture,
-  useBatches, useSubjects, useChapters, useTopics,
+  useBatches, useSubjects, useChapters, useTopics, useTeachers, useUpdateLecture, useDeleteLecture,
 } from "@/hooks/use-admin";
 import type { Subject, Chapter, Topic } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
@@ -445,10 +445,11 @@ function TopicPicker({
 function LiveDetailsForm({
   value, onChange,
 }: {
-  value: { title: string; description: string; scheduledAt: string; liveMeetingUrl: string };
+  value: { title: string; description: string; scheduledAt: string; liveMeetingUrl: string; teacherId?: string };
   onChange: (v: typeof value) => void;
 }) {
-  const set = (k: keyof typeof value) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const { data: teachers = [] } = useTeachers();
+  const set = (k: keyof typeof value) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     onChange({ ...value, [k]: e.target.value });
 
   return (
@@ -504,6 +505,29 @@ function LiveDetailsForm({
               className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Assign Teacher</label>
+          <select
+            value={value.teacherId || ""}
+            onChange={set("teacherId")}
+            className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors appearance-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+              backgroundPosition: "right 0.75rem center",
+              backgroundSize: "1.25rem",
+              backgroundRepeat: "no-repeat",
+              paddingRight: "2.5rem"
+            }}
+          >
+            <option value="">Select a teacher (optional, defaults to you)</option>
+            {teachers.map((t: any) => (
+              <option key={t.id} value={t.id}>
+                {t.fullName} ({t.email || t.phoneNumber})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -660,19 +684,74 @@ function RecordedDetailsForm({
 // ─── Schedule Lecture Modal ───────────────────────────────────────────────────
 
 function ScheduleLectureModal({
-  type, onClose,
+  type, editingLecture, onClose,
 }: {
   type: "live" | "recorded";
+  editingLecture?: any;
   onClose: () => void;
 }) {
   const createLecture = useCreateLecture();
+  const updateLecture = useUpdateLecture();
+  const { data: batches = [] } = useBatches();
 
-  const [step, setStep] = useState<WizardStep>(0);
+  const [step, setStep] = useState<WizardStep>(editingLecture ? 2 : 0);
   const [selectedBatch, setSelectedBatch] = useState<any | null>(null);
-  const [selectedEntry, setSelectedEntry] = useState<{ topic: Topic; chapter: Chapter; subject: Subject } | null>(null);
 
-  const [liveForm, setLiveForm] = useState({ title: "", description: "", scheduledAt: "", liveMeetingUrl: "" });
-  const [recForm, setRecForm] = useState({ title: "", description: "", videoUrl: "" });
+  useEffect(() => {
+    if (editingLecture && batches.length > 0 && !selectedBatch) {
+      const b = batches.find((b: any) => b.id === editingLecture.batchId);
+      if (b) setSelectedBatch(b);
+    }
+  }, [batches, editingLecture, selectedBatch]);
+
+  const [selectedEntry, setSelectedEntry] = useState<{ topic: Topic; chapter: Chapter; subject: Subject } | null>(() => {
+    if (editingLecture?.topic) {
+      return {
+        topic: editingLecture.topic,
+        chapter: editingLecture.topic.chapter,
+        subject: editingLecture.topic.chapter.subject,
+      };
+    }
+    return null;
+  });
+
+  const [liveForm, setLiveForm] = useState(() => {
+    if (editingLecture && editingLecture.type === "live") {
+      let formattedDate = "";
+      if (editingLecture.scheduledAt) {
+        try {
+          const d = new Date(editingLecture.scheduledAt);
+          if (!isNaN(d.getTime())) {
+            const tzOffset = d.getTimezoneOffset() * 60000;
+            formattedDate = new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      return {
+        title: editingLecture.title || "",
+        description: editingLecture.description || "",
+        scheduledAt: formattedDate,
+        liveMeetingUrl: editingLecture.liveMeetingUrl || "",
+        teacherId: editingLecture.teacherId || "",
+      };
+    }
+    return { title: "", description: "", scheduledAt: "", liveMeetingUrl: "", teacherId: "" };
+  });
+
+  const [recForm, setRecForm] = useState(() => {
+    if (editingLecture && editingLecture.type === "recorded") {
+      return {
+        title: editingLecture.title || "",
+        description: editingLecture.description || "",
+        videoUrl: editingLecture.videoUrl || "",
+        teacherId: editingLecture.teacherId || "",
+      };
+    }
+    return { title: "", description: "", videoUrl: "", teacherId: "" };
+  });
+
   const [tempLectureId] = useState(() => uuidv4());
 
   const isLive = type === "live";
@@ -689,37 +768,62 @@ function ScheduleLectureModal({
 
   const handleSubmit = async () => {
     if (!selectedBatch || !selectedEntry) return;
+    const isPending = createLecture.isPending || updateLecture.isPending;
+    if (isPending) return;
+
     try {
       if (isLive) {
-        await createLecture.mutateAsync({
+        const payload = {
           batchId: selectedBatch.id,
           topicId: selectedEntry.topic.id,
           title: liveForm.title.trim(),
           description: liveForm.description.trim() || undefined,
-          type: "live",
+          type: "live" as const,
           scheduledAt: liveForm.scheduledAt,
           liveMeetingUrl: liveForm.liveMeetingUrl.trim(),
-        });
-        toast.success("Live lecture scheduled!");
+          teacherId: liveForm.teacherId || undefined,
+        };
+
+        if (editingLecture) {
+          await updateLecture.mutateAsync({
+            id: editingLecture.id,
+            ...payload,
+          });
+          toast.success("Live lecture updated!");
+        } else {
+          await createLecture.mutateAsync(payload);
+          toast.success("Live lecture scheduled!");
+        }
       } else {
         const v = recForm.videoUrl.trim();
         if (isYouTubeUrl(v) && !isValidYouTubeLectureUrl(v)) {
           toast.error("Invalid YouTube URL. Use a watch, Shorts, embed, or youtu.be link.");
           return;
         }
-        await createLecture.mutateAsync({
+        const payload = {
           batchId: selectedBatch.id,
           topicId: selectedEntry.topic.id,
           title: recForm.title.trim(),
           description: recForm.description.trim() || undefined,
-          type: "recorded",
+          type: "recorded" as const,
           videoUrl: recForm.videoUrl.trim(),
-        });
-        toast.success("Recorded lecture saved!");
+          teacherId: recForm.teacherId || undefined,
+        };
+
+        if (editingLecture) {
+          await updateLecture.mutateAsync({
+            id: editingLecture.id,
+            ...payload,
+          });
+          toast.success("Recorded lecture updated!");
+        } else {
+          await createLecture.mutateAsync(payload);
+          toast.success("Recorded lecture saved!");
+        }
       }
       onClose();
-    } catch {
-      toast.error("Failed to save lecture. Please try again.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to save lecture. Please try again.");
     }
   };
 
@@ -754,7 +858,9 @@ function ScheduleLectureModal({
             </div>
             <div>
               <h2 className="text-base font-black text-slate-900">
-                {isLive ? "Schedule Live Lecture" : "Upload Recorded Lecture"}
+                {editingLecture
+                  ? (isLive ? "Edit Live Lecture" : "Edit Recorded Lecture")
+                  : (isLive ? "Schedule Live Lecture" : "Upload Recorded Lecture")}
               </h2>
               {selectedBatch && (
                 <p className="text-[11px] text-slate-400 mt-0.5">
@@ -822,17 +928,19 @@ function ScheduleLectureModal({
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={!canProceed() || createLecture.isPending}
+              disabled={!canProceed() || createLecture.isPending || updateLecture.isPending}
               className={cn(
                 "flex items-center gap-2 h-9 px-5 rounded-xl text-sm font-black text-white disabled:opacity-40 transition-opacity",
                 isLive ? "bg-rose-500 hover:bg-rose-600" : "bg-blue-600 hover:bg-blue-700"
               )}
             >
-              {createLecture.isPending
+              {createLecture.isPending || updateLecture.isPending
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
-                : isLive
-                  ? <><Radio className="w-3.5 h-3.5" /> Schedule Live</>
-                  : <><Upload className="w-3.5 h-3.5" /> Save Lecture</>}
+                : editingLecture
+                  ? "Save Changes"
+                  : isLive
+                    ? <><Radio className="w-3.5 h-3.5" /> Schedule Live</>
+                    : <><Upload className="w-3.5 h-3.5" /> Save Lecture</>}
             </button>
           )}
         </div>
@@ -846,9 +954,13 @@ function ScheduleLectureModal({
 const LecturesPage = () => {
   const { data: lectures, isLoading } = useLectures();
   const unpublish = useUnpublishLecture();
+  const deleteLectureMutation = useDeleteLecture();
+
   const [statsLecture, setStatsLecture] = useState<{ id: string; title: string } | null>(null);
   const [confirmUnpublish, setConfirmUnpublish] = useState<{ id: string; title: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
   const [scheduleType, setScheduleType] = useState<"live" | "recorded" | null>(null);
+  const [editingLecture, setEditingLecture] = useState<any | null>(null);
 
   const lectureList: any[] = Array.isArray(lectures) ? lectures : [];
 
@@ -860,6 +972,17 @@ const LecturesPage = () => {
       setConfirmUnpublish(null);
     } catch {
       toast.error("Failed to unpublish lecture");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    try {
+      await deleteLectureMutation.mutateAsync(confirmDelete.id);
+      toast.success(`"${confirmDelete.title}" deleted`);
+      setConfirmDelete(null);
+    } catch {
+      toast.error("Failed to delete lecture");
     }
   };
 
@@ -974,6 +1097,18 @@ const LecturesPage = () => {
                     <EyeOff className="w-3.5 h-3.5" /> Unpublish
                   </button>
                 )}
+                <button
+                  onClick={() => setEditingLecture(lec)}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => setConfirmDelete({ id: lec.id, title: lec.title })}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 transition-colors"
+                >
+                  {lec.type === "live" ? "Cancel" : "Delete"}
+                </button>
               </div>
             </div>
           ))}
@@ -982,11 +1117,15 @@ const LecturesPage = () => {
 
       {/* Schedule Lecture Modal */}
       <AnimatePresence>
-        {scheduleType && (
+        {(scheduleType || editingLecture) && (
           <ScheduleLectureModal
             key="schedule-modal"
-            type={scheduleType}
-            onClose={() => setScheduleType(null)}
+            type={scheduleType || editingLecture?.type}
+            editingLecture={editingLecture}
+            onClose={() => {
+              setScheduleType(null);
+              setEditingLecture(null);
+            }}
           />
         )}
       </AnimatePresence>
@@ -1028,6 +1167,43 @@ const LecturesPage = () => {
                   className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
                 >
                   {unpublish.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Unpublish"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete/Cancel confirm */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gray-300/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-4">
+                <AlertTriangle className="w-6 h-6 text-rose-500" />
+              </div>
+              <h3 className="font-bold text-foreground mb-1">Delete Lecture?</h3>
+              <p className="text-sm text-muted-foreground mb-5">
+                "<span className="text-foreground">{confirmDelete.title}</span>" will be deleted permanently. This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-secondary transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteLectureMutation.isPending}
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {deleteLectureMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
                 </button>
               </div>
             </motion.div>

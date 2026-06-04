@@ -1,9 +1,11 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
 import TimetableForm from '@/components/school/admin/forms/TimetableForm';
+import { useConfirm } from '@/context/ConfirmContext';
+import { handleApiError } from '@/lib/school/errorHandler';
 
 export default function Timetable() {
   const [timetables, setTimetables] = useState([]);
@@ -13,6 +15,9 @@ export default function Timetable() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filterTeacher, setFilterTeacher] = useState('');
   const [filterClass, setFilterClass] = useState('');
+  const [activeDay, setActiveDay] = useState('MONDAY');
+
+  const confirm = useConfirm();
 
   useEffect(() => { fetchTimetables(); }, []);
 
@@ -29,12 +34,21 @@ export default function Timetable() {
 
   const handleAddClick = () => { setSelectedTimetable(null); setIsModalOpen(true); };
   const handleEditClick = (t) => { setSelectedTimetable(t); setIsModalOpen(true); };
+  
   const handleDeleteClick = async (id) => {
-    if (!confirm('Are you sure you want to delete this timetable entry?')) return;
+    const ok = await confirm({
+      title: 'Delete Timetable Slot',
+      message: 'Are you sure you want to delete this timetable entry?',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel'
+    });
+    if (!ok) return;
     try {
       await api.delete(`/timetable/${id}`);
       setTimetables((prev) => prev.filter((x) => x.id !== id));
-    } catch (err) { alert('Failed to delete timetable entry'); }
+    } catch (err) {
+      handleApiError(err, 'Failed to delete timetable entry');
+    }
   };
 
   const handleSubmit = async (formData) => {
@@ -50,7 +64,7 @@ export default function Timetable() {
       setIsModalOpen(false);
       setSelectedTimetable(null);
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to save timetable');
+      handleApiError(err, 'Failed to save timetable');
     } finally { setIsSubmitting(false); }
   };
 
@@ -82,63 +96,139 @@ export default function Timetable() {
     groupedByDay[day] = dayTimetables;
   });
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (loading) return <div className="p-8 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading...</div>;
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="mx-auto max-w-6xl px-2 sm:px-4 dark:bg-slate-950 min-h-screen">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-surface-950">Timetable</h1>
-          <p className="mt-2 text-sm text-surface-500">Manage class schedules and teacher assignments.</p>
+          <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white">Timetable</h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage class schedules and teacher assignments.</p>
         </div>
-        <button onClick={handleAddClick} className="rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700">Add Slot</button>
+        <button
+          onClick={handleAddClick}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
+        >
+          <Plus className="h-5 w-5" />
+          Add Slot
+        </button>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 rounded-lg border border-surface-200 bg-white p-4 md:flex-row md:items-end md:gap-4">
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-surface-700">Filter by Teacher</label>
-          <select value={filterTeacher} onChange={(e) => setFilterTeacher(e.target.value)} className="rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100">
+      <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 md:flex-row md:items-end shadow-sm">
+        <div className="flex-1">
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filter by Teacher</label>
+          <select
+            value={filterTeacher}
+            onChange={(e) => setFilterTeacher(e.target.value)}
+            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
+          >
             <option value="">All Teachers</option>
             {teachers.map((teacher) => (<option key={teacher} value={teacher}>{teacher}</option>))}
           </select>
         </div>
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-surface-700">Filter by Class</label>
-          <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100">
+        <div className="flex-1">
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filter by Class</label>
+          <select
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
+          >
             <option value="">All Classes</option>
             {classes.map((cls) => (<option key={cls} value={cls}>{cls}</option>))}
           </select>
         </div>
 
         {(filterTeacher || filterClass) && (
-          <button onClick={() => { setFilterTeacher(''); setFilterClass(''); }} className="text-sm font-semibold text-brand-600 hover:text-brand-700">Clear Filters</button>
+          <button
+            onClick={() => { setFilterTeacher(''); setFilterClass(''); }}
+            className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            Clear Filters
+          </button>
         )}
       </div>
 
-      <div className="grid gap-6">
+      <div className="mb-6 flex overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-sm">
         {days.map((day) => (
-          <div key={day} className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 font-semibold text-surface-950">{day.replace('_', ' ')}</h2>
-            {groupedByDay[day].length === 0 ? (
-              <p className="text-sm text-surface-500">No classes scheduled</p>
-            ) : (
-              <div className="space-y-3">
-                {groupedByDay[day].map((slot) => (
-                  <div key={slot.id} className="flex items-center justify-between rounded-md bg-surface-50 p-3">
-                    <div className="flex-1">
-                      <p className="font-semibold text-surface-950">{slot.subject?.name} ({slot.startTime} - {slot.endTime})</p>
-                      <p className="text-sm text-surface-500">{formatClassName(slot.section)}{slot.section?.name ? ` - ${slot.section?.name}` : ''} | {formatTeacherName(slot.teacher)} | Room: {slot.room || 'N/A'}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleEditClick(slot)} className="rounded p-1 text-surface-500 hover:bg-surface-200 hover:text-brand-600"><Edit2 className="h-4 w-4" /></button>
-                      <button onClick={() => handleDeleteClick(slot.id)} className="rounded p-1 text-surface-500 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+          <button
+            key={day}
+            onClick={() => setActiveDay(day)}
+            className={`flex-1 min-w-[100px] text-center rounded-xl py-3 text-xs font-bold tracking-wider uppercase transition ${
+              activeDay === day
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+            }`}
+          >
+            {day.replace('_', ' ')}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {groupedByDay[activeDay].length === 0 ? (
+          <div className="col-span-full rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center bg-white dark:bg-slate-900">
+            <Clock className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
+            <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">No classes scheduled</h3>
+            <p className="mt-1 text-xs text-slate-400">Enjoy your day or schedule a new slot above!</p>
+          </div>
+        ) : (
+          groupedByDay[activeDay].map((slot) => {
+            const teacherName = formatTeacherName(slot.teacher) || 'Unnamed Teacher';
+            const initials = teacherName.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+            return (
+              <div
+                key={slot.id}
+                className="relative overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition hover:shadow-md hover:scale-[1.01] duration-200 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="inline-flex rounded-lg bg-blue-50 dark:bg-slate-850 border border-blue-100 dark:border-slate-800 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-sky-300">
+                      {slot.subject?.name || 'Subject'}
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleEditClick(slot)}
+                        className="rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(slot.id)}
+                        className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
-                ))}
+
+                  <h3 className="text-base font-bold text-slate-950 dark:text-white mt-3">
+                    {formatClassName(slot.section)}{slot.section?.name ? ` - ${slot.section?.name}` : ''}
+                  </h3>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-slate-50 dark:border-slate-850 pt-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-350">
+                      {initials}
+                    </div>
+                    <span className="text-xs font-semibold text-slate-650 dark:text-slate-400">{teacherName}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-450">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-blue-600" />
+                      {slot.startTime} - {slot.endTime}
+                    </span>
+                    {slot.room && (
+                      <span className="rounded bg-slate-55 dark:bg-slate-800 px-1.5 py-0.5">
+                        Room {slot.room}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
 
       <Modal isOpen={isModalOpen} title={selectedTimetable ? 'Edit Timetable Slot' : 'Add Timetable Slot'} onClose={() => setIsModalOpen(false)} size="lg">

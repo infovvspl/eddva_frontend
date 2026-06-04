@@ -14,6 +14,7 @@ import type { StudyPlanItem } from "@/lib/api/student";
 // Color lookup for all event types (including legacy exam/test for existing data)
 const TYPE_COLOR_MAP: Record<string, string> = {
   holiday: "#10b981",
+  vacation: "#f59e0b", // Amber for vacations
   monthly_planner: "#0ea5e9",
   mock_test: "#f97316",
   pt_exam: "#ef4444",
@@ -30,9 +31,10 @@ const TYPE_COLOR_MAP: Record<string, string> = {
 // Grouped categories for the "Add Event" form dropdown
 const EVENT_CATEGORIES = [
   {
-    group: "Holidays",
+    group: "Holidays & Vacations",
     types: [
       { value: "holiday", label: "School/Institution Holiday", color: "#10b981" },
+      { value: "vacation", label: "Vacation", color: "#f59e0b" },
     ],
   },
   {
@@ -74,6 +76,7 @@ const VIEW_FILTERS = [
   { value: "all", label: "All Events" },
   { value: "public_holiday", label: "Public Holidays" },
   { value: "holiday", label: "School/Institution Holidays" },
+  { value: "vacation", label: "Vacations" },
   { value: "monthly_planner", label: "Monthly Planner" },
   { value: "exam", label: "Exams (All)" },
   { value: "live_class", label: "Live Classes" },
@@ -127,12 +130,13 @@ function eventColor(type: string) {
 
 function matchesFilter(viewFilter: string, kind: string, type: string): boolean {
   if (viewFilter === "all") return true;
-  if (viewFilter === "public_holiday") return kind === "public_holiday";
+  if (viewFilter === "public_holiday") return kind === "public_holiday" || type === "holiday" || type === "vacation";
   if (kind === "public_holiday") return false;
   if (viewFilter === "live_class") return type === "live_class";
   if (viewFilter === "assignment") return type === "assignment";
   if (viewFilter === "study_plan") return kind === "study_plan";
   if (viewFilter === "exam") return EXAM_TYPES.has(type);
+  if (viewFilter === "vacation") return type === "vacation";
   return type === viewFilter;
 }
 
@@ -170,12 +174,27 @@ function buildByDate(
 
   for (const ev of instituteEvents) {
     if (!matchesFilter(viewFilter, "institute", ev.type)) continue;
-    const key = (ev.date || "").split("T")[0];
-    if (!key) continue;
-    byDate[key] = [
-      ...(byDate[key] ?? []),
-      { kind: "institute", id: ev.id, title: ev.title, type: ev.type, color: ev.color || eventColor(ev.type), raw: ev },
-    ];
+    const startStr = (ev.date || "").split("T")[0];
+    if (!startStr) continue;
+
+    if (ev.endDate) {
+      const endStr = ev.endDate.split("T")[0];
+      let current = new Date(startStr + "T00:00:00.000Z");
+      const end = new Date(endStr + "T00:00:00.000Z");
+      while (current.getTime() <= end.getTime()) {
+        const key = current.toISOString().split("T")[0];
+        byDate[key] = [
+          ...(byDate[key] ?? []),
+          { kind: "institute", id: `${ev.id}-${key}`, title: ev.title, type: ev.type, color: ev.color || eventColor(ev.type), raw: ev },
+        ];
+        current.setUTCDate(current.getUTCDate() + 1);
+      }
+    } else {
+      byDate[startStr] = [
+        ...(byDate[startStr] ?? []),
+        { kind: "institute", id: ev.id, title: ev.title, type: ev.type, color: ev.color || eventColor(ev.type), raw: ev },
+      ];
+    }
   }
 
   for (const lec of liveClasses) {
@@ -258,10 +277,12 @@ function mergedList(
   for (const ev of instituteEvents) {
     if (!matchesFilter(viewFilter, "institute", ev.type)) continue;
     const typeLabel = LEGEND_TYPES.find((t) => t.value === ev.type)?.label ?? ev.type;
+    const startStr = (ev.date || "").split("T")[0];
+    const endStr = ev.endDate ? ` to ${ev.endDate.split("T")[0]}` : "";
     rows.push({
       sortKey: ev.date,
       label: ev.title,
-      sub: `${(ev.date || "").split("T")[0]}${ev.description ? ` · ${ev.description}` : ""}`,
+      sub: `${startStr}${endStr}${ev.description ? ` · ${ev.description}` : ""}`,
       color: ev.color || eventColor(ev.type),
       kind: typeLabel,
       id: ev.id,

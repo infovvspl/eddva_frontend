@@ -126,7 +126,6 @@ const SchoolAdminSettings     = lazy(() => import("./pages/school/admin/AdminSet
 const SchoolReports           = lazy(() => import("./pages/school/admin/Reports"));
 const SchoolFinance           = lazy(() => import("./pages/school/admin/Finance"));
 const SchoolCommunications    = lazy(() => import("./pages/school/admin/Communications"));
-const SchoolRoles             = lazy(() => import("./pages/school/admin/Roles"));
 const SchoolAuditLogs         = lazy(() => import("./pages/school/admin/AuditLogs"));
 const SchoolSecurity          = lazy(() => import("./pages/school/admin/SecurityCenter"));
 const SchoolSubjects          = lazy(() => import("./pages/school/admin/Subjects"));
@@ -142,9 +141,7 @@ const SchoolFeeStructures     = lazy(() => import("./pages/school/admin/FeeStruc
 const SchoolPaymentCollection = lazy(() => import("./pages/school/admin/PaymentCollection"));
 const SchoolPaymentHistory    = lazy(() => import("./pages/school/admin/PaymentHistory"));
 const SchoolFeeDefaulters     = lazy(() => import("./pages/school/admin/FeeDefaulters"));
-const SchoolNotificationsCenter = lazy(() => import("./pages/school/admin/NotificationsCenter"));
 const SchoolMessageLogs       = lazy(() => import("./pages/school/admin/MessageLogs"));
-const SchoolEmailCenter       = lazy(() => import("./pages/school/admin/EmailCenter"));
 const SchoolAiInsights        = lazy(() => import("./pages/school/admin/AiInsights"));
 const SchoolStudentPerformance = lazy(() => import("./pages/school/admin/StudentPerformance"));
 const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/AttendanceAnalytics"));
@@ -353,13 +350,10 @@ const SchoolRoutes = () => (
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
-      <Route path="roles" element={<SchoolRoles />} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
-      <Route path="notifications-center" element={<SchoolNotificationsCenter />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
-      <Route path="email-center" element={<SchoolEmailCenter />} />
     </Route>
 
     {/* School Teacher */}

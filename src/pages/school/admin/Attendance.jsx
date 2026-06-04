@@ -1,17 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit2, Trash2, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
-import Modal from '@/components/school/admin/Modal';
-import AttendanceForm from '@/components/school/admin/forms/AttendanceForm';
 
 export default function Attendance() {
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAttendance, setSelectedAttendance] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [filterType, setFilterType] = useState('daily');
   const [teacherName, setTeacherName] = useState('');
@@ -43,40 +38,6 @@ export default function Attendance() {
       console.error(error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAddClick = () => {
-    setSelectedAttendance(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEditClick = (record) => {
-    setSelectedAttendance(record);
-    setIsModalOpen(true);
-  };
-
-  const handleDeleteClick = async (id) => {
-    if (confirm('Are you sure you want to delete this attendance record?')) {
-      try {
-        setAttendance(attendance.filter(a => a.id !== id));
-      } catch (error) {
-        alert('Failed to delete attendance record');
-      }
-    }
-  };
-
-  const handleSubmit = async (formData) => {
-    setIsSubmitting(true);
-    try {
-      const res = await api.post('/attendance', formData);
-      await fetchAttendance();
-      setIsModalOpen(false);
-      setSelectedAttendance(null);
-    } catch (error) {
-      alert(error.response?.data?.error || 'Failed to mark attendance');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -116,17 +77,9 @@ export default function Attendance() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-surface-950">Attendance</h1>
-          <p className="mt-2 text-sm text-surface-500">Track student and teacher attendance.</p>
-        </div>
-        <button 
-          onClick={handleAddClick}
-          className="rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700"
-        >
-          Mark Attendance
-        </button>
+      <div className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-surface-950">Attendance</h1>
+        <p className="mt-2 text-sm text-surface-500">Track student and teacher attendance.</p>
       </div>
 
       <div className="mb-6 rounded-lg border border-surface-200 bg-white p-3 shadow-sm">
@@ -266,20 +219,6 @@ export default function Attendance() {
                           <Eye className="h-4 w-4" />
                         </button>
                       )}
-                      <button
-                        onClick={() => handleEditClick(record)}
-                        className="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                        <span className="absolute -top-9 left-1/2 -translate-x-1/2 scale-0 rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(record.id)}
-                        className="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="absolute -top-9 left-1/2 -translate-x-1/2 scale-0 rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Delete</span>
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -288,20 +227,6 @@ export default function Attendance() {
           </tbody>
         </table>
       </div>
-
-      <Modal 
-        isOpen={isModalOpen}
-        title={selectedAttendance ? 'Edit Attendance' : 'Mark Attendance'}
-        onClose={() => setIsModalOpen(false)}
-        size="md"
-      >
-        <AttendanceForm 
-          attendance={selectedAttendance}
-          onSubmit={handleSubmit}
-          onCancel={() => setIsModalOpen(false)}
-          isLoading={isSubmitting}
-        />
-      </Modal>
     </div>
   );
 }

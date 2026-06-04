@@ -115,3 +115,21 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dark .class__calendar-cell {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+}
+.dark .class__calendar-day {
+  color: #94a3b8 !important;
+}
+.dark .class__calendar-day-header {
+  color: #cbd5e1 !important;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.15)) !important;
+}
+.dark .class__calendar-grid {
+  background: #1e293b !important;
+}
+.dark .class__calendar-cell--current {
+  background: rgba(124, 58, 237, 0.12) !important;
+}
