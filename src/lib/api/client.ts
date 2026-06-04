@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 import { getApiBaseUrl } from "@/lib/api-config";
-import { getSubdomain } from "@/lib/tenant";
+import { getSubdomain, getSubdomainFromHost } from "@/lib/tenant";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,7 +57,15 @@ export const apiClient = axios.create({
 });
 
 // Public endpoints that must not carry auth or tenant headers
-const PUBLIC_FRAGMENTS = ["auth/login", "auth/register", "auth/otp", "auth/forgot", "auth/reset"];
+const PUBLIC_FRAGMENTS = [
+  "auth/login",
+  "auth/register",
+  "auth/otp",
+  "auth/forgot",
+  "auth/reset",
+  "school/auth/login",
+  "school/auth/register",
+];
 const isPublicEndpoint = (url = "") =>
   PUBLIC_FRAGMENTS.some((p) => (url || "").replace(/^\//, "").includes(p));
 
@@ -66,9 +74,9 @@ const isPublicEndpoint = (url = "") =>
 // ---------------------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Always attach subdomain header — backend needs it even for login
-    // to know which tenant to authenticate against
-    const subdomain = getSubdomain();
+    // Login/register: only send subdomain from the URL (e.g. odm.localhost), not
+    // stale localStorage — otherwise bare localhost logins get scoped to the wrong tenant.
+    const subdomain = isPublicEndpoint(config.url) ? getSubdomainFromHost() : getSubdomain();
     if (subdomain && config.headers) {
       config.headers["X-Tenant-Subdomain"] = subdomain;
     }

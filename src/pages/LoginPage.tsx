@@ -10,7 +10,7 @@ import * as authApi from "@/lib/api/auth";
 import type { SchoolLoginResponse } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
-import { getSubdomain } from "@/lib/tenant";
+import { getSubdomain, getSubdomainFromHost, clearStoredSubdomain } from "@/lib/tenant";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
@@ -52,6 +52,11 @@ const LoginPage = () => {
   const [tenantInfo, setTenantInfo] = useState<PublicTenantInfo | null>(null);
 
   useEffect(() => {
+    // Avoid stale tenant subdomain from a previous session breaking login on bare localhost
+    if (!getSubdomainFromHost()) {
+      clearStoredSubdomain();
+    }
+
     // Strictly check the URL hostname so localhost:8080 doesn't get affected
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
@@ -95,6 +100,13 @@ const LoginPage = () => {
 
   const inputClass =
     "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-600 focus:bg-white focus:border-blue-400 focus:ring-8 focus:ring-blue-500/5 disabled:opacity-50 shadow-sm";
+
+  const loginErrorMessage = (err: any, fallback: string) => {
+    if (!err?.response) {
+      return "Cannot reach the server. Start the backend (npm run start:dev in eddva_backend).";
+    }
+    return err.response?.data?.message || fallback;
+  };
 
   /* ── helpers ── */
   const buildUser = (meData: any, loginMeta?: { onboardingRequired?: boolean }) => {
@@ -216,7 +228,7 @@ const LoginPage = () => {
         // Fall through to school login on any auth failure (works for both email AND phone)
         if (status === 401 || status === 404 || status === 400 || status === 500) {
           coachingFailed = true;
-          coachingErrMsg = coachingErr?.response?.data?.message || "";
+          coachingErrMsg = loginErrorMessage(coachingErr, "Invalid credentials");
         } else {
           throw coachingErr;
         }
@@ -233,15 +245,11 @@ const LoginPage = () => {
         const schoolUser = buildSchoolUser(schoolRes);
         redirectUser(schoolUser, "school");
       } catch (schoolErr: any) {
-        const schoolMsg = schoolErr?.response?.data?.message || "";
-        console.error("School login error details:", schoolErr, schoolErr?.response?.data);
-        alert(`School login error: ${schoolErr?.message} | Data: ${JSON.stringify(schoolErr?.response?.data)}`);
+        const schoolMsg = loginErrorMessage(schoolErr, "Invalid credentials");
         setError(schoolMsg || coachingErrMsg || "Invalid credentials. Please try again.");
       }
     } catch (err: any) {
-      console.error("Outer login error:", err);
-      alert(`Outer login error: ${err?.message}`);
-      setError(err?.response?.data?.message || err?.message || "Invalid credentials. Please try again.");
+      setError(loginErrorMessage(err, "Invalid credentials. Please try again."));
     } finally { setLoginLoading(false); }
   };
 

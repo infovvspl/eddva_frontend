@@ -25,7 +25,8 @@ function createQuietProxyLogger(): Logger {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const proxyTarget = env.VITE_DEV_PROXY_TARGET?.trim() || "http://127.0.0.1:3000";
+  // Use localhost (not 127.0.0.1) so changeOrigin does not make the API treat "127" as a tenant subdomain
+  const proxyTarget = env.VITE_DEV_PROXY_TARGET?.trim() || "http://localhost:3000";
 
   return {
   customLogger: mode === "development" ? createQuietProxyLogger() : undefined,

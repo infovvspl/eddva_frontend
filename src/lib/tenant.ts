@@ -56,7 +56,30 @@ export function getSubdomain(): string | null {
   return null;
 }
 
+/** Subdomain from the URL hostname only (never localStorage). Use for login/register. */
+export function getSubdomainFromHost(): string | null {
+  const hostname = window.location.hostname;
+
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return null;
+
+  const parts = hostname.split(".");
+
+  if (parts.length === 2 && parts[1] === "localhost") {
+    const sub = parts[0];
+    if (MAIN_DOMAINS.includes(sub)) return null;
+    return sub;
+  }
+
+  if (parts.length >= 3) {
+    const sub = parts[0];
+    if (MAIN_DOMAINS.includes(sub)) return null;
+    return sub;
+  }
+
+  return null;
+}
+
 /** Check if we're on a tenant subdomain */
 export function isTenantSubdomain(): boolean {
-  return getSubdomain() !== null;
+  return getSubdomainFromHost() !== null;
 }
