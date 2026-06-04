@@ -171,18 +171,24 @@ const SchoolStudentDashboard    = lazy(() => import("./pages/school/student/Dash
 const SchoolStudentClasses      = lazy(() => import("./pages/school/student/Classes"));
 const SchoolStudentClassDetails = lazy(() => import("./pages/school/student/ClassDetails"));
 const SchoolStudentTopicDetails = lazy(() => import("./pages/school/student/TopicDetails"));
+const SchoolStudentStudyMaterials = lazy(() => import("./pages/school/student/StudyMaterials"));
 const SchoolStudentAssignments  = lazy(() => import("./pages/school/student/Assignments"));
 const SchoolStudentAssessments  = lazy(() => import("./pages/school/student/Assessments"));
 const SchoolStudentTestEngine   = lazy(() => import("./pages/school/student/TestEngine"));
 const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/SessionResult"));
 const SchoolStudentAiAssistant  = lazy(() => import("./pages/school/student/AiAssistant"));
 const SchoolStudentBattleArena  = lazy(() => import("./pages/school/student/BattleArena"));
+const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
 const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
+const SchoolStudentAttendance   = lazy(() => import("./pages/school/student/Attendance"));
 const SchoolStudentCalendar     = lazy(() => import("./pages/school/student/Calendar"));
 const SchoolStudentAnalytics    = lazy(() => import("./pages/school/student/Analytics"));
 const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feedback"));
+const SchoolStudentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
+const SchoolStudentSupportTickets = lazy(() => import("./pages/school/student/SupportTickets"));
 const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
+const SchoolStudentSettings     = lazy(() => import("./pages/school/student/Settings"));
 
 // ── School parent pages ──────────────────────────────────────────────────────
 const SchoolParentLayout        = lazy(() => import("./components/school/parent/ParentLayout"));
@@ -364,7 +370,8 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
-      <Route path="topics" element={<SchoolTopicManagement />} />
+      <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolAssignmentManagement />} />
@@ -382,21 +389,29 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["STUDENT"]}><SchoolStudentLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolStudentDashboard />} />
+      <Route path="live-classes" element={<SchoolStudentClasses />} />
+      <Route path="recorded-classes" element={<SchoolStudentClasses />} />
       <Route path="classes" element={<SchoolStudentClasses />} />
       <Route path="classes/:id" element={<SchoolStudentClassDetails />} />
       <Route path="classes/:batchId/topics/:topicId" element={<SchoolStudentTopicDetails />} />
+      <Route path="study-materials" element={<SchoolStudentStudyMaterials />} />
       <Route path="assignments" element={<SchoolStudentAssignments />} />
       <Route path="assessments" element={<SchoolStudentAssessments />} />
       <Route path="assessments/:id/take" element={<SchoolStudentTestEngine />} />
       <Route path="assessments/:id" element={<SchoolStudentSessionResult />} />
       <Route path="ai-assistant" element={<SchoolStudentAiAssistant />} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
+      <Route path="gamification" element={<SchoolStudentGamification />} />
       <Route path="planner" element={<SchoolStudentStudyPlanner />} />
+      <Route path="attendance" element={<SchoolStudentAttendance />} />
       <Route path="calendar" element={<SchoolStudentCalendar />} />
       <Route path="analytics" element={<SchoolStudentAnalytics />} />
       <Route path="feedback" element={<SchoolStudentFeedback />} />
+      <Route path="announcements" element={<SchoolStudentAnnouncements />} />
+      <Route path="support-tickets" element={<SchoolStudentSupportTickets />} />
       <Route path="chat" element={<SchoolStudentChat />} />
       <Route path="profile" element={<SchoolStudentProfile />} />
+      <Route path="settings" element={<SchoolStudentSettings />} />
     </Route>
 
     {/* School Parent */}

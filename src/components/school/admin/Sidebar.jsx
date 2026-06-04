@@ -133,7 +133,7 @@ const teacherGroups = [
     heading: 'Teaching',
     items: [
       { to: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/school/teacher/topics', label: 'Course Content', icon: BookOpen },
+      { to: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
       { to: '/school/teacher/classes', label: 'My Schedule', icon: Video },
       { to: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
     ],

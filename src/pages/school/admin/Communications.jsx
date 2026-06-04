@@ -1,6 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { io } from 'socket.io-client';
 import {
   MessageSquare,
   Search,
@@ -11,12 +10,8 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
-
-function getSocketBaseUrl() {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-  return apiUrl.replace(/\/api\/v1\/?$/, '');
-}
 
 const PANELS = [
   { key: 'TEACHER', label: 'Admin <-> Teacher' },
@@ -34,21 +29,29 @@ export default function Communications() {
   const [messageText, setMessageText] = useState('');
   const [attachment, setAttachment] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(false);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (!user?.id) return;
-    const socket = io(getSocketBaseUrl(), { transports: ['websocket', 'polling'] });
+    const socket = createChatSocket();
     socketRef.current = socket;
-    socket.emit('join_user', user.id);
+    const join = () => socket.emit('join_user', user.id);
+    socket.on('connect', () => { join(); setSocketConnected(true); });
+    socket.on('disconnect', () => setSocketConnected(false));
+    join();
 
     socket.on('direct_message', (msg) => {
+      // Refetch the open thread (dedupe-safe) when it concerns this peer.
       if (
         selectedUser &&
         (msg.sender_id === selectedUser.id || msg.receiver_id === selectedUser.id)
       ) {
-        setMessages((prev) => [...prev, msg]);
+        api.get(`/chat/messages/${selectedUser.id}`)
+          .then((res) => setMessages(Array.isArray(res.data?.data) ? res.data.data : []))
+          .catch(() => {});
       }
       void fetchConversations(activePanel);
     });
@@ -78,6 +81,23 @@ export default function Communications() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Fallback poll ONLY when the realtime socket is down — the socket pushes
+  // updates otherwise, so we avoid re-running the heavy conversations query.
+  useEffect(() => {
+    if (!selectedUser || socketConnected) return;
+    const interval = window.setInterval(async () => {
+      try {
+        const res = await api.get(`/chat/messages/${selectedUser.id}`);
+        const list = res.data?.data ?? [];
+        setMessages(Array.isArray(list) ? list : []);
+        void fetchConversations(activePanel);
+      } catch (err) {
+        console.error('Failed to poll messages', err);
+      }
+    }, 5000);
+    return () => window.clearInterval(interval);
+  }, [selectedUser, activePanel, socketConnected]);
+
   async function fetchConversations(role) {
     try {
       const res = await api.get('/chat/conversations', { params: { role } });
@@ -90,6 +110,7 @@ export default function Communications() {
   }
 
   async function fetchUsers(role, q = '') {
+    setLoadingUsers(true);
     try {
       const res = await api.get('/chat/users', { params: { role, q } });
       const list = res.data?.data ?? [];
@@ -97,6 +118,8 @@ export default function Communications() {
     } catch (err) {
       console.error('Failed to load chat users', err);
       setUsers([]);
+    } finally {
+      setLoadingUsers(false);
     }
   }
 
@@ -203,7 +226,19 @@ export default function Communications() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-3 pb-3">
-            {mergedList.length === 0 ? (
+            {loadingUsers ? (
+              <div className="space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-2xl border border-transparent bg-white p-3">
+                    <div className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-slate-200" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-3 w-2/3 animate-pulse rounded bg-slate-200" />
+                      <div className="h-2.5 w-1/2 animate-pulse rounded bg-slate-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : mergedList.length === 0 ? (
               <div className="grid h-full place-items-center rounded-2xl border border-dashed border-slate-100 bg-white p-6 text-center text-sm text-slate-400">
                 No users found in this panel.
               </div>
@@ -280,7 +315,12 @@ export default function Communications() {
 
               <div className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(219,234,254,0.25)_0%,rgba(255,255,255,1)_45%)] p-4 sm:p-6">
                 {loading ? (
-                  <p className="text-sm font-semibold text-slate-500">Loading messages...</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-start"><div className="h-10 w-1/2 animate-pulse rounded-2xl bg-slate-200/80" /></div>
+                    <div className="flex justify-end"><div className="h-10 w-2/5 animate-pulse rounded-2xl bg-blue-200/60" /></div>
+                    <div className="flex justify-start"><div className="h-14 w-3/5 animate-pulse rounded-2xl bg-slate-200/80" /></div>
+                    <div className="flex justify-end"><div className="h-10 w-1/3 animate-pulse rounded-2xl bg-blue-200/60" /></div>
+                  </div>
                 ) : messages.length === 0 ? (
                   <div className="grid h-full place-items-center text-sm font-semibold text-slate-400">
                     Start the conversation.
@@ -298,7 +338,7 @@ export default function Communications() {
                                 : 'border border-slate-100 bg-white text-slate-700'
                             }`}
                           >
-                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            <p className="whitespace-pre-wrap break-words">{msg.content ?? msg.text}</p>
                             <p className={`mt-1 text-[10px] ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
                               {new Date(msg.created_at || Date.now()).toLocaleTimeString()}
                             </p>

@@ -159,7 +159,7 @@ export default function Users() {
                 <th className="p-4">Registered</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">IP Address</th>
-            </tr>
+              </tr>
             </thead>
             <tbody>
               {loading ? (
