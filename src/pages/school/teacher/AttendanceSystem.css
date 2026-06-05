@@ -1,223 +1,86 @@
-.attendance {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+.attendance-page {
+  animation: fadeIn 0.45s ease-out forwards;
 }
 
-.attendance__stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+/* Horizontal KPI stats cards */
+.attendance-kpi {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.attendance__section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.attendance-kpi:hover {
+  transform: translateY(-3px);
 }
 
-.attendance__present { color: var(--success-600); font-weight: 700; }
-.attendance__absent { color: var(--error-600); font-weight: 700; }
-.attendance__late { color: var(--warning-500); font-weight: 700; }
-
-.attendance__report-title,
-.attendance__offline-title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--gray-800);
-  margin-bottom: 12px;
-  letter-spacing: -0.2px;
+/* Input & Select field styling overrides for premium look */
+.attendance-page .select-field__wrapper,
+.attendance-page .input-field__wrapper {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  transition: all 0.25s ease;
 }
 
-.attendance__offline-desc {
-  font-size: 0.813rem;
-  color: var(--gray-500);
-  margin-bottom: 16px;
-  line-height: 1.5;
+.dark .attendance-page .select-field__wrapper,
+.dark .attendance-page .input-field__wrapper {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.attendance__report-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  height: 160px;
-  padding: 14px 0;
+/* Custom Table spacing */
+.attendance-page table th,
+.attendance-page table td {
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
-.attendance__report-bar-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-  justify-content: flex-end;
+/* Toggle Chips & Quick action adjustments */
+.quick-actions-bar button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.attendance__report-bars {
-  display: flex;
-  gap: 3px;
-  align-items: flex-end;
-  height: 100%;
+.quick-actions-bar button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.attendance__report-bar {
-  width: 20px;
-  border-radius: 6px 6px 0 0;
-  transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 3px;
-  position: relative;
+.quick-actions-bar button:active {
+  transform: translateY(0);
 }
 
-.attendance__report-bar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 60%);
+/* Tabs Navigation active sliding effect */
+.tabs-navigation-bar button {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.attendance__report-bar--present {
-  background: var(--gradient-cool);
+/* Circular progress ring */
+circle {
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.attendance__report-bar--absent {
-  background: var(--gradient-warm);
-}
-
-.attendance__report-label {
-  font-size: 0.688rem;
-  font-weight: 500;
-  color: var(--gray-500);
-}
-
-.attendance__report-legend {
-  display: flex;
-  gap: 16px;
-  margin-top: 10px;
-}
-
-.attendance__report-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.75rem;
-  color: var(--gray-600);
-}
-
-.attendance__report-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-}
-
-.attendance__report-legend-dot--present { background: var(--gradient-cool); }
-.attendance__report-legend-dot--absent { background: var(--gradient-warm); }
-
-.attendance__offline-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.attendance__offline-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.attendance__offline-students {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.attendance__offline-student {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: var(--gray-50);
-  border-radius: 7px;
-  transition: background var(--transition-fast);
-}
-
-.attendance__offline-student:hover {
-  background: var(--gray-100);
-}
-
-.attendance__offline-name {
-  font-size: 0.813rem;
-  font-weight: 500;
-  color: var(--gray-700);
-}
-
-.attendance__offline-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.attendance__offline-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  font-size: 0.688rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-fast);
-  border: 1.5px solid transparent;
-}
-
-.attendance__offline-btn--present {
-  background: rgba(34, 197, 94, 0.08);
-  color: var(--success-600);
-  border-color: rgba(34, 197, 94, 0.2);
-}
-
-.attendance__offline-btn--present:hover {
-  background: var(--success-500);
-  color: white;
-  border-color: var(--success-500);
-}
-
-.attendance__offline-btn--absent {
-  background: rgba(239, 68, 68, 0.08);
-  color: var(--error-600);
-  border-color: rgba(239, 68, 68, 0.2);
-}
-
-.attendance__offline-btn--absent:hover {
-  background: var(--error-500);
-  color: white;
-  border-color: var(--error-500);
-}
-
-.attendance__offline-btn--late {
-  background: rgba(245, 158, 11, 0.08);
-  color: var(--warning-500);
-  border-color: rgba(245, 158, 11, 0.2);
-}
-
-.attendance__offline-btn--late:hover {
-  background: var(--warning-500);
-  color: white;
-  border-color: var(--warning-500);
-}
-
-@media (max-width: 768px) {
-  .attendance__stats {
-    grid-template-columns: repeat(2, 1fr);
+/* Print/Export Styling */
+@media print {
+  body * {
+    visibility: hidden;
   }
-
-  .attendance__offline-row {
-    grid-template-columns: 1fr;
+  #pdf-capture-element, #pdf-capture-element * {
+    visibility: visible;
+  }
+  #pdf-capture-element {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
 }
 
-@media (max-width: 480px) {
-  .attendance__stats {
-    grid-template-columns: 1fr;
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -46,7 +46,7 @@ const pageTitles = {
   '/school/student/attendance': 'Attendance',
   '/school/student/analytics': 'Performance Analytics',
   '/school/student/doubts': 'My Doubts',
-  '/school/student/ai-assistant': 'AI Study Assistant',
+
   '/school/student/gamification': 'Gamification',
   '/school/student/battle-arena': 'Battle Arena',
   '/school/student/planner': 'Study Planner',
@@ -68,7 +68,7 @@ const studentPages = [
   { name: 'Attendance', path: '/school/student/attendance', icon: UserCheck, keywords: 'present absent monthly subject warnings' },
   { name: 'Performance Analytics', path: '/school/student/analytics', icon: BarChart3, keywords: 'reports progress weak areas accuracy time' },
   { name: 'Ask a Doubt', path: '/school/student/doubts', icon: BrainCircuit, keywords: 'doubt question teacher ai help homework' },
-  { name: 'AI Study Assistant', path: '/school/student/ai-assistant', icon: BrainCircuit, keywords: 'doubt notes summary planner coach recommendations' },
+
   { name: 'Gamification', path: '/school/student/gamification', icon: Trophy, keywords: 'xp badges achievements leaderboards certificates' },
   { name: 'Calendar', path: '/school/student/calendar', icon: CalendarDays, keywords: 'planner goals exams events schedule' },
   { name: 'Announcements', path: '/school/student/announcements', icon: Megaphone, keywords: 'notice exam holiday teacher message' },

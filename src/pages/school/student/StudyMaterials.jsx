@@ -106,13 +106,8 @@ export default function StudyMaterials() {
   useEffect(() => {
     const fetchMaterials = async () => {
       try {
-<<<<<<< HEAD
         const res = await api.get('/school/materials');
         setMaterials(res.data?.data || res.data || []);
-=======
-        const res = await api.get('/students/courses/my');
-        setCourses(unwrapSchoolList(res));
->>>>>>> 0e981dba2d3c3dfaa86d2735525242e4af9cd56b
       } catch (error) {
         console.error('Failed to fetch study materials:', error);
       } finally {
