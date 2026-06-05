@@ -6,7 +6,6 @@ import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
 import ProgressBar from '@/components/school/ProgressBar';
-import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
@@ -77,7 +76,7 @@ const Dashboard: React.FC = () => {
       }
 
       try {
-        const doubtRes = await api.get('/doubts', { params: { status: 'pending' } });
+        const doubtRes = await api.get('/doubts');
         const list = unwrapSchoolList(doubtRes);
         setPendingDoubts(
           list.filter((d: { status?: string }) =>

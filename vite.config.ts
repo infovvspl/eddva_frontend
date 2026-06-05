@@ -44,6 +44,11 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         secure: false,
       },
+      "/uploads": {
+        target: proxyTarget,
+        changeOrigin: true,
+        secure: false,
+      },
       // Socket.IO (namespaces /live, /battle, …) so dev works on localhost or LAN IP
       "/socket.io": {
         target: proxyTarget,

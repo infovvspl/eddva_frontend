@@ -2,6 +2,7 @@ import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { getSubdomain, getSubdomainFromHost } from "@/lib/tenant";
+import { useAuthStore } from "@/lib/auth-store";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -75,19 +76,45 @@ const isSchoolAuthEndpoint = (url = "") => {
   return path.startsWith("school/auth/");
 };
 
+const isSchoolApiEndpoint = (url = "") => {
+  const path = (url || "").replace(/^\//, "");
+  return path.startsWith("school/");
+};
+
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  if (window.location.pathname.startsWith("/login")) return;
+  window.location.replace("/login");
+}
+
 // ---------------------------------------------------------------------------
 // Request interceptor — attach token
 // ---------------------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // School login/register: no tenant header. Coaching public auth: host subdomain only.
     const path = (config.url || "").replace(/^\//, "");
-    let subdomain: string | null = null;
-    if (!isSchoolAuthEndpoint(path)) {
-      subdomain = isPublicEndpoint(config.url) ? getSubdomainFromHost() : getSubdomain();
-    }
-    if (subdomain && config.headers) {
-      config.headers["X-Tenant-Subdomain"] = subdomain;
+    const schoolApi = isSchoolApiEndpoint(path);
+    const schoolAuth = isSchoolAuthEndpoint(path);
+    const { tenantType, user } = useAuthStore.getState();
+
+    // School uses institute_id (school DB), not coaching tenants — never send X-Tenant-Subdomain.
+    if (!schoolApi && !schoolAuth) {
+      const subdomain = isPublicEndpoint(config.url)
+        ? getSubdomainFromHost()
+        : getSubdomain();
+      if (subdomain && config.headers) {
+        config.headers["X-Tenant-Subdomain"] = subdomain;
+      }
+    } else if (schoolApi && config.headers) {
+      const instituteId =
+        user?.instituteId || (tenantType === "school" ? user?.tenantId : null);
+      if (instituteId) {
+        config.headers["X-Institute-Id"] = instituteId;
+      }
+      const hostSub = getSubdomainFromHost();
+      if (hostSub && config.headers) {
+        config.headers["X-Institute-Domain"] = hostSub;
+      }
     }
 
     // Auth header only for non-public endpoints
@@ -133,25 +160,38 @@ apiClient.interceptors.response.use(
 
     // If 401 and we haven't already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Never attempt a token refresh for auth endpoints themselves
       const url = (originalRequest.url || "").replace(/^\//, "");
-      const isAuthEndpoint = ["auth/login", "auth/otp", "auth/refresh", "auth/forgot", "auth/reset"].some((p) =>
-        url.includes(p),
-      );
+      const isAuthEndpoint = [
+        "auth/login",
+        "auth/otp",
+        "auth/refresh",
+        "auth/forgot",
+        "auth/reset",
+        "school/auth/login",
+        "school/auth/register",
+      ].some((p) => url.includes(p));
       if (isAuthEndpoint) {
         return Promise.reject(error);
       }
 
       const accessToken = tokenStorage.getAccess();
       const refreshToken = tokenStorage.getRefresh();
-      // No tokens at all — just reject
+
+      // School JWT has no refresh token — do not call coaching /auth/refresh
+      if (isSchoolApiEndpoint(url) || useAuthStore.getState().tenantType === "school") {
+        tokenStorage.clear();
+        useAuthStore.getState().clearAuth();
+        redirectToLogin();
+        return Promise.reject(error);
+      }
+
       if (!refreshToken && !accessToken) {
         return Promise.reject(error);
       }
-      // Access token but no refresh token — clear stale state and redirect
       if (!refreshToken) {
         tokenStorage.clear();
-        window.location.href = "/login";
+        useAuthStore.getState().clearAuth();
+        redirectToLogin();
         return Promise.reject(error);
       }
 
@@ -181,7 +221,8 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError as AxiosError);
         tokenStorage.clear();
-        window.location.href = "/login";
+        useAuthStore.getState().clearAuth();
+        redirectToLogin();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

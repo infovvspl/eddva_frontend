@@ -196,34 +196,35 @@ export default function DoubtQueue() {
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showSpinner = false) => {
     setError('');
+    if (showSpinner) setLoading(true);
     try {
-      const params = tab === 'pending' ? { status: 'pending' } : tab === 'answered' ? { status: 'answered' } : {};
-      const res = await api.get('/doubts', { params });
+      const res = await api.get('/doubts');
       setDoubts(unwrapSchoolList(res));
     } catch (e) {
       console.error(e);
       setError(e?.response?.data?.message || 'Failed to load doubts');
+      setDoubts([]);
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    load();
+    load(true);
   }, [load]);
 
-  const pending = useMemo(
+  const pendingList = useMemo(
     () => doubts.filter((d) => ['escalated', 'open', 'ai_answered'].includes(d.status)),
     [doubts],
   );
-  const answered = useMemo(
+  const answeredList = useMemo(
     () => doubts.filter((d) => d.status === 'teacher_answered'),
     [doubts],
   );
-  const shown = tab === 'pending' ? pending : tab === 'answered' ? answered : doubts;
+  const shown =
+    tab === 'pending' ? pendingList : tab === 'answered' ? answeredList : doubts;
 
   const submitReply = async (id) => {
     if (replyText.trim().length < 5 && !replyImageUrl) return;
@@ -281,7 +282,7 @@ export default function DoubtQueue() {
         </div>
         <button
           type="button"
-          onClick={() => { setLoading(true); load(); }}
+          onClick={() => load(true)}
           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
         >
           <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
@@ -292,11 +293,11 @@ export default function DoubtQueue() {
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
           <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Pending</p>
-          <p className="mt-1 text-2xl font-black text-amber-900 dark:text-amber-100">{pending.length}</p>
+          <p className="mt-1 text-2xl font-black text-amber-900 dark:text-amber-100">{pendingList.length}</p>
         </div>
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Answered</p>
-          <p className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-100">{answered.length}</p>
+          <p className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-100">{answeredList.length}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">All in queue</p>
@@ -306,8 +307,8 @@ export default function DoubtQueue() {
 
       <div className="flex flex-wrap gap-2">
         {[
-          { id: 'pending', label: 'Pending', icon: Clock, count: pending.length },
-          { id: 'answered', label: 'Answered', icon: CheckCircle2, count: answered.length },
+          { id: 'pending', label: 'Pending', icon: Clock, count: pendingList.length },
+          { id: 'answered', label: 'Answered', icon: CheckCircle2, count: answeredList.length },
           { id: 'all', label: 'All', icon: HelpCircle, count: doubts.length },
         ].map(({ id, label, icon: Icon, count }) => (
           <button
@@ -337,13 +338,23 @@ export default function DoubtQueue() {
       {shown.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
           <HelpCircle className="mx-auto h-10 w-10 text-slate-300" />
-          <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">No doubts in this view</h3>
+          <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">
+            {tab === 'pending' ? 'No pending doubts' : tab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
+          </h3>
           <p className="mt-1 text-sm text-slate-500">
-            When students ask questions from{' '}
-            <Link to="/school/student/doubts" className="font-bold text-blue-600 hover:underline">
-              Ask a Doubt
-            </Link>
-            , they appear here for your sections.
+            {tab === 'pending' && answeredList.length > 0
+              ? 'You have answered doubts — check the Answered tab.'
+              : tab === 'answered' && pendingList.length > 0
+                ? 'You still have pending doubts — check the Pending tab.'
+                : (
+                  <>
+                    When students ask from{' '}
+                    <Link to="/school/student/doubts" className="font-bold text-blue-600 hover:underline">
+                      Ask a Doubt
+                    </Link>
+                    , they appear here for your sections.
+                  </>
+                )}
           </p>
         </div>
       ) : (

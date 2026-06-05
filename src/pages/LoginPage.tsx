@@ -149,6 +149,7 @@ const LoginPage = () => {
       email: u.email,
       role: (u.role.toLowerCase()) as UserRole,
       avatar: u.photo ?? undefined,
+      instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
       isFirstLogin: false,

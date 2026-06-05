@@ -15,7 +15,13 @@ export function DoubtImagePreview({ url, alt = 'Attached image', className = '' 
   );
 }
 
-export default function DoubtImageAttach({ imageUrl, previewUrl, onChange, label = 'Attach image (optional)' }) {
+export default function DoubtImageAttach({
+  imageUrl,
+  previewUrl,
+  onChange,
+  label = 'Attach image (optional)',
+  uploadFn = uploadDoubtImage,
+}) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
@@ -25,7 +31,7 @@ export default function DoubtImageAttach({ imageUrl, previewUrl, onChange, label
     setErr('');
     setUploading(true);
     try {
-      const url = await uploadDoubtImage(file);
+      const url = await uploadFn(file);
       onChange(url, URL.createObjectURL(file));
     } catch (e) {
       setErr(e?.message || 'Upload failed');

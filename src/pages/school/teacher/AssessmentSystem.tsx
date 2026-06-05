@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,7 +21,7 @@ import DataTable from "@/components/school/DataTable";
 import Modal from "@/components/school/Modal";
 import InputField from "@/components/school/InputField";
 import SelectField from "@/components/school/SelectField";
-import api from "@/lib/api/school-client";
+import { apiClient as api } from "@/lib/api/client";
 import "./AssessmentSystem.css";
 
 const AssessmentSystem: React.FC = () => {

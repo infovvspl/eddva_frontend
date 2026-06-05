@@ -58,7 +58,10 @@ export interface User {
   email?: string;
   role: UserRole;
   avatar?: string;
+  /** Coaching: coaching tenant UUID. School: same value as instituteId (legacy field name). */
   tenantId?: string;
+  /** School module only — institutes.id from school DB */
+  instituteId?: string;
   tenantName?: string;
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;
