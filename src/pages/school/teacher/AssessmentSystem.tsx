@@ -2,22 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ClipboardList,
-  Trophy,
-  BarChart3,
-  Plus,
-  Target,
-  Award,
-  TrendingUp,
-  Edit,
-  Trash2,
+  FileText, Upload, BookOpen, Calendar, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, Trophy, BarChart3, ClipboardList, Target
 } from "lucide-react";
 import GlassCard from "@/components/school/GlassCard";
-import StatCard from "@/components/school/StatCard";
 import Button from "@/components/school/Button";
 import Badge from "@/components/school/Badge";
-import Tabs from "@/components/school/Tabs";
-import DataTable from "@/components/school/DataTable";
 import Modal from "@/components/school/Modal";
 import InputField from "@/components/school/InputField";
 import SelectField from "@/components/school/SelectField";
@@ -26,141 +15,160 @@ import "./AssessmentSystem.css";
 
 const AssessmentSystem: React.FC = () => {
   const navigate = useNavigate();
+  const { assignments, setAssignments } = useAcademicStore();
+  const [loadingContext, setLoadingContext] = useState(true);
+
+  // Navigation state
+  const [selectedClass, setSelectedClass] = useState<{ id: string; name: string } | null>(null);
+  const [selectedSection, setSelectedSection] = useState<{ id: string; name: string } | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
+  const [search, setSearch] = useState('');
+
+  // Assessment States
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [testsList, setTestsList] = useState<any[]>([]);
+  const [loadingTests, setLoadingTests] = useState(false);
+  const [editingTest, setEditingTest] = useState<any>(null);
+
   const [formData, setFormData] = useState({
     title: "",
     type: "topic",
-    class_id: "",
     total_marks: 100,
     duration_minutes: 120,
     scheduled_date: "",
   });
 
-  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [editingTest, setEditingTest] = useState<any>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
 
+  // ── Load Context (source of truth for navigation) ────────────
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (assignments.length > 0) {
+          setLoadingContext(false);
+          return;
+        }
+        const res = await api.get('/dashboard/stats');
+        const tData = res.data?.data?.teacherData || res.data?.teacherData || {};
+        if (!cancelled && Array.isArray(tData.assignments)) {
+          setAssignments(tData.assignments);
+        }
+      } catch (err) {
+        console.error('Failed to load teacher context', err);
+      } finally {
+        if (!cancelled) setLoadingContext(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [assignments.length, setAssignments]);
+
+  // ── Derived hierarchies ──────────────────────────────────────────────────
+  const classes = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string> }>();
+    assignments.forEach((a: any) => {
+      if (!a.classId) return;
+      const entry = map.get(a.classId) ?? { id: a.classId, name: a.className, sections: new Set(), subjects: new Set() };
+      if (a.sectionId) entry.sections.add(a.sectionId);
+      if (a.subjectId) entry.subjects.add(a.subjectId);
+      map.set(a.classId, entry);
+    });
+    return Array.from(map.values());
+  }, [assignments]);
+
+  const sections = useMemo(() => {
+    if (!selectedClass) return [];
+    const map = new Map<string, { id: string; name: string; subjects: Set<string> }>();
+    assignments
+      .filter((a: any) => a.classId === selectedClass.id)
+      .forEach((a: any) => {
+        if (!a.sectionId) return;
+        const entry = map.get(a.sectionId) ?? { id: a.sectionId, name: a.sectionName, subjects: new Set() };
+        if (a.subjectId) entry.subjects.add(a.subjectId);
+        map.set(a.sectionId, entry);
+      });
+    return Array.from(map.values());
+  }, [assignments, selectedClass]);
+
+  const subjects = useMemo(() => {
+    if (!selectedClass || !selectedSection) return [];
+    const map = new Map<string, { id: string; name: string }>();
+    assignments
+      .filter((a: any) => a.classId === selectedClass.id && a.sectionId === selectedSection.id)
+      .forEach((a: any) => {
+        if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
+      });
+    return Array.from(map.values());
+  }, [assignments, selectedClass, selectedSection]);
+
+  // ── Filtered Navigation ──────────────────────────────────────────────────
+  const q = search.trim().toLowerCase();
+  const filteredClasses = classes.filter((c) => c.name?.toLowerCase().includes(q));
+  const filteredSections = sections.filter((s) => s.name?.toLowerCase().includes(q));
+  const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
+
+  const level = selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
+
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
+  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
+  const goBack = () => {
+    if (level === 'workspace') goToSubjects();
+    else if (level === 'subjects') goToSections();
+    else if (level === 'sections') goToClasses();
+  };
+
+  // ── Data Fetching for Workspace ──────────────────────────────────────────
   const fetchTests = async () => {
+    if (!selectedSubject) return;
+    setLoadingTests(true);
     try {
+      // Fetch all assessments and filter on frontend based on subjectId
       const res = await api.get("/assessments");
+      const allAssessments = res.data.data || [];
+      
+      const filtered = allAssessments.filter((item: any) => 
+        String(item.subject_id) === String(selectedSubject.id) &&
+        String(item.section_id) === String(selectedSection?.id)
+      );
 
-      const formatted = res.data.data.map((item: any) => ({
+      const formatted = filtered.map((item: any) => ({
         id: item.id,
         title: item.title,
-        type: item.type,
-
+        type: item.assessment_type || item.type || "topic",
         totalMarks: item.total_marks,
-
         duration: item.duration_minutes || "-",
-
-        date: item.scheduled_date
-          ? new Date(item.scheduled_date).toLocaleDateString()
+        date: item.scheduled_at || item.scheduled_date
+          ? new Date(item.scheduled_at || item.scheduled_date).toLocaleDateString()
           : "-",
-
-        class: item.class_name || "-",
-
-        status:
-          new Date(item.scheduled_date) > new Date() ? "upcoming" : "completed",
-
+        class: selectedClass?.name || "-",
+        status: item.status || (new Date(item.scheduled_at || item.scheduled_date) > new Date() ? "upcoming" : "completed"),
         submissions: 0,
       }));
 
       setTestsList(formatted);
     } catch (err) {
       console.error("Fetch assessments error:", err);
-    }
-  };
-
-  const fetchLeaderboard = async (assessmentId: number) => {
-    try {
-      const res = await api.get(`/assessments/${assessmentId}/leaderboard`);
-
-      const formatted = res.data.data.map((item: any, index: number) => ({
-        rank: index + 1,
-        name: item.student_name,
-        class: item.class_name || "12-A",
-        marks: item.marks_obtained,
-        percentage:
-          item.percentage || Math.round((item.marks_obtained / 100) * 100),
-      }));
-
-      setLeaderboardData(formatted);
-    } catch (err) {
-      console.error("Leaderboard fetch error:", err);
-    }
-  };
-
-  const fetchAnalytics = async (assessmentId: number) => {
-    try {
-      const res = await api.get(`/assessments/${assessmentId}/analytics`);
-
-      setAnalytics(res.data.data);
-    } catch (err) {
-      console.error("Analytics fetch error:", err);
+    } finally {
+      setLoadingTests(false);
     }
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      await fetchTests();
-    };
-
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (testsList.length > 0) {
-      fetchLeaderboard(testsList[0].id);
-      fetchAnalytics(testsList[0].id);
+    if (level === 'workspace') {
+      fetchTests();
     }
-  }, [testsList]);
+  }, [level, selectedSubject]);
 
   const handleCreateTest = async () => {
     if (!formData.title.trim()) {
       alert("Please enter test title");
       return;
     }
-
     if (!formData.scheduled_date) {
       alert("Please select test date");
-      return;
-    }
-
-    if (!formData.type) {
-      alert("Please select test type");
-      return;
-    }
-
-    if (!formData.class_id) {
-      alert("Please select class");
-      return;
-    }
-
-    if (formData.total_marks <= 0) {
-      alert("Total marks must be greater than 0");
-      return;
-    }
-
-    if (formData.duration_minutes <= 0) {
-      alert("Duration must be greater than 0");
-      return;
-    }
-
-    if (!formData.scheduled_date) {
-      alert("Please select test date");
-      return;
-    }
-
-    const selectedDate = new Date(formData.scheduled_date);
-    const today = new Date();
-
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate < today) {
-      alert("Test date cannot be in the past");
       return;
     }
 
@@ -168,11 +176,16 @@ const AssessmentSystem: React.FC = () => {
       const payload = {
         title: formData.title,
         type: formData.type,
-        subject_id: 1,
-        class_id: Number(formData.class_id),
+        assessmentType: formData.type, // Handle backend variations
+        subjectId: selectedSubject?.id,
+        class_id: selectedClass?.id, // frontend metadata if needed
+        sectionId: selectedSection?.id,
         total_marks: formData.total_marks,
+        totalMarks: formData.total_marks,
         duration_minutes: formData.duration_minutes,
+        durationMinutes: formData.duration_minutes,
         scheduled_date: formData.scheduled_date,
+        scheduledAt: formData.scheduled_date
       };
 
       if (editingTest) {
@@ -180,22 +193,13 @@ const AssessmentSystem: React.FC = () => {
       } else {
         await api.post("/assessments", payload);
       }
+      
       await fetchTests();
-
       setEditingTest(null);
-
-      alert(
-        editingTest
-          ? "Test updated successfully!"
-          : "Test created successfully!",
-      );
-
       setShowCreateModal(false);
-
       setFormData({
         title: "",
         type: "topic",
-        class_id: "",
         total_marks: 100,
         duration_minutes: 120,
         scheduled_date: "",
@@ -211,10 +215,8 @@ const AssessmentSystem: React.FC = () => {
       title: "Test Name",
       render: (v: string, row: any) => (
         <span
-          className="assessment__title-link"
-          onClick={() => {
-            navigate(`/teacher/assessments/${row.id}`);
-          }}
+          className="text-brand-600 font-medium hover:underline cursor-pointer"
+          onClick={() => navigate(`/teacher/assessments/${row.id}`)}
         >
           {v}
         </span>
@@ -226,13 +228,7 @@ const AssessmentSystem: React.FC = () => {
       render: (v: string) => (
         <Badge
           variant={
-            v === "final"
-              ? "error"
-              : v === "mock"
-                ? "warning"
-                : v === "unit"
-                  ? "info"
-                  : "purple"
+            v === "final" ? "error" : v === "mock" ? "warning" : v === "unit" ? "info" : "purple"
           }
         >
           {v}
@@ -240,24 +236,15 @@ const AssessmentSystem: React.FC = () => {
       ),
     },
     { key: "totalMarks", title: "Total Marks" },
-    { key: "duration", title: "Duration" },
+    { key: "duration", title: "Duration (mins)" },
     { key: "date", title: "Date" },
-    {
-      key: "class",
-      title: "Class",
-      render: (v: string) => <Badge variant="default">{v}</Badge>,
-    },
     {
       key: "status",
       title: "Status",
       render: (v: string) => (
         <Badge
           variant={
-            v === "completed"
-              ? "success"
-              : v === "scheduled"
-                ? "info"
-                : "warning"
+            v === "completed" ? "success" : v === "scheduled" || v === "upcoming" ? "info" : "warning"
           }
         >
           {v}
@@ -265,7 +252,7 @@ const AssessmentSystem: React.FC = () => {
       ),
     },
     {
-      key: "submissions",
+      key: "actions",
       title: "Actions",
       render: (_: any, row: any) => (
         <Button
@@ -274,14 +261,9 @@ const AssessmentSystem: React.FC = () => {
           icon={<Trash2 size={14} />}
           onClick={async () => {
             const confirmed = window.confirm("Delete this assessment?");
-
             if (!confirmed) return;
-
             try {
               await api.delete(`/assessments/${row.id}`);
-
-              alert("Assessment deleted successfully!");
-
               fetchTests();
             } catch (err) {
               console.error(err);
@@ -294,291 +276,271 @@ const AssessmentSystem: React.FC = () => {
     },
   ];
 
-  const topicTestsContent = (
-    <div className="assessment__section">
-      <DataTable
-        columns={testColumns}
-        data={testsList.filter(
-          (t) =>
-            t.type === "topic" &&
-            t.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-            (statusFilter === "all" || t.status === statusFilter),
-        )}
-      />
-    </div>
-  );
+  const renderDataTable = (typeFilter: string | string[]) => {
+    const data = testsList.filter((t) => {
+      const matchType = Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter;
+      const matchSearch = t.title.toLowerCase().includes(workspaceSearch.toLowerCase());
+      const matchStatus = workspaceStatusFilter === "all" || t.status === workspaceStatusFilter;
+      return matchType && matchSearch && matchStatus;
+    });
 
-  const unitTestsContent = (
-    <div className="assessment__section">
-      <DataTable
-        columns={testColumns}
-        data={testsList.filter(
-          (t) =>
-            t.type === "unit" &&
-            t.title.toLowerCase().includes(searchTerm.toLowerCase()),
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {loadingTests ? (
+          <div className="py-12 text-center text-gray-400">Loading tests...</div>
+        ) : data.length === 0 ? (
+          <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
+             <Target size={48} className="mx-auto text-gray-300 mb-4" />
+             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
+             <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
+          </div>
+        ) : (
+          <DataTable columns={testColumns} data={data} />
         )}
-      />
-    </div>
-  );
-
-  const mockTestsContent = (
-    <div className="assessment__section">
-      <DataTable
-        columns={testColumns}
-        data={testsList.filter(
-          (t) =>
-            (t.type === "mock" || t.type === "subject" || t.type === "final") &&
-            t.title.toLowerCase().includes(searchTerm.toLowerCase()),
-        )}
-      />
-    </div>
-  );
-
-  const resultsContent = (
-    <div className="assessment__results">
-      <div className="assessment__result-stats">
-        <StatCard
-          title="Average Score"
-          value={`${analytics?.averageScore || 0}%`}
-          icon={<Target size={24} />}
-          gradient="var(--gradient-primary)"
-        />
-        <StatCard
-          title="Highest Score"
-          value={`${analytics?.highestScore || 0}%`}
-          icon={<Award size={24} />}
-          gradient="var(--gradient-cool)"
-        />
-        <StatCard
-          title="Pass Rate"
-          value={`${analytics?.passRate || 0}%`}
-          icon={<TrendingUp size={24} />}
-          gradient="var(--gradient-accent)"
-        />
-        <StatCard
-          title="Distinction Rate"
-          value={`${analytics?.distinctionRate || 0}%`}
-          icon={<Trophy size={24} />}
-          gradient="var(--gradient-secondary)"
-        />
       </div>
+    );
+  };
 
-      <GlassCard>
-        <h3 className="assessment__grade-title">Grade Distribution</h3>
-        <div className="assessment__grade-chart">
-          {analytics?.gradeDistribution?.map((g: any) => (
-            <div key={g.grade} className="assessment__grade-bar-wrapper">
-              <div
-                className="assessment__grade-bar"
-                style={{
-                  height: `${g.count * 20}px`,
-                  background: g.color,
-                }}
-              />
-
-              <span className="assessment__grade-label">{g.grade}</span>
-
-              <small className="assessment__grade-count">{g.count}</small>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
-
-      <GlassCard>
-        <div className="assessment__leaderboard-header">
-          <h3>
-            <Trophy size={20} className="assessment__trophy-icon" /> Leaderboard
-          </h3>
-          <Badge variant="purple">Unit Test 3</Badge>
-        </div>
-        <div className="assessment__leaderboard">
-          {leaderboardData.length > 0 ? (
-            leaderboardData.map((entry) => (
-              <div
-                key={entry.rank}
-                className={`assessment__leaderboard-item ${
-                  entry.rank <= 3 ? "assessment__leaderboard-item--top" : ""
-                }`}
-              >
-                <div
-                  className={`assessment__rank assessment__rank--${entry.rank}`}
-                >
-                  {entry.rank <= 3 ? <Trophy size={14} /> : entry.rank}
-                </div>
-
-                <div className="assessment__leader-info">
-                  <span className="assessment__leader-name">{entry.name}</span>
-
-                  <span className="assessment__leader-class">
-                    Class {entry.class}
-                  </span>
-                </div>
-
-                <div className="assessment__leader-score">
-                  <span className="assessment__leader-marks">
-                    {entry.marks}/100
-                  </span>
-
-                  <span className="assessment__leader-pct">
-                    {entry.percentage}%
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="assessment__empty">
-              No leaderboard data available yet.
-            </div>
-          )}
-        </div>
-      </GlassCard>
-    </div>
-  );
-
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="assessment">
-      <div className="assessment__header">
-        <input
-          type="text"
-          placeholder="Search assessments..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="assessment__search"
-        />
-
-        <select
-          value={statusFilter}
-          defaultValue="all"
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="assessment__search assessment__filter"
-        >
-          <option value="all" disabled hidden>
-            Filter Status
-          </option>
-
-          <option value="upcoming">Upcoming</option>
-
-          <option value="completed">Completed</option>
-        </select>
-
-        <Button
-          icon={<Plus size={16} />}
-          onClick={() => setShowCreateModal(true)}
-        >
-          Create Test
-        </Button>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            Assessments
+          </h1>
+          <p className="mt-1 text-sm font-medium text-gray-500">
+            Navigate through your assigned classes to manage assessments.
+          </p>
+        </div>
+        {level !== 'classes' && (
+          <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
+            Back
+          </Button>
+        )}
       </div>
 
-      <Tabs
-        tabs={[
-          {
-            id: "topic",
-            label: "Topic Tests",
-            icon: <ClipboardList size={16} />,
-            content: topicTestsContent,
-          },
-          {
-            id: "unit",
-            label: "Unit Tests",
-            icon: <BarChart3 size={16} />,
-            content: unitTestsContent,
-          },
-          {
-            id: "mock",
-            label: "Mock & Final",
-            icon: <Target size={16} />,
-            content: mockTestsContent,
-          },
-          {
-            id: "results",
-            label: "Results & Leaderboard",
-            icon: <Trophy size={16} />,
-            content: resultsContent,
-          },
+      {/* Breadcrumbs */}
+      <Breadcrumb
+        items={[
+          { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
+          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
+          ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => {}, active: true }] : []),
         ]}
       />
 
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title={editingTest ? "Update Test" : "Create New Test"}
-      >
-        <div className="assessment__modal-form">
-          <InputField
-            label="Test Title"
-            placeholder="Enter test title"
-            value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
-          />
-          <SelectField
-            label="Test Type"
-            value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-            options={[
-              { value: "topic", label: "Topic Test" },
-              { value: "unit", label: "Unit Test" },
-              { value: "mock", label: "Mock Test" },
-              { value: "subject", label: "Subject Test" },
-              { value: "final", label: "Final Exam" },
-            ]}
-          />
-          <SelectField
-            label="Class"
-            value={formData.class_id}
-            onChange={(e) =>
-              setFormData({ ...formData, class_id: e.target.value })
-            }
-            options={[
-              { value: "1", label: "Class 12-A" },
-              { value: "2", label: "Class 11-B" },
-            ]}
-          />
-          <div className="assessment__modal-row">
-            <InputField
-              label="Total Marks"
-              type="number"
-              placeholder="100"
-              value={formData.total_marks}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  total_marks: Number(e.target.value),
-                })
-              }
-            />
-            <InputField
-              label="Duration (mins)"
-              type="number"
-              placeholder="120"
-              value={formData.duration_minutes}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  duration_minutes: Number(e.target.value),
-                })
-              }
-            />
-          </div>
-          <InputField
-            label="Date"
-            type="date"
-            value={formData.scheduled_date}
-            onChange={(e) =>
-              setFormData({ ...formData, scheduled_date: e.target.value })
-            }
-          />
-          <div className="assessment__modal-actions">
-            <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateTest}>
-              {editingTest ? "Update Test" : "Create Test"}
-            </Button>{" "}
-          </div>
+      {/* Search Bar for Navigation Levels */}
+      {level !== 'workspace' && (
+        <div className="max-w-md mb-6">
+          <SearchBar value={search} onChange={setSearch} placeholder={`Search ${level}...`} />
         </div>
-      </Modal>
+      )}
+
+      {/* Level 1: Classes */}
+      {level === 'classes' && (
+        loadingContext ? (
+          <div className="py-12 text-center text-gray-400">Loading your classes...</div>
+        ) : filteredClasses.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+            No classes assigned.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClasses.map((c) => (
+              <NavCard
+                key={c.id}
+                icon={<GraduationCap size={22} />}
+                tone="brand"
+                title={c.name}
+                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
+                actionLabel="View sections"
+                onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Level 2: Sections */}
+      {level === 'sections' && (
+        filteredSections.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+            No sections assigned for this class.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSections.map((s) => (
+              <NavCard
+                key={s.id}
+                icon={<Layers size={22} />}
+                tone="brand"
+                title={`Section ${s.name}`}
+                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
+                actionLabel="View subjects"
+                onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Level 3: Subjects */}
+      {level === 'subjects' && (
+        filteredSubjects.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+            No subjects assigned for this class.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSubjects.map((s) => (
+              <NavCard
+                key={s.id}
+                icon={<BookOpen size={22} />}
+                tone="emerald"
+                title={s.name}
+                meta="Assessments Workspace"
+                actionLabel="Open workspace"
+                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Level 4: Workspace */}
+      {level === 'workspace' && selectedClass && selectedSubject && (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {selectedClass.name} | {selectedSubject.name}
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="text"
+                placeholder="Search tests..."
+                value={workspaceSearch}
+                onChange={(e) => setWorkspaceSearch(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+              <select
+                value={workspaceStatusFilter}
+                onChange={(e) => setWorkspaceStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+              >
+                <option value="all">All Status</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="completed">Completed</option>
+              </select>
+              <Button
+                icon={<Plus size={18} />}
+                onClick={() => {
+                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
+                  setShowCreateModal(true);
+                }}
+                className="shadow-sm"
+              >
+                Create Test
+              </Button>
+            </div>
+          </div>
+
+          <Tabs
+            tabs={[
+              {
+                id: "topic",
+                label: "Topic Tests",
+                icon: <ClipboardList size={16} />,
+                content: renderDataTable("topic"),
+              },
+              {
+                id: "unit",
+                label: "Unit Tests",
+                icon: <BarChart3 size={16} />,
+                content: renderDataTable("unit"),
+              },
+              {
+                id: "mock",
+                label: "Mock & Final",
+                icon: <Target size={16} />,
+                content: renderDataTable(["mock", "subject", "final"]),
+              }
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {selectedClass && selectedSubject && (
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title={editingTest ? "Update Test" : "Create New Test"}
+        >
+          <div className="space-y-4 p-2">
+            <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
+              <strong>Context:</strong> Posting to {selectedClass.name} ({selectedSubject.name})
+            </div>
+
+            <InputField
+              label="Test Title"
+              placeholder="Enter test title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            />
+            <SelectField
+              label="Test Type"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              options={[
+                { value: "topic", label: "Topic Test" },
+                { value: "unit", label: "Unit Test" },
+                { value: "mock", label: "Mock Test" },
+                { value: "subject", label: "Subject Test" },
+                { value: "final", label: "Final Exam" },
+              ]}
+            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <InputField
+                label="Total Marks"
+                type="number"
+                placeholder="100"
+                value={formData.total_marks}
+                onChange={(e) => setFormData({ ...formData, total_marks: Number(e.target.value) })}
+              />
+              <InputField
+                label="Duration (mins)"
+                type="number"
+                placeholder="120"
+                value={formData.duration_minutes}
+                onChange={(e) => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
+              />
+            </div>
+            
+            <InputField
+              label="Date"
+              type="date"
+              value={formData.scheduled_date}
+              onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+            />
+            
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateTest}>
+                {editingTest ? "Update Test" : "Create Test"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
