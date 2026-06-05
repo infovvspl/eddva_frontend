@@ -153,7 +153,6 @@ const teacherGroups = [
       { to: '/school/teacher/creator', label: 'PPT & Mind Maps', icon: Presentation },
       { to: '/school/teacher/grievances', label: 'Grievances', icon: MessageSquareWarning },
       { to: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
-      { to: '/school/teacher/profile', label: 'Profile', icon: SettingsIcon },
     ],
   },
 ];

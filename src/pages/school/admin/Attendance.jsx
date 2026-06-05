@@ -185,8 +185,8 @@ export default function Attendance() {
                   <td className="px-6 py-4 font-semibold text-surface-950">{record.user?.name || '-'}</td>
                   <td className="px-6 py-4">{new Date(record.date).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${statusColors[record.status] || statusColors.PRESENT}`}>
-                      {record.status}
+                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
+                      {record.status?.toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-surface-600">
