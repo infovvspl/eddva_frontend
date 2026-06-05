@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { BookOpen, Radio, Video, ChevronRight, CheckCircle2, Hand, BarChart3 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/components/school/admin/Skeleton';
@@ -13,7 +13,7 @@ export default function Classes() {
     const fetchCourses = async () => {
       try {
         const response = await api.get('/students/courses/my');
-        setCourses(response.data || []);
+        setCourses(unwrapSchoolList(response));
       } catch (error) {
         console.error('Failed to fetch courses:', error);
       } finally {

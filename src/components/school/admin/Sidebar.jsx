@@ -141,6 +141,7 @@ const teacherGroups = [
   {
     heading: 'Evaluation',
     items: [
+      { to: '/school/teacher/doubts', label: 'Student Doubts', icon: MessageSquare },
       { to: '/school/teacher/assignments', label: 'Assignments', icon: FileText },
       { to: '/school/teacher/assessments', label: 'Assessments', icon: ClipboardList },
       { to: '/school/teacher/reports', label: 'Reports', icon: BarChart3 },

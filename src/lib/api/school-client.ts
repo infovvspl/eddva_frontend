@@ -21,4 +21,22 @@ const schoolApi = {
     apiClient.delete(`/school${url}`, config),
 };
 
+/** Normalize list payloads from school APIs (`{ data: [] }` or bare array). */
+export function unwrapSchoolList(res: { data?: unknown }): unknown[] {
+  const body = res?.data;
+  if (Array.isArray(body)) return body;
+  if (body && typeof body === 'object' && Array.isArray((body as { data?: unknown[] }).data)) {
+    return (body as { data: unknown[] }).data;
+  }
+  return [];
+}
+
+export function unwrapSchoolData<T>(res: { data?: unknown }, fallback: T): T {
+  const body = res?.data;
+  if (body && typeof body === 'object' && 'data' in (body as object) && (body as { data?: T }).data !== undefined) {
+    return (body as { data: T }).data;
+  }
+  return (body as T) ?? fallback;
+}
+
 export default schoolApi;

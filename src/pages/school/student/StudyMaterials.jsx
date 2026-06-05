@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import {
   BookOpen,
   ChevronRight,
@@ -29,7 +29,7 @@ export default function StudyMaterials() {
     const fetchCourses = async () => {
       try {
         const res = await api.get('/students/courses/my');
-        setCourses(res.data || []);
+        setCourses(unwrapSchoolList(res));
       } catch (error) {
         console.error('Failed to fetch study material courses:', error);
       } finally {

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileText, Upload, BookOpen, Calendar, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, Trophy, BarChart3, ClipboardList, Target
@@ -9,61 +10,8 @@ import Badge from "@/components/school/Badge";
 import Modal from "@/components/school/Modal";
 import InputField from "@/components/school/InputField";
 import SelectField from "@/components/school/SelectField";
-import SearchBar from "@/components/school/SearchBar";
-import Tabs from "@/components/school/Tabs";
-import DataTable from "@/components/school/DataTable";
-import api from "@/lib/api/school-client";
-import { useAcademicStore } from "@/lib/academic-store";
-
-// ── Components ─────────────────────────────────────────────────────────────
-
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
-  return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm mb-6">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-gray-300" />}
-          <button
-            type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              it.active ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-            }`}
-          >
-            {it.icon}{it.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
-  );
-}
-
-function NavCard({
-  icon, tone, title, meta, actionLabel, onClick,
-}: {
-  icon: React.ReactNode; tone: 'brand' | 'emerald'; title: string; meta: string;
-  actionLabel: string; onClick: () => void;
-}) {
-  const t = tone === 'brand' ? { soft: 'bg-brand-100', icon: 'text-brand-600' } : { soft: 'bg-emerald-100', icon: 'text-emerald-600' };
-  return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
-      </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-gray-900">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-gray-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5" />
-      </div>
-    </GlassCard>
-  );
-}
-
-// ── Main Component ─────────────────────────────────────────────────────────
+import { apiClient as api } from "@/lib/api/client";
+import "./AssessmentSystem.css";
 
 const AssessmentSystem: React.FC = () => {
   const navigate = useNavigate();

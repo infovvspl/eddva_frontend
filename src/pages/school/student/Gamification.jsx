@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { Award, BookOpen, CheckCircle2, Medal, Star, Target, Trophy, UserCheck } from 'lucide-react';
 
 const levels = ['Beginner', 'Learner', 'Scholar', 'Expert', 'Champion'];
@@ -16,7 +16,7 @@ export default function Gamification() {
           api.get('/students/dashboard').catch(() => ({ data: null })),
           api.get('/battles/leaderboard').catch(() => ({ data: { rankings: [] } })),
         ]);
-        setDashboard(dashRes.data || null);
+        setDashboard(unwrapSchoolData(dashRes, null));
         setLeaderboard(boardRes.data?.rankings || []);
       } catch (error) {
         console.error('Failed to fetch gamification data:', error);
