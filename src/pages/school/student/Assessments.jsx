@@ -1,28 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { apiClient as api } from '@/lib/api/client';
-import { ClipboardList, Clock, BrainCircuit, PlayCircle, CheckCircle2, Trophy, BarChart3, ChevronRight, Save, ShieldCheck, Timer } from 'lucide-react';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { getApiOrigin } from '@/lib/api-config';
+import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, Save, ShieldCheck, Timer, X } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+
+function resolveUploadUrl(filePath) {
+  if (!filePath) return null;
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+  const clean = String(filePath).replace(/^\.\//, '').replace(/^uploads[/\\]/, '');
+  return `${getApiOrigin()}/uploads/${clean}`;
+}
 
 export default function Assessments() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('available');
-  const [mockTests, setMockTests] = useState([]);
+  const [assessments, setAssessments] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [testsRes, sessionsRes] = await Promise.all([
-          api.get('/assessments/mock-tests?status=published'),
-          api.get('/assessments/sessions')
-        ]);
-        
-        setMockTests(testsRes.data.data || []);
-        setSessions(sessionsRes.data.data || []);
+        const testsRes = await api.get('/assessments');
+        setAssessments(unwrapSchoolList(testsRes));
       } catch (error) {
         console.error('Failed to fetch assessments:', error);
+        setAssessments([]);
+      }
+
+      try {
+        const sessionsRes = await api.get('/assessments/sessions');
+        setSessions(unwrapSchoolList(sessionsRes));
+      } catch (error) {
+        console.warn('Failed to fetch assessment history:', error);
+        setSessions([]);
       } finally {
         setLoading(false);
       }
@@ -30,26 +42,6 @@ export default function Assessments() {
     
     fetchData();
   }, []);
-
-  const handleStartTest = async (mockTestId) => {
-    try {
-      const res = await api.post('/assessments/sessions/start', { mockTestId });
-      navigate(`/school/student/assessments/${res.data.id}/take`);
-    } catch (error) {
-      console.error('Failed to start test session:', error);
-      alert('Could not start test session. Please try again.');
-    }
-  };
-
-  const handleGenerateDiagnostic = async () => {
-    try {
-      const res = await api.post('/assessments/diagnostic/generate');
-      navigate(`/school/student/assessments/${res.data.id}/take`);
-    } catch (error) {
-      console.error('Failed to generate diagnostic test:', error);
-      alert('Could not generate diagnostic test. Please try again.');
-    }
-  };
 
   if (loading) {
     return (
@@ -123,22 +115,24 @@ export default function Assessments() {
 
       {activeTab === 'available' && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {mockTests.length === 0 ? (
+          {assessments.length === 0 ? (
              <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
                <ClipboardList className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
                <h3 className="text-lg font-bold text-slate-900 dark:text-white">No available tests</h3>
                <p className="mt-1 text-sm text-slate-500">You don't have any pending assessments right now.</p>
              </div>
           ) : (
-            mockTests.map((test) => (
+            assessments.map((test) => {
+              const uploadUrl = resolveUploadUrl(test.file_path || test.filePath);
+              return (
               <div key={test.id} className="flex flex-col overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex flex-1 flex-col p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <span className="rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                      {test.type || 'Mock Test'}
+                      {test.type || test.assessment_type || 'Assessment'}
                     </span>
                     <span className="text-xs font-bold text-slate-400">
-                      {test.questions?.length || 0} Questions
+                      {test.status || 'scheduled'}
                     </span>
                   </div>
                   
@@ -147,28 +141,41 @@ export default function Assessments() {
                   </h3>
                   
                   <p className="mb-6 text-sm text-slate-500 line-clamp-2">
-                    {test.description || 'Test your understanding of the current topics.'}
+                    {test.content_text || 'Your teacher has posted this assessment. Open it to view instructions or download the question paper.'}
                   </p>
                   
                   <div className="mb-6 flex items-center gap-4 text-xs font-semibold text-slate-500">
                     <div className="flex items-center gap-1">
                       <Clock size={14} className="text-slate-400" />
-                      <span>{test.durationMinutes} mins</span>
+                      <span>{test.duration_minutes || test.durationMinutes || 60} mins</span>
                     </div>
+                    <div>{test.total_marks || test.totalMarks || 100} marks</div>
                   </div>
                   
-                  <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="mt-auto flex flex-col gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
                     <button 
-                      onClick={() => handleStartTest(test.id)}
+                      onClick={() => setSelectedAssessment(test)}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20"
                     >
-                      <PlayCircle size={16} />
-                      Start Assessment
+                      <FileText size={16} />
+                      View Assessment
                     </button>
+                    {uploadUrl && (
+                      <a
+                        href={uploadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
+                      >
+                        <Download size={16} />
+                        Download Paper
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
-            ))
+            );
+          })
           )}
         </div>
       )}
@@ -235,18 +242,44 @@ export default function Assessments() {
 
       {activeTab === 'diagnostic' && (
         <div className="flex flex-col items-center justify-center rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-12 text-center shadow-sm dark:border-blue-900/30 dark:from-slate-900 dark:to-slate-900">
-          <BrainCircuit className="mb-6 h-16 w-16 text-blue-600" />
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white">AI Diagnostic Test</h3>
+          <ClipboardList className="mb-6 h-16 w-16 text-blue-600" />
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white">Teacher Assessments</h3>
           <p className="mt-2 max-w-md text-sm font-medium text-slate-500">
-            Take a personalized diagnostic test generated by our AI to identify your strengths and weak areas across all subjects.
+            Diagnostic online tests are not enabled for this school assessment flow yet. Teacher-posted assessments appear in Available Tests.
           </p>
-          <button 
-            onClick={handleGenerateDiagnostic}
-            className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-sm font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20"
-          >
-            <PlayCircle size={20} />
-            Generate & Start Test
-          </button>
+        </div>
+      )}
+
+      {selectedAssessment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800">
+              <div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white">{selectedAssessment.title}</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {(selectedAssessment.type || 'Assessment')} | {selectedAssessment.total_marks || 100} marks | {selectedAssessment.duration_minutes || 60} mins
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAssessment(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-auto p-5">
+              {selectedAssessment.content_text ? (
+                <pre className="whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800 dark:bg-slate-800 dark:text-slate-100">
+                  {selectedAssessment.content_text}
+                </pre>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800">
+                  No text instructions were added. Download the uploaded question paper if available.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
