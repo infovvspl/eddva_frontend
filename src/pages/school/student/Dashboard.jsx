@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { motion } from 'framer-motion';
+import api from '@/lib/api/school-client';
+import StudentAvatar from '@/assets/images/Student_Avatar.png';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { readStudentDashboardCache, writeStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 import {
@@ -177,7 +179,7 @@ export default function Dashboard() {
   const hasAttendance = rawAttendance != null && Number.isFinite(Number(rawAttendance));
   const attendancePct = hasAttendance ? pct(rawAttendance) : null;
   const todayClassesCount = dashboardData?.todayClasses ?? dashboardData?.classesToday ?? todayPlan.length ?? 0;
-  
+
   const pendingAssignments = assignments.filter(
     (a) => a.status !== 'completed' && a.status !== 'submitted' && a.status !== 'evaluated'
   );
@@ -245,14 +247,14 @@ export default function Dashboard() {
         <div className="lg:col-span-3 relative flex flex-col justify-between">
           <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
-            
+
             {/* Elegant bubble style translucent overlays matching the screenshot */}
             <div className="absolute top-[20px] left-[320px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
             <div className="absolute top-[-30px] right-[280px] w-28 h-28 rounded-full bg-white/[0.08] pointer-events-none"></div>
             <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
             <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
-            
-            <div className="relative z-10 flex h-full flex-col justify-between space-y-6">
+
+            <div className="relative z-10 flex h-full flex-col justify-between space-y-6 md:pr-72">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-4">
                   <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
@@ -307,23 +309,25 @@ export default function Dashboard() {
           </section>
 
           {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
-          <motion.div 
-            className="absolute -right-6 -bottom-6 w-[360px] h-[225px] pointer-events-none hidden md:block z-20"
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <img 
-              src="/images/student_illustration.png" 
-              alt="Student Illustration" 
-              className="w-full h-full object-contain" 
-            />
-          </motion.div>
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 w-[280px] h-[210px] pointer-events-none hidden md:block z-20">
+            <motion.div
+              className="w-full h-full"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <img
+                src={StudentAvatar}
+                alt="Student Avatar"
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
+          </div>
         </div>
 
         {/* Smart Calendar (matching Institute Admin Panel exactly) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 14 }} 
-          animate={{ opacity: 1, y: 0 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
           className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
         >
           <div>
@@ -362,7 +366,7 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
         {/* Left main widgets */}
         <div className="space-y-6">
-          
+
           {/* Today's Classes */}
           <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <SectionHeader
@@ -441,7 +445,7 @@ export default function Dashboard() {
 
         {/* Right side widgets */}
         <div className="space-y-6">
-          
+
           {/* Attendance Summary */}
           <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <SectionHeader title="Attendance Summary" />
