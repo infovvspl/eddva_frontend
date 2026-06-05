@@ -63,8 +63,6 @@ const studentGroups = [
     heading: 'Communication',
     items: [
       { to: '/school/student/announcements', label: 'Announcements', icon: Megaphone },
-      { to: '/school/student/support-tickets', label: 'Support Tickets', icon: LifeBuoy },
-      { to: '/school/student/chat', label: 'Class Chat', icon: MessageSquare },
     ],
   },
 ];
@@ -158,24 +156,24 @@ export default function Sidebar({ open, onClose }) {
             >
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center">
                 {user?.photo ? (
-                  <img 
-                    src={user.photo} 
-                    alt="Student Avatar" 
+                  <img
+                    src={user.photo}
+                    alt="Student Avatar"
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.parentNode.innerHTML = `<div class="grid h-full w-full place-items-center rounded-xl bg-blue-100 text-xs font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
                     }}
-                    className="h-full w-full object-cover" 
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <img 
-                    src="/images/student_avatar.png" 
-                    alt="Student Avatar" 
+                  <img
+                    src="/images/student_avatar.png"
+                    alt="Student Avatar"
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.parentNode.innerHTML = `<div class="grid h-full w-full place-items-center rounded-xl bg-blue-100 text-xs font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
                     }}
-                    className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal" 
+                    className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal"
                   />
                 )}
               </div>

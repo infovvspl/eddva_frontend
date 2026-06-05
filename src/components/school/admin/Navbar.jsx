@@ -24,6 +24,8 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { cn } from './Skeleton';
 import api from '@/lib/api/school-client';
+import { createNotificationSocket } from '@/lib/notification-socket';
+import NotificationCenterModal from '@/components/school/NotificationCenterModal';
 
 function pageTitle(pathname) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
@@ -34,6 +36,43 @@ function pageTitle(pathname) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
+
+const getAdminFallbackUrl = (n, isTeacher) => {
+  if (n.actionUrl) return n.actionUrl;
+  const type = (n.type || '').toLowerCase();
+  const title = (n.title || '').toLowerCase();
+
+  if (isTeacher) {
+    if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
+      return '/school/teacher/assignments';
+    }
+    if (type.includes('assessment') || type.includes('result') || title.includes('assessment') || title.includes('test') || title.includes('exam')) {
+      return '/school/teacher/assessments';
+    }
+    if (type.includes('live') || type.includes('class') || title.includes('class') || title.includes('timetable') || title.includes('schedule')) {
+      return '/school/teacher/classes';
+    }
+    if (type.includes('attendance') || title.includes('attendance') || title.includes('absent')) {
+      return '/school/teacher/attendance';
+    }
+    return '/school/teacher';
+  } else {
+    // Institute Admin or Super Admin
+    if (type.includes('announcement') || title.includes('announcement') || title.includes('notice')) {
+      return '/school/admin/notices';
+    }
+    if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
+      return '/school/admin/assignments';
+    }
+    if (type.includes('attendance') || title.includes('attendance') || title.includes('absent')) {
+      return '/school/admin/attendance';
+    }
+    if (type.includes('timetable') || title.includes('schedule') || type.includes('live')) {
+      return '/school/admin/timetable';
+    }
+    return '/school/admin';
+  }
+};
 
 export default function Navbar({ onMenuClick }) {
   const location = useLocation();
@@ -60,6 +99,7 @@ export default function Navbar({ onMenuClick }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
 
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -108,6 +148,22 @@ export default function Navbar({ onMenuClick }) {
       fetchNotifications();
     }
   }, [notifOpen]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const socket = createNotificationSocket();
+    socket.emit('join_user', user.id);
+
+    socket.on('new_notification', (newNotif) => {
+      setNotifications(prev => [newNotif, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user?.id]);
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -526,7 +582,16 @@ export default function Navbar({ onMenuClick }) {
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                        onClick={() => {
+                          if (!n.isRead) {
+                            handleMarkAsRead(n.id);
+                          }
+                          const targetUrl = getAdminFallbackUrl(n, isTeacher);
+                          if (targetUrl) {
+                            navigate(targetUrl);
+                          }
+                          setNotifOpen(false);
+                        }}
                         className={cn(
                           "group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/40 dark:hover:bg-slate-800/40 cursor-pointer transition-colors",
                           !n.isRead && "bg-blue-50/20 dark:bg-blue-900/10"
@@ -569,6 +634,19 @@ export default function Navbar({ onMenuClick }) {
                       </div>
                     ))
                   )}
+                </div>
+                
+                {/* Footer link to open modal */}
+                <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      setNotifCenterOpen(true);
+                      setNotifOpen(false);
+                    }}
+                    className="w-full text-center text-[10px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    View All Notifications →
+                  </button>
                 </div>
               </div>
             )}
@@ -642,6 +720,12 @@ export default function Navbar({ onMenuClick }) {
           </div>
         </div>
       </div>
+      <NotificationCenterModal
+        isOpen={notifCenterOpen}
+        onClose={() => setNotifCenterOpen(false)}
+        currentUser={user}
+        onUpdate={fetchUnreadCount}
+      />
     </header>
   );
 }

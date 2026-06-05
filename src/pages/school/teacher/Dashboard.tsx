@@ -10,6 +10,7 @@ import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
+import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
 import './Dashboard.css';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -19,10 +20,31 @@ const iconMap: Record<string, React.ReactNode> = {
   ClipboardList: <ClipboardList size={24} />,
 };
 
+const getTeacherFallbackUrl = (n: any) => {
+  if (n.actionUrl) return n.actionUrl;
+  const type = (n.type || '').toLowerCase();
+  const title = (n.title || '').toLowerCase();
+
+  if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
+    return '/school/teacher/assignments';
+  }
+  if (type.includes('assessment') || type.includes('result') || title.includes('assessment') || title.includes('test') || title.includes('exam')) {
+    return '/school/teacher/assessments';
+  }
+  if (type.includes('live') || type.includes('class') || title.includes('class') || title.includes('timetable') || title.includes('schedule')) {
+    return '/school/teacher/classes';
+  }
+  if (type.includes('attendance') || title.includes('attendance')) {
+    return '/school/teacher/attendance';
+  }
+  return '/school/teacher';
+};
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { activeAcademicContext, setActiveAcademicContext, setAssignments } = useAcademicStore();
-  
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState<any>(null);
   const [upcomingClasses, setUpcomingClasses] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -30,6 +52,25 @@ const Dashboard: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
   const [pendingDoubts, setPendingDoubts] = useState(0);
+
+  const unreadNotificationsCount = useMemo(() => {
+    return notifications.filter((n: any) => !n.isRead).length;
+  }, [notifications]);
+
+  const handleNotificationClick = async (n: any) => {
+    try {
+      if (!n.isRead) {
+        await api.patch(`/notifications/${n.id}/read`);
+        setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, isRead: true } : item));
+      }
+      const targetUrl = getTeacherFallbackUrl(n);
+      if (targetUrl) {
+        navigate(targetUrl);
+      }
+    } catch (error) {
+      console.error('Failed to handle notification click:', error);
+    }
+  };
 
   const loadDashboard = async () => {
     try {
@@ -42,7 +83,7 @@ const Dashboard: React.FC = () => {
       if (statsRes.status === 'fulfilled') {
         const data = statsRes.value.data?.data || statsRes.value.data || {};
         setStats(data);
-        
+
         if (data.teacherData?.assignments) {
           setAssignments(data.teacherData.assignments);
         }
@@ -165,7 +206,7 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
           <div className="relative shrink-0 select-none pointer-events-none drop-shadow-2xl">
-            <img src="/images/teacher_avatar.png" alt="Teacher Illustration" className="h-40 object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
+            <img src={TeacherAvatar} alt="Teacher Illustration" className="h-40 object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
           </div>
         </div>
         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
@@ -265,8 +306,8 @@ const Dashboard: React.FC = () => {
                 stats.teacherData.assignments.map((assignment: any, idx: number) => {
                   const isActive = activeAcademicContext?.subjectId === assignment.subjectId && activeAcademicContext?.classId === assignment.classId;
                   return (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       onClick={() => {
                         setActiveAcademicContext(assignment);
                         toast.success(`Active context set to ${assignment.className} - ${assignment.sectionName} - ${assignment.subjectName}`);
@@ -312,65 +353,83 @@ const Dashboard: React.FC = () => {
           </GlassCard>
 
           <GlassCard className="dashboard__card">
+<<<<<<< HEAD
+            <div className="dashboard__card-header flex items-center justify-between">
+=======
             <div className="dashboard__card-header">
-              <h3>Student Doubts 💬</h3>
-              <Badge variant={pendingDoubts > 0 ? 'error' : 'success'}>
-                {pendingDoubts > 0 ? `${pendingDoubts} pending` : 'Clear'}
-              </Badge>
-            </div>
-            <p className="mb-4 text-sm text-slate-500">
-              Students in your classes can ask AI or escalate to you from Ask a Doubt.
-            </p>
-            <Link
-              to="/school/teacher/doubts"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-black text-white hover:bg-blue-700"
-            >
-              <MessageSquare size={18} />
-              Open doubt panel
-            </Link>
-          </GlassCard>
+      <h3>Student Doubts 💬</h3>
+      <Badge variant={pendingDoubts > 0 ? 'error' : 'success'}>
+        {pendingDoubts > 0 ? `${pendingDoubts} pending` : 'Clear'}
+      </Badge>
+    </div>
+    <p className="mb-4 text-sm text-slate-500">
+      Students in your classes can ask AI or escalate to you from Ask a Doubt.
+    </p>
+    <Link
+      to="/school/teacher/doubts"
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-black text-white hover:bg-blue-700"
+    >
+      <MessageSquare size={18} />
+      Open doubt panel
+    </Link>
+  </GlassCard>
 
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>Notifications 🔔</h3>
-              <Badge variant="error">3 new ⚡</Badge>
-            </div>
-            <div className="dashboard__notifications-list">
-              {notifications.slice(0, 4).map((n) => (
-                <div key={n.id} className={`dashboard__notification ${!n.read ? 'dashboard__notification--unread' : ''}`}>
-                  <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
-                    {n.type === 'error' ? <AlertCircle size={14} /> : <FileText size={14} />}
-                  </div>
-                  <div className="dashboard__notification-content">
-                    <p className="dashboard__notification-title">{n.title}</p>
-                    <span className="dashboard__notification-time">{n.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>Student Activity 🧑‍🎓</h3>
-            </div>
-            <div className="dashboard__activity-list">
-              {studentActivityFeed.map((activity) => (
-                <div key={activity.id} className="dashboard__activity-item">
-                  <div className="dashboard__activity-avatar overflow-hidden bg-indigo-50 border border-indigo-200">
-                    <img src="/assets/student_cartoon.png" alt="Student avatar" className="h-full w-full object-cover object-top scale-110" />
-                  </div>
-                  <div className="dashboard__activity-content">
-                    <p><strong>{activity.student}</strong> {activity.action} <span className="dashboard__activity-target">{activity.target}</span></p>
-                    <span className="dashboard__activity-time">{activity.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
+    <GlassCard className="dashboard__card">
+      <div className="dashboard__card-header">
+>>>>>>> 0e981dba2d3c3dfaa86d2735525242e4af9cd56b
+        <h3>Notifications 🔔</h3>
+        <div className="flex items-center gap-2">
+          <Badge variant="error">{unreadNotificationsCount} new ⚡</Badge>
+          <Link to="/school/teacher/notifications" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">View all</Link>
         </div>
       </div>
-    </div>
+      <div className="dashboard__notifications-list">
+        {notifications.length > 0 ? (
+          notifications.slice(0, 4).map((n) => (
+            <div
+              key={n.id}
+              onClick={() => handleNotificationClick(n)}
+              className={`dashboard__notification ${!n.isRead ? 'dashboard__notification--unread' : ''}`}
+              title="Click to mark as read and view"
+            >
+              <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
+                {n.type === 'error' ? <AlertCircle size={14} /> : <FileText size={14} />}
+              </div>
+              <div className="dashboard__notification-content">
+                <p className={`dashboard__notification-title ${!n.isRead ? 'font-bold' : ''}`}>{n.title}</p>
+                <span className="dashboard__notification-time">
+                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-slate-500 py-4 text-center">No notifications available.</p>
+        )}
+      </div>
+    </GlassCard>
+
+    <GlassCard className="dashboard__card">
+      <div className="dashboard__card-header">
+        <h3>Student Activity 🧑‍🎓</h3>
+      </div>
+      <div className="dashboard__activity-list">
+        {studentActivityFeed.map((activity) => (
+          <div key={activity.id} className="dashboard__activity-item">
+            <div className="dashboard__activity-avatar overflow-hidden bg-indigo-50 border border-indigo-200">
+              <img src="/assets/student_cartoon.png" alt="Student avatar" className="h-full w-full object-cover object-top scale-110" />
+            </div>
+            <div className="dashboard__activity-content">
+              <p><strong>{activity.student}</strong> {activity.action} <span className="dashboard__activity-target">{activity.target}</span></p>
+              <span className="dashboard__activity-time">{activity.time}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+        </div >
+      </div >
+    </div >
   );
 };
 

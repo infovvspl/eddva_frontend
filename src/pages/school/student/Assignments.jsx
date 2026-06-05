@@ -106,7 +106,7 @@ export default function Assignments() {
     const bucket = isLate ? 'overdue' : evaluated ? 'evaluated' : submitted ? 'submitted' : 'pending';
     const daysLeft = dueDate ? Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
     return { ...assignment, isLate, bucket, daysLeft };
-  });
+  }) : [];
 
   const counts = {
     all: assignmentView.length,
