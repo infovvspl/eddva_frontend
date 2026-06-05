@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -305,7 +305,7 @@ const TopicManagement: React.FC = () => {
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
           ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
           ...(selectedSection ? [{ label: selectedSection.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => {}, active: true }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
 
@@ -471,7 +471,7 @@ const TopicManagement: React.FC = () => {
           </Modal>
         </>
       )}
-    </div>
+    </div >
   );
 };
 
@@ -515,11 +515,10 @@ function IconButton({ children, label, danger, onClick }: { children: React.Reac
       title={label}
       aria-label={label}
       onClick={onClick}
-      className={`grid h-8 w-8 place-items-center rounded-lg border border-transparent transition-colors ${
-        danger
-          ? 'text-surface-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30'
-          : 'text-surface-400 hover:border-brand-200 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30'
-      }`}
+      className={`grid h-8 w-8 place-items-center rounded-lg border border-transparent transition-colors ${danger
+        ? 'text-surface-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30'
+        : 'text-surface-400 hover:border-brand-200 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30'
+        }`}
     >
       {children}
     </button>
@@ -536,9 +535,8 @@ function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode;
             type="button"
             onClick={it.onClick}
             disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
+              }`}
           >
             {it.icon}{it.label}
           </button>
