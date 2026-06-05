@@ -354,56 +354,56 @@ const Dashboard: React.FC = () => {
 
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-      <h3>Student Doubts 💬</h3>
-      <Badge variant={pendingDoubts > 0 ? 'error' : 'success'}>
-        {pendingDoubts > 0 ? `${pendingDoubts} pending` : 'Clear'}
-      </Badge>
-    </div>
-    <p className="mb-4 text-sm text-slate-500">
-      Students in your classes can ask AI or escalate to you from Ask a Doubt.
-    </p>
-    <Link
-      to="/school/teacher/doubts"
-      className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-black text-white hover:bg-blue-700"
-    >
-      <MessageSquare size={18} />
-      Open doubt panel
-    </Link>
-  </GlassCard>
-
-    <GlassCard className="dashboard__card">
-      <div className="dashboard__card-header">
-        <h3>Notifications 🔔</h3>
-        <div className="flex items-center gap-2">
-          <Badge variant="error">{unreadNotificationsCount} new ⚡</Badge>
-          <Link to="/school/teacher/notifications" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">View all</Link>
-        </div>
-      </div>
-      <div className="dashboard__notifications-list">
-        {notifications.length > 0 ? (
-          notifications.slice(0, 4).map((n) => (
-            <div
-              key={n.id}
-              onClick={() => handleNotificationClick(n)}
-              className={`dashboard__notification ${!n.isRead ? 'dashboard__notification--unread' : ''}`}
-              title="Click to mark as read and view"
+              <h3>Student Doubts 💬</h3>
+              <Badge variant={pendingDoubts > 0 ? 'error' : 'success'}>
+                {pendingDoubts > 0 ? `${pendingDoubts} pending` : 'Clear'}
+              </Badge>
+            </div>
+            <p className="mb-4 text-sm text-slate-500">
+              Students in your classes can ask AI or escalate to you from Ask a Doubt.
+            </p>
+            <Link
+              to="/school/teacher/doubts"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-black text-white hover:bg-blue-700"
             >
-              <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
-                {n.type === 'error' ? <AlertCircle size={14} /> : <FileText size={14} />}
-              </div>
-              <div className="dashboard__notification-content">
-                <p className={`dashboard__notification-title ${!n.isRead ? 'font-bold' : ''}`}>{n.title}</p>
-                <span className="dashboard__notification-time">
-                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                </span>
+              <MessageSquare size={18} />
+              Open doubt panel
+            </Link>
+          </GlassCard>
+
+          <GlassCard className="dashboard__card">
+            <div className="dashboard__card-header flex items-center justify-between">
+              <h3>Notifications 🔔</h3>
+              <div className="flex items-center gap-2">
+                <Badge variant="error">{unreadNotificationsCount} new ⚡</Badge>
+                <Link to="/school/teacher/notifications" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">View all</Link>
               </div>
             </div>
-          ))
-        ) : (
-          <p className="text-xs text-slate-500 py-4 text-center">No notifications available.</p>
-        )}
-      </div>
-    </GlassCard>
+            <div className="dashboard__notifications-list">
+              {notifications.length > 0 ? (
+                notifications.slice(0, 4).map((n) => (
+                  <div 
+                    key={n.id} 
+                    onClick={() => handleNotificationClick(n)}
+                    className={`dashboard__notification ${!n.isRead ? 'dashboard__notification--unread' : ''}`}
+                    title="Click to mark as read and view"
+                  >
+                    <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
+                      {n.type === 'error' ? <AlertCircle size={14} /> : <FileText size={14} />}
+                    </div>
+                    <div className="dashboard__notification-content">
+                      <p className={`dashboard__notification-title ${!n.isRead ? 'font-bold' : ''}`}>{n.title}</p>
+                      <span className="dashboard__notification-time">
+                        {n.createdAt ? new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-500 py-4 text-center">No notifications available.</p>
+              )}
+            </div>
+          </GlassCard>
 
     <GlassCard className="dashboard__card">
       <div className="dashboard__card-header">

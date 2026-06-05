@@ -54,7 +54,6 @@ const studentGroups = [
     heading: 'Growth',
     items: [
       { to: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle },
-      { to: '/school/student/ai-assistant', label: 'AI Study Assistant', icon: BrainCircuit },
       { to: '/school/student/gamification', label: 'Gamification', icon: Trophy },
       { to: '/school/student/calendar', label: 'Calendar', icon: CalendarDays },
     ],
