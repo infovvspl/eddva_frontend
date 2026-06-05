@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/context/SchoolAuthContext';
-import api from '@/lib/api/school-client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import {
   BookOpen,
   ChevronDown,
@@ -31,14 +30,14 @@ const materialTypes = [
 ];
 
 const SUBJECT_COLORS = {
-  physics:     { bg: "#3B82F6", text: "#fff", light: "bg-blue-50",   ring: "ring-blue-200" },
-  chemistry:   { bg: "#10B981", text: "#fff", light: "bg-emerald-50", ring: "ring-emerald-200" },
-  mathematics: { bg: "#F59E0B", text: "#fff", light: "bg-amber-50",   ring: "ring-amber-200" },
-  biology:     { bg: "#8B5CF6", text: "#fff", light: "bg-violet-50",  ring: "ring-violet-200" },
-  maths:       { bg: "#F59E0B", text: "#fff", light: "bg-amber-50",   ring: "ring-amber-200" },
-  science:     { bg: "#10B981", text: "#fff", light: "bg-emerald-50", ring: "ring-emerald-200" },
-  english:     { bg: "#EC4899", text: "#fff", light: "bg-pink-50",    ring: "ring-pink-200" },
-  default:     { bg: "#6366F1", text: "#fff", light: "bg-indigo-50",  ring: "ring-indigo-200" },
+  physics: { bg: "#3B82F6", text: "#fff", light: "bg-blue-50", ring: "ring-blue-200" },
+  chemistry: { bg: "#10B981", text: "#fff", light: "bg-emerald-50", ring: "ring-emerald-200" },
+  mathematics: { bg: "#F59E0B", text: "#fff", light: "bg-amber-50", ring: "ring-amber-200" },
+  biology: { bg: "#8B5CF6", text: "#fff", light: "bg-violet-50", ring: "ring-violet-200" },
+  maths: { bg: "#F59E0B", text: "#fff", light: "bg-amber-50", ring: "ring-amber-200" },
+  science: { bg: "#10B981", text: "#fff", light: "bg-emerald-50", ring: "ring-emerald-200" },
+  english: { bg: "#EC4899", text: "#fff", light: "bg-pink-50", ring: "ring-pink-200" },
+  default: { bg: "#6366F1", text: "#fff", light: "bg-indigo-50", ring: "ring-indigo-200" },
 };
 
 function getSubjectColor(name) {
@@ -50,14 +49,14 @@ function getSubjectColor(name) {
 }
 
 const RESOURCE_META = {
-  dpp:     { label: "DPP",   icon: ClipboardList, color: "text-orange-600",  bg: "bg-orange-50 border-orange-200 dark:bg-orange-950/20" },
-  pyq:     { label: "PYQ",   icon: ClipboardList,        color: "text-violet-600",  bg: "bg-violet-50 border-violet-200 dark:bg-violet-950/20" },
-  pdf:     { label: "PDF Notes",      icon: Download,          color: "text-red-600",     bg: "bg-red-50 border-red-200 dark:bg-red-950/20" },
-  notes:   { label: "Notes", icon: FileText,      color: "text-blue-600",    bg: "bg-blue-50 border-blue-200 dark:bg-blue-950/20" },
-  video:   { label: "Video Lecture", icon: Video,       color: "text-red-600",     bg: "bg-red-50 border-red-200 dark:bg-red-950/20" },
-  ppt:     { label: "PPT Presentation", icon: Presentation,  color: "text-teal-600",    bg: "bg-teal-50 border-teal-200 dark:bg-teal-950/20" },
-  link:    { label: "Reference Link",  icon: BookOpen,  color: "text-teal-600",    bg: "bg-teal-50 border-teal-200 dark:bg-teal-950/20" },
-  default: { label: "Material", icon: FileText,      color: "text-indigo-600",  bg: "bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20" },
+  dpp: { label: "DPP", icon: ClipboardList, color: "text-orange-600", bg: "bg-orange-50 border-orange-200 dark:bg-orange-950/20" },
+  pyq: { label: "PYQ", icon: ClipboardList, color: "text-violet-600", bg: "bg-violet-50 border-violet-200 dark:bg-violet-950/20" },
+  pdf: { label: "PDF Notes", icon: Download, color: "text-red-600", bg: "bg-red-50 border-red-200 dark:bg-red-950/20" },
+  notes: { label: "Notes", icon: FileText, color: "text-blue-600", bg: "bg-blue-50 border-blue-200 dark:bg-blue-950/20" },
+  video: { label: "Video Lecture", icon: Video, color: "text-red-600", bg: "bg-red-50 border-red-200 dark:bg-red-950/20" },
+  ppt: { label: "PPT Presentation", icon: Presentation, color: "text-teal-600", bg: "bg-teal-50 border-teal-200 dark:bg-teal-950/20" },
+  link: { label: "Reference Link", icon: BookOpen, color: "text-teal-600", bg: "bg-teal-50 border-teal-200 dark:bg-teal-950/20" },
+  default: { label: "Material", icon: FileText, color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20" },
 };
 
 function getResourceMeta(type, fileUrl = '') {
@@ -90,7 +89,7 @@ export default function StudyMaterials() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Filter States
   const [selectedSubject, setSelectedSubject] = useState('ALL');
   const [selectedChapter, setSelectedChapter] = useState('ALL');
@@ -107,8 +106,13 @@ export default function StudyMaterials() {
   useEffect(() => {
     const fetchMaterials = async () => {
       try {
+<<<<<<< HEAD
         const res = await api.get('/school/materials');
         setMaterials(res.data?.data || res.data || []);
+=======
+        const res = await api.get('/students/courses/my');
+        setCourses(unwrapSchoolList(res));
+>>>>>>> 0e981dba2d3c3dfaa86d2735525242e4af9cd56b
       } catch (error) {
         console.error('Failed to fetch study materials:', error);
       } finally {
@@ -130,7 +134,7 @@ export default function StudyMaterials() {
       const top = m.topicName;
 
       if (sub) subjects.add(sub);
-      
+
       // Cascading logic
       const matchSubject = selectedSubject === 'ALL' || sub === selectedSubject;
       if (matchSubject && chap) chapters.add(chap);
@@ -196,7 +200,7 @@ export default function StudyMaterials() {
       list = list.filter((m) => {
         const typeStr = (m.fileType || m.type || '').toLowerCase();
         const fileUrlLower = (m.fileUrl || '').toLowerCase();
-        
+
         if (selectedType === 'pdf') {
           return typeStr.includes('pdf') || typeStr.includes('notes') || fileUrlLower.endsWith('.pdf');
         }
@@ -314,7 +318,7 @@ export default function StudyMaterials() {
       {/* Filter and Search Bar Panel */}
       <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 items-end">
-          
+
           {/* Search Bar */}
           <div className="lg:col-span-1 flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400">Search</label>
@@ -427,7 +431,7 @@ export default function StudyMaterials() {
             const isSubExpanded = !!expandedNodes[subName];
             const chapters = filteredAndGroupedTree[subName];
             const chapterKeys = Object.keys(chapters);
-            
+
             // Compute counts and metrics
             const totalChaptersCount = chapterKeys.length;
             let totalTopicsCount = 0;
@@ -444,8 +448,8 @@ export default function StudyMaterials() {
             const subColor = getSubjectColor(subName);
 
             return (
-              <div 
-                key={subName} 
+              <div
+                key={subName}
                 className="mb-2"
               >
                 {/* Subject Header Card */}
@@ -500,8 +504,8 @@ export default function StudyMaterials() {
                           });
 
                           return (
-                            <div 
-                              key={chapName} 
+                            <div
+                              key={chapName}
                               className="rounded-2xl overflow-hidden border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800/50 transition-all shadow-sm"
                             >
                               {/* Chapter Accordion Header */}

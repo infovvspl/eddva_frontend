@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api from '@/lib/api/school-client';
+import { apiClient as api } from '@/lib/api/client';
 import { ChevronLeft, Trophy, Target, AlertTriangle, CheckCircle2, Clock, BarChart3, TrendingUp, XCircle } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 

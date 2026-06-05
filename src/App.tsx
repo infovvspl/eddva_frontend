@@ -164,6 +164,7 @@ const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/Grie
 const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
 const SchoolTeacherProfile      = lazy(() => import("./pages/school/teacher/Profile"));
 const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Notifications"));
+const SchoolTeacherDoubtQueue   = lazy(() => import("./pages/school/teacher/DoubtQueue"));
 
 // ── School student pages ─────────────────────────────────────────────────────
 const SchoolStudentLayout       = lazy(() => import("./components/school/student/Layout"));
@@ -177,6 +178,7 @@ const SchoolStudentAssessments  = lazy(() => import("./pages/school/student/Asse
 const SchoolStudentTestEngine   = lazy(() => import("./pages/school/student/TestEngine"));
 const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/SessionResult"));
 const SchoolStudentAiAssistant  = lazy(() => import("./pages/school/student/AiAssistant"));
+const SchoolStudentDoubts       = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena  = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
 const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
@@ -381,6 +383,7 @@ const SchoolRoutes = () => (
       <Route path="reports" element={<SchoolTeacherReports />} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
       <Route path="chat" element={<SchoolChatSystem />} />
+      <Route path="doubts" element={<SchoolTeacherDoubtQueue />} />
     </Route>
 
     {/* School Student */}
@@ -400,6 +403,7 @@ const SchoolRoutes = () => (
       <Route path="assessments/:id/take" element={<SchoolStudentTestEngine />} />
       <Route path="assessments/:id" element={<SchoolStudentSessionResult />} />
       <Route path="ai-assistant" element={<SchoolStudentAiAssistant />} />
+      <Route path="doubts" element={<SchoolStudentDoubts />} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
       <Route path="planner" element={<SchoolStudentStudyPlanner />} />

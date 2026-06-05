@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '@/lib/api/school-client';
+import { apiClient as api } from '@/lib/api/client';
 import { ClipboardList, Clock, BrainCircuit, PlayCircle, CheckCircle2, Trophy, BarChart3, ChevronRight, Save, ShieldCheck, Timer } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import { Link, useNavigate } from 'react-router-dom';
