@@ -10,7 +10,7 @@ import { putFileToS3, type UploadProgressEvent } from './upload';
  * can't be reused because its JWT strategy resolves users from the coaching DB.
  */
 
-export type SchoolMaterialType = 'notes' | 'pyq' | 'formula_sheet' | 'dpp';
+export type SchoolMaterialType = 'notes' | 'pyq' | 'formula_sheet' | 'dpp' | 'mindmap' | 'ppt';
 
 export interface SchoolMaterial {
   id: string;
