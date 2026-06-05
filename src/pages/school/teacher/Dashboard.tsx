@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
@@ -9,6 +10,7 @@ import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
+import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
 import './Dashboard.css';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -18,9 +20,30 @@ const iconMap: Record<string, React.ReactNode> = {
   ClipboardList: <ClipboardList size={24} />,
 };
 
+const getTeacherFallbackUrl = (n: any) => {
+  if (n.actionUrl) return n.actionUrl;
+  const type = (n.type || '').toLowerCase();
+  const title = (n.title || '').toLowerCase();
+
+  if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
+    return '/school/teacher/assignments';
+  }
+  if (type.includes('assessment') || type.includes('result') || title.includes('assessment') || title.includes('test') || title.includes('exam')) {
+    return '/school/teacher/assessments';
+  }
+  if (type.includes('live') || type.includes('class') || title.includes('class') || title.includes('timetable') || title.includes('schedule')) {
+    return '/school/teacher/classes';
+  }
+  if (type.includes('attendance') || title.includes('attendance')) {
+    return '/school/teacher/attendance';
+  }
+  return '/school/teacher';
+};
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { activeAcademicContext, setActiveAcademicContext, setAssignments } = useAcademicStore();
+  const navigate = useNavigate();
   
   const [stats, setStats] = useState<any>(null);
   const [upcomingClasses, setUpcomingClasses] = useState<any[]>([]);
@@ -28,6 +51,25 @@ const Dashboard: React.FC = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
+
+  const unreadNotificationsCount = useMemo(() => {
+    return notifications.filter((n: any) => !n.isRead).length;
+  }, [notifications]);
+
+  const handleNotificationClick = async (n: any) => {
+    try {
+      if (!n.isRead) {
+        await api.patch(`/notifications/${n.id}/read`);
+        setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, isRead: true } : item));
+      }
+      const targetUrl = getTeacherFallbackUrl(n);
+      if (targetUrl) {
+        navigate(targetUrl);
+      }
+    } catch (error) {
+      console.error('Failed to handle notification click:', error);
+    }
+  };
 
   const loadDashboard = async () => {
     try {
@@ -151,7 +193,7 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
           <div className="relative shrink-0 select-none pointer-events-none drop-shadow-2xl">
-            <img src="/images/teacher_avatar.png" alt="Teacher Illustration" className="h-40 object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
+            <img src={TeacherAvatar} alt="Teacher Illustration" className="h-40 object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
           </div>
         </div>
         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
@@ -298,22 +340,36 @@ const Dashboard: React.FC = () => {
           </GlassCard>
 
           <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
+            <div className="dashboard__card-header flex items-center justify-between">
               <h3>Notifications 🔔</h3>
-              <Badge variant="error">3 new ⚡</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="error">{unreadNotificationsCount} new ⚡</Badge>
+                <Link to="/school/teacher/notifications" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">View all</Link>
+              </div>
             </div>
             <div className="dashboard__notifications-list">
-              {notifications.slice(0, 4).map((n) => (
-                <div key={n.id} className={`dashboard__notification ${!n.read ? 'dashboard__notification--unread' : ''}`}>
-                  <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
-                    {n.type === 'error' ? <AlertCircle size={14} /> : <FileText size={14} />}
+              {notifications.length > 0 ? (
+                notifications.slice(0, 4).map((n) => (
+                  <div 
+                    key={n.id} 
+                    onClick={() => handleNotificationClick(n)}
+                    className={`dashboard__notification ${!n.isRead ? 'dashboard__notification--unread' : ''}`}
+                    title="Click to mark as read and view"
+                  >
+                    <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
+                      {n.type === 'error' ? <AlertCircle size={14} /> : <FileText size={14} />}
+                    </div>
+                    <div className="dashboard__notification-content">
+                      <p className={`dashboard__notification-title ${!n.isRead ? 'font-bold' : ''}`}>{n.title}</p>
+                      <span className="dashboard__notification-time">
+                        {n.createdAt ? new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="dashboard__notification-content">
-                    <p className="dashboard__notification-title">{n.title}</p>
-                    <span className="dashboard__notification-time">{n.time}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-slate-500 py-4 text-center">No notifications available.</p>
+              )}
             </div>
           </GlassCard>
 

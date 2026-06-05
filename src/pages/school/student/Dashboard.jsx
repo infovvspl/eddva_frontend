@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { motion } from 'framer-motion';
 import api from '@/lib/api/school-client';
+import StudentAvatar from '@/assets/images/Student_Avatar.png';
 import {
   Bell,
   BookOpen,
@@ -127,7 +128,7 @@ export default function Dashboard() {
         ]);
 
         setDashboardData(dashRes.data || null);
-        setAssignments(assignRes.data || []);
+        setAssignments(assignRes.data?.data || assignRes.data || []);
         setMockTests(testRes.data?.data || testRes.data || []);
         setNotices(noticeRes.data?.data || noticeRes.data || []);
         setCourses(courseRes.data || []);
@@ -205,7 +206,7 @@ export default function Dashboard() {
             <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
             <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
             
-            <div className="relative z-10 flex h-full flex-col justify-between space-y-6">
+            <div className="relative z-10 flex h-full flex-col justify-between space-y-6 md:pr-72">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-4">
                   <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
@@ -253,17 +254,19 @@ export default function Dashboard() {
           </section>
 
           {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
-          <motion.div 
-            className="absolute -right-6 -bottom-6 w-[360px] h-[225px] pointer-events-none hidden md:block z-20"
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <img 
-              src="/images/student_illustration.png" 
-              alt="Student Illustration" 
-              className="w-full h-full object-contain" 
-            />
-          </motion.div>
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 w-[280px] h-[210px] pointer-events-none hidden md:block z-20">
+            <motion.div 
+              className="w-full h-full"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <img 
+                src={StudentAvatar} 
+                alt="Student Avatar" 
+                className="w-full h-full object-contain" 
+              />
+            </motion.div>
+          </div>
         </div>
 
         {/* Smart Calendar (matching Institute Admin Panel exactly) */}

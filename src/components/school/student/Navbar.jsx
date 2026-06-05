@@ -32,6 +32,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import api from '@/lib/api/school-client';
 import { cn } from '@/components/school/admin/Skeleton';
+import { createNotificationSocket } from '@/lib/notification-socket';
+import NotificationCenterModal from '@/components/school/NotificationCenterModal';
 
 const pageTitles = {
   '/school/student': 'Dashboard',
@@ -86,6 +88,32 @@ function pageTitle(pathname) {
     .join(' ') || 'Student Portal';
 }
 
+const getStudentFallbackUrl = (n) => {
+  if (n.actionUrl) return n.actionUrl;
+  const type = (n.type || '').toLowerCase();
+  const title = (n.title || '').toLowerCase();
+  
+  if (type.includes('announcement') || title.includes('announcement') || title.includes('notice')) {
+    return '/school/student/announcements';
+  }
+  if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
+    return '/school/student/assignments';
+  }
+  if (type.includes('assessment') || type.includes('result') || title.includes('assessment') || title.includes('test') || title.includes('exam')) {
+    return '/school/student/assessments';
+  }
+  if (type.includes('live') || type.includes('class') || title.includes('class') || title.includes('timetable') || title.includes('schedule')) {
+    return '/school/student/live-classes';
+  }
+  if (type.includes('material') || title.includes('material') || title.includes('study')) {
+    return '/school/student/study-materials';
+  }
+  if (type.includes('attendance') || title.includes('attendance') || title.includes('absent')) {
+    return '/school/student/attendance';
+  }
+  return '/school/student';
+};
+
 export default function Navbar({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -102,6 +130,7 @@ export default function Navbar({ onMenuClick }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
 
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -150,6 +179,22 @@ export default function Navbar({ onMenuClick }) {
       fetchNotifications();
     }
   }, [notifOpen]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const socket = createNotificationSocket();
+    socket.emit('join_user', user.id);
+
+    socket.on('new_notification', (newNotif) => {
+      setNotifications(prev => [newNotif, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user?.id]);
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -325,7 +370,16 @@ export default function Navbar({ onMenuClick }) {
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                        onClick={() => {
+                          if (!n.isRead) {
+                            handleMarkAsRead(n.id);
+                          }
+                          const targetUrl = getStudentFallbackUrl(n);
+                          if (targetUrl) {
+                            navigate(targetUrl);
+                          }
+                          setNotifOpen(false);
+                        }}
                         className={cn(
                           "group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/40 dark:hover:bg-slate-800/40 cursor-pointer transition-colors",
                           !n.isRead && "bg-blue-50/20 dark:bg-blue-900/10"
@@ -368,6 +422,19 @@ export default function Navbar({ onMenuClick }) {
                       </div>
                     ))
                   )}
+                </div>
+                
+                {/* Footer link to open modal */}
+                <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      setNotifCenterOpen(true);
+                      setNotifOpen(false);
+                    }}
+                    className="w-full text-center text-[10px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    View All Notifications →
+                  </button>
                 </div>
               </div>
             )}
@@ -463,6 +530,12 @@ export default function Navbar({ onMenuClick }) {
           </div>
         </div>
       </div>
+      <NotificationCenterModal
+        isOpen={notifCenterOpen}
+        onClose={() => setNotifCenterOpen(false)}
+        currentUser={user}
+        onUpdate={fetchUnreadCount}
+      />
     </header>
   );
 }

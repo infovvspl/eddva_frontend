@@ -12,9 +12,16 @@ export default function Assignments() {
     const fetchAssignments = async () => {
       try {
         const response = await api.get('/assignments');
-        setAssignments(response.data || []);
+        if (response.data && Array.isArray(response.data.data)) {
+          setAssignments(response.data.data);
+        } else if (Array.isArray(response.data)) {
+          setAssignments(response.data);
+        } else {
+          setAssignments([]);
+        }
       } catch (error) {
         console.error('Failed to fetch assignments:', error);
+        setAssignments([]);
       } finally {
         setLoading(false);
       }
@@ -31,7 +38,7 @@ export default function Assignments() {
     );
   }
 
-  const assignmentView = assignments.map((assignment) => {
+  const assignmentView = Array.isArray(assignments) ? assignments.map((assignment) => {
     const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
     const isLate = dueDate && dueDate < new Date() && assignment.status !== 'completed';
     const evaluated = assignment.status === 'evaluated' || assignment.feedback || assignment.marksObtained !== undefined;
@@ -39,7 +46,7 @@ export default function Assignments() {
     const bucket = isLate ? 'overdue' : evaluated ? 'evaluated' : submitted ? 'submitted' : 'pending';
     const daysLeft = dueDate ? Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
     return { ...assignment, isLate, bucket, daysLeft };
-  });
+  }) : [];
 
   const counts = {
     all: assignmentView.length,

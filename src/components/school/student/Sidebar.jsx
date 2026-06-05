@@ -52,7 +52,6 @@ const studentGroups = [
   {
     heading: 'Growth',
     items: [
-      { to: '/school/student/ai-assistant', label: 'AI Study Assistant', icon: BrainCircuit },
       { to: '/school/student/gamification', label: 'Gamification', icon: Trophy },
       { to: '/school/student/calendar', label: 'Calendar', icon: CalendarDays },
     ],
@@ -61,8 +60,6 @@ const studentGroups = [
     heading: 'Communication',
     items: [
       { to: '/school/student/announcements', label: 'Announcements', icon: Megaphone },
-      { to: '/school/student/support-tickets', label: 'Support Tickets', icon: LifeBuoy },
-      { to: '/school/student/chat', label: 'Class Chat', icon: MessageSquare },
     ],
   },
 ];
