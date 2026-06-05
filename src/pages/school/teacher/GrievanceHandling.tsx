@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquareWarning, Plus, Filter, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import Button from '@/components/school/Button';
@@ -26,6 +26,7 @@ const GrievanceHandling: React.FC = () => {
       const res = await api.get('/grievances');
       const formatted = res.data.data.map((g: any) => ({
         ...g,
+        status: (g.status || 'open').toLowerCase(),
         raisedBy: g.raised_by_name || 'Anonymous',
         date: new Date(g.created_at).toLocaleDateString(),
         // mock priority since backend doesn't store it yet

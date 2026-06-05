@@ -18,7 +18,9 @@ import {
   Shield,
   CheckCheck,
   Inbox,
-  Loader2
+  Loader2,
+  UserCircle,
+  KeyRound
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -674,9 +676,23 @@ export default function Navbar({ onMenuClick }) {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{roleName}</p>
                 </div>
                 
+                {/* Profile Link (Teachers Only) */}
+                {isTeacher && (
+                  <Link
+                    to="/school/teacher/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <UserCircle size={16} />
+                    </div>
+                    My Profile
+                  </Link>
+                )}
+
                 {/* Settings link */}
                 <Link
-                  to={profilePath}
+                  to={isTeacher ? "/school/teacher/settings" : profilePath}
                   onClick={() => setProfileOpen(false)}
                   className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
@@ -685,6 +701,20 @@ export default function Navbar({ onMenuClick }) {
                   </div>
                   Settings
                 </Link>
+
+                {/* Change Password (Teachers Only) */}
+                {isTeacher && (
+                  <Link
+                    to="/school/teacher/settings?tab=security"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+                      <KeyRound size={16} />
+                    </div>
+                    Change Password
+                  </Link>
+                )}
 
                 {/* Dark Mode toggle */}
                 <button

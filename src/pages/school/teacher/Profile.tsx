@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Camera, Mail, Phone, Shield, BookOpen } from "lucide-react";
+import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircle } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
+import api from "@/lib/api/school-client";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
@@ -11,9 +12,8 @@ const Profile: React.FC = () => {
     name: "",
     email: "",
     phone: "",
-    department: "",
-    role: "",
-    bio: "",
+    employeeId: "",
+    dateOfJoining: "",
   });
   const [avatarUrl, setAvatarUrl] = useState<string>(localStorage.getItem("teacher_avatar") || "");
 
@@ -23,19 +23,25 @@ const Profile: React.FC = () => {
     sections: [],
     subjects: []
   });
+  const [stats, setStats] = useState({
+    attendancePercentage: "98%",
+    classesConducted: 45,
+    totalStudents: 120,
+    assignmentsCreated: 12,
+    assessmentsConducted: 4
+  });
 
   useEffect(() => {
     if (user) {
       setProfile({
         name: user.name || "",
         email: user.email || "",
-        role: user.role || "Teacher",
         phone: localStorage.getItem("teacher_phone") || "",
-        department: localStorage.getItem("teacher_department") || "",
-        bio: localStorage.getItem("teacher_bio") || "",
+        employeeId: localStorage.getItem("teacher_employeeId") || "",
+        dateOfJoining: localStorage.getItem("teacher_doj") || new Date().toLocaleDateString(),
       });
 
-      // Fetch teacher specific details (classes, sections, subjects)
+      // Fetch teacher specific details
       api.get(`/teachers/${user.id}`)
         .then(res => {
           const data = res.data?.data || res.data;
@@ -48,9 +54,14 @@ const Profile: React.FC = () => {
             if (data.teacherProfile?.assignments) {
               setAssignments(data.teacherProfile.assignments);
             }
-            // Update department if it exists from DB
-            if (data.teacherProfile?.department) {
-              setProfile(p => ({ ...p, department: data.teacherProfile.department }));
+            if (data.employeeId) {
+              setProfile(p => ({ ...p, employeeId: data.employeeId }));
+            }
+            if (data.createdAt) {
+              setProfile(p => ({ ...p, dateOfJoining: new Date(data.createdAt).toLocaleDateString() }));
+            }
+            if (data.stats) {
+               setStats(prev => ({ ...prev, ...data.stats }));
             }
           }
         })
@@ -69,8 +80,6 @@ const Profile: React.FC = () => {
 
   const handleSave = () => {
     localStorage.setItem("teacher_phone", profile.phone);
-    localStorage.setItem("teacher_department", profile.department);
-    localStorage.setItem("teacher_bio", profile.bio);
     if (avatarUrl) {
       localStorage.setItem("teacher_avatar", avatarUrl);
     }
@@ -110,36 +119,49 @@ const Profile: React.FC = () => {
 
         <div>
           <h1>{profile.name}</h1>
-          <p>{profile.role}</p>
+          <p>Teacher Profile</p>
         </div>
       </div>
 
       <div className="profile-grid">
         <div className="profile-card">
-          <h2>Personal Information</h2>
+          <h2>Personal Details</h2>
 
           <div className="profile-field">
-            <label>Name</label>
+            <label>Full Name</label>
             <input
               type="text"
               name="name"
               value={profile.name}
               onChange={handleChange}
+              disabled
+            />
+          </div>
+          
+          <div className="profile-field">
+            <label>Employee ID</label>
+            <input
+              type="text"
+              name="employeeId"
+              value={profile.employeeId}
+              disabled
+              className="bg-slate-50 cursor-not-allowed"
             />
           </div>
 
           <div className="profile-field">
-            <label>Email</label>
+            <label>Email Address</label>
             <input
               type="email"
               name="email"
               value={profile.email}
-              onChange={handleChange}
+              disabled
+              className="bg-slate-50 cursor-not-allowed"
             />
           </div>
 
           <div className="profile-field">
-            <label>Phone</label>
+            <label>Mobile Number</label>
             <input
               type="text"
               name="phone"
@@ -149,22 +171,13 @@ const Profile: React.FC = () => {
           </div>
 
           <div className="profile-field">
-            <label>Department</label>
+            <label>Date of Joining</label>
             <input
               type="text"
-              name="department"
-              value={profile.department}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="profile-field">
-            <label>Bio</label>
-            <textarea
-              rows={4}
-              name="bio"
-              value={profile.bio}
-              onChange={handleChange}
+              name="dateOfJoining"
+              value={profile.dateOfJoining}
+              disabled
+              className="bg-slate-50 cursor-not-allowed"
             />
           </div>
 
@@ -173,9 +186,9 @@ const Profile: React.FC = () => {
           </button>
         </div>
 
-        <div className="profile-side-column">
-          <div className="profile-card mb-6">
-            <h2>Academic Assignments</h2>
+        <div className="profile-side-column space-y-6">
+          <div className="profile-card">
+            <h2>Academic Information</h2>
             <div className="space-y-3 mt-4">
               {assignments.length > 0 ? (
                 assignments.map((ass: any, i: number) => (
@@ -188,11 +201,6 @@ const Profile: React.FC = () => {
                         Subject: <span className="text-blue-600 dark:text-sky-400 font-bold">{ass.subjectName || 'General'}</span>
                       </p>
                     </div>
-                    {ass.isClassTeacher && (
-                      <span className="bg-emerald-500/10 text-emerald-700 dark:text-sky-400 border border-emerald-500/20 px-1.5 py-0.5 rounded text-[8px] uppercase font-black tracking-widest shrink-0">
-                        Class Teacher
-                      </span>
-                    )}
                   </div>
                 ))
               ) : (
@@ -201,28 +209,43 @@ const Profile: React.FC = () => {
             </div>
           </div>
 
-          <div className="profile-stats">
-            <div className="profile-stat-card">
-              <BookOpen size={22} />
-              <div>
-                <h3>{academicData.subjects.length || 0}</h3>
-                <p>Subjects</p>
+          <div className="profile-card">
+            <h2>Attendance Information</h2>
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/50">
+                <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle size={16} />
+                  <span className="text-xs font-bold uppercase tracking-wider">Rate</span>
+                </div>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">{stats.attendancePercentage}</p>
+              </div>
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/50">
+                <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
+                  <BookOpen size={16} />
+                  <span className="text-xs font-bold uppercase tracking-wider">Classes</span>
+                </div>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">{stats.classesConducted}</p>
               </div>
             </div>
+          </div>
 
-            <div className="profile-stat-card">
-              <Shield size={22} />
-              <div>
-                <h3>98%</h3>
-                <p>Attendance Rate</p>
+          <div className="profile-card">
+            <h2>Performance Summary</h2>
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                <Users size={18} className="mx-auto mb-2 text-indigo-500" />
+                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Students</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white">{stats.totalStudents}</p>
               </div>
-            </div>
-
-            <div className="profile-stat-card">
-              <Phone size={22} />
-              <div>
-                <h3>{academicData.classes.length || 0}</h3>
-                <p>Classes Managed</p>
+              <div className="text-center p-3 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                <ClipboardList size={18} className="mx-auto mb-2 text-rose-500" />
+                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assignments</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white">{stats.assignmentsCreated}</p>
+              </div>
+              <div className="text-center p-3 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                <Shield size={18} className="mx-auto mb-2 text-teal-500" />
+                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assessments</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white">{stats.assessmentsConducted}</p>
               </div>
             </div>
           </div>
