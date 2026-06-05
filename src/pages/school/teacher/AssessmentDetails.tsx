@@ -1,258 +1,457 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Plus, Target, Trophy, TrendingUp, Award, BarChart3, Users, Settings } from "lucide-react";
+import {
+  Award,
+  BarChart3,
+  ChevronLeft,
+  Save,
+  Target,
+  TrendingUp,
+  Trophy,
+  Users,
+} from "lucide-react";
 import GlassCard from "@/components/school/GlassCard";
 import Button from "@/components/school/Button";
 import Badge from "@/components/school/Badge";
 import Tabs from "@/components/school/Tabs";
 import StatCard from "@/components/school/StatCard";
-import api from "@/lib/api/school-client";
-import "./AssessmentSystem.css"; // Reuse assessment CSS for leaderboard
+import DataTable from "@/components/school/DataTable";
+import api, { unwrapSchoolData, unwrapSchoolList } from "@/lib/api/school-client";
+import { getApiOrigin } from "@/lib/api-config";
+import "./AssessmentSystem.css";
+
+type DraftResult = {
+  marksObtained: string;
+  grade: string;
+  remarks: string;
+  isAbsent: boolean;
+};
+
+function percentage(marks: number, total: number) {
+  if (!total) return 0;
+  return Math.round((marks / total) * 100);
+}
+
+function gradeFromPercent(pct: number) {
+  if (pct >= 90) return "A+";
+  if (pct >= 75) return "A";
+  if (pct >= 60) return "B";
+  if (pct >= 45) return "C";
+  if (pct >= 33) return "D";
+  return "F";
+}
+
+function resolveUploadUrl(filePath: string | null | undefined) {
+  if (!filePath) return null;
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+  const clean = String(filePath).replace(/^\.\//, "").replace(/^uploads[/\\]/, "");
+  return `${getApiOrigin()}/uploads/${clean}`;
+}
 
 const AssessmentDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [assessment, setAssessment] = useState<any>(null);
+  const [students, setStudents] = useState<any[]>([]);
+  const [results, setResults] = useState<any[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, DraftResult>>({});
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
-  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
-  
-  // Dummy questions for Overview
-  const [questions, setQuestions] = useState<any[]>([
-    { id: 1, text: "Sample Question 1", type: "mcq", marks: 2 },
-    { id: 2, text: "Sample Question 2", type: "short", marks: 5 }
-  ]);
+  const totalMarks = Number(assessment?.total_marks || assessment?.totalMarks || 100);
+
+  const load = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const assessmentRes = await api.get(`/assessments/${id}`);
+      const loadedAssessment = unwrapSchoolData<any>(assessmentRes, null);
+      setAssessment(loadedAssessment);
+
+      const [studentsRes, resultsRes] = await Promise.all([
+        api.get("/students", {
+          params: {
+            classId: loadedAssessment?.class_id || loadedAssessment?.classId,
+            sectionId: loadedAssessment?.section_id || loadedAssessment?.sectionId,
+          },
+        }),
+        api.get(`/assessments/${id}/results`),
+      ]);
+
+      const loadedStudents = unwrapSchoolList(studentsRes);
+      const loadedResults = unwrapSchoolList(resultsRes);
+      setStudents(loadedStudents);
+      setResults(loadedResults);
+
+      const nextDrafts: Record<string, DraftResult> = {};
+      loadedStudents.forEach((student: any) => {
+        const existing = loadedResults.find((result: any) => String(result.student_id) === String(student.id));
+        const marks = existing?.marks_obtained ?? "";
+        const pct = marks === "" ? 0 : percentage(Number(marks), Number(loadedAssessment?.total_marks || 100));
+        nextDrafts[student.id] = {
+          marksObtained: marks === "" ? "" : String(Number(marks)),
+          grade: existing?.grade || (marks === "" ? "" : gradeFromPercent(pct)),
+          remarks: existing?.remarks || "",
+          isAbsent: Boolean(existing?.is_absent),
+        };
+      });
+      setDrafts(nextDrafts);
+    } catch (err) {
+      console.error("Failed to fetch assessment details", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        setLoading(true);
-        // Load main assessment info
-        const res = await api.get(`/assessments/${id}`);
-        setAssessment(res.data.data || res.data);
-
-        // Load leaderboard
-        try {
-          const lRes = await api.get(`/assessments/${id}/leaderboard`);
-          if (lRes.data.data) {
-            setLeaderboardData(lRes.data.data.map((item: any, index: number) => ({
-              rank: index + 1,
-              name: item.student_name,
-              class: item.class_name || "N/A",
-              marks: item.marks_obtained,
-              percentage: item.percentage || Math.round((item.marks_obtained / 100) * 100),
-            })));
-          }
-        } catch (e) {
-          console.warn("No leaderboard data", e);
-        }
-
-        // Load analytics
-        try {
-          const aRes = await api.get(`/assessments/${id}/analytics`);
-          if (aRes.data.data) {
-            setAnalytics(aRes.data.data);
-          }
-        } catch (e) {
-          console.warn("No analytics data", e);
-        }
-
-      } catch (err) {
-        console.error("Failed to fetch assessment details", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (id) fetchDetails();
+    void load();
   }, [id]);
 
+  const resultMap = useMemo(() => {
+    const map = new Map<string, any>();
+    results.forEach((result) => map.set(String(result.student_id), result));
+    return map;
+  }, [results]);
+
+  const analytics = useMemo(() => {
+    const present = results.filter((result) => !result.is_absent);
+    const scored = present.map((result) => Number(result.marks_obtained || 0));
+    const average = scored.length
+      ? Math.round(scored.reduce((sum, mark) => sum + percentage(mark, totalMarks), 0) / scored.length)
+      : 0;
+    const highest = scored.length ? Math.max(...scored.map((mark) => percentage(mark, totalMarks))) : 0;
+    const passCount = scored.filter((mark) => percentage(mark, totalMarks) >= 33).length;
+    const distinctionCount = scored.filter((mark) => percentage(mark, totalMarks) >= 75).length;
+    const gradeDistribution = ["A+", "A", "B", "C", "D", "F"].map((grade) => ({
+      grade,
+      count: results.filter((result) => result.grade === grade).length,
+    }));
+    return {
+      average,
+      highest,
+      passRate: scored.length ? Math.round((passCount / scored.length) * 100) : 0,
+      distinctionRate: scored.length ? Math.round((distinctionCount / scored.length) * 100) : 0,
+      gradeDistribution,
+    };
+  }, [results, totalMarks]);
+
+  const leaderboardData = useMemo(() => {
+    return results
+      .filter((result) => !result.is_absent)
+      .map((result) => ({
+        ...result,
+        percentage: percentage(Number(result.marks_obtained || 0), totalMarks),
+      }))
+      .sort((a, b) => Number(b.marks_obtained || 0) - Number(a.marks_obtained || 0))
+      .map((result, index) => ({ ...result, rank: index + 1 }));
+  }, [results, totalMarks]);
+
+  const updateDraft = (studentId: string, patch: Partial<DraftResult>) => {
+    setDrafts((current) => ({
+      ...current,
+      [studentId]: { ...(current[studentId] || { marksObtained: "", grade: "", remarks: "", isAbsent: false }), ...patch },
+    }));
+  };
+
+  const saveStudentResult = async (student: any) => {
+    if (!id) return;
+    const draft = drafts[student.id] || { marksObtained: "", grade: "", remarks: "", isAbsent: false };
+    const marks = draft.isAbsent ? 0 : Number(draft.marksObtained || 0);
+    const pct = percentage(marks, totalMarks);
+    setSavingId(student.id);
+    try {
+      await api.post("/assessments/results", {
+        assessmentId: id,
+        studentId: student.id,
+        marksObtained: marks,
+        isAbsent: draft.isAbsent,
+        grade: draft.grade || gradeFromPercent(pct),
+        remarks: draft.remarks,
+      });
+      await load();
+    } catch (err) {
+      console.error("Failed to save result", err);
+      alert("Could not save result. Please try again.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const markAssessmentStatus = async (status: string) => {
+    if (!id) return;
+    try {
+      await api.put(`/assessments/${id}`, { status });
+      await load();
+    } catch (err) {
+      console.error("Failed to update assessment status", err);
+    }
+  };
+
   if (loading) {
-    return <div className="p-12 text-center text-gray-500">Loading Assessment...</div>;
+    return <div className="p-12 text-center text-gray-500">Loading assessment...</div>;
   }
 
   if (!assessment) {
     return <div className="p-12 text-center text-red-500">Assessment not found</div>;
   }
 
-  const overviewContent = (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-bold text-gray-900">Questions</h3>
-        <Button size="sm" icon={<Plus size={16} />}>Add Question</Button>
-      </div>
-      
-      {questions.length > 0 ? (
-        <div className="space-y-4">
-          {questions.map((q, idx) => (
-            <div key={q.id} className="p-4 bg-white border border-gray-100 shadow-sm rounded-xl">
-              <div className="flex justify-between">
-                <span className="font-semibold text-gray-900">Question {idx + 1}</span>
-                <span className="text-sm font-medium text-brand-600">{q.marks} marks</span>
-              </div>
-              <p className="mt-2 text-gray-700">{q.text}</p>
-              <div className="mt-4 flex gap-2">
-                <Badge variant="purple">{String(q.type).toUpperCase()}</Badge>
-              </div>
-            </div>
-          ))}
+  const attemptsColumns = [
+    {
+      key: "name",
+      title: "Student",
+      render: (_: any, student: any) => (
+        <div>
+          <p className="font-semibold text-gray-900">{student.name}</p>
+          <p className="text-xs text-gray-500">
+            Roll {student.studentProfile?.rollNo || "-"} | {student.studentProfile?.section?.name || "No section"}
+          </p>
         </div>
+      ),
+    },
+    {
+      key: "marks",
+      title: "Marks",
+      render: (_: any, student: any) => {
+        const draft = drafts[student.id];
+        return (
+          <input
+            type="number"
+            min="0"
+            max={totalMarks}
+            value={draft?.marksObtained || ""}
+            disabled={draft?.isAbsent}
+            onChange={(event) => {
+              const marks = event.target.value;
+              const pct = percentage(Number(marks || 0), totalMarks);
+              updateDraft(student.id, { marksObtained: marks, grade: marks === "" ? "" : gradeFromPercent(pct) });
+            }}
+            className="w-24 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-100"
+          />
+        );
+      },
+    },
+    {
+      key: "grade",
+      title: "Grade",
+      render: (_: any, student: any) => (
+        <input
+          value={drafts[student.id]?.grade || ""}
+          onChange={(event) => updateDraft(student.id, { grade: event.target.value })}
+          className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      ),
+    },
+    {
+      key: "absent",
+      title: "Absent",
+      render: (_: any, student: any) => (
+        <input
+          type="checkbox"
+          checked={Boolean(drafts[student.id]?.isAbsent)}
+          onChange={(event) => updateDraft(student.id, { isAbsent: event.target.checked })}
+          className="h-4 w-4"
+        />
+      ),
+    },
+    {
+      key: "remarks",
+      title: "Remarks",
+      render: (_: any, student: any) => (
+        <input
+          value={drafts[student.id]?.remarks || ""}
+          onChange={(event) => updateDraft(student.id, { remarks: event.target.value })}
+          placeholder="Optional"
+          className="min-w-48 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      ),
+    },
+    {
+      key: "status",
+      title: "Status",
+      render: (_: any, student: any) => (
+        resultMap.has(String(student.id))
+          ? <Badge variant="success">Saved</Badge>
+          : <Badge variant="warning">Pending</Badge>
+      ),
+    },
+    {
+      key: "actions",
+      title: "Actions",
+      render: (_: any, student: any) => (
+        <Button
+          size="sm"
+          icon={<Save size={14} />}
+          onClick={() => saveStudentResult(student)}
+          disabled={savingId === student.id}
+        >
+          {savingId === student.id ? "Saving..." : "Save"}
+        </Button>
+      ),
+    },
+  ];
+
+  const attemptsContent = (
+    <GlassCard>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Marks Entry</h3>
+          <p className="text-sm text-gray-500">
+            {students.length} student{students.length === 1 ? "" : "s"} in this assessment roster.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => markAssessmentStatus("completed")}>
+          Mark Completed
+        </Button>
+      </div>
+      {students.length ? (
+        <DataTable columns={attemptsColumns} data={students} />
       ) : (
-        <div className="p-12 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-500">
-          No questions added yet.
+        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
+          No students found for this assessment class or section.
         </div>
       )}
-    </div>
-  );
-
-  const analyticsContent = (
-    <div className="assessment__results">
-      <div className="assessment__result-stats">
-        <StatCard
-          title="Average Score"
-          value={`${analytics?.averageScore || 0}%`}
-          icon={<Target size={24} />}
-          gradient="var(--gradient-primary)"
-        />
-        <StatCard
-          title="Highest Score"
-          value={`${analytics?.highestScore || 0}%`}
-          icon={<Award size={24} />}
-          gradient="var(--gradient-cool)"
-        />
-        <StatCard
-          title="Pass Rate"
-          value={`${analytics?.passRate || 0}%`}
-          icon={<TrendingUp size={24} />}
-          gradient="var(--gradient-accent)"
-        />
-        <StatCard
-          title="Distinction Rate"
-          value={`${analytics?.distinctionRate || 0}%`}
-          icon={<Trophy size={24} />}
-          gradient="var(--gradient-secondary)"
-        />
-      </div>
-
-      <GlassCard>
-        <h3 className="assessment__grade-title">Grade Distribution</h3>
-        <div className="assessment__grade-chart mt-6">
-          {analytics?.gradeDistribution ? analytics.gradeDistribution.map((g: any) => (
-            <div key={g.grade} className="assessment__grade-bar-wrapper">
-              <div
-                className="assessment__grade-bar"
-                style={{
-                  height: `${(g.count || 1) * 20}px`,
-                  background: g.color || '#2563eb',
-                }}
-              />
-              <span className="assessment__grade-label">{g.grade}</span>
-              <small className="assessment__grade-count">{g.count}</small>
-            </div>
-          )) : (
-            <div className="text-center w-full text-gray-400 py-6">No distribution data</div>
-          )}
-        </div>
-      </GlassCard>
-    </div>
+    </GlassCard>
   );
 
   const leaderboardContent = (
     <GlassCard>
-      <div className="assessment__leaderboard-header mb-6">
-        <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-          <Trophy size={20} className="text-yellow-500" /> Leaderboard
-        </h3>
+      <div className="mb-6 flex items-center gap-2">
+        <Trophy size={20} className="text-yellow-500" />
+        <h3 className="text-lg font-bold text-gray-900">Leaderboard</h3>
       </div>
-      <div className="assessment__leaderboard space-y-3">
-        {leaderboardData.length > 0 ? (
+      <div className="space-y-3">
+        {leaderboardData.length ? (
           leaderboardData.map((entry) => (
-            <div
-              key={entry.rank}
-              className={`assessment__leaderboard-item ${
-                entry.rank <= 3 ? "assessment__leaderboard-item--top" : ""
-              }`}
-            >
-              <div className={`assessment__rank assessment__rank--${entry.rank}`}>
-                {entry.rank <= 3 ? <Trophy size={14} /> : entry.rank}
-              </div>
+            <div key={entry.id || entry.student_id} className="assessment__leaderboard-item">
+              <div className={`assessment__rank assessment__rank--${entry.rank}`}>{entry.rank <= 3 ? <Trophy size={14} /> : entry.rank}</div>
               <div className="assessment__leader-info">
-                <span className="assessment__leader-name">{entry.name}</span>
-                <span className="assessment__leader-class">Class {entry.class}</span>
+                <span className="assessment__leader-name">{entry.student_name || "Student"}</span>
+                <span className="assessment__leader-class">{entry.grade || "Ungraded"}</span>
               </div>
               <div className="assessment__leader-score">
-                <span className="assessment__leader-marks">{entry.marks}/{assessment.total_marks || 100}</span>
+                <span className="assessment__leader-marks">{Number(entry.marks_obtained || 0)}/{totalMarks}</span>
                 <span className="assessment__leader-pct">{entry.percentage}%</span>
               </div>
             </div>
           ))
         ) : (
-          <div className="p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-500">
-            No leaderboard data available yet.
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+            Save marks to build the leaderboard.
           </div>
         )}
       </div>
     </GlassCard>
   );
 
-  const attemptsContent = (
-    <div className="p-12 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-500">
-      <Users size={48} className="mx-auto text-gray-300 mb-4" />
-      <h3 className="text-lg font-medium text-gray-700">Student Attempts</h3>
-      <p className="mt-1 text-sm">View individual student submissions here.</p>
+  const analyticsContent = (
+    <div className="assessment__results">
+      <div className="assessment__result-stats">
+        <StatCard title="Average Score" value={`${analytics.average}%`} icon={<Target size={24} />} gradient="var(--gradient-primary)" />
+        <StatCard title="Highest Score" value={`${analytics.highest}%`} icon={<Award size={24} />} gradient="var(--gradient-cool)" />
+        <StatCard title="Pass Rate" value={`${analytics.passRate}%`} icon={<TrendingUp size={24} />} gradient="var(--gradient-accent)" />
+        <StatCard title="Distinction Rate" value={`${analytics.distinctionRate}%`} icon={<Trophy size={24} />} gradient="var(--gradient-secondary)" />
+      </div>
+
+      <GlassCard>
+        <h3 className="assessment__grade-title">Grade Distribution</h3>
+        <div className="assessment__grade-chart mt-6">
+          {analytics.gradeDistribution.map((grade) => (
+            <div key={grade.grade} className="assessment__grade-bar-wrapper">
+              <div className="assessment__grade-bar" style={{ height: `${Math.max(grade.count, 1) * 24}px` }} />
+              <span className="assessment__grade-label">{grade.grade}</span>
+              <small className="assessment__grade-count">{grade.count}</small>
+            </div>
+          ))}
+        </div>
+      </GlassCard>
+    </div>
+  );
+
+  const overviewContent = (
+    <div className="space-y-5">
+      <GlassCard>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Type</p>
+            <p className="mt-1 font-semibold text-gray-900">{assessment.type || assessment.assessment_type || "Test"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Total Marks</p>
+            <p className="mt-1 font-semibold text-gray-900">{totalMarks}</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duration</p>
+            <p className="mt-1 font-semibold text-gray-900">{assessment.duration_minutes || 60} mins</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Scheduled</p>
+            <p className="mt-1 font-semibold text-gray-900">
+              {assessment.scheduled_date ? new Date(assessment.scheduled_date).toLocaleDateString() : "Not scheduled"}
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Question Paper / Instructions</h3>
+            <p className="text-sm text-gray-500">
+              Source: {assessment.content_source || "metadata only"}
+            </p>
+          </div>
+          {resolveUploadUrl(assessment.file_path) && (
+            <a
+              href={resolveUploadUrl(assessment.file_path) || "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
+            >
+              Open uploaded file
+            </a>
+          )}
+        </div>
+        {assessment.content_text ? (
+          <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+            {assessment.content_text}
+          </pre>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+            No manual or AI text was added for this assessment.
+          </div>
+        )}
+      </GlassCard>
     </div>
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Badge variant="purple">{String(assessment.assessment_type || assessment.type || 'Test').toUpperCase()}</Badge>
-            <Badge variant={assessment.status === 'completed' ? 'success' : 'warning'}>{assessment.status || 'Draft'}</Badge>
+          <div className="mb-2 flex items-center gap-3">
+            <Badge variant="purple">{String(assessment.type || assessment.assessment_type || "Test").toUpperCase()}</Badge>
+            <Badge variant={assessment.status === "completed" ? "success" : "warning"}>{assessment.status || "Draft"}</Badge>
           </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            {assessment.title}
-          </h1>
-          <p className="mt-1 text-sm font-medium text-gray-500 flex items-center gap-3">
-            <span>Total Marks: {assessment.total_marks || 100}</span>
-            <span>•</span>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{assessment.title}</h1>
+          <p className="mt-1 flex items-center gap-3 text-sm font-medium text-gray-500">
+            <span>Total Marks: {totalMarks}</span>
+            <span>|</span>
             <span>Duration: {assessment.duration_minutes || 60} mins</span>
           </p>
         </div>
-        <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={() => navigate('/school/teacher/assessments')}>
+        <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={() => navigate("/school/teacher/assessments")}>
           Back to Assessments
         </Button>
       </div>
 
       <Tabs
         tabs={[
-          {
-            id: "overview",
-            label: "Overview & Questions",
-            icon: <Settings size={16} />,
-            content: overviewContent,
-          },
-          {
-            id: "attempts",
-            label: "Attempts",
-            icon: <Users size={16} />,
-            content: attemptsContent,
-          },
-          {
-            id: "leaderboard",
-            label: "Leaderboard",
-            icon: <Trophy size={16} />,
-            content: leaderboardContent,
-          },
-          {
-            id: "analytics",
-            label: "Analytics",
-            icon: <BarChart3 size={16} />,
-            content: analyticsContent,
-          },
+          { id: "overview", label: "Overview", icon: <BarChart3 size={16} />, content: overviewContent },
+          { id: "attempts", label: "Marks Entry", icon: <Users size={16} />, content: attemptsContent },
+          { id: "leaderboard", label: "Leaderboard", icon: <Trophy size={16} />, content: leaderboardContent },
+          { id: "analytics", label: "Analytics", icon: <BarChart3 size={16} />, content: analyticsContent },
         ]}
       />
     </div>

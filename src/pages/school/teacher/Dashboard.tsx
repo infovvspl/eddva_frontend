@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle, MessageSquare } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import StatCard from '@/components/school/StatCard';
@@ -353,9 +353,6 @@ const Dashboard: React.FC = () => {
           </GlassCard>
 
           <GlassCard className="dashboard__card">
-<<<<<<< HEAD
-            <div className="dashboard__card-header flex items-center justify-between">
-=======
             <div className="dashboard__card-header">
       <h3>Student Doubts 💬</h3>
       <Badge variant={pendingDoubts > 0 ? 'error' : 'success'}>
@@ -376,7 +373,6 @@ const Dashboard: React.FC = () => {
 
     <GlassCard className="dashboard__card">
       <div className="dashboard__card-header">
->>>>>>> 0e981dba2d3c3dfaa86d2735525242e4af9cd56b
         <h3>Notifications 🔔</h3>
         <div className="flex items-center gap-2">
           <Badge variant="error">{unreadNotificationsCount} new ⚡</Badge>

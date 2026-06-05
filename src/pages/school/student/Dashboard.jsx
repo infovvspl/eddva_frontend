@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { motion } from 'framer-motion';
-import api from '@/lib/api/school-client';
 import StudentAvatar from '@/assets/images/Student_Avatar.png';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { readStudentDashboardCache, writeStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
