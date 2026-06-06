@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/context/SchoolAuthContext';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import {
   BookOpen,
