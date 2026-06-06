@@ -31,6 +31,7 @@ import {
   Eye,
   Brain,
   Lightbulb,
+  Presentation,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
@@ -41,6 +42,8 @@ import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
 
 import api from '@/lib/api/school-client';
+import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
+import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import { schoolContent, type SchoolMaterial, type SchoolMaterialType } from '@/lib/api/school-content';
 import { getApiOrigin } from '@/lib/api-config';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -579,6 +582,8 @@ const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.Co
   { value: 'pyq', label: 'PYQ', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { value: 'formula_sheet', label: 'Formula Sheet', icon: FileSpreadsheet, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
   { value: 'dpp', label: 'DPP', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'mindmap', label: 'Mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
+  { value: 'ppt', label: 'Presentation', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
 ];
 const mCfg = (t?: string) => MATERIAL_TYPES.find((m) => m.value === t) ?? MATERIAL_TYPES[0];
 
@@ -690,7 +695,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
   useEffect(() => { load(); }, [load]);
 
   const grouped = useMemo(() => {
-    const g: Record<string, SchoolMaterial[]> = { notes: [], pyq: [], formula_sheet: [], dpp: [] };
+    const g: Record<string, SchoolMaterial[]> = { notes: [], pyq: [], formula_sheet: [], dpp: [], mindmap: [], ppt: [] };
     materials.forEach((m) => { const t = String(m.fileType ?? 'notes').toLowerCase(); (g[t] ?? g.notes).push(m); });
     return g;
   }, [materials]);
@@ -735,18 +740,27 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
             <p className="text-base font-bold text-surface-800 dark:text-surface-200">No materials yet</p>
             <p className="mt-1 max-w-sm text-sm font-medium text-surface-500">Upload notes, PYQs, formula sheets or DPPs — or paste a link — for this topic.</p>
             {canEdit && (
-              <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
-                {MATERIAL_TYPES.map((mt) => {
-                  const Icon = mt.icon;
-                  return (
-                    <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
-                      className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
-                      <Icon size={16} className={mt.text} />
-                      <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
+                  {MATERIAL_TYPES.map((mt) => {
+                    const Icon = mt.icon;
+                    return (
+                      <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
+                        className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
+                        <Icon size={16} className={mt.text} />
+                        <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
+                  <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
+                </div>
+                <button onClick={() => setShowAi(true)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                  <Sparkles size={16} /> Generate with AI
+                </button>
+              </>
             )}
           </div>
         ) : (
@@ -833,22 +847,46 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
 // ── Markdown viewer (AI / text materials) ────────────────────────────────────
 
 function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClose: () => void }) {
+  const isMindmap = String(material.fileType ?? '').toLowerCase() === 'mindmap';
+  const tree = useMemo(
+    () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, material.title) : null),
+    [isMindmap, material.description, material.title],
+  );
+  const showTree = !!tree && tree.children.length > 0;
+  const [view, setView] = useState<'tree' | 'text'>(showTree ? 'tree' : 'text');
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
-        <div className="flex items-center justify-between border-b border-surface-100 px-6 py-4 dark:border-surface-700">
+      <div className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 ${showTree && view === 'tree' ? 'max-w-5xl' : 'max-w-3xl'}`}>
+        <div className="flex items-center justify-between gap-3 border-b border-surface-100 px-6 py-4 dark:border-surface-700">
           <div className="min-w-0">
             <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{material.title}</h3>
             <p className="text-[11px] font-black uppercase tracking-wider text-violet-500">AI Generated · {material.fileType}</p>
           </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
+          <div className="flex items-center gap-2">
+            {showTree && (
+              <div className="flex rounded-xl border border-surface-200 p-0.5 dark:border-surface-700">
+                <button onClick={() => setView('tree')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'tree' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>Tree</button>
+                <button onClick={() => setView('text')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'text' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>Text</button>
+              </div>
+            )}
+            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
+          </div>
         </div>
-        <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
-          {material.description
-            ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
-            : <p className="text-surface-400">No content.</p>}
-        </div>
+        {showTree && view === 'tree' ? (
+          <div className="flex-1 overflow-hidden p-4">
+            <MindMapCanvas data={tree} height={560} />
+          </div>
+        ) : (
+          <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
+            {material.description
+              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
+              : <p className="text-surface-400">No content.</p>}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -859,6 +897,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
   { id: 'dpp', label: 'DPP Sheet', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
   { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
+  { id: 'presentation', label: 'Presentation', desc: 'Slide-by-slide PPT deck with titles & bullet points', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'notes', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'notes', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
@@ -877,6 +916,12 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
 
   const cfg = AI_GEN_TYPES.find((t) => t.id === typeId)!;
   const isQuestionType = typeId === 'dpp' || typeId === 'pyq';
+  const isMindmap = typeId === 'mindmap';
+  const previewTree = useMemo(
+    () => (isMindmap && content ? mindmapMarkdownToTree(content, topic.name) : null),
+    [isMindmap, content, topic.name],
+  );
+  const showPreviewTree = !!previewTree && previewTree.children.length > 0;
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -973,17 +1018,21 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
           {(generating || content) && (
             <div className="mt-6">
               <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-surface-400">Preview</p>
-              <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
-                {generating ? (
-                  <div className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-surface-500">
-                    <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI…
-                  </div>
-                ) : (
+              {generating ? (
+                <div className="flex items-center justify-center gap-2 rounded-2xl border border-surface-100 bg-surface-50 py-10 text-sm font-semibold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
+                  <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI…
+                </div>
+              ) : showPreviewTree ? (
+                <div className="overflow-hidden rounded-2xl border border-surface-100 dark:border-surface-700">
+                  <MindMapCanvas data={previewTree} height={360} />
+                </div>
+              ) : (
+                <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
                   <div className="prose prose-sm prose-slate max-w-none dark:prose-invert">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
