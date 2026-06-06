@@ -3,6 +3,7 @@ import { Bell, Globe, Save, Shield, SlidersHorizontal, User } from 'lucide-react
 import { EddvaLogo, InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { formatTenantUrl, getBaseAppUrl } from '@/lib/school/tenantRedirect';
+import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 
 const tabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe },
@@ -13,9 +14,11 @@ const tabs = [
 
 export default function Settings() {
   const { user, institute } = useAuth();
+  const { settings, toggleSetting } = useSchoolNotification();
   const [activeTab, setActiveTab] = useState('workspace');
   const [saved, setSaved] = useState(false);
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
+
 
   const workspaceRows = useMemo(() => {
     if (isInstituteAdmin) {
@@ -112,16 +115,28 @@ export default function Settings() {
 
           {activeTab === 'notifications' && (
             <div className="space-y-6">
-              <h2 className="font-display text-xl font-bold text-surface-950">Operational Alerts</h2>
+              <h2 className="font-display text-xl font-bold text-surface-950">System & Communication Alerts</h2>
               {[
-                ['New institute registrations', true],
-                ['Pending approval reminders', true],
-                ['Support ticket changes', isInstituteAdmin],
-              ].map(([label, enabled]) => (
-                <label key={label} className="flex items-center justify-between gap-4 rounded-lg border border-surface-200 bg-surface-50 p-4">
-                  <span className="text-sm font-bold text-surface-700">{label}</span>
-                  <input type="checkbox" defaultChecked={enabled} className="h-5 w-5 rounded border-surface-300 text-brand-700 focus:ring-brand-200" />
-                </label>
+                ['desktopNotificationsEnabled', 'Desktop Notifications', 'Receive real-time desktop notifications.'],
+                ['chatNotificationsEnabled', 'Chat Notifications', 'Get alerts when a teacher/parent sends you a message.'],
+                ['announcementAlerts', 'Announcement Alerts', 'Get alerts for new announcements/notices.'],
+                ['assignmentAlerts', 'Assignment Alerts', 'Deadlines and grading reminders.'],
+                ['attendanceAlerts', 'Attendance Alerts', 'Attendance status notifications.'],
+                ['soundEnabled', 'Notification Sounds', 'Play a sound alert when a message arrives.'],
+                ['doNotDisturb', 'Do Not Disturb Mode', 'Mute all system and desktop notifications.'],
+              ].map(([key, label, description]) => (
+                <div key={key} className="flex items-center justify-between gap-4 rounded-lg border border-surface-200 bg-surface-50 p-4">
+                  <div>
+                    <span className="block text-sm font-bold text-surface-950">{label}</span>
+                    <span className="mt-1 block text-xs text-surface-500">{description}</span>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={settings[key] || false} 
+                    onChange={() => toggleSetting(key)} 
+                    className="h-5 w-5 rounded border-surface-300 text-brand-700 focus:ring-brand-200 cursor-pointer" 
+                  />
+                </div>
               ))}
             </div>
           )}

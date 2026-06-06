@@ -20,13 +20,14 @@ import {
   Inbox,
   Loader2,
   UserCircle,
-  KeyRound
+  KeyRound,
+  CalendarDays
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { cn } from './Skeleton';
 import api from '@/lib/api/school-client';
-import { createNotificationSocket } from '@/lib/notification-socket';
+import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 import NotificationCenterModal from '@/components/school/NotificationCenterModal';
 
 function pageTitle(pathname) {
@@ -45,6 +46,9 @@ const getAdminFallbackUrl = (n, isTeacher) => {
   const title = (n.title || '').toLowerCase();
 
   if (isTeacher) {
+    if (type.includes('calendar') || type.includes('event') || title.includes('calendar') || title.includes('event')) {
+      return '/school/teacher/calendar';
+    }
     if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
       return '/school/teacher/assignments';
     }
@@ -60,6 +64,9 @@ const getAdminFallbackUrl = (n, isTeacher) => {
     return '/school/teacher';
   } else {
     // Institute Admin or Super Admin
+    if (type.includes('calendar') || type.includes('event') || title.includes('calendar') || title.includes('event')) {
+      return '/school/admin/calendar';
+    }
     if (type.includes('announcement') || title.includes('announcement') || title.includes('notice')) {
       return '/school/admin/notices';
     }
@@ -96,9 +103,15 @@ export default function Navbar({ onMenuClick }) {
   const [isSearching, setIsSearching] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   
-  // Notification states
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    unreadCount,
+    notifications,
+    setUnreadCount,
+    setNotifications,
+    fetchUnreadCount,
+    fetchNotifications
+  } = useSchoolNotification();
+
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifCenterOpen, setNotifCenterOpen] = useState(false);
@@ -114,58 +127,11 @@ export default function Navbar({ onMenuClick }) {
     localStorage.setItem('eddva-theme', theme);
   }, [theme]);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/unread-count');
-      if (res.data?.success) {
-        setUnreadCount(res.data.count);
-      }
-    } catch (err) {
-      console.error('Failed to fetch unread count:', err);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    setNotifLoading(true);
-    try {
-      const res = await api.get('/notifications');
-      if (res.data?.success) {
-        setNotifications(res.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-    } finally {
-      setNotifLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     if (notifOpen) {
       fetchNotifications();
     }
   }, [notifOpen]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const socket = createNotificationSocket();
-    socket.emit('join_user', user.id);
-
-    socket.on('new_notification', (newNotif) => {
-      setNotifications(prev => [newNotif, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [user?.id]);
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -236,6 +202,7 @@ export default function Navbar({ onMenuClick }) {
         { name: 'Course Content', path: '/school/teacher/course-content', icon: GraduationCap },
         { name: 'Student Doubts', path: '/school/teacher/doubts', icon: MessageSquare },
         { name: 'My Schedule', path: '/school/teacher/classes', icon: Users },
+        { name: 'Academic Calendar', path: '/school/teacher/calendar', icon: CalendarDays },
         { name: 'Assignments', path: '/school/teacher/assignments', icon: SettingsIcon },
         { name: 'Assessments', path: '/school/teacher/assessments', icon: SettingsIcon },
         { name: 'Reports', path: '/school/teacher/reports', icon: SettingsIcon },

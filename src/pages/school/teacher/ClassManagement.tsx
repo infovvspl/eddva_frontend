@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Calendar, Users, Clock, Plus, Radio } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio } from 'lucide-react';
 import Button from '@/components/school/Button';
 import Badge from '@/components/school/Badge';
 import Tabs from '@/components/school/Tabs';
@@ -15,10 +15,10 @@ import './ClassManagement.css';
 
 const ClassManagement: React.FC = () => {
   const { user } = useAuth();
+  // navigate removed because calendar tab was removed
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [liveClassData, setLiveClassData] = useState([]);
   const [recordedClassData, setRecordedClassData] = useState([]);
-  const [calendarData, setCalendarData] = useState([]);
   const [academicClasses, setAcademicClasses] = useState<any[]>([]);
   const [academicSubjects, setAcademicSubjects] = useState<any[]>([]);
   const [scheduleForm, setScheduleForm] = useState({
@@ -40,13 +40,15 @@ const ClassManagement: React.FC = () => {
     { key: 'date', title: 'Date' },
     { key: 'time', title: 'Time', render: (v: string) => <span className="class__time"><Clock size={14} /> {v}</span> },
     { key: 'duration', title: 'Duration' },
-    { key: 'status', title: 'Status', render: (v: string) => (
-      <Badge variant={v === 'live' ? 'error' : 'info'}>{v === 'live' ? 'Live Now' : 'Scheduled'}</Badge>
-    )},
+    {
+      key: 'status', title: 'Status', render: (v: string) => (
+        <Badge variant={v === 'live' ? 'error' : 'info'}>{v === 'live' ? 'Live Now' : 'Scheduled'}</Badge>
+      )
+    },
     { key: 'attendees', title: 'Attendees', render: (v: number) => v > 0 ? <span className="class__attendees"><Users size={14} /> {v}</span> : '-' },
   ];
 
- useEffect(() => {
+  useEffect(() => {
     fetchSchedules();
     fetchRecordedClasses();
     fetchAcademicData();
@@ -69,21 +71,21 @@ const ClassManagement: React.FC = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await api.get('/classes/schedules');    console.log(response.data);
+      const response = await api.get('/classes/schedules'); console.log(response.data);
       const formattedData = response.data.data.map((item: any) => ({
         id: item.id,
         title: item.subject_name || item.title,
         class: item.class_name,
         date: item.day_of_week,
         time: `${new Date(`1970-01-01T${item.start_time}`).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          })} - ${new Date(`1970-01-01T${item.end_time}`).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          })}`,        
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })} - ${new Date(`1970-01-01T${item.end_time}`).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })}`,
         duration: '-',
         status: item.live_status || 'scheduled',
         attendees: 0,
@@ -92,7 +94,6 @@ const ClassManagement: React.FC = () => {
       }));
 
       setLiveClassData(formattedData);
-      setCalendarData(response.data.data);
     } catch (error) {
       console.error('Failed to fetch schedules', error);
     }
@@ -143,7 +144,7 @@ const ClassManagement: React.FC = () => {
         <h3>Live Classes</h3>
         <Button icon={<Plus size={16} />} onClick={() => setShowScheduleModal(true)}>Schedule Class</Button>
       </div>
-    <DataTable columns={liveColumns} data={liveClassData} />    </div>
+      <DataTable columns={liveColumns} data={liveClassData} />    </div>
   );
 
   const toEndTime = (startTime: string, durationMinutes: number) => {
@@ -163,78 +164,12 @@ const ClassManagement: React.FC = () => {
       <DataTable columns={recordedColumns} data={recordedClassData} />    </div>
   );
 
-  const calendarContent = (
-    <div className="class__section">
-      <div className="class__section-header">
-        <h3>Class Schedule</h3>
-      </div>
-
-      <div className="class__calendar">
-        <div className="class__calendar-grid">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div
-              key={day}
-              className="class__calendar-day-header"
-            >
-              {day}
-            </div>
-          ))}
-
-          {Array.from({ length: 31 }, (_, i) => {
-            const day = i + 1;
-
-            const events = calendarData.filter(
-              (e: any) =>
-                new Date(e.created_at).getDate() === day
-            );
-
-            return (
-              <div
-                key={day}
-                className={`class__calendar-cell ${
-                  day <= 8
-                    ? 'class__calendar-cell--current'
-                    : ''
-                }`}
-              >
-                <span className="class__calendar-day">
-                  {day}
-                </span>
-
-                {events.map((event: any) => {
-                  const type = (event.type || 'class').toLowerCase();
-                  let modifier = 'class__calendar-event--deadline';
-                  if (type === 'live' || type === 'class') {
-                    modifier = 'class__calendar-event--class';
-                  } else if (type === 'exam') {
-                    modifier = 'class__calendar-event--exam';
-                  } else if (type === 'meeting') {
-                    modifier = 'class__calendar-event--meeting';
-                  }
-                  return (
-                    <div
-                      key={event.id}
-                      className={`class__calendar-event ${modifier}`}
-                    >
-                      {event.subject_name || event.title || 'Class'}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="class">
       <Tabs
         tabs={[
           { id: 'live', label: 'Live Classes', icon: <Radio size={16} />, content: liveContent },
           { id: 'recorded', label: 'Recorded', icon: <Video size={16} />, content: recordedContent },
-          { id: 'calendar', label: 'Calendar', icon: <Calendar size={16} />, content: calendarContent },
         ]}
       />
 
