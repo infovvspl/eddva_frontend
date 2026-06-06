@@ -771,4 +771,58 @@ const AssessmentSystem: React.FC = () => {
   );
 };
 
+// ── Presentational helpers ───────────────────────────────────────────────────
+
+const toneStyles: Record<string, { soft: string; icon: string }> = {
+  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
+  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
+  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
+};
+
+function NavCard({
+  icon, tone, title, meta, actionLabel, onClick,
+}: {
+  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
+  actionLabel: string; onClick: () => void;
+}) {
+  const t = toneStyles[tone] ?? toneStyles.brand;
+  return (
+    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
+      <div className="flex items-start justify-between gap-3">
+        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
+      </div>
+      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
+      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
+        <Users size={14} /> {meta}
+      </p>
+      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
+        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </GlassCard>
+  );
+}
+
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+  return (
+    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+      {items.map((it, i) => (
+        <React.Fragment key={`${it.label}-${i}`}>
+          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
+          <button
+            type="button"
+            onClick={it.onClick}
+            disabled={it.active}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
+              it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
+            }`}
+          >
+            {it.icon}{it.label}
+          </button>
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+}
+
 export default AssessmentSystem;

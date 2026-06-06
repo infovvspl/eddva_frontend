@@ -400,6 +400,7 @@ export default function NotificationCenterModal({
     const title = (n.title || '').toLowerCase();
 
     if (isTeacher) {
+      if (cat.includes("calendar") || cat.includes("event") || title.includes("calendar") || title.includes("event")) return "/school/teacher/calendar";
       if (cat.includes("assignment") || title.includes("assignment")) return "/school/teacher/assignments";
       if (cat.includes("assessment") || title.includes("assessment")) return "/school/teacher/assessments";
       if (cat.includes("class") || title.includes("class")) return "/school/teacher/classes";
@@ -408,6 +409,7 @@ export default function NotificationCenterModal({
     }
 
     if (isStudent) {
+      if (cat.includes("calendar") || cat.includes("event") || title.includes("calendar") || title.includes("event")) return "/school/student/calendar";
       if (cat.includes("assignment") || title.includes("assignment")) return "/school/student/assignments";
       if (cat.includes("assessment") || title.includes("assessment")) return "/school/student/assessments";
       if (cat.includes("class") || title.includes("class")) return "/school/student/live-classes";
@@ -423,6 +425,7 @@ export default function NotificationCenterModal({
 
     // Default Admin routes
     if (cat.includes("user")) return "/school/admin/users";
+    if (cat.includes("calendar") || cat.includes("event") || title.includes("calendar") || title.includes("event")) return "/school/admin/calendar";
     if (cat.includes("class")) return "/school/admin/academics";
     if (cat.includes("notice") || cat.includes("announcement")) return "/school/admin/notices";
     return "/school/admin";

@@ -12,6 +12,7 @@ import { SchoolGuard } from "./components/auth/SchoolGuard";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
+import { NotificationProvider } from "@/context/SchoolNotificationContext";
 
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
 
@@ -154,6 +155,7 @@ const SchoolTeacherLayout       = lazy(() => import("./components/school/admin/L
 const SchoolTeacherDashboard    = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTopicManagement     = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolClassManagement     = lazy(() => import("./pages/school/teacher/ClassManagement"));
+const SchoolTeacherCalendar     = lazy(() => import("./pages/school/teacher/Calendar"));
 const SchoolAttendanceSystem    = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
 const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
@@ -377,6 +379,7 @@ const SchoolRoutes = () => (
       <Route path="course-content" element={<SchoolTopicManagement />} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
+      <Route path="calendar" element={<SchoolTeacherCalendar />} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolAssignmentManagement />} />
       <Route path="assessments" element={<SchoolAssessmentSystem />} />
@@ -545,9 +548,11 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Suspense fallback={<RouteLoading />}>
-                {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
-              </Suspense>
+              <NotificationProvider>
+                <Suspense fallback={<RouteLoading />}>
+                  {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+                </Suspense>
+              </NotificationProvider>
             </BrowserRouter>
           </XPToastProvider>
         </SchoolAuthProvider>
