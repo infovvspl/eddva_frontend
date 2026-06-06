@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, CheckCircle2, KeyRound, Lock, Monitor, Moon, ShieldCheck, Smartphone, Sun } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { settings, toggleSetting } = useSchoolNotification();
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
-  const [preferences, setPreferences] = useState({
-    pushNotifications: true,
-    classAlerts: true,
-    assignmentReminders: true,
-    offlineMode: false,
-  });
 
   useEffect(() => {
     const root = document.documentElement;
@@ -19,9 +15,6 @@ export default function Settings() {
     localStorage.setItem('eddva-theme', theme);
   }, [theme]);
 
-  const togglePreference = (key: string) => {
-    setPreferences((current: any) => ({ ...current, [key]: !current[key] }));
-  };
 
   return (
     <div className="space-y-6">
@@ -64,27 +57,31 @@ export default function Settings() {
               <Bell className="h-6 w-6 text-blue-600" />
               <div>
                 <h2 className="text-base font-black text-slate-950 dark:text-white">Notification Preferences</h2>
-                <p className="mt-1 text-sm font-medium text-slate-500">Control mobile and portal alerts.</p>
+                <p className="mt-1 text-sm font-medium text-slate-500">Control browser, email, and desktop alerts.</p>
               </div>
             </div>
             <div className="mt-5 space-y-3">
               {[
-                ['pushNotifications', 'Push Notifications', 'Receive system updates and important alerts.'],
-                ['classAlerts', 'Class Alerts', 'Get reminders for upcoming live classes and schedule changes.'],
-                ['assignmentReminders', 'Assignment Reminders', 'Student submission deadlines and grading reminders.'],
+                ['desktopNotificationsEnabled', 'Desktop Notifications', 'Receive real-time desktop notifications.'],
+                ['chatNotificationsEnabled', 'Chat Notifications', 'Get alerts when a parent/student sends you a message.'],
+                ['announcementAlerts', 'Announcement Alerts', 'Get alerts for new announcements/notices.'],
+                ['assignmentAlerts', 'Assignment Alerts', 'Deadlines and grading reminders.'],
+                ['attendanceAlerts', 'Attendance Alerts', 'Attendance status notifications.'],
+                ['soundEnabled', 'Notification Sounds', 'Play a sound alert when a message arrives.'],
+                ['doNotDisturb', 'Do Not Disturb Mode', 'Mute all system and desktop notifications.'],
               ].map(([key, label, description]) => (
                 <button
                   key={key}
                   type="button"
-                  onClick={() => togglePreference(key)}
+                  onClick={() => toggleSetting(key as any)}
                   className="flex w-full items-center justify-between gap-4 rounded-lg border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
                 >
                   <span>
                     <span className="block text-sm font-black text-slate-950 dark:text-white">{label}</span>
                     <span className="mt-1 block text-xs font-medium text-slate-500">{description}</span>
                   </span>
-                  <span className={`flex h-6 w-11 items-center rounded-full p-1 transition ${preferences[key as keyof typeof preferences] ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                    <span className={`h-4 w-4 rounded-full bg-white transition ${preferences[key as keyof typeof preferences] ? 'translate-x-5' : 'translate-x-0'}`} />
+                  <span className={`flex h-6 w-11 items-center rounded-full p-1 transition ${settings[key as keyof typeof settings] ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                    <span className={`h-4 w-4 rounded-full bg-white transition ${settings[key as keyof typeof settings] ? 'translate-x-5' : 'translate-x-0'}`} />
                   </span>
                 </button>
               ))}
