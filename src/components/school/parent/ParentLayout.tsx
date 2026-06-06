@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/context/SchoolAuthContext";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import api from "@/lib/api/school-client";
-import { createNotificationSocket } from "@/lib/notification-socket";
+import { useSchoolNotification } from "@/context/SchoolNotificationContext";
 import NotificationCenterModal from "@/components/school/NotificationCenterModal";
 
 const navItems = [
@@ -36,67 +36,26 @@ export default function ParentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Notifications state
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    unreadCount,
+    notifications,
+    setUnreadCount,
+    setNotifications,
+    fetchUnreadCount,
+    fetchNotifications
+  } = useSchoolNotification();
+
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifCenterOpen, setNotifCenterOpen] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/unread-count');
-      if (res.data?.success) {
-        setUnreadCount(res.data.count);
-      }
-    } catch (err) {
-      console.error('Failed to fetch unread count:', err);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    setNotifLoading(true);
-    try {
-      const res = await api.get('/notifications');
-      if (res.data?.success) {
-        setNotifications(res.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-    } finally {
-      setNotifLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     if (notifOpen) {
       fetchNotifications();
     }
   }, [notifOpen]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const socket = createNotificationSocket();
-    socket.emit('join_user', user.id);
-
-    socket.on('new_notification', (newNotif) => {
-      setNotifications(prev => [newNotif, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [user?.id]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
