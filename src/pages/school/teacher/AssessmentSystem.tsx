@@ -33,8 +33,8 @@ function Breadcrumb({
             onClick={item.onClick}
             disabled={item.active}
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${item.active
-                ? "bg-brand-50 text-brand-700"
-                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              ? "bg-brand-50 text-brand-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               }`}
           >
             {item.icon}
@@ -103,22 +103,20 @@ function ContentEditor({
         <button
           type="button"
           onClick={() => setActiveTab("edit")}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${
-            activeTab === "edit"
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
               ? "border-brand-500 text-brand-600 font-extrabold"
               : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
         >
           ✏️ Edit Test
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("preview")}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${
-            activeTab === "preview"
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
               ? "border-brand-500 text-brand-600 font-extrabold"
               : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
         >
           👁️ Preview (Student View)
         </button>
@@ -233,6 +231,11 @@ const AssessmentSystem: React.FC = () => {
 
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
+
+  const updateContentText = (value: string) => {
+    setContentText(value);
+    setStructuredQuestions([]);
+  };
 
   // ── Load Context (source of truth for navigation) ────────────
   useEffect(() => {
@@ -921,8 +924,8 @@ const AssessmentSystem: React.FC = () => {
                     type="button"
                     onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
-                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
                       }`}
                   >
                     {mode.icon}

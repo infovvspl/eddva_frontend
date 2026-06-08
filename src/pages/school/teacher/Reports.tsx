@@ -14,31 +14,44 @@ const Reports: React.FC = () => {
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
   const [classAnalytics, setClassAnalytics] = useState<any[]>([]);
   const [weaknessData, setWeaknessData] = useState<any[]>([]);
+  const [summary, setSummary] = useState({
+    classAverage: 0,
+    passRate: 0,
+    atRiskStudents: 0,
+    totalStudents: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await api.get('/reports/class/1');
-        if (res.data && res.data.data && res.data.data.length > 0) {
-          const formattedData = res.data.data.map((item: any) => ({
-            month: item.title,
-            avgScore: Math.round(item.avg_score || 0),
-            attendance: Math.round(item.attendance_rate || 0)
-          }));
-          setPerformanceChartData(formattedData);
-          setClassAnalytics(res.data.data.map((item: any) => ({
-            class: item.class_name || item.title || '-',
-            avgScore: Math.round(item.avg_score || 0),
-            passRate: Math.round(item.pass_rate || 0),
-            topSubject: item.top_subject || '-',
-            weakSubject: item.weak_subject || '-',
-            attendance: Math.round(item.attendance_rate || 0),
-          })));
-          setStudentPerformance(Array.isArray(res.data.students) ? res.data.students : []);
-          setWeaknessData(Array.isArray(res.data.weaknesses) ? res.data.weaknesses : []);
-        }
-      } catch (err) {
+        setLoading(true);
+        setError('');
+        const res = await api.get('/reports/class');
+        const body: any = res.data || {};
+        const reportSummary = body.summary || {};
+        const analytics = Array.isArray(body.data) ? body.data : [];
+
+        setPerformanceChartData(Array.isArray(body.performance) ? body.performance : []);
+        setClassAnalytics(analytics);
+        setStudentPerformance(Array.isArray(body.students) ? body.students : []);
+        setWeaknessData(Array.isArray(body.weaknesses) ? body.weaknesses : []);
+        setSummary({
+          classAverage: Math.round(reportSummary.classAverage || analytics[0]?.avgScore || 0),
+          passRate: Math.round(reportSummary.passRate || analytics[0]?.passRate || 0),
+          atRiskStudents: Math.round(reportSummary.atRiskStudents || 0),
+          totalStudents: Math.round(reportSummary.totalStudents || body.students?.length || 0),
+        });
+      } catch (err: any) {
         console.error('Error fetching reports:', err);
+        if (err?.response?.status === 404) {
+          setError('Reports API is not available on the running backend. Restart the backend server to load the new /school/reports/class route.');
+        } else {
+          setError('Unable to load reports right now.');
+        }
+      } finally {
+        setLoading(false);
       }
     };
     fetchReports();
@@ -75,12 +88,18 @@ const Reports: React.FC = () => {
 
   const studentContent = (
     <div className="reports__section">
+      {!loading && !studentPerformance.length && (
+        <div className="reports__empty">No students found for your assigned class or section.</div>
+      )}
       <DataTable columns={studentColumns} data={studentPerformance} />
     </div>
   );
 
   const weaknessContent = (
     <div className="reports__section">
+      {!loading && !weaknessData.length && (
+        <div className="reports__empty">No weakness data yet. Publish assessment results to generate this analysis.</div>
+      )}
       <div className="reports__weakness-grid">
         {weaknessData.map((item) => (
           <GlassCard key={item.topic} hover className="reports__weakness-card">
@@ -109,6 +128,9 @@ const Reports: React.FC = () => {
     <div className="reports__section">
       <GlassCard>
         <h3 className="reports__chart-title">Performance Over Time</h3>
+        {!loading && !performanceChartData.length && (
+          <div className="reports__empty">No test performance history is available yet.</div>
+        )}
         <div className="reports__chart">
           {performanceChartData.map((item) => (
             <div key={item.month} className="reports__chart-bar-wrapper">
@@ -142,17 +164,22 @@ const Reports: React.FC = () => {
 
   const classContent = (
     <div className="reports__section">
+      {!loading && !classAnalytics.length && (
+        <div className="reports__empty">No class analytics available yet.</div>
+      )}
       <DataTable columns={classColumns} data={classAnalytics} />
     </div>
   );
 
   return (
     <div className="reports">
+      {error && <div className="reports__error">{error}</div>}
+      {loading && <div className="reports__empty">Loading reports...</div>}
       <div className="reports__stats">
-        <StatCard title="Class Average" value={`${classAnalytics[0]?.avgScore || 0}%`} change="Live" changeType="positive" icon={<BarChart3 size={24} />} />
-        <StatCard title="Pass Rate" value={`${classAnalytics[0]?.passRate || 0}%`} change="Live" changeType="positive" icon={<Target size={24} />} gradient="var(--gradient-cool)" />
-        <StatCard title="At-Risk Students" value={String(weaknessData.reduce((sum, item) => sum + Number(item.weakStudents || item.weak_students || 0), 0))} change="Live" changeType="negative" icon={<AlertTriangle size={24} />} gradient="var(--gradient-warm)" />
-        <StatCard title="Total Students" value={String(studentPerformance.length)} icon={<Users size={24} />} gradient="var(--gradient-accent)" />
+        <StatCard title="Class Average" value={`${summary.classAverage}%`} change="Live" changeType="positive" icon={<BarChart3 size={24} />} />
+        <StatCard title="Pass Rate" value={`${summary.passRate}%`} change="Live" changeType="positive" icon={<Target size={24} />} gradient="var(--gradient-cool)" />
+        <StatCard title="At-Risk Students" value={String(summary.atRiskStudents)} change="Live" changeType="negative" icon={<AlertTriangle size={24} />} gradient="var(--gradient-warm)" />
+        <StatCard title="Total Students" value={String(summary.totalStudents)} icon={<Users size={24} />} gradient="var(--gradient-accent)" />
       </div>
 
       <Tabs
