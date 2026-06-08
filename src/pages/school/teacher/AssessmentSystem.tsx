@@ -27,9 +27,8 @@ function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode;
             type="button"
             onClick={it.onClick}
             disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              it.active ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+              }`}
           >
             {it.icon}{it.label}
           </button>
@@ -163,9 +162,9 @@ const AssessmentSystem: React.FC = () => {
 
   const level = selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
   const goBack = () => {
     if (level === 'workspace') goToSubjects();
     else if (level === 'subjects') goToSections();
@@ -180,26 +179,63 @@ const AssessmentSystem: React.FC = () => {
       // Fetch all assessments and filter on frontend based on subjectId
       const res = await api.get("/assessments");
       const allAssessments = res.data.data || [];
-      
-      const filtered = allAssessments.filter((item: any) => 
-        String(item.subject_id) === String(selectedSubject.id) &&
-        String(item.section_id) === String(selectedSection?.id)
-      );
+
+      // DEBUG: log raw response
+      console.log("RAW ASSESSMENTS", allAssessments);
+      console.log("Filtering by subject_id:", selectedSubject.id, "class_id:", selectedClass?.id);
+
+      // FIX: The assessments table has NO section_id column — filtering by
+      // item.section_id was always undefined → "undefined" !== any real UUID
+      // → every record was excluded. Filter only by subject_id (and class_id if set).
+      const filtered = allAssessments.filter((item: any) => {
+        const matchSubject = String(item.subject_id) === String(selectedSubject.id);
+        // class_id is optional — skip the check if either side is missing
+        const matchClass = !selectedClass?.id || !item.class_id
+          ? true
+          : String(item.class_id) === String(selectedClass.id);
+        return matchSubject && matchClass;
+      });
+
+      // DEBUG: log filtered result
+      console.log("FILTERED ASSESSMENTS", filtered);
+
+      // ── Frontend mapping layer ────────────────────────────────────────
+      // Legacy DB records stored type = "unit". Normalise to "chapter" for
+      // display/filtering so they appear under Chapter Tests.
+      const normaliseType = (raw: string): string =>
+        raw === "unit" ? "chapter" : raw;
+
+      // ── Status: computed purely from scheduled_date on the frontend ────────
+      // Rule: scheduled_date >= today → "upcoming"  |  < today → "completed"
+      // The backend status field is intentionally ignored.
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // compare calendar days, not clock time
+
+      const computeStatus = (item: any): string => {
+        const raw = item.scheduled_at || item.scheduled_date;
+        if (!raw) return "upcoming"; // no date → treat as upcoming
+        const d = new Date(raw);
+        d.setHours(0, 0, 0, 0);
+        return d >= today ? "upcoming" : "completed";
+      };
 
       const formatted = filtered.map((item: any) => ({
         id: item.id,
         title: item.title,
-        type: item.assessment_type || item.type || "topic",
+        type: normaliseType(item.assessment_type || item.type || "topic"),
+        rawType: item.assessment_type || item.type || "topic", // original for debugging
         totalMarks: item.total_marks,
         duration: item.duration_minutes || "-",
         date: item.scheduled_at || item.scheduled_date
           ? new Date(item.scheduled_at || item.scheduled_date).toLocaleDateString()
           : "-",
         class: selectedClass?.name || "-",
-        status: item.status || (new Date(item.scheduled_at || item.scheduled_date) > new Date() ? "upcoming" : "completed"),
+        // status is computed from scheduled_date — never from the backend field
+        status: computeStatus(item),
         submissions: 0,
       }));
 
+      console.log("AFTER WORKSPACE FILTER", formatted.length, formatted);
       setTestsList(formatted);
     } catch (err) {
       console.error("Fetch assessments error:", err);
@@ -245,7 +281,7 @@ const AssessmentSystem: React.FC = () => {
       } else {
         await api.post("/assessments", payload);
       }
-      
+
       await fetchTests();
       setEditingTest(null);
       setShowCreateModal(false);
@@ -277,15 +313,27 @@ const AssessmentSystem: React.FC = () => {
     {
       key: "type",
       title: "Type",
-      render: (v: string) => (
-        <Badge
-          variant={
-            v === "final" ? "error" : v === "mock" ? "warning" : v === "unit" ? "info" : "purple"
-          }
-        >
-          {v}
-        </Badge>
-      ),
+      render: (v: string) => {
+        const labelMap: Record<string, string> = {
+          topic: "Topic Test",
+          chapter: "Chapter Test",
+          subject: "Subject Test",
+          mock: "Mock Test",
+          final: "Final Exam",
+        };
+        const variantMap: Record<string, "error" | "warning" | "info" | "purple" | "success"> = {
+          topic: "purple",
+          chapter: "info",
+          subject: "success",
+          mock: "warning",
+          final: "error",
+        };
+        return (
+          <Badge variant={variantMap[v] ?? "purple"}>
+            {labelMap[v] ?? v}
+          </Badge>
+        );
+      },
     },
     { key: "totalMarks", title: "Total Marks" },
     { key: "duration", title: "Duration (mins)" },
@@ -328,13 +376,53 @@ const AssessmentSystem: React.FC = () => {
     },
   ];
 
+  // ── Type label map (used for search matching against type) ──────────────
+  const TYPE_LABEL_MAP: Record<string, string> = {
+    topic:   "topic test",
+    chapter: "chapter test",
+    subject: "subject test",
+    mock:    "mock test",
+    final:   "final exam",
+  };
+
+  /**
+   * renderDataTable — 5-stage filter pipeline
+   *
+   * Stage 1  RAW ASSESSMENTS     — all records from API (logged in fetchTests)
+   * Stage 2  AFTER WORKSPACE     — subject + class filter (applied in fetchTests, stored in testsList)
+   * Stage 3  AFTER TYPE FILTER   — keep only records matching this tab's type
+   * Stage 4  AFTER STATUS FILTER — apply Upcoming / Completed dropdown
+   * Stage 5  AFTER SEARCH FILTER — case-insensitive match on title OR type label
+   */
   const renderDataTable = (typeFilter: string | string[]) => {
-    const data = testsList.filter((t) => {
-      const matchType = Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter;
-      const matchSearch = t.title.toLowerCase().includes(workspaceSearch.toLowerCase());
-      const matchStatus = workspaceStatusFilter === "all" || t.status === workspaceStatusFilter;
-      return matchType && matchSearch && matchStatus;
-    });
+    // Stage 2 — workspace-filtered list (fetchTests already applied subject+class)
+    console.log("RAW ASSESSMENTS (in testsList, after workspace filter)", testsList.length);
+
+    // Stage 3 — tab type filter
+    const afterType = testsList.filter((t) =>
+      Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter
+    );
+    console.log("AFTER TYPE FILTER", afterType.length);
+
+    // Stage 4 — status dropdown filter
+    const afterStatus = workspaceStatusFilter === "all"
+      ? afterType
+      : afterType.filter((t) => t.status === workspaceStatusFilter);
+    console.log("AFTER STATUS FILTER", afterStatus.length);
+
+    // Stage 5 — search: title OR type label only (NOT status, marks, dates)
+    const sq = workspaceSearch.trim().toLowerCase();
+    const afterSearch = sq
+      ? afterStatus.filter((t) => {
+          const inTitle = (t.title ?? "").toLowerCase().includes(sq);
+          const inType  = (TYPE_LABEL_MAP[t.type] ?? t.type ?? "").toLowerCase().includes(sq);
+          return inTitle || inType;
+        })
+      : afterStatus;
+    console.log("AFTER SEARCH FILTER", afterSearch.length);
+    console.log("FINAL RENDER COUNT", afterSearch.length);
+
+    const data = afterSearch;
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -342,9 +430,13 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-12 text-center text-gray-400">Loading tests...</div>
         ) : data.length === 0 ? (
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
-             <Target size={48} className="mx-auto text-gray-300 mb-4" />
-             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-             <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
+            <Target size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
+            <p className="text-gray-500 mt-1 text-sm">
+              {sq
+                ? `No results for "${workspaceSearch}" in this tab.`
+                : "Get started by creating your first test."}
+            </p>
           </div>
         ) : (
           <DataTable columns={testColumns} data={data} />
@@ -379,7 +471,7 @@ const AssessmentSystem: React.FC = () => {
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
           ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
           ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => {}, active: true }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
 
@@ -471,14 +563,15 @@ const AssessmentSystem: React.FC = () => {
                 {selectedClass.name} | {selectedSubject.name}
               </p>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-3">
               <input
+                id="workspace-search"
                 type="text"
-                placeholder="Search tests..."
+                placeholder="Search by title or type..."
                 value={workspaceSearch}
                 onChange={(e) => setWorkspaceSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
               />
               <select
                 value={workspaceStatusFilter}
@@ -508,20 +601,38 @@ const AssessmentSystem: React.FC = () => {
                 id: "topic",
                 label: "Topic Tests",
                 icon: <ClipboardList size={16} />,
+                // Matches records with type = "topic"
                 content: renderDataTable("topic"),
               },
               {
-                id: "unit",
-                label: "Unit Tests",
+                id: "chapter",
+                label: "Chapter Tests",
                 icon: <BarChart3 size={16} />,
-                content: renderDataTable("unit"),
+                // Matches records with type = "chapter" OR legacy "unit"
+                // (legacy "unit" is already normalised to "chapter" in formatted list)
+                content: renderDataTable("chapter"),
+              },
+              {
+                id: "subject",
+                label: "Subject Tests",
+                icon: <BookOpen size={16} />,
+                // Matches records with type = "subject"
+                content: renderDataTable("subject"),
               },
               {
                 id: "mock",
-                label: "Mock & Final",
+                label: "Mock Tests",
+                icon: <Trophy size={16} />,
+                // Matches records with type = "mock"
+                content: renderDataTable("mock"),
+              },
+              {
+                id: "final",
+                label: "Final Exams",
                 icon: <Target size={16} />,
-                content: renderDataTable(["mock", "subject", "final"]),
-              }
+                // Matches records with type = "final"
+                content: renderDataTable("final"),
+              },
             ]}
           />
         </div>
@@ -551,13 +662,13 @@ const AssessmentSystem: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
               options={[
                 { value: "topic", label: "Topic Test" },
-                { value: "unit", label: "Unit Test" },
-                { value: "mock", label: "Mock Test" },
+                { value: "chapter", label: "Chapter Test" },
                 { value: "subject", label: "Subject Test" },
+                { value: "mock", label: "Mock Test" },
                 { value: "final", label: "Final Exam" },
               ]}
             />
-            
+
             <div className="grid grid-cols-2 gap-4">
               <InputField
                 label="Total Marks"
@@ -574,14 +685,14 @@ const AssessmentSystem: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
               />
             </div>
-            
+
             <InputField
               label="Date"
               type="date"
               value={formData.scheduled_date}
               onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
             />
-            
+
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                 Cancel
