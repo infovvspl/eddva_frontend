@@ -130,6 +130,7 @@ const AssessmentSystem: React.FC = () => {
   const [editingTest, setEditingTest] = useState<any>(null);
   const [contentMode, setContentMode] = useState<"manual" | "upload" | "ai">("manual");
   const [contentText, setContentText] = useState("");
+  const [structuredQuestions, setStructuredQuestions] = useState<any[]>([]);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [generatingAi, setGeneratingAi] = useState(false);
@@ -158,6 +159,11 @@ const AssessmentSystem: React.FC = () => {
 
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
+
+  const updateContentText = (value: string) => {
+    setContentText(value);
+    setStructuredQuestions([]);
+  };
 
   // ── Load Context (source of truth for navigation) ────────────
   useEffect(() => {
@@ -332,6 +338,7 @@ const AssessmentSystem: React.FC = () => {
         scheduled_date: formData.scheduled_date,
         scheduledAt: formData.scheduled_date,
         contentText,
+        questions: structuredQuestions,
         contentSource: contentMode,
         chapterId: selectedChapterId || undefined,
         topicId: selectedTopicId || undefined,
@@ -362,6 +369,7 @@ const AssessmentSystem: React.FC = () => {
       });
       setContentMode("manual");
       setContentText("");
+      setStructuredQuestions([]);
       setUploadFile(null);
       setAiPrompt("");
     } catch (err) {
@@ -396,6 +404,7 @@ const AssessmentSystem: React.FC = () => {
         setFormData((current) => ({ ...current, title: draft.title }));
       }
       setContentText(draft.contentText || draft.content_text || "");
+      setStructuredQuestions(Array.isArray(draft.questions) ? draft.questions : []);
       setContentMode("ai");
     } catch (err) {
       console.error("AI assessment generation error:", err);
@@ -465,6 +474,7 @@ const AssessmentSystem: React.FC = () => {
                 scheduled_date: row.rawDate ? String(row.rawDate).slice(0, 10) : "",
               });
               setContentText(row.raw?.content_text || row.raw?.contentText || "");
+              setStructuredQuestions(Array.isArray(row.raw?.questions_json) ? row.raw.questions_json : []);
               setContentMode(row.raw?.content_source === "upload" ? "upload" : row.raw?.content_source === "ai" ? "ai" : "manual");
               setUploadFile(null);
               setAiPrompt("");
@@ -663,6 +673,7 @@ const AssessmentSystem: React.FC = () => {
                   setEditingTest(null);
                   setContentMode("manual");
                   setContentText("");
+                  setStructuredQuestions([]);
                   setUploadFile(null);
                   setAiPrompt("");
                   setShowCreateModal(true);
@@ -801,7 +812,7 @@ const AssessmentSystem: React.FC = () => {
               </div>
 
               {contentMode === "manual" && (
-                <ContentEditPreview value={contentText} onChange={setContentText} />
+                <ContentEditPreview value={contentText} onChange={updateContentText} />
               )}
 
               {contentMode === "upload" && (
@@ -817,7 +828,7 @@ const AssessmentSystem: React.FC = () => {
                   ) : (
                     <p className="text-xs text-gray-500">Upload a PDF, document, text file, or question-paper image.</p>
                   )}
-                  <ContentEditPreview value={contentText} onChange={setContentText} />
+                  <ContentEditPreview value={contentText} onChange={updateContentText} />
                 </div>
               )}
 
@@ -866,7 +877,7 @@ const AssessmentSystem: React.FC = () => {
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
                     {generatingAi ? "Generating..." : "Generate Question Paper"}
                   </Button>
-                  <ContentEditPreview value={contentText} onChange={setContentText} />
+                  <ContentEditPreview value={contentText} onChange={updateContentText} />
                 </div>
               )}
             </div>
