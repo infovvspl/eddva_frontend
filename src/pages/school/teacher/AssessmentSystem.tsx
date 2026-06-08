@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
 } from "lucide-react";
@@ -31,11 +33,10 @@ function Breadcrumb({
             type="button"
             onClick={item.onClick}
             disabled={item.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              item.active
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${item.active
                 ? "bg-brand-50 text-brand-700"
                 : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-            }`}
+              }`}
           >
             {item.icon}
             {item.label}
@@ -83,6 +84,34 @@ function NavCard({
   );
 }
 
+function ContentEditPreview({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="flex flex-col">
+        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-400">Edit question paper</p>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type or edit the question paper here. Markdown supported (## Section A, 1. question, etc.)."
+          className="h-[55vh] w-full resize-none rounded-xl border border-gray-200 bg-white p-3 font-mono text-xs outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div className="flex flex-col">
+        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-400">Preview</p>
+        <div className="h-[55vh] overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-4">
+          {value.trim() ? (
+            <div className="prose prose-sm prose-slate max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Formatted question paper will appear here.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const AssessmentSystem: React.FC = () => {
   const navigate = useNavigate();
   const { assignments, setAssignments } = useAcademicStore();
@@ -104,6 +133,20 @@ const AssessmentSystem: React.FC = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiConfig, setAiConfig] = useState({
+    mcqCount: 5,
+    trueFalseCount: 5,
+    fillBlankCount: 5,
+    shortCount: 3,
+    longCount: 2,
+    difficulty: "intermediate",
+  });
+
+  // Curriculum scope (optional) — chapter → topic for the selected subject
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [selectedChapterId, setSelectedChapterId] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -139,6 +182,30 @@ const AssessmentSystem: React.FC = () => {
     void load();
     return () => { cancelled = true; };
   }, [assignments.length, setAssignments]);
+
+  // Load chapters for the selected subject whenever the Create modal opens.
+  useEffect(() => {
+    if (!showCreateModal || !selectedSubject) return;
+    let cancelled = false;
+    setSelectedChapterId("");
+    setSelectedTopicId("");
+    setTopics([]);
+    api.get(`/topics/chapters?subjectId=${selectedSubject.id}`)
+      .then((res) => { if (!cancelled) setChapters(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setChapters([]); });
+    return () => { cancelled = true; };
+  }, [showCreateModal, selectedSubject]);
+
+  // Load topics for the selected chapter
+  useEffect(() => {
+    setSelectedTopicId("");
+    if (!selectedChapterId) { setTopics([]); return; }
+    let cancelled = false;
+    api.get(`/topics?chapterId=${selectedChapterId}`)
+      .then((res) => { if (!cancelled) setTopics(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setTopics([]); });
+    return () => { cancelled = true; };
+  }, [selectedChapterId]);
 
   // ── Derived hierarchies ──────────────────────────────────────────────────
   const classes = useMemo(() => {
@@ -266,6 +333,8 @@ const AssessmentSystem: React.FC = () => {
         scheduledAt: formData.scheduled_date,
         contentText,
         contentSource: contentMode,
+        chapterId: selectedChapterId || undefined,
+        topicId: selectedTopicId || undefined,
       };
 
       if (editingTest) {
@@ -280,7 +349,7 @@ const AssessmentSystem: React.FC = () => {
         data.append("file", uploadFile);
         await api.post("/assessments", data);
       }
-      
+
       await fetchTests();
       setEditingTest(null);
       setShowCreateModal(false);
@@ -303,6 +372,8 @@ const AssessmentSystem: React.FC = () => {
   const handleAiGenerate = async () => {
     setGeneratingAi(true);
     try {
+      const chapterName = chapters.find((c: any) => c.id === selectedChapterId)?.name;
+      const topicName = topics.find((t: any) => t.id === selectedTopicId)?.name;
       const res = await api.post("/assessments/ai-generate", {
         title: formData.title,
         type: formData.type,
@@ -310,7 +381,15 @@ const AssessmentSystem: React.FC = () => {
         durationMinutes: formData.duration_minutes,
         className: selectedClass?.name,
         subjectName: selectedSubject?.name,
+        chapterName,
+        topicName,
         prompt: aiPrompt,
+        mcqCount: aiConfig.mcqCount,
+        trueFalseCount: aiConfig.trueFalseCount,
+        fillBlankCount: aiConfig.fillBlankCount,
+        shortCount: aiConfig.shortCount,
+        longCount: aiConfig.longCount,
+        difficulty: aiConfig.difficulty,
       });
       const draft = res.data?.data || res.data || {};
       if (draft.title && !formData.title.trim()) {
@@ -430,9 +509,9 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-12 text-center text-gray-400">Loading tests...</div>
         ) : data.length === 0 ? (
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
-             <Target size={48} className="mx-auto text-gray-300 mb-4" />
-             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-             <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
+            <Target size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
+            <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
           </div>
         ) : (
           <DataTable columns={testColumns} data={data} />
@@ -467,7 +546,7 @@ const AssessmentSystem: React.FC = () => {
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
           ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
           ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => {}, active: true }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
 
@@ -559,7 +638,7 @@ const AssessmentSystem: React.FC = () => {
                 {selectedClass.name} | {selectedSubject.name}
               </p>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-3">
               <input
                 type="text"
@@ -626,6 +705,7 @@ const AssessmentSystem: React.FC = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           title={editingTest ? "Update Test" : "Create New Test"}
+          size="full"
         >
           <div className="space-y-4 p-2">
             <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
@@ -651,7 +731,28 @@ const AssessmentSystem: React.FC = () => {
                 { value: "final", label: "Final Exam" },
               ]}
             />
-            
+
+            <div className="grid grid-cols-2 gap-4">
+              <SelectField
+                label="Chapter (optional)"
+                value={selectedChapterId}
+                onChange={(e) => setSelectedChapterId(e.target.value)}
+                options={[
+                  { value: "", label: chapters.length ? "All chapters / general" : "No chapters found" },
+                  ...chapters.map((c: any) => ({ value: c.id, label: c.name })),
+                ]}
+              />
+              <SelectField
+                label="Topic (optional)"
+                value={selectedTopicId}
+                onChange={(e) => setSelectedTopicId(e.target.value)}
+                options={[
+                  { value: "", label: selectedChapterId ? "Whole chapter" : "Select a chapter first" },
+                  ...topics.map((t: any) => ({ value: t.id, label: t.name })),
+                ]}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <InputField
                 label="Total Marks"
@@ -668,7 +769,7 @@ const AssessmentSystem: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
               />
             </div>
-            
+
             <InputField
               label="Date"
               type="date"
@@ -688,11 +789,10 @@ const AssessmentSystem: React.FC = () => {
                     key={mode.id}
                     type="button"
                     onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
-                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${
-                      contentMode === mode.id
+                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
                         ? "border-brand-400 bg-white text-brand-700 shadow-sm"
                         : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
-                    }`}
+                      }`}
                   >
                     {mode.icon}
                     {mode.label}
@@ -701,13 +801,7 @@ const AssessmentSystem: React.FC = () => {
               </div>
 
               {contentMode === "manual" && (
-                <textarea
-                  value={contentText}
-                  onChange={(e) => setContentText(e.target.value)}
-                  rows={8}
-                  placeholder="Paste or type the assessment questions here. Example: Section A - Answer any 5 questions..."
-                  className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                />
+                <ContentEditPreview value={contentText} onChange={setContentText} />
               )}
 
               {contentMode === "upload" && (
@@ -723,39 +817,60 @@ const AssessmentSystem: React.FC = () => {
                   ) : (
                     <p className="text-xs text-gray-500">Upload a PDF, document, text file, or question-paper image.</p>
                   )}
-                  <textarea
-                    value={contentText}
-                    onChange={(e) => setContentText(e.target.value)}
-                    rows={4}
-                    placeholder="Optional notes for this uploaded question paper."
-                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                  />
+                  <ContentEditPreview value={contentText} onChange={setContentText} />
                 </div>
               )}
 
               {contentMode === "ai" && (
                 <div className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Question types &amp; counts</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {([
+                      { key: "mcqCount", label: "MCQ (1 mark)" },
+                      { key: "trueFalseCount", label: "True / False" },
+                      { key: "fillBlankCount", label: "Fill in blanks" },
+                      { key: "shortCount", label: "Short answer" },
+                      { key: "longCount", label: "Long answer" },
+                    ] as const).map((f) => (
+                      <label key={f.key} className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                        {f.label}
+                        <input
+                          type="number"
+                          min={0}
+                          value={(aiConfig as any)[f.key]}
+                          onChange={(e) => setAiConfig((c) => ({ ...c, [f.key]: Math.max(0, Number(e.target.value) || 0) }))}
+                          className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                        />
+                      </label>
+                    ))}
+                    <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                      Difficulty
+                      <select
+                        value={aiConfig.difficulty}
+                        onChange={(e) => setAiConfig((c) => ({ ...c, difficulty: e.target.value }))}
+                        className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </label>
+                  </div>
                   <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    rows={3}
-                    placeholder="Tell AI what to generate. Example: 20 marks History test on French Revolution, include 1 map question and 2 long answers."
+                    rows={2}
+                    placeholder="Optional: extra instructions. Example: focus on French Revolution causes; include one map-based question."
                     className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
                   />
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
                     {generatingAi ? "Generating..." : "Generate Question Paper"}
                   </Button>
-                  <textarea
-                    value={contentText}
-                    onChange={(e) => setContentText(e.target.value)}
-                    rows={8}
-                    placeholder="AI generated assessment content will appear here. You can edit it before creating."
-                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                  />
+                  <ContentEditPreview value={contentText} onChange={setContentText} />
                 </div>
               )}
             </div>
-            
+
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                 Cancel
@@ -770,59 +885,5 @@ const AssessmentSystem: React.FC = () => {
     </div>
   );
 };
-
-// ── Presentational helpers ───────────────────────────────────────────────────
-
-const toneStyles: Record<string, { soft: string; icon: string }> = {
-  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
-  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
-  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
-};
-
-function NavCard({
-  icon, tone, title, meta, actionLabel, onClick,
-}: {
-  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
-  actionLabel: string; onClick: () => void;
-}) {
-  const t = toneStyles[tone] ?? toneStyles.brand;
-  return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
-      </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
-      </div>
-    </GlassCard>
-  );
-}
-
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
-  return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
-          <button
-            type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
-            }`}
-          >
-            {it.icon}{it.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
-  );
-}
 
 export default AssessmentSystem;
