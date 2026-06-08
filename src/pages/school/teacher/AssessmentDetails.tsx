@@ -5,6 +5,8 @@ import {
   Award,
   BarChart3,
   ChevronLeft,
+  Download,
+  FileText,
   Save,
   Target,
   TrendingUp,
@@ -56,6 +58,7 @@ const AssessmentDetails: React.FC = () => {
   const [assessment, setAssessment] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftResult>>({});
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -70,7 +73,7 @@ const AssessmentDetails: React.FC = () => {
       const loadedAssessment = unwrapSchoolData<any>(assessmentRes, null);
       setAssessment(loadedAssessment);
 
-      const [studentsRes, resultsRes] = await Promise.all([
+      const [studentsRes, resultsRes, submissionsRes] = await Promise.all([
         api.get("/students", {
           params: {
             classId: loadedAssessment?.class_id || loadedAssessment?.classId,
@@ -78,12 +81,15 @@ const AssessmentDetails: React.FC = () => {
           },
         }),
         api.get(`/assessments/${id}/results`),
+        api.get(`/assessments/${id}/submissions`),
       ]);
 
       const loadedStudents = unwrapSchoolList(studentsRes);
       const loadedResults = unwrapSchoolList(resultsRes);
+      const loadedSubmissions = unwrapSchoolList(submissionsRes);
       setStudents(loadedStudents);
       setResults(loadedResults);
+      setSubmissions(loadedSubmissions);
 
       const nextDrafts: Record<string, DraftResult> = {};
       loadedStudents.forEach((student: any) => {
@@ -426,6 +432,63 @@ const AssessmentDetails: React.FC = () => {
     </div>
   );
 
+  const submissionsContent = (
+    <GlassCard>
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Student Submissions</h3>
+          <p className="text-sm text-gray-500">
+            {submissions.length} online submission{submissions.length === 1 ? "" : "s"} received.
+          </p>
+        </div>
+      </div>
+      {submissions.length ? (
+        <div className="space-y-4">
+          {submissions.map((submission) => {
+            const fileUrl = resolveUploadUrl(submission.file_path || submission.filePath);
+            return (
+              <div key={submission.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">{submission.student_name || "Student"}</p>
+                    <p className="mt-1 text-xs font-medium text-gray-500">
+                      Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "-"}
+                    </p>
+                  </div>
+                  {fileUrl && (
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
+                    >
+                      <Download size={14} />
+                      Open file
+                    </a>
+                  )}
+                </div>
+                {submission.answer_text ? (
+                  <pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+                    {submission.answer_text}
+                  </pre>
+                ) : (
+                  <div className="mt-4 flex items-center gap-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                    <FileText size={16} />
+                    No typed answer. Check the uploaded file.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
+          No students have submitted this assessment online yet.
+        </div>
+      )}
+    </GlassCard>
+  );
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -449,6 +512,7 @@ const AssessmentDetails: React.FC = () => {
       <Tabs
         tabs={[
           { id: "overview", label: "Overview", icon: <BarChart3 size={16} />, content: overviewContent },
+          { id: "submissions", label: "Submissions", icon: <FileText size={16} />, content: submissionsContent },
           { id: "attempts", label: "Marks Entry", icon: <Users size={16} />, content: attemptsContent },
           { id: "leaderboard", label: "Leaderboard", icon: <Trophy size={16} />, content: leaderboardContent },
           { id: "analytics", label: "Analytics", icon: <BarChart3 size={16} />, content: analyticsContent },
