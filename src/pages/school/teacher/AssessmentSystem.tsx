@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
 } from "lucide-react";
+import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
 import Button from "@/components/school/Button";
 import Badge from "@/components/school/Badge";
@@ -84,30 +83,104 @@ function NavCard({
   );
 }
 
-function ContentEditPreview({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function ContentEditor({
+  questions,
+  onQuestionsChange,
+  answerKey,
+  onAnswerKeyChange,
+}: {
+  questions: string;
+  onQuestionsChange: (v: string) => void;
+  answerKey: string;
+  onAnswerKeyChange: (v: string) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-      <div className="flex flex-col">
-        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-400">Edit question paper</p>
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Type or edit the question paper here. Markdown supported (## Section A, 1. question, etc.)."
-          className="h-[55vh] w-full resize-none rounded-xl border border-gray-200 bg-white p-3 font-mono text-xs outline-none focus:ring-2 focus:ring-brand-500"
-        />
+    <div className="space-y-4">
+      {/* Tab Switcher */}
+      <div className="flex border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab("edit")}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === "edit"
+              ? "border-brand-500 text-brand-600 font-extrabold"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          ✏️ Edit Test
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("preview")}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === "preview"
+              ? "border-brand-500 text-brand-600 font-extrabold"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          👁️ Preview (Student View)
+        </button>
       </div>
-      <div className="flex flex-col">
-        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-400">Preview</p>
-        <div className="h-[55vh] overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-4">
-          {value.trim() ? (
-            <div className="prose prose-sm prose-slate max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+
+      {activeTab === "edit" ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Question Paper pane */}
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 border-b border-blue-100">
+              <FileText size={14} className="text-blue-600" />
+              <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper</span>
+              <span className="ml-auto text-[10px] text-blue-400 font-medium">Students will see this</span>
             </div>
-          ) : (
-            <p className="text-sm text-gray-400">Formatted question paper will appear here.</p>
-          )}
+            <textarea
+              value={questions}
+              onChange={(e) => onQuestionsChange(e.target.value)}
+              placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
+              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+
+          {/* Answer Key pane */}
+          <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 border-b border-amber-100">
+              <span className="text-sm">🔑</span>
+              <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key</span>
+              <span className="ml-auto text-[10px] text-amber-500 font-medium">Teacher only · hidden from students</span>
+            </div>
+            <textarea
+              value={answerKey}
+              onChange={(e) => onAnswerKeyChange(e.target.value)}
+              placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
+              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 overflow-hidden">
+          <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+            <FileText size={14} />
+            <span>Question Paper Preview (Student View)</span>
+          </div>
+          <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
+            {questions.trim() ? (
+              <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
+            )}
+          </div>
+          <div className="mt-4 rounded-lg border border-amber-100 bg-white p-4">
+            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
+              <span>Answer Key Preview (Teacher Only)</span>
+            </div>
+            {answerKey.trim() ? (
+              <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
+            ) : (
+              <p className="text-sm text-gray-400">The answer key preview will appear here once answers are added.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -130,9 +203,11 @@ const AssessmentSystem: React.FC = () => {
   const [editingTest, setEditingTest] = useState<any>(null);
   const [contentMode, setContentMode] = useState<"manual" | "upload" | "ai">("manual");
   const [contentText, setContentText] = useState("");
+  const [answerKey, setAnswerKey] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiLanguage, setAiLanguage] = useState("en");
   const [aiConfig, setAiConfig] = useState({
     mcqCount: 5,
     trueFalseCount: 5,
@@ -321,9 +396,9 @@ const AssessmentSystem: React.FC = () => {
       const payload: Record<string, any> = {
         title: formData.title,
         type: formData.type,
-        assessmentType: formData.type, // Handle backend variations
+        assessmentType: formData.type,
         subjectId: selectedSubject?.id,
-        class_id: selectedClass?.id, // frontend metadata if needed
+        class_id: selectedClass?.id,
         sectionId: selectedSection?.id,
         total_marks: formData.total_marks,
         totalMarks: formData.total_marks,
@@ -332,9 +407,11 @@ const AssessmentSystem: React.FC = () => {
         scheduled_date: formData.scheduled_date,
         scheduledAt: formData.scheduled_date,
         contentText,
+        answerKey,
         contentSource: contentMode,
         chapterId: selectedChapterId || undefined,
         topicId: selectedTopicId || undefined,
+        language: aiLanguage,
       };
 
       if (editingTest) {
@@ -362,10 +439,46 @@ const AssessmentSystem: React.FC = () => {
       });
       setContentMode("manual");
       setContentText("");
+      setAnswerKey("");
       setUploadFile(null);
       setAiPrompt("");
+      setAiLanguage("en");
     } catch (err) {
       console.error("Create assessment error:", err);
+    }
+  };
+
+  const handleLanguageChange = async (newLang: string) => {
+    setAiLanguage(newLang);
+    if (!contentText.trim() && !answerKey.trim()) return;
+
+    const langLabel = newLang === 'hi' ? 'Hindi' : newLang === 'od' ? 'Odia' : 'English';
+    const confirmed = window.confirm(`Do you want to translate the current question paper and answer key to ${langLabel}?`);
+    if (!confirmed) return;
+
+    setGeneratingAi(true);
+    try {
+      if (contentText.trim()) {
+        const resQ = await api.post("/assessments/translate", {
+          text: contentText,
+          language: newLang,
+        });
+        const translatedQ = resQ.data?.data?.translatedText || resQ.data?.translatedText || contentText;
+        setContentText(translatedQ);
+      }
+      if (answerKey.trim()) {
+        const resA = await api.post("/assessments/translate", {
+          text: answerKey,
+          language: newLang,
+        });
+        const translatedA = resA.data?.data?.translatedText || resA.data?.translatedText || answerKey;
+        setAnswerKey(translatedA);
+      }
+    } catch (err) {
+      console.error("Translation error:", err);
+      alert("Failed to translate the content. Please try again.");
+    } finally {
+      setGeneratingAi(false);
     }
   };
 
@@ -390,12 +503,14 @@ const AssessmentSystem: React.FC = () => {
         shortCount: aiConfig.shortCount,
         longCount: aiConfig.longCount,
         difficulty: aiConfig.difficulty,
+        language: aiLanguage,
       });
       const draft = res.data?.data || res.data || {};
       if (draft.title && !formData.title.trim()) {
         setFormData((current) => ({ ...current, title: draft.title }));
       }
       setContentText(draft.contentText || draft.content_text || "");
+      setAnswerKey(draft.answerKey || draft.answer_key || "");
       setContentMode("ai");
     } catch (err) {
       console.error("AI assessment generation error:", err);
@@ -465,9 +580,11 @@ const AssessmentSystem: React.FC = () => {
                 scheduled_date: row.rawDate ? String(row.rawDate).slice(0, 10) : "",
               });
               setContentText(row.raw?.content_text || row.raw?.contentText || "");
+              setAnswerKey(row.raw?.answer_key || row.raw?.answerKey || "");
               setContentMode(row.raw?.content_source === "upload" ? "upload" : row.raw?.content_source === "ai" ? "ai" : "manual");
               setUploadFile(null);
               setAiPrompt("");
+              setAiLanguage(row.raw?.language || "en");
               setShowCreateModal(true);
             }}
           >
@@ -663,8 +780,10 @@ const AssessmentSystem: React.FC = () => {
                   setEditingTest(null);
                   setContentMode("manual");
                   setContentText("");
+                  setAnswerKey("");
                   setUploadFile(null);
                   setAiPrompt("");
+                  setAiLanguage("en");
                   setShowCreateModal(true);
                 }}
                 className="shadow-sm"
@@ -719,18 +838,30 @@ const AssessmentSystem: React.FC = () => {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
-            <SelectField
-              label="Test Type"
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              options={[
-                { value: "topic", label: "Topic Test" },
-                { value: "unit", label: "Unit Test" },
-                { value: "mock", label: "Mock Test" },
-                { value: "subject", label: "Subject Test" },
-                { value: "final", label: "Final Exam" },
-              ]}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <SelectField
+                label="Test Type"
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                options={[
+                  { value: "topic", label: "Topic Test" },
+                  { value: "unit", label: "Unit Test" },
+                  { value: "mock", label: "Mock Test" },
+                  { value: "subject", label: "Subject Test" },
+                  { value: "final", label: "Final Exam" },
+                ]}
+              />
+              <SelectField
+                label="Language"
+                value={aiLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                options={[
+                  { value: "en", label: "English" },
+                  { value: "hi", label: "Hindi" },
+                  { value: "od", label: "Odia" },
+                ]}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <SelectField
@@ -801,7 +932,12 @@ const AssessmentSystem: React.FC = () => {
               </div>
 
               {contentMode === "manual" && (
-                <ContentEditPreview value={contentText} onChange={setContentText} />
+                <ContentEditor
+                  questions={contentText}
+                  onQuestionsChange={setContentText}
+                  answerKey={answerKey}
+                  onAnswerKeyChange={setAnswerKey}
+                />
               )}
 
               {contentMode === "upload" && (
@@ -817,7 +953,12 @@ const AssessmentSystem: React.FC = () => {
                   ) : (
                     <p className="text-xs text-gray-500">Upload a PDF, document, text file, or question-paper image.</p>
                   )}
-                  <ContentEditPreview value={contentText} onChange={setContentText} />
+                  <ContentEditor
+                    questions={contentText}
+                    onQuestionsChange={setContentText}
+                    answerKey={answerKey}
+                    onAnswerKeyChange={setAnswerKey}
+                  />
                 </div>
               )}
 
@@ -855,6 +996,7 @@ const AssessmentSystem: React.FC = () => {
                         <option value="hard">Hard</option>
                       </select>
                     </label>
+
                   </div>
                   <textarea
                     value={aiPrompt}
@@ -866,7 +1008,15 @@ const AssessmentSystem: React.FC = () => {
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
                     {generatingAi ? "Generating..." : "Generate Question Paper"}
                   </Button>
-                  <ContentEditPreview value={contentText} onChange={setContentText} />
+                  {/* Show two-pane editor once AI has generated content */}
+                  {contentText && (
+                    <ContentEditor
+                      questions={contentText}
+                      onQuestionsChange={setContentText}
+                      answerKey={answerKey}
+                      onAnswerKeyChange={setAnswerKey}
+                    />
+                  )}
                 </div>
               )}
             </div>
