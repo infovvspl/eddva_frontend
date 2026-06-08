@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   ChevronLeft,
@@ -11,11 +11,15 @@ import {
   Search,
   User as UserIcon,
   X,
+  Loader2,
+  CheckCheck,
+  Inbox
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
-import { useQuery } from "@tanstack/react-query";
-import { parentClient } from "@/lib/api/parent-client";
+import api from "@/lib/api/school-client";
+import { useSchoolNotification } from "@/context/SchoolNotificationContext";
+import NotificationCenterModal from "@/components/school/NotificationCenterModal";
 
 const navItems = [
   { name: "Dashboard", href: "/school/parent/dashboard", icon: Home, end: true },
@@ -27,17 +31,74 @@ const navItems = [
 
 export default function ParentLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  const { data: notifications } = useQuery({
-    queryKey: ["parent-notifications"],
-    queryFn: () => parentClient.getNotifications(),
-    refetchInterval: 60000,
-  });
+  const {
+    unreadCount,
+    notifications,
+    setUnreadCount,
+    setNotifications,
+    fetchUnreadCount,
+    fetchNotifications
+  } = useSchoolNotification();
 
-  const unreadCount = notifications?.filter((n: any) => !n.isRead)?.length || 0;
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
+
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (notifOpen) {
+      fetchNotifications();
+    }
+  }, [notifOpen]);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!notifRef.current?.contains(e.target as Node)) setNotifOpen(false);
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const res = await api.patch('/notifications/read-all');
+      if (res.data?.success) {
+        setUnreadCount(0);
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      }
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      const res = await api.patch(`/notifications/${id}/read`);
+      if (res.data?.success) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      }
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  const getParentFallbackUrl = (n: any) => {
+    if (n.actionUrl) return n.actionUrl;
+    const type = (n.type || '').toLowerCase();
+    const title = (n.title || '').toLowerCase();
+    if (type.includes('attendance') || title.includes('attendance')) {
+      return '/school/parent/child';
+    }
+    return '/school/parent/dashboard';
+  };
+
   const pageTitle = getPageTitle(location.pathname);
   const workspaceName = user?.tenantName || "School Parent Portal";
 
@@ -83,18 +144,123 @@ export default function ParentLayout() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Link
-                to="/school/parent/notifications"
-                className="relative flex h-10 w-10 items-center justify-center rounded-2xl text-slate-500 transition hover:bg-slate-50"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-bold text-white">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
+              <div className="relative flex items-center gap-2" ref={notifRef}>
+                <button
+                  type="button"
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 transition-colors"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute right-2 top-2 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white border border-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-4 w-96 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-900 dark:text-white">Notifications</h3>
+                        <p className="text-[9px] text-slate-400 font-semibold mt-0.5">
+                          {unreadCount} unread messages
+                        </p>
+                      </div>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
+                        >
+                          <CheckCheck size={12} />
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notifications List */}
+                    <div className="max-h-[360px] overflow-y-auto custom-scrollbar">
+                      {notifLoading ? (
+                        <div className="flex flex-col items-center justify-center p-8 text-slate-400">
+                          <Loader2 className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+                          <p className="text-xs font-bold">Fetching updates...</p>
+                        </div>
+                      ) : notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-8 text-center">
+                          <Inbox className="h-8 w-8 text-slate-300 mb-2" />
+                          <p className="text-xs font-bold text-slate-400">All caught up!</p>
+                          <p className="text-[10px] text-slate-400/80 mt-1">No new alerts found.</p>
+                        </div>
+                      ) : (
+                        notifications.map((n: any) => (
+                          <div
+                            key={n.id}
+                            onClick={() => {
+                              if (!n.isRead) {
+                                handleMarkAsRead(n.id);
+                              }
+                              const targetUrl = getParentFallbackUrl(n);
+                              if (targetUrl) {
+                                navigate(targetUrl);
+                              }
+                              setNotifOpen(false);
+                            }}
+                            className={`group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/40 dark:hover:bg-slate-800/40 cursor-pointer transition-colors ${
+                              !n.isRead ? "bg-blue-50/20 dark:bg-blue-900/10" : ""
+                            }`}
+                          >
+                            {!n.isRead && (
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            )}
+
+                            <div className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold ${
+                              n.priority === 'urgent' 
+                                ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30"
+                                : n.priority === 'high'
+                                ? "bg-orange-50 text-orange-600"
+                                : "bg-blue-50 text-blue-600"
+                            }`}>
+                              <Bell size={14} />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className={`text-[11px] font-bold text-slate-900 dark:text-white truncate ${!n.isRead ? "font-extrabold" : ""}`}>
+                                {n.title}
+                              </h4>
+                              <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                                {n.message}
+                              </p>
+                              <span className="text-[8px] font-bold text-slate-400 tracking-tight uppercase block mt-1.5">
+                                {new Date(n.createdAt).toLocaleDateString(undefined, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Footer link to open modal */}
+                    <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          setNotifCenterOpen(true);
+                          setNotifOpen(false);
+                        }}
+                        className="w-full text-center text-[10px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                      >
+                        View All Notifications →
+                      </button>
+                    </div>
+                  </div>
                 )}
-              </Link>
+              </div>
 
               <Link to="/school/parent/profile" className="flex items-center gap-3 border-l border-slate-100 pl-3">
                 <div className="hidden text-right sm:block">
@@ -116,6 +282,14 @@ export default function ParentLayout() {
           </div>
         </main>
       </div>
+      {user && (
+        <NotificationCenterModal
+          isOpen={notifCenterOpen}
+          onClose={() => setNotifCenterOpen(false)}
+          currentUser={user}
+          onUpdate={fetchUnreadCount}
+        />
+      )}
     </div>
   );
 }

@@ -88,15 +88,37 @@ export const parentClient = {
     Promise.all([
       schoolApi.get('/chat/users', { params: { role: 'TEACHER' } }).then(extractData),
       schoolApi.get('/chat/users', { params: { role: 'INSTITUTE_ADMIN' } }).then(extractData),
+      schoolApi.get('/chat/conversations', { params: { role: 'TEACHER' } }).then(extractData),
+      schoolApi.get('/chat/conversations', { params: { role: 'INSTITUTE_ADMIN' } }).then(extractData),
     ])
-      .then(([teachers, admins]) => {
+      .then(([teachers, admins, teacherConvs, adminConvs]) => {
         const list = [
           ...(Array.isArray(teachers) ? teachers : []),
           ...(Array.isArray(admins) ? admins : []),
         ];
-        // De-duplicate by id in case a user matches both queries.
+        const convs = [
+          ...(Array.isArray(teacherConvs) ? teacherConvs : []),
+          ...(Array.isArray(adminConvs) ? adminConvs : []),
+        ];
+        const convByPeer = new Map<string, any>();
+        convs.forEach((c) => {
+          if (c && c.peer_id) {
+            convByPeer.set(c.peer_id, c);
+          }
+        });
+
         const seen = new Set<string>();
-        return list.filter((u: { id: string }) => (seen.has(u.id) ? false : seen.add(u.id)));
+        return list
+          .filter((u: { id: string }) => (seen.has(u.id) ? false : seen.add(u.id)))
+          .map((u: any) => {
+            const conv = convByPeer.get(u.id);
+            return {
+              ...u,
+              lastMessage: conv?.last_message || '',
+              unread: Number(conv?.unread_count || 0),
+              time: conv?.created_at ? new Date(conv.created_at).toLocaleDateString() : '',
+            };
+          });
       })
       .catch((e) => logParentApiError('getChatContacts', '/school/chat/users', e)),
 

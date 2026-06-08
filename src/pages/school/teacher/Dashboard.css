@@ -217,10 +217,16 @@
   padding: 8px;
   border-radius: 7px;
   transition: background var(--transition-fast);
+  cursor: pointer;
+}
+
+.dashboard__notification:hover {
+  background: rgba(124, 58, 237, 0.05);
 }
 
 .dashboard__notification--unread {
   background: rgba(124, 58, 237, 0.02);
+  border-left: 2px solid var(--primary-500);
 }
 
 .dashboard__notification-icon {

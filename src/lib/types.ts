@@ -3,15 +3,22 @@ export type UserRole = "super_admin" | "institute_admin" | "teacher" | "student"
 export interface StudentProfile {
   id: string;
   batchId?: string;
-  examTarget: string;
-  currentClass: string;
+  examTarget?: string;
+  currentClass?: string;
   examYear?: number;
-  diagnosticCompleted: boolean;
+  diagnosticCompleted?: boolean;
   streakDays?: number;
   xpPoints?: number;
   currentEloTier?: string;
   targetCollege?: string;
   dailyStudyHours?: number;
+  /** School module — class / section from students table */
+  sectionId?: string;
+  sectionName?: string;
+  classId?: string;
+  className?: string;
+  enrollmentNo?: string;
+  rollNo?: string;
 }
 
 export interface StudentParentDetails {
@@ -51,7 +58,10 @@ export interface User {
   email?: string;
   role: UserRole;
   avatar?: string;
+  /** Coaching: coaching tenant UUID. School: same value as instituteId (legacy field name). */
   tenantId?: string;
+  /** School module only — institutes.id from school DB */
+  instituteId?: string;
   tenantName?: string;
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;

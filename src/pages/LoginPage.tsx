@@ -10,7 +10,7 @@ import * as authApi from "@/lib/api/auth";
 import type { SchoolLoginResponse } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
-import { getSubdomain } from "@/lib/tenant";
+import { getSubdomain, getSubdomainFromHost, clearStoredSubdomain } from "@/lib/tenant";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
@@ -52,6 +52,11 @@ const LoginPage = () => {
   const [tenantInfo, setTenantInfo] = useState<PublicTenantInfo | null>(null);
 
   useEffect(() => {
+    // Avoid stale tenant subdomain from a previous session breaking login on bare localhost
+    if (!getSubdomainFromHost()) {
+      clearStoredSubdomain();
+    }
+
     // Strictly check the URL hostname so localhost:8080 doesn't get affected
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
@@ -96,6 +101,13 @@ const LoginPage = () => {
   const inputClass =
     "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-600 focus:bg-white focus:border-blue-400 focus:ring-8 focus:ring-blue-500/5 disabled:opacity-50 shadow-sm";
 
+  const loginErrorMessage = (err: any, fallback: string) => {
+    if (!err?.response) {
+      return "Cannot reach the server. Start the backend (npm run start:dev in eddva_backend).";
+    }
+    return err.response?.data?.message || fallback;
+  };
+
   /* ── helpers ── */
   const buildUser = (meData: any, loginMeta?: { onboardingRequired?: boolean }) => {
     const profile = meData.user;
@@ -129,6 +141,7 @@ const LoginPage = () => {
   const buildSchoolUser = (loginData: SchoolLoginResponse): User => {
     const u = loginData.user;
     const inst = loginData.institute;
+    const sp = u.studentProfile;
     return {
       id: u.id,
       name: u.name,
@@ -136,12 +149,27 @@ const LoginPage = () => {
       email: u.email,
       role: (u.role.toLowerCase()) as UserRole,
       avatar: u.photo ?? undefined,
+      instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
       isFirstLogin: false,
       onboardingRequired: false,
       teacherProfile: null,
-      studentProfile: null,
+      studentProfile: sp
+        ? {
+            id: sp.id ?? u.id,
+            examTarget: "",
+            currentClass: sp.currentClass ?? (sp.className && sp.sectionName ? `${sp.className} · ${sp.sectionName}` : sp.className ?? ""),
+            sectionId: sp.sectionId,
+            sectionName: sp.sectionName,
+            classId: sp.classId,
+            className: sp.className,
+            enrollmentNo: sp.enrollmentNo,
+            rollNo: sp.rollNo,
+            subjects: sp.subjects,
+            diagnosticCompleted: true,
+          }
+        : null,
     };
   };
 
@@ -194,10 +222,17 @@ const LoginPage = () => {
       const rawPhone = identifier.trim().replace(/[^\d+]/g, "");
       const formattedPhone = rawPhone.startsWith("+") ? rawPhone : `+91${rawPhone}`;
 
-      // Step 1 — Try coaching (Eddva main) login
-      let coachingFailed = false;
-      let coachingErrMsg = "";
-      try {
+      const schoolPayload = isEmail
+        ? { email: identifier.trim(), password }
+        : { phone: formattedPhone, password };
+
+      const trySchoolLogin = async () => {
+        const schoolRes = await authApi.loginSchoolWithPassword(schoolPayload);
+        const schoolUser = buildSchoolUser(schoolRes);
+        redirectUser(schoolUser, "school");
+      };
+
+      const tryCoachingLogin = async () => {
         const loginRes = await authApi.loginWithPassword(
           isEmail
             ? { email: identifier.trim(), password }
@@ -210,38 +245,48 @@ const LoginPage = () => {
         } else {
           redirectUser(user as User, "coaching");
         }
-        return;
-      } catch (coachingErr: any) {
-        const status = coachingErr?.response?.status;
-        // Fall through to school login on any auth failure (works for both email AND phone)
-        if (status === 401 || status === 404 || status === 400 || status === 500) {
-          coachingFailed = true;
-          coachingErrMsg = coachingErr?.response?.data?.message || "";
-        } else {
-          throw coachingErr;
+      };
+
+      // On institute subdomains (e.g. odm.localhost), try school DB first
+      const schoolFirst = !!getSubdomainFromHost();
+      let primaryErr = "";
+      let fallbackErr = "";
+
+      if (schoolFirst) {
+        try {
+          await trySchoolLogin();
+          return;
+        } catch (e: any) {
+          primaryErr = loginErrorMessage(e, "School login failed");
+        }
+        try {
+          await tryCoachingLogin();
+          return;
+        } catch (e: any) {
+          fallbackErr = loginErrorMessage(e, "Coaching login failed");
+        }
+      } else {
+        try {
+          await tryCoachingLogin();
+          return;
+        } catch (e: any) {
+          primaryErr = loginErrorMessage(e, "Coaching login failed");
+        }
+        try {
+          await trySchoolLogin();
+          return;
+        } catch (e: any) {
+          fallbackErr = loginErrorMessage(e, "School login failed");
         }
       }
 
-      if (!coachingFailed) return;
-
-      // Step 2 — School login fallback (works for both email and phone)
-      try {
-        const schoolPayload = isEmail
-          ? { email: identifier.trim(), password }
-          : { phone: formattedPhone, password };
-        const schoolRes = await authApi.loginSchoolWithPassword(schoolPayload);
-        const schoolUser = buildSchoolUser(schoolRes);
-        redirectUser(schoolUser, "school");
-      } catch (schoolErr: any) {
-        const schoolMsg = schoolErr?.response?.data?.message || "";
-        console.error("School login error details:", schoolErr, schoolErr?.response?.data);
-        alert(`School login error: ${schoolErr?.message} | Data: ${JSON.stringify(schoolErr?.response?.data)}`);
-        setError(schoolMsg || coachingErrMsg || "Invalid credentials. Please try again.");
-      }
+      setError(
+        primaryErr && fallbackErr
+          ? `${primaryErr}. ${fallbackErr}.`
+          : primaryErr || fallbackErr || "Invalid credentials.",
+      );
     } catch (err: any) {
-      console.error("Outer login error:", err);
-      alert(`Outer login error: ${err?.message}`);
-      setError(err?.response?.data?.message || err?.message || "Invalid credentials. Please try again.");
+      setError(loginErrorMessage(err, "Invalid credentials. Please try again."));
     } finally { setLoginLoading(false); }
   };
 

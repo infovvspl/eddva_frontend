@@ -323,7 +323,7 @@ function BranchNode({ data }: any) {
    MAIN COMPONENT
 ========================================================= */
 
-function MindMapVisualizerContent({ data }: { data: any }) {
+function MindMapVisualizerContent({ data, height = 600 }: { data: any; height?: number }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView } = useReactFlow();
@@ -530,7 +530,7 @@ function MindMapVisualizerContent({ data }: { data: any }) {
   }
 
   return (
-    <div style={{ width: "100%", height: "600px", borderRadius: "12px", overflow: "hidden", border: "1px solid #e5e7eb", background: "#f8fafc" }}>
+    <div style={{ width: "100%", height: `${height}px`, borderRadius: "12px", overflow: "hidden", border: "1px solid #e5e7eb", background: "#f8fafc" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -566,6 +566,18 @@ export function MindMapVisualizer({ data }: { data: any }) {
         <MindMapVisualizerContent data={data} />
       </ReactFlowProvider>
     </div>
+  );
+}
+
+/** Bare interactive mind-map canvas (no heading/wrapper) for embedding in
+ *  modals and panels. Pass a `{ title, children }` tree and an optional pixel
+ *  height. */
+export function MindMapCanvas({ data, height = 600 }: { data: any; height?: number }) {
+  if (!data) return null;
+  return (
+    <ReactFlowProvider>
+      <MindMapVisualizerContent data={data} height={height} />
+    </ReactFlowProvider>
   );
 }
 

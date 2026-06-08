@@ -135,12 +135,14 @@ const teacherGroups = [
       { to: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { to: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
       { to: '/school/teacher/classes', label: 'My Schedule', icon: Video },
+      { to: '/school/teacher/calendar', label: 'Academic Calendar', icon: CalendarDays },
       { to: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
     ],
   },
   {
     heading: 'Evaluation',
     items: [
+      { to: '/school/teacher/doubts', label: 'Student Doubts', icon: MessageSquare },
       { to: '/school/teacher/assignments', label: 'Assignments', icon: FileText },
       { to: '/school/teacher/assessments', label: 'Assessments', icon: ClipboardList },
       { to: '/school/teacher/reports', label: 'Reports', icon: BarChart3 },
@@ -152,7 +154,6 @@ const teacherGroups = [
       { to: '/school/teacher/creator', label: 'PPT & Mind Maps', icon: Presentation },
       { to: '/school/teacher/grievances', label: 'Grievances', icon: MessageSquareWarning },
       { to: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
-      { to: '/school/teacher/profile', label: 'Profile', icon: SettingsIcon },
     ],
   },
 ];

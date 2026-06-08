@@ -135,6 +135,16 @@ export interface SchoolLoginResponse {
     photo?: string;
     phone?: string;
     instituteId?: string;
+    studentProfile?: {
+      id?: string;
+      sectionId?: string;
+      sectionName?: string;
+      classId?: string;
+      className?: string;
+      enrollmentNo?: string;
+      rollNo?: string;
+      currentClass?: string;
+    } | null;
   };
   institute: { id: string; name: string; tenantDomain?: string; logo?: string } | null;
   tenantDomain?: string;

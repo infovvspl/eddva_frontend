@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '@/lib/api/school-client';
+import { apiClient as api } from '@/lib/api/client';
 import Modal from '@/components/school/Modal';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';

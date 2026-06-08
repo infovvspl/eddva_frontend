@@ -187,6 +187,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const [showGuardian, setShowGuardian] = useState(false);
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
+  const [teachingMap, setTeachingMap] = useState(null);
+  const [teachingMapLoading, setTeachingMapLoading] = useState(false);
 
   useEffect(() => {
     fetchClasses();
@@ -200,6 +202,29 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       setSections([]);
     }
   }, [formData.classId, classes]);
+
+  useEffect(() => {
+    if (!formData.sectionId) {
+      setTeachingMap(null);
+      return;
+    }
+    let cancelled = false;
+    const loadMap = async () => {
+      setTeachingMapLoading(true);
+      try {
+        const res = await api.get(`/academic/sections/${formData.sectionId}/teaching-map`);
+        const data = res.data?.data ?? res.data;
+        if (!cancelled) setTeachingMap(data);
+      } catch (error) {
+        console.error('Failed to load teaching map:', error);
+        if (!cancelled) setTeachingMap(null);
+      } finally {
+        if (!cancelled) setTeachingMapLoading(false);
+      }
+    };
+    loadMap();
+    return () => { cancelled = true; };
+  }, [formData.sectionId]);
 
   const fetchClasses = async () => {
     try {
@@ -547,7 +572,59 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               />
             </div>
 
-            <AIAssistantCard message={`AI recommends ${formData.classId ? classes.find(c => c.id === formData.classId)?.name : 'a class'} based on age and previous school curriculum compatibility.`} />
+            {formData.sectionId && (
+              <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+                  Class setup — subjects & teachers
+                </h3>
+                <p className="mt-1 text-xs font-medium text-slate-500">
+                  This student will follow the timetable and teacher assignments configured for this section.
+                </p>
+                {teachingMapLoading ? (
+                  <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                  </div>
+                ) : teachingMap ? (
+                  <div className="mt-4 space-y-3">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                      {teachingMap.className} · Section {teachingMap.sectionName}
+                      <span className="ml-2 text-xs font-semibold text-blue-600">
+                        {teachingMap.subjectCount} subject{teachingMap.subjectCount === 1 ? '' : 's'}
+                      </span>
+                    </p>
+                    {teachingMap.classTeacher?.name && (
+                      <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                        Class teacher: {teachingMap.classTeacher.name}
+                      </p>
+                    )}
+                    {teachingMap.subjects?.length > 0 ? (
+                      <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-950">
+                        {teachingMap.subjects.map((row) => (
+                          <li key={row.subjectId || row.subjectName} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                            <span className="font-bold text-slate-800 dark:text-slate-100">{row.subjectName}</span>
+                            <span className="text-xs font-semibold text-slate-500">
+                              {row.teachers?.length
+                                ? row.teachers.map((t) => t.name).join(', ')
+                                : <span className="text-amber-600">No teacher assigned yet</span>}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs font-semibold text-amber-600">
+                        No subjects or teacher assignments found for this section. Add subjects under Subjects and assign teachers under Teachers → Academic Assignments.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            <AIAssistantCard message={
+              formData.sectionId && teachingMap?.subjectCount
+                ? `This student will be enrolled in ${teachingMap.className} (${teachingMap.sectionName}) with ${teachingMap.subjectCount} subjects. Assignments, doubts, and timetable use these teacher mappings.`
+                : `Select class and section to see which subjects and teachers apply. Configure teachers under Teachers → profile → Academic Assignments.`
+            } />
           </motion.div>
         );
       case 3:

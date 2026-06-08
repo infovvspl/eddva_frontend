@@ -10,7 +10,7 @@ import { putFileToS3, type UploadProgressEvent } from './upload';
  * can't be reused because its JWT strategy resolves users from the coaching DB.
  */
 
-export type SchoolMaterialType = 'notes' | 'pyq' | 'formula_sheet' | 'dpp';
+export type SchoolMaterialType = 'notes' | 'pyq' | 'formula_sheet' | 'dpp' | 'mindmap' | 'ppt' | 'ebook';
 
 export interface SchoolMaterial {
   id: string;
@@ -70,6 +70,11 @@ export const schoolContent = {
   /** Persist AI-generated markdown as a study material for students. */
   saveAiMaterial: (body: { topicId: string; title: string; content: string; resourceType: string }) =>
     schoolApi.post('/materials/ai-save', body).then(extractData),
+
+  /** Generate (or fetch cached) an AI image for one slide; returns its S3 URL. */
+  generateSlideImage: (body: { prompt: string }) =>
+    schoolApi.post('/materials/ai-slide-image', body)
+      .then((res) => extractData<{ url: string; cached: boolean }>(res)),
 
   /** Request a presigned PUT URL for a school material file. */
   requestUploadUrl: (body: { fileName: string; contentType: string; fileSize: number }) =>

@@ -250,7 +250,6 @@ export default function Users() {
           </div>
         )}
       </div>
-
     </div>
   );
 }

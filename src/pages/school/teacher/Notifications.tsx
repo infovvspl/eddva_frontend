@@ -1,11 +1,12 @@
-﻿import React, { useEffect, useState } from "react";
-import { Bell, Trash2, CheckCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Bell, Trash2, CheckCircle, CheckCheck } from "lucide-react";
 import api from "@/lib/api/school-client";
 import useLiveRefresh from "@/hooks/useLiveRefresh";
+import { toast } from "sonner";
 import "./Notifications.css";
 
 interface Notification {
-  id: number;
+  id: string | number;
   title: string;
   message: string;
   time: string;
@@ -14,28 +15,28 @@ interface Notification {
 
 const defaultNotifications: Notification[] = [
   {
-    id: 1,
+    id: "1",
     title: "Assignment Submitted",
     message: "Rahul submitted Assignment 4.",
     time: "2 min ago",
     read: false,
   },
   {
-    id: 2,
+    id: "2",
     title: "Attendance Updated",
     message: "Attendance marked successfully.",
     time: "10 min ago",
     read: false,
   },
   {
-    id: 3,
+    id: "3",
     title: "New Topic Created",
     message: "AI Fundamentals topic added.",
     time: "1 hour ago",
     read: true,
   },
   {
-    id: 4,
+    id: "4",
     title: "Assessment Completed",
     message: "Semester Test evaluation completed.",
     time: "3 hours ago",
@@ -60,7 +61,7 @@ const Notifications: React.FC = () => {
         if (Array.isArray(notices)) {
           notices.slice(0, 8).forEach((notice: any, index: number) => {
             nextNotifications.push({
-              id: Number(notice.id ?? index + 1000),
+              id: notice.id || `notice-${index}`,
               title: notice.title || 'Notice',
               message: notice.content || notice.category || 'New institute notice published.',
               time: notice.postedDate ? new Date(notice.postedDate).toLocaleString() : 'Just now',
@@ -75,11 +76,11 @@ const Notifications: React.FC = () => {
         if (Array.isArray(items)) {
           items.forEach((item: any, index: number) => {
             nextNotifications.push({
-              id: Number(item.id ?? index + 2000),
+              id: item.id || `notif-${index}`,
               title: item.title || 'Notification',
               message: item.message || item.content || 'Institute update available.',
-              time: item.time || item.created_at || 'Just now',
-              read: Boolean(item.read),
+              time: item.time || item.createdAt || item.created_at || 'Just now',
+              read: Boolean(item.isRead ?? item.read),
             });
           });
         }
@@ -124,24 +125,63 @@ const Notifications: React.FC = () => {
     );
   }, [notifications]);
 
-  const markAsRead = (id: number) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification,
-      ),
-    );
+  const markAsRead = async (id: string | number) => {
+    try {
+      if (typeof id === 'string' && !id.startsWith('notice-') && !id.startsWith('notif-')) {
+        await api.patch(`/notifications/${id}/read`);
+      }
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === id ? { ...notification, read: true } : notification,
+        ),
+      );
+      toast.success("Notification marked as read");
+    } catch (error) {
+      console.error("Failed to mark notification as read", error);
+      toast.error("Failed to mark notification as read");
+    }
   };
 
-  const deleteNotification = (id: number) => {
-    setNotifications((prev) =>
-      prev.filter((notification) => notification.id !== id),
-    );
+  const deleteNotification = async (id: string | number) => {
+    try {
+      if (typeof id === 'string' && !id.startsWith('notice-') && !id.startsWith('notif-')) {
+        await api.delete(`/notifications/${id}`);
+      }
+      setNotifications((prev) =>
+        prev.filter((notification) => notification.id !== id),
+      );
+      toast.success("Notification deleted");
+    } catch (error) {
+      console.error("Failed to delete notification", error);
+      toast.error("Failed to delete notification");
+    }
   };
+
+  const markAllAsRead = async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, read: true }))
+      );
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      console.error("Failed to mark all as read", error);
+      toast.error("Failed to mark all as read");
+    }
+  };
+
+  const hasUnread = notifications.some((n) => !n.read);
 
   return (
     <div className="notifications-page">
       <div className="notifications-header">
         <h1>Notifications</h1>
+        {hasUnread && (
+          <button onClick={markAllAsRead} className="mark-all-btn">
+            <CheckCheck size={16} />
+            Mark all read
+          </button>
+        )}
       </div>
 
       <div className="notifications-list">
@@ -167,12 +207,12 @@ const Notifications: React.FC = () => {
 
               <div className="notification-actions">
                 {!notification.read && (
-                  <button onClick={() => markAsRead(notification.id)}>
+                  <button onClick={() => markAsRead(notification.id)} title="Mark as read">
                     <CheckCircle size={18} />
                   </button>
                 )}
 
-                <button onClick={() => deleteNotification(notification.id)}>
+                <button onClick={() => deleteNotification(notification.id)} title="Delete notification">
                   <Trash2 size={18} />
                 </button>
               </div>
@@ -187,3 +227,4 @@ const Notifications: React.FC = () => {
 };
 
 export default Notifications;
+

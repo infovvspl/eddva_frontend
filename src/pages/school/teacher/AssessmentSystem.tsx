@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText, Upload, BookOpen, Calendar, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, Trophy, BarChart3, ClipboardList, Target
+  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
 } from "lucide-react";
 import GlassCard from "@/components/school/GlassCard";
 import Button from "@/components/school/Button";
@@ -10,27 +11,33 @@ import Modal from "@/components/school/Modal";
 import InputField from "@/components/school/InputField";
 import SelectField from "@/components/school/SelectField";
 import SearchBar from "@/components/school/SearchBar";
-import Tabs from "@/components/school/Tabs";
 import DataTable from "@/components/school/DataTable";
-import api from "@/lib/api/school-client";
+import Tabs from "@/components/school/Tabs";
+import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
+import "./AssessmentSystem.css";
 
-// ── Components ─────────────────────────────────────────────────────────────
-
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+function Breadcrumb({
+  items,
+}: {
+  items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[];
+}) {
   return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm mb-6">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-gray-300" />}
+    <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-sm">
+      {items.map((item, index) => (
+        <React.Fragment key={`${item.label}-${index}`}>
+          {index > 0 && <ChevronRight size={14} className="text-gray-300" />}
           <button
             type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+            onClick={item.onClick}
+            disabled={item.active}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${item.active
+                ? "bg-brand-50 text-brand-700"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               }`}
           >
-            {it.icon}{it.label}
+            {item.icon}
+            {item.label}
           </button>
         </React.Fragment>
       ))}
@@ -39,30 +46,41 @@ function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode;
 }
 
 function NavCard({
-  icon, tone, title, meta, actionLabel, onClick,
+  icon,
+  tone,
+  title,
+  meta,
+  actionLabel,
+  onClick,
 }: {
-  icon: React.ReactNode; tone: 'brand' | 'emerald'; title: string; meta: string;
-  actionLabel: string; onClick: () => void;
+  icon: React.ReactNode;
+  tone: "brand" | "emerald";
+  title: string;
+  meta: string;
+  actionLabel: string;
+  onClick: () => void;
 }) {
-  const t = tone === 'brand' ? { soft: 'bg-brand-100', icon: 'text-brand-600' } : { soft: 'bg-emerald-100', icon: 'text-emerald-600' };
+  const toneClasses =
+    tone === "brand"
+      ? { soft: "bg-brand-100", icon: "text-brand-600" }
+      : { soft: "bg-emerald-100", icon: "text-emerald-600" };
+
   return (
     <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
       <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
+        <div className={`rounded-xl p-2.5 ${toneClasses.soft} ${toneClasses.icon}`}>{icon}</div>
       </div>
       <h4 className="mt-4 truncate text-lg font-bold text-gray-900">{title}</h4>
       <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-gray-500">
         <Users size={14} /> {meta}
       </p>
       <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <span className={`text-sm font-semibold ${toneClasses.icon}`}>{actionLabel}</span>
         <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5" />
       </div>
     </GlassCard>
   );
 }
-
-// ── Main Component ─────────────────────────────────────────────────────────
 
 const AssessmentSystem: React.FC = () => {
   const navigate = useNavigate();
@@ -80,6 +98,11 @@ const AssessmentSystem: React.FC = () => {
   const [testsList, setTestsList] = useState<any[]>([]);
   const [loadingTests, setLoadingTests] = useState(false);
   const [editingTest, setEditingTest] = useState<any>(null);
+  const [contentMode, setContentMode] = useState<"manual" | "upload" | "ai">("manual");
+  const [contentText, setContentText] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [generatingAi, setGeneratingAi] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -176,50 +199,15 @@ const AssessmentSystem: React.FC = () => {
     if (!selectedSubject) return;
     setLoadingTests(true);
     try {
-      // Fetch all assessments and filter on frontend based on subjectId
-      const res = await api.get("/assessments");
-      const allAssessments = res.data.data || [];
-
-      // DEBUG: log raw response
-      console.log("RAW ASSESSMENTS", allAssessments);
-      console.log("Filtering by subject_id:", selectedSubject.id, "class_id:", selectedClass?.id);
-
-      // FIX: The assessments table has NO section_id column — filtering by
-      // item.section_id was always undefined → "undefined" !== any real UUID
-      // → every record was excluded. Filter only by subject_id (and class_id if set).
-      const filtered = allAssessments.filter((item: any) => {
-        const matchSubject = String(item.subject_id) === String(selectedSubject.id);
-        // class_id is optional — skip the check if either side is missing
-        const matchClass = !selectedClass?.id || !item.class_id
-          ? true
-          : String(item.class_id) === String(selectedClass.id);
-        return matchSubject && matchClass;
+      const res = await api.get("/assessments", {
+        params: {
+          classId: selectedClass?.id,
+          subjectId: selectedSubject.id,
+        },
       });
+      const allAssessments = unwrapSchoolList(res);
 
-      // DEBUG: log filtered result
-      console.log("FILTERED ASSESSMENTS", filtered);
-
-      // ── Frontend mapping layer ────────────────────────────────────────
-      // Legacy DB records stored type = "unit". Normalise to "chapter" for
-      // display/filtering so they appear under Chapter Tests.
-      const normaliseType = (raw: string): string =>
-        raw === "unit" ? "chapter" : raw;
-
-      // ── Status: computed purely from scheduled_date on the frontend ────────
-      // Rule: scheduled_date >= today → "upcoming"  |  < today → "completed"
-      // The backend status field is intentionally ignored.
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // compare calendar days, not clock time
-
-      const computeStatus = (item: any): string => {
-        const raw = item.scheduled_at || item.scheduled_date;
-        if (!raw) return "upcoming"; // no date → treat as upcoming
-        const d = new Date(raw);
-        d.setHours(0, 0, 0, 0);
-        return d >= today ? "upcoming" : "completed";
-      };
-
-      const formatted = filtered.map((item: any) => ({
+      const formatted = allAssessments.map((item: any) => ({
         id: item.id,
         title: item.title,
         type: normaliseType(item.assessment_type || item.type || "topic"),
@@ -229,10 +217,13 @@ const AssessmentSystem: React.FC = () => {
         date: item.scheduled_at || item.scheduled_date
           ? new Date(item.scheduled_at || item.scheduled_date).toLocaleDateString()
           : "-",
+        rawDate: item.scheduled_at || item.scheduled_date || "",
         class: selectedClass?.name || "-",
-        // status is computed from scheduled_date — never from the backend field
-        status: computeStatus(item),
+        status: item.status || (item.scheduled_at || item.scheduled_date
+          ? new Date(item.scheduled_at || item.scheduled_date) > new Date() ? "upcoming" : "completed"
+          : "draft"),
         submissions: 0,
+        raw: item,
       }));
 
       console.log("AFTER WORKSPACE FILTER", formatted.length, formatted);
@@ -261,7 +252,7 @@ const AssessmentSystem: React.FC = () => {
     }
 
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         title: formData.title,
         type: formData.type,
         assessmentType: formData.type, // Handle backend variations
@@ -273,13 +264,22 @@ const AssessmentSystem: React.FC = () => {
         duration_minutes: formData.duration_minutes,
         durationMinutes: formData.duration_minutes,
         scheduled_date: formData.scheduled_date,
-        scheduledAt: formData.scheduled_date
+        scheduledAt: formData.scheduled_date,
+        contentText,
+        contentSource: contentMode,
       };
 
       if (editingTest) {
-        await api.patch(`/assessments/${editingTest.id}`, payload);
-      } else {
+        await api.put(`/assessments/${editingTest.id}`, payload);
+      } else if (contentMode !== "upload" || !uploadFile) {
         await api.post("/assessments", payload);
+      } else {
+        const data = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) data.append(key, String(value));
+        });
+        data.append("file", uploadFile);
+        await api.post("/assessments", data);
       }
 
       await fetchTests();
@@ -292,8 +292,38 @@ const AssessmentSystem: React.FC = () => {
         duration_minutes: 120,
         scheduled_date: "",
       });
+      setContentMode("manual");
+      setContentText("");
+      setUploadFile(null);
+      setAiPrompt("");
     } catch (err) {
       console.error("Create assessment error:", err);
+    }
+  };
+
+  const handleAiGenerate = async () => {
+    setGeneratingAi(true);
+    try {
+      const res = await api.post("/assessments/ai-generate", {
+        title: formData.title,
+        type: formData.type,
+        totalMarks: formData.total_marks,
+        durationMinutes: formData.duration_minutes,
+        className: selectedClass?.name,
+        subjectName: selectedSubject?.name,
+        prompt: aiPrompt,
+      });
+      const draft = res.data?.data || res.data || {};
+      if (draft.title && !formData.title.trim()) {
+        setFormData((current) => ({ ...current, title: draft.title }));
+      }
+      setContentText(draft.contentText || draft.content_text || "");
+      setContentMode("ai");
+    } catch (err) {
+      console.error("AI assessment generation error:", err);
+      alert("AI could not generate the assessment right now. Please use manual entry or upload.");
+    } finally {
+      setGeneratingAi(false);
     }
   };
 
@@ -304,7 +334,7 @@ const AssessmentSystem: React.FC = () => {
       render: (v: string, row: any) => (
         <span
           className="text-brand-600 font-medium hover:underline cursor-pointer"
-          onClick={() => navigate(`/teacher/assessments/${row.id}`)}
+          onClick={() => navigate(`/school/teacher/assessments/${row.id}`)}
         >
           {v}
         </span>
@@ -355,34 +385,57 @@ const AssessmentSystem: React.FC = () => {
       key: "actions",
       title: "Actions",
       render: (_: any, row: any) => (
-        <Button
-          size="sm"
-          variant="outline"
-          icon={<Trash2 size={14} />}
-          onClick={async () => {
-            const confirmed = window.confirm("Delete this assessment?");
-            if (!confirmed) return;
-            try {
-              await api.delete(`/assessments/${row.id}`);
-              fetchTests();
-            } catch (err) {
-              console.error(err);
-            }
-          }}
-        >
-          Delete
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditingTest(row);
+              setFormData({
+                title: row.title || "",
+                type: row.type || "topic",
+                total_marks: Number(row.totalMarks) || 100,
+                duration_minutes: Number(row.duration) || 120,
+                scheduled_date: row.rawDate ? String(row.rawDate).slice(0, 10) : "",
+              });
+              setContentText(row.raw?.content_text || row.raw?.contentText || "");
+              setContentMode(row.raw?.content_source === "upload" ? "upload" : row.raw?.content_source === "ai" ? "ai" : "manual");
+              setUploadFile(null);
+              setAiPrompt("");
+              setShowCreateModal(true);
+            }}
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            icon={<Trash2 size={14} />}
+            onClick={async () => {
+              const confirmed = window.confirm("Delete this assessment?");
+              if (!confirmed) return;
+              try {
+                await api.delete(`/assessments/${row.id}`);
+                fetchTests();
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+          >
+            Delete
+          </Button>
+        </div>
       ),
     },
   ];
 
   // ── Type label map (used for search matching against type) ──────────────
   const TYPE_LABEL_MAP: Record<string, string> = {
-    topic:   "topic test",
+    topic: "topic test",
     chapter: "chapter test",
     subject: "subject test",
-    mock:    "mock test",
-    final:   "final exam",
+    mock: "mock test",
+    final: "final exam",
   };
 
   /**
@@ -414,10 +467,10 @@ const AssessmentSystem: React.FC = () => {
     const sq = workspaceSearch.trim().toLowerCase();
     const afterSearch = sq
       ? afterStatus.filter((t) => {
-          const inTitle = (t.title ?? "").toLowerCase().includes(sq);
-          const inType  = (TYPE_LABEL_MAP[t.type] ?? t.type ?? "").toLowerCase().includes(sq);
-          return inTitle || inType;
-        })
+        const inTitle = (t.title ?? "").toLowerCase().includes(sq);
+        const inType = (TYPE_LABEL_MAP[t.type] ?? t.type ?? "").toLowerCase().includes(sq);
+        return inTitle || inType;
+      })
       : afterStatus;
     console.log("AFTER SEARCH FILTER", afterSearch.length);
     console.log("FINAL RENDER COUNT", afterSearch.length);
@@ -586,6 +639,11 @@ const AssessmentSystem: React.FC = () => {
                 icon={<Plus size={18} />}
                 onClick={() => {
                   setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
+                  setEditingTest(null);
+                  setContentMode("manual");
+                  setContentText("");
+                  setUploadFile(null);
+                  setAiPrompt("");
                   setShowCreateModal(true);
                 }}
                 className="shadow-sm"
@@ -647,7 +705,8 @@ const AssessmentSystem: React.FC = () => {
         >
           <div className="space-y-4 p-2">
             <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
-              <strong>Context:</strong> Posting to {selectedClass.name} ({selectedSubject.name})
+              <strong>Context:</strong> Posting to {selectedClass.name}
+              {selectedSection ? ` / Section ${selectedSection.name}` : ""} ({selectedSubject.name})
             </div>
 
             <InputField
@@ -693,6 +752,85 @@ const AssessmentSystem: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
             />
 
+            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+              <label className="text-sm font-semibold text-gray-800">Assessment Content</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "manual", label: "Manual", icon: <FileText size={14} /> },
+                  { id: "upload", label: "Upload", icon: <Upload size={14} /> },
+                  { id: "ai", label: "AI", icon: <Sparkles size={14} /> },
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
+                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
+                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+                      }`}
+                  >
+                    {mode.icon}
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
+
+              {contentMode === "manual" && (
+                <textarea
+                  value={contentText}
+                  onChange={(e) => setContentText(e.target.value)}
+                  rows={8}
+                  placeholder="Paste or type the assessment questions here. Example: Section A - Answer any 5 questions..."
+                  className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              )}
+
+              {contentMode === "upload" && (
+                <div className="space-y-3">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
+                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm"
+                  />
+                  {uploadFile ? (
+                    <p className="text-xs font-semibold text-emerald-600">{uploadFile.name} selected</p>
+                  ) : (
+                    <p className="text-xs text-gray-500">Upload a PDF, document, text file, or question-paper image.</p>
+                  )}
+                  <textarea
+                    value={contentText}
+                    onChange={(e) => setContentText(e.target.value)}
+                    rows={4}
+                    placeholder="Optional notes for this uploaded question paper."
+                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              )}
+
+              {contentMode === "ai" && (
+                <div className="space-y-3">
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    rows={3}
+                    placeholder="Tell AI what to generate. Example: 20 marks History test on French Revolution, include 1 map question and 2 long answers."
+                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                  <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
+                    {generatingAi ? "Generating..." : "Generate Question Paper"}
+                  </Button>
+                  <textarea
+                    value={contentText}
+                    onChange={(e) => setContentText(e.target.value)}
+                    rows={8}
+                    placeholder="AI generated assessment content will appear here. You can edit it before creating."
+                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                 Cancel
@@ -707,5 +845,58 @@ const AssessmentSystem: React.FC = () => {
     </div>
   );
 };
+
+// ── Presentational helpers ───────────────────────────────────────────────────
+
+const toneStyles: Record<string, { soft: string; icon: string }> = {
+  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
+  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
+  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
+};
+
+function NavCard({
+  icon, tone, title, meta, actionLabel, onClick,
+}: {
+  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
+  actionLabel: string; onClick: () => void;
+}) {
+  const t = toneStyles[tone] ?? toneStyles.brand;
+  return (
+    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
+      <div className="flex items-start justify-between gap-3">
+        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
+      </div>
+      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
+      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
+        <Users size={14} /> {meta}
+      </p>
+      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
+        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </GlassCard>
+  );
+}
+
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+  return (
+    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+      {items.map((it, i) => (
+        <React.Fragment key={`${it.label}-${i}`}>
+          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
+          <button
+            type="button"
+            onClick={it.onClick}
+            disabled={it.active}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
+              }`}
+          >
+            {it.icon}{it.label}
+          </button>
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+}
 
 export default AssessmentSystem;

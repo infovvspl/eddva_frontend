@@ -124,7 +124,13 @@ function isWithinRange(event, date) {
   return target >= start && target <= end;
 }
 
-export default function AcademicCalendar() {
+export default function AcademicCalendar({
+  calendarLabel = 'Academic Calendar',
+  calendarDescription = 'Month, week, day and agenda planning for academic events, exams, holidays and live classes.',
+  quickTitle = 'Live Class + Zoom / Meet',
+  quickDescription = 'Plan live classes, attach meeting links, assign teachers and subjects, and keep upcoming events synced with dashboard widgets.',
+  quickActionLabel = 'Schedule Live Class',
+}) {
   const [view, setView] = useState('month');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [category, setCategory] = useState('All');
@@ -424,9 +430,9 @@ export default function AcademicCalendar() {
         <div className="overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
           <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-white via-sky-50/20 to-white dark:from-slate-900 dark:via-slate-800/40 dark:to-slate-900 p-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-slate-800 px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-blue-700 dark:text-sky-300"><Sparkles className="h-3.5 w-3.5" /> Academic Calendar</p>
+              <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-slate-800 px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-blue-700 dark:text-sky-300"><Sparkles className="h-3.5 w-3.5" /> {calendarLabel}</p>
               <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-white">{title}</h1>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Month, week, day and agenda planning for academic events, exams, holidays and live classes.</p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{calendarDescription}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -635,9 +641,9 @@ export default function AcademicCalendar() {
                   <AlertTriangle className="h-4 w-4" />
                   <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.24em]">Quick Actions</span>
                 </div>
-                <h3 className="mt-3 text-lg font-bold">Live Class + Zoom / Meet</h3>
-                <p className="mt-2 text-sm text-slate-300">Plan live classes, attach meeting links, assign teachers and subjects, and keep upcoming events synced with dashboard widgets.</p>
-                <button onClick={() => openNew()} className="mt-4 w-full rounded-2xl bg-white px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-slate-950 hover:bg-slate-100">Schedule Live Class</button>
+                <h3 className="mt-3 text-lg font-bold">{quickTitle}</h3>
+                <p className="mt-2 text-sm text-slate-300">{quickDescription}</p>
+                <button onClick={() => openNew()} className="mt-4 w-full rounded-2xl bg-white px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-slate-950 hover:bg-slate-100">{quickActionLabel}</button>
               </div>
 
               <div className="rounded-[2rem] bg-white dark:bg-slate-950 p-5 shadow-sm">

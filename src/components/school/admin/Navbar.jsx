@@ -9,6 +9,7 @@ import {
   Sparkles,
   Sun,
   MessageCircle,
+  MessageSquare,
   GraduationCap,
   Users,
   Settings as SettingsIcon,
@@ -17,12 +18,17 @@ import {
   Shield,
   CheckCheck,
   Inbox,
-  Loader2
+  Loader2,
+  UserCircle,
+  KeyRound,
+  CalendarDays
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { cn } from './Skeleton';
 import api from '@/lib/api/school-client';
+import { useSchoolNotification } from '@/context/SchoolNotificationContext';
+import NotificationCenterModal from '@/components/school/NotificationCenterModal';
 
 function pageTitle(pathname) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
@@ -33,6 +39,49 @@ function pageTitle(pathname) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
+
+const getAdminFallbackUrl = (n, isTeacher) => {
+  if (n.actionUrl) return n.actionUrl;
+  const type = (n.type || '').toLowerCase();
+  const title = (n.title || '').toLowerCase();
+
+  if (isTeacher) {
+    if (type.includes('calendar') || type.includes('event') || title.includes('calendar') || title.includes('event')) {
+      return '/school/teacher/calendar';
+    }
+    if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
+      return '/school/teacher/assignments';
+    }
+    if (type.includes('assessment') || type.includes('result') || title.includes('assessment') || title.includes('test') || title.includes('exam')) {
+      return '/school/teacher/assessments';
+    }
+    if (type.includes('live') || type.includes('class') || title.includes('class') || title.includes('timetable') || title.includes('schedule')) {
+      return '/school/teacher/classes';
+    }
+    if (type.includes('attendance') || title.includes('attendance') || title.includes('absent')) {
+      return '/school/teacher/attendance';
+    }
+    return '/school/teacher';
+  } else {
+    // Institute Admin or Super Admin
+    if (type.includes('calendar') || type.includes('event') || title.includes('calendar') || title.includes('event')) {
+      return '/school/admin/calendar';
+    }
+    if (type.includes('announcement') || title.includes('announcement') || title.includes('notice')) {
+      return '/school/admin/notices';
+    }
+    if (type.includes('assignment') || type.includes('submission') || title.includes('assignment')) {
+      return '/school/admin/assignments';
+    }
+    if (type.includes('attendance') || title.includes('attendance') || title.includes('absent')) {
+      return '/school/admin/attendance';
+    }
+    if (type.includes('timetable') || title.includes('schedule') || type.includes('live')) {
+      return '/school/admin/timetable';
+    }
+    return '/school/admin';
+  }
+};
 
 export default function Navbar({ onMenuClick }) {
   const location = useLocation();
@@ -54,11 +103,18 @@ export default function Navbar({ onMenuClick }) {
   const [isSearching, setIsSearching] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   
-  // Notification states
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    unreadCount,
+    notifications,
+    setUnreadCount,
+    setNotifications,
+    fetchUnreadCount,
+    fetchNotifications
+  } = useSchoolNotification();
+
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
 
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -70,37 +126,6 @@ export default function Navbar({ onMenuClick }) {
     else root.classList.remove('dark');
     localStorage.setItem('eddva-theme', theme);
   }, [theme]);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/unread-count');
-      if (res.data?.success) {
-        setUnreadCount(res.data.count);
-      }
-    } catch (err) {
-      console.error('Failed to fetch unread count:', err);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    setNotifLoading(true);
-    try {
-      const res = await api.get('/notifications');
-      if (res.data?.success) {
-        setNotifications(res.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-    } finally {
-      setNotifLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (notifOpen) {
@@ -173,12 +198,14 @@ export default function Navbar({ onMenuClick }) {
     setIsSearching(true);
     try {
       const teacherPages = [
-        { name: 'Dashboard', path: '/teacher', icon: Sparkles },
-        { name: 'Course Content', path: '/teacher/topics', icon: GraduationCap },
-        { name: 'My Schedule', path: '/teacher/classes', icon: Users },
-        { name: 'Assignments', path: '/teacher/assignments', icon: SettingsIcon },
-        { name: 'Assessments', path: '/teacher/assessments', icon: SettingsIcon },
-        { name: 'Reports', path: '/teacher/reports', icon: SettingsIcon },
+        { name: 'Dashboard', path: '/school/teacher', icon: Sparkles },
+        { name: 'Course Content', path: '/school/teacher/course-content', icon: GraduationCap },
+        { name: 'Student Doubts', path: '/school/teacher/doubts', icon: MessageSquare },
+        { name: 'My Schedule', path: '/school/teacher/classes', icon: Users },
+        { name: 'Academic Calendar', path: '/school/teacher/calendar', icon: CalendarDays },
+        { name: 'Assignments', path: '/school/teacher/assignments', icon: SettingsIcon },
+        { name: 'Assessments', path: '/school/teacher/assessments', icon: SettingsIcon },
+        { name: 'Reports', path: '/school/teacher/reports', icon: SettingsIcon },
       ];
       const adminPages = [
         { name: 'Dashboard', path: '/school/admin', icon: Sparkles },
@@ -524,7 +551,16 @@ export default function Navbar({ onMenuClick }) {
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                        onClick={() => {
+                          if (!n.isRead) {
+                            handleMarkAsRead(n.id);
+                          }
+                          const targetUrl = getAdminFallbackUrl(n, isTeacher);
+                          if (targetUrl) {
+                            navigate(targetUrl);
+                          }
+                          setNotifOpen(false);
+                        }}
                         className={cn(
                           "group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/40 dark:hover:bg-slate-800/40 cursor-pointer transition-colors",
                           !n.isRead && "bg-blue-50/20 dark:bg-blue-900/10"
@@ -568,6 +604,19 @@ export default function Navbar({ onMenuClick }) {
                     ))
                   )}
                 </div>
+                
+                {/* Footer link to open modal */}
+                <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      setNotifCenterOpen(true);
+                      setNotifOpen(false);
+                    }}
+                    className="w-full text-center text-[10px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    View All Notifications →
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -594,9 +643,23 @@ export default function Navbar({ onMenuClick }) {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{roleName}</p>
                 </div>
                 
+                {/* Profile Link (Teachers Only) */}
+                {isTeacher && (
+                  <Link
+                    to="/school/teacher/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <UserCircle size={16} />
+                    </div>
+                    My Profile
+                  </Link>
+                )}
+
                 {/* Settings link */}
                 <Link
-                  to={profilePath}
+                  to={isTeacher ? "/school/teacher/settings" : profilePath}
                   onClick={() => setProfileOpen(false)}
                   className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
@@ -605,6 +668,20 @@ export default function Navbar({ onMenuClick }) {
                   </div>
                   Settings
                 </Link>
+
+                {/* Change Password (Teachers Only) */}
+                {isTeacher && (
+                  <Link
+                    to="/school/teacher/settings?tab=security"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+                      <KeyRound size={16} />
+                    </div>
+                    Change Password
+                  </Link>
+                )}
 
                 {/* Dark Mode toggle */}
                 <button
@@ -640,6 +717,12 @@ export default function Navbar({ onMenuClick }) {
           </div>
         </div>
       </div>
+      <NotificationCenterModal
+        isOpen={notifCenterOpen}
+        onClose={() => setNotifCenterOpen(false)}
+        currentUser={user}
+        onUpdate={fetchUnreadCount}
+      />
     </header>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { ChevronLeft, PlayCircle, FileText, CheckCircle2, MonitorPlay, FileDown, ExternalLink } from 'lucide-react';
 
 export default function TopicDetails() {
@@ -12,7 +12,7 @@ export default function TopicDetails() {
     const fetchTopic = async () => {
       try {
         const res = await api.get(`/students/courses/${batchId}/topics/${topicId}`);
-        setTopicData(res.data);
+        setTopicData(unwrapSchoolData(res, null));
       } catch (error) {
         console.error('Failed to fetch topic details:', error);
       } finally {

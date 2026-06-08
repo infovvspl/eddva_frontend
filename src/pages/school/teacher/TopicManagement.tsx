@@ -31,6 +31,9 @@ import {
   Eye,
   Brain,
   Lightbulb,
+  Presentation,
+  BookMarked,
+  Download,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
@@ -41,6 +44,10 @@ import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
 
 import api from '@/lib/api/school-client';
+import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
+import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
+import { presentationMarkdownToSlides, slideImageQuery, slideImagePrompt, fetchSlideImage, type Slide } from '@/lib/presentation-markdown';
+import { downloadMaterial, downloadAllMaterials, isDownloadableAiMaterial } from '@/lib/material-download';
 import { schoolContent, type SchoolMaterial, type SchoolMaterialType } from '@/lib/api/school-content';
 import { getApiOrigin } from '@/lib/api-config';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -579,6 +586,9 @@ const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.Co
   { value: 'pyq', label: 'PYQ', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { value: 'formula_sheet', label: 'Formula Sheet', icon: FileSpreadsheet, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
   { value: 'dpp', label: 'DPP', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'mindmap', label: 'Mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
+  { value: 'ppt', label: 'Presentation', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { value: 'ebook', label: 'E-book', icon: BookMarked, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
 ];
 const mCfg = (t?: string) => MATERIAL_TYPES.find((m) => m.value === t) ?? MATERIAL_TYPES[0];
 
@@ -678,6 +688,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -690,7 +701,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
   useEffect(() => { load(); }, [load]);
 
   const grouped = useMemo(() => {
-    const g: Record<string, SchoolMaterial[]> = { notes: [], pyq: [], formula_sheet: [], dpp: [] };
+    const g: Record<string, SchoolMaterial[]> = { notes: [], pyq: [], formula_sheet: [], dpp: [], mindmap: [], ppt: [], ebook: [] };
     materials.forEach((m) => { const t = String(m.fileType ?? 'notes').toLowerCase(); (g[t] ?? g.notes).push(m); });
     return g;
   }, [materials]);
@@ -699,6 +710,20 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
     if (!window.confirm(`Delete material "${m.title}"?`)) return;
     try { await schoolContent.deleteMaterial(m.id); toast.success('Material deleted'); load(); }
     catch { toast.error('Failed to delete material'); }
+  };
+
+  const aiCount = useMemo(() => materials.filter(isDownloadableAiMaterial).length, [materials]);
+
+  const handleDownloadAll = async () => {
+    setDownloadingAll(true);
+    try {
+      const n = await downloadAllMaterials(materials, `${topic.name} — AI materials`);
+      if (!n) toast.message('No AI-generated materials to download');
+    } catch {
+      toast.error('Download failed');
+    } finally {
+      setDownloadingAll(false);
+    }
   };
 
   return (
@@ -712,6 +737,16 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
           <span className="rounded-lg border border-surface-100 bg-surface-50 px-2.5 py-1 text-xs font-bold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
             {materials.length} item{materials.length === 1 ? '' : 's'}
           </span>
+          {aiCount > 0 && (
+            <button
+              onClick={handleDownloadAll}
+              disabled={downloadingAll}
+              title="Download all AI-generated materials as one PDF"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-sm font-bold text-surface-600 transition-colors hover:bg-surface-50 disabled:opacity-50 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200"
+            >
+              {downloadingAll ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} Download all
+            </button>
+          )}
           {canEdit && (
             <>
               <button
@@ -735,18 +770,27 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
             <p className="text-base font-bold text-surface-800 dark:text-surface-200">No materials yet</p>
             <p className="mt-1 max-w-sm text-sm font-medium text-surface-500">Upload notes, PYQs, formula sheets or DPPs — or paste a link — for this topic.</p>
             {canEdit && (
-              <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
-                {MATERIAL_TYPES.map((mt) => {
-                  const Icon = mt.icon;
-                  return (
-                    <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
-                      className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
-                      <Icon size={16} className={mt.text} />
-                      <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
+                  {MATERIAL_TYPES.map((mt) => {
+                    const Icon = mt.icon;
+                    return (
+                      <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
+                        className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
+                        <Icon size={16} className={mt.text} />
+                        <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
+                  <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
+                </div>
+                <button onClick={() => setShowAi(true)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                  <Sparkles size={16} /> Generate with AI
+                </button>
+              </>
             )}
           </div>
         ) : (
@@ -780,6 +824,12 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
                               {!!m.fileSizeKb && <span className="text-[11px] font-medium text-surface-400">{m.fileSizeKb < 1024 ? `${m.fileSizeKb} KB` : `${(m.fileSizeKb / 1024).toFixed(1)} MB`}</span>}
                             </div>
                           </div>
+                          {isText && (
+                            <button onClick={() => downloadMaterial(m)} title="Download as PDF"
+                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                              <Download size={13} /> PDF
+                            </button>
+                          )}
                           {isText ? (
                             <button onClick={() => setViewMaterial(m)}
                               className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
@@ -832,23 +882,184 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
 
 // ── Markdown viewer (AI / text materials) ────────────────────────────────────
 
+// ── Slide deck viewer (presentation / ppt materials) ─────────────────────────
+
+/**
+ * Slide image column: generates a content-matched image for the slide via the
+ * backend HF image endpoint (cached in S3), falling back to a Wikipedia image
+ * if generation isn't available. Renders nothing (bullets go full width) when
+ * neither yields an image.
+ */
+function SlideImage({ prompt, fallbackQuery, directUrl, alt }: { prompt: string; fallbackQuery: string; directUrl?: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(directUrl ?? null);
+  const [resolving, setResolving] = useState<boolean>(!directUrl);
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    if (directUrl) { setUrl(directUrl); setResolving(false); return; }
+    let cancelled = false;
+    setResolving(true);
+    setUrl(null);
+    setBroken(false);
+    (async () => {
+      let resolved: string | null = null;
+      try {
+        const r = await schoolContent.generateSlideImage({ prompt });
+        resolved = r?.url ?? null;
+      } catch {
+        resolved = null;
+      }
+      if (!resolved) {
+        try { resolved = await fetchSlideImage(fallbackQuery); } catch { resolved = null; }
+      }
+      if (!cancelled) { setUrl(resolved); setResolving(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [prompt, fallbackQuery, directUrl]);
+
+  if (!resolving && (!url || broken)) return null; // no image → bullets go full width
+
+  return (
+    <div className="hidden w-2/5 shrink-0 sm:block">
+      <div className="relative h-full w-full overflow-hidden rounded-xl border border-surface-200 bg-surface-100 dark:border-surface-700 dark:bg-surface-800">
+        {resolving && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 text-[11px] font-semibold text-surface-400">
+            <Loader2 size={15} className="animate-spin" /> Generating image…
+          </div>
+        )}
+        {url && (
+          <img
+            src={url}
+            alt={alt}
+            loading="lazy"
+            onError={() => setBroken(true)}
+            className="h-full w-full object-contain"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; height?: number; topic?: string }) {
+  const [idx, setIdx] = useState(0);
+  if (!slides.length) return null;
+  const safeIdx = Math.min(idx, slides.length - 1);
+  const slide = slides[safeIdx];
+  const go = (d: number) => setIdx((i) => Math.max(0, Math.min(slides.length - 1, i + d)));
+  const imgPrompt = slideImagePrompt(slide, topic);
+  const imgQuery = slideImageQuery(slide, topic);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div
+        className="overflow-hidden rounded-2xl border border-surface-200 bg-gradient-to-br from-rose-50 to-white shadow-sm dark:border-surface-700 dark:from-surface-800 dark:to-surface-900"
+        style={{ height }}
+      >
+        <div className="flex h-full flex-col p-6">
+          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">
+            Slide {safeIdx + 1} / {slides.length}
+          </span>
+          <h3 className="mt-1 border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
+            {slide.title}
+          </h3>
+          <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
+            <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
+              {slide.bullets.length ? slide.bullets.map((b, i) => (
+                <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+                  <span>{b}</span>
+                </li>
+              )) : (
+                <li className="text-sm text-surface-400">No content on this slide.</li>
+              )}
+            </ul>
+            <SlideImage key={imgPrompt} prompt={imgPrompt} fallbackQuery={imgQuery} directUrl={slide.imageUrl} alt={slide.title} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" onClick={() => go(-1)} disabled={safeIdx === 0}
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          <ChevronLeft size={14} /> Prev
+        </button>
+        <div className="flex flex-1 flex-wrap justify-center gap-1.5">
+          {slides.map((s, i) => (
+            <button key={i} type="button" onClick={() => setIdx(i)} title={`${i + 1}. ${s.title}`}
+              aria-label={`Go to slide ${i + 1}`}
+              className={`h-2.5 w-2.5 rounded-full transition-colors ${i === safeIdx ? 'bg-rose-500' : 'bg-surface-300 hover:bg-surface-400 dark:bg-surface-600'}`} />
+          ))}
+        </div>
+        <button type="button" onClick={() => go(1)} disabled={safeIdx === slides.length - 1}
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          Next <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClose: () => void }) {
+  const fileType = String(material.fileType ?? '').toLowerCase();
+  const isMindmap = fileType === 'mindmap';
+  const isPresentation = fileType === 'ppt';
+  const tree = useMemo(
+    () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, material.title) : null),
+    [isMindmap, material.description, material.title],
+  );
+  const slides = useMemo(
+    () => (isPresentation && material.description ? presentationMarkdownToSlides(material.description) : []),
+    [isPresentation, material.description],
+  );
+  const showTree = !!tree && tree.children.length > 0;
+  const showSlides = slides.length > 0;
+  const hasRich = showTree || showSlides;
+  const richLabel = showTree ? 'Tree' : 'Slides';
+  const [view, setView] = useState<'rich' | 'text'>(hasRich ? 'rich' : 'text');
+  const rich = hasRich && view === 'rich';
+  const widthClass = rich && showTree ? 'max-w-5xl' : rich && showSlides ? 'max-w-4xl' : 'max-w-3xl';
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
-        <div className="flex items-center justify-between border-b border-surface-100 px-6 py-4 dark:border-surface-700">
+      <div className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 ${widthClass}`}>
+        <div className="flex items-center justify-between gap-3 border-b border-surface-100 px-6 py-4 dark:border-surface-700">
           <div className="min-w-0">
             <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{material.title}</h3>
             <p className="text-[11px] font-black uppercase tracking-wider text-violet-500">AI Generated · {material.fileType}</p>
           </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
+          <div className="flex items-center gap-2">
+            {hasRich && (
+              <div className="flex rounded-xl border border-surface-200 p-0.5 dark:border-surface-700">
+                <button onClick={() => setView('rich')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'rich' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>{richLabel}</button>
+                <button onClick={() => setView('text')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'text' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>Text</button>
+              </div>
+            )}
+            <button onClick={() => downloadMaterial(material)} title="Download as PDF"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 px-3 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
+              <Download size={14} /> PDF
+            </button>
+            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
+          </div>
         </div>
-        <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
-          {material.description
-            ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
-            : <p className="text-surface-400">No content.</p>}
-        </div>
+        {rich && showTree ? (
+          <div className="flex-1 overflow-hidden p-4">
+            <MindMapCanvas data={tree} height={560} />
+          </div>
+        ) : rich && showSlides ? (
+          <div className="flex-1 overflow-y-auto p-5">
+            <SlideDeck slides={slides} height={480} topic={material.title} />
+          </div>
+        ) : (
+          <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
+            {material.description
+              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
+              : <p className="text-surface-400">No content.</p>}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -859,6 +1070,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
   { id: 'dpp', label: 'DPP Sheet', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
   { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
+  { id: 'presentation', label: 'Presentation', desc: 'Slide-by-slide PPT deck with titles & bullet points', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'notes', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'notes', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
@@ -877,6 +1089,18 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
 
   const cfg = AI_GEN_TYPES.find((t) => t.id === typeId)!;
   const isQuestionType = typeId === 'dpp' || typeId === 'pyq';
+  const isMindmap = typeId === 'mindmap';
+  const previewTree = useMemo(
+    () => (isMindmap && content ? mindmapMarkdownToTree(content, topic.name) : null),
+    [isMindmap, content, topic.name],
+  );
+  const showPreviewTree = !!previewTree && previewTree.children.length > 0;
+  const isPresentation = typeId === 'presentation';
+  const previewSlides = useMemo(
+    () => (isPresentation && content ? presentationMarkdownToSlides(content) : []),
+    [isPresentation, content],
+  );
+  const showPreviewSlides = previewSlides.length > 0;
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -973,17 +1197,23 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
           {(generating || content) && (
             <div className="mt-6">
               <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-surface-400">Preview</p>
-              <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
-                {generating ? (
-                  <div className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-surface-500">
-                    <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI…
-                  </div>
-                ) : (
+              {generating ? (
+                <div className="flex items-center justify-center gap-2 rounded-2xl border border-surface-100 bg-surface-50 py-10 text-sm font-semibold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
+                  <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI…
+                </div>
+              ) : showPreviewTree ? (
+                <div className="overflow-hidden rounded-2xl border border-surface-100 dark:border-surface-700">
+                  <MindMapCanvas data={previewTree} height={360} />
+                </div>
+              ) : showPreviewSlides ? (
+                <SlideDeck slides={previewSlides} height={300} topic={topic.name} />
+              ) : (
+                <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
                   <div className="prose prose-sm prose-slate max-w-none dark:prose-invert">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1128,8 +1358,8 @@ function AddMaterialModal({
               >
                 <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl ${cfg.soft}`}><Upload size={22} className={cfg.text} /></div>
                 <p className="text-sm font-bold text-surface-600 dark:text-surface-300">Drop file or <span className="text-brand-600">browse</span></p>
-                <p className="mt-1 text-xs text-surface-400">Max 100 MB · PDF, DOC, images</p>
-                <input ref={fileRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png"
+                <p className="mt-1 text-xs text-surface-400">{type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}</p>
+                <input ref={fileRef} type="file" className="hidden" accept={type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
                   onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
               </div>
             )}
