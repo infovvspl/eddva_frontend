@@ -16,7 +16,8 @@ import {
   Eye, Edit3, Send, Calendar, Link2, Users, BarChart2,
   PlayCircle, StopCircle, Zap, BookOpen, ChevronRight,
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
-  HelpCircle, RefreshCw, Trophy, TrendingUp, XCircle, AlertTriangle,
+  HelpCircle, RefreshCw, RotateCcw, Trophy, TrendingUp, XCircle, AlertTriangle,
+  Brush, Move, SquareDashedMousePointer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 import { AssignmentManagerModal } from "@/components/teacher/AssignmentManagerModal";
+import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 import {
   isYouTubeUrl,
   isValidYouTubeLectureUrl,
@@ -99,6 +101,129 @@ function cleanAiMarkdown(md: string) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+
+interface OverlayLabel {
+  text: string;
+  x: number;
+  y: number;
+  px?: number;
+  py?: number;
+}
+
+interface NoteImage {
+  url: string;
+  caption: string;
+  fullMatch: string;
+  overlayLabels: OverlayLabel[];
+}
+
+function parseNoteImageAlt(alt?: string | null) {
+  const raw = String(alt || "").trim();
+  const overlayMatch = raw.match(/\s*<<NOTE_IMAGE_OVERLAY:([A-Za-z0-9_-]+)>>\s*/);
+  const overlayLabels = (() => {
+    if (!overlayMatch) return [] as OverlayLabel[];
+    try {
+      const padded = overlayMatch[1] + "=".repeat((4 - (overlayMatch[1].length % 4)) % 4);
+      const binary = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const payload = JSON.parse(new TextDecoder().decode(bytes));
+      return Array.isArray(payload?.labels)
+        ? payload.labels
+            .map((label: any) => ({
+              text: String(label?.text || "").trim(),
+              x: Number(label?.x),
+              y: Number(label?.y),
+              px: label?.px !== undefined && Number.isFinite(Number(label.px)) ? Number(label.px) : undefined,
+              py: label?.py !== undefined && Number.isFinite(Number(label.py)) ? Number(label.py) : undefined,
+            }))
+            .filter((label: any) => label.text && Number.isFinite(label.x) && Number.isFinite(label.y))
+        : [];
+    } catch {
+      return [];
+    }
+  })();
+  const withoutOverlay = raw.replace(/\s*<<NOTE_IMAGE_OVERLAY:[A-Za-z0-9_-]+>>\s*/g, "").trim();
+  const [caption, legend] = withoutOverlay.split(/\s+\|\s+Legend:\s+/i);
+  return {
+    caption: (caption || withoutOverlay || "Generated educational visual").trim(),
+    legend: (legend || "").trim(),
+    overlayLabels,
+  };
+}
+
+function encodeNoteImageAlt(caption: string, labels: OverlayLabel[]) {
+  if (!labels || labels.length === 0) return caption;
+  const payload = { labels };
+  const jsonStr = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(jsonStr);
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  const base64 = btoa(binary);
+  const base64url = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  return `${caption} <<NOTE_IMAGE_OVERLAY:${base64url}>>`;
+}
+
+function extractImagesFromMarkdown(markdown: string): NoteImage[] {
+  const images: NoteImage[] = [];
+  if (!markdown) return images;
+  const regex = /!\[([^\]]*?)\]\(([^)]+?)\)/g;
+  let match;
+  while ((match = regex.exec(markdown)) !== null) {
+    const fullMatch = match[0];
+    const alt = match[1];
+    const url = match[2];
+    const parsed = parseNoteImageAlt(alt);
+    images.push({
+      url,
+      caption: parsed.caption,
+      fullMatch,
+      overlayLabels: parsed.overlayLabels,
+    });
+  }
+  return images;
+}
+
+function getNotesSections(markdown: string) {
+  const sections: { title: string; index: number; fullHeading: string }[] = [];
+  if (!markdown) return sections;
+  const mdRegex = /^(#{1,6})\s+(.+)$/gm;
+  const htmlRegex = /<(h[1-6])(?:\s+[^>]*)*>(.*?)<\/h[1-6]>/gi;
+
+  let match;
+  while ((match = mdRegex.exec(markdown)) !== null) {
+    sections.push({
+      title: match[2].trim(),
+      index: match.index,
+      fullHeading: match[0],
+    });
+  }
+  while ((match = htmlRegex.exec(markdown)) !== null) {
+    sections.push({
+      title: match[2].replace(/<[^>]*>/g, "").trim(),
+      index: match.index,
+      fullHeading: match[0],
+    });
+  }
+  return sections.sort((a, b) => a.index - b.index);
+}
+
+function insertImageAfterSection(markdown: string, sectionHeading: string, imageMarkdownBlock: string): string {
+  if (!sectionHeading) {
+    return markdown + "\n\n" + imageMarkdownBlock;
+  }
+  const idx = markdown.indexOf(sectionHeading);
+  if (idx === -1) {
+    return markdown + "\n\n" + imageMarkdownBlock;
+  }
+  const remainingText = markdown.slice(idx + sectionHeading.length);
+  const nextHeadingMatch = remainingText.match(/^(#{1,6}\s+|<h[1-6][^>]*>)/m);
+  
+  if (nextHeadingMatch && nextHeadingMatch.index !== undefined) {
+    const insertIdx = idx + sectionHeading.length + nextHeadingMatch.index;
+    return markdown.slice(0, insertIdx).trimEnd() + "\n\n" + imageMarkdownBlock + "\n\n" + markdown.slice(insertIdx).trimStart();
+  } else {
+    return markdown.trimEnd() + "\n\n" + imageMarkdownBlock;
+  }
 }
 
 function toTranscriptParagraphs(transcript?: string | null): string[] {
@@ -396,6 +521,469 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
   );
 }
 
+interface ImageEditorCanvasProps {
+  imageUrl: string;
+  onSave: (blob: Blob) => void;
+  onCancel: () => void;
+  isSaving: boolean;
+}
+
+type ImageEditorMode = "brush" | "move";
+
+type CanvasSelection = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+type ImageEditorInteraction =
+  | { type: "brush" }
+  | { type: "select"; startX: number; startY: number }
+  | {
+      type: "move";
+      startX: number;
+      startY: number;
+      original: CanvasSelection;
+      imageData: ImageData;
+      snapshot: ImageData;
+    };
+
+function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditorCanvasProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [brushSize, setBrushSize] = useState(20);
+  const [brushColor, setBrushColor] = useState("#ffffff"); // Default white for eraser
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [editorMode, setEditorMode] = useState<ImageEditorMode>("brush");
+  const [selection, setSelection] = useState<CanvasSelection | null>(null);
+  const interactionRef = useRef<ImageEditorInteraction | null>(null);
+  const [history, setHistory] = useState<string[]>([]); // To support Undo
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // Load image onto canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous"; // Essential to prevent tainted canvas issues during toBlob
+    img.onload = () => {
+      // Set canvas size to match image aspect ratio, but keep size reasonable
+      const maxW = 600;
+      const maxH = 400;
+      let w = img.width;
+      let h = img.height;
+      
+      if (w > maxW || h > maxH) {
+        const ratio = Math.min(maxW / w, maxH / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      
+      canvas.width = w;
+      canvas.height = h;
+      
+      ctx.drawImage(img, 0, 0, w, h);
+      
+      // Save initial state to history
+      const initialData = canvas.toDataURL();
+      setHistory([initialData]);
+      setHistoryIndex(0);
+      setImgLoaded(true);
+      setSelection(null);
+      interactionRef.current = null;
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  const clampSelection = (rect: CanvasSelection): CanvasSelection => {
+    const canvas = canvasRef.current;
+    if (!canvas) return rect;
+    const x1 = Math.max(0, Math.min(canvas.width, rect.x));
+    const y1 = Math.max(0, Math.min(canvas.height, rect.y));
+    const x2 = Math.max(0, Math.min(canvas.width, rect.x + rect.w));
+    const y2 = Math.max(0, Math.min(canvas.height, rect.y + rect.h));
+    return {
+      x: Math.min(x1, x2),
+      y: Math.min(y1, y2),
+      w: Math.abs(x2 - x1),
+      h: Math.abs(y2 - y1),
+    };
+  };
+
+  const createSelectionFromPoints = (startX: number, startY: number, endX: number, endY: number): CanvasSelection => {
+    return clampSelection({
+      x: Math.min(startX, endX),
+      y: Math.min(startY, endY),
+      w: Math.abs(endX - startX),
+      h: Math.abs(endY - startY),
+    });
+  };
+
+  const moveSelectionTo = (
+    ctx: CanvasRenderingContext2D,
+    interaction: Extract<ImageEditorInteraction, { type: "move" }>,
+    nextX: number,
+    nextY: number,
+  ) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return interaction.original;
+    const w = interaction.original.w;
+    const h = interaction.original.h;
+    const x = Math.max(0, Math.min(canvas.width - w, nextX));
+    const y = Math.max(0, Math.min(canvas.height - h, nextY));
+
+    ctx.putImageData(interaction.snapshot, 0, 0);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(interaction.original.x, interaction.original.y, w, h);
+    ctx.putImageData(interaction.imageData, Math.round(x), Math.round(y));
+
+    return { x: Math.round(x), y: Math.round(y), w, h };
+  };
+
+  const saveToHistory = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const data = canvas.toDataURL();
+    
+    // Clear future history if we were in the middle of undo stack
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(data);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex <= 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const newIndex = historyIndex - 1;
+    setHistoryIndex(newIndex);
+    
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      setSelection(null);
+      interactionRef.current = null;
+    };
+    img.src = history[newIndex];
+  };
+
+  const handleReset = () => {
+    if (history.length === 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    setHistoryIndex(0);
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      setSelection(null);
+      interactionRef.current = null;
+    };
+    img.src = history[0];
+  };
+
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    
+    let clientX = 0;
+    let clientY = 0;
+    if ("touches" in e) {
+      if (e.touches.length === 0) {
+        if ("changedTouches" in e && e.changedTouches.length > 0) {
+          clientX = e.changedTouches[0].clientX;
+          clientY = e.changedTouches[0].clientY;
+        } else {
+          return null;
+        }
+      } else {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+    } else {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
+    }
+    
+    // Scale coordinates back to canvas dimensions
+    const x = ((clientX - rect.left) / rect.width) * canvas.width;
+    const y = ((clientY - rect.top) / rect.height) * canvas.height;
+    return { x, y };
+  };
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const coords = getCoordinates(e);
+    if (!coords) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    if (editorMode === "move") {
+      if (
+        selection &&
+        selection.w > 0 &&
+        selection.h > 0 &&
+        coords.x >= selection.x &&
+        coords.x <= selection.x + selection.w &&
+        coords.y >= selection.y &&
+        coords.y <= selection.y + selection.h
+      ) {
+        const rounded = {
+          x: Math.round(selection.x),
+          y: Math.round(selection.y),
+          w: Math.round(selection.w),
+          h: Math.round(selection.h),
+        };
+        interactionRef.current = {
+          type: "move",
+          startX: coords.x,
+          startY: coords.y,
+          original: rounded,
+          imageData: ctx.getImageData(rounded.x, rounded.y, rounded.w, rounded.h),
+          snapshot: ctx.getImageData(0, 0, canvas.width, canvas.height),
+        };
+      } else {
+        interactionRef.current = { type: "select", startX: coords.x, startY: coords.y };
+        setSelection({ x: coords.x, y: coords.y, w: 0, h: 0 });
+      }
+      setIsDrawing(true);
+      return;
+    }
+    
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = brushColor;
+    
+    setIsDrawing(true);
+    interactionRef.current = { type: "brush" };
+    setSelection(null);
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    const coords = getCoordinates(e);
+    if (!coords) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const interaction = interactionRef.current;
+
+    if (interaction?.type === "select") {
+      setSelection(createSelectionFromPoints(interaction.startX, interaction.startY, coords.x, coords.y));
+      return;
+    }
+
+    if (interaction?.type === "move") {
+      const nextX = interaction.original.x + (coords.x - interaction.startX);
+      const nextY = interaction.original.y + (coords.y - interaction.startY);
+      setSelection(moveSelectionTo(ctx, interaction, nextX, nextY));
+      return;
+    }
+    
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) return;
+    const interaction = interactionRef.current;
+    setIsDrawing(false);
+    interactionRef.current = null;
+
+    if (interaction?.type === "select") {
+      setSelection((current) => current && current.w >= 4 && current.h >= 4 ? current : null);
+      return;
+    }
+
+    if (interaction?.type === "brush" || interaction?.type === "move") {
+      saveToHistory();
+    }
+  };
+
+  const handleSaveClick = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    canvas.toBlob((blob) => {
+      if (blob) {
+        onSave(blob);
+      }
+    }, "image/png");
+  };
+
+  const selectionStyle = (() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !selection || selection.w <= 0 || selection.h <= 0) return null;
+    return {
+      left: `${(selection.x / canvas.width) * 100}%`,
+      top: `${(selection.y / canvas.height) * 100}%`,
+      width: `${(selection.w / canvas.width) * 100}%`,
+      height: `${(selection.h / canvas.height) * 100}%`,
+    };
+  })();
+
+  return (
+    <div className="space-y-4">
+      {/* Editor toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-secondary/20 p-3 rounded-xl border border-border">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setEditorMode("brush"); setSelection(null); }}
+              className={cn("h-7 px-2 text-[10px] gap-1.5", editorMode === "brush" && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
+              title="Paint or erase on the image"
+            >
+              <Brush className="w-3 h-3" /> Brush
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditorMode("move")}
+              className={cn("h-7 px-2 text-[10px] gap-1.5", editorMode === "move" && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
+              title="Select an area and drag it to a new position"
+            >
+              <Move className="w-3 h-3" /> Move Selection
+            </Button>
+          </div>
+
+          <div className={cn("flex items-center gap-1.5", editorMode !== "brush" && "opacity-50 pointer-events-none")}>
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase">Brush Color:</span>
+            <input
+              type="color"
+              value={brushColor}
+              onChange={(e) => setBrushColor(e.target.value)}
+              className="w-7 h-7 border border-border rounded cursor-pointer p-0 bg-transparent"
+              title="Pick drawing/erasure color"
+            />
+          </div>
+
+          <div className={cn("flex items-center gap-2", editorMode !== "brush" && "opacity-50 pointer-events-none")}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBrushColor("#ffffff")}
+              className={`h-7 px-2 text-[10px] ${brushColor === "#ffffff" ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground" : ""}`}
+            >
+              White Eraser
+            </Button>
+          </div>
+          
+          <div className={cn("flex items-center gap-2", editorMode !== "brush" && "opacity-50 pointer-events-none")}>
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase">Size:</span>
+            <input
+              type="range"
+              min="5"
+              max="60"
+              value={brushSize}
+              onChange={(e) => setBrushSize(parseInt(e.target.value))}
+              className="w-24 h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-[10px] font-mono w-7 text-right">{brushSize}px</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUndo}
+            disabled={historyIndex <= 0}
+            className="h-7 px-2.5 text-[10px] gap-1"
+          >
+            <RotateCcw className="w-3 h-3" /> Undo
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+            disabled={history.length <= 1}
+            className="h-7 px-2.5 text-[10px]"
+          >
+            Reset
+          </Button>
+        </div>
+      </div>
+
+      {/* Drawing Canvas Area */}
+      <div className="relative border border-border rounded-xl bg-background flex items-center justify-center p-4 min-h-[300px] shadow-inner select-none overflow-hidden">
+        {!imgLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
+        <div className="relative inline-flex max-h-[350px]">
+          <canvas
+            ref={canvasRef}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+            className={cn(
+              "border border-border/80 bg-white max-h-[350px] shadow-md touch-none",
+              editorMode === "move" ? "cursor-move" : "cursor-crosshair"
+            )}
+          />
+          {selectionStyle && (
+            <div
+              className="pointer-events-none absolute border-2 border-dashed border-primary bg-primary/10 shadow-[0_0_0_9999px_rgba(15,23,42,0.08)]"
+              style={selectionStyle}
+            >
+              <div className="absolute -top-6 left-0 flex items-center gap-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm">
+                <SquareDashedMousePointer className="w-3 h-3" />
+                Drag to move
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <p className="text-[10px] text-muted-foreground italic text-center">
+        {editorMode === "move"
+          ? "Drag to select part of the image, then drag inside the selection to move it. Undo steps if needed."
+          : "Use the brush to paint over labels or unwanted features of the diagram. Select White Eraser to white out items, or use custom brush color. Undo steps if needed."}
+      </p>
+
+      {/* Action Footer */}
+      <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
+        <Button variant="outline" size="sm" onClick={onCancel} disabled={isSaving}>
+          Cancel
+        </Button>
+        <Button variant="default" size="sm" onClick={handleSaveClick} disabled={isSaving || !imgLoaded} className="gap-1.5">
+          {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          Save Edited Image
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Markdown Renderer (Preview) ─────────────────────────────────────────────
 
 function MarkdownContent({ content }: { content: string }) {
@@ -434,6 +1022,79 @@ function MarkdownContent({ content }: { content: string }) {
         table: ({ children }) => <div className="overflow-x-auto my-3"><table className="w-full text-sm border-collapse">{children}</table></div>,
         th: ({ children }) => <th className="bg-secondary text-left px-3 py-2 text-xs font-semibold border border-border">{children}</th>,
         td: ({ children }) => <td className="px-3 py-2 text-sm border border-border">{children}</td>,
+        img: ({ src, alt }) => {
+          const meta = parseNoteImageAlt(String(alt || ""));
+          return (
+            <figure className="my-5 overflow-hidden rounded-xl border border-border bg-secondary/10">
+              <div className="relative bg-background flex justify-center py-2 select-none">
+                <div className="relative">
+                  <img
+                    src={String(src || "")}
+                    alt={meta.caption}
+                    loading="lazy"
+                    className="max-h-[420px] max-w-full w-auto h-auto block object-contain"
+                  />
+                  {meta.overlayLabels.length > 0 && (
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                      {meta.overlayLabels.map((label: any, index: number) => {
+                        const px = label.px !== undefined ? label.px : label.x;
+                        const py = label.py !== undefined ? label.py : label.y;
+                        const dist = Math.hypot(label.x - px, label.y - py);
+                        if (dist < 0.005) return null;
+                        return (
+                          <g key={`line-${index}`}>
+                            <line
+                              x1={`${label.x * 100}%`}
+                              y1={`${label.y * 100}%`}
+                              x2={`${px * 100}%`}
+                              y2={`${py * 100}%`}
+                              stroke="rgba(99, 102, 241, 0.4)"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            <line
+                              x1={`${label.x * 100}%`}
+                              y1={`${label.y * 100}%`}
+                              x2={`${px * 100}%`}
+                              y2={`${py * 100}%`}
+                              stroke="#6366f1"
+                              strokeWidth="1.5"
+                              strokeDasharray="2,2"
+                              strokeLinecap="round"
+                            />
+                            <circle
+                              cx={`${px * 100}%`}
+                              cy={`${py * 100}%`}
+                              r="3.5"
+                              fill="#4f46e5"
+                              stroke="#ffffff"
+                              strokeWidth="1"
+                            />
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  )}
+                  {meta.overlayLabels.map((label: any, index: number) => (
+                    <span
+                      key={`${label.text}-${index}`}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-slate-950/85 px-2 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm pointer-events-auto"
+                      style={{
+                        left: `${Math.max(3, Math.min(97, label.x * 100))}%`,
+                        top: `${Math.max(3, Math.min(97, label.y * 100))}%`,
+                      }}
+                    >
+                      {label.text}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <figcaption className="border-t border-border bg-background px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                <div className="font-semibold text-foreground">{meta.caption}</div>
+              </figcaption>
+            </figure>
+          );
+        },
       }}>{content}</ReactMarkdown>
     </div>
   );
@@ -575,6 +1236,265 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
   // Analytics state
   const [analytics, setAnalytics] = useState<WatchAnalytics | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  // Note image modal state
+  const [imageModalMode, setImageModalMode] = useState<"delete" | "regenerate" | "edit-labels" | "edit-image" | null>(null);
+  const [selectedImg, setSelectedImg] = useState<NoteImage | null>(null);
+  const [isSavingLabels, setIsSavingLabels] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenCaption, setRegenCaption] = useState("");
+  const [regenDesc, setRegenDesc] = useState("");
+  const [editingLabels, setEditingLabels] = useState<OverlayLabel[]>([]);
+  const [selectedLabelIndex, setSelectedLabelIndex] = useState<number | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [regenOption, setRegenOption] = useState<"choose" | "ai" | "manual">("choose");
+
+  const [dragState, setDragState] = useState<{ index: number; target: "badge" | "pin" } | null>(null);
+  const canvasWrapperRef = useRef<HTMLDivElement>(null);
+
+  const [isAddingImage, setIsAddingImage] = useState(false);
+  const [addImgCaption, setAddImgCaption] = useState("");
+  const [addImgSection, setAddImgSection] = useState("");
+  const [isUploadingAddImage, setIsUploadingAddImage] = useState(false);
+
+  const noteImages = useMemo(() => {
+    return extractImagesFromMarkdown(lecture.aiNotesMarkdown || "");
+  }, [lecture.aiNotesMarkdown]);
+
+  const handleSelectImage = (img: NoteImage) => {
+    setSelectedImg(img);
+    setRegenCaption(img.caption);
+    setRegenDesc("");
+    setEditingLabels(
+      img.overlayLabels.map((lbl) => ({
+        text: lbl.text,
+        x: lbl.x,
+        y: lbl.y,
+        px: lbl.px !== undefined ? lbl.px : lbl.x,
+        py: lbl.py !== undefined ? lbl.py : lbl.y,
+      }))
+    );
+    setSelectedLabelIndex(null);
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (!dragState || !canvasWrapperRef.current) return;
+    const rect = canvasWrapperRef.current.getBoundingClientRect();
+    const mx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const my = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+    const updated = [...editingLabels];
+    const item = updated[dragState.index];
+    if (!item) return;
+
+    if (dragState.target === "badge") {
+      updated[dragState.index] = { ...item, x: mx, y: my };
+    } else {
+      updated[dragState.index] = { ...item, px: mx, py: my };
+    }
+    setEditingLabels(updated);
+  };
+
+  const handleCanvasMouseUp = () => {
+    setDragState(null);
+  };
+
+  const handleDeleteImage = async () => {
+    if (!selectedImg) return;
+    setIsSaving(true);
+    try {
+      let notes = lecture.aiNotesMarkdown || "";
+      notes = notes.replace(selectedImg.fullMatch, "");
+      notes = notes.replace(/\n{3,}/g, "\n\n");
+
+      await updateLecture.mutateAsync({
+        id: lecture.id,
+        aiNotesMarkdown: notes,
+      } as any);
+
+      toast({ title: "Visual deleted successfully" });
+      setImageModalMode(null);
+      setSelectedImg(null);
+    } catch {
+      toast({ title: "Failed to delete visual", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveLabels = async () => {
+    if (!selectedImg) return;
+    setIsSavingLabels(true);
+    try {
+      let notes = lecture.aiNotesMarkdown || "";
+      const newAlt = encodeNoteImageAlt(selectedImg.caption, editingLabels);
+      const newImgBlock = `![${newAlt}](${selectedImg.url})`;
+      notes = notes.replace(selectedImg.fullMatch, newImgBlock);
+
+      await updateLecture.mutateAsync({
+        id: lecture.id,
+        aiNotesMarkdown: notes,
+      } as any);
+
+      toast({ title: "Labels saved successfully" });
+      setImageModalMode(null);
+      setSelectedImg(null);
+    } catch {
+      toast({ title: "Failed to save labels", variant: "destructive" });
+    } finally {
+      setIsSavingLabels(false);
+    }
+  };
+
+  const handleRegenerateImage = async () => {
+    if (!selectedImg) return;
+    if (!regenCaption.trim() || !regenDesc.trim()) {
+      toast({ title: "Caption and description are required", variant: "destructive" });
+      return;
+    }
+    setIsRegenerating(true);
+    try {
+      await apiClient.post(`/content/lectures/${lecture.id}/regenerate-note-image`, {
+        caption: regenCaption,
+        visualDescription: regenDesc,
+        oldImageUrl: selectedImg.url,
+      });
+
+      toast({ title: "Image regenerated successfully!" });
+      queryClient.invalidateQueries({ queryKey: ["lecture", lecture.id] });
+      setImageModalMode(null);
+      setSelectedImg(null);
+    } catch (err: any) {
+      toast({
+        title: "Regeneration failed",
+        description: err.response?.data?.message || err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleManualImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedImg) return;
+    setUploadingImage(true);
+    try {
+      const contentType = (file.type && file.type.trim()) || guessImageMimeFromName(file.name);
+      const url = await uploadToS3(
+        {
+          type: "doubt-response-image",
+          contentType,
+          fileName: file.name,
+          fileSize: file.size,
+        },
+        file,
+        undefined,
+        selectedImg.url
+      );
+
+      const urlWithCacheBuster = url.split("?")[0] + "?v=" + Date.now();
+
+      let notes = lecture.aiNotesMarkdown || "";
+      const newAlt = encodeNoteImageAlt(regenCaption || selectedImg.caption, selectedImg.overlayLabels);
+      const newImgBlock = `![${newAlt}](${urlWithCacheBuster})`;
+      notes = notes.replace(selectedImg.fullMatch, newImgBlock);
+
+      await updateLecture.mutateAsync({
+        id: lecture.id,
+        aiNotesMarkdown: notes,
+      } as any);
+
+      toast({ title: "Image uploaded and updated!" });
+      setImageModalMode(null);
+      setSelectedImg(null);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSaveEditedImage = async (blob: Blob) => {
+    if (!selectedImg) return;
+    setIsSavingImage(true);
+    try {
+      const file = new File([blob], "edited_diagram.png", { type: "image/png" });
+      const url = await uploadToS3(
+        {
+          type: "doubt-response-image",
+          contentType: "image/png",
+          fileName: "edited_diagram.png",
+          fileSize: file.size,
+        },
+        file,
+        undefined,
+        selectedImg.url
+      );
+
+      const urlWithCacheBuster = url.split("?")[0] + "?v=" + Date.now();
+
+      let notes = lecture.aiNotesMarkdown || "";
+      const newAlt = encodeNoteImageAlt(selectedImg.caption, selectedImg.overlayLabels);
+      const newImgBlock = `![${newAlt}](${urlWithCacheBuster})`;
+      notes = notes.replace(selectedImg.fullMatch, newImgBlock);
+
+      await updateLecture.mutateAsync({
+        id: lecture.id,
+        aiNotesMarkdown: notes,
+      } as any);
+
+      toast({ title: "Image edited and saved successfully!" });
+      setImageModalMode(null);
+      setSelectedImg(null);
+    } catch (err: any) {
+      toast({ title: "Failed to save edited image", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
+
+  const handleAddImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!addImgCaption.trim()) {
+      toast({ title: "Figure caption is required", variant: "destructive" });
+      return;
+    }
+    setIsUploadingAddImage(true);
+    try {
+      const contentType = (file.type && file.type.trim()) || guessImageMimeFromName(file.name);
+      const url = await uploadToS3(
+        {
+          type: "doubt-response-image",
+          contentType,
+          fileName: file.name,
+          fileSize: file.size,
+        },
+        file
+      );
+
+      const imgMarkdownBlock = `![${addImgCaption.trim()}](${url})\n*Figure: ${addImgCaption.trim()}*`;
+      const updatedMarkdown = insertImageAfterSection(
+        lecture.aiNotesMarkdown || "",
+        addImgSection,
+        imgMarkdownBlock
+      );
+
+      await updateLecture.mutateAsync({
+        id: lecture.id,
+        aiNotesMarkdown: updatedMarkdown,
+      } as any);
+
+      toast({ title: "Visual added successfully!" });
+      setIsAddingImage(false);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsUploadingAddImage(false);
+    }
+  };
 
   const loadQuiz = async () => {
     if (quizLoaded) return;
@@ -798,7 +1718,58 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
           {tab === "preview" && (
             <div className="h-full overflow-y-auto px-8 py-6">
               {lecture.aiNotesMarkdown ? (
-                <MarkdownContent content={cleanAiMarkdown(lecture.aiNotesMarkdown)} />
+                <>
+                  {/* Manage Visuals Toolbar */}
+                  <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-2">Manage Visuals:</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setImageModalMode("delete"); setSelectedImg(null); }}
+                      className="h-8 text-xs gap-1.5 text-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete Visual
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setImageModalMode("regenerate"); setSelectedImg(null); setRegenOption("choose"); }}
+                      className="h-8 text-xs gap-1.5 text-foreground hover:text-violet-600"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Regenerate Visual
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setImageModalMode("edit-labels"); setSelectedImg(null); }}
+                      className="h-8 text-xs gap-1.5 text-foreground hover:text-primary"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Edit Labels
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setImageModalMode("edit-image"); setSelectedImg(null); }}
+                      className="h-8 text-xs gap-1.5 text-foreground hover:text-indigo-600"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      Edit Image
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setIsAddingImage(true); setAddImgCaption(""); setAddImgSection(""); }}
+                      className="h-8 text-xs gap-1.5 text-foreground hover:text-emerald-600"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Visual in Place
+                    </Button>
+                  </div>
+                  <MarkdownContent content={cleanAiMarkdown(lecture.aiNotesMarkdown)} />
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                   {(lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") ? (
@@ -1309,6 +2280,623 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
             </Button>
           </div>
         </div>
+
+        {/* Note Image Actions Modal */}
+        {imageModalMode && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    {imageModalMode === "delete" ? (
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    ) : imageModalMode === "regenerate" ? (
+                      <RefreshCw className="w-4 h-4 text-violet-500" />
+                    ) : (
+                      <ImageIcon className="w-4 h-4 text-primary" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-sm">
+                      {imageModalMode === "delete"
+                        ? "Delete Visual"
+                        : imageModalMode === "regenerate"
+                        ? "Regenerate Visual via AI"
+                        : imageModalMode === "edit-image"
+                        ? "Edit Diagram Image"
+                        : "Edit Image Labels"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {selectedImg
+                        ? selectedImg.caption
+                        : "Select an image from the lecture notes to modify"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setImageModalMode(null)}
+                  className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 min-h-0">
+                {!selectedImg ? (
+                  // Grid of note images
+                  noteImages.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                      <p className="text-sm font-medium">No images found in notes</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      {noteImages.map((img, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => handleSelectImage(img)}
+                          className="group border border-border/80 hover:border-primary/50 rounded-xl p-3 bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-all duration-200 shadow-sm flex flex-col gap-2"
+                        >
+                          <div className="relative aspect-video rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center">
+                            <img
+                              src={img.url}
+                              alt={img.caption}
+                              className="max-h-full max-w-full object-contain group-hover:scale-[1.03] transition-transform duration-200"
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-foreground truncate block text-center mt-1">
+                            {img.caption}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  // Image is selected
+                  <div className="space-y-5">
+                    {/* Mode specific contents */}
+                    {imageModalMode === "delete" && (
+                      <div className="space-y-4">
+                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 flex gap-3 text-destructive">
+                          <AlertTriangle className="w-5 h-5 shrink-0" />
+                          <div className="text-xs leading-5">
+                            <p className="font-semibold">Confirm Deletion</p>
+                            <p className="mt-0.5">Are you sure you want to delete this educational visual? This will permanently remove the image markdown block and its caption figure from the lecture notes.</p>
+                          </div>
+                        </div>
+                        <div className="max-h-[220px] rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center p-3">
+                          <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-[200px] object-contain" />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSaving}>
+                            Back
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={handleDeleteImage} disabled={isSaving} className="gap-1.5">
+                            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Confirm Delete
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {imageModalMode === "regenerate" && (
+                      <div className="space-y-4">
+                        {regenOption === "choose" && (
+                          <div className="space-y-6 py-4">
+                            <p className="text-sm text-foreground text-center font-medium">
+                              How would you like to regenerate this visual?
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <button
+                                onClick={() => setRegenOption("ai")}
+                                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-primary/5 hover:border-primary/50 transition-all group gap-3 text-center"
+                              >
+                                <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                  <Sparkles className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-bold text-foreground block">Regenerate with AI</span>
+                                  <span className="text-xs text-muted-foreground mt-1 block">Describe the concept and let FLUX generate a new diagram with automated labels</span>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => setRegenOption("manual")}
+                                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/10 hover:border-emerald-500/50 transition-all group gap-3 text-center"
+                              >
+                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                  <Upload className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-bold text-foreground block">Manually Upload Image</span>
+                                  <span className="text-xs text-muted-foreground mt-1 block">Select a local image file and upload it to replace the current visual</span>
+                                </div>
+                              </button>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                              <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)}>
+                                Back
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {regenOption === "ai" && (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="flex flex-col gap-3">
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                                  <Input
+                                    value={regenCaption}
+                                    onChange={(e) => setRegenCaption(e.target.value)}
+                                    className="h-9 text-xs"
+                                    placeholder="Enter a descriptive caption..."
+                                  />
+                                </div>
+                                <div className="space-y-1.5 flex-1 flex flex-col">
+                                  <Label className="text-xs font-semibold text-foreground">Visual Description *</Label>
+                                  <textarea
+                                    value={regenDesc}
+                                    onChange={(e) => setRegenDesc(e.target.value)}
+                                    className="flex-1 text-xs min-h-[120px] resize-none border border-border rounded-xl focus:border-primary outline-none p-3 bg-secondary/10"
+                                    placeholder="Describe in detail what you want the AI to illustrate (e.g. processes, labeled structures, cycles)..."
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex flex-col justify-center items-center gap-2 border border-border/60 rounded-xl p-3 bg-secondary/10">
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase self-start">Current Visual:</span>
+                                <div className="relative aspect-video rounded-lg border overflow-hidden bg-background w-full flex items-center justify-center p-1.5">
+                                  <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-full max-w-full object-contain" />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground text-center italic mt-1">Regenerating creates a new image using Hugging Face FLUX and overlays auto-labels.</p>
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
+                              <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={isRegenerating}>
+                                Back
+                              </Button>
+                              <Button variant="default" size="sm" onClick={handleRegenerateImage} disabled={isRegenerating} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white border-none">
+                                {isRegenerating ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Generating Image...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    Regenerate Image
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {regenOption === "manual" && (
+                          <div className="space-y-4">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                              <Input
+                                value={regenCaption}
+                                onChange={(e) => setRegenCaption(e.target.value)}
+                                className="h-9 text-xs"
+                                placeholder="Enter a descriptive caption..."
+                              />
+                            </div>
+                            
+                            <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleManualImageUpload}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                disabled={uploadingImage}
+                              />
+                              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                <Upload className="w-5 h-5" />
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
+                              </div>
+                            </div>
+
+                            {uploadingImage && (
+                              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                <span>Uploading image to S3...</span>
+                              </div>
+                            )}
+
+                            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                              <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={uploadingImage}>
+                                Back
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {imageModalMode === "edit-labels" && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                          {/* Image preview with labels plotted on top */}
+                          <div className="md:col-span-3 flex flex-col gap-2">
+                            <span className="text-[11px] font-semibold text-muted-foreground uppercase">Interactive Canvas:</span>
+                            <div 
+                              className="relative border border-border rounded-xl overflow-hidden bg-background h-[320px] flex items-center justify-center select-none shadow-inner"
+                              onMouseMove={handleCanvasMouseMove}
+                              onMouseUp={handleCanvasMouseUp}
+                              onMouseLeave={handleCanvasMouseUp}
+                            >
+                              <div ref={canvasWrapperRef} className="relative">
+                                <img
+                                  src={selectedImg.url}
+                                  alt={selectedImg.caption}
+                                  className="max-h-[300px] max-w-full w-auto h-auto block cursor-crosshair"
+                                  onClick={(e) => {
+                                    if (dragState) return; // Prevent clicking while dragging
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = (e.clientX - rect.left) / rect.width;
+                                    const y = (e.clientY - rect.top) / rect.height;
+                                    
+                                    if (selectedLabelIndex !== null && editingLabels[selectedLabelIndex]) {
+                                      const updated = [...editingLabels];
+                                      updated[selectedLabelIndex] = {
+                                        ...updated[selectedLabelIndex],
+                                        px: x,
+                                        py: y
+                                      };
+                                      setEditingLabels(updated);
+                                    } else {
+                                      const text = prompt("Enter label text:") || "";
+                                      if (text.trim()) {
+                                        const newLabel: OverlayLabel = { 
+                                          text: text.trim(), 
+                                          x, 
+                                          y,
+                                          px: x,
+                                          py: y
+                                        };
+                                        setEditingLabels([...editingLabels, newLabel]);
+                                        setSelectedLabelIndex(editingLabels.length);
+                                      }
+                                    }
+                                  }}
+                                />
+                                
+                                {/* SVG connecting lines inside the editor */}
+                                {editingLabels.length > 0 && (
+                                  <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                                    {editingLabels.map((lbl, idx) => {
+                                      const px = lbl.px !== undefined ? lbl.px : lbl.x;
+                                      const py = lbl.py !== undefined ? lbl.py : lbl.y;
+                                      const dist = Math.hypot(lbl.x - px, lbl.y - py);
+                                      if (dist < 0.005) return null;
+                                      return (
+                                        <g key={`edit-line-${idx}`}>
+                                          <line
+                                            x1={`${lbl.x * 100}%`}
+                                            y1={`${lbl.y * 100}%`}
+                                            x2={`${px * 100}%`}
+                                            y2={`${py * 100}%`}
+                                            stroke="rgba(99, 102, 241, 0.4)"
+                                            strokeWidth="3.5"
+                                            strokeLinecap="round"
+                                          />
+                                          <line
+                                            x1={`${lbl.x * 100}%`}
+                                            y1={`${lbl.y * 100}%`}
+                                            x2={`${px * 100}%`}
+                                            y2={`${py * 100}%`}
+                                            stroke="#6366f1"
+                                            strokeWidth="1.5"
+                                            strokeDasharray="2,2"
+                                            strokeLinecap="round"
+                                          />
+                                        </g>
+                                      );
+                                    })}
+                                  </svg>
+                                )}
+
+                                {/* Target spots/pins */}
+                                {editingLabels.map((lbl, idx) => {
+                                  const px = lbl.px !== undefined ? lbl.px : lbl.x;
+                                  const py = lbl.py !== undefined ? lbl.py : lbl.y;
+                                  return (
+                                    <div
+                                      key={`edit-pin-${idx}`}
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        setSelectedLabelIndex(idx);
+                                        setDragState({ index: idx, target: "pin" });
+                                      }}
+                                      className={cn(
+                                        "absolute -translate-x-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center cursor-move transition-transform hover:scale-125 z-40 select-none",
+                                        selectedLabelIndex === idx ? "scale-110" : ""
+                                      )}
+                                      style={{
+                                        left: `${px * 100}%`,
+                                        top: `${py * 100}%`,
+                                      }}
+                                      title="Drag to reposition target spot"
+                                    >
+                                      <div className={cn(
+                                        "w-2.5 h-2.5 rounded-full border border-white shadow-md transition-colors",
+                                        selectedLabelIndex === idx ? "bg-emerald-500 ring-2 ring-emerald-500/30" : "bg-indigo-500"
+                                      )} />
+                                    </div>
+                                  );
+                                })}
+
+                                {/* Draggable Label badges */}
+                                {editingLabels.map((lbl, idx) => (
+                                  <span
+                                    key={`edit-badge-${idx}`}
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      setSelectedLabelIndex(idx);
+                                      setDragState({ index: idx, target: "badge" });
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedLabelIndex(idx);
+                                    }}
+                                    className={cn(
+                                      "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-0.5 text-[9px] font-bold leading-none cursor-move shadow-md select-none transition-all duration-150 z-50",
+                                      selectedLabelIndex === idx
+                                        ? "border-primary bg-primary text-primary-foreground scale-110 ring-2 ring-primary/30"
+                                        : "border-white/80 bg-slate-950/85 text-white hover:bg-slate-900"
+                                    )}
+                                    style={{
+                                      left: `${lbl.x * 100}%`,
+                                      top: `${lbl.y * 100}%`,
+                                    }}
+                                  >
+                                    {lbl.text}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground italic text-center">Click empty space to place a new label. Drag the label badge or the target pin to reposition them. Use the sidebar to edit text or delete labels.</p>
+                          </div>
+
+                          {/* Side list/control fields */}
+                          <div className="md:col-span-2 flex flex-col gap-2 h-[350px]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-semibold text-muted-foreground uppercase">Labels ({editingLabels.length}):</span>
+                              <div className="flex gap-1.5">
+                                {selectedLabelIndex !== null && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedLabelIndex(null)}
+                                    className="h-7 px-2 text-[10px] hover:bg-secondary/80 text-muted-foreground"
+                                  >
+                                    Deselect
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingLabels([...editingLabels, { text: "New Label", x: 0.5, y: 0.5, px: 0.5, py: 0.5 }]);
+                                    setSelectedLabelIndex(editingLabels.length);
+                                  }}
+                                  className="h-7 px-2 text-[10px] gap-1"
+                                >
+                                  <Plus className="w-3 h-3" /> Add Label
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto space-y-2 border border-border/80 rounded-xl p-2.5 bg-secondary/10 min-h-0">
+                              {editingLabels.length === 0 ? (
+                                <p className="text-[11px] text-muted-foreground text-center py-12">No labels. Click "+ Add Label" or click the image to add labels.</p>
+                              ) : (
+                                editingLabels.map((lbl, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={cn(
+                                      "border rounded-lg p-2 flex flex-col gap-1.5 transition-colors",
+                                      selectedLabelIndex === idx
+                                        ? "border-primary/50 bg-primary/5"
+                                        : "border-border bg-background"
+                                    )}
+                                  >
+                                    <div className="flex items-center justify-between gap-1.5">
+                                      <input
+                                        type="text"
+                                        value={lbl.text}
+                                        onChange={(e) => {
+                                          const updated = [...editingLabels];
+                                          updated[idx].text = e.target.value;
+                                          setEditingLabels(updated);
+                                        }}
+                                        onClick={() => setSelectedLabelIndex(idx)}
+                                        className="h-7 w-full px-2 text-[11px] border border-border rounded bg-background focus:border-primary outline-none"
+                                        placeholder="Label text..."
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          setEditingLabels(editingLabels.filter((_, i) => i !== idx));
+                                          if (selectedLabelIndex === idx) setSelectedLabelIndex(null);
+                                        }}
+                                        className="h-7 w-7 text-muted-foreground hover:text-destructive flex items-center justify-center hover:bg-destructive/5 rounded"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    <div className="flex gap-2 text-[9px] text-muted-foreground font-semibold">
+                                      <div className="flex-1 flex items-center gap-1">
+                                        <span>X:</span>
+                                        <input
+                                          type="range"
+                                          min="0"
+                                          max="100"
+                                          value={Math.round(lbl.x * 100)}
+                                          onChange={(e) => {
+                                            const updated = [...editingLabels];
+                                            updated[idx].x = parseInt(e.target.value) / 100;
+                                            setEditingLabels(updated);
+                                          }}
+                                          className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <span>{Math.round(lbl.x * 100)}%</span>
+                                      </div>
+                                      <div className="flex-1 flex items-center gap-1">
+                                        <span>Y:</span>
+                                        <input
+                                          type="range"
+                                          min="0"
+                                          max="100"
+                                          value={Math.round(lbl.y * 100)}
+                                          onChange={(e) => {
+                                            const updated = [...editingLabels];
+                                            updated[idx].y = parseInt(e.target.value) / 100;
+                                            setEditingLabels(updated);
+                                          }}
+                                          className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <span>{Math.round(lbl.y * 100)}%</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSavingLabels}>
+                            Back
+                          </Button>
+                          <Button variant="default" size="sm" onClick={handleSaveLabels} disabled={isSavingLabels} className="gap-1.5">
+                            {isSavingLabels && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Save Labels
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {imageModalMode === "edit-image" && selectedImg && (
+                      <ImageEditorCanvas
+                        imageUrl={selectedImg.url}
+                        onSave={handleSaveEditedImage}
+                        onCancel={() => setSelectedImg(null)}
+                        isSaving={isSavingImage}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Add Visual in Place Modal */}
+        {isAddingImage && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-sm">Add Visual in Place</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Upload a manual image and choose where to insert it in the notes</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAddingImage(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 min-h-0 space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                  <Input
+                    value={addImgCaption}
+                    onChange={(e) => setAddImgCaption(e.target.value)}
+                    className="h-9 text-xs"
+                    placeholder="Enter a descriptive caption for the figure..."
+                  />
+                </div>
+
+                {/* Section Picker */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Insertion Location</Label>
+                  <select
+                    value={addImgSection}
+                    onChange={(e) => setAddImgSection(e.target.value)}
+                    className="w-full h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="">At the very end of notes</option>
+                    {getNotesSections(lecture.aiNotesMarkdown || "").map((sec, idx) => (
+                      <option key={idx} value={sec.fullHeading}>
+                        After section: {sec.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Drag and Drop File Picker */}
+                <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAddImageUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    disabled={isUploadingAddImage}
+                  />
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
+                  </div>
+                </div>
+
+                {isUploadingAddImage && (
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <span>Uploading image to S3...</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 p-4 border-t border-border shrink-0 bg-secondary/10">
+                <Button variant="outline" size="sm" onClick={() => setIsAddingImage(false)} disabled={isUploadingAddImage}>
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -1437,11 +3025,6 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4 shrink-0">
-            {(lecture.status === "draft") && (
-              <Button size="sm" onClick={() => { onClose(); onReview(); }} className="gap-1.5 h-8 text-xs">
-                <Eye className="w-3.5 h-3.5" /> Review & Publish
-              </Button>
-            )}
             <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1">
               <X className="w-5 h-5" />
             </button>
@@ -1449,7 +3032,7 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
         </div>
 
         {/* Tab bar */}
-        <div className="flex border-b border-border px-6 shrink-0">
+        <div className="flex items-center border-b border-border px-6 shrink-0">
           {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={cn("flex items-center gap-1.5 px-3 py-3 text-xs font-medium border-b-2 transition-colors -mb-px",
@@ -1457,6 +3040,15 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
               <t.icon className="w-3.5 h-3.5" />{t.label}
             </button>
           ))}
+          {(lecture.status === "draft" || lecture.status === "published") && (
+            <Button
+              size="sm"
+              onClick={() => { onClose(); onReview(); }}
+              className="ml-auto gap-1.5 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white border-none"
+            >
+              <Edit3 className="w-3.5 h-3.5" /> {lecture.status === "published" ? "Edit Notes / Quiz" : "Review & Publish"}
+            </Button>
+          )}
         </div>
 
         {/* Body */}
@@ -2652,6 +4244,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
   const transcriptFailed = lecture.transcriptStatus === "failed" && !isGeneratingNotes;
   const isTranscribing = lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending";
   const notesGenerable = lecture.transcriptStatus === "done" && (!lecture.aiNotesMarkdown || notesFailed) && !isTranscribing && !isGeneratingNotes;
+  const notesRegenerable = lecture.transcriptStatus === "done" && !!lecture.aiNotesMarkdown && !notesFailed && !isTranscribing && !isGeneratingNotes;
 
   const { progressPct, elapsed, currentStep } = useAiProgress(lecture, processingStep);
   const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
@@ -2812,8 +4405,8 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
       {/* Action bar */}
       <div className="flex items-center gap-2 px-4 pb-3 flex-wrap border-t border-border/50 pt-3">
         {lecture.status === "draft" && (
-          <Button size="sm" onClick={e => { e.stopPropagation(); onReview(); }} className="gap-1.5 h-8 text-xs">
-            <Eye className="w-3.5 h-3.5" /> Review AI Notes
+          <Button size="sm" onClick={e => { e.stopPropagation(); onReview(); }} className="gap-1.5 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white border-none">
+            <Edit3 className="w-3.5 h-3.5" /> Review AI Notes
           </Button>
         )}
         {lecture.status === "published" && (
@@ -2834,6 +4427,11 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         {notesGenerable && queuePosition === 0 && (
           <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRegenerateNotes(); }} className="gap-1.5 h-8 text-xs text-violet-600 border-violet-300/60 hover:bg-violet-50">
             <Sparkles className="w-3 h-3" /> Generate Notes
+          </Button>
+        )}
+        {notesRegenerable && queuePosition === 0 && (
+          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRegenerateNotes(); }} className="gap-1.5 h-8 text-xs text-violet-600 border-violet-300/60 hover:bg-violet-50">
+            <RefreshCw className="w-3 h-3" /> Regenerate Notes
           </Button>
         )}
         {(queuePosition ?? 0) > 0 && (
@@ -3356,6 +4954,7 @@ const TeacherLecturesPage = () => {
 
   // Track which lecture IDs have notes generation in progress (client-side only)
   const [notesGeneratingIds, setNotesGeneratingIds] = useState<Set<string>>(new Set());
+  const notesGenerationBaselineRef = useRef<Record<string, string | null | undefined>>({});
 
   // ── AI job queue: one transcription / notes-generation job at a time ─────────
   type ProcessingJob = { lectureId: string; action: "retranscribe" | "regenerate" };
@@ -3388,7 +4987,11 @@ const TeacherLecturesPage = () => {
   // Remove from notesGeneratingIds once aiNotesMarkdown appears on the lecture
   useEffect(() => {
     if (notesGeneratingIds.size === 0) return;
-    const done = (lectures ?? []).filter(l => notesGeneratingIds.has(l.id) && !!l.aiNotesMarkdown);
+    const done = (lectures ?? []).filter(l => {
+      if (!notesGeneratingIds.has(l.id) || !l.aiNotesMarkdown) return false;
+      const baseline = notesGenerationBaselineRef.current[l.id];
+      return baseline === undefined || l.aiNotesMarkdown === "__NOTES_FAILED__" || l.aiNotesMarkdown !== baseline;
+    });
     if (done.length === 0) return;
     setNotesGeneratingIds(prev => {
       const next = new Set(prev);
@@ -3396,6 +4999,7 @@ const TeacherLecturesPage = () => {
       return next;
     });
     done.forEach(l => {
+      delete notesGenerationBaselineRef.current[l.id];
       if (l.aiNotesMarkdown === "__NOTES_FAILED__") {
         toast({ title: "Notes generation failed", description: `Could not generate notes for "${l.title}".`, variant: "destructive" });
       } else {
@@ -3446,8 +5050,8 @@ const TeacherLecturesPage = () => {
           await retranscribeLecture(next.lectureId);
           toast({ title: "Transcription started", description: "AI is re-transcribing the lecture." });
         } else {
-          await regenerateNotes(next.lectureId);
           setNotesGeneratingIds(prev => new Set(prev).add(next.lectureId));
+          await regenerateNotes(next.lectureId);
           toast({ title: "Notes generation started", description: "AI is generating notes from the transcript." });
         }
         queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
@@ -3466,7 +5070,13 @@ const TeacherLecturesPage = () => {
     if (activeJob.action === "retranscribe") {
       if (lecture.transcriptStatus === "done" || lecture.transcriptStatus === "failed") setActiveJob(null);
     } else {
-      if (lecture.aiNotesMarkdown || lecture.transcriptStatus === "failed") setActiveJob(null);
+      const baseline = notesGenerationBaselineRef.current[lecture.id];
+      if (
+        lecture.transcriptStatus === "failed" ||
+        (lecture.aiNotesMarkdown && (baseline === undefined || lecture.aiNotesMarkdown === "__NOTES_FAILED__" || lecture.aiNotesMarkdown !== baseline))
+      ) {
+        setActiveJob(null);
+      }
     }
   }, [activeJob, lectures]);
 
@@ -3552,12 +5162,16 @@ const TeacherLecturesPage = () => {
   // Enqueue a job — silently deduplicate if already queued/active for this lecture.
   const submitJob = useCallback((lectureId: string, action: "retranscribe" | "regenerate") => {
     if (activeJob?.lectureId === lectureId || jobQueue.some(j => j.lectureId === lectureId)) return;
+    if (action === "regenerate") {
+      const lecture = (lectures ?? []).find(l => l.id === lectureId);
+      notesGenerationBaselineRef.current[lectureId] = lecture?.aiNotesMarkdown;
+    }
     const qPos = jobQueue.length + (activeJob ? 1 : 0);
     setJobQueue(q => [...q, { lectureId, action }]);
     if (qPos > 0) {
       toast({ title: "Added to queue", description: `Will start after the current job finishes (position ${qPos + 1}).` });
     }
-  }, [activeJob, jobQueue, toast]);
+  }, [activeJob, jobQueue, lectures, toast]);
 
   const handleRetranscribe = useCallback((id: string) => submitJob(id, "retranscribe"), [submitJob]);
   const handleRegenerateNotes = useCallback((id: string) => submitJob(id, "regenerate"), [submitJob]);

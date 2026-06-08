@@ -15,6 +15,21 @@ import {
 import { cn } from '@/components/school/admin/Skeleton';
 import { toast } from 'sonner';
 
+const statusLabels = {
+  all: 'All',
+  pending: 'Pending',
+  submitted: 'Submitted',
+  evaluated: 'Evaluated',
+  overdue: 'Overdue',
+};
+
+const statCards = [
+  { id: 'pending', label: 'Pending', icon: AlertCircle },
+  { id: 'submitted', label: 'Submitted', icon: UploadCloud },
+  { id: 'evaluated', label: 'Evaluated', icon: CheckCircle2 },
+  { id: 'overdue', label: 'Overdue', icon: Calendar },
+];
+
 function resolveUploadUrl(filePath) {
   if (!filePath) return null;
   const clean = String(filePath).replace(/^\.\//, '').replace(/^uploads[/\\]/, '');
@@ -122,39 +137,48 @@ export default function Assignments() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Assignments</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+            Academic Work
+          </p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Assignments</h1>
+          <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
             View homework from your teachers, download attachments, and upload your work.
           </p>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <AlertCircle className="h-6 w-6 text-amber-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Pending</p>
-          <p className="text-3xl font-black text-slate-950 dark:text-white">{counts.pending}</p>
-        </div>
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <UploadCloud className="h-6 w-6 text-blue-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Submitted</p>
-          <p className="text-3xl font-black text-slate-950 dark:text-white">{counts.submitted}</p>
-        </div>
-        <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Evaluated</p>
-          <p className="text-3xl font-black text-slate-950 dark:text-white">{counts.evaluated}</p>
-        </div>
-        <div className="rounded-lg border border-rose-100 bg-rose-50 p-4 dark:border-rose-900/40 dark:bg-rose-950/20">
-          <Calendar className="h-6 w-6 text-rose-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-rose-700 dark:text-rose-300">Overdue</p>
-          <p className="text-3xl font-black text-slate-950 dark:text-white">{counts.overdue}</p>
-        </div>
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <button
+              key={stat.id}
+              type="button"
+              onClick={() => setActiveStatus(stat.id)}
+              className={cn(
+                'rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900',
+                activeStatus === stat.id
+                  ? 'border-blue-300 ring-2 ring-blue-100 dark:border-blue-700 dark:ring-blue-950'
+                  : 'border-slate-200 dark:border-slate-800',
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <p className="text-3xl font-black text-slate-950 dark:text-white">{counts[stat.id]}</p>
+              </div>
+              <p className="mt-5 text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                {stat.label}
+              </p>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {[
           ['all', 'All'],
           ['pending', 'Pending'],
@@ -169,8 +193,8 @@ export default function Assignments() {
             className={cn(
               'whitespace-nowrap rounded-lg px-4 py-2 text-xs font-black uppercase tracking-widest transition',
               activeStatus === id
-                ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-                : 'bg-white text-slate-500 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800',
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800',
             )}
           >
             {label} ({counts[id]})
@@ -194,35 +218,19 @@ export default function Assignments() {
             return (
               <div
                 key={assignment.id}
-                className="flex flex-col overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm transition-all hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
               >
-                <div
-                  className={cn(
-                    'h-2 w-full',
-                    assignment.bucket === 'evaluated' || assignment.bucket === 'submitted'
-                      ? 'bg-emerald-500'
-                      : assignment.bucket === 'overdue'
-                        ? 'bg-rose-500'
-                        : 'bg-blue-500',
-                  )}
-                />
+                <div className="h-1 w-full bg-slate-200 dark:bg-slate-800" />
 
                 <div className="flex flex-1 flex-col p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <span
-                      className={cn(
-                        'rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest',
-                        assignment.bucket === 'evaluated' || assignment.bucket === 'submitted'
-                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : assignment.bucket === 'overdue'
-                            ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
-                            : 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-                      )}
+                      className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                     >
-                      {assignment.bucket}
+                      {statusLabels[assignment.bucket] || assignment.bucket}
                     </span>
                     {assignment.daysLeft !== null && assignment.bucket === 'pending' && (
-                      <span className="rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                      <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
                         {assignment.daysLeft <= 0 ? 'Due today' : `${assignment.daysLeft}d left`}
                       </span>
                     )}
@@ -260,7 +268,7 @@ export default function Assignments() {
                     </div>
                     {assignment.marksObtained != null && (
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 size={14} className="text-emerald-500" />
+                        <CheckCircle2 size={14} className="text-slate-400" />
                         <span>Marks: {assignment.marksObtained}</span>
                       </div>
                     )}
@@ -282,7 +290,7 @@ export default function Assignments() {
                     {assignment.bucket === 'evaluated' ? (
                       <div className="flex flex-col gap-2">
                         <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-sm font-bold text-slate-500 dark:bg-slate-800/50">
-                          <CheckCircle2 size={16} className="text-emerald-500" />
+                          <CheckCircle2 size={16} className="text-slate-500" />
                           Evaluated
                         </div>
                         {(assignment.mySubmission?.file_path || assignment.mySubmission?.filePath) && (
@@ -317,12 +325,7 @@ export default function Assignments() {
                       <button
                         type="button"
                         onClick={() => openSubmit(assignment)}
-                        className={cn(
-                          'flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-colors',
-                          assignment.bucket === 'overdue'
-                            ? 'bg-rose-600 hover:bg-rose-700'
-                            : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20',
-                        )}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20"
                       >
                         <UploadCloud size={16} />
                         Submit work
