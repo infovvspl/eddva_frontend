@@ -1,43 +1,228 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/context/SchoolAuthContext';
-import api from '@/lib/api/school-client';
-import { 
-  Trophy, TrendingUp, Target, Calendar, 
-  PlayCircle, Clock, BookOpen, AlertCircle, 
-  ChevronRight, Award, Flame, Star
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/context/SchoolAuthContext';
 import { motion } from 'framer-motion';
-import './Dashboard.css';
+import StudentAvatar from '@/assets/images/Student_Avatar.png';
+import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import { readStudentDashboardCache, writeStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
+import {
+  Bell,
+  BookOpen,
+  Calendar,
+  ChevronRight,
+  ClipboardList,
+  HelpCircle,
+  FileText,
+  GraduationCap,
+  Megaphone,
+  Radio,
+  Target,
+  CalendarDays,
+  Flame,
+  Star,
+  UserCheck,
+} from 'lucide-react';
+
+const tones = {
+  blue: {
+    card: 'border-blue-100 bg-blue-50/70 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300',
+    icon: 'bg-blue-600 text-white',
+    bar: 'bg-blue-600',
+  },
+  emerald: {
+    card: 'border-emerald-100 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300',
+    icon: 'bg-emerald-600 text-white',
+    bar: 'bg-emerald-600',
+  },
+  amber: {
+    card: 'border-amber-100 bg-amber-50/70 text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300',
+    icon: 'bg-amber-500 text-white',
+    bar: 'bg-amber-500',
+  },
+  rose: {
+    card: 'border-rose-100 bg-rose-50/70 text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300',
+    icon: 'bg-rose-600 text-white',
+    bar: 'bg-rose-600',
+  },
+  violet: {
+    card: 'border-violet-100 bg-violet-50/70 text-violet-700 dark:border-violet-900/40 dark:bg-violet-950/20 dark:text-violet-300',
+    icon: 'bg-violet-600 text-white',
+    bar: 'bg-violet-600',
+  },
+  slate: {
+    card: 'border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300',
+    icon: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900',
+    bar: 'bg-slate-700 dark:bg-slate-200',
+  },
+};
+
+function pct(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.min(100, Math.max(0, Math.round(numeric)));
+}
+
+function SectionHeader({ title, subtitle, action }) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 className="text-base font-bold text-slate-950 dark:text-white">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{subtitle}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function QuickAction({ to, icon: Icon, label, tone = 'slate' }) {
+  const palette = tones[tone] || tones.slate;
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+    >
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${palette.icon}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 truncate">{label}</span>
+    </Link>
+  );
+}
+
+function EmptyMini({ icon: Icon, title, text }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-800 dark:bg-slate-900/50">
+      <Icon className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-700" />
+      <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{title}</p>
+      <p className="mt-1 text-xs font-medium text-slate-500">{text}</p>
+    </div>
+  );
+}
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState(null);
-  const [continueLearning, setContinueLearning] = useState(null);
-  const [activity, setActivity] = useState(null);
+  const { user, institute } = useAuth();
+  const initialCache = readStudentDashboardCache();
+  const [loading, setLoading] = useState(!initialCache);
+  const [refreshing, setRefreshing] = useState(false);
+  const [dashboardData, setDashboardData] = useState(initialCache?.dashboardData ?? null);
+  const [assignments, setAssignments] = useState(initialCache?.assignments ?? []);
+  const [mockTests, setMockTests] = useState(initialCache?.mockTests ?? []);
+  const [notices, setNotices] = useState(initialCache?.notices ?? []);
+  const [courses, setCourses] = useState(initialCache?.courses ?? []);
+  const [weekEvents, setWeekEvents] = useState(initialCache?.weekEvents ?? []);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!initialCache) setLoading(true);
+      else setRefreshing(true);
       try {
-        const [dashRes, contRes, actRes] = await Promise.all([
+        const now = new Date();
+        const dayNum = now.getDay();
+        const diff = (dayNum + 6) % 7;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - diff);
+        const from = new Date(monday);
+        const to = new Date(monday);
+        to.setDate(monday.getDate() + 6);
+
+        const [dashRes, assignRes, testRes, noticeRes, courseRes, eventRes] = await Promise.all([
           api.get('/students/dashboard'),
-          api.get('/students/continue-learning').catch(() => ({ data: null })),
-          api.get('/students/activity/weekly').catch(() => ({ data: null }))
+          api.get('/assignments').catch(() => ({ data: [] })),
+          api.get('/assessments/mock-tests?status=published').catch(() => ({ data: { data: [] } })),
+          api.get('/notices').catch(() => ({ data: [] })),
+          api.get('/students/courses/my').catch(() => ({ data: [] })),
+          api.get('/events', { params: { from: from.toISOString(), to: to.toISOString() } }).catch(() => ({ data: { data: [] } })),
         ]);
-        
-        setDashboardData(dashRes.data);
-        setContinueLearning(contRes.data);
-        setActivity(actRes.data);
+
+        const nextDashboard = unwrapSchoolData(dashRes, null);
+        const nextAssignments = unwrapSchoolList(assignRes);
+        const nextMockTests = testRes.data?.data || testRes.data || [];
+        const nextNotices = noticeRes.data?.data || noticeRes.data || [];
+        const nextCourses = Array.isArray(courseRes.data?.data)
+          ? courseRes.data.data
+          : Array.isArray(courseRes.data)
+            ? courseRes.data
+            : [];
+        const eventData = eventRes.data?.data ?? eventRes.data;
+        const nextWeekEvents = Array.isArray(eventData) ? eventData : [];
+
+        setDashboardData(nextDashboard);
+        setAssignments(nextAssignments);
+        setMockTests(nextMockTests);
+        setNotices(nextNotices);
+        setCourses(nextCourses);
+        setWeekEvents(nextWeekEvents);
+
+        writeStudentDashboardCache({
+          dashboardData: nextDashboard,
+          assignments: nextAssignments,
+          mockTests: nextMockTests,
+          notices: nextNotices,
+          courses: nextCourses,
+          weekEvents: nextWeekEvents,
+        });
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
     };
-    
+
     fetchData();
   }, []);
+
+  const todayPlan = dashboardData?.todayPlan || [];
+  const rawAttendance =
+    dashboardData?.attendancePercentage ?? dashboardData?.attendance?.percentage ?? null;
+  const hasAttendance = rawAttendance != null && Number.isFinite(Number(rawAttendance));
+  const attendancePct = hasAttendance ? pct(rawAttendance) : null;
+  const todayClassesCount = dashboardData?.todayClasses ?? dashboardData?.classesToday ?? todayPlan.length ?? 0;
+
+  const pendingAssignments = assignments.filter(
+    (a) => a.status !== 'completed' && a.status !== 'submitted' && a.status !== 'evaluated'
+  );
+  const pendingAssignmentsCount = pendingAssignments.length;
+  const upcomingExamsCount = mockTests.length;
+
+  const profile = user?.studentProfile || user?.profile || dashboardData?.student || {};
+  const className =
+    profile.className ||
+    profile.class ||
+    dashboardData?.student?.className ||
+    dashboardData?.student?.class ||
+    null;
+  const sectionName =
+    profile.sectionName ||
+    profile.section ||
+    dashboardData?.student?.sectionName ||
+    dashboardData?.student?.section ||
+    null;
+
+  const calendarWeek = useMemo(() => {
+    const monday = new Date();
+    const day = monday.getDay();
+    const diff = (day + 6) % 7;
+    monday.setDate(monday.getDate() - diff);
+
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      const events = weekEvents
+        .filter(ev => ev.startTime && ev.startTime.split('T')[0] === key)
+        .map(ev => ({ t: ev.title || 'Event', tone: ev.priority === 'HIGH' ? 'bg-rose-500' : 'bg-blue-500' }));
+      return { day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i], events };
+    });
+  }, [weekEvents]);
+
+  const quickActions = [
+    { label: 'Join Live Class', to: '/school/student/live-classes', icon: Radio, tone: 'blue' },
+    { label: 'View Notes', to: '/school/student/study-materials', icon: FileText, tone: 'emerald' },
+    { label: 'My Doubts', to: '/school/student/doubts', icon: HelpCircle, tone: 'violet' },
+    { label: 'View Assignments', to: '/school/student/assignments', icon: ClipboardList, tone: 'amber' },
+    { label: 'Take Test', to: '/school/student/assessments', icon: Target, tone: 'rose' },
+  ];
 
   if (loading) {
     return (
@@ -47,267 +232,269 @@ export default function Dashboard() {
     );
   }
 
-  const {
-    overallAccuracy = 0,
-    currentStreak = 0,
-    xpTotal = 0,
-    globalRank,
-    pendingLectures = 0,
-    testsAttempted = 0,
-    weakTopics = [],
-    recommendations = [],
-    todayPlan = []
-  } = dashboardData || {};
-
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-8 text-white shadow-xl shadow-blue-900/20">
-        <div className="bubbles-container">
-          <div className="bubble"></div>
-          <div className="bubble"></div>
-          <div className="bubble"></div>
-          <div className="bubble"></div>
-          <div className="bubble"></div>
-          <div className="bubble"></div>
-          <div className="bubble"></div>
+      {refreshing && (
+        <div className="flex items-center justify-end gap-2 text-xs font-semibold text-slate-400">
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          Updating…
         </div>
-        <div className="absolute -right-4 -bottom-6 w-56 h-56 pointer-events-none hidden md:block">
-          <img src="/images/student_avatar.png" alt="Student" className="w-full h-full object-contain mix-blend-multiply drop-shadow-2xl animate-float" />
-        </div>
-        
-        <div className="relative z-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          <div className="col-span-1 lg:col-span-2">
-            <h1 className="text-3xl font-black tracking-tight">Welcome back, {user?.name}! 👋🌟</h1>
-            <p className="mt-2 max-w-xl text-blue-100 font-medium leading-relaxed">
-              You're on a {currentStreak}-day learning streak! 🔥 Keep up the awesome momentum! 🚀 You have {pendingLectures} lectures pending 📚 and have attempted {testsAttempted} tests so far 🏆.
-            </p>
-            
-            <div className="mt-8 flex flex-wrap gap-4">
-              <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 backdrop-blur-md">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white">
-                  <Flame size={20} className="animate-pulse" />
+      )}
+      {/* Top Grid for Welcome Card and Smart Calendar */}
+      <div className="grid gap-6 lg:grid-cols-4 items-stretch">
+        {/* Welcome Card Wrapper */}
+        <div className="lg:col-span-3 relative flex flex-col justify-between">
+          <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+
+            {/* Elegant bubble style translucent overlays matching the screenshot */}
+            <div className="absolute top-[20px] left-[320px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute top-[-30px] right-[280px] w-28 h-28 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
+
+            <div className="relative z-10 flex h-full flex-col justify-between space-y-6 md:pr-72">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
+                    Student Dashboard
+                  </span>
+                  <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
+                    School Module
+                  </span>
                 </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Current Streak</p>
-                  <p className="text-lg font-bold">{currentStreak} Days</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 backdrop-blur-md">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-amber-950">
-                  <Star size={20} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Total XP 🦄</p>
-                  <p className="text-lg font-bold">{xpTotal} XP</p>
-                </div>
+                <h1 className="font-display text-2xl font-black md:text-3xl text-white">
+                  Welcome back, {user?.name || 'Student'}! 👋 🌟
+                </h1>
+                <p className="mt-2 text-white/90 font-medium text-sm">
+                  {className && sectionName
+                    ? `${className} · Section ${sectionName}`
+                    : className || 'Your class schedule loads from your section assignment.'}
+                </p>
+                <p className="mt-1 text-white/90 font-medium text-sm">
+                  {todayClassesCount > 0
+                    ? `You have ${todayClassesCount} class${todayClassesCount === 1 ? '' : 'es'} scheduled today.`
+                    : 'No classes scheduled for today.'}
+                  {pendingAssignmentsCount > 0
+                    ? ` ${pendingAssignmentsCount} assignment${pendingAssignmentsCount === 1 ? '' : 's'} pending.`
+                    : ''}
+                </p>
               </div>
 
-              {globalRank && (
-                <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 backdrop-blur-md">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white">
-                    <Trophy size={20} />
+              <div className="flex flex-wrap gap-4">
+                {/* Current Streak Badge */}
+                <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f97316] shadow-sm">
+                    <Flame className="h-5 w-5 text-white fill-white" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Global Rank 👑</p>
-                    <p className="text-lg font-bold">#{globalRank}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Current Streak</p>
+                    <p className="text-sm font-black text-white">{user?.currentStreak || dashboardData?.currentStreak || 0} Days</p>
                   </div>
                 </div>
+
+                {/* Total XP Badge */}
+                <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
+                    <Star className="h-5 w-5 text-white fill-white" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
+                    <p className="text-sm font-black text-white">{dashboardData?.xpTotal || user?.xpTotal || 0} XP</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 w-[280px] h-[210px] pointer-events-none hidden md:block z-20">
+            <motion.div
+              className="w-full h-full"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <img
+                src={StudentAvatar}
+                alt="Student Avatar"
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Smart Calendar (matching Institute Admin Panel exactly) */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
+        >
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold text-surface-950 dark:text-white">Smart calendar</h3>
+              <CalendarDays className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-widest text-surface-400 dark:text-slate-500">
+              {calendarWeek.map((d) => (
+                <div key={d.day}>{d.day}</div>
+              ))}
+            </div>
+            <div className="mt-2 grid min-h-[180px] grid-cols-7 gap-2">
+              {calendarWeek.map((d) => (
+                <div key={d.day} className="rounded-lg border border-[rgba(37,99,235,0.08)] bg-white/50 p-1.5 dark:border-slate-700 dark:bg-slate-800/40">
+                  {d.events.map((ev, idx) => (
+                    <div key={`${ev.t}-${idx}`} className={`mb-1 truncate rounded px-1 py-0.5 text-[9px] font-bold text-white ${ev.tone}`}>
+                      {ev.t}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Quick Actions */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {quickActions.map((action) => (
+          <QuickAction key={action.label} {...action} />
+        ))}
+      </section>
+
+      {/* Simplified Widgets */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
+        {/* Left main widgets */}
+        <div className="space-y-6">
+
+          {/* Today's Classes */}
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <SectionHeader
+              title="Today's Classes"
+              subtitle="Your schedule and live classes for today."
+              action={
+                <Link to="/school/student/live-classes" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                  Join live
+                </Link>
+              }
+            />
+            <div className="mt-5 space-y-4">
+              {todayPlan.length > 0 ? (
+                todayPlan.slice(0, 5).map((item, index) => (
+                  <div key={`${item.id || item.subject || item.title}-${index}`} className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30">
+                      <Radio className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                        {item.subject || item.title || 'Class'}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        {item.startTime
+                          ? new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : item.type || 'Scheduled'}
+                        {item.room ? ` · ${item.room}` : ''}
+                      </p>
+                    </div>
+                    <Link to="/school/student/live-classes" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
+                      Join
+                    </Link>
+                  </div>
+                ))
+              ) : (
+                <EmptyMini icon={Radio} title="No classes scheduled" text="You are all caught up for today!" />
               )}
             </div>
           </div>
-          
-          <div className="hidden items-center justify-center md:flex relative select-none pointer-events-none">
-            <img src="/assets/student_cartoon.png" alt="Student Illustration" className="h-44 object-contain animate-float drop-shadow-2xl" />
-          </div>
-        </div>
-        
-        {/* Background decorative elements */}
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-blue-400/20 blur-3xl" />
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Content Column */}
-        <div className="space-y-6 lg:col-span-2">
-          
-          {/* Continue Learning */}
-          <section>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-black text-slate-900 dark:text-white">Continue Learning</h2>
-              <Link to="/school/student/classes" className="text-sm font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View All</Link>
-            </div>
-            
-            {continueLearning ? (
-              <div className="group relative overflow-hidden rounded-[2rem] border border-slate-100 bg-white p-2 shadow-sm transition-all hover:shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-2xl bg-slate-100 sm:w-64 dark:bg-slate-800">
-                    {continueLearning.thumbnailUrl ? (
-                      <img src={continueLearning.thumbnailUrl} alt={continueLearning.lectureTitle} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <PlayCircle className="h-12 w-12 text-slate-300 dark:text-slate-700" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/10 transition-colors" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30">
-                        <PlayCircle className="h-8 w-8 ml-1" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-1 flex-col justify-center p-2 sm:p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                        {continueLearning.subjectName || 'Subject'}
-                      </span>
-                      <span className="text-xs font-bold text-slate-400 truncate max-w-[150px]">
-                        {continueLearning.chapterName || 'Chapter'}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-2 mb-4">
-                      {continueLearning.lectureTitle}
-                    </h3>
-                    
-                    <div className="mt-auto">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-500">{continueLearning.watchPercentage}% completed</span>
-                        <span className="text-xs font-bold text-slate-500">
-                          {Math.floor(continueLearning.resumeAtSeconds / 60)}m left
-                        </span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                        <div 
-                          className="h-full rounded-full bg-blue-600 transition-all duration-1000" 
-                          style={{ width: `${continueLearning.watchPercentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-slate-50 p-12 text-center dark:border-slate-800 dark:bg-slate-900/50">
-                <BookOpen className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Ready to start?</h3>
-                <p className="mt-1 text-sm text-slate-500">Pick a subject and begin your learning journey.</p>
-                <Link to="/school/student/classes" className="mt-6 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20">
-                  Browse Classes
-                </Link>
-              </div>
-            )}
-          </section>
-
-          {/* Performance Overview */}
-          <section className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                  <Target className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Accuracy</p>
-                  <p className="text-2xl font-black text-slate-900 dark:text-white">{overallAccuracy}%</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400">
-                  <PlayCircle className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pending Lectures</p>
-                  <p className="text-2xl font-black text-slate-900 dark:text-white">{pendingLectures}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-          
-          {/* Action Items / Weak Topics */}
-          {weakTopics.length > 0 && (
-            <section>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">Needs Attention</h2>
-              </div>
-              <div className="space-y-3">
-                {weakTopics.map((topic, index) => (
-                  <div key={index} className="flex items-center justify-between rounded-2xl border border-rose-100 bg-rose-50/50 p-4 dark:border-rose-900/30 dark:bg-rose-900/10">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-400">
-                        <AlertCircle className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">{topic.topicName}</p>
-                        <p className="text-xs font-semibold text-slate-500">{topic.subjectName}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-black text-rose-600 dark:text-rose-400">{topic.accuracy}%</p>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Accuracy</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* Right Sidebar Column */}
-        <div className="space-y-6">
-          {/* Study Planner / Today */}
+          {/* Upcoming Assignments */}
           <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-black text-slate-900 dark:text-white">Today's Plan</h2>
-              <Calendar className="h-5 w-5 text-slate-400" />
-            </div>
-            
-            {todayPlan && todayPlan.length > 0 ? (
-              <div className="space-y-4">
-                {todayPlan.map((item, index) => (
-                  <div key={index} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="h-2 w-2 rounded-full bg-blue-600" />
-                      {index !== todayPlan.length - 1 && <div className="mt-2 h-full w-px bg-slate-100 dark:bg-slate-800" />}
+            <SectionHeader
+              title="Upcoming Assignments"
+              subtitle="Pending homework and project submissions."
+              action={
+                <Link to="/school/student/assignments" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                  View all
+                </Link>
+              }
+            />
+            <div className="mt-5 space-y-4">
+              {pendingAssignmentsCount > 0 ? (
+                pendingAssignments.slice(0, 3).map((assignment) => (
+                  <div key={assignment.id} className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                    <div className="min-w-0 flex-1 pr-4">
+                      <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{assignment.title}</h4>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        Due: {assignment.dueDate || assignment.due_date
+                          ? new Date(assignment.dueDate || assignment.due_date).toLocaleDateString()
+                          : '—'}
+                      </p>
                     </div>
-                    <div className="pb-4">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">{item.title}</p>
-                      <p className="text-xs font-semibold text-slate-500">{item.type} • {item.durationMinutes} min</p>
-                    </div>
+                    <Link to="/school/student/assignments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
+                      Submit
+                    </Link>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800">
-                  <Calendar className="h-6 w-6 text-slate-400" />
-                </div>
-                <p className="text-sm font-bold text-slate-500">No tasks scheduled for today.</p>
-                <Link to="/school/student/planner" className="mt-4 inline-block text-xs font-bold text-blue-600 hover:text-blue-700">Go to Planner →</Link>
-              </div>
-            )}
-          </div>
-          
-          {/* AI Recommendations */}
-          {recommendations.length > 0 && (
-            <div className="rounded-[2rem] border border-blue-100 bg-gradient-to-b from-blue-50 to-white p-6 shadow-sm dark:border-blue-900/30 dark:from-blue-950/20 dark:to-slate-900">
-              <div className="mb-4 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">AI Recommendations</h2>
-              </div>
-              <ul className="space-y-3">
-                {recommendations.map((rec, index) => (
-                  <li key={index} className="flex gap-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                    <span>{rec}</span>
-                  </li>
-                ))}
-              </ul>
+                ))
+              ) : (
+                <EmptyMini icon={FileText} title="No pending assignments" text="Good job! You have submitted all homework." />
+              )}
             </div>
-          )}
+          </div>
+
+        </div>
+
+        {/* Right side widgets */}
+        <div className="space-y-6">
+
+          {/* Attendance Summary */}
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <SectionHeader title="Attendance Summary" />
+            <div className="mt-5 space-y-4">
+              {hasAttendance ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Attendance Rate</span>
+                    <span className="text-lg font-black text-slate-950 dark:text-white">{attendancePct}%</span>
+                  </div>
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div
+                      className={`h-full rounded-full ${attendancePct < 75 ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${attendancePct}%` }}
+                    />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500">
+                    {attendancePct < 75 ? 'Warning: Attendance is below 75% requirement!' : 'Status: On track'}
+                  </p>
+                </>
+              ) : (
+                <EmptyMini icon={UserCheck} title="No attendance yet" text="Records appear once your school marks attendance." />
+              )}
+            </div>
+          </div>
+
+          {/* Recent Announcements */}
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <SectionHeader
+              title="Recent Announcements"
+              action={
+                <Link to="/school/student/announcements" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                  View all
+                </Link>
+              }
+            />
+            <div className="mt-5 space-y-4">
+              {notices.length > 0 ? (
+                notices.slice(0, 3).map((notice) => (
+                  <div key={notice.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0 dark:border-slate-800">
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">{notice.title}</p>
+                    <p className="mt-1 text-xs text-slate-500 line-clamp-2 leading-relaxed">{notice.content}</p>
+                  </div>
+                ))
+              ) : (
+                <EmptyMini icon={Megaphone} title="No announcements" text="No new notices from the school administration." />
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

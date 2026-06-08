@@ -1,574 +1,1377 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import {
   Plus,
   BookOpen,
-  File,
   ChevronRight,
-  Library
+  Library,
+  Layers,
+  GraduationCap,
+  Users,
+  ChevronLeft,
+  ChevronDown,
+  Home,
+  UploadCloud,
+  Pencil,
+  Trash2,
+  Loader2,
+  Upload,
+  Link2,
+  FileText,
+  FileQuestion,
+  FileSpreadsheet,
+  ListChecks,
+  ExternalLink,
+  X,
+  Sparkles,
+  Eye,
+  Brain,
+  Lightbulb,
+  Presentation,
+  BookMarked,
+  Download,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
 import Button from '@/components/school/Button';
 import SearchBar from '@/components/school/SearchBar';
 import Badge from '@/components/school/Badge';
-import ProgressBar from '@/components/school/ProgressBar';
 import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
-import SelectField from '@/components/school/SelectField';
-import Tabs from '@/components/school/Tabs';
 
 import api from '@/lib/api/school-client';
+import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
+import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
+import { presentationMarkdownToSlides, slideImageQuery, slideImagePrompt, fetchSlideImage, type Slide } from '@/lib/presentation-markdown';
+import { downloadMaterial, downloadAllMaterials, isDownloadableAiMaterial } from '@/lib/material-download';
+import { schoolContent, type SchoolMaterial, type SchoolMaterialType } from '@/lib/api/school-content';
+import { getApiOrigin } from '@/lib/api-config';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface Assignment {
+  classId: string;
+  className: string;
+  sectionId: string;
+  sectionName: string;
+  subjectId: string;
+  subjectName: string;
+  isClassTeacher?: boolean;
+}
+
+interface Ref { id: string; name: string }
+
 const TopicManagement: React.FC = () => {
   const { user } = useAuth();
-  const { assignments, activeAcademicContext } = useAcademicStore();
-  const isTeacher = user?.role === 'TEACHER';
-  const canEditCurriculum = user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'TEACHER';
+  const { assignments, setAssignments } = useAcademicStore();
+  const canEditCurriculum =
+    user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'TEACHER';
 
-  // =====================================
-  // STATES
-  // =====================================
+  // ── Navigation state (Classes → Sections → Subjects → Curriculum) ──────────
+  const [selectedClass, setSelectedClass] = useState<Ref | null>(null);
+  const [selectedSection, setSelectedSection] = useState<Ref | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<Ref | null>(null);
 
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loadingAssignments, setLoadingAssignments] = useState(true);
 
-  const [subjects, setSubjects] = useState<any[]>([]);
+  // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
   const [chaptersList, setChaptersList] = useState<any[]>([]);
-  const [topicsList, setTopicsList] = useState<any[]>([]);
+  const [loadingChapters, setLoadingChapters] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<{ id: string; name: string; chapterId: string } | null>(null);
+  // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
+  const [curriculumVersion, setCurriculumVersion] = useState(0);
 
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
-
+  // ── Modals ─────────────────────────────────────────────────────────────────
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [showTopicModal, setShowTopicModal] = useState(false);
-  const [showMaterialModal, setShowMaterialModal] = useState(false);
-  const [uploadTopicId, setUploadTopicId] = useState<string | null>(null);
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [topicTargetChapterId, setTopicTargetChapterId] = useState<string | null>(null);
+  const [newChapter, setNewChapter] = useState({ name: '', order: 1 });
+  const [newTopic, setNewTopic] = useState({ name: '', orderIndex: 1 });
 
-  // =====================================
-  // FORMS
-  // =====================================
-
-  const [newChapter, setNewChapter] = useState({
-    name: '',
-    order: 1,
-  });
-
-  const [newTopic, setNewTopic] = useState({
-    name: '',
-    orderIndex: 1,
-  });
-
-  const [newMaterial, setNewMaterial] = useState({ 
-    title: '', 
-    category: 'Notes', 
-    fileUrl: '', 
-    fileName: '' 
-  });
-
-  // =====================================
-  // FETCH SUBJECTS
-  // =====================================
-
-  const fetchSubjects = async () => {
-    try {
-      if (isTeacher) {
-        let currentAssignments = assignments;
-        if (currentAssignments.length === 0) {
-          const statsRes = await api.get('/dashboard/stats');
-          const tData = statsRes.data?.data?.teacherData || statsRes.data?.teacherData || {};
-          if (tData.assignments) {
-            useAcademicStore.getState().setAssignments(tData.assignments);
-            currentAssignments = tData.assignments;
-          }
+  // ── Load teacher assignments ───────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (assignments.length > 0) return;
+        const res = await api.get('/dashboard/stats');
+        const tData = res.data?.data?.teacherData || res.data?.teacherData || {};
+        if (!cancelled && Array.isArray(tData.assignments)) {
+          setAssignments(tData.assignments);
         }
-
-        // Build unique subjects from teacher assignments
-        const teacherSubjects = currentAssignments.map((a: any) => ({
-          id: a.subjectId,
-          name: `${a.className} - ${a.sectionName} - ${a.subjectName}`
-        }));
-        
-        // Remove duplicates by ID
-        const uniqueSubjects = Array.from(new Map(teacherSubjects.map(item => [item.id, item])).values());
-        setSubjects(uniqueSubjects);
-
-        // Respect active academic context if present
-        if (activeAcademicContext && uniqueSubjects.find(s => s.id === activeAcademicContext.subjectId)) {
-          setSelectedSubject(activeAcademicContext.subjectId);
-        } else if (uniqueSubjects.length > 0 && !selectedSubject) {
-          setSelectedSubject(uniqueSubjects[0].id);
-        }
-      } else {
-        const res = await api.get('/academic/subjects');
-        const list = res.data?.data || res.data || [];
-        setSubjects(list);
-        if (list.length > 0 && !selectedSubject) {
-          setSelectedSubject(list[0].id);
-        }
+      } catch (err) {
+        console.error('Failed to load teacher assignments', err);
+      } finally {
+        if (!cancelled) setLoadingAssignments(false);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [assignments.length, setAssignments]);
 
-  // =====================================
-  // FETCH CHAPTERS
-  // =====================================
+  const all = assignments as unknown as Assignment[];
 
+  // ── Derived hierarchies ────────────────────────────────────────────────────
+  const classes = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string>; isClassTeacher: boolean }>();
+    all.forEach((a) => {
+      if (!a.classId) return;
+      const entry = map.get(a.classId) ?? { id: a.classId, name: a.className, sections: new Set(), subjects: new Set(), isClassTeacher: false };
+      if (a.sectionId) entry.sections.add(a.sectionId);
+      if (a.subjectId) entry.subjects.add(a.subjectId);
+      if (a.isClassTeacher) entry.isClassTeacher = true;
+      map.set(a.classId, entry);
+    });
+    return Array.from(map.values());
+  }, [all]);
+
+  const sections = useMemo(() => {
+    if (!selectedClass) return [];
+    const map = new Map<string, { id: string; name: string; subjects: Set<string> }>();
+    all.filter((a) => a.classId === selectedClass.id).forEach((a) => {
+      if (!a.sectionId) return;
+      const entry = map.get(a.sectionId) ?? { id: a.sectionId, name: a.sectionName, subjects: new Set() };
+      if (a.subjectId) entry.subjects.add(a.subjectId);
+      map.set(a.sectionId, entry);
+    });
+    return Array.from(map.values());
+  }, [all, selectedClass]);
+
+  const subjects = useMemo(() => {
+    if (!selectedClass || !selectedSection) return [];
+    const map = new Map<string, Ref>();
+    all
+      .filter((a) => a.classId === selectedClass.id && a.sectionId === selectedSection.id)
+      .forEach((a) => { if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName }); });
+    return Array.from(map.values());
+  }, [all, selectedClass, selectedSection]);
+
+  // ── Curriculum fetches ─────────────────────────────────────────────────────
   const fetchChapters = async (subjectId: string) => {
     try {
-      setLoading(true);
+      setLoadingChapters(true);
       const res = await api.get(`/topics/chapters?subjectId=${subjectId}`);
       setChaptersList(res.data?.data || res.data || []);
-      setSelectedChapter(null);
-      setTopicsList([]);
     } catch (err) {
       console.error(err);
       toast.error('Failed to fetch chapters');
     } finally {
-      setLoading(false);
+      setLoadingChapters(false);
     }
   };
 
-  // =====================================
-  // FETCH TOPICS
-  // =====================================
-
-  const fetchTopics = async (chapterId: string) => {
-    try {
-      const res = await api.get(`/topics?chapterId=${chapterId}`);
-      setTopicsList(res.data?.data || res.data || []);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to fetch topics');
-    }
-  };
-
-  // =====================================
-  // INITIAL LOAD
-  // =====================================
-
   useEffect(() => {
-    fetchSubjects();
-  }, []);
-
-  useEffect(() => {
-    if (selectedSubject) {
-      fetchChapters(selectedSubject);
-    }
+    if (selectedSubject) { setSelectedTopic(null); void fetchChapters(selectedSubject.id); }
   }, [selectedSubject]);
 
-  useEffect(() => {
-    if (selectedChapter) {
-      fetchTopics(selectedChapter);
-    }
-  }, [selectedChapter]);
+  // ── Navigation helpers ─────────────────────────────────────────────────────
+  const level: 'classes' | 'sections' | 'subjects' | 'curriculum' =
+    selectedSubject ? 'curriculum' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  // =====================================
-  // CREATE CHAPTER
-  // =====================================
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
+  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
+  const goBack = () => {
+    if (level === 'curriculum') goToSubjects();
+    else if (level === 'subjects') goToSections();
+    else if (level === 'sections') goToClasses();
+  };
 
-  const handleCreateChapter = async () => {
+  // ── Chapter create / edit / delete ─────────────────────────────────────────
+  const openCreateChapter = () => {
+    setEditingChapterId(null);
+    setNewChapter({ name: '', order: (chaptersList.length || 0) + 1 });
+    setShowChapterModal(true);
+  };
+
+  const openEditChapter = (chapter: any) => {
+    setEditingChapterId(chapter.id);
+    setNewChapter({ name: chapter.name || '', order: Number(chapter.sort_order ?? chapter.orderIndex ?? 1) });
+    setShowChapterModal(true);
+  };
+
+  const handleSaveChapter = async () => {
+    if (!newChapter.name.trim()) { toast.warning('Chapter name is required'); return; }
+    if (!selectedSubject) { toast.warning('Subject is required'); return; }
     try {
-      if (!newChapter.name.trim()) {
-        toast.warning('Chapter name is required');
-        return;
+      if (editingChapterId) {
+        await api.put(`/topics/chapters/${editingChapterId}`, { name: newChapter.name, orderIndex: Number(newChapter.order) });
+      } else {
+        await api.post('/topics/chapters', { name: newChapter.name, orderIndex: Number(newChapter.order), subjectId: selectedSubject.id });
       }
-      if (!selectedSubject) {
-        toast.warning('Subject is required');
-        return;
-      }
-
-      await api.post('/topics/chapters', {
-        name: newChapter.name,
-        orderIndex: Number(newChapter.order),
-        subjectId: selectedSubject,
-      });
-
-      await fetchChapters(selectedSubject);
-
+      await fetchChapters(selectedSubject.id);
       setNewChapter({ name: '', order: 1 });
       setShowChapterModal(false);
-      toast.success('Chapter created successfully');
+      setEditingChapterId(null);
+      toast.success(editingChapterId ? 'Chapter updated' : 'Chapter created successfully');
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to create chapter');
+      toast.error(err.response?.data?.message || 'Failed to save chapter');
     }
   };
 
-  // =====================================
-  // CREATE TOPIC
-  // =====================================
-
-  const handleCreateTopic = async () => {
+  const handleDeleteChapter = async (chapter: any) => {
+    if (!window.confirm(`Delete chapter "${chapter.name}"? Its topics will also be removed. This cannot be undone.`)) return;
     try {
-      if (!newTopic.name.trim()) {
-        toast.warning('Topic name is required');
-        return;
+      await api.delete(`/topics/chapters/${chapter.id}`);
+      if (selectedTopic?.chapterId === chapter.id) setSelectedTopic(null);
+      if (selectedSubject) await fetchChapters(selectedSubject.id);
+      toast.success('Chapter deleted');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete chapter');
+    }
+  };
+
+  // ── Topic create / edit / delete ───────────────────────────────────────────
+  const openCreateTopic = (chapterId: string) => {
+    setEditingTopicId(null);
+    setTopicTargetChapterId(chapterId);
+    setNewTopic({ name: '', orderIndex: 1 });
+    setShowTopicModal(true);
+  };
+
+  const openEditTopic = (topic: any) => {
+    setEditingTopicId(topic.id);
+    setTopicTargetChapterId(topic.chapter_id ?? topic.chapterId ?? null);
+    setNewTopic({ name: topic.name || '', orderIndex: Number(topic.sort_order ?? topic.orderIndex ?? 1) });
+    setShowTopicModal(true);
+  };
+
+  const handleSaveTopic = async () => {
+    if (!newTopic.name.trim()) { toast.warning('Topic name is required'); return; }
+    try {
+      if (editingTopicId) {
+        await api.put(`/topics/${editingTopicId}`, { name: newTopic.name, orderIndex: Number(newTopic.orderIndex) });
+      } else {
+        if (!topicTargetChapterId) { toast.warning('No chapter selected'); return; }
+        await api.post('/topics', { name: newTopic.name, orderIndex: Number(newTopic.orderIndex), chapterId: topicTargetChapterId });
       }
-      if (!selectedChapter) {
-        toast.warning('Please select a chapter first');
-        return;
-      }
-
-      await api.post('/topics', {
-        name: newTopic.name,
-        orderIndex: Number(newTopic.orderIndex),
-        chapterId: selectedChapter,
-      });
-
-      await fetchTopics(selectedChapter);
-
       setNewTopic({ name: '', orderIndex: 1 });
       setShowTopicModal(false);
-      toast.success('Topic created successfully');
+      setEditingTopicId(null);
+      setCurriculumVersion((v) => v + 1);
+      toast.success(editingTopicId ? 'Topic updated' : 'Topic created successfully');
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to create topic');
+      toast.error(err.response?.data?.message || 'Failed to save topic');
     }
   };
 
-  // =====================================
-  // UPLOAD MATERIAL
-  // =====================================
-
-  const handleUploadMaterial = async () => {
+  const handleDeleteTopic = async (topic: any) => {
+    if (!window.confirm(`Delete topic "${topic.name}"? Its materials will also be removed. This cannot be undone.`)) return;
     try {
-      if (!newMaterial.title.trim() || !newMaterial.fileName.trim() || !newMaterial.fileUrl.trim()) {
-        toast.warning('Please fill all required fields');
-        return;
-      }
-      await api.post('/materials', {
-        title: newMaterial.title,
-        fileName: newMaterial.fileName,
-        fileUrl: newMaterial.fileUrl,
-        fileType: newMaterial.category,
-        fileSize: 0,
-        subjectId: selectedSubject,
-        subjectIdFk: selectedSubject,
-        chapterId: selectedChapter,
-        topicId: uploadTopicId,
-        description: ''
-      });
-      setShowMaterialModal(false);
-      setNewMaterial({ title: '', category: 'Notes', fileUrl: '', fileName: '' });
-      toast.success('Material uploaded successfully');
+      await api.delete(`/topics/${topic.id}`);
+      if (selectedTopic?.id === topic.id) setSelectedTopic(null);
+      setCurriculumVersion((v) => v + 1);
+      toast.success('Topic deleted');
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to upload material');
+      toast.error(err.response?.data?.message || 'Failed to delete topic');
     }
   };
 
-  // =====================================
-  // FILTER
-  // =====================================
+  // ── Filtered current level ─────────────────────────────────────────────────
+  const q = search.trim().toLowerCase();
+  const filteredClasses = classes.filter((c) => c.name?.toLowerCase().includes(q));
+  const filteredSections = sections.filter((s) => s.name?.toLowerCase().includes(q));
+  const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
 
-  const filteredChapters = chaptersList.filter((chap) =>
-    chap.name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // =====================================
-  // CHAPTERS TAB
-  // =====================================
-
-  const chapterContent = (
-    <>
-      <div className="topic__header flex items-center justify-between mb-4">
-        <div className="flex gap-4 w-full max-w-2xl">
-          <SelectField
-            label=""
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            options={[
-              { value: '', label: 'Select Subject' },
-              ...subjects.map(s => ({ value: s.id, label: s.name }))
-            ]}
-          />
-          <SearchBar
-            value={search}
-            onChange={setSearch}
-            placeholder="Search chapters..."
-          />
-        </div>
-
-        {canEditCurriculum && (
-          <Button
-            icon={<Plus size={16} />}
-            onClick={() => {
-              if (!selectedSubject) {
-                toast.warning('Please select a subject first');
-                return;
-              }
-              setShowChapterModal(true);
-            }}
-          >
-            Create Chapter
-          </Button>
-        )}
-      </div>
-
-      <div className="topic__list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading ? (
-          <p>Loading chapters...</p>
-        ) : !selectedSubject ? (
-          <p>Please select a subject to view chapters.</p>
-        ) : filteredChapters.length === 0 ? (
-          <p>No chapters found for this subject.</p>
-        ) : (
-          filteredChapters.map((chapter) => (
-            <GlassCard
-              key={chapter.id}
-              hover
-              className={`topic__card cursor-pointer p-4 transition-all ${
-                selectedChapter === chapter.id
-                  ? 'ring-2 ring-brand-500 bg-brand-50/50 dark:bg-brand-900/20'
-                  : ''
-              }`}
-              onClick={() => setSelectedChapter(chapter.id)}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-brand-100 dark:bg-brand-900/50 rounded-lg text-brand-600 dark:text-brand-400">
-                  <Library size={20} />
-                </div>
-                <Badge variant={chapter.status === 'completed' ? 'success' : 'info'}>
-                  {chapter.status || 'Active'}
-                </Badge>
-              </div>
-
-              <h4 className="font-semibold text-surface-900 dark:text-white mb-2">
-                {chapter.name}
-              </h4>
-              
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
-                <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
-                  View Topics
-                </span>
-                <ChevronRight size={16} className="text-surface-400" />
-              </div>
-            </GlassCard>
-          ))
-        )}
-      </div>
-    </>
-  );
-
-  // =====================================
-  // TOPICS TAB
-  // =====================================
-
-  const topicContent = (
-    <div className="topic__topics">
-      <div className="flex justify-between items-center mb-6">
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-surface-900 dark:text-white">
-            Topics
-          </h3>
-          <p className="text-sm text-surface-500">
-            {selectedChapter 
-              ? `Showing topics for ${chaptersList.find(c => c.id === selectedChapter)?.name}`
-              : 'Select a chapter to view its topics'}
+          <h1 className="font-display text-2xl font-bold tracking-tight text-surface-900 dark:text-white sm:text-3xl">
+            Course Content
+          </h1>
+          <p className="mt-1 text-sm font-medium text-surface-500">
+            Browse your assigned classes, drill into sections and subjects, and manage the curriculum.
           </p>
         </div>
-
-        {canEditCurriculum && selectedChapter && (
-          <Button
-            size="sm"
-            icon={<Plus size={16} />}
-            onClick={() => setShowTopicModal(true)}
-          >
-            Add Topic
+        {level !== 'classes' && (
+          <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
+            Back
           </Button>
         )}
       </div>
 
-      <div className="space-y-3">
-        {!selectedChapter ? (
-          <div className="text-center p-8 bg-surface-50 dark:bg-surface-800 rounded-xl border border-dashed border-surface-200 dark:border-surface-700">
-            <p className="text-surface-500">Please select a chapter from the Chapters tab first.</p>
-          </div>
-        ) : topicsList.length === 0 ? (
-          <div className="text-center p-8 bg-surface-50 dark:bg-surface-800 rounded-xl border border-dashed border-surface-200 dark:border-surface-700">
-            <p className="text-surface-500">No topics found in this chapter.</p>
-          </div>
-        ) : (
-          topicsList.map((topic) => (
-            <div
-              key={topic.id}
-              className="flex items-center justify-between p-4 bg-white dark:bg-surface-800 rounded-xl shadow-sm border border-surface-100 dark:border-surface-700 hover:border-brand-300 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 font-semibold text-sm">
-                  {topic.sort_order || 0}
-                </div>
-                <div>
-                  <h4 className="font-medium text-surface-900 dark:text-white">
-                    {topic.name}
-                  </h4>
-                  {topic.description && (
-                    <p className="text-sm text-surface-500 mt-1">{topic.description}</p>
-                  )}
-                </div>
-              </div>
-              {canEditCurriculum && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => { 
-                    setUploadTopicId(topic.id); 
-                    setShowMaterialModal(true); 
-                  }}
-                >
-                  Upload Material
-                </Button>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-
-  // =====================================
-  // RENDER
-  // =====================================
-
-  return (
-    <div className="topic">
-      {isTeacher && (
-        <p className="mb-4 text-surface-500 dark:text-surface-400">
-          Curriculum structure follows Subject → Chapter → Topic. Only interact with subjects you are assigned to.
-        </p>
-      )}
-
-      <Tabs
-        tabs={[
-          {
-            id: 'chapters',
-            label: 'Chapters',
-            icon: <Library size={16} />,
-            content: chapterContent,
-          },
-          {
-            id: 'topics',
-            label: 'Topics',
-            icon: <BookOpen size={16} />,
-            content: topicContent,
-          }
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
+          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
+          ...(selectedSection ? [{ label: selectedSection.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
 
+      {/* Search (not on curriculum's topic side) */}
+      {level !== 'curriculum' && (
+        <div className="max-w-md">
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder={`Search ${level}...`}
+          />
+        </div>
+      )}
+
+      {/* ── CLASSES ── */}
+      {level === 'classes' && (
+        loadingAssignments ? (
+          <CardGridSkeleton />
+        ) : filteredClasses.length === 0 ? (
+          <EmptyState icon={<GraduationCap size={40} />} title="No classes assigned" message="You haven't been assigned to any classes yet. Contact your administrator." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredClasses.map((c) => (
+              <NavCard
+                key={c.id}
+                icon={<GraduationCap size={22} />}
+                tone="brand"
+                title={c.name}
+                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
+                badge={c.isClassTeacher ? <Badge variant="success">Class Teacher</Badge> : null}
+                actionLabel="View sections"
+                onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* ── SECTIONS ── */}
+      {level === 'sections' && (
+        filteredSections.length === 0 ? (
+          <EmptyState icon={<Layers size={40} />} title="No sections" message="No sections found for this class." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredSections.map((s) => (
+              <NavCard
+                key={s.id}
+                icon={<Layers size={22} />}
+                tone="violet"
+                title={`Section ${s.name}`}
+                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
+                actionLabel="View subjects"
+                onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* ── SUBJECTS ── */}
+      {level === 'subjects' && (
+        filteredSubjects.length === 0 ? (
+          <EmptyState icon={<BookOpen size={40} />} title="No subjects" message="No subjects found for this section." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredSubjects.map((s) => (
+              <NavCard
+                key={s.id}
+                icon={<BookOpen size={22} />}
+                tone="emerald"
+                title={s.name}
+                meta="Chapters & topics"
+                actionLabel="Open curriculum"
+                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* ── CURRICULUM (chapters + topics) ── */}
+      {level === 'curriculum' && selectedSubject && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(300px,380px)_1fr]">
+          {/* Curriculum tree: chapters → topics */}
+          <div className="rounded-2xl border border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40">
+            <div className="flex items-center justify-between border-b border-surface-100 p-4 dark:border-surface-700">
+              <div className="flex items-center gap-2">
+                <Library size={18} className="text-brand-600" />
+                <h3 className="font-bold text-surface-900 dark:text-white">Chapters & Topics</h3>
+              </div>
+              {canEditCurriculum && (
+                <Button size="sm" icon={<Plus size={16} />} onClick={openCreateChapter}>Chapter</Button>
+              )}
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto p-3">
+              {loadingChapters ? (
+                <div className="space-y-3"><RowSkeleton /><RowSkeleton /><RowSkeleton /></div>
+              ) : chaptersList.length === 0 ? (
+                <EmptyState compact icon={<Library size={32} />} title="No chapters yet" message="Create the first chapter for this subject." />
+              ) : (
+                <div className="space-y-1.5">
+                  {chaptersList.map((chapter) => (
+                    <ChapterNode
+                      key={chapter.id}
+                      chapter={chapter}
+                      version={curriculumVersion}
+                      canEdit={canEditCurriculum}
+                      selectedTopicId={selectedTopic?.id ?? null}
+                      onSelectTopic={(t) => setSelectedTopic({ id: t.id, name: t.name, chapterId: chapter.id })}
+                      onAddTopic={() => openCreateTopic(chapter.id)}
+                      onEditTopic={openEditTopic}
+                      onDeleteTopic={handleDeleteTopic}
+                      onEditChapter={() => openEditChapter(chapter)}
+                      onDeleteChapter={() => handleDeleteChapter(chapter)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Material workspace for the selected topic */}
+          <div className="rounded-2xl border border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40">
+            {selectedTopic ? (
+              <MaterialWorkspace
+                key={selectedTopic.id}
+                topic={selectedTopic}
+                subjectId={selectedSubject.id}
+                canEdit={canEditCurriculum}
+              />
+            ) : (
+              <div className="flex h-full min-h-[300px] items-center justify-center p-6">
+                <EmptyState icon={<UploadCloud size={40} />} title="Select a topic" message="Pick a topic on the left to view and add its study materials." />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modals ── */}
       {canEditCurriculum && (
         <>
-          {/* CREATE CHAPTER MODAL */}
-          <Modal
-            isOpen={showChapterModal}
-            onClose={() => setShowChapterModal(false)}
-            title="Create Chapter"
-          >
+          <Modal isOpen={showChapterModal} onClose={() => { setShowChapterModal(false); setEditingChapterId(null); }} title={editingChapterId ? 'Edit Chapter' : 'Create Chapter'}>
             <div className="space-y-4">
-              <InputField
-                label="Chapter Name"
-                value={newChapter.name}
-                onChange={(e) => setNewChapter({ ...newChapter, name: e.target.value })}
-                placeholder="e.g. Thermodynamics"
-              />
-              <InputField
-                label="Order"
-                type="number"
-                value={newChapter.order}
-                onChange={(e) => setNewChapter({ ...newChapter, order: Number(e.target.value) })}
-              />
-              <div className="flex justify-end gap-3 mt-6">
-                <Button variant="outline" onClick={() => setShowChapterModal(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateChapter}>Create Chapter</Button>
+              <InputField label="Chapter Name" value={newChapter.name} onChange={(e) => setNewChapter({ ...newChapter, name: e.target.value })} placeholder="e.g. Thermodynamics" />
+              <InputField label="Order" type="number" value={newChapter.order} onChange={(e) => setNewChapter({ ...newChapter, order: Number(e.target.value) })} />
+              <div className="mt-6 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => { setShowChapterModal(false); setEditingChapterId(null); }}>Cancel</Button>
+                <Button onClick={handleSaveChapter}>{editingChapterId ? 'Save Changes' : 'Create Chapter'}</Button>
               </div>
             </div>
           </Modal>
 
-          {/* CREATE TOPIC MODAL */}
-          <Modal
-            isOpen={showTopicModal}
-            onClose={() => setShowTopicModal(false)}
-            title="Create Topic"
-          >
+          <Modal isOpen={showTopicModal} onClose={() => { setShowTopicModal(false); setEditingTopicId(null); }} title={editingTopicId ? 'Edit Topic' : 'Create Topic'}>
             <div className="space-y-4">
-              <InputField
-                label="Topic Name"
-                value={newTopic.name}
-                onChange={(e) => setNewTopic({ ...newTopic, name: e.target.value })}
-                placeholder="e.g. Laws of Thermodynamics"
-              />
-              <InputField
-                label="Order Index"
-                type="number"
-                value={newTopic.orderIndex}
-                onChange={(e) => setNewTopic({ ...newTopic, orderIndex: Number(e.target.value) })}
-              />
-              <div className="flex justify-end gap-3 mt-6">
-                <Button variant="outline" onClick={() => setShowTopicModal(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateTopic}>Create Topic</Button>
-              </div>
-            </div>
-          </Modal>
-
-          {/* UPLOAD MATERIAL MODAL */}
-          <Modal
-            isOpen={showMaterialModal}
-            onClose={() => setShowMaterialModal(false)}
-            title="Upload Material"
-          >
-            <div className="space-y-4">
-              <InputField
-                label="Material Title"
-                value={newMaterial.title}
-                onChange={(e) => setNewMaterial({ ...newMaterial, title: e.target.value })}
-                placeholder="e.g. Thermodynamics PDF"
-              />
-              <SelectField
-                label="Category"
-                value={newMaterial.category}
-                onChange={(e) => setNewMaterial({ ...newMaterial, category: e.target.value })}
-                options={[
-                  { value: 'Notes', label: 'Notes' },
-                  { value: 'Presentation', label: 'Presentation' },
-                  { value: 'Video', label: 'Video' },
-                  { value: 'Other', label: 'Other' },
-                ]}
-              />
-              <InputField
-                label="File Name"
-                value={newMaterial.fileName}
-                onChange={(e) => setNewMaterial({ ...newMaterial, fileName: e.target.value })}
-                placeholder="e.g. notes.pdf"
-              />
-              <InputField
-                label="File URL"
-                value={newMaterial.fileUrl}
-                onChange={(e) => setNewMaterial({ ...newMaterial, fileUrl: e.target.value })}
-                placeholder="e.g. https://..."
-              />
-              <div className="flex justify-end gap-3 mt-6">
-                <Button variant="outline" onClick={() => setShowMaterialModal(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUploadMaterial}>Upload Material</Button>
+              <InputField label="Topic Name" value={newTopic.name} onChange={(e) => setNewTopic({ ...newTopic, name: e.target.value })} placeholder="e.g. Laws of Thermodynamics" />
+              <InputField label="Order Index" type="number" value={newTopic.orderIndex} onChange={(e) => setNewTopic({ ...newTopic, orderIndex: Number(e.target.value) })} />
+              <div className="mt-6 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => { setShowTopicModal(false); setEditingTopicId(null); }}>Cancel</Button>
+                <Button onClick={handleSaveTopic}>{editingTopicId ? 'Save Changes' : 'Create Topic'}</Button>
               </div>
             </div>
           </Modal>
         </>
       )}
-    </div>
+    </div >
   );
 };
+
+// ── Presentational helpers ───────────────────────────────────────────────────
+
+const toneStyles: Record<string, { soft: string; icon: string }> = {
+  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
+  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
+  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
+};
+
+function NavCard({
+  icon, tone, title, meta, actionLabel, badge, onClick,
+}: {
+  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
+  actionLabel: string; badge?: React.ReactNode; onClick: () => void;
+}) {
+  const t = toneStyles[tone];
+  return (
+    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
+      <div className="flex items-start justify-between gap-3">
+        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
+        {badge}
+      </div>
+      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
+      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
+        <Users size={14} /> {meta}
+      </p>
+      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
+        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </GlassCard>
+  );
+}
+
+function IconButton({ children, label, danger, onClick }: { children: React.ReactNode; label: string; danger?: boolean; onClick: (e: React.MouseEvent) => void }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={`grid h-8 w-8 place-items-center rounded-lg border border-transparent transition-colors ${danger
+        ? 'text-surface-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30'
+        : 'text-surface-400 hover:border-brand-200 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30'
+        }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+  return (
+    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+      {items.map((it, i) => (
+        <React.Fragment key={`${it.label}-${i}`}>
+          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
+          <button
+            type="button"
+            onClick={it.onClick}
+            disabled={it.active}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
+              }`}
+          >
+            {it.icon}{it.label}
+          </button>
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+}
+
+function EmptyState({ icon, title, message, compact }: { icon: React.ReactNode; title: string; message: string; compact?: boolean }) {
+  return (
+    <div className={`flex flex-col items-center justify-center rounded-2xl border border-dashed border-surface-200 bg-surface-50/60 text-center dark:border-surface-700 dark:bg-surface-800/40 ${compact ? 'px-6 py-10' : 'px-6 py-16'}`}>
+      <div className="mb-3 text-surface-300 dark:text-surface-600">{icon}</div>
+      <p className="text-base font-bold text-surface-800 dark:text-surface-200">{title}</p>
+      <p className="mt-1 max-w-sm text-sm font-medium text-surface-500">{message}</p>
+    </div>
+  );
+}
+
+function CardGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="rounded-2xl border border-surface-100 bg-white p-5 dark:border-surface-700 dark:bg-surface-800">
+          <div className="h-11 w-11 animate-pulse rounded-xl bg-surface-200 dark:bg-surface-700" />
+          <div className="mt-4 h-5 w-2/3 animate-pulse rounded bg-surface-200 dark:bg-surface-700" />
+          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
+          <div className="mt-4 h-4 w-full animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RowSkeleton() {
+  return <div className="h-16 w-full animate-pulse rounded-xl bg-surface-100 dark:bg-surface-800" />;
+}
+
+// ── Material type config ─────────────────────────────────────────────────────
+
+const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
+  { value: 'notes', label: 'Notes', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
+  { value: 'pyq', label: 'PYQ', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
+  { value: 'formula_sheet', label: 'Formula Sheet', icon: FileSpreadsheet, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+  { value: 'dpp', label: 'DPP', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'mindmap', label: 'Mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
+  { value: 'ppt', label: 'Presentation', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { value: 'ebook', label: 'E-book', icon: BookMarked, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+];
+const mCfg = (t?: string) => MATERIAL_TYPES.find((m) => m.value === t) ?? MATERIAL_TYPES[0];
+
+function resolveFileUrl(url?: string | null) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${getApiOrigin() || ''}${url}`;
+}
+
+// ── Chapter node (accordion: chapter → its topics) ───────────────────────────
+
+function ChapterNode({
+  chapter, version, canEdit, selectedTopicId, onSelectTopic, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
+}: {
+  chapter: any; version: number; canEdit: boolean; selectedTopicId: string | null;
+  onSelectTopic: (t: any) => void; onAddTopic: () => void; onEditTopic: (t: any) => void;
+  onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    api.get(`/topics?chapterId=${chapter.id}`)
+      .then((res) => { if (!cancelled) setTopics(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setTopics([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [open, chapter.id, version]);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-surface-100 dark:border-surface-700">
+      <div className="group flex items-center gap-2 bg-white px-3 py-2.5 transition-colors hover:bg-surface-50 dark:bg-surface-900/40 dark:hover:bg-surface-800">
+        <button onClick={() => setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+          <ChevronDown size={15} className={`shrink-0 text-surface-400 transition-transform ${open ? '' : '-rotate-90'}`} />
+          <div className="rounded-lg bg-brand-100 p-1.5 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400"><Library size={15} /></div>
+          <span className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{chapter.name}</span>
+        </button>
+        {canEdit && (
+          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <IconButton label="Edit chapter" onClick={(e) => { e.stopPropagation(); onEditChapter(); }}><Pencil size={14} /></IconButton>
+            <IconButton label="Delete chapter" danger onClick={(e) => { e.stopPropagation(); onDeleteChapter(); }}><Trash2 size={14} /></IconButton>
+          </div>
+        )}
+      </div>
+
+      {open && (
+        <div className="border-t border-surface-100 bg-surface-50/60 p-2 dark:border-surface-700 dark:bg-surface-800/40">
+          {loading ? (
+            <div className="flex justify-center py-3"><Loader2 size={16} className="animate-spin text-brand-500" /></div>
+          ) : (
+            <div className="space-y-1">
+              {topics.map((t) => {
+                const active = selectedTopicId === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    className={`group/topic flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 transition-colors ${active ? 'bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-900/30' : 'hover:bg-white dark:hover:bg-surface-800'}`}
+                    onClick={() => onSelectTopic(t)}
+                  >
+                    <BookOpen size={14} className={active ? 'text-brand-600' : 'text-surface-400'} />
+                    <span className={`flex-1 truncate text-sm font-medium ${active ? 'text-brand-700 dark:text-brand-300' : 'text-surface-700 dark:text-surface-200'}`}>{t.name}</span>
+                    {canEdit && (
+                      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
+                        <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }); }}><Pencil size={13} /></IconButton>
+                        <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={13} /></IconButton>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {canEdit && (
+                <button onClick={onAddTopic} className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold text-surface-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-surface-800">
+                  <Plus size={13} /> Add Topic
+                </button>
+              )}
+              {!canEdit && topics.length === 0 && (
+                <p className="px-2.5 py-2 text-xs font-medium text-surface-400">No topics yet.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Material workspace (selected topic's materials, grouped by type) ─────────
+
+function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string; name: string; chapterId: string }; subjectId: string; canEdit: boolean }) {
+  const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
+  const [showAi, setShowAi] = useState(false);
+  const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const load = React.useCallback(() => {
+    setLoading(true);
+    schoolContent.getMaterials({ topicId: topic.id })
+      .then((list) => setMaterials(Array.isArray(list) ? list : []))
+      .catch(() => setMaterials([]))
+      .finally(() => setLoading(false));
+  }, [topic.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const grouped = useMemo(() => {
+    const g: Record<string, SchoolMaterial[]> = { notes: [], pyq: [], formula_sheet: [], dpp: [], mindmap: [], ppt: [], ebook: [] };
+    materials.forEach((m) => { const t = String(m.fileType ?? 'notes').toLowerCase(); (g[t] ?? g.notes).push(m); });
+    return g;
+  }, [materials]);
+
+  const handleDelete = async (m: SchoolMaterial) => {
+    if (!window.confirm(`Delete material "${m.title}"?`)) return;
+    try { await schoolContent.deleteMaterial(m.id); toast.success('Material deleted'); load(); }
+    catch { toast.error('Failed to delete material'); }
+  };
+
+  const aiCount = useMemo(() => materials.filter(isDownloadableAiMaterial).length, [materials]);
+
+  const handleDownloadAll = async () => {
+    setDownloadingAll(true);
+    try {
+      const n = await downloadAllMaterials(materials, `${topic.name} — AI materials`);
+      if (!n) toast.message('No AI-generated materials to download');
+    } catch {
+      toast.error('Download failed');
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 p-4 dark:border-surface-700">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-surface-400">Topic</p>
+          <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{topic.name}</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-lg border border-surface-100 bg-surface-50 px-2.5 py-1 text-xs font-bold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
+            {materials.length} item{materials.length === 1 ? '' : 's'}
+          </span>
+          {aiCount > 0 && (
+            <button
+              onClick={handleDownloadAll}
+              disabled={downloadingAll}
+              title="Download all AI-generated materials as one PDF"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-sm font-bold text-surface-600 transition-colors hover:bg-surface-50 disabled:opacity-50 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200"
+            >
+              {downloadingAll ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} Download all
+            </button>
+          )}
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setShowAi(true)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+              >
+                <Sparkles size={15} /> AI Generate
+              </button>
+              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(undefined); setShowAdd(true); }}>Add Material</Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {loading ? (
+          <div className="space-y-3"><RowSkeleton /><RowSkeleton /><RowSkeleton /></div>
+        ) : materials.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-3 text-surface-300 dark:text-surface-600"><UploadCloud size={40} /></div>
+            <p className="text-base font-bold text-surface-800 dark:text-surface-200">No materials yet</p>
+            <p className="mt-1 max-w-sm text-sm font-medium text-surface-500">Upload notes, PYQs, formula sheets or DPPs — or paste a link — for this topic.</p>
+            {canEdit && (
+              <>
+                <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
+                  {MATERIAL_TYPES.map((mt) => {
+                    const Icon = mt.icon;
+                    return (
+                      <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
+                        className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
+                        <Icon size={16} className={mt.text} />
+                        <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
+                  <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
+                </div>
+                <button onClick={() => setShowAi(true)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                  <Sparkles size={16} /> Generate with AI
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {MATERIAL_TYPES.map((mt) => {
+              const items = grouped[mt.value];
+              if (!items || items.length === 0) return null;
+              const Icon = mt.icon;
+              return (
+                <section key={mt.value}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className={`rounded-lg p-1.5 ${mt.soft}`}><Icon size={14} className={mt.text} /></div>
+                    <h4 className={`text-sm font-bold ${mt.text}`}>{mt.label}</h4>
+                    <span className="rounded-full bg-surface-100 px-2 py-0.5 text-xs font-bold text-surface-500 dark:bg-surface-800">{items.length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {items.map((m) => {
+                      const href = resolveFileUrl(m.fileUrl ?? m.file_url);
+                      const isText = !!m.description && !href;
+                      return (
+                        <div key={m.id} className="group flex items-center gap-3 rounded-xl border border-surface-100 bg-white p-3 transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
+                          <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{m.title}</p>
+                            <div className="flex items-center gap-2">
+                              {isText && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-500">
+                                  <Sparkles size={11} /> AI Generated
+                                </span>
+                              )}
+                              {!!m.fileSizeKb && <span className="text-[11px] font-medium text-surface-400">{m.fileSizeKb < 1024 ? `${m.fileSizeKb} KB` : `${(m.fileSizeKb / 1024).toFixed(1)} MB`}</span>}
+                            </div>
+                          </div>
+                          {isText && (
+                            <button onClick={() => downloadMaterial(m)} title="Download as PDF"
+                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                              <Download size={13} /> PDF
+                            </button>
+                          )}
+                          {isText ? (
+                            <button onClick={() => setViewMaterial(m)}
+                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
+                              <Eye size={13} /> View
+                            </button>
+                          ) : href ? (
+                            <a href={href} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                              <ExternalLink size={13} /> Open
+                            </a>
+                          ) : null}
+                          {canEdit && (
+                            <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {showAdd && (
+        <AddMaterialModal
+          topic={topic}
+          subjectId={subjectId}
+          initialType={addType}
+          onClose={() => setShowAdd(false)}
+          onSaved={() => { setShowAdd(false); load(); }}
+        />
+      )}
+
+      {showAi && (
+        <AiGeneratePanel
+          topic={topic}
+          onClose={() => setShowAi(false)}
+          onSaved={() => { load(); }}
+        />
+      )}
+
+      {viewMaterial && (
+        <MarkdownViewer material={viewMaterial} onClose={() => setViewMaterial(null)} />
+      )}
+    </div>
+  );
+}
+
+// ── Markdown viewer (AI / text materials) ────────────────────────────────────
+
+// ── Slide deck viewer (presentation / ppt materials) ─────────────────────────
+
+/**
+ * Slide image column: generates a content-matched image for the slide via the
+ * backend HF image endpoint (cached in S3), falling back to a Wikipedia image
+ * if generation isn't available. Renders nothing (bullets go full width) when
+ * neither yields an image.
+ */
+function SlideImage({ prompt, fallbackQuery, directUrl, alt }: { prompt: string; fallbackQuery: string; directUrl?: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(directUrl ?? null);
+  const [resolving, setResolving] = useState<boolean>(!directUrl);
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    if (directUrl) { setUrl(directUrl); setResolving(false); return; }
+    let cancelled = false;
+    setResolving(true);
+    setUrl(null);
+    setBroken(false);
+    (async () => {
+      let resolved: string | null = null;
+      try {
+        const r = await schoolContent.generateSlideImage({ prompt });
+        resolved = r?.url ?? null;
+      } catch {
+        resolved = null;
+      }
+      if (!resolved) {
+        try { resolved = await fetchSlideImage(fallbackQuery); } catch { resolved = null; }
+      }
+      if (!cancelled) { setUrl(resolved); setResolving(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [prompt, fallbackQuery, directUrl]);
+
+  if (!resolving && (!url || broken)) return null; // no image → bullets go full width
+
+  return (
+    <div className="hidden w-2/5 shrink-0 sm:block">
+      <div className="relative h-full w-full overflow-hidden rounded-xl border border-surface-200 bg-surface-100 dark:border-surface-700 dark:bg-surface-800">
+        {resolving && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 text-[11px] font-semibold text-surface-400">
+            <Loader2 size={15} className="animate-spin" /> Generating image…
+          </div>
+        )}
+        {url && (
+          <img
+            src={url}
+            alt={alt}
+            loading="lazy"
+            onError={() => setBroken(true)}
+            className="h-full w-full object-contain"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; height?: number; topic?: string }) {
+  const [idx, setIdx] = useState(0);
+  if (!slides.length) return null;
+  const safeIdx = Math.min(idx, slides.length - 1);
+  const slide = slides[safeIdx];
+  const go = (d: number) => setIdx((i) => Math.max(0, Math.min(slides.length - 1, i + d)));
+  const imgPrompt = slideImagePrompt(slide, topic);
+  const imgQuery = slideImageQuery(slide, topic);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div
+        className="overflow-hidden rounded-2xl border border-surface-200 bg-gradient-to-br from-rose-50 to-white shadow-sm dark:border-surface-700 dark:from-surface-800 dark:to-surface-900"
+        style={{ height }}
+      >
+        <div className="flex h-full flex-col p-6">
+          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">
+            Slide {safeIdx + 1} / {slides.length}
+          </span>
+          <h3 className="mt-1 border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
+            {slide.title}
+          </h3>
+          <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
+            <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
+              {slide.bullets.length ? slide.bullets.map((b, i) => (
+                <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+                  <span>{b}</span>
+                </li>
+              )) : (
+                <li className="text-sm text-surface-400">No content on this slide.</li>
+              )}
+            </ul>
+            <SlideImage key={imgPrompt} prompt={imgPrompt} fallbackQuery={imgQuery} directUrl={slide.imageUrl} alt={slide.title} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" onClick={() => go(-1)} disabled={safeIdx === 0}
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          <ChevronLeft size={14} /> Prev
+        </button>
+        <div className="flex flex-1 flex-wrap justify-center gap-1.5">
+          {slides.map((s, i) => (
+            <button key={i} type="button" onClick={() => setIdx(i)} title={`${i + 1}. ${s.title}`}
+              aria-label={`Go to slide ${i + 1}`}
+              className={`h-2.5 w-2.5 rounded-full transition-colors ${i === safeIdx ? 'bg-rose-500' : 'bg-surface-300 hover:bg-surface-400 dark:bg-surface-600'}`} />
+          ))}
+        </div>
+        <button type="button" onClick={() => go(1)} disabled={safeIdx === slides.length - 1}
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          Next <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClose: () => void }) {
+  const fileType = String(material.fileType ?? '').toLowerCase();
+  const isMindmap = fileType === 'mindmap';
+  const isPresentation = fileType === 'ppt';
+  const tree = useMemo(
+    () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, material.title) : null),
+    [isMindmap, material.description, material.title],
+  );
+  const slides = useMemo(
+    () => (isPresentation && material.description ? presentationMarkdownToSlides(material.description) : []),
+    [isPresentation, material.description],
+  );
+  const showTree = !!tree && tree.children.length > 0;
+  const showSlides = slides.length > 0;
+  const hasRich = showTree || showSlides;
+  const richLabel = showTree ? 'Tree' : 'Slides';
+  const [view, setView] = useState<'rich' | 'text'>(hasRich ? 'rich' : 'text');
+  const rich = hasRich && view === 'rich';
+  const widthClass = rich && showTree ? 'max-w-5xl' : rich && showSlides ? 'max-w-4xl' : 'max-w-3xl';
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 ${widthClass}`}>
+        <div className="flex items-center justify-between gap-3 border-b border-surface-100 px-6 py-4 dark:border-surface-700">
+          <div className="min-w-0">
+            <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{material.title}</h3>
+            <p className="text-[11px] font-black uppercase tracking-wider text-violet-500">AI Generated · {material.fileType}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasRich && (
+              <div className="flex rounded-xl border border-surface-200 p-0.5 dark:border-surface-700">
+                <button onClick={() => setView('rich')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'rich' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>{richLabel}</button>
+                <button onClick={() => setView('text')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'text' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>Text</button>
+              </div>
+            )}
+            <button onClick={() => downloadMaterial(material)} title="Download as PDF"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 px-3 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
+              <Download size={14} /> PDF
+            </button>
+            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
+          </div>
+        </div>
+        {rich && showTree ? (
+          <div className="flex-1 overflow-hidden p-4">
+            <MindMapCanvas data={tree} height={560} />
+          </div>
+        ) : rich && showSlides ? (
+          <div className="flex-1 overflow-y-auto p-5">
+            <SlideDeck slides={slides} height={480} topic={material.title} />
+          </div>
+        ) : (
+          <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
+            {material.description
+              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
+              : <p className="text-surface-400">No content.</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AI Content Generator panel ───────────────────────────────────────────────
+
+const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
+  { id: 'dpp', label: 'DPP Sheet', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
+  { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
+  { id: 'presentation', label: 'Presentation', desc: 'Slide-by-slide PPT deck with titles & bullet points', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
+  { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'notes', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+  { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'notes', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { id: 'flashcard', label: 'Flashcards', desc: 'Bite-sized Q&A cards for quick recall', saveAs: 'notes', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
+  { id: 'revision_checklist', label: 'Revision Checklist', desc: 'Subtopic checklist students can tick off', saveAs: 'notes', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'notes', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+];
+
+function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; name: string; chapterId: string }; onClose: () => void; onSaved: () => void }) {
+  const [typeId, setTypeId] = useState('dpp');
+  const [questionCount, setQuestionCount] = useState(10);
+  const [extraContext, setExtraContext] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [content, setContent] = useState<string | null>(null);
+
+  const cfg = AI_GEN_TYPES.find((t) => t.id === typeId)!;
+  const isQuestionType = typeId === 'dpp' || typeId === 'pyq';
+  const isMindmap = typeId === 'mindmap';
+  const previewTree = useMemo(
+    () => (isMindmap && content ? mindmapMarkdownToTree(content, topic.name) : null),
+    [isMindmap, content, topic.name],
+  );
+  const showPreviewTree = !!previewTree && previewTree.children.length > 0;
+  const isPresentation = typeId === 'presentation';
+  const previewSlides = useMemo(
+    () => (isPresentation && content ? presentationMarkdownToSlides(content) : []),
+    [isPresentation, content],
+  );
+  const showPreviewSlides = previewSlides.length > 0;
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setContent(null);
+    try {
+      const res = await schoolContent.generateAiContent({
+        topicId: topic.id,
+        contentType: typeId,
+        questionCount: isQuestionType ? questionCount : undefined,
+        extraContext: extraContext.trim() || undefined,
+      });
+      setContent(res.content ?? '');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'AI generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!content) return;
+    setSaving(true);
+    try {
+      await schoolContent.saveAiMaterial({
+        topicId: topic.id,
+        title: `${cfg.label} — ${topic.name}`,
+        content,
+        resourceType: cfg.saveAs,
+      });
+      toast.success(`Saved as ${cfg.label} — students can now access it!`);
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex justify-end bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl dark:bg-surface-900">
+        <div className="flex items-start justify-between border-b border-surface-100 bg-gradient-to-r from-violet-50 to-blue-50 px-5 py-4 dark:border-surface-700 dark:from-violet-900/20 dark:to-blue-900/20">
+          <div className="flex items-center gap-2">
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-violet-600 text-white"><Sparkles size={15} /></div>
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-wider text-violet-600">AI Content Generator</p>
+              <p className="truncate text-sm font-bold text-surface-900 dark:text-white">{topic.name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-xl bg-white/70 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-surface-400">1 · Choose content type</p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {AI_GEN_TYPES.map((t) => {
+              const Icon = t.icon;
+              const active = typeId === t.id;
+              return (
+                <button key={t.id} onClick={() => { setTypeId(t.id); setContent(null); }}
+                  className={`rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
+                  <div className={`mb-1.5 inline-flex rounded-lg p-1.5 ${t.soft}`}><Icon size={16} className={t.text} /></div>
+                  <p className="text-sm font-bold text-surface-900 dark:text-white">{t.label}</p>
+                  <p className="mt-0.5 text-[11px] font-medium leading-snug text-surface-400">{t.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mb-3 mt-6 text-[11px] font-black uppercase tracking-wider text-surface-400">2 · Settings</p>
+          <div className="space-y-4">
+            {isQuestionType && (
+              <div>
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Number of Questions</p>
+                <div className="flex flex-wrap gap-2">
+                  {[5, 10, 15, 20, 25, 30].map((n) => (
+                    <button key={n} onClick={() => setQuestionCount(n)}
+                      className={`h-9 w-10 rounded-xl border-2 text-sm font-bold transition-colors ${questionCount === n ? 'border-violet-400 bg-violet-500 text-white' : 'border-surface-200 text-surface-600 dark:border-surface-700'}`}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Extra context (optional)</p>
+              <textarea value={extraContext} onChange={(e) => setExtraContext(e.target.value)} rows={2}
+                placeholder="e.g. focus on numericals, include real-world examples…"
+                className="w-full resize-none rounded-xl border-2 border-surface-200 bg-surface-50 px-3 py-2 text-sm outline-none focus:border-violet-400 dark:border-surface-700 dark:bg-surface-800" />
+            </div>
+          </div>
+
+          {(generating || content) && (
+            <div className="mt-6">
+              <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-surface-400">Preview</p>
+              {generating ? (
+                <div className="flex items-center justify-center gap-2 rounded-2xl border border-surface-100 bg-surface-50 py-10 text-sm font-semibold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
+                  <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI…
+                </div>
+              ) : showPreviewTree ? (
+                <div className="overflow-hidden rounded-2xl border border-surface-100 dark:border-surface-700">
+                  <MindMapCanvas data={previewTree} height={360} />
+                </div>
+              ) : showPreviewSlides ? (
+                <SlideDeck slides={previewSlides} height={300} topic={topic.name} />
+              ) : (
+                <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
+                  <div className="prose prose-sm prose-slate max-w-none dark:prose-invert">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 border-t border-surface-100 p-4 dark:border-surface-700">
+          <Button variant="outline" className="flex-1 justify-center" onClick={handleGenerate} disabled={generating}>
+            {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating…</span> : (content ? 'Regenerate' : 'Generate')}
+          </Button>
+          {content && (
+            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving}>
+              {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save for students'}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Add Material modal (pick type → upload file or paste link) ───────────────
+
+function AddMaterialModal({
+  topic, subjectId, initialType, onClose, onSaved,
+}: {
+  topic: { id: string; name: string; chapterId: string }; subjectId: string;
+  initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
+}) {
+  const [step, setStep] = useState<'type' | 'input'>(initialType ? 'input' : 'type');
+  const [type, setType] = useState<SchoolMaterialType>(initialType ?? 'notes');
+  const [source, setSource] = useState<'file' | 'link'>('file');
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cfg = mCfg(type);
+
+  const cleanName = (n: string) => n.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim();
+  const stageFile = (f: File) => {
+    if (f.size > 100 * 1024 * 1024) { toast.error('File must be ≤ 100 MB'); return; }
+    setFile(f);
+    if (!title.trim()) setTitle(cleanName(f.name));
+  };
+
+  const save = async () => {
+    const finalTitle = title.trim() || (file ? cleanName(file.name) : 'Material');
+    setBusy(true);
+    try {
+      let fileUrl = '';
+      let fileName = '';
+      let fileSizeKb = 0;
+      if (source === 'file') {
+        if (!file) { toast.warning('Choose a file to upload'); setBusy(false); return; }
+        fileUrl = await schoolContent.uploadMaterialFile(file);
+        fileName = file.name;
+        fileSizeKb = Math.round(file.size / 1024);
+      } else {
+        if (!url.trim()) { toast.warning('Paste a URL first'); setBusy(false); return; }
+        fileUrl = url.trim();
+      }
+      await schoolContent.createMaterial({
+        title: finalTitle,
+        fileType: type,
+        fileUrl,
+        fileName,
+        fileSizeKb,
+        subjectIdFk: subjectId,
+        chapterId: topic.chapterId,
+        topicId: topic.id,
+      });
+      toast.success('Material added');
+      onSaved();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to add material');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
+        <div className="flex items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
+          <div className="flex items-center gap-2">
+            {step === 'input' && !initialType && (
+              <button onClick={() => setStep('type')} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
+            )}
+            <div>
+              <h3 className="text-sm font-bold text-surface-900 dark:text-white">{step === 'type' ? 'Choose material type' : `Add ${cfg.label}`}</h3>
+              <p className="max-w-[240px] truncate text-xs text-surface-400">{topic.name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+        </div>
+
+        {step === 'type' ? (
+          <div className="grid grid-cols-2 gap-3 p-5">
+            {MATERIAL_TYPES.map((mt) => {
+              const Icon = mt.icon;
+              return (
+                <button key={mt.value} onClick={() => { setType(mt.value); setStep('input'); }}
+                  className={`flex items-center gap-3 rounded-2xl border border-surface-100 p-4 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
+                  <Icon size={20} className={mt.text} />
+                  <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-4 p-5">
+            <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give this material a clear title…" />
+
+            <div className="flex gap-2">
+              <button onClick={() => setSource('file')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'file' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+                <Upload size={15} /> Upload file
+              </button>
+              <button onClick={() => setSource('link')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'link' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+                <Link2 size={15} /> Paste link
+              </button>
+            </div>
+
+            {source === 'link' ? (
+              <InputField label="URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… (PDF, Drive, YouTube, etc.)" />
+            ) : file ? (
+              <div className={`flex items-center gap-3 rounded-2xl border-2 border-surface-200 p-3 dark:border-surface-700 ${cfg.soft}`}>
+                <cfg.icon size={20} className={cfg.text} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
+                  <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+                <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
+              </div>
+            ) : (
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) stageFile(f); }}
+                onClick={() => fileRef.current?.click()}
+                className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all ${dragging ? 'border-brand-400 bg-brand-50' : 'border-surface-200 hover:border-brand-300 hover:bg-surface-50 dark:border-surface-700'}`}
+              >
+                <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl ${cfg.soft}`}><Upload size={22} className={cfg.text} /></div>
+                <p className="text-sm font-bold text-surface-600 dark:text-surface-300">Drop file or <span className="text-brand-600">browse</span></p>
+                <p className="mt-1 text-xs text-surface-400">{type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}</p>
+                <input ref={fileRef} type="file" className="hidden" accept={type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
+                  onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
+              </div>
+            )}
+
+            <Button className="w-full justify-center" onClick={save} disabled={busy}>
+              {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> {source === 'file' ? 'Uploading…' : 'Saving…'}</span> : (source === 'file' ? 'Upload & Save' : 'Save Link')}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default TopicManagement;

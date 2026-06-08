@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import api from '@/lib/api/school-client';
-import { BookOpen, Calendar, Clock, Video, ChevronRight, CheckCircle2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { BookOpen, Radio, Video, ChevronRight, CheckCircle2, Hand, BarChart3 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/components/school/admin/Skeleton';
 
 export default function Classes() {
+  const location = useLocation();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +13,7 @@ export default function Classes() {
     const fetchCourses = async () => {
       try {
         const response = await api.get('/students/courses/my');
-        setCourses(response.data || []);
+        setCourses(unwrapSchoolList(response));
       } catch (error) {
         console.error('Failed to fetch courses:', error);
       } finally {
@@ -31,12 +32,39 @@ export default function Classes() {
     );
   }
 
+  const isLiveView = location.pathname.endsWith('/live-classes');
+  const isRecordedView = location.pathname.endsWith('/recorded-classes');
+  const title = isLiveView ? 'Live Classes' : isRecordedView ? 'Recorded Classes' : 'My Learning';
+  const subtitle = isLiveView
+    ? 'Join live sessions, track auto attendance, raise your hand, and participate in polls.'
+    : isRecordedView
+      ? 'Resume recorded lessons and review your watch progress.'
+      : 'Explore classes, chapters, topics, notes, assignments, tests, and teacher resources.';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">My Classes</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">Pick up where you left off or explore your courses.</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">{title}</h1>
+          <p className="mt-1 text-sm font-medium text-slate-500">{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
+          <Radio className="h-6 w-6 text-blue-600" />
+          <h2 className="mt-4 text-sm font-black text-slate-950 dark:text-white">Join Live Session</h2>
+          <p className="mt-1 text-xs font-medium text-slate-500">Live sessions support auto attendance and classroom interaction.</p>
+        </div>
+        <div className="rounded-lg border border-violet-100 bg-violet-50 p-4 dark:border-violet-900/40 dark:bg-violet-950/20">
+          <Hand className="h-6 w-6 text-violet-600" />
+          <h2 className="mt-4 text-sm font-black text-slate-950 dark:text-white">Raise Hand</h2>
+          <p className="mt-1 text-xs font-medium text-slate-500">Ask questions during class and participate in polls or quizzes.</p>
+        </div>
+        <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+          <BarChart3 className="h-6 w-6 text-emerald-600" />
+          <h2 className="mt-4 text-sm font-black text-slate-950 dark:text-white">Watch Progress</h2>
+          <p className="mt-1 text-xs font-medium text-slate-500">Recorded lessons can resume from your last watched point.</p>
         </div>
       </div>
 
@@ -104,8 +132,8 @@ export default function Classes() {
                     />
                   </div>
                   
-                  <Link 
-                    to={`/student/classes/${course.batch?.id}`} 
+                  <Link
+                    to={`/school/student/classes/${course.batch?.id}`}
                     className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 dark:bg-slate-800/50 dark:hover:bg-blue-900/20"
                   >
                     View Curriculum

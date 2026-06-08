@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/SchoolAuthContext";
+import { tokenStorage } from "@/lib/api/client";
 
 interface SchoolGuardProps {
   children: React.ReactNode;
@@ -25,7 +26,9 @@ export function SchoolGuard({ children, roles }: SchoolGuardProps) {
     );
   }
 
-  if (!isAuthenticated || !user) {
+  const hasToken = !!tokenStorage.getAccess();
+
+  if (!hasToken || !isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 

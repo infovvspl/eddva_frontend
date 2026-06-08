@@ -22,6 +22,7 @@ import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext, type ParentChild } from "@/components/school/parent/ParentAuthGuard";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import DashboardChatCard from "@/components/school/parent/DashboardChatCard";
 
 interface StudentSummary {
   attendancePercentage?: number | null;
@@ -237,6 +238,7 @@ export default function ParentDashboard() {
 
           <div className="grid gap-5">
             <QuickActions />
+            <DashboardChatCard />
 
             <Panel
               icon={<Calendar className="h-5 w-5 text-violet-600" />}

@@ -1,4 +1,4 @@
-import { api } from './api/client';
+import { apiClient } from './api/client';
 import axios from 'axios';
 
 export type UploadType = 
@@ -8,7 +8,8 @@ export type UploadType =
   | 'source' 
   | 'lecture-video' 
   | 'lecture-thumbnail' 
-  | 'lecture-attachment';
+  | 'lecture-attachment'
+  | 'chat-attachment';
 
 export interface GenerateUploadUrlParams {
   type: UploadType;
@@ -32,8 +33,45 @@ delete s3UploadClient.defaults.headers.common.Accept;
 delete s3UploadClient.defaults.headers.common.Authorization;
 
 export const getUploadUrl = async (params: GenerateUploadUrlParams): Promise<UploadUrlResponse> => {
-  const { data } = await api.post<UploadUrlResponse>('/upload-url', params);
-  return data;
+  let resolvedContentType = params.contentType ? params.contentType.trim() : '';
+  const ext = params.fileName.split('.').pop()?.toLowerCase();
+  
+  const mimeMap: Record<string, string> = {
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc: 'application/msword',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    xls: 'application/vnd.ms-excel',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg'
+  };
+
+  if (!resolvedContentType || resolvedContentType === 'application/octet-stream') {
+    if (ext && mimeMap[ext]) {
+      resolvedContentType = mimeMap[ext];
+    }
+  }
+
+  if (!resolvedContentType) {
+    resolvedContentType = 'application/octet-stream';
+  }
+
+  try {
+    const { data } = await apiClient.post<any>('/upload-url', {
+      ...params,
+      contentType: resolvedContentType
+    });
+    
+    // Unwrap standard API response envelopes ({ success: true, data: { uploadUrl, fileUrl } })
+    if (data && typeof data === 'object' && 'data' in data) {
+      return data.data;
+    }
+    return data;
+  } catch (err: any) {
+    console.error("Failed to generate upload URL:", err);
+    throw err;
+  }
 };
 
 export const uploadToS3 = async (

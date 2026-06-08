@@ -79,6 +79,64 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('sendMessage', `/school/parent/chat/${teacherId}`, e)),
 
+  // ── Real-time direct messaging (shared /school/chat backend) ──────────────
+  // Parents converse with school staff (teachers + admins) over the same chat
+  // tables the admin Communications hub uses, so admin <-> parent is two-way.
+
+  /** Staff a parent can message: teachers + institute admins, merged. */
+  getChatContacts: () =>
+    Promise.all([
+      schoolApi.get('/chat/users', { params: { role: 'TEACHER' } }).then(extractData),
+      schoolApi.get('/chat/users', { params: { role: 'INSTITUTE_ADMIN' } }).then(extractData),
+      schoolApi.get('/chat/conversations', { params: { role: 'TEACHER' } }).then(extractData),
+      schoolApi.get('/chat/conversations', { params: { role: 'INSTITUTE_ADMIN' } }).then(extractData),
+    ])
+      .then(([teachers, admins, teacherConvs, adminConvs]) => {
+        const list = [
+          ...(Array.isArray(teachers) ? teachers : []),
+          ...(Array.isArray(admins) ? admins : []),
+        ];
+        const convs = [
+          ...(Array.isArray(teacherConvs) ? teacherConvs : []),
+          ...(Array.isArray(adminConvs) ? adminConvs : []),
+        ];
+        const convByPeer = new Map<string, any>();
+        convs.forEach((c) => {
+          if (c && c.peer_id) {
+            convByPeer.set(c.peer_id, c);
+          }
+        });
+
+        const seen = new Set<string>();
+        return list
+          .filter((u: { id: string }) => (seen.has(u.id) ? false : seen.add(u.id)))
+          .map((u: any) => {
+            const conv = convByPeer.get(u.id);
+            return {
+              ...u,
+              lastMessage: conv?.last_message || '',
+              unread: Number(conv?.unread_count || 0),
+              time: conv?.created_at ? new Date(conv.created_at).toLocaleDateString() : '',
+            };
+          });
+      })
+      .catch((e) => logParentApiError('getChatContacts', '/school/chat/users', e)),
+
+  getChatThread: (peerId: string) =>
+    schoolApi.get(`/chat/messages/${peerId}`)
+      .then((res) => extractData<unknown[]>(res) ?? [])
+      .catch((e) => logParentApiError('getChatThread', `/school/chat/messages/${peerId}`, e)),
+
+  sendChatMessage: (peerId: string, content: string) =>
+    schoolApi.post('/chat/messages', { receiverId: peerId, content })
+      .then(extractData)
+      .catch((e) => logParentApiError('sendChatMessage', '/school/chat/messages', e)),
+
+  markChatRead: (peerId: string) =>
+    schoolApi.patch(`/chat/messages/${peerId}/read`)
+      .then(extractData)
+      .catch((e) => logParentApiError('markChatRead', `/school/chat/messages/${peerId}/read`, e)),
+
   getMeetingRequests: () =>
     schoolApi.get('/parent/meeting-requests')
       .then(extractData)

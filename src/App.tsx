@@ -12,6 +12,7 @@ import { SchoolGuard } from "./components/auth/SchoolGuard";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
+import { NotificationProvider } from "@/context/SchoolNotificationContext";
 
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
 
@@ -154,6 +155,7 @@ const SchoolTeacherLayout       = lazy(() => import("./components/school/admin/L
 const SchoolTeacherDashboard    = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTopicManagement     = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolClassManagement     = lazy(() => import("./pages/school/teacher/ClassManagement"));
+const SchoolTeacherCalendar     = lazy(() => import("./pages/school/teacher/Calendar"));
 const SchoolAttendanceSystem    = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
 const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
@@ -164,6 +166,8 @@ const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/Grie
 const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
 const SchoolTeacherProfile      = lazy(() => import("./pages/school/teacher/Profile"));
 const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Notifications"));
+const SchoolTeacherDoubtQueue   = lazy(() => import("./pages/school/teacher/DoubtQueue"));
+const SchoolTeacherSettings     = lazy(() => import("./pages/school/teacher/Settings"));
 
 // ── School student pages ─────────────────────────────────────────────────────
 const SchoolStudentLayout       = lazy(() => import("./components/school/student/Layout"));
@@ -171,18 +175,25 @@ const SchoolStudentDashboard    = lazy(() => import("./pages/school/student/Dash
 const SchoolStudentClasses      = lazy(() => import("./pages/school/student/Classes"));
 const SchoolStudentClassDetails = lazy(() => import("./pages/school/student/ClassDetails"));
 const SchoolStudentTopicDetails = lazy(() => import("./pages/school/student/TopicDetails"));
+const SchoolStudentStudyMaterials = lazy(() => import("./pages/school/student/StudyMaterials"));
 const SchoolStudentAssignments  = lazy(() => import("./pages/school/student/Assignments"));
 const SchoolStudentAssessments  = lazy(() => import("./pages/school/student/Assessments"));
 const SchoolStudentTestEngine   = lazy(() => import("./pages/school/student/TestEngine"));
 const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/SessionResult"));
-const SchoolStudentAiAssistant  = lazy(() => import("./pages/school/student/AiAssistant"));
+
+const SchoolStudentDoubts       = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena  = lazy(() => import("./pages/school/student/BattleArena"));
+const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
 const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
+const SchoolStudentAttendance   = lazy(() => import("./pages/school/student/Attendance"));
 const SchoolStudentCalendar     = lazy(() => import("./pages/school/student/Calendar"));
 const SchoolStudentAnalytics    = lazy(() => import("./pages/school/student/Analytics"));
 const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feedback"));
+const SchoolStudentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
+const SchoolStudentSupportTickets = lazy(() => import("./pages/school/student/SupportTickets"));
 const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
+const SchoolStudentSettings     = lazy(() => import("./pages/school/student/Settings"));
 
 // ── School parent pages ──────────────────────────────────────────────────────
 const SchoolParentLayout        = lazy(() => import("./components/school/parent/ParentLayout"));
@@ -363,9 +374,12 @@ const SchoolRoutes = () => (
     >
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
+      <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
-      <Route path="topics" element={<SchoolTopicManagement />} />
+      <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
+      <Route path="calendar" element={<SchoolTeacherCalendar />} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolAssignmentManagement />} />
       <Route path="assessments" element={<SchoolAssessmentSystem />} />
@@ -374,6 +388,7 @@ const SchoolRoutes = () => (
       <Route path="reports" element={<SchoolTeacherReports />} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
       <Route path="chat" element={<SchoolChatSystem />} />
+      <Route path="doubts" element={<SchoolTeacherDoubtQueue />} />
     </Route>
 
     {/* School Student */}
@@ -382,21 +397,30 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["STUDENT"]}><SchoolStudentLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolStudentDashboard />} />
+      <Route path="live-classes" element={<SchoolStudentClasses />} />
+      <Route path="recorded-classes" element={<SchoolStudentClasses />} />
       <Route path="classes" element={<SchoolStudentClasses />} />
       <Route path="classes/:id" element={<SchoolStudentClassDetails />} />
       <Route path="classes/:batchId/topics/:topicId" element={<SchoolStudentTopicDetails />} />
+      <Route path="study-materials" element={<SchoolStudentStudyMaterials />} />
       <Route path="assignments" element={<SchoolStudentAssignments />} />
       <Route path="assessments" element={<SchoolStudentAssessments />} />
       <Route path="assessments/:id/take" element={<SchoolStudentTestEngine />} />
       <Route path="assessments/:id" element={<SchoolStudentSessionResult />} />
-      <Route path="ai-assistant" element={<SchoolStudentAiAssistant />} />
+
+      <Route path="doubts" element={<SchoolStudentDoubts />} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
+      <Route path="gamification" element={<SchoolStudentGamification />} />
       <Route path="planner" element={<SchoolStudentStudyPlanner />} />
+      <Route path="attendance" element={<SchoolStudentAttendance />} />
       <Route path="calendar" element={<SchoolStudentCalendar />} />
       <Route path="analytics" element={<SchoolStudentAnalytics />} />
       <Route path="feedback" element={<SchoolStudentFeedback />} />
+      <Route path="announcements" element={<SchoolStudentAnnouncements />} />
+      <Route path="support-tickets" element={<SchoolStudentSupportTickets />} />
       <Route path="chat" element={<SchoolStudentChat />} />
       <Route path="profile" element={<SchoolStudentProfile />} />
+      <Route path="settings" element={<SchoolStudentSettings />} />
     </Route>
 
     {/* School Parent */}
@@ -524,9 +548,11 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Suspense fallback={<RouteLoading />}>
-                {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
-              </Suspense>
+              <NotificationProvider>
+                <Suspense fallback={<RouteLoading />}>
+                  {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+                </Suspense>
+              </NotificationProvider>
             </BrowserRouter>
           </XPToastProvider>
         </SchoolAuthProvider>

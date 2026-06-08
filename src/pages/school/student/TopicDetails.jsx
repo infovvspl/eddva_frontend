@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { ChevronLeft, PlayCircle, FileText, CheckCircle2, MonitorPlay, FileDown, ExternalLink } from 'lucide-react';
 
 export default function TopicDetails() {
@@ -12,7 +12,7 @@ export default function TopicDetails() {
     const fetchTopic = async () => {
       try {
         const res = await api.get(`/students/courses/${batchId}/topics/${topicId}`);
-        setTopicData(res.data);
+        setTopicData(unwrapSchoolData(res, null));
       } catch (error) {
         console.error('Failed to fetch topic details:', error);
       } finally {
@@ -35,7 +35,7 @@ export default function TopicDetails() {
       <div className="flex h-[60vh] flex-col items-center justify-center text-center">
         <MonitorPlay className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Topic not found</h2>
-        <Link to={`/student/classes/${batchId}`} className="mt-4 text-sm font-bold text-blue-600 hover:underline">Back to Course</Link>
+        <Link to={`/school/student/classes/${batchId}`} className="mt-4 text-sm font-bold text-blue-600 hover:underline">Back to Course</Link>
       </div>
     );
   }
@@ -46,7 +46,7 @@ export default function TopicDetails() {
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <div>
-        <Link to={`/student/classes/${batchId}`} className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors">
+        <Link to={`/school/student/classes/${batchId}`} className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors">
           <ChevronLeft size={16} />
           Back to Curriculum
         </Link>
