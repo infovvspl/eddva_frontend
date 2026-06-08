@@ -8,6 +8,7 @@ import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
 import DataTable from '@/components/school/DataTable';
 import api from '@/lib/api/school-client';
+import { putFileToS3 } from '@/lib/api/upload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 
@@ -19,6 +20,17 @@ const ClassManagement: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [liveClassData, setLiveClassData] = useState([]);
   const [recordedClassData, setRecordedClassData] = useState([]);
+  const [showRecordingModal, setShowRecordingModal] = useState(false);
+  const [uploadingRecording, setUploadingRecording] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [recordingFile, setRecordingFile] = useState<File | null>(null);
+  const [recordingForm, setRecordingForm] = useState({
+    title: '',
+    classId: '',
+    subjectId: '',
+    recordedDate: '',
+    duration: '',
+  });
   const [academicClasses, setAcademicClasses] = useState<any[]>([]);
   const [academicSubjects, setAcademicSubjects] = useState<any[]>([]);
   const [scheduleForm, setScheduleForm] = useState({
@@ -106,15 +118,54 @@ const ClassManagement: React.FC = () => {
       const formattedData = response.data.data.map((item: any) => ({
         id: item.id,
         title: item.title,
-        date: new Date(item.recorded_date).toLocaleDateString('en-GB'),
-        duration: item.duration,
+        date: item.recorded_date ? new Date(item.recorded_date).toLocaleDateString('en-GB') : '-',
+        duration: item.duration || '-',
+        video_link: item.video_url,
         views: item.views || 0,
-        likes: item.likes || 0,
       }));
 
       setRecordedClassData(formattedData);
     } catch (error) {
       console.error('Failed to fetch recordings', error);
+    }
+  };
+
+  const handleUploadRecording = async () => {
+    if (!recordingForm.title.trim()) { alert('Please enter a recording title'); return; }
+    if (!recordingFile) { alert('Please choose a video file to upload'); return; }
+    setUploadingRecording(true);
+    setUploadPct(0);
+    try {
+      const contentType = recordingFile.type || 'video/mp4';
+      // 1) presigned URL  2) direct browser → S3 upload  3) save metadata
+      const presign = await api.post('/classes/recordings/upload-url', {
+        fileName: recordingFile.name,
+        contentType,
+        fileSize: recordingFile.size,
+      });
+      const { uploadUrl, fileUrl, key } = presign.data?.data ?? presign.data;
+      await putFileToS3(uploadUrl, recordingFile, contentType, (e: any) => {
+        if (e?.total) setUploadPct(Math.round((e.loaded / e.total) * 100));
+      });
+      await api.post('/classes/recordings', {
+        title: recordingForm.title.trim(),
+        classId: recordingForm.classId || undefined,
+        subjectId: recordingForm.subjectId || undefined,
+        recordedDate: recordingForm.recordedDate || undefined,
+        duration: recordingForm.duration || undefined,
+        videoUrl: fileUrl,
+        videoKey: key,
+      });
+      alert('Recording uploaded successfully');
+      setShowRecordingModal(false);
+      setRecordingForm({ title: '', classId: '', subjectId: '', recordedDate: '', duration: '' });
+      setRecordingFile(null);
+      fetchRecordedClasses();
+    } catch (error) {
+      console.error('Failed to upload recording', error);
+      alert(error instanceof Error ? error.message : 'Failed to upload recording');
+    } finally {
+      setUploadingRecording(false);
     }
   };
 
@@ -160,6 +211,7 @@ const ClassManagement: React.FC = () => {
     <div className="class__section">
       <div className="class__section-header">
         <h3>Recorded Classes</h3>
+        <Button icon={<Plus size={16} />} onClick={() => setShowRecordingModal(true)}>Upload Recording</Button>
       </div>
       <DataTable columns={recordedColumns} data={recordedClassData} />    </div>
   );
@@ -291,6 +343,67 @@ const ClassManagement: React.FC = () => {
               }}
             >
               Schedule Class
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showRecordingModal} onClose={() => !uploadingRecording && setShowRecordingModal(false)} title="Upload Recorded Class">
+        <div className="class__modal-form">
+          <InputField
+            label="Recording Title"
+            placeholder="e.g., Thermodynamics — Lecture 3"
+            value={recordingForm.title}
+            onChange={(e) => setRecordingForm((prev) => ({ ...prev, title: e.target.value }))}
+          />
+          <SelectField
+            label="Class"
+            value={recordingForm.classId}
+            onChange={(e) => setRecordingForm((prev) => ({ ...prev, classId: e.target.value }))}
+            options={academicClasses.map((c: any) => ({ value: c.id, label: c.name }))}
+          />
+          <SelectField
+            label="Subject"
+            value={recordingForm.subjectId}
+            onChange={(e) => setRecordingForm((prev) => ({ ...prev, subjectId: e.target.value }))}
+            options={academicSubjects.map((s: any) => ({ value: s.id, label: s.name }))}
+          />
+          <div className="class__modal-row">
+            <InputField
+              label="Recorded Date"
+              type="date"
+              value={recordingForm.recordedDate}
+              onChange={(e) => setRecordingForm((prev) => ({ ...prev, recordedDate: e.target.value }))}
+            />
+            <InputField
+              label="Duration"
+              placeholder="e.g., 45 min"
+              value={recordingForm.duration}
+              onChange={(e) => setRecordingForm((prev) => ({ ...prev, duration: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Video file</label>
+            <input
+              type="file"
+              accept="video/*,audio/*"
+              onChange={(e) => setRecordingFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {recordingFile && (
+              <p className="mt-1 text-xs text-slate-400">{recordingFile.name} · {(recordingFile.size / 1024 / 1024).toFixed(1)} MB</p>
+            )}
+            <p className="mt-1 text-xs text-slate-400">Max 2 GB · MP4, WebM, MOV, etc.</p>
+          </div>
+          {uploadingRecording && (
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${uploadPct}%` }} />
+            </div>
+          )}
+          <div className="class__modal-actions">
+            <Button variant="outline" disabled={uploadingRecording} onClick={() => setShowRecordingModal(false)}>Cancel</Button>
+            <Button disabled={uploadingRecording} onClick={handleUploadRecording}>
+              {uploadingRecording ? `Uploading… ${uploadPct}%` : 'Upload Recording'}
             </Button>
           </div>
         </div>
