@@ -1,5 +1,7 @@
 import { apiClient, extractData } from "./client";
 
+export type LectureLanguage = "en" | "hi" | "hinglish" | "od";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface TeacherBatch {
@@ -57,11 +59,12 @@ export interface Lecture {
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
   aiFormulas?: string[];
+  aiNoteImages?: AiNoteImage[];
   transcript?: string;
   transcriptHi?: string;
   transcriptStatus?: "pending" | "processing" | "done" | "failed";
   transcriptLanguage?: string;
-  lectureLanguage?: "en" | "hi" | "hinglish";
+  lectureLanguage?: LectureLanguage;
   createdAt: string;
   batch?: { id: string; name: string };
   topic?: {
@@ -69,6 +72,17 @@ export interface Lecture {
     name: string;
     chapter?: { id: string; name: string; subject?: { id: string; name: string } };
   };
+}
+
+export interface AiNoteImage {
+  url: string;
+  caption?: string;
+  section_heading?: string;
+  evidence_quote?: string;
+  prompt?: string;
+  provider?: string;
+  model?: string;
+  image_size?: string;
 }
 
 export interface CreateLecturePayload {
@@ -82,10 +96,11 @@ export interface CreateLecturePayload {
   thumbnailUrl?: string;
   scheduledAt?: string;
   liveMeetingUrl?: string;
-  lectureLanguage?: "en" | "hi" | "hinglish";
+  lectureLanguage?: LectureLanguage;
   status?: string;
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
+  aiNoteImages?: AiNoteImage[];
 }
 
 export interface LectureStats {
