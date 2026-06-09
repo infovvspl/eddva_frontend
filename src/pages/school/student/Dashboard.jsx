@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import StudentAvatar from '@/assets/images/Student_Avatar.png';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { readStudentDashboardCache, writeStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
+import useLiveRefresh from '@/hooks/useLiveRefresh';
 import {
   Bell,
   BookOpen,
@@ -21,6 +22,7 @@ import {
   Flame,
   Star,
   UserCheck,
+  Sparkles,
 } from 'lucide-react';
 
 const tones = {
@@ -79,12 +81,14 @@ function QuickAction({ to, icon: Icon, label, tone = 'slate' }) {
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+      className="group flex flex-col items-center justify-center gap-3 rounded-[20px] border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800"
     >
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${palette.icon}`}>
-        <Icon className="h-5 w-5" />
+      <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${palette.icon} shadow-sm transition-transform duration-300 group-hover:scale-110`}>
+        <Icon className="h-7 w-7" />
       </span>
-      <span className="min-w-0 truncate">{label}</span>
+      <span className="text-sm font-bold leading-tight text-slate-800 dark:text-slate-100">
+        {label}
+      </span>
     </Link>
   );
 }
@@ -111,72 +115,71 @@ export default function Dashboard() {
   const [courses, setCourses] = useState(initialCache?.courses ?? []);
   const [weekEvents, setWeekEvents] = useState(initialCache?.weekEvents ?? []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!initialCache) setLoading(true);
-      else setRefreshing(true);
-      try {
-        const now = new Date();
-        const dayNum = now.getDay();
-        const diff = (dayNum + 6) % 7;
-        const monday = new Date(now);
-        monday.setDate(now.getDate() - diff);
-        const from = new Date(monday);
-        const to = new Date(monday);
-        to.setDate(monday.getDate() + 6);
+  const fetchData = async () => {
+    if (!initialCache) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const now = new Date();
+      const dayNum = now.getDay();
+      const diff = (dayNum + 6) % 7;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - diff);
+      const from = new Date(monday);
+      const to = new Date(monday);
+      to.setDate(monday.getDate() + 6);
 
-        const [dashRes, assignRes, testRes, noticeRes, courseRes, eventRes] = await Promise.all([
-          api.get('/students/dashboard'),
-          api.get('/assignments').catch(() => ({ data: [] })),
-          api.get('/assessments/mock-tests?status=published').catch(() => ({ data: { data: [] } })),
-          api.get('/notices').catch(() => ({ data: [] })),
-          api.get('/students/courses/my').catch(() => ({ data: [] })),
-          api.get('/events', { params: { from: from.toISOString(), to: to.toISOString() } }).catch(() => ({ data: { data: [] } })),
-        ]);
+      const [dashRes, assignRes, testRes, noticeRes, courseRes, eventRes] = await Promise.allSettled([
+        api.get('/students/dashboard'),
+        api.get('/assignments'),
+        api.get('/assessments/mock-tests?status=published'),
+        api.get('/notices'),
+        api.get('/students/courses/my'),
+        api.get('/events', { params: { from: from.toISOString(), to: to.toISOString() } }),
+      ]);
 
-        const nextDashboard = unwrapSchoolData(dashRes, null);
-        const nextAssignments = unwrapSchoolList(assignRes);
-        const nextMockTests = testRes.data?.data || testRes.data || [];
-        const nextNotices = noticeRes.data?.data || noticeRes.data || [];
-        const nextCourses = Array.isArray(courseRes.data?.data)
-          ? courseRes.data.data
-          : Array.isArray(courseRes.data)
-            ? courseRes.data
-            : [];
-        const eventData = eventRes.data?.data ?? eventRes.data;
-        const nextWeekEvents = Array.isArray(eventData) ? eventData : [];
+      const nextDashboard = dashRes.status === 'fulfilled' ? unwrapSchoolData(dashRes.value, null) : null;
+      const nextAssignments = assignRes.status === 'fulfilled' ? unwrapSchoolList(assignRes.value) : [];
+      const nextMockTests = testRes.status === 'fulfilled' ? (testRes.value.data?.data || testRes.value.data || []) : [];
+      const nextNotices = noticeRes.status === 'fulfilled' ? (noticeRes.value.data?.data || noticeRes.value.data || []) : [];
+      const nextCourses = courseRes.status === 'fulfilled' && Array.isArray(courseRes.value.data?.data)
+        ? courseRes.value.data.data
+        : courseRes.status === 'fulfilled' && Array.isArray(courseRes.value.data)
+          ? courseRes.value.data
+          : [];
+      const eventData = eventRes.status === 'fulfilled' ? (eventRes.value.data?.data ?? eventRes.value.data) : [];
+      const nextWeekEvents = Array.isArray(eventData) ? eventData : [];
 
-        setDashboardData(nextDashboard);
-        setAssignments(nextAssignments);
-        setMockTests(nextMockTests);
-        setNotices(nextNotices);
-        setCourses(nextCourses);
-        setWeekEvents(nextWeekEvents);
+      setDashboardData(nextDashboard);
+      setAssignments(nextAssignments);
+      setMockTests(nextMockTests);
+      setNotices(nextNotices);
+      setCourses(nextCourses);
+      setWeekEvents(nextWeekEvents);
 
-        writeStudentDashboardCache({
-          dashboardData: nextDashboard,
-          assignments: nextAssignments,
-          mockTests: nextMockTests,
-          notices: nextNotices,
-          courses: nextCourses,
-          weekEvents: nextWeekEvents,
-        });
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    };
+      writeStudentDashboardCache({
+        dashboardData: nextDashboard,
+        assignments: nextAssignments,
+        mockTests: nextMockTests,
+        notices: nextNotices,
+        courses: nextCourses,
+        weekEvents: nextWeekEvents,
+      });
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-    fetchData();
-  }, []);
+  useLiveRefresh(fetchData, [], 20000);
 
   const todayPlan = dashboardData?.todayPlan || [];
   const rawAttendance =
     dashboardData?.attendancePercentage ?? dashboardData?.attendance?.percentage ?? null;
   const hasAttendance = rawAttendance != null && Number.isFinite(Number(rawAttendance));
   const attendancePct = hasAttendance ? pct(rawAttendance) : null;
+  const attendanceSummary = dashboardData?.attendanceSummary || dashboardData?.attendance || null;
   const todayClassesCount = dashboardData?.todayClasses ?? dashboardData?.classesToday ?? todayPlan.length ?? 0;
 
   const pendingAssignments = assignments.filter(
@@ -304,6 +307,16 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                className="mt-4 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
+              >
+                <Sparkles className="h-5 w-5 text-blue-200" />
+                <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+              </motion.div>
             </div>
           </section>
 
@@ -355,7 +368,7 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {quickActions.map((action) => (
           <QuickAction key={action.label} {...action} />
         ))}
@@ -386,12 +399,13 @@ export default function Dashboard() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-black text-slate-900 dark:text-white">
-                        {item.subject || item.title || 'Class'}
+                        {item.subjectName || item.subject || item.title || 'Class'}
                       </p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
                         {item.startTime
                           ? new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : item.type || 'Scheduled'}
+                        {item.teacherName ? ` · ${item.teacherName}` : ''}
                         {item.room ? ` · ${item.room}` : ''}
                       </p>
                     </div>
@@ -461,6 +475,14 @@ export default function Dashboard() {
                       style={{ width: `${attendancePct}%` }}
                     />
                   </div>
+                  {attendanceSummary?.total != null && (
+                    <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      <div className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-800 dark:bg-slate-800/50">P {attendanceSummary.present ?? 0}</div>
+                      <div className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-800 dark:bg-slate-800/50">A {attendanceSummary.absent ?? 0}</div>
+                      <div className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-800 dark:bg-slate-800/50">L {attendanceSummary.leave ?? 0}</div>
+                      <div className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-800 dark:bg-slate-800/50">T {attendanceSummary.total ?? 0}</div>
+                    </div>
+                  )}
                   <p className="text-xs font-semibold text-slate-500">
                     {attendancePct < 75 ? 'Warning: Attendance is below 75% requirement!' : 'Status: On track'}
                   </p>

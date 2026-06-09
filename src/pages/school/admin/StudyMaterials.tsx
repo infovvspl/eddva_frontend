@@ -9,8 +9,10 @@ import SelectField from '@/components/school/SelectField';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function StudyMaterials() {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const { assignments, activeAcademicContext } = useAcademicStore();
   const isTeacher = user?.role === 'TEACHER';
@@ -186,7 +188,14 @@ export default function StudyMaterials() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this material?')) return;
+    const isConfirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this material? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/materials/${id}`);
       toast.success('Study material deleted successfully');

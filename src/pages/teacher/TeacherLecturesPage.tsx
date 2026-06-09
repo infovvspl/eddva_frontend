@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/context/ConfirmContext";
 import { cn } from "@/lib/utils";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
@@ -3133,6 +3134,7 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TeacherLecturesPage = () => {
+  const confirm = useConfirm();
   const isCompactLayout = useIsCompactLayout();
   const prefersReducedMotion = useReducedMotion();
   const lightMotion = isCompactLayout || !!prefersReducedMotion;
@@ -3542,7 +3544,13 @@ const TeacherLecturesPage = () => {
   }, [lectures, pendingReviewIds, toast]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this lecture? This cannot be undone.")) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: "Are you sure you want to delete this lecture? This action cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try {
       await deleteLecture.mutateAsync(id);
       toast({ title: "Deleted" });

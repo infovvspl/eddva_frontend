@@ -38,12 +38,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api/school-client";
 import { getUploadUrl, uploadToS3 } from "@/lib/upload";
 import { useLocation } from "react-router-dom";
+import { useConfirm } from "@/context/ConfirmContext";
 
 export default function ParentCommunication() {
   const [activeTab, setActiveTab] = useState<"messages" | "meetings" | "grievances">("messages");
 
   return (
-    <div className="space-y-6 md:space-y-8 h-[calc(100vh-140px)] flex flex-col">
+    <div className="space-y-6 md:space-y-8 h-[calc(100dvh-140px)] max-h-[calc(100dvh-140px)] min-h-0 flex flex-col">
       <div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Communication</h2>
         <p className="text-sm font-semibold text-slate-500">Connect with teachers and school administration</p>
@@ -69,7 +70,7 @@ export default function ParentCommunication() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-[2rem] bg-white shadow-sm border border-slate-100 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-hidden rounded-[2rem] bg-white shadow-sm border border-slate-100 flex flex-col">
         {activeTab === "messages" && <MessagesTab />}
         {activeTab === "meetings" && <MeetingsTab />}
         {activeTab === "grievances" && <GrievancesTab />}
@@ -79,6 +80,7 @@ export default function ParentCommunication() {
 }
 
 function MessagesTab() {
+  const confirm = useConfirm();
   const { user } = useAuthStore();
   const location = useLocation();
   const [activeContact, setActiveContact] = useState<any | null>(null);
@@ -446,7 +448,14 @@ function MessagesTab() {
   }
 
   async function submitDelete(messageId: string | number) {
-    if (!window.confirm("Are you sure you want to delete this message?")) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: "Are you sure you want to delete this message? This action cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
     try {
       const res = await api.delete(`/chat/messages/${messageId}`);
       const updated = res.data?.data;
@@ -572,9 +581,9 @@ function MessagesTab() {
   };
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden bg-white relative">
+    <div className="h-[calc(100dvh-160px)] max-h-[calc(100dvh-160px)] min-h-0 rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex flex-col md:flex-row relative">
       {/* Column 1: Contact List */}
-      <div className={`w-full lg:w-[320px] shrink-0 border-r border-slate-100 bg-slate-50/10 flex flex-col ${activeContact ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`w-full md:w-[300px] lg:w-[320px] shrink-0 border-r border-slate-100 bg-slate-50/10 flex flex-col min-h-0 transition-all ${activeContact ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-slate-100 bg-white">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Teachers & Admin</label>
           <div className="relative mt-2">
@@ -635,13 +644,13 @@ function MessagesTab() {
       </div>
 
       {/* Column 2: Chat Area */}
-      <div className={`flex-1 flex flex-col bg-white min-w-0 ${!activeContact ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-1 flex flex-col bg-white min-w-0 min-h-0 ${!activeContact ? 'hidden md:flex' : 'flex'}`}>
         {activeContact ? (
           <>
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
               <div className="flex items-center gap-3 min-w-0">
-                <button className="lg:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setActiveContact(null)}>
+                <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setActiveContact(null)}>
                   <ChevronRight size={18} className="rotate-180" />
                 </button>
                 <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
@@ -662,28 +671,21 @@ function MessagesTab() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
-                <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                  <Search size={16} />
-                </button>
-                <button onClick={() => handleUnavailableAction('Voice call')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                  <Phone size={16} />
-                </button>
-                <button onClick={() => handleUnavailableAction('Video call')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                  <Video size={16} />
-                </button>
-                <div className="h-4 w-px bg-slate-100 mx-1" />
-                <button
-                  onClick={() => setShowDetails(!showDetails)}
-                  className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                >
-                  <Info size={16} />
-                </button>
-              </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
+                    <Search size={16} />
+                  </button>
+                  <button
+                    onClick={() => setShowDetails(!showDetails)}
+                    className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                  >
+                    <Info size={16} />
+                  </button>
+                </div>
             </div>
 
             {/* Message Thread */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/20">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-slate-50/20">
               {loadingMessages ? (
                 <div className="space-y-3">
                   <Skeleton className="h-12 w-2/3 rounded-2xl bg-white" />
@@ -824,7 +826,7 @@ function MessagesTab() {
             )}
 
             {/* Input Form */}
-            <div className="border-t border-slate-100 p-4 bg-white shrink-0">
+            <div className="border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white shrink-0 z-10">
               {editingMessage ? (
                 <div className="flex gap-2">
                   <input
@@ -901,7 +903,7 @@ function MessagesTab() {
 
       {/* Right Column: Contact Details & Shared Files */}
       {showDetails && activeContact && (
-        <div className="hidden lg:flex w-[280px] shrink-0 flex-col border-l border-slate-100 bg-slate-50/10">
+        <div className="hidden xl:flex w-[280px] shrink-0 flex-col border-l border-slate-100 bg-slate-50/10">
           <div className="p-6 text-center border-b border-slate-100 bg-white">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-bold text-white shadow-sm">
               {(activeContact.name || 'U').slice(0, 1).toUpperCase()}
@@ -911,11 +913,11 @@ function MessagesTab() {
             <p className="text-xs font-semibold text-slate-500 truncate mt-1">{activeContact.email}</p>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0">
+            <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 md:grid-cols-4">
             {[
               { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-              { label: 'Call', icon: <Phone size={14} />, act: () => handleUnavailableAction('Voice call') },
-              { label: 'Meet', icon: <Video size={14} />, act: () => setShowVideoMeetModal(true) },
+                { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
+                { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
               { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
             ].map((btn, idx) => (
               <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-85 transition">
@@ -1157,65 +1159,46 @@ function MessagesTab() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-slate-700">
-                <div className="text-center">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white shadow-lg">
-                    {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
-                  <h4 className="mt-4 text-sm font-bold text-slate-900">{activeContact.name}</h4>
-                  <div className="mt-2 flex items-center justify-center gap-1.5">
-                    <span className={`h-2 w-2 rounded-full ${activeContact.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">{activeContact.online ? 'Online' : 'Offline'}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Contact Information</h5>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-3 text-xs font-semibold">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Email</span>
-                      <span className="text-slate-800 truncate max-w-[180px]">{activeContact.email || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Phone</span>
-                      <span className="text-slate-800">9348532113</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Role</span>
-                      <span className="text-slate-800 uppercase text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{roleLabel(activeContact.role)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Last Seen</span>
-                      <span className="text-slate-800">{activeContact.online ? 'Just now' : 'Yesterday, 6:30 PM'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Quick Actions</h5>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <button
-                      onClick={() => {
-                        setShowProfileDrawer(false);
-                        const inp = document.querySelector('input[placeholder="Type a message..."]') as HTMLInputElement;
-                        inp?.focus();
-                      }}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white p-2.5 font-bold text-slate-700 hover:bg-slate-50 transition"
-                    >
-                      <Send size={12} className="text-blue-500" />
-                      Send Message
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProfileDrawer(false);
-                        setShowSharedFilesModal(true);
-                      }}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white p-2.5 font-bold text-slate-700 hover:bg-slate-50 transition"
-                    >
-                      <FileText size={12} className="text-indigo-500" />
-                      Shared Files
-                    </button>
-                  </div>
+              <div className="space-y-4 text-xs font-semibold text-slate-700">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowProfileDrawer(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <User size={14} className="text-blue-500" /> View Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowSharedFilesModal(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <FileText size={14} className="text-indigo-500" /> Shared Files
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!activeContact) return;
+                      await api.patch(`/chat/messages/${activeContact.id}/read`).catch(() => {});
+                      showToast('Conversation marked as read', 'success');
+                      setShowMoreOptions(false);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <CheckCheck size={14} className="text-emerald-500" /> Mark as Read
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowDetails(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <Info size={14} className="text-slate-500" /> Conversation Info
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -1223,10 +1206,10 @@ function MessagesTab() {
         )}
       </AnimatePresence>
 
-      {/* Video Meet Creator Modal */}
+      {/* Video Meet Modal */}
       <AnimatePresence>
         {showVideoMeetModal && activeContact && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1237,12 +1220,11 @@ function MessagesTab() {
                 <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Video Meet</h3>
                 <button
                   onClick={() => setShowVideoMeetModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
+                  className="rounded-full p-1.5 hover:bg-slate-100 transition"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
                 <div className="space-y-1">
                   <label className="text-slate-400">Meeting Title</label>
@@ -1426,34 +1408,45 @@ function MessagesTab() {
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">Danger Zone</span>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        if (confirm('Permanently delete all messages? This cannot be undone.')) {
-                          setMessages([]);
-                          setShowMoreOptions(false);
-                          showToast('Chat history cleared', 'success');
-                        }
-                      }}
-                      className="w-full flex items-center justify-between gap-2 rounded-xl border border-rose-100 bg-rose-50/20 p-2.5 text-rose-600 hover:bg-rose-50 transition"
-                    >
-                      <span>Clear Conversation History</span>
-                      <span className="text-[9px] font-black uppercase bg-rose-100 text-rose-700 px-2 py-0.5 rounded">Delete</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setBlockedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
-                        setShowMoreOptions(false);
-                        showToast(blockedChats[activeContact.id] ? 'Contact unblocked' : 'Contact blocked successfully', 'success');
-                      }}
-                      className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700 hover:bg-slate-50 transition"
-                    >
-                      <span>{blockedChats[activeContact.id] ? 'Unblock Contact' : 'Block Contact'}</span>
-                      <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Block</span>
-                    </button>
-                  </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowProfileDrawer(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <User size={14} className="text-blue-500" /> View Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowSharedFilesModal(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <FileText size={14} className="text-indigo-500" /> Shared Files
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!activeContact) return;
+                      await parentClient.markChatRead(activeContact.id).catch(() => {});
+                      setShowMoreOptions(false);
+                      showToast('Conversation marked as read', 'success');
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <CheckCheck size={14} className="text-emerald-500" /> Mark as Read
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowDetails(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <Info size={14} className="text-slate-500" /> Conversation Info
+                  </button>
                 </div>
               </div>
             </motion.div>

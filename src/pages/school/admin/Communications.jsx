@@ -35,6 +35,7 @@ import api from '@/lib/api/school-client';
 import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
+import { useConfirm } from '@/context/ConfirmContext';
 
 const PANELS = [
   { key: 'TEACHER', label: 'Admin <-> Teacher' },
@@ -42,6 +43,7 @@ const PANELS = [
 ];
 
 export default function Communications() {
+  const confirm = useConfirm();
   const { user, institute } = useAuth();
   const [activePanel, setActivePanel] = useState('TEACHER');
   const [conversations, setConversations] = useState([]);
@@ -401,7 +403,14 @@ export default function Communications() {
   }
 
   async function submitDelete(messageId) {
-    if (!window.confirm("Are you sure you want to delete this message?")) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: "Are you sure you want to delete this message? This action cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
     try {
       const res = await api.delete(`/chat/messages/${messageId}`);
       const updated = res.data?.data;
@@ -551,27 +560,27 @@ export default function Communications() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-2 sm:px-4">
+    <div className="flex h-[calc(100dvh-112px)] min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6">
       {/* Top statistics Header */}
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
           { label: 'Active Chats', val: stats.active, sub: 'This month' },
           { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
           { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
           { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
         ].map((item, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className={`text-2xl font-black ${item.alert ? 'text-red-500' : 'text-slate-800'}`}>{item.val}</span>
-              <span className="text-[9px] font-bold text-slate-400">{item.sub}</span>
+            <div className="mt-1.5 flex items-baseline gap-2">
+              <span className={`text-xl font-black ${item.alert ? 'text-red-500' : 'text-slate-800'}`}>{item.val}</span>
+              <span className="text-[9px] font-bold leading-none text-slate-400">{item.sub}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div className="mb-4 flex gap-1.5 p-1 bg-slate-50/50 rounded-2xl border border-slate-100/60 max-w-xs shrink-0">
+      <div className="mt-3 flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1">
         {PANELS.map((panel) => (
           <button
             key={panel.key}
@@ -588,11 +597,11 @@ export default function Communications() {
       </div>
 
       {/* 3-Column Redesigned Layout */}
-      <div className="h-[70vh] min-h-[540px] rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex relative">
+      <div className="mt-3 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
         
         {/* Column 1: Contacts Sidebar */}
-        <div className={`w-full lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 bg-slate-50/10 ${selectedUser ? 'hidden lg:flex' : 'flex'}`}>
-          <div className="p-4 bg-white border-b border-slate-100/60">
+        <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
@@ -670,7 +679,7 @@ export default function Communications() {
         </div>
 
         {/* Column 2: Chat Conversation Panel */}
-        <div className={`flex-1 flex flex-col min-w-0 ${!selectedUser ? 'hidden lg:flex' : 'flex'}`}>
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden md:flex' : 'flex'}`}>
           {!selectedUser ? (
             <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10">
               <MessageSquare className="h-10 w-10 text-slate-350 mb-2" />
@@ -680,9 +689,9 @@ export default function Communications() {
           ) : (
             <>
               {/* Conversation Header */}
-              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0">
+              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button className="lg:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setSelectedUser(null)}>
+                  <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setSelectedUser(null)}>
                     <ChevronRight size={18} className="rotate-180" />
                   </button>
                   <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
@@ -711,13 +720,6 @@ export default function Communications() {
                   <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
                     <Search size={16} />
                   </button>
-                  <button onClick={() => handleUnavailableAction('Voice call')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                    <Phone size={16} />
-                  </button>
-                  <button onClick={() => handleUnavailableAction('Video call')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                    <Video size={16} />
-                  </button>
-                  <div className="h-4 w-px bg-slate-100 mx-1" />
                   <button
                     onClick={() => setShowDetails(!showDetails)}
                     className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50'}`}
@@ -728,7 +730,7 @@ export default function Communications() {
               </div>
 
               {/* Messages scrollarea */}
-              <div className="flex-1 overflow-y-auto bg-slate-50/20 p-4 space-y-4">
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4">
                 {loading ? (
                   <div className="space-y-3">
                     <div className="h-10 w-1/2 animate-pulse rounded-2xl bg-slate-100" />
@@ -874,7 +876,7 @@ export default function Communications() {
               )}
 
               {/* Input Area */}
-              <div className="border-t border-slate-100 p-4 bg-white shrink-0">
+              <div className="border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white shrink-0 z-10">
                 {editingMessage ? (
                   <div className="flex gap-2">
                     <input
@@ -948,8 +950,8 @@ export default function Communications() {
 
         {/* Column 3: Contact Details Sidebar */}
         {showDetails && selectedUser && (
-          <aside className="hidden lg:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
-            <div className="p-6 text-center border-b border-slate-100 bg-white">
+          <aside className="hidden xl:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
+            <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white shadow-md">
                 {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
               </div>
@@ -958,11 +960,11 @@ export default function Communications() {
               <p className="text-[11px] font-medium text-slate-500 truncate mt-1">{selectedUser.email}</p>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0">
+              <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 md:grid-cols-4">
               {[
                 { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-                { label: 'Call', icon: <Phone size={14} />, act: () => handleUnavailableAction('Voice call') },
-                { label: 'Meet', icon: <Video size={14} />, act: () => setShowVideoMeetModal(true) },
+                  { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
+                  { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
                 { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
               ].map((btn, idx) => (
                 <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
@@ -1444,89 +1446,45 @@ export default function Communications() {
               </div>
 
               <div className="space-y-4 text-xs font-semibold text-slate-700">
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Actions</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={handleExportChat}
-                      className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
-                    >
-                      <Download size={14} className="text-blue-500" /> Export Chat History
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowMoreOptions(false);
-                        window.print();
-                      }}
-                      className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
-                    >
-                      <FileText size={14} className="text-slate-500" /> Print Conversation
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Preferences</span>
-                  <div className="space-y-1 rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                    <div className="flex justify-between items-center py-1.5">
-                      <span className="text-slate-600">Mute Notifications</span>
-                      <button
-                        onClick={() => {
-                          setMutedChats((prev) => ({ ...prev, [selectedUser.id]: !prev[selectedUser.id] }));
-                          showToast(mutedChats[selectedUser.id] ? 'Notifications unmuted' : 'Notifications muted', 'success');
-                        }}
-                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${
-                          mutedChats[selectedUser.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        {mutedChats[selectedUser.id] ? 'Muted' : 'Mute'}
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-center py-1.5 border-t border-slate-100/60">
-                      <span className="text-slate-600">Archive Conversation</span>
-                      <button
-                        onClick={() => {
-                          setArchivedChats((prev) => ({ ...prev, [selectedUser.id]: !prev[selectedUser.id] }));
-                          showToast(archivedChats[selectedUser.id] ? 'Conversation unarchived' : 'Conversation archived', 'success');
-                        }}
-                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${
-                          archivedChats[selectedUser.id] ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        {archivedChats[selectedUser.id] ? 'Archived' : 'Archive'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">Danger Zone</span>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        if (confirm('Permanently delete all messages? This cannot be undone.')) {
-                          setMessages([]);
-                          setShowMoreOptions(false);
-                          showToast('Chat history cleared', 'success');
-                        }
-                      }}
-                      className="w-full flex items-center justify-between gap-2 rounded-xl border border-rose-100 bg-rose-50/20 p-2.5 text-rose-600 hover:bg-rose-50 transition"
-                    >
-                      <span>Clear Conversation History</span>
-                      <span className="text-[9px] font-black uppercase bg-rose-100 text-rose-700 px-2 py-0.5 rounded">Delete</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setBlockedChats((prev) => ({ ...prev, [selectedUser.id]: !prev[selectedUser.id] }));
-                        setShowMoreOptions(false);
-                        showToast(blockedChats[selectedUser.id] ? 'Contact unblocked' : 'Contact blocked successfully', 'success');
-                      }}
-                      className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700 hover:bg-slate-50 transition"
-                    >
-                      <span>{blockedChats[selectedUser.id] ? 'Unblock Contact' : 'Block Contact'}</span>
-                      <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Block</span>
-                    </button>
-                  </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowProfileDrawer(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <User size={14} className="text-blue-500" /> View Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowSharedFilesModal(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <FileText size={14} className="text-indigo-500" /> Shared Files
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!selectedUser) return;
+                      await api.patch(`/chat/messages/${selectedUser.id}/read`).catch(() => {});
+                      showToast('Conversation marked as read', 'success');
+                      setShowMoreOptions(false);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <CheckCheck size={14} className="text-emerald-500" /> Mark as Read
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowDetails(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <Info size={14} className="text-slate-500" /> Conversation Info
+                  </button>
                 </div>
               </div>
             </motion.div>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import StatCard from '@/components/school/StatCard';
@@ -6,6 +6,7 @@ import Badge from '@/components/school/Badge';
 import ProgressBar from '@/components/school/ProgressBar';
 import Tabs from '@/components/school/Tabs';
 import DataTable from '@/components/school/DataTable';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
 import './Reports.css';
 
@@ -15,34 +16,46 @@ const Reports: React.FC = () => {
   const [classAnalytics, setClassAnalytics] = useState<any[]>([]);
   const [weaknessData, setWeaknessData] = useState<any[]>([]);
 
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await api.get('/reports/class/1');
-        if (res.data && res.data.data && res.data.data.length > 0) {
-          const formattedData = res.data.data.map((item: any) => ({
-            month: item.title,
-            avgScore: Math.round(item.avg_score || 0),
-            attendance: Math.round(item.attendance_rate || 0)
-          }));
-          setPerformanceChartData(formattedData);
-          setClassAnalytics(res.data.data.map((item: any) => ({
-            class: item.class_name || item.title || '-',
-            avgScore: Math.round(item.avg_score || 0),
-            passRate: Math.round(item.pass_rate || 0),
-            topSubject: item.top_subject || '-',
-            weakSubject: item.weak_subject || '-',
-            attendance: Math.round(item.attendance_rate || 0),
-          })));
+        const res = await api.get('/reports/teacher/class', { params: { page, limit } });
+        if (res.data) {
+          if (res.data.data && res.data.data.length > 0) {
+            const formattedData = res.data.data.map((item: any) => ({
+              month: item.title,
+              avgScore: Math.round(item.avg_score || 0),
+              attendance: Math.round(item.attendance_rate || 0)
+            }));
+            setPerformanceChartData(formattedData);
+            setClassAnalytics(res.data.data.map((item: any) => ({
+              class: item.class_name || item.title || '-',
+              avgScore: Math.round(item.avg_score || 0),
+              passRate: Math.round(item.pass_rate || 0),
+              topSubject: item.top_subject || '-',
+              weakSubject: item.weak_subject || '-',
+              attendance: Math.round(item.attendance_rate || 0),
+            })));
+          }
           setStudentPerformance(Array.isArray(res.data.students) ? res.data.students : []);
           setWeaknessData(Array.isArray(res.data.weaknesses) ? res.data.weaknesses : []);
+          
+          if (typeof res.data.total !== 'undefined') {
+            setTotal(res.data.total);
+            setTotalPages(res.data.totalPages);
+          }
         }
       } catch (err) {
         console.error('Error fetching reports:', err);
       }
     };
     fetchReports();
-  }, []);
+  }, [page, limit]);
 
   const studentColumns = [
     { key: 'name', title: 'Student' },
@@ -76,6 +89,18 @@ const Reports: React.FC = () => {
   const studentContent = (
     <div className="reports__section">
       <DataTable columns={studentColumns} data={studentPerformance} />
+      {studentPerformance.length > 0 && (
+        <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+          />
+        </div>
+      )}
     </div>
   );
 

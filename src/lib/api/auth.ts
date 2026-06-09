@@ -135,6 +135,7 @@ export interface SchoolLoginResponse {
     photo?: string;
     phone?: string;
     instituteId?: string;
+    profilePictureUrl?: string | null;
     studentProfile?: {
       id?: string;
       sectionId?: string;

@@ -8,6 +8,7 @@ import Modal from '@/components/school/admin/Modal';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
+import { useConfirm } from '@/context/ConfirmContext';
 
 const categoryStyles = {
   ACADEMIC: 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300',
@@ -28,6 +29,7 @@ function toDateKey(date) {
 }
 
 export default function Calendar() {
+  const confirm = useConfirm();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -119,7 +121,14 @@ export default function Calendar() {
   };
 
   const handleDeleteEvent = async (id) => {
-    if (!confirm('Cancel this event?')) return;
+    const isConfirmed = await confirm({
+      title: 'Cancel Event',
+      message: 'Are you sure you want to cancel this event? This action cannot be undone.',
+      confirmLabel: 'Cancel Event',
+      cancelLabel: 'Keep Event',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/events/${id}`);
       toast.success('Event removed');

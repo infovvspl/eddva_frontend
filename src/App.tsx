@@ -13,6 +13,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
+import { ConfirmProvider } from "@/context/ConfirmContext";
 
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
 
@@ -160,7 +161,6 @@ const SchoolAttendanceSystem    = lazy(() => import("./pages/school/teacher/Atte
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
 const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
 const SchoolAssessmentDetails   = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
-const SchoolCreatorStudio       = lazy(() => import("./pages/school/teacher/CreatorStudio"));
 const SchoolTeacherReports      = lazy(() => import("./pages/school/teacher/Reports"));
 const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
 const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
@@ -168,6 +168,7 @@ const SchoolTeacherProfile      = lazy(() => import("./pages/school/teacher/Prof
 const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Notifications"));
 const SchoolTeacherDoubtQueue   = lazy(() => import("./pages/school/teacher/DoubtQueue"));
 const SchoolTeacherSettings     = lazy(() => import("./pages/school/teacher/Settings"));
+const SchoolTeacherTimetable    = lazy(() => import("./pages/school/teacher/Timetable"));
 
 // ── School student pages ─────────────────────────────────────────────────────
 const SchoolStudentLayout       = lazy(() => import("./components/school/student/Layout"));
@@ -187,6 +188,7 @@ const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gami
 const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
 const SchoolStudentAttendance   = lazy(() => import("./pages/school/student/Attendance"));
 const SchoolStudentCalendar     = lazy(() => import("./pages/school/student/Calendar"));
+const SchoolStudentTimetable    = lazy(() => import("./pages/school/student/Timetable"));
 const SchoolStudentAnalytics    = lazy(() => import("./pages/school/student/Analytics"));
 const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feedback"));
 const SchoolStudentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
@@ -376,6 +378,7 @@ const SchoolRoutes = () => (
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
+      <Route path="timetable" element={<SchoolTeacherTimetable />} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
@@ -384,7 +387,6 @@ const SchoolRoutes = () => (
       <Route path="assignments" element={<SchoolAssignmentManagement />} />
       <Route path="assessments" element={<SchoolAssessmentSystem />} />
       <Route path="assessments/:id" element={<SchoolAssessmentDetails />} />
-      <Route path="creator" element={<SchoolCreatorStudio />} />
       <Route path="reports" element={<SchoolTeacherReports />} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
       <Route path="chat" element={<SchoolChatSystem />} />
@@ -413,6 +415,7 @@ const SchoolRoutes = () => (
       <Route path="gamification" element={<SchoolStudentGamification />} />
       <Route path="planner" element={<SchoolStudentStudyPlanner />} />
       <Route path="attendance" element={<SchoolStudentAttendance />} />
+      <Route path="timetable" element={<SchoolStudentTimetable />} />
       <Route path="calendar" element={<SchoolStudentCalendar />} />
       <Route path="analytics" element={<SchoolStudentAnalytics />} />
       <Route path="feedback" element={<SchoolStudentFeedback />} />
@@ -547,13 +550,15 @@ const App = () => {
           <XPToastProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
-              <NotificationProvider>
-                <Suspense fallback={<RouteLoading />}>
-                  {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
-                </Suspense>
-              </NotificationProvider>
-            </BrowserRouter>
+            <ConfirmProvider>
+              <BrowserRouter>
+                <NotificationProvider>
+                  <Suspense fallback={<RouteLoading />}>
+                    {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+                  </Suspense>
+                </NotificationProvider>
+              </BrowserRouter>
+            </ConfirmProvider>
           </XPToastProvider>
         </SchoolAuthProvider>
       </TooltipProvider>

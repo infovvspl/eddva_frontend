@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient as api } from '@/lib/api/client';
 import { Clock, AlertTriangle, CheckCircle2, ChevronRight, ChevronLeft, ShieldAlert } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function TestEngine() {
+  const confirm = useConfirm();
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -115,8 +117,14 @@ export default function TestEngine() {
 
   const handleSubmit = useCallback(async (isAuto = false) => {
     if (isSubmitting) return;
-    if (!isAuto && !window.confirm('Are you sure you want to submit the test? You cannot change your answers after submission.')) {
-      return;
+    if (!isAuto) {
+      const ok = await confirm({
+        title: 'Submit Test',
+        message: 'Are you sure you want to submit the test? You cannot change your answers after submission.',
+        confirmLabel: 'Submit',
+        cancelLabel: 'Cancel',
+      });
+      if (!ok) return;
     }
 
     setIsSubmitting(true);
@@ -128,7 +136,7 @@ export default function TestEngine() {
       alert('Failed to submit test. Please try again.');
       setIsSubmitting(false);
     }
-  }, [id, navigate, isSubmitting]);
+  }, [id, navigate, isSubmitting, confirm]);
 
   if (loading) {
     return (

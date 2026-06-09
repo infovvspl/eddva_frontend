@@ -32,6 +32,7 @@ import { useAcademicStore } from "@/lib/academic-store";
 import DoubtImageAttach from "@/components/school/DoubtImageAttach";
 import { uploadAssignmentImage } from "@/lib/school/assignment-upload";
 import { toast } from "sonner";
+import { useConfirm } from "@/context/ConfirmContext";
 
 type CreateMode = "manual" | "image" | "ai";
 
@@ -92,6 +93,7 @@ function NavCard({
 // ── Main Component ─────────────────────────────────────────────────────────
 
 const AssignmentManagement: React.FC = () => {
+  const confirm = useConfirm();
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingAssignments, setLoadingAssignments] = useState(true);
 
@@ -414,7 +416,14 @@ const AssignmentManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Delete this assignment?")) return;
+    const isConfirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this assignment? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/assignments/${id}`);
       closeDetail();

@@ -293,7 +293,7 @@ export default function TeacherOnboardingPage() {
           phone: (p as any).phoneNumber || (p as any).phone || "",
           email: p.email,
           role: p.role as any,
-          avatar: p.avatar,
+          avatar: (p as any).avatar ?? (p as any).profilePictureUrl,
           tenantId: p.tenantId,
           tenantName: p.tenant?.name || (p as any).tenantName || "",
           isFirstLogin: false,

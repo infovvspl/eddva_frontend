@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { useConfirm } from "@/context/ConfirmContext";
 import {
   getMyBatches,
   getMockTests,
@@ -2108,6 +2109,7 @@ function CreateWizardModal({ onClose, onSuccess }: { onClose: () => void; onSucc
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function TeacherQuizzesPage() {
+  const confirm = useConfirm();
   const isCompactLayout = useIsCompactLayout();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
@@ -2173,8 +2175,14 @@ export default function TeacherQuizzesPage() {
     onError: () => toast.error("Failed to delete quiz."),
   });
 
-  const handleDelete = (quiz: MockTest) => {
-    if (!confirm(`Delete "${quiz.title}"? This cannot be undone.`)) return;
+  const handleDelete = async (quiz: MockTest) => {
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: `Are you sure you want to delete "${quiz.title}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     deleteM.mutate(quiz.id);
   };
 

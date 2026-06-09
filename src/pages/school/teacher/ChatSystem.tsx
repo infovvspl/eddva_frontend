@@ -33,6 +33,7 @@ import Tabs from '@/components/school/Tabs';
 import api from '@/lib/api/school-client';
 import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import './ChatSystem.css';
 
@@ -73,15 +74,15 @@ type DirectoryRow = {
 };
 
 const ROLE_BY_TAB: Record<string, string> = {
-  students: 'STUDENT',
   parents: 'PARENT',
   staff: 'INSTITUTE_ADMIN',
 };
 
 const ChatSystem: React.FC = () => {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const [activeContact, setActiveContact] = useState<Contact | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('students');
+  const [activeTab, setActiveTab] = useState<string>('parents');
   const [contacts, setContacts] = useState<Contact[]>([]);
 
   // Track active chat peer ID
@@ -105,11 +106,11 @@ const ChatSystem: React.FC = () => {
     } else {
       // Not found in current tab's contacts. Let's check other tabs!
       const checkOtherTabs = async () => {
-        const tabs = ['students', 'parents', 'staff'];
+        const tabs = ['parents', 'staff'];
         for (const t of tabs) {
           if (t === activeTab) continue;
           try {
-            const role = ROLE_BY_TAB[t] ?? 'STUDENT';
+            const role = ROLE_BY_TAB[t] ?? 'PARENT';
             const groupContacts = await fetchGroup(role);
             const found = groupContacts.find((c) => String(c.id) === String(userIdParam));
             if (found) {
@@ -241,7 +242,7 @@ const ChatSystem: React.FC = () => {
         void fetchDirectory();
         return;
       }
-      const role = ROLE_BY_TAB[activeTab] ?? 'STUDENT';
+      const role = ROLE_BY_TAB[activeTab] ?? 'PARENT';
       if (showSpinner) setLoadingContacts(true);
       try {
         setContacts(await fetchGroup(role));
@@ -517,7 +518,13 @@ const ChatSystem: React.FC = () => {
   }
 
   async function submitDelete(messageId: string | number) {
-    if (!window.confirm("Are you sure you want to delete this message?")) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: "Are you sure you want to delete this message? This action cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try {
       const res = await api.delete(`/chat/messages/${messageId}`);
       const updated = res.data?.data;
@@ -631,7 +638,7 @@ const ChatSystem: React.FC = () => {
     if (contactDirectoryInfo) {
       return `${contactDirectoryInfo.class_name} • Section ${contactDirectoryInfo.section_name}`;
     }
-    return activeTab === 'students' ? 'Student' : activeTab === 'parents' ? 'Parent' : 'Staff';
+    return activeTab === 'parents' ? 'Parent' : 'Staff';
   }, [activeContact, contactDirectoryInfo, activeTab]);
 
   function startChatFromDirectory(row: DirectoryRow) {
@@ -819,11 +826,11 @@ const ChatSystem: React.FC = () => {
   };
 
   return (
-    <div className="h-[72vh] min-h-[560px] rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex relative">
+    <div className="h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] min-h-0 rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex flex-col md:flex-row relative">
       
       {/* Column 1: Sidebar Directory */}
-      <div className={`w-full lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 bg-slate-50/10 ${activeContact ? 'hidden lg:flex' : 'flex'}`}>
-        <div className="flex items-center justify-between p-4 border-b border-slate-100/60 bg-white">
+      <div className={`w-full md:w-[300px] lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${activeContact ? 'hidden md:flex' : 'flex'}`}>
+        <div className="flex items-center justify-between p-4 border-b border-slate-100/60 bg-white shrink-0">
           <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">Messages</h3>
           <button className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition" type="button" onClick={() => handleUnavailableAction('Chat options')}>
             <MoreVertical size={16} />
@@ -844,7 +851,6 @@ const ChatSystem: React.FC = () => {
         {/* Custom Tab Pills */}
         <div className="flex gap-1.5 px-3 py-2 bg-slate-50/50 overflow-x-auto no-scrollbar border-b border-slate-100/60">
           {[
-            { id: 'students', label: 'Students', icon: <Users size={12} /> },
             { id: 'parents', label: 'Parents', icon: <User size={12} /> },
             { id: 'staff', label: 'Staff', icon: <Headphones size={12} /> },
             { id: 'directory', label: 'Directory', icon: <Users size={12} /> },
@@ -873,13 +879,13 @@ const ChatSystem: React.FC = () => {
       </div>
 
       {/* Column 2: Chat Conversation Panel */}
-      <div className={`flex-1 flex flex-col min-w-0 ${!activeContact ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!activeContact ? 'hidden md:flex' : 'flex'}`}>
         {activeContact ? (
           <>
             {/* Conversation Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
               <div className="flex items-center gap-3 min-w-0">
-                <button className="lg:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setActiveContact(null)}>
+                <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setActiveContact(null)}>
                   <ChevronRight size={18} className="rotate-180" />
                 </button>
                 <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
@@ -902,28 +908,21 @@ const ChatSystem: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
-                <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                  <Search size={16} />
-                </button>
-                <button onClick={() => handleUnavailableAction('Voice call')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                  <Phone size={16} />
-                </button>
-                <button onClick={() => handleUnavailableAction('Video call')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                  <Video size={16} />
-                </button>
-                <div className="h-4 w-px bg-slate-100 mx-1" />
-                <button
-                  onClick={() => setShowDetails(!showDetails)}
-                  className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                >
-                  <Info size={16} />
-                </button>
-              </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
+                    <Search size={16} />
+                  </button>
+                  <button
+                    onClick={() => setShowDetails(!showDetails)}
+                    className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                  >
+                    <Info size={16} />
+                  </button>
+                </div>
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/20 p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4">
               {groupedMessages.length > 0 ? (
                 groupedMessages.map((item, idx) => {
                   if (item.type === 'separator') {
@@ -1060,7 +1059,7 @@ const ChatSystem: React.FC = () => {
             )}
 
             {/* Input Composer Panel */}
-            <div className="border-t border-slate-100 p-4 bg-white flex items-center gap-2 shrink-0">
+            <div className="border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white flex items-center gap-2 shrink-0 z-10">
               {editingMessage ? (
                 <div className="flex w-full gap-2">
                   <input
@@ -1119,8 +1118,8 @@ const ChatSystem: React.FC = () => {
 
       {/* Column 3: Contact Details Side Panel */}
       {showDetails && activeContact && (
-        <aside className="hidden lg:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
-          <div className="p-6 text-center border-b border-slate-100 bg-white">
+        <aside className="hidden xl:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
+          <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white shadow-md">
               {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
             </div>
@@ -1128,11 +1127,11 @@ const ChatSystem: React.FC = () => {
             <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{contactSub}</p>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0">
+          <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 md:grid-cols-4">
             {[
               { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-              { label: 'Call', icon: <Phone size={14} />, act: () => handleUnavailableAction('Voice call') },
-              { label: 'Meet', icon: <Video size={14} />, act: () => setShowVideoMeetModal(true) },
+              { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
+              { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
               { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
             ].map((btn, idx) => (
               <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
@@ -1632,89 +1631,45 @@ const ChatSystem: React.FC = () => {
               </div>
 
               <div className="space-y-4 text-xs font-semibold">
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Actions</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={handleExportChat}
-                      className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
-                    >
-                      <Download size={14} className="text-blue-500" /> Export Chat History
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowMoreOptions(false);
-                        window.print();
-                      }}
-                      className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
-                    >
-                      <FileText size={14} className="text-slate-500" /> Print Conversation
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Preferences</span>
-                  <div className="space-y-1 rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                    <div className="flex justify-between items-center py-1.5">
-                      <span className="text-slate-600">Mute Notifications</span>
-                      <button
-                        onClick={() => {
-                          setMutedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
-                          showToast(mutedChats[activeContact.id] ? 'Notifications unmuted' : 'Notifications muted', 'success');
-                        }}
-                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${
-                          mutedChats[activeContact.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        {mutedChats[activeContact.id] ? 'Muted' : 'Mute'}
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-center py-1.5 border-t border-slate-100/60">
-                      <span className="text-slate-600">Archive Conversation</span>
-                      <button
-                        onClick={() => {
-                          setArchivedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
-                          showToast(archivedChats[activeContact.id] ? 'Conversation unarchived' : 'Conversation archived', 'success');
-                        }}
-                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${
-                          archivedChats[activeContact.id] ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        {archivedChats[activeContact.id] ? 'Archived' : 'Archive'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">Danger Zone</span>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        if (confirm('Permanently delete all messages? This cannot be undone.')) {
-                          setMessages([]);
-                          setShowMoreOptions(false);
-                          showToast('Chat history cleared', 'success');
-                        }
-                      }}
-                      className="w-full flex items-center justify-between gap-2 rounded-xl border border-rose-100 bg-rose-50/20 p-2.5 text-rose-600 hover:bg-rose-50 transition"
-                    >
-                      <span>Clear Conversation History</span>
-                      <span className="text-[9px] font-black uppercase bg-rose-100 text-rose-700 px-2 py-0.5 rounded">Delete</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setBlockedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
-                        setShowMoreOptions(false);
-                        showToast(blockedChats[activeContact.id] ? 'Contact unblocked' : 'Contact blocked successfully', 'success');
-                      }}
-                      className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700 hover:bg-slate-50 transition"
-                    >
-                      <span>{blockedChats[activeContact.id] ? 'Unblock Contact' : 'Block Contact'}</span>
-                      <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Block</span>
-                    </button>
-                  </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowProfileDrawer(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <User size={14} className="text-blue-500" /> View Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowSharedFilesModal(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <FileText size={14} className="text-indigo-500" /> Shared Files
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!activeContact) return;
+                      await api.patch(`/chat/messages/${activeContact.id}/read`).catch(() => {});
+                      showToast('Conversation marked as read', 'success');
+                      setShowMoreOptions(false);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <CheckCheck size={14} className="text-emerald-500" /> Mark as Read
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreOptions(false);
+                      setShowDetails(true);
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                  >
+                    <Info size={14} className="text-slate-500" /> Conversation Info
+                  </button>
                 </div>
               </div>
             </motion.div>

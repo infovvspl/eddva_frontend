@@ -118,6 +118,16 @@ export default function ParentDashboard() {
                   <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-blue-50/90 sm:text-base">
                     A focused view of attendance, marks, homework, tests, and school updates for the week.
                   </p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                    className="mt-8 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
+                  >
+                    <Sparkles className="h-5 w-5 text-blue-200" />
+                    <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+                  </motion.div>
                 </div>
 
                 <ChildSwitcher

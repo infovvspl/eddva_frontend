@@ -3,23 +3,36 @@ import { Link } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 export default function Attendance() {
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [filterType, setFilterType] = useState('daily');
-  const [teacherName, setTeacherName] = useState('');
-  const [studentName, setStudentName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [studentClassId, setStudentClassId] = useState('');
+  
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
+  // We don't fetch dynamically on text change to avoid spam, we fetch when dependencies change.
   useEffect(() => {
-    fetchAttendance();
-  }, [filterDate, filterType]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchAttendance();
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [filterDate, filterType, page, limit, searchQuery, roleFilter, studentClassId]);
 
   const fetchAttendance = async () => {
     try {
-      let params = {};
+      let params = {
+        page: page.toString(),
+        limit: limit.toString(),
+      };
       if (filterType === 'daily') {
         params.date = filterDate;
       } else if (filterType === 'weekly') {
@@ -32,8 +45,18 @@ export default function Attendance() {
         params.startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
         params.endDate = filterDate;
       }
+      
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (roleFilter) params.role = roleFilter;
+      if (studentClassId) params.classId = studentClassId;
+
       const res = await api.get('/attendance', { params });
       setAttendance(getResponseList(res));
+      const resData = res.data?.data || res.data;
+      if (resData && typeof resData.total !== 'undefined') {
+        setTotal(resData.total);
+        setTotalPages(resData.totalPages);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -59,19 +82,7 @@ export default function Attendance() {
     return Array.from(uniqueClasses.values());
   }, [attendance]);
 
-  const filteredAttendance = useMemo(() => {
-    return attendance.filter((record) => {
-      const name = record.user?.name || '';
-      const role = record.user?.role;
-      const classId = record.user?.studentProfile?.section?.class?.id;
-
-      const matchesTeacher = !teacherName || (role === 'TEACHER' && name.toLowerCase().includes(teacherName.toLowerCase()));
-      const matchesStudentName = !studentName || (role === 'STUDENT' && name.toLowerCase().includes(studentName.toLowerCase()));
-      const matchesStudentClass = !studentClassId || (role === 'STUDENT' && classId === studentClassId);
-
-      return matchesTeacher && matchesStudentName && matchesStudentClass;
-    });
-  }, [attendance, teacherName, studentName, studentClassId]);
+  const filteredAttendance = attendance;
 
   if (loading) return <div className="p-8">Loading...</div>;
 
@@ -113,23 +124,25 @@ export default function Attendance() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Teacher</label>
-            <input
-              type="text"
-              value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
-              placeholder="Teacher"
+            <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
+            <select
+              value={roleFilter}
+              onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
               className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-            />
+            >
+              <option value="">All</option>
+              <option value="TEACHER">Teacher</option>
+              <option value="STUDENT">Student</option>
+            </select>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Student</label>
+            <label className="mb-1 block text-xs font-semibold text-surface-700">Search Name</label>
             <input
               type="text"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="Student"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              placeholder="Search user..."
               className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
           </div>
@@ -138,7 +151,7 @@ export default function Attendance() {
             <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
             <select
               value={studentClassId}
-              onChange={(e) => setStudentClassId(e.target.value)}
+              onChange={(e) => { setStudentClassId(e.target.value); setPage(1); }}
               className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             >
               <option value="">All</option>
@@ -152,7 +165,7 @@ export default function Attendance() {
 
           <div className="ml-auto">
             <button
-              onClick={() => { setTeacherName(''); setStudentName(''); setStudentClassId(''); setFilterType('daily'); }}
+              onClick={() => { setSearchQuery(''); setRoleFilter(''); setStudentClassId(''); setFilterType('daily'); setPage(1); }}
               className="text-sm font-semibold text-brand-600 hover:text-brand-700"
             >
               Clear
@@ -226,6 +239,19 @@ export default function Attendance() {
             )}
           </tbody>
         </table>
+      </div>
+      <div className="mt-4 rounded-lg border border-surface-200 bg-white">
+        <DataTablePagination
+          page={page}
+          limit={limit}
+          total={total || attendance.length}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+        />
       </div>
     </div>
   );

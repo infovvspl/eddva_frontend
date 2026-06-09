@@ -37,6 +37,7 @@ import {
 import { cn } from './Skeleton';
 import { EddvaLogo, InstituteLogo } from './Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { ProfileAvatar } from '@/components/ui/profile-avatar';
 
 const superAdminGroups = [
   {
@@ -133,10 +134,12 @@ const teacherGroups = [
     heading: 'Teaching',
     items: [
       { to: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
+
       { to: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
       { to: '/school/teacher/classes', label: 'My Schedule', icon: Video },
-      { to: '/school/teacher/calendar', label: 'Academic Calendar', icon: CalendarDays },
       { to: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
+      { to: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },
+      { to: '/school/teacher/calendar', label: 'Academic Calendar', icon: CalendarDays },
     ],
   },
   {
@@ -151,7 +154,6 @@ const teacherGroups = [
   {
     heading: 'Tools',
     items: [
-      { to: '/school/teacher/creator', label: 'PPT & Mind Maps', icon: Presentation },
       { to: '/school/teacher/grievances', label: 'Grievances', icon: MessageSquareWarning },
       { to: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
     ],
@@ -172,12 +174,12 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:sticky md:top-0 md:h-screen',
+          'flex flex-col fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:sticky md:top-0 md:h-screen',
           collapsed && canCollapse ? 'md:w-[80px]' : 'md:w-[280px]',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-        <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6 dark:border-slate-800">
             <div className={cn('min-w-0 transition-opacity', collapsed && canCollapse && 'md:opacity-0 md:pointer-events-none md:w-0 md:overflow-hidden')}>
               <Link to={isTeacher ? '/school/teacher' : '/school/admin'}>
@@ -201,7 +203,7 @@ export default function Sidebar({ open, onClose }) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-6 custom-scrollbar">
             {groups.map((group) => (
                 <div key={group.heading} className="mb-6">
                   <p
@@ -256,7 +258,7 @@ export default function Sidebar({ open, onClose }) {
               ))}
           </div>
 
-          <div className="border-t border-slate-100 p-4 dark:border-slate-800">
+          <div className="mt-auto border-t border-slate-100 p-4 dark:border-slate-800">
             {isInstitute || isTeacher ? (
               <div
                 className={cn(
@@ -264,19 +266,18 @@ export default function Sidebar({ open, onClose }) {
                   collapsed && 'md:justify-center md:p-2'
                 )}
               >
-                {isTeacher ? (
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-emerald-50 border border-emerald-200">
-                    <img src="/images/teacher_avatar.png" alt="Teacher Avatar" className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal" />
-                  </div>
-                ) : isInstitute ? (
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-blue-50 border border-blue-200">
-                    <img src="/images/admin_avatar.png" alt="Admin Avatar" className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal" />
-                  </div>
-                ) : (
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-xs font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                    {(user?.name || 'T').charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <ProfileAvatar
+                  src={user?.photo ?? null}
+                  name={user?.name}
+                  className={cn(
+                    'h-10 w-10 shrink-0 rounded-xl',
+                    isTeacher ? 'bg-emerald-50 border border-emerald-200' : 'bg-blue-50 border border-blue-200'
+                  )}
+                  fallbackClassName={cn(
+                    'text-xs font-bold tracking-tight',
+                    isTeacher ? 'text-emerald-700 dark:text-emerald-300' : 'text-blue-700 dark:text-blue-300'
+                  )}
+                />
                 <div className={cn('min-w-0 flex-1', collapsed && 'md:hidden')}>
                   <p className="truncate text-xs font-bold text-slate-950 dark:text-white">{workspaceName}</p>
                   <div className="mt-1 flex items-center gap-1.5">

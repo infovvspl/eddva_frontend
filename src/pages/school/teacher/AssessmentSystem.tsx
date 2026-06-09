@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useConfirm } from "@/context/ConfirmContext";
 import {
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
 } from "lucide-react";
@@ -84,6 +85,7 @@ function NavCard({
 }
 
 const AssessmentSystem: React.FC = () => {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingContext, setLoadingContext] = useState(true);
@@ -399,7 +401,13 @@ const AssessmentSystem: React.FC = () => {
             variant="outline"
             icon={<Trash2 size={14} />}
             onClick={async () => {
-              const confirmed = window.confirm("Delete this assessment?");
+              const confirmed = await confirm({
+                title: "Confirm Delete",
+                message: "Are you sure you want to delete this assessment? This action cannot be undone.",
+                confirmLabel: "Delete",
+                cancelLabel: "Cancel",
+                variant: "destructive",
+              });
               if (!confirmed) return;
               try {
                 await api.delete(`/assessments/${row.id}`);
@@ -770,59 +778,5 @@ const AssessmentSystem: React.FC = () => {
     </div>
   );
 };
-
-// ── Presentational helpers ───────────────────────────────────────────────────
-
-const toneStyles: Record<string, { soft: string; icon: string }> = {
-  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
-  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
-  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
-};
-
-function NavCard({
-  icon, tone, title, meta, actionLabel, onClick,
-}: {
-  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
-  actionLabel: string; onClick: () => void;
-}) {
-  const t = toneStyles[tone] ?? toneStyles.brand;
-  return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
-      </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
-      </div>
-    </GlassCard>
-  );
-}
-
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
-  return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
-          <button
-            type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
-            }`}
-          >
-            {it.icon}{it.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
-  );
-}
 
 export default AssessmentSystem;
