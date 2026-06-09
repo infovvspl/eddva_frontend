@@ -1,13 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
-import { BookOpen, Radio, Video, ChevronRight, CheckCircle2, Hand, BarChart3 } from 'lucide-react';
+import {
+  BookOpen,
+  Radio,
+  Video,
+  ChevronRight,
+  CheckCircle2,
+  Hand,
+  BarChart3,
+  CalendarDays,
+  Clock3,
+  Download,
+  FileText,
+  Loader2,
+  PlayCircle,
+  Sparkles,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/components/school/admin/Skeleton';
 
 export default function Classes() {
   const location = useLocation();
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [recordings, setRecordings] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [recordingsLoading, setRecordingsLoading] = useState(false);
+
+  const isLiveView = location.pathname.endsWith('/live-classes');
+  const isRecordedView = location.pathname.endsWith('/recorded-classes');
+
+  const loading = isRecordedView ? recordingsLoading : coursesLoading;
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -17,12 +38,41 @@ export default function Classes() {
       } catch (error) {
         console.error('Failed to fetch courses:', error);
       } finally {
-        setLoading(false);
+        setCoursesLoading(false);
       }
     };
-    
+
     fetchCourses();
   }, []);
+
+  useEffect(() => {
+    if (!isRecordedView) return;
+
+    const fetchRecordings = async () => {
+      try {
+        setRecordingsLoading(true);
+        const response = await api.get('/classes/recordings');
+        setRecordings(unwrapSchoolList(response));
+      } catch (error) {
+        console.error('Failed to fetch recorded classes:', error);
+      } finally {
+        setRecordingsLoading(false);
+      }
+    };
+
+    fetchRecordings();
+  }, [isRecordedView]);
+
+  const recordingsSummary = useMemo(() => {
+    const total = recordings.length;
+    const transcriptReady = recordings.filter((item) => item.transcript_status === 'done').length;
+    const notesReady = recordings.filter((item) => item.notes_status === 'done' && item.notes).length;
+    const processing = recordings.filter((item) =>
+      ['pending', 'processing'].includes(item.transcript_status) ||
+      ['pending', 'processing'].includes(item.notes_status)
+    ).length;
+    return { total, transcriptReady, notesReady, processing };
+  }, [recordings]);
 
   if (loading) {
     return (
@@ -32,14 +82,178 @@ export default function Classes() {
     );
   }
 
-  const isLiveView = location.pathname.endsWith('/live-classes');
-  const isRecordedView = location.pathname.endsWith('/recorded-classes');
   const title = isLiveView ? 'Live Classes' : isRecordedView ? 'Recorded Classes' : 'My Learning';
   const subtitle = isLiveView
     ? 'Join live sessions, track auto attendance, raise your hand, and participate in polls.'
     : isRecordedView
-      ? 'Resume recorded lessons and review your watch progress.'
+      ? 'Watch teacher-uploaded recorded lectures, open transcript, and study from generated notes.'
       : 'Explore classes, chapters, topics, notes, assignments, tests, and teacher resources.';
+
+  const renderRecordingStatus = (recording) => {
+    if (recording.notes_status === 'done' && recording.notes) {
+      return (
+        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+          <Sparkles size={13} />
+          AI notes ready
+        </span>
+      );
+    }
+
+    if (recording.transcript_status === 'done') {
+      return (
+        <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+          <Download size={13} />
+          Transcript ready
+        </span>
+      );
+    }
+
+    if (recording.notes_status === 'failed' || recording.transcript_status === 'failed') {
+      return (
+        <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
+          <X size={13} />
+          Generation failed
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+        <Loader2 size={13} className="animate-spin" />
+        Processing notes
+      </span>
+    );
+  };
+
+  const recordedClassesView = (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50 p-5">
+          <Video className="h-6 w-6 text-blue-600" />
+          <p className="mt-4 text-[11px] font-black uppercase tracking-[0.24em] text-blue-700">Lectures</p>
+          <p className="mt-2 text-3xl font-black text-slate-900">{recordingsSummary.total}</p>
+          <p className="mt-1 text-sm font-medium text-slate-500">Recorded lessons available</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-5">
+          <Sparkles className="h-6 w-6 text-emerald-600" />
+          <p className="mt-4 text-[11px] font-black uppercase tracking-[0.24em] text-emerald-700">AI Notes</p>
+          <p className="mt-2 text-3xl font-black text-slate-900">{recordingsSummary.notesReady}</p>
+          <p className="mt-1 text-sm font-medium text-slate-500">Ready to read and revise</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-violet-100 bg-violet-50 p-5">
+          <FileText className="h-6 w-6 text-violet-600" />
+          <p className="mt-4 text-[11px] font-black uppercase tracking-[0.24em] text-violet-700">Transcript</p>
+          <p className="mt-2 text-3xl font-black text-slate-900">{recordingsSummary.transcriptReady}</p>
+          <p className="mt-1 text-sm font-medium text-slate-500">Lecture transcripts ready</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-amber-100 bg-amber-50 p-5">
+          <Loader2 className="h-6 w-6 text-amber-600" />
+          <p className="mt-4 text-[11px] font-black uppercase tracking-[0.24em] text-amber-700">Processing</p>
+          <p className="mt-2 text-3xl font-black text-slate-900">{recordingsSummary.processing}</p>
+          <p className="mt-1 text-sm font-medium text-slate-500">AI is still preparing content</p>
+        </div>
+      </div>
+
+      {recordings.length === 0 ? (
+        <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
+          <Video className="mx-auto h-12 w-12 text-slate-300" />
+          <h3 className="mt-4 text-lg font-bold text-slate-900">No recorded classes yet</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Once your teachers upload recorded lectures, transcript and notes will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-2">
+            {recordings.map((recording) => {
+              const hasNotes = !!recording.notes;
+              const hasTranscript = !!recording.transcript;
+              const canWatch = !!recording.video_url;
+
+              return (
+                <div
+                  key={recording.id}
+                  className="overflow-hidden rounded-[1.75rem] border border-slate-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="flex gap-4">
+                    <div className="relative flex h-28 w-36 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900">
+                      {recording.thumbnail_url ? (
+                        <img
+                          src={recording.thumbnail_url}
+                          alt={recording.title}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <PlayCircle className="h-10 w-10 text-white/70" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">
+                          {recording.subject_name || 'Lecture'}
+                        </span>
+                      </div>
+
+                      <h3 className="mt-3 line-clamp-2 text-base font-black text-slate-900">{recording.title}</h3>
+                      <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">
+                        {recording.chapter_name || 'General chapter'}
+                        {recording.topic_name ? ` · ${recording.topic_name}` : ''}
+                      </p>
+
+                      <div className="mt-3">{renderRecordingStatus(recording)}</div>
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+                          <Clock3 size={12} />
+                          {recording.duration ? `${recording.duration} mins` : 'Pending'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+                          <CalendarDays size={12} />
+                          {recording.recorded_date ? new Date(recording.recorded_date).toLocaleDateString('en-GB') : 'No date'}
+                        </span>
+                        {hasNotes && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700">
+                            <Sparkles size={12} />
+                            Notes
+                          </span>
+                        )}
+                        {!hasNotes && hasTranscript && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-violet-700">
+                            <Download size={12} />
+                            Transcript
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Link
+                          to={`/school/student/recorded-classes/${recording.id}`}
+                          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                        >
+                          <FileText size={15} />
+                          Open Details
+                        </Link>
+                        {canWatch && (
+                          <a
+                            href={recording.video_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                          >
+                            <PlayCircle size={15} />
+                            Watch Video
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -50,6 +264,10 @@ export default function Classes() {
         </div>
       </div>
 
+      {isRecordedView ? (
+        recordedClassesView
+      ) : (
+        <>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
           <Radio className="h-6 w-6 text-blue-600" />
@@ -144,6 +362,8 @@ export default function Classes() {
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   );
