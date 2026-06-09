@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
 } from "lucide-react";
@@ -185,6 +185,7 @@ function ContentEditor({
 
 const AssessmentSystem: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingContext, setLoadingContext] = useState(true);
 
@@ -193,6 +194,16 @@ const AssessmentSystem: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<{ id: string; name: string } | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const restoredState = (location.state as any)?.assessmentWorkspace;
+    if (!restoredState) return;
+    setSelectedClass(restoredState.selectedClass || null);
+    setSelectedSection(restoredState.selectedSection || null);
+    setSelectedSubject(restoredState.selectedSubject || null);
+    setSearch('');
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   // Assessment States
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -530,7 +541,16 @@ const AssessmentSystem: React.FC = () => {
       render: (v: string, row: any) => (
         <span
           className="text-brand-600 font-medium hover:underline cursor-pointer"
-          onClick={() => navigate(`/school/teacher/assessments/${row.id}`)}
+          onClick={() => navigate(`/school/teacher/assessments/${row.id}`, {
+            state: {
+              from: `${location.pathname}${location.search}`,
+              assessmentWorkspace: {
+                selectedClass,
+                selectedSection,
+                selectedSubject,
+              },
+            },
+          })}
         >
           {v}
         </span>

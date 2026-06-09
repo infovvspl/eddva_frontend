@@ -4,7 +4,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiOrigin } from '@/lib/api-config';
 import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, Save, ShieldCheck, Timer, X, Award, MessageSquare, Target, Loader2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 function resolveUploadUrl(filePath) {
@@ -58,6 +58,7 @@ function getQuestionTypeLabel(type) {
 export default function Assessments() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('available');
   const [assessments, setAssessments] = useState([]);
   // myResults: array of { assessment, result } objects
@@ -171,7 +172,9 @@ export default function Assessments() {
       toast.info('This assessment is already submitted. Your teacher can grade it now.');
       return;
     }
-    navigate(`/school/student/assessments/${test.id}/take`);
+    navigate(`/school/student/assessments/${test.id}/take`, {
+      state: { from: `${location.pathname}${location.search}` },
+    });
   };
 
   const closeSubmit = () => {

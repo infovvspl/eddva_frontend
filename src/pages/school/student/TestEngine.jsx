@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText, Loader2, UploadCloud } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
@@ -8,6 +8,18 @@ import { toast } from 'sonner';
 function getStructuredQuestions(test) {
   const questions = test?.questions || test?.questions_json || test?.questionsJson || [];
   return Array.isArray(questions) ? questions : [];
+}
+
+function cleanStructuredQuestions(questions) {
+  const instructionPattern = /(general instructions|question paper consists|follow the instructions|space provided|read each question carefully)/i;
+  const seen = new Set();
+  return questions.filter((question) => {
+    const text = String(question?.text || '').trim();
+    const key = `${question?.sectionTitle || ''}-${question?.displayNumber || question?.number || ''}-${text}`;
+    if (!text || instructionPattern.test(text) || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function formatRemaining(seconds) {
@@ -29,14 +41,64 @@ function getQuestionTypeLabel(type) {
   return labels[type] || 'Question';
 }
 
+function getQuestionDisplayNumber(question, fallbackIndex) {
+  return question?.displayNumber || question?.number || fallbackIndex + 1;
+}
+
+function getSectionLetter(question) {
+  const section = String(question?.sectionTitle || question?.section || '');
+  return section.match(/section\s+([A-E])/i)?.[1]?.toUpperCase()
+    || section.match(/[-–]\s*([A-E])\b/i)?.[1]?.toUpperCase()
+    || '';
+}
+
+function parseInlineOptions(text) {
+  const body = String(text || '');
+  const matches = Array.from(body.matchAll(/\(([a-dA-D])\)\s*/g));
+  if (matches.length < 2) return { text: body, options: [] };
+  const questionText = body.slice(0, matches[0].index || 0).trim() || body;
+  const options = matches.map((match, index) => {
+    const start = (match.index || 0) + match[0].length;
+    const end = index + 1 < matches.length ? matches[index + 1].index || body.length : body.length;
+    return {
+      id: match[1].toLowerCase(),
+      label: match[1],
+      text: body.slice(start, end).trim(),
+    };
+  }).filter((option) => option.text);
+  return { text: questionText, options };
+}
+
+function getEffectiveQuestion(question) {
+  const inline = parseInlineOptions(question?.text);
+  const sectionLetter = getSectionLetter(question);
+  const hasOptions = Array.isArray(question?.options) && question.options.length > 0;
+  let type = question?.type || 'short_answer';
+  if (hasOptions || inline.options.length) type = 'mcq_single';
+  else if (sectionLetter === 'A') type = 'mcq_single';
+  else if (sectionLetter === 'B') type = 'true_false';
+  else if (sectionLetter === 'C') type = 'fill_blank';
+  else if (sectionLetter === 'D') type = 'short_answer';
+  else if (sectionLetter === 'E') type = 'long_answer';
+
+  return {
+    ...question,
+    type,
+    text: inline.options.length ? inline.text : question?.text,
+    options: hasOptions ? question.options : inline.options,
+  };
+}
+
 export default function TestEngine() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef(null);
   const latestAnswersRef = useRef({});
   const latestAnswerTextRef = useRef('');
   const latestAnswerFileRef = useRef(null);
   const autoSubmittedRef = useRef(false);
+  const startRequestedRef = useRef(false);
 
   const [assessment, setAssessment] = useState(null);
   const [attempt, setAttempt] = useState(null);
@@ -48,6 +110,19 @@ export default function TestEngine() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const previousPage = location.state?.from;
+
+  const goBackToPreviousPage = () => {
+    if (previousPage) {
+      navigate(previousPage);
+      return;
+    }
+    if (window.history.state?.idx > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate('/school/student/assessments');
+  };
 
   useEffect(() => {
     latestAnswersRef.current = answers;
@@ -62,6 +137,8 @@ export default function TestEngine() {
   }, [answerFile]);
 
   useEffect(() => {
+    if (startRequestedRef.current) return;
+    startRequestedRef.current = true;
     let cancelled = false;
     const start = async () => {
       setLoading(true);
@@ -84,7 +161,7 @@ export default function TestEngine() {
 
         setAssessment(assessmentData);
         setAttempt(attemptData);
-        setQuestions(parsedQuestions);
+        setQuestions(cleanStructuredQuestions(parsedQuestions));
         setAnswers(attemptData.answers_json || {});
         setAnswerText(attemptData.answer_text || '');
         setCurrentIdx(0);
@@ -176,12 +253,13 @@ export default function TestEngine() {
   }, [answerFile, answerText, answers, id, navigate, questions, submitting]);
 
   const renderAnswerInput = (question) => {
+    const effectiveQuestion = getEffectiveQuestion(question);
     const value = answers?.[question.id] ?? '';
-    const type = question.type || 'short_answer';
+    const type = effectiveQuestion.type || 'short_answer';
     if (type === 'mcq_single') {
       return (
         <div className="space-y-3">
-          {(question.options || []).map((option) => {
+          {(effectiveQuestion.options || []).map((option) => {
             const optionValue = option.id || option.value || option.text;
             const selected = String(value) === String(optionValue);
             return (
@@ -267,7 +345,7 @@ export default function TestEngine() {
       <div className="flex h-[70vh] flex-col items-center justify-center text-center">
         <AlertTriangle className="mb-4 h-14 w-14 text-rose-500" />
         <h2 className="text-xl font-black text-slate-900">Could not open assessment</h2>
-        <button onClick={() => navigate('/school/student/assessments')} className="mt-6 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white">
+        <button onClick={goBackToPreviousPage} className="mt-6 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white">
           Back to Assessments
         </button>
       </div>
@@ -275,10 +353,21 @@ export default function TestEngine() {
   }
 
   const currentQuestion = questions[currentIdx];
+  const effectiveCurrentQuestion = currentQuestion ? getEffectiveQuestion(currentQuestion) : null;
   const answeredCount = questions.filter((question) => {
     const value = answers?.[question.id];
     return Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
   }).length;
+  const questionGroups = questions.reduce((groups, question, index) => {
+    const sectionTitle = question.sectionTitle || question.section || '';
+    const lastGroup = groups[groups.length - 1];
+    if (!lastGroup || lastGroup.sectionTitle !== sectionTitle) {
+      groups.push({ sectionTitle, startIndex: index, questions: [{ question, index }] });
+    } else {
+      lastGroup.questions.push({ question, index });
+    }
+    return groups;
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
@@ -287,7 +376,7 @@ export default function TestEngine() {
           <div className="min-w-0">
             <button
               type="button"
-              onClick={() => navigate('/school/student/assessments')}
+              onClick={goBackToPreviousPage}
               className="mb-2 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-600"
             >
               <ChevronLeft size={14} />
@@ -324,20 +413,25 @@ export default function TestEngine() {
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <span className="rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
-                  {getQuestionTypeLabel(currentQuestion.type)}
+                  {getQuestionTypeLabel(effectiveCurrentQuestion?.type)}
                 </span>
+                {currentQuestion.sectionTitle && (
+                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-blue-600">
+                    {currentQuestion.sectionTitle}
+                  </p>
+                )}
                 <h2 className="mt-3 text-xl font-black text-slate-950">
-                  Question {currentIdx + 1}
+                  Question {getQuestionDisplayNumber(currentQuestion, currentIdx)}
                 </h2>
               </div>
               <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                {currentQuestion.marks || 1} marks
+                {effectiveCurrentQuestion?.marks || 1} marks
               </span>
             </div>
             <p className="mb-8 whitespace-pre-wrap text-base font-semibold leading-8 text-slate-800">
-              {currentQuestion.text}
+              {effectiveCurrentQuestion?.text}
             </p>
-            {renderAnswerInput(currentQuestion)}
+            {renderAnswerInput(effectiveCurrentQuestion)}
             <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-5">
               <button
                 type="button"
@@ -365,28 +459,39 @@ export default function TestEngine() {
               <h3 className="text-sm font-black text-slate-950">Question Palette</h3>
               <span className="text-xs font-bold text-slate-500">{answeredCount}/{questions.length} Answered</span>
             </div>
-            <div className="grid grid-cols-5 gap-2">
-              {questions.map((question, index) => {
-                const value = answers?.[question.id];
-                const answered = Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
-                return (
-                  <button
-                    key={question.id}
-                    type="button"
-                    onClick={() => setCurrentIdx(index)}
-                    className={cn(
-                      'h-10 rounded-xl text-sm font-black transition',
-                      index === currentIdx
-                        ? 'bg-blue-600 text-white ring-2 ring-blue-200'
-                        : answered
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                    )}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
+            <div className="space-y-4">
+              {questionGroups.map((group, groupIndex) => (
+                <div key={`${group.sectionTitle || 'section'}-${group.startIndex}`}>
+                  {group.sectionTitle && (
+                    <p className={cn('mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400', groupIndex > 0 && 'pt-1')}>
+                      {group.sectionTitle}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-5 gap-2">
+                    {group.questions.map(({ question, index }) => {
+                      const value = answers?.[question.id];
+                      const answered = Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
+                      return (
+                        <button
+                          key={question.id}
+                          type="button"
+                          onClick={() => setCurrentIdx(index)}
+                          className={cn(
+                            'h-10 rounded-xl text-sm font-black transition',
+                            index === currentIdx
+                              ? 'bg-blue-600 text-white ring-2 ring-blue-200'
+                              : answered
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                          )}
+                        >
+                          {getQuestionDisplayNumber(question, index)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </aside>
         </div>
