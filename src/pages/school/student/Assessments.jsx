@@ -4,12 +4,8 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiOrigin } from '@/lib/api-config';
 import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, Save, ShieldCheck, Timer, X, Award, MessageSquare, Target, Loader2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
-<<<<<<< HEAD
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-=======
 import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
 import { Link, useNavigate } from 'react-router-dom';
->>>>>>> ea436ebcd76593c147cdba8cacbd6858e5e98586
 import { toast } from 'sonner';
 
 function resolveUploadUrl(filePath) {
