@@ -16,9 +16,11 @@ function formatDenseAssessmentText(text: string) {
   if (!looksDense) return text;
 
   return trimmed
-    .replace(/\s+(?=(?:Section|Part|Answer Key|Answers|Ans Key)\b)/gi, "\n\n")
-    .replace(/\s+(?=([A-E]|[ଏ-ଐ])\s*[-:]\s*)/g, "\n\n")
-    .replace(/([^\n])\s+(?=\d{1,2}[.)]\s+)/g, "$1\n")
+    .replace(/\s+(?=(?:Section|Part|Answer Key|Answers|Ans Key|General Instructions)\b)/gi, "\n\n")
+    .replace(/\s+(?=#+\s+)/g, "\n\n")
+    .replace(/\s+(?=[A-Ea-e]\s*[-:]\s*)/g, "\n\n")
+    .replace(/([^\n])\s+(?=\d{1,2}[.)]\s+)/g, "$1\n\n")
+    .replace(/([^\n])\s+(?=\d{1,2}\s+[^\s])/g, "$1\n\n")
     .replace(/([^\n])\s+(?=\([a-dA-D]\)\s+)/g, "$1 ")
     .replace(/\n{3,}/g, "\n\n");
 }
@@ -30,7 +32,9 @@ export default function AssessmentContentRenderer({
   const formattedContent = formatDenseAssessmentText(children);
 
   return (
-    <div className={`assessment-content prose prose-sm prose-slate max-w-none ${className}`}>
+    <div
+      className={`assessment-content prose prose-sm prose-slate max-w-none leading-7 prose-headings:mb-3 prose-headings:mt-6 prose-li:my-1 prose-p:my-3 ${className}`}
+    >
       <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {formattedContent}
       </ReactMarkdown>

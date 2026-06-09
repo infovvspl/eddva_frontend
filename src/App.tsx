@@ -178,6 +178,7 @@ const SchoolStudentTopicDetails = lazy(() => import("./pages/school/student/Topi
 const SchoolStudentStudyMaterials = lazy(() => import("./pages/school/student/StudyMaterials"));
 const SchoolStudentAssignments  = lazy(() => import("./pages/school/student/Assignments"));
 const SchoolStudentAssessments  = lazy(() => import("./pages/school/student/Assessments"));
+const SchoolStudentAssessmentView = lazy(() => import("./pages/school/student/AssessmentView"));
 const SchoolStudentTestEngine   = lazy(() => import("./pages/school/student/TestEngine"));
 const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/SessionResult"));
 
@@ -405,6 +406,7 @@ const SchoolRoutes = () => (
       <Route path="study-materials" element={<SchoolStudentStudyMaterials />} />
       <Route path="assignments" element={<SchoolStudentAssignments />} />
       <Route path="assessments" element={<SchoolStudentAssessments />} />
+      <Route path="assessments/:id/view" element={<SchoolStudentAssessmentView />} />
       <Route path="assessments/:id/take" element={<SchoolStudentTestEngine />} />
       <Route path="assessments/:id" element={<SchoolStudentSessionResult />} />
 

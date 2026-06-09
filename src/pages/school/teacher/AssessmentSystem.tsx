@@ -104,8 +104,8 @@ function ContentEditor({
           type="button"
           onClick={() => setActiveTab("edit")}
           className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
-              ? "border-brand-500 text-brand-600 font-extrabold"
-              : "border-transparent text-gray-500 hover:text-gray-700"
+            ? "border-brand-500 text-brand-600 font-extrabold"
+            : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
         >
           ✏️ Edit Test
@@ -114,8 +114,8 @@ function ContentEditor({
           type="button"
           onClick={() => setActiveTab("preview")}
           className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
-              ? "border-brand-500 text-brand-600 font-extrabold"
-              : "border-transparent text-gray-500 hover:text-gray-700"
+            ? "border-brand-500 text-brand-600 font-extrabold"
+            : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
         >
           👁️ Preview (Student View)
@@ -342,9 +342,9 @@ const AssessmentSystem: React.FC = () => {
 
   const level = selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
   const goBack = () => {
     if (level === 'workspace') goToSubjects();
     else if (level === 'subjects') goToSections();
@@ -367,7 +367,8 @@ const AssessmentSystem: React.FC = () => {
       const formatted = allAssessments.map((item: any) => ({
         id: item.id,
         title: item.title,
-        type: item.assessment_type || item.type || "topic",
+        type: normaliseType(item.assessment_type || item.type || "topic"),
+        rawType: item.assessment_type || item.type || "topic", // original for debugging
         totalMarks: item.total_marks,
         duration: item.duration_minutes || "-",
         date: item.scheduled_at || item.scheduled_date
@@ -382,6 +383,7 @@ const AssessmentSystem: React.FC = () => {
         raw: item,
       }));
 
+      console.log("AFTER WORKSPACE FILTER", formatted.length, formatted);
       setTestsList(formatted);
     } catch (err) {
       console.error("Fetch assessments error:", err);
@@ -559,15 +561,27 @@ const AssessmentSystem: React.FC = () => {
     {
       key: "type",
       title: "Type",
-      render: (v: string) => (
-        <Badge
-          variant={
-            v === "final" ? "error" : v === "mock" ? "warning" : v === "unit" ? "info" : "purple"
-          }
-        >
-          {v}
-        </Badge>
-      ),
+      render: (v: string) => {
+        const labelMap: Record<string, string> = {
+          topic: "Topic Test",
+          chapter: "Chapter Test",
+          subject: "Subject Test",
+          mock: "Mock Test",
+          final: "Final Exam",
+        };
+        const variantMap: Record<string, "error" | "warning" | "info" | "purple" | "success"> = {
+          topic: "purple",
+          chapter: "info",
+          subject: "success",
+          mock: "warning",
+          final: "error",
+        };
+        return (
+          <Badge variant={variantMap[v] ?? "purple"}>
+            {labelMap[v] ?? v}
+          </Badge>
+        );
+      },
     },
     { key: "totalMarks", title: "Total Marks" },
     { key: "duration", title: "Duration (mins)" },
@@ -635,13 +649,53 @@ const AssessmentSystem: React.FC = () => {
     },
   ];
 
+  // ── Type label map (used for search matching against type) ──────────────
+  const TYPE_LABEL_MAP: Record<string, string> = {
+    topic: "topic test",
+    chapter: "chapter test",
+    subject: "subject test",
+    mock: "mock test",
+    final: "final exam",
+  };
+
+  /**
+   * renderDataTable — 5-stage filter pipeline
+   *
+   * Stage 1  RAW ASSESSMENTS     — all records from API (logged in fetchTests)
+   * Stage 2  AFTER WORKSPACE     — subject + class filter (applied in fetchTests, stored in testsList)
+   * Stage 3  AFTER TYPE FILTER   — keep only records matching this tab's type
+   * Stage 4  AFTER STATUS FILTER — apply Upcoming / Completed dropdown
+   * Stage 5  AFTER SEARCH FILTER — case-insensitive match on title OR type label
+   */
   const renderDataTable = (typeFilter: string | string[]) => {
-    const data = testsList.filter((t) => {
-      const matchType = Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter;
-      const matchSearch = t.title.toLowerCase().includes(workspaceSearch.toLowerCase());
-      const matchStatus = workspaceStatusFilter === "all" || t.status === workspaceStatusFilter;
-      return matchType && matchSearch && matchStatus;
-    });
+    // Stage 2 — workspace-filtered list (fetchTests already applied subject+class)
+    console.log("RAW ASSESSMENTS (in testsList, after workspace filter)", testsList.length);
+
+    // Stage 3 — tab type filter
+    const afterType = testsList.filter((t) =>
+      Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter
+    );
+    console.log("AFTER TYPE FILTER", afterType.length);
+
+    // Stage 4 — status dropdown filter
+    const afterStatus = workspaceStatusFilter === "all"
+      ? afterType
+      : afterType.filter((t) => t.status === workspaceStatusFilter);
+    console.log("AFTER STATUS FILTER", afterStatus.length);
+
+    // Stage 5 — search: title OR type label only (NOT status, marks, dates)
+    const sq = workspaceSearch.trim().toLowerCase();
+    const afterSearch = sq
+      ? afterStatus.filter((t) => {
+        const inTitle = (t.title ?? "").toLowerCase().includes(sq);
+        const inType = (TYPE_LABEL_MAP[t.type] ?? t.type ?? "").toLowerCase().includes(sq);
+        return inTitle || inType;
+      })
+      : afterStatus;
+    console.log("AFTER SEARCH FILTER", afterSearch.length);
+    console.log("FINAL RENDER COUNT", afterSearch.length);
+
+    const data = afterSearch;
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -651,12 +705,16 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
             <Target size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-            <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
-          </div>
+            <p className="text-gray-500 mt-1 text-sm">
+              {sq
+                ? `No results for "${workspaceSearch}" in this tab.`
+                : "Get started by creating your first test."}
+            </p>
+          </div >
         ) : (
           <DataTable columns={testColumns} data={data} />
         )}
-      </div>
+      </div >
     );
   };
 
@@ -781,11 +839,12 @@ const AssessmentSystem: React.FC = () => {
 
             <div className="flex flex-wrap items-center gap-3">
               <input
+                id="workspace-search"
                 type="text"
-                placeholder="Search tests..."
+                placeholder="Search by title or type..."
                 value={workspaceSearch}
                 onChange={(e) => setWorkspaceSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
               />
               <select
                 value={workspaceStatusFilter}
@@ -822,20 +881,38 @@ const AssessmentSystem: React.FC = () => {
                 id: "topic",
                 label: "Topic Tests",
                 icon: <ClipboardList size={16} />,
+                // Matches records with type = "topic"
                 content: renderDataTable("topic"),
               },
               {
-                id: "unit",
-                label: "Unit Tests",
+                id: "chapter",
+                label: "Chapter Tests",
                 icon: <BarChart3 size={16} />,
-                content: renderDataTable("unit"),
+                // Matches records with type = "chapter" OR legacy "unit"
+                // (legacy "unit" is already normalised to "chapter" in formatted list)
+                content: renderDataTable("chapter"),
+              },
+              {
+                id: "subject",
+                label: "Subject Tests",
+                icon: <BookOpen size={16} />,
+                // Matches records with type = "subject"
+                content: renderDataTable("subject"),
               },
               {
                 id: "mock",
-                label: "Mock & Final",
+                label: "Mock Tests",
+                icon: <Trophy size={16} />,
+                // Matches records with type = "mock"
+                content: renderDataTable("mock"),
+              },
+              {
+                id: "final",
+                label: "Final Exams",
                 icon: <Target size={16} />,
-                content: renderDataTable(["mock", "subject", "final"]),
-              }
+                // Matches records with type = "final"
+                content: renderDataTable("final"),
+              },
             ]}
           />
         </div>
@@ -861,51 +938,18 @@ const AssessmentSystem: React.FC = () => {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField
-                label="Test Type"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                options={[
-                  { value: "topic", label: "Topic Test" },
-                  { value: "unit", label: "Unit Test" },
-                  { value: "mock", label: "Mock Test" },
-                  { value: "subject", label: "Subject Test" },
-                  { value: "final", label: "Final Exam" },
-                ]}
-              />
-              <SelectField
-                label="Language"
-                value={aiLanguage}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                options={[
-                  { value: "en", label: "English" },
-                  { value: "hi", label: "Hindi" },
-                  { value: "od", label: "Odia" },
-                ]}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField
-                label="Chapter (optional)"
-                value={selectedChapterId}
-                onChange={(e) => setSelectedChapterId(e.target.value)}
-                options={[
-                  { value: "", label: chapters.length ? "All chapters / general" : "No chapters found" },
-                  ...chapters.map((c: any) => ({ value: c.id, label: c.name })),
-                ]}
-              />
-              <SelectField
-                label="Topic (optional)"
-                value={selectedTopicId}
-                onChange={(e) => setSelectedTopicId(e.target.value)}
-                options={[
-                  { value: "", label: selectedChapterId ? "Whole chapter" : "Select a chapter first" },
-                  ...topics.map((t: any) => ({ value: t.id, label: t.name })),
-                ]}
-              />
-            </div>
+            <SelectField
+              label="Test Type"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              options={[
+                { value: "topic", label: "Topic Test" },
+                { value: "chapter", label: "Chapter Test" },
+                { value: "subject", label: "Subject Test" },
+                { value: "mock", label: "Mock Test" },
+                { value: "final", label: "Final Exam" },
+              ]}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <InputField
@@ -1052,11 +1096,64 @@ const AssessmentSystem: React.FC = () => {
                 {editingTest ? "Update Test" : "Create Test"}
               </Button>
             </div>
-          </div>
-        </Modal>
+          </div >
+        </Modal >
       )}
-    </div>
+    </div >
   );
 };
+
+// ── Presentational helpers ───────────────────────────────────────────────────
+
+const toneStyles: Record<string, { soft: string; icon: string }> = {
+  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
+  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
+  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
+};
+
+function NavCard({
+  icon, tone, title, meta, actionLabel, onClick,
+}: {
+  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
+  actionLabel: string; onClick: () => void;
+}) {
+  const t = toneStyles[tone] ?? toneStyles.brand;
+  return (
+    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
+      <div className="flex items-start justify-between gap-3">
+        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
+      </div>
+      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
+      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
+        <Users size={14} /> {meta}
+      </p>
+      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
+        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </GlassCard>
+  );
+}
+
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+  return (
+    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+      {items.map((it, i) => (
+        <React.Fragment key={`${it.label}-${i}`}>
+          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
+          <button
+            type="button"
+            onClick={it.onClick}
+            disabled={it.active}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
+              }`}
+          >
+            {it.icon}{it.label}
+          </button>
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+}
 
 export default AssessmentSystem;

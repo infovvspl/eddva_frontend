@@ -4,7 +4,12 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiOrigin } from '@/lib/api-config';
 import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, Save, ShieldCheck, Timer, X, Award, MessageSquare, Target, Loader2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
+<<<<<<< HEAD
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+=======
+import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
+import { Link, useNavigate } from 'react-router-dom';
+>>>>>>> ea436ebcd76593c147cdba8cacbd6858e5e98586
 import { toast } from 'sonner';
 
 function resolveUploadUrl(filePath) {
@@ -445,13 +450,13 @@ export default function Assessments() {
                         {isInProgress ? 'Attempt in progress' : 'Submitted online'}
                       </div>
                     )}
-                    <button 
-                      onClick={() => setSelectedAssessment(test)}
+                    <Link
+                      to={`/school/student/assessments/${test.id}/view`}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20"
                     >
                       <FileText size={16} />
                       View Assessment
-                    </button>
+                    </Link>
                     {uploadUrl && (
                       <a
                         href={uploadUrl}
@@ -628,9 +633,20 @@ export default function Assessments() {
             </div>
             <div className="max-h-[70vh] overflow-auto p-5">
               {selectedAssessment.content_text ? (
-                <pre className="whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800 dark:bg-slate-800 dark:text-slate-100">
-                  {selectedAssessment.content_text}
-                </pre>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                  <div className="mb-5 border-b border-slate-100 pb-4 text-center dark:border-slate-800">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Question Paper</p>
+                    <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
+                      {selectedAssessment.title}
+                    </h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      {selectedAssessment.total_marks || 100} marks | {selectedAssessment.duration_minutes || 60} mins
+                    </p>
+                  </div>
+                  <AssessmentContentRenderer className="text-slate-800 dark:text-slate-100">
+                    {selectedAssessment.content_text}
+                  </AssessmentContentRenderer>
+                </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800">
                   No text instructions were added. Download the uploaded question paper if available.
@@ -763,9 +779,11 @@ export default function Assessments() {
                       <label className="block text-xs font-bold uppercase tracking-widest text-slate-500">
                         Question Paper
                       </label>
-                      <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800 dark:bg-slate-800 dark:text-slate-100">
-                        {submitTarget.content_text}
-                      </pre>
+                      <div className="mt-2 max-h-80 overflow-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                        <AssessmentContentRenderer className="text-slate-800 dark:text-slate-100">
+                          {submitTarget.content_text}
+                        </AssessmentContentRenderer>
+                      </div>
                     </div>
                   )}
                   <label className="block text-xs font-bold uppercase tracking-widest text-slate-500">
