@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/SchoolAuthContext';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   ChevronDown,
@@ -118,8 +119,10 @@ function countSubject(chapters) {
 }
 
 export default function StudyMaterials() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
+  const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -134,14 +137,22 @@ export default function StudyMaterials() {
   useEffect(() => {
     const fetchMaterials = async () => {
       try {
-        const res = await api.get('/materials', {
-          params: { _ts: Date.now() },
-          headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-        });
-        setMaterials(unwrapSchoolList(res));
+        const [materialsRes, recordingsRes] = await Promise.all([
+          api.get('/materials', {
+            params: { _ts: Date.now() },
+            headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+          }),
+          api.get('/classes/recordings', {
+            params: { _ts: Date.now() },
+            headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+          }),
+        ]);
+        setMaterials(unwrapSchoolList(materialsRes));
+        setRecordings(unwrapSchoolList(recordingsRes));
       } catch (error) {
-        console.error('Failed to fetch study materials:', error);
+        console.error('Failed to fetch study resources:', error);
         setMaterials([]);
+        setRecordings([]);
       } finally {
         setLoading(false);
       }
@@ -149,9 +160,34 @@ export default function StudyMaterials() {
     fetchMaterials();
   }, []);
 
+  const recordedLectureMaterials = useMemo(() => (
+    recordings.map((recording) => ({
+      id: `recording-${recording.id}`,
+      recordingId: recording.id,
+      title: recording.title,
+      type: 'recorded_class',
+      fileType: 'video',
+      fileUrl: recording.video_url || null,
+      subjectName: recording.subject_name || 'Other Subjects',
+      chapterName: recording.chapter_name || 'General Chapters',
+      topicName: recording.topic_name || 'General Topics',
+      uploaded_by_name: recording.teacher_name || 'Teacher',
+      createdAt: recording.created_at || recording.recorded_date || null,
+      description: recording.description || null,
+      transcriptStatus: recording.transcript_status || null,
+      notesStatus: recording.notes_status || null,
+      isRecordedClass: true,
+    }))
+  ), [recordings]);
+
+  const allMaterials = useMemo(
+    () => [...materials, ...recordedLectureMaterials],
+    [materials, recordedLectureMaterials],
+  );
+
   const filteredMaterials = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return materials.filter((m) => {
+    return allMaterials.filter((m) => {
       const haystack = [
         m.title,
         m.subjectName || m.subjectId,
@@ -162,12 +198,12 @@ export default function StudyMaterials() {
 
       return (!q || haystack.includes(q)) && materialMatchesType(m, selectedType);
     });
-  }, [materials, searchQuery, selectedType]);
+  }, [allMaterials, searchQuery, selectedType]);
 
   const groupedTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
   const subjectNames = Object.keys(groupedTree).sort();
   const activeChapters = selectedSubject ? groupedTree[selectedSubject] || {} : {};
-  const totalCount = materials.length;
+  const totalCount = allMaterials.length;
 
   useEffect(() => {
     if (!selectedSubject) return;
@@ -185,6 +221,10 @@ export default function StudyMaterials() {
   };
 
   const openMaterial = (material) => {
+    if (material.isRecordedClass && material.recordingId) {
+      navigate(`/school/student/recorded-classes/${material.recordingId}`);
+      return;
+    }
     if (material.fileUrl) {
       window.open(material.fileUrl, '_blank');
       return;
@@ -425,6 +465,13 @@ function TopicBlock({ topicName, materials, onView }) {
         {materials.map((m) => {
           const meta = getResourceMeta(m.fileType, m.fileUrl);
           const TypeIcon = meta.icon;
+          const actionLabel = m.isRecordedClass ? 'Open Class' : 'View';
+          const statusText = m.isRecordedClass
+            ? [
+                m.notesStatus === 'done' ? 'AI notes ready' : null,
+                m.transcriptStatus === 'done' ? 'Transcript ready' : null,
+              ].filter(Boolean).join(' · ')
+            : null;
 
           return (
             <div key={m.id} className="flex items-center gap-4 p-4">
@@ -439,6 +486,12 @@ function TopicBlock({ topicName, materials, onView }) {
                   <span>{m.uploaded_by_name || 'Teacher'}</span>
                   <span>|</span>
                   <span>{m.createdAt ? new Date(m.createdAt).toLocaleDateString() : 'N/A'}</span>
+                  {statusText && (
+                    <>
+                      <span>|</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{statusText}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <button
@@ -447,7 +500,7 @@ function TopicBlock({ topicName, materials, onView }) {
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-700"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                View
+                {actionLabel}
               </button>
             </div>
           );

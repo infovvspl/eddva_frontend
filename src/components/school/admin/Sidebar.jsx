@@ -145,6 +145,7 @@ const teacherGroups = [
       { to: '/school/teacher/doubts', label: 'Student Doubts', icon: MessageSquare },
       { to: '/school/teacher/assignments', label: 'Assignments', icon: FileText },
       { to: '/school/teacher/assessments', label: 'Assessments', icon: ClipboardList },
+      { to: '/school/teacher/meetings', label: 'Meetings', icon: CalendarDays },
       { to: '/school/teacher/reports', label: 'Reports', icon: BarChart3 },
     ],
   },

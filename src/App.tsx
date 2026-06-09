@@ -164,6 +164,7 @@ const SchoolCreatorStudio       = lazy(() => import("./pages/school/teacher/Crea
 const SchoolTeacherReports      = lazy(() => import("./pages/school/teacher/Reports"));
 const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
 const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
+const SchoolTeacherMeetings     = lazy(() => import("./pages/school/teacher/Meetings"));
 const SchoolTeacherProfile      = lazy(() => import("./pages/school/teacher/Profile"));
 const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Notifications"));
 const SchoolTeacherDoubtQueue   = lazy(() => import("./pages/school/teacher/DoubtQueue"));
@@ -173,6 +174,7 @@ const SchoolTeacherSettings     = lazy(() => import("./pages/school/teacher/Sett
 const SchoolStudentLayout       = lazy(() => import("./components/school/student/Layout"));
 const SchoolStudentDashboard    = lazy(() => import("./pages/school/student/Dashboard"));
 const SchoolStudentClasses      = lazy(() => import("./pages/school/student/Classes"));
+const SchoolStudentRecordedClassDetails = lazy(() => import("./pages/school/student/RecordedClassDetails"));
 const SchoolStudentClassDetails = lazy(() => import("./pages/school/student/ClassDetails"));
 const SchoolStudentTopicDetails = lazy(() => import("./pages/school/student/TopicDetails"));
 const SchoolStudentStudyMaterials = lazy(() => import("./pages/school/student/StudyMaterials"));
@@ -387,6 +389,7 @@ const SchoolRoutes = () => (
       <Route path="assessments/:id" element={<SchoolAssessmentDetails />} />
       <Route path="creator" element={<SchoolCreatorStudio />} />
       <Route path="reports" element={<SchoolTeacherReports />} />
+      <Route path="meetings" element={<SchoolTeacherMeetings />} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
       <Route path="chat" element={<SchoolChatSystem />} />
       <Route path="doubts" element={<SchoolTeacherDoubtQueue />} />
@@ -400,6 +403,7 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolStudentDashboard />} />
       <Route path="live-classes" element={<SchoolStudentClasses />} />
       <Route path="recorded-classes" element={<SchoolStudentClasses />} />
+      <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
       <Route path="classes" element={<SchoolStudentClasses />} />
       <Route path="classes/:id" element={<SchoolStudentClassDetails />} />
       <Route path="classes/:batchId/topics/:topicId" element={<SchoolStudentTopicDetails />} />
