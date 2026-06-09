@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
 } from "lucide-react";
+import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
 import Button from "@/components/school/Button";
 import Badge from "@/components/school/Badge";
@@ -34,8 +33,8 @@ function Breadcrumb({
             onClick={item.onClick}
             disabled={item.active}
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${item.active
-                ? "bg-brand-50 text-brand-700"
-                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              ? "bg-brand-50 text-brand-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               }`}
           >
             {item.icon}
@@ -84,30 +83,102 @@ function NavCard({
   );
 }
 
-function ContentEditPreview({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function ContentEditor({
+  questions,
+  onQuestionsChange,
+  answerKey,
+  onAnswerKeyChange,
+}: {
+  questions: string;
+  onQuestionsChange: (v: string) => void;
+  answerKey: string;
+  onAnswerKeyChange: (v: string) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-      <div className="flex flex-col">
-        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-400">Edit question paper</p>
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Type or edit the question paper here. Markdown supported (## Section A, 1. question, etc.)."
-          className="h-[55vh] w-full resize-none rounded-xl border border-gray-200 bg-white p-3 font-mono text-xs outline-none focus:ring-2 focus:ring-brand-500"
-        />
+    <div className="space-y-4">
+      {/* Tab Switcher */}
+      <div className="flex border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab("edit")}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
+            ? "border-brand-500 text-brand-600 font-extrabold"
+            : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+        >
+          ✏️ Edit Test
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("preview")}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
+            ? "border-brand-500 text-brand-600 font-extrabold"
+            : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+        >
+          👁️ Preview (Student View)
+        </button>
       </div>
-      <div className="flex flex-col">
-        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-400">Preview</p>
-        <div className="h-[55vh] overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-4">
-          {value.trim() ? (
-            <div className="prose prose-sm prose-slate max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+
+      {activeTab === "edit" ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Question Paper pane */}
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 border-b border-blue-100">
+              <FileText size={14} className="text-blue-600" />
+              <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper</span>
+              <span className="ml-auto text-[10px] text-blue-400 font-medium">Students will see this</span>
             </div>
-          ) : (
-            <p className="text-sm text-gray-400">Formatted question paper will appear here.</p>
-          )}
+            <textarea
+              value={questions}
+              onChange={(e) => onQuestionsChange(e.target.value)}
+              placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
+              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+
+          {/* Answer Key pane */}
+          <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 border-b border-amber-100">
+              <span className="text-sm">🔑</span>
+              <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key</span>
+              <span className="ml-auto text-[10px] text-amber-500 font-medium">Teacher only · hidden from students</span>
+            </div>
+            <textarea
+              value={answerKey}
+              onChange={(e) => onAnswerKeyChange(e.target.value)}
+              placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
+              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 overflow-hidden">
+          <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+            <FileText size={14} />
+            <span>Question Paper Preview (Student View)</span>
+          </div>
+          <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
+            {questions.trim() ? (
+              <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
+            )}
+          </div>
+          <div className="mt-4 rounded-lg border border-amber-100 bg-white p-4">
+            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
+              <span>Answer Key Preview (Teacher Only)</span>
+            </div>
+            {answerKey.trim() ? (
+              <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
+            ) : (
+              <p className="text-sm text-gray-400">The answer key preview will appear here once answers are added.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -130,9 +201,11 @@ const AssessmentSystem: React.FC = () => {
   const [editingTest, setEditingTest] = useState<any>(null);
   const [contentMode, setContentMode] = useState<"manual" | "upload" | "ai">("manual");
   const [contentText, setContentText] = useState("");
+  const [answerKey, setAnswerKey] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiLanguage, setAiLanguage] = useState("en");
   const [aiConfig, setAiConfig] = useState({
     mcqCount: 5,
     trueFalseCount: 5,
@@ -158,6 +231,11 @@ const AssessmentSystem: React.FC = () => {
 
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
+
+  const updateContentText = (value: string) => {
+    setContentText(value);
+    setStructuredQuestions([]);
+  };
 
   // ── Load Context (source of truth for navigation) ────────────
   useEffect(() => {
@@ -253,9 +331,9 @@ const AssessmentSystem: React.FC = () => {
 
   const level = selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
   const goBack = () => {
     if (level === 'workspace') goToSubjects();
     else if (level === 'subjects') goToSections();
@@ -278,7 +356,8 @@ const AssessmentSystem: React.FC = () => {
       const formatted = allAssessments.map((item: any) => ({
         id: item.id,
         title: item.title,
-        type: item.assessment_type || item.type || "topic",
+        type: normaliseType(item.assessment_type || item.type || "topic"),
+        rawType: item.assessment_type || item.type || "topic", // original for debugging
         totalMarks: item.total_marks,
         duration: item.duration_minutes || "-",
         date: item.scheduled_at || item.scheduled_date
@@ -293,6 +372,7 @@ const AssessmentSystem: React.FC = () => {
         raw: item,
       }));
 
+      console.log("AFTER WORKSPACE FILTER", formatted.length, formatted);
       setTestsList(formatted);
     } catch (err) {
       console.error("Fetch assessments error:", err);
@@ -321,9 +401,9 @@ const AssessmentSystem: React.FC = () => {
       const payload: Record<string, any> = {
         title: formData.title,
         type: formData.type,
-        assessmentType: formData.type, // Handle backend variations
+        assessmentType: formData.type,
         subjectId: selectedSubject?.id,
-        class_id: selectedClass?.id, // frontend metadata if needed
+        class_id: selectedClass?.id,
         sectionId: selectedSection?.id,
         total_marks: formData.total_marks,
         totalMarks: formData.total_marks,
@@ -332,9 +412,11 @@ const AssessmentSystem: React.FC = () => {
         scheduled_date: formData.scheduled_date,
         scheduledAt: formData.scheduled_date,
         contentText,
+        answerKey,
         contentSource: contentMode,
         chapterId: selectedChapterId || undefined,
         topicId: selectedTopicId || undefined,
+        language: aiLanguage,
       };
 
       if (editingTest) {
@@ -362,10 +444,46 @@ const AssessmentSystem: React.FC = () => {
       });
       setContentMode("manual");
       setContentText("");
+      setAnswerKey("");
       setUploadFile(null);
       setAiPrompt("");
+      setAiLanguage("en");
     } catch (err) {
       console.error("Create assessment error:", err);
+    }
+  };
+
+  const handleLanguageChange = async (newLang: string) => {
+    setAiLanguage(newLang);
+    if (!contentText.trim() && !answerKey.trim()) return;
+
+    const langLabel = newLang === 'hi' ? 'Hindi' : newLang === 'od' ? 'Odia' : 'English';
+    const confirmed = window.confirm(`Do you want to translate the current question paper and answer key to ${langLabel}?`);
+    if (!confirmed) return;
+
+    setGeneratingAi(true);
+    try {
+      if (contentText.trim()) {
+        const resQ = await api.post("/assessments/translate", {
+          text: contentText,
+          language: newLang,
+        });
+        const translatedQ = resQ.data?.data?.translatedText || resQ.data?.translatedText || contentText;
+        setContentText(translatedQ);
+      }
+      if (answerKey.trim()) {
+        const resA = await api.post("/assessments/translate", {
+          text: answerKey,
+          language: newLang,
+        });
+        const translatedA = resA.data?.data?.translatedText || resA.data?.translatedText || answerKey;
+        setAnswerKey(translatedA);
+      }
+    } catch (err) {
+      console.error("Translation error:", err);
+      alert("Failed to translate the content. Please try again.");
+    } finally {
+      setGeneratingAi(false);
     }
   };
 
@@ -390,12 +508,14 @@ const AssessmentSystem: React.FC = () => {
         shortCount: aiConfig.shortCount,
         longCount: aiConfig.longCount,
         difficulty: aiConfig.difficulty,
+        language: aiLanguage,
       });
       const draft = res.data?.data || res.data || {};
       if (draft.title && !formData.title.trim()) {
         setFormData((current) => ({ ...current, title: draft.title }));
       }
       setContentText(draft.contentText || draft.content_text || "");
+      setAnswerKey(draft.answerKey || draft.answer_key || "");
       setContentMode("ai");
     } catch (err) {
       console.error("AI assessment generation error:", err);
@@ -421,15 +541,27 @@ const AssessmentSystem: React.FC = () => {
     {
       key: "type",
       title: "Type",
-      render: (v: string) => (
-        <Badge
-          variant={
-            v === "final" ? "error" : v === "mock" ? "warning" : v === "unit" ? "info" : "purple"
-          }
-        >
-          {v}
-        </Badge>
-      ),
+      render: (v: string) => {
+        const labelMap: Record<string, string> = {
+          topic: "Topic Test",
+          chapter: "Chapter Test",
+          subject: "Subject Test",
+          mock: "Mock Test",
+          final: "Final Exam",
+        };
+        const variantMap: Record<string, "error" | "warning" | "info" | "purple" | "success"> = {
+          topic: "purple",
+          chapter: "info",
+          subject: "success",
+          mock: "warning",
+          final: "error",
+        };
+        return (
+          <Badge variant={variantMap[v] ?? "purple"}>
+            {labelMap[v] ?? v}
+          </Badge>
+        );
+      },
     },
     { key: "totalMarks", title: "Total Marks" },
     { key: "duration", title: "Duration (mins)" },
@@ -465,9 +597,11 @@ const AssessmentSystem: React.FC = () => {
                 scheduled_date: row.rawDate ? String(row.rawDate).slice(0, 10) : "",
               });
               setContentText(row.raw?.content_text || row.raw?.contentText || "");
+              setAnswerKey(row.raw?.answer_key || row.raw?.answerKey || "");
               setContentMode(row.raw?.content_source === "upload" ? "upload" : row.raw?.content_source === "ai" ? "ai" : "manual");
               setUploadFile(null);
               setAiPrompt("");
+              setAiLanguage(row.raw?.language || "en");
               setShowCreateModal(true);
             }}
           >
@@ -495,13 +629,53 @@ const AssessmentSystem: React.FC = () => {
     },
   ];
 
+  // ── Type label map (used for search matching against type) ──────────────
+  const TYPE_LABEL_MAP: Record<string, string> = {
+    topic: "topic test",
+    chapter: "chapter test",
+    subject: "subject test",
+    mock: "mock test",
+    final: "final exam",
+  };
+
+  /**
+   * renderDataTable — 5-stage filter pipeline
+   *
+   * Stage 1  RAW ASSESSMENTS     — all records from API (logged in fetchTests)
+   * Stage 2  AFTER WORKSPACE     — subject + class filter (applied in fetchTests, stored in testsList)
+   * Stage 3  AFTER TYPE FILTER   — keep only records matching this tab's type
+   * Stage 4  AFTER STATUS FILTER — apply Upcoming / Completed dropdown
+   * Stage 5  AFTER SEARCH FILTER — case-insensitive match on title OR type label
+   */
   const renderDataTable = (typeFilter: string | string[]) => {
-    const data = testsList.filter((t) => {
-      const matchType = Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter;
-      const matchSearch = t.title.toLowerCase().includes(workspaceSearch.toLowerCase());
-      const matchStatus = workspaceStatusFilter === "all" || t.status === workspaceStatusFilter;
-      return matchType && matchSearch && matchStatus;
-    });
+    // Stage 2 — workspace-filtered list (fetchTests already applied subject+class)
+    console.log("RAW ASSESSMENTS (in testsList, after workspace filter)", testsList.length);
+
+    // Stage 3 — tab type filter
+    const afterType = testsList.filter((t) =>
+      Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter
+    );
+    console.log("AFTER TYPE FILTER", afterType.length);
+
+    // Stage 4 — status dropdown filter
+    const afterStatus = workspaceStatusFilter === "all"
+      ? afterType
+      : afterType.filter((t) => t.status === workspaceStatusFilter);
+    console.log("AFTER STATUS FILTER", afterStatus.length);
+
+    // Stage 5 — search: title OR type label only (NOT status, marks, dates)
+    const sq = workspaceSearch.trim().toLowerCase();
+    const afterSearch = sq
+      ? afterStatus.filter((t) => {
+        const inTitle = (t.title ?? "").toLowerCase().includes(sq);
+        const inType = (TYPE_LABEL_MAP[t.type] ?? t.type ?? "").toLowerCase().includes(sq);
+        return inTitle || inType;
+      })
+      : afterStatus;
+    console.log("AFTER SEARCH FILTER", afterSearch.length);
+    console.log("FINAL RENDER COUNT", afterSearch.length);
+
+    const data = afterSearch;
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -511,226 +685,281 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
             <Target size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
+<<<<<<< HEAD
+    <p className="text-gray-500 mt-1 text-sm">
+      {sq
+        ? `No results for "${workspaceSearch}" in this tab.`
+        : "Get started by creating your first test."}
+    </p>
+=======
             <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
-          </div>
+>>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
+          </div >
         ) : (
-          <DataTable columns={testColumns} data={data} />
-        )}
-      </div>
+  <DataTable columns={testColumns} data={data} />
+)}
+      </div >
     );
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            Assessments
-          </h1>
-          <p className="mt-1 text-sm font-medium text-gray-500">
-            Navigate through your assigned classes to manage assessments.
-          </p>
-        </div>
-        {level !== 'classes' && (
-          <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
-            Back
-          </Button>
-        )}
+// ── Render ───────────────────────────────────────────────────────────────
+return (
+  <div className="p-6 max-w-7xl mx-auto space-y-6">
+    {/* Header */}
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          Assessments
+        </h1>
+        <p className="mt-1 text-sm font-medium text-gray-500">
+          Navigate through your assigned classes to manage assessments.
+        </p>
       </div>
+      {level !== 'classes' && (
+        <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
+          Back
+        </Button>
+      )}
+    </div>
 
-      {/* Breadcrumbs */}
-      <Breadcrumb
-        items={[
-          { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
-          ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
-        ]}
-      />
+    {/* Breadcrumbs */}
+    <Breadcrumb
+      items={[
+        { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
+        ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
+        ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
+        ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
+      ]}
+    />
 
-      {/* Search Bar for Navigation Levels */}
-      {level !== 'workspace' && (
-        <div className="max-w-md mb-6">
-          <SearchBar value={search} onChange={setSearch} placeholder={`Search ${level}...`} />
+    {/* Search Bar for Navigation Levels */}
+    {level !== 'workspace' && (
+      <div className="max-w-md mb-6">
+        <SearchBar value={search} onChange={setSearch} placeholder={`Search ${level}...`} />
+      </div>
+    )}
+
+    {/* Level 1: Classes */}
+    {level === 'classes' && (
+      loadingContext ? (
+        <div className="py-12 text-center text-gray-400">Loading your classes...</div>
+      ) : filteredClasses.length === 0 ? (
+        <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+          No classes assigned.
         </div>
-      )}
-
-      {/* Level 1: Classes */}
-      {level === 'classes' && (
-        loadingContext ? (
-          <div className="py-12 text-center text-gray-400">Loading your classes...</div>
-        ) : filteredClasses.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-            No classes assigned.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredClasses.map((c) => (
-              <NavCard
-                key={c.id}
-                icon={<GraduationCap size={22} />}
-                tone="brand"
-                title={c.name}
-                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
-                actionLabel="View sections"
-                onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* Level 2: Sections */}
-      {level === 'sections' && (
-        filteredSections.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-            No sections assigned for this class.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSections.map((s) => (
-              <NavCard
-                key={s.id}
-                icon={<Layers size={22} />}
-                tone="brand"
-                title={`Section ${s.name}`}
-                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
-                actionLabel="View subjects"
-                onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* Level 3: Subjects */}
-      {level === 'subjects' && (
-        filteredSubjects.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-            No subjects assigned for this class.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSubjects.map((s) => (
-              <NavCard
-                key={s.id}
-                icon={<BookOpen size={22} />}
-                tone="emerald"
-                title={s.name}
-                meta="Assessments Workspace"
-                actionLabel="Open workspace"
-                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* Level 4: Workspace */}
-      {level === 'workspace' && selectedClass && selectedSubject && (
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {selectedClass.name} | {selectedSubject.name}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="text"
-                placeholder="Search tests..."
-                value={workspaceSearch}
-                onChange={(e) => setWorkspaceSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-              />
-              <select
-                value={workspaceStatusFilter}
-                onChange={(e) => setWorkspaceStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-              >
-                <option value="all">All Status</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="completed">Completed</option>
-              </select>
-              <Button
-                icon={<Plus size={18} />}
-                onClick={() => {
-                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
-                  setEditingTest(null);
-                  setContentMode("manual");
-                  setContentText("");
-                  setUploadFile(null);
-                  setAiPrompt("");
-                  setShowCreateModal(true);
-                }}
-                className="shadow-sm"
-              >
-                Create Test
-              </Button>
-            </div>
-          </div>
-
-          <Tabs
-            tabs={[
-              {
-                id: "topic",
-                label: "Topic Tests",
-                icon: <ClipboardList size={16} />,
-                content: renderDataTable("topic"),
-              },
-              {
-                id: "unit",
-                label: "Unit Tests",
-                icon: <BarChart3 size={16} />,
-                content: renderDataTable("unit"),
-              },
-              {
-                id: "mock",
-                label: "Mock & Final",
-                icon: <Target size={16} />,
-                content: renderDataTable(["mock", "subject", "final"]),
-              }
-            ]}
-          />
-        </div>
-      )}
-
-      {/* Create Modal */}
-      {selectedClass && selectedSubject && (
-        <Modal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          title={editingTest ? "Update Test" : "Create New Test"}
-          size="full"
-        >
-          <div className="space-y-4 p-2">
-            <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
-              <strong>Context:</strong> Posting to {selectedClass.name}
-              {selectedSection ? ` / Section ${selectedSection.name}` : ""} ({selectedSubject.name})
-            </div>
-
-            <InputField
-              label="Test Title"
-              placeholder="Enter test title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredClasses.map((c) => (
+            <NavCard
+              key={c.id}
+              icon={<GraduationCap size={22} />}
+              tone="brand"
+              title={c.name}
+              meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
+              actionLabel="View sections"
+              onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
             />
+          ))}
+        </div>
+      )
+    )}
+
+    {/* Level 2: Sections */}
+    {level === 'sections' && (
+      filteredSections.length === 0 ? (
+        <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+          No sections assigned for this class.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSections.map((s) => (
+            <NavCard
+              key={s.id}
+              icon={<Layers size={22} />}
+              tone="brand"
+              title={`Section ${s.name}`}
+              meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
+              actionLabel="View subjects"
+              onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
+            />
+          ))}
+        </div>
+      )
+    )}
+
+    {/* Level 3: Subjects */}
+    {level === 'subjects' && (
+      filteredSubjects.length === 0 ? (
+        <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+          No subjects assigned for this class.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSubjects.map((s) => (
+            <NavCard
+              key={s.id}
+              icon={<BookOpen size={22} />}
+              tone="emerald"
+              title={s.name}
+              meta="Assessments Workspace"
+              actionLabel="Open workspace"
+              onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
+            />
+          ))}
+        </div>
+      )
+    )}
+
+    {/* Level 4: Workspace */}
+    {level === 'workspace' && selectedClass && selectedSubject && (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {selectedClass.name} | {selectedSubject.name}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              id="workspace-search"
+              type="text"
+              placeholder="Search by title or type..."
+              value={workspaceSearch}
+              onChange={(e) => setWorkspaceSearch(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
+            />
+            <select
+              value={workspaceStatusFilter}
+              onChange={(e) => setWorkspaceStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+            >
+              <option value="all">All Status</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="completed">Completed</option>
+            </select>
+            <Button
+              icon={<Plus size={18} />}
+              onClick={() => {
+                setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
+                setEditingTest(null);
+                setContentMode("manual");
+                setContentText("");
+                setAnswerKey("");
+                setUploadFile(null);
+                setAiPrompt("");
+                setAiLanguage("en");
+                setShowCreateModal(true);
+              }}
+              className="shadow-sm"
+            >
+              Create Test
+            </Button>
+          </div>
+        </div>
+
+        <Tabs
+          tabs={[
+            {
+              id: "topic",
+              label: "Topic Tests",
+              icon: <ClipboardList size={16} />,
+              // Matches records with type = "topic"
+              content: renderDataTable("topic"),
+            },
+            {
+              id: "chapter",
+              label: "Chapter Tests",
+              icon: <BarChart3 size={16} />,
+              // Matches records with type = "chapter" OR legacy "unit"
+              // (legacy "unit" is already normalised to "chapter" in formatted list)
+              content: renderDataTable("chapter"),
+            },
+            {
+              id: "subject",
+              label: "Subject Tests",
+              icon: <BookOpen size={16} />,
+              // Matches records with type = "subject"
+              content: renderDataTable("subject"),
+            },
+            {
+              id: "mock",
+              label: "Mock Tests",
+              icon: <Trophy size={16} />,
+              // Matches records with type = "mock"
+              content: renderDataTable("mock"),
+            },
+            {
+              id: "final",
+              label: "Final Exams",
+              icon: <Target size={16} />,
+              // Matches records with type = "final"
+              content: renderDataTable("final"),
+            },
+          ]}
+        />
+      </div>
+    )}
+
+    {/* Create Modal */}
+    {selectedClass && selectedSubject && (
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title={editingTest ? "Update Test" : "Create New Test"}
+        size="full"
+      >
+        <div className="space-y-4 p-2">
+          <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
+            <strong>Context:</strong> Posting to {selectedClass.name}
+            {selectedSection ? ` / Section ${selectedSection.name}` : ""} ({selectedSubject.name})
+          </div>
+
+          <InputField
+            label="Test Title"
+            placeholder="Enter test title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          />
+<<<<<<< HEAD
             <SelectField
               label="Test Type"
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
               options={[
                 { value: "topic", label: "Topic Test" },
-                { value: "unit", label: "Unit Test" },
-                { value: "mock", label: "Mock Test" },
+                { value: "chapter", label: "Chapter Test" },
                 { value: "subject", label: "Subject Test" },
+                { value: "mock", label: "Mock Test" },
                 { value: "final", label: "Final Exam" },
               ]}
             />
+=======
+            <div className="grid grid-cols-2 gap-4">
+              <SelectField
+                label="Test Type"
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                options={[
+                  { value: "topic", label: "Topic Test" },
+                  { value: "unit", label: "Unit Test" },
+                  { value: "mock", label: "Mock Test" },
+                  { value: "subject", label: "Subject Test" },
+                  { value: "final", label: "Final Exam" },
+                ]}
+              />
+              <SelectField
+                label="Language"
+                value={aiLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                options={[
+                  { value: "en", label: "English" },
+                  { value: "hi", label: "Hindi" },
+                  { value: "od", label: "Odia" },
+                ]}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <SelectField
@@ -752,6 +981,7 @@ const AssessmentSystem: React.FC = () => {
                 ]}
               />
             </div>
+>>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
 
             <div className="grid grid-cols-2 gap-4">
               <InputField
@@ -790,8 +1020,13 @@ const AssessmentSystem: React.FC = () => {
                     type="button"
                     onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
+<<<<<<< HEAD
                         ? "border-brand-400 bg-white text-brand-700 shadow-sm"
                         : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+=======
+                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+>>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
                       }`}
                   >
                     {mode.icon}
@@ -801,7 +1036,12 @@ const AssessmentSystem: React.FC = () => {
               </div>
 
               {contentMode === "manual" && (
-                <ContentEditPreview value={contentText} onChange={setContentText} />
+                <ContentEditor
+                  questions={contentText}
+                  onQuestionsChange={setContentText}
+                  answerKey={answerKey}
+                  onAnswerKeyChange={setAnswerKey}
+                />
               )}
 
               {contentMode === "upload" && (
@@ -817,7 +1057,12 @@ const AssessmentSystem: React.FC = () => {
                   ) : (
                     <p className="text-xs text-gray-500">Upload a PDF, document, text file, or question-paper image.</p>
                   )}
-                  <ContentEditPreview value={contentText} onChange={setContentText} />
+                  <ContentEditor
+                    questions={contentText}
+                    onQuestionsChange={setContentText}
+                    answerKey={answerKey}
+                    onAnswerKeyChange={setAnswerKey}
+                  />
                 </div>
               )}
 
@@ -855,6 +1100,7 @@ const AssessmentSystem: React.FC = () => {
                         <option value="hard">Hard</option>
                       </select>
                     </label>
+
                   </div>
                   <textarea
                     value={aiPrompt}
@@ -866,7 +1112,15 @@ const AssessmentSystem: React.FC = () => {
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
                     {generatingAi ? "Generating..." : "Generate Question Paper"}
                   </Button>
-                  <ContentEditPreview value={contentText} onChange={setContentText} />
+                  {/* Show two-pane editor once AI has generated content */}
+                  {contentText && (
+                    <ContentEditor
+                      questions={contentText}
+                      onQuestionsChange={setContentText}
+                      answerKey={answerKey}
+                      onAnswerKeyChange={setAnswerKey}
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -879,11 +1133,67 @@ const AssessmentSystem: React.FC = () => {
                 {editingTest ? "Update Test" : "Create Test"}
               </Button>
             </div>
-          </div>
-        </Modal>
+          </div >
+        </Modal >
       )}
-    </div>
+    </div >
   );
 };
 
+<<<<<<< HEAD
+// ── Presentational helpers ───────────────────────────────────────────────────
+
+const toneStyles: Record<string, { soft: string; icon: string }> = {
+  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
+  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
+  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
+};
+
+function NavCard({
+  icon, tone, title, meta, actionLabel, onClick,
+}: {
+  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
+  actionLabel: string; onClick: () => void;
+}) {
+  const t = toneStyles[tone] ?? toneStyles.brand;
+  return (
+    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
+      <div className="flex items-start justify-between gap-3">
+        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
+      </div>
+      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
+      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
+        <Users size={14} /> {meta}
+      </p>
+      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
+        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </GlassCard>
+  );
+}
+
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+  return (
+    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+      {items.map((it, i) => (
+        <React.Fragment key={`${it.label}-${i}`}>
+          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
+          <button
+            type="button"
+            onClick={it.onClick}
+            disabled={it.active}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
+              }`}
+          >
+            {it.icon}{it.label}
+          </button>
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+}
+
+=======
+>>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
 export default AssessmentSystem;

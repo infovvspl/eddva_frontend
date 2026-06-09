@@ -6,46 +6,23 @@ import { cn } from '@/components/school/admin/Skeleton';
 export default function Analytics() {
   const [performance, setPerformance] = useState(null);
   const [insights, setInsights] = useState(null);
-  const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCourses();
+    fetchAnalytics();
   }, []);
 
-  useEffect(() => {
-    if (selectedCourse) {
-      fetchAnalytics(selectedCourse);
-    } else if (courses.length > 0) {
-      fetchAnalytics(courses[0].batchId);
-    }
-  }, [selectedCourse, courses]);
-
-  const fetchCourses = async () => {
-    try {
-      const res = await api.get('/study-plans/courses');
-      setCourses(res.data || []);
-      if (res.data?.length > 0) {
-        setSelectedCourse(res.data[0].batchId);
-      }
-    } catch (error) {
-      console.error('Failed to fetch courses:', error);
-      setLoading(false);
-    }
-  };
-
-  const fetchAnalytics = async (batchId) => {
+  const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const [perfRes, insightsRes] = await Promise.all([
-        api.get(`/analytics/student/performance?batchId=${batchId}`),
-        api.get(`/analytics/student/insights?batchId=${batchId}`)
-      ]);
-      setPerformance(perfRes.data);
-      setInsights(insightsRes.data);
+      const res = await api.get('/reports/my-analytics');
+      const data = res.data?.data || null;
+      setPerformance(data);
+      setInsights(data?.insights || null);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
+      setPerformance(null);
+      setInsights(null);
     } finally {
       setLoading(false);
     }
@@ -68,27 +45,18 @@ export default function Analytics() {
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500">Track your learning progress and get AI insights.</p>
         </div>
-        
-        {courses.length > 0 && (
-          <select
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-            className="rounded-xl border-slate-200 bg-white py-2 pl-4 pr-10 text-sm font-bold text-slate-700 focus:border-indigo-500 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-          >
-            {courses.map(course => (
-              <option key={course.batchId} value={course.batchId}>
-                {course.batchName}
-              </option>
-            ))}
-          </select>
+        {performance?.profile && (
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            {[performance.profile.class_name, performance.profile.section_name].filter(Boolean).join(' - ')}
+          </div>
         )}
       </div>
 
-      {(!performance && !loading) ? (
+      {(!performance || performance.questionsAttempted === 0) && !loading ? (
         <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <Activity className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">No analytics available</h3>
-          <p className="mt-1 text-sm text-slate-500">Start learning and completing assessments to see your data here.</p>
+          <p className="mt-1 text-sm text-slate-500">Your analytics will appear after your teacher publishes assessment results.</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-3">

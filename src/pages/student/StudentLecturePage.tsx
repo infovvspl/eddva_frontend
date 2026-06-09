@@ -16,7 +16,6 @@ import {
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
 import { cn } from "@/lib/utils";
-import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { cleanAiNotesContent } from "@/lib/ai-notes";
 import { apiClient, extractData } from "@/lib/api/client";
 import {
@@ -44,6 +43,48 @@ import {
 } from "@/lib/youtube-iframe-api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+interface OverlayLabel {
+  text: string;
+  x: number;
+  y: number;
+  px?: number;
+  py?: number;
+}
+
+function parseNoteImageAlt(alt?: string | null) {
+  const raw = String(alt || "").trim();
+  const overlayMatch = raw.match(/\s*<<NOTE_IMAGE_OVERLAY:([A-Za-z0-9_-]+)>>\s*/);
+  const overlayLabels = (() => {
+    if (!overlayMatch) return [] as OverlayLabel[];
+    try {
+      const padded = overlayMatch[1] + "=".repeat((4 - (overlayMatch[1].length % 4)) % 4);
+      const binary = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const payload = JSON.parse(new TextDecoder().decode(bytes));
+      return Array.isArray(payload?.labels)
+        ? payload.labels
+            .map((label: any) => ({
+              text: String(label?.text || "").trim(),
+              x: Number(label?.x),
+              y: Number(label?.y),
+              px: label?.px !== undefined && Number.isFinite(Number(label.px)) ? Number(label.px) : undefined,
+              py: label?.py !== undefined && Number.isFinite(Number(label.py)) ? Number(label.py) : undefined,
+            }))
+            .filter((label: any) => label.text && Number.isFinite(label.x) && Number.isFinite(label.y))
+        : [];
+    } catch {
+      return [];
+    }
+  })();
+  const withoutOverlay = raw.replace(/\s*<<NOTE_IMAGE_OVERLAY:[A-Za-z0-9_-]+>>\s*/g, "").trim();
+  const [caption, legend] = withoutOverlay.split(/\s+\|\s+Legend:\s+/i);
+  return {
+    caption: (caption || withoutOverlay || "Generated educational visual").trim(),
+    legend: (legend || "").trim(),
+    overlayLabels,
+  };
+}
 
 async function fetchLecture(id: string): Promise<Lecture> {
   const res = await apiClient.get(`/content/lectures/${id}`);
@@ -865,7 +906,86 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
               {displayNotes && /<[a-z][\s\S]*>/i.test(displayNotes) && (displayNotes.includes('<p>') || displayNotes.includes('<h1>') || displayNotes.includes('<ul>')) ? (
                  <div dangerouslySetInnerHTML={{ __html: displayNotes }} />
               ) : (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayNotes ?? ""}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ src, alt }) => {
+                      const meta = parseNoteImageAlt(String(alt || ""));
+                      return (
+                        <figure className="my-5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                          <div className="relative bg-white flex justify-center py-2 select-none">
+                            <div className="relative">
+                              <img
+                                src={String(src || "")}
+                                alt={meta.caption}
+                                loading="lazy"
+                                className="max-h-[420px] max-w-full w-auto h-auto block object-contain"
+                              />
+                              {meta.overlayLabels.length > 0 && (
+                                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                                  {meta.overlayLabels.map((label: any, index: number) => {
+                                    const px = label.px !== undefined ? label.px : label.x;
+                                    const py = label.py !== undefined ? label.py : label.y;
+                                    const dist = Math.hypot(label.x - px, label.y - py);
+                                    if (dist < 0.005) return null;
+                                    return (
+                                      <g key={`line-${index}`}>
+                                        <line
+                                          x1={`${label.x * 100}%`}
+                                          y1={`${label.y * 100}%`}
+                                          x2={`${px * 100}%`}
+                                          y2={`${py * 100}%`}
+                                          stroke="rgba(99, 102, 241, 0.4)"
+                                          strokeWidth="3"
+                                          strokeLinecap="round"
+                                        />
+                                        <line
+                                          x1={`${label.x * 100}%`}
+                                          y1={`${label.y * 100}%`}
+                                          x2={`${px * 100}%`}
+                                          y2={`${py * 100}%`}
+                                          stroke="#6366f1"
+                                          strokeWidth="1.5"
+                                          strokeDasharray="2,2"
+                                          strokeLinecap="round"
+                                        />
+                                        <circle
+                                          cx={`${px * 100}%`}
+                                          cy={`${py * 100}%`}
+                                          r="3.5"
+                                          fill="#4f46e5"
+                                          stroke="#ffffff"
+                                          strokeWidth="1"
+                                        />
+                                      </g>
+                                    );
+                                  })}
+                                </svg>
+                              )}
+                              {meta.overlayLabels.map((label: any, index: number) => (
+                                <span
+                                  key={`${label.text}-${index}`}
+                                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-slate-950/85 px-2 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm pointer-events-auto"
+                                  style={{
+                                    left: `${Math.max(3, Math.min(97, label.x * 100))}%`,
+                                    top: `${Math.max(3, Math.min(97, label.y * 100))}%`,
+                                  }}
+                                >
+                                  {label.text}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <figcaption className="border-t border-slate-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-slate-500">
+                            <div className="font-semibold text-slate-600">{meta.caption}</div>
+                          </figcaption>
+                        </figure>
+                      );
+                    },
+                  }}
+                >
+                  {displayNotes ?? ""}
+                </ReactMarkdown>
               )}
             </div>
           </div>
@@ -1230,8 +1350,7 @@ export default function StudentLecturePage() {
 
   const [activeAiTab,  setActiveAiTab]  = useState<AiTabKey>("notes");
   const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
-  const aiLectureEnabled = useHasAiFeature("ai_study_assistant");
-  const [aiOpen,       setAiOpen]       = useState(aiLectureEnabled);
+  const [aiOpen,       setAiOpen]       = useState(true);
   const [mobileAiOpen, setMobileAiOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytPlaybackRef = useRef<ExternalLecturePlayback | null>(null);
@@ -1508,21 +1627,19 @@ export default function StudentLecturePage() {
             </div>
           )}
 
-          {/* AI Tools toggle — desktop only, AI feature gated */}
-          {aiLectureEnabled && (
-            <button
-              onClick={() => setAiOpen(v => !v)}
-              className={cn(
-                "hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border shrink-0",
-                aiOpen
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
-              )}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Tools</span>
-            </button>
-          )}
+          {/* AI Tools toggle — desktop only */}
+          <button
+            onClick={() => setAiOpen(v => !v)}
+            className={cn(
+              "hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border shrink-0",
+              aiOpen
+                ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
+                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI Tools</span>
+          </button>
         </div>
       </div>
 
@@ -1610,8 +1727,8 @@ export default function StudentLecturePage() {
             {/* Lecture info card */}
             <LectureInfoCard lecture={lecture} />
 
-            {/* ── Mobile AI Study Tools (collapsible) — AI feature gated ── */}
-            <div className={cn("lg:hidden", !aiLectureEnabled && "hidden")}>
+            {/* ── Mobile AI Study Tools (collapsible) ── */}
+            <div className="lg:hidden">
               <button
                 onClick={() => setMobileAiOpen(v => !v)}
                 className="w-full flex items-center justify-between px-4 py-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm text-sm font-semibold text-slate-700 hover:border-indigo-300 hover:shadow-md transition-all group"
@@ -1756,8 +1873,8 @@ export default function StudentLecturePage() {
             )}
           </div>
 
-          {/* ── RIGHT: AI Panel (desktop sticky) — AI feature gated ── */}
-          <aside className={cn("hidden", aiLectureEnabled && aiOpen && "lg:block")}>
+          {/* ── RIGHT: AI Panel (desktop sticky) ── */}
+          <aside className={cn("hidden", aiOpen && "lg:block")}>
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden sticky top-20">
 
               {/* Panel header */}
