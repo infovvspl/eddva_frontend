@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
@@ -9,6 +9,11 @@ import { ConfirmProvider } from '@/context/ConfirmContext';
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainRef = useRef(null);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [location.pathname]);
 
   return (
     <ConfirmProvider>
@@ -19,8 +24,8 @@ export default function Layout() {
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <Navbar onMenuClick={() => setSidebarOpen(true)} />
-          <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
-            <AnimatePresence initial={false} mode="sync">
+          <main ref={mainRef} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
+            <AnimatePresence initial={false} mode="wait">
               <PageTransition key={location.pathname} duration={0.2}>
                 <div className="mx-auto min-h-full max-w-[1680px]">
                   <Outlet />

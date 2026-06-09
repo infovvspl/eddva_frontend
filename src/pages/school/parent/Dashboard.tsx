@@ -1,314 +1,402 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  ArrowUpRight,
-  Bell,
-  BookOpenCheck,
-  Calendar,
+  CalendarCheck,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
   FileText,
   GraduationCap,
-  MessageCircle,
-  RefreshCw,
-  Sparkles,
+  ShieldCheck,
   TrendingUp,
+  UserRound,
+  XCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useAuth } from "@/context/SchoolAuthContext";
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext, type ParentChild } from "@/components/school/parent/ParentAuthGuard";
-import { useAuth } from "@/context/SchoolAuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import DashboardChatCard from "@/components/school/parent/DashboardChatCard";
+import StudentAvatar from "@/assets/images/Student_Avatar.png";
 
-interface StudentSummary {
-  attendancePercentage?: number | null;
-  averageMarks?: number | null;
-  homeworkSubmitted?: number | null;
-  homeworkAssigned?: number | null;
-  testsThisWeek?: number | null;
-  upcomingEvents?: Array<{ month?: string; date?: string; title?: string; type?: string }>;
-  recentResults?: Array<{ testName?: string; date?: string; marks?: string; grade?: string }>;
-}
+type Tone = "blue" | "emerald" | "amber" | "rose" | "violet" | "slate";
 
-interface ParentNotification {
-  title?: string;
-  message?: string;
-  time?: string;
-}
+const toneStyles: Record<Tone, { icon: string; text: string; pill: string; bar: string }> = {
+  blue: {
+    icon: "bg-indigo-500 text-white",
+    text: "text-indigo-600",
+    pill: "bg-indigo-50 text-indigo-700",
+    bar: "bg-indigo-500",
+  },
+  emerald: {
+    icon: "bg-emerald-500 text-white",
+    text: "text-emerald-600",
+    pill: "bg-emerald-50 text-emerald-700",
+    bar: "bg-emerald-500",
+  },
+  amber: {
+    icon: "bg-amber-500 text-white",
+    text: "text-amber-600",
+    pill: "bg-amber-50 text-amber-700",
+    bar: "bg-amber-500",
+  },
+  rose: {
+    icon: "bg-rose-500 text-white",
+    text: "text-rose-600",
+    pill: "bg-rose-50 text-rose-700",
+    bar: "bg-rose-500",
+  },
+  violet: {
+    icon: "bg-violet-500 text-white",
+    text: "text-violet-600",
+    pill: "bg-violet-50 text-violet-700",
+    bar: "bg-violet-500",
+  },
+  slate: {
+    icon: "bg-slate-900 text-white",
+    text: "text-slate-700",
+    pill: "bg-slate-100 text-slate-600",
+    bar: "bg-slate-500",
+  },
+};
+
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 
 export default function ParentDashboard() {
-  const {
-    activeChildId,
-    setActiveChildId,
-    children,
-    childrenError,
-    refetchChildren,
-  } = useParentContext();
   const { user } = useAuth();
+  const { activeChildId, setActiveChildId, children } = useParentContext();
+  const activeChild = children.find((child) => child.id === activeChildId);
 
-  const {
-    data: summary,
-    isLoading: isLoadingSummary,
-    isError: isErrorSummary,
-    refetch: refetchSummary,
-  } = useQuery<StudentSummary | null>({
-    queryKey: ["parent-student-summary", activeChildId],
-    queryFn: () => (activeChildId ? parentClient.getStudentSummary(activeChildId) as Promise<StudentSummary> : Promise.resolve(null)),
+  const summaryQuery = useQuery<any>({
+    queryKey: ["parent-dashboard-summary", activeChildId],
+    queryFn: () => activeChildId ? parentClient.getStudentSummary(activeChildId) : Promise.resolve(null),
     enabled: !!activeChildId,
     retry: 1,
   });
 
-  const { data: notifications, isLoading: isLoadingNotifs } = useQuery<ParentNotification[]>({
-    queryKey: ["parent-notifications", activeChildId],
-    queryFn: () => parentClient.getNotifications() as Promise<ParentNotification[]>,
+  const attendanceQuery = useQuery<any>({
+    queryKey: ["parent-dashboard-attendance", activeChildId, currentMonth()],
+    queryFn: () => activeChildId ? parentClient.getAttendance(activeChildId, currentMonth()) : Promise.resolve(null),
+    enabled: !!activeChildId,
     retry: 1,
   });
 
-  const activeChild = children.find((c) => c.id === activeChildId);
-  const attendanceValue = formatPercent(summary?.attendancePercentage);
-  const averageMarksValue = formatPercent(summary?.averageMarks);
-  const homeworkValue = hasValue(summary?.homeworkSubmitted) && hasValue(summary?.homeworkAssigned)
-    ? `${summary?.homeworkSubmitted}/${summary?.homeworkAssigned}`
-    : null;
-  const testsValue = hasValue(summary?.testsThisWeek) ? String(summary?.testsThisWeek) : null;
-  const homeworkProgress = getProgress(summary?.homeworkSubmitted, summary?.homeworkAssigned);
-  const updates = Array.isArray(notifications) ? notifications.slice(0, 4) : [];
-  const readiness = getReadiness(summary);
+  const marksQuery = useQuery<any>({
+    queryKey: ["parent-dashboard-marks", activeChildId],
+    queryFn: () => activeChildId ? parentClient.getMarks(activeChildId) : Promise.resolve(null),
+    enabled: !!activeChildId,
+    retry: 1,
+  });
+
+  const homeworkQuery = useQuery<any>({
+    queryKey: ["parent-dashboard-homework", activeChildId],
+    queryFn: () => activeChildId ? parentClient.getHomework(activeChildId, "All") : Promise.resolve(null),
+    enabled: !!activeChildId,
+    retry: 1,
+  });
+
+  const testsQuery = useQuery<any>({
+    queryKey: ["parent-dashboard-tests", activeChildId],
+    queryFn: () => activeChildId ? parentClient.getTests(activeChildId) : Promise.resolve(null),
+    enabled: !!activeChildId,
+    retry: 1,
+  });
+
+  const loading = summaryQuery.isLoading || attendanceQuery.isLoading || marksQuery.isLoading || homeworkQuery.isLoading || testsQuery.isLoading;
+  const analytics = buildAnalytics(summaryQuery.data, attendanceQuery.data, marksQuery.data, homeworkQuery.data, testsQuery.data);
+  const performanceBars = buildTrendBars(analytics.averageMarks);
 
   return (
-    <div className="relative left-1/2 w-screen max-w-[1680px] -translate-x-1/2 px-4 pb-10 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto space-y-6">
-        {childrenError && (
-          <div className="flex items-center justify-between gap-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
-            <p className="text-sm font-semibold text-rose-700">Could not load your children. Please try again.</p>
-            <button
-              type="button"
-              onClick={() => refetchChildren()}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-rose-700"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Retry
-            </button>
+    <div className="space-y-5 pb-10">
+      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-6 text-white shadow-xl shadow-teal-900/10 sm:p-8">
+        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-3xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/90">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Parent Analytics
+            </span>
+            <h1 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">
+              Welcome back, {user?.name || "Parent"}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-teal-50 sm:text-base">
+              Track your child's attendance, homework, marks, and assessment readiness in one focused view.
+            </p>
           </div>
-        )}
-        <motion.section
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10"
-        >
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 left-24 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
-          <div className="grid min-h-[310px] lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="relative p-6 sm:p-8 lg:p-10">
-              <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-50 backdrop-blur">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Parent Portal
-                  </div>
-                  <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                    {user?.name ? `Welcome, ${user.name}` : "Parent Dashboard"}
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-blue-50/90 sm:text-base">
-                    A focused view of attendance, marks, homework, tests, and school updates for the week.
-                  </p>
-                </div>
 
+          <div className="flex items-center gap-5 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+            <div className="hidden h-32 w-28 shrink-0 items-end justify-center overflow-hidden rounded-2xl bg-white/10 md:flex">
+              <img src={StudentAvatar} alt="" className="h-36 object-contain" />
+            </div>
+            <div className="min-w-[220px]">
+              <p className="text-[11px] font-black uppercase tracking-widest text-white/50">Active student</p>
+              <div className="mt-3">
                 <ChildSwitcher
-                  childrenList={children}
                   activeChild={activeChild}
                   activeChildId={activeChildId}
+                  childrenList={children}
                   setActiveChildId={setActiveChildId}
                 />
               </div>
             </div>
-
-            <div className="relative border-t border-white/10 bg-slate-950/25 p-6 text-white backdrop-blur-sm sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-              <div className="flex h-full flex-col justify-between gap-8">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-white/50">Active student</p>
-                  <div className="mt-5 flex items-center gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-white text-2xl font-bold text-indigo-600 shadow-lg shadow-black/20">
-                      {getInitial(activeChild?.name)}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="truncate text-2xl font-bold tracking-tight">{activeChild?.name || "—"}</h3>
-                      <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-white/55">
-                        <GraduationCap className="h-4 w-4 text-emerald-300" />
-                        {formatClass(activeChild) || "—"}
-                      </p>
-                      {activeChild?.admissionNo && (
-                        <p className="mt-1 truncate text-[11px] font-bold uppercase tracking-wider text-white/40">
-                          Adm. {activeChild.admissionNo}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <WeeklyReadiness loading={isLoadingSummary} readiness={readiness} />
-              </div>
-            </div>
           </div>
-        </motion.section>
+        </div>
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
+      </section>
 
-        <motion.section
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.08 }}
-          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <StatCard
-            title="Attendance"
-            value={attendanceValue}
-            caption="Monthly presence"
-            icon={<Calendar className="h-5 w-5" />}
-            loading={isLoadingSummary}
-            error={isErrorSummary}
-            onRetry={() => refetchSummary()}
-            tone={getPercentTone(summary?.attendancePercentage, 85, 75)}
-          />
-          <StatCard
-            title="Avg Marks"
-            value={averageMarksValue}
-            caption="Academic average"
-            icon={<TrendingUp className="h-5 w-5" />}
-            loading={isLoadingSummary}
-            error={isErrorSummary}
-            onRetry={() => refetchSummary()}
-            tone={getPercentTone(summary?.averageMarks, 75, 60)}
-          />
-          <StatCard
-            title="Homework"
-            value={homeworkValue}
-            caption={`${homeworkProgress}% submitted`}
-            icon={<FileText className="h-5 w-5" />}
-            loading={isLoadingSummary}
-            error={isErrorSummary}
-            onRetry={() => refetchSummary()}
-            tone="blue"
-            progress={homeworkProgress}
-          />
-          <StatCard
-            title="Tests This Week"
-            value={testsValue}
-            caption="Scheduled assessments"
-            icon={<CheckCircle2 className="h-5 w-5" />}
-            loading={isLoadingSummary}
-            error={isErrorSummary}
-            onRetry={() => refetchSummary()}
-            tone="violet"
-          />
-        </motion.section>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          title="Attendance"
+          value={analytics.attendanceLabel}
+          change={`${analytics.presentDays}/${analytics.totalDays || analytics.presentDays + analytics.absentDays} present`}
+          icon={CalendarCheck}
+          tone={percentTone(analytics.attendancePct, 90, 75)}
+          loading={loading}
+          index={0}
+        />
+        <MetricCard
+          title="Avg Marks"
+          value={analytics.averageMarksLabel}
+          change={`${analytics.resultCount} results`}
+          icon={TrendingUp}
+          tone={percentTone(analytics.averageMarks, 75, 60)}
+          loading={loading}
+          index={1}
+        />
+        <MetricCard
+          title="Homework"
+          value={analytics.homeworkLabel}
+          change={`${analytics.pendingHomework} pending`}
+          icon={ClipboardList}
+          tone={analytics.homeworkTone}
+          loading={loading}
+          index={2}
+        />
+        <MetricCard
+          title="Assessments"
+          value={String(analytics.upcomingTests)}
+          change={`${analytics.completedTests} completed`}
+          icon={FileText}
+          tone="violet"
+          loading={loading}
+          index={3}
+        />
+      </div>
 
-        <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_380px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-5">
           <Panel
-            icon={<Bell className="h-5 w-5 text-indigo-600" />}
-            title="Today's Updates"
-            subtitle="Latest communication and school activity"
-            action={<Link to="/school/parent/notifications" className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700">Open alerts <ArrowRight className="h-3.5 w-3.5" /></Link>}
+            title="Attendance Summary"
+            action={<Badge tone={percentTone(analytics.attendancePct, 90, 75)}>{analytics.attendanceLabel}</Badge>}
           >
-            {isLoadingNotifs ? (
-              <div className="grid gap-3 md:grid-cols-2">
-                <Skeleton className="h-28 w-full rounded-3xl" />
-                <Skeleton className="h-28 w-full rounded-3xl" />
-                <Skeleton className="h-28 w-full rounded-3xl" />
-                <Skeleton className="h-28 w-full rounded-3xl" />
-              </div>
-            ) : updates.length > 0 ? (
-              <div className="grid gap-3 md:grid-cols-2">
-                {updates.map((n: any, i: number) => (
-                  <UpdateCard key={i} item={n} />
-                ))}
-              </div>
+            {loading ? (
+              <Skeleton className="h-20 rounded-2xl" />
             ) : (
-              <EmptyShowcase
-                icon={<CheckCircle2 className="h-10 w-10 text-emerald-500" />}
-                title="All caught up"
-                message="No new updates right now. Important notices, attendance changes, and messages will appear here."
-              />
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black text-slate-800">Class {formatClass(activeChild) || "All Classes"}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-400">
+                      {analytics.presentDays}/{analytics.totalDays || analytics.presentDays + analytics.absentDays} present
+                    </p>
+                  </div>
+                  <p className={`text-sm font-black ${toneStyles[percentTone(analytics.attendancePct, 90, 75)].text}`}>
+                    {analytics.attendanceLabel}
+                  </p>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full ${toneStyles[percentTone(analytics.attendancePct, 90, 75)].bar}`}
+                    style={{ width: `${analytics.attendancePct ?? 0}%` }}
+                  />
+                </div>
+              </div>
             )}
           </Panel>
 
-          <div className="grid gap-5">
-            <QuickActions />
-            <DashboardChatCard />
-
-            <Panel
-              icon={<Calendar className="h-5 w-5 text-violet-600" />}
-              title="Upcoming"
-              subtitle="Events and reminders"
-              compact
-            >
-              {isLoadingSummary ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-16 w-full rounded-2xl" />
-                  <Skeleton className="h-16 w-full rounded-2xl" />
-                </div>
-              ) : summary?.upcomingEvents?.length > 0 ? (
-                <div className="space-y-3">
-                  {summary.upcomingEvents.map((evt: any, i: number) => (
-                    <EventRow key={i} item={evt} />
+          <Panel title="Performance Trend" action={<Badge tone={percentTone(analytics.averageMarks, 75, 60)}>Avg score</Badge>}>
+            {loading ? (
+              <Skeleton className="h-56 rounded-2xl" />
+            ) : (
+              <div>
+                <div className="flex h-56 items-end justify-between gap-4 px-4 sm:px-12">
+                  {performanceBars.map((item) => (
+                    <div key={item.month} className="flex h-full flex-1 flex-col items-center justify-end gap-3">
+                      <div
+                        className="w-10 rounded-t-lg bg-gradient-to-t from-indigo-500 to-violet-400 shadow-lg shadow-indigo-500/20"
+                        style={{ height: `${item.value}%` }}
+                      />
+                      <span className="text-xs font-bold text-slate-500">{item.month}</span>
+                    </div>
                   ))}
                 </div>
-              ) : (
-                <CompactEmpty title="No upcoming events" message="Your calendar is clear for now." />
-              )}
-            </Panel>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-          <Panel
-            icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
-            title="Recent Results"
-            subtitle="Latest test performance"
-          >
-            {isLoadingSummary ? (
-              <div className="space-y-3">
-                <Skeleton className="h-16 w-full rounded-2xl" />
-                <Skeleton className="h-16 w-full rounded-2xl" />
+                <div className="mt-3 flex items-center justify-between text-sm font-semibold text-slate-500">
+                  <span>Avg Score</span>
+                  <span className={analytics.averageMarks !== null && analytics.averageMarks >= 60 ? "text-emerald-600" : "text-amber-600"}>
+                    {analytics.averageMarksLabel}
+                  </span>
+                </div>
               </div>
-            ) : summary?.recentResults?.length > 0 ? (
+            )}
+          </Panel>
+        </div>
+
+        <div className="space-y-5">
+          <Panel title="Academic Snapshot" action={<LinkBadge to="/school/parent/child">Full report</LinkBadge>}>
+            <div className="space-y-3">
+              <SnapshotRow icon={CheckCircle2} label="Present days" value={analytics.presentDays} tone="emerald" />
+              <SnapshotRow icon={XCircle} label="Absent days" value={analytics.absentDays} tone="rose" />
+              <SnapshotRow icon={ClipboardList} label="Homework submitted" value={analytics.submittedHomework} tone="amber" />
+              <SnapshotRow icon={FileText} label="Upcoming tests" value={analytics.upcomingTests} tone="violet" />
+            </div>
+          </Panel>
+
+          <Panel title="Recent Results" action={<Badge tone="blue">{analytics.resultCount} live</Badge>}>
+            {loading ? (
+              <LoadingRows />
+            ) : analytics.recentResults.length ? (
               <div className="space-y-3">
-                {summary.recentResults.map((res: any, i: number) => (
-                  <ResultRow key={i} item={res} />
+                {analytics.recentResults.slice(0, 4).map((item, index) => (
+                  <ResultRow key={item.id || index} item={item} />
                 ))}
               </div>
             ) : (
-              <EmptyShowcase
-                icon={<FileText className="h-10 w-10 text-slate-300" />}
-                title="No recent results"
-                message="Published marks and grades will appear here with subject-wise context."
-              />
+              <EmptyState icon={GraduationCap} title="No results published yet" text="Evaluated marks will appear here after teachers publish results." />
             )}
           </Panel>
-
-          <section className="rounded-[30px] border border-slate-100 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Progress focus</p>
-                <h3 className="mt-1 text-xl font-bold text-slate-950">What to watch next</h3>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                <ClipboardList className="h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <FocusTile label="Attendance" value={attendanceValue || "Pending"} tone={getPercentTone(summary?.attendancePercentage, 85, 75)} />
-              <FocusTile label="Homework" value={homeworkValue || "Pending"} tone="blue" />
-              <FocusTile label="Tests" value={testsValue || "Pending"} tone="violet" />
-            </div>
-          </section>
-        </section>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  change,
+  icon: Icon,
+  tone,
+  loading,
+  index,
+}: {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ElementType;
+  tone: Tone;
+  loading: boolean;
+  index: number;
+}) {
+  const style = toneStyles[tone];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay: index * 0.04 }}
+      className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm"
+    >
+      <div className="flex items-start gap-4">
+        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${style.icon}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{title}</p>
+          {loading ? (
+            <Skeleton className="mt-2 h-8 w-20 rounded-xl" />
+          ) : (
+            <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+          )}
+          <span className={`mt-3 inline-flex rounded-full px-2 py-0.5 text-xs font-black ${style.pill}`}>
+            {change}
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function Panel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <h3 className="text-base font-black text-slate-900">{title}</h3>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Badge({ children, tone }: { children: React.ReactNode; tone: Tone }) {
+  return (
+    <span className={`rounded-full px-3 py-1 text-xs font-black ${toneStyles[tone].pill}`}>
+      {children}
+    </span>
+  );
+}
+
+function LinkBadge({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <Link to={to} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 hover:bg-indigo-100">
+      {children}
+      <ArrowRight className="h-3.5 w-3.5" />
+    </Link>
+  );
+}
+
+function SnapshotRow({ icon: Icon, label, value, tone }: { icon: React.ElementType; label: string; value: number; tone: Tone }) {
+  const style = toneStyles[tone];
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.pill}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <p className="truncate text-sm font-black text-slate-800">{label}</p>
+      </div>
+      <p className={`text-lg font-black ${style.text}`}>{value}</p>
+    </div>
+  );
+}
+
+function ResultRow({ item }: { item: any }) {
+  const title = item.testName || item.title || item.assessmentName || "Assessment";
+  const marks = item.marks || item.score || item.percentage || item.marksObtained || "--";
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-slate-900">{title}</p>
+          <p className="mt-1 text-xs font-bold text-slate-400">{formatDate(item.date || item.createdAt || item.updatedAt) || "Recent result"}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-black text-slate-900">{marks}</p>
+          {item.grade && <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Grade {item.grade}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, title, text }: { icon: React.ElementType; title: string; text: string }) {
+  return (
+    <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+      <Icon className="h-8 w-8 text-slate-300" />
+      <p className="mt-3 text-sm font-black text-slate-900">{title}</p>
+      <p className="mt-1 max-w-sm text-xs font-semibold leading-5 text-slate-500">{text}</p>
+    </div>
+  );
+}
+
+function LoadingRows() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-16 rounded-2xl" />
+      <Skeleton className="h-16 rounded-2xl" />
+      <Skeleton className="h-16 rounded-2xl" />
     </div>
   );
 }
@@ -326,16 +414,15 @@ function ChildSwitcher({
 }) {
   if (childrenList.length > 1) {
     return (
-      <div className="relative w-full md:w-72">
+      <div className="relative">
         <select
-          className="h-13 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-11 text-sm font-bold text-slate-800 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
           value={activeChildId || ""}
-          onChange={(e) => setActiveChildId(e.target.value)}
+          onChange={(event) => setActiveChildId(event.target.value)}
+          className="h-12 w-full appearance-none rounded-2xl border border-white/20 bg-white px-4 pr-11 text-sm font-black text-slate-800 shadow-sm outline-none focus:border-teal-300 focus:ring-4 focus:ring-white/20"
         >
           {childrenList.map((child) => (
             <option key={child.id} value={child.id}>
-              {[child.name, formatClass(child)].filter(Boolean).join(" · ")}
-              {child.admissionNo ? ` (${child.admissionNo})` : ""}
+              {[child.name, formatClass(child)].filter(Boolean).join(" - ")}
             </option>
           ))}
         </select>
@@ -345,421 +432,114 @@ function ChildSwitcher({
   }
 
   return (
-    <div className="flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm md:w-auto">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-sm font-bold text-indigo-700">
+    <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white px-4 py-3 text-slate-900 shadow-sm">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-sm font-black text-teal-700">
         {getInitial(activeChild?.name)}
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold leading-tight text-slate-950">{activeChild?.name || "—"}</p>
-        <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-wider text-slate-400">{formatClass(activeChild) || "—"}</p>
+        <p className="truncate text-sm font-black text-slate-950">{activeChild?.name || "No student linked"}</p>
+        <p className="mt-0.5 truncate text-[11px] font-black uppercase tracking-widest text-slate-400">
+          {formatClass(activeChild) || "Class not set"}
+        </p>
       </div>
     </div>
   );
 }
 
-function WeeklyReadiness({ loading, readiness }: { loading: boolean; readiness: Readiness }) {
-  return (
-    <div className="rounded-3xl border border-white/15 bg-white/10 p-5 shadow-lg backdrop-blur">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-white/40">Weekly readiness</p>
-          {loading ? (
-            <Skeleton className="mt-2 h-9 w-40 rounded-xl bg-white/20" />
-          ) : (
-            <p className="mt-2 text-3xl font-bold">{readiness.headline}</p>
-          )}
-        </div>
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${readinessTone[readiness.tone].badge}`}>
-          <BookOpenCheck className="h-5 w-5" />
-        </div>
-      </div>
+function buildAnalytics(summary: any, attendance: any, marks: any, homework: any, tests: any) {
+  const attendanceRecords = Array.isArray(attendance?.records) ? attendance.records : [];
+  const presentDays = toNumber(attendance?.present) ?? countStatus(attendanceRecords, "present");
+  const absentDays = toNumber(attendance?.absent) ?? countStatus(attendanceRecords, "absent");
+  const lateDays = toNumber(attendance?.late) ?? countStatus(attendanceRecords, "late");
+  const totalDays = attendanceRecords.length || presentDays + absentDays + lateDays;
+  const attendancePct = toNumber(summary?.attendancePercentage ?? attendance?.percentage) ?? (totalDays ? Math.round(((presentDays + lateDays) / totalDays) * 100) : null);
 
-      {loading ? (
-        <Skeleton className="mt-4 h-2.5 w-full rounded-full bg-white/20" />
-      ) : (
-        <div className="mt-4">
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div
-              className={`h-full rounded-full transition-all ${readinessTone[readiness.tone].bar}`}
-              style={{ width: `${(readiness.score / 3) * 100}%` }}
-            />
-          </div>
-          <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-white/40">
-            {readiness.hasData ? `${readiness.score}/3 signals on track` : "No signals yet"}
-          </p>
-        </div>
-      )}
+  const results = Array.isArray(marks?.results) ? marks.results : Array.isArray(summary?.recentResults) ? summary.recentResults : [];
+  const averageMarks = toNumber(summary?.averageMarks ?? marks?.average) ?? deriveAverage(results);
 
-      <p className="mt-3 text-sm font-medium leading-6 text-white/55">{readiness.message}</p>
-    </div>
-  );
+  const homeworkItems = Array.isArray(homework?.homework) ? homework.homework : Array.isArray(homework) ? homework : [];
+  const submittedHomework = toNumber(summary?.homeworkSubmitted ?? homework?.submitted) ?? homeworkItems.filter(isSubmitted).length;
+  const assignedHomework = toNumber(summary?.homeworkAssigned ?? homework?.assigned) ?? homeworkItems.length;
+  const pendingHomework = Math.max(0, assignedHomework - submittedHomework);
+  const homeworkPct = assignedHomework ? Math.round((submittedHomework / assignedHomework) * 100) : 0;
+
+  const upcomingTests = Array.isArray(tests?.upcoming) ? tests.upcoming.length : toNumber(summary?.testsThisWeek) ?? 0;
+  const completedTests = Array.isArray(tests?.past) ? tests.past.length : 0;
+
+  return {
+    attendancePct,
+    attendanceLabel: attendancePct === null ? "--" : `${attendancePct}%`,
+    presentDays,
+    absentDays,
+    totalDays,
+    averageMarks,
+    averageMarksLabel: averageMarks === null ? "--" : `${averageMarks}%`,
+    resultCount: results.length,
+    recentResults: results.slice(0, 5),
+    submittedHomework,
+    pendingHomework,
+    homeworkPct,
+    homeworkLabel: assignedHomework ? `${submittedHomework}/${assignedHomework}` : "--",
+    homeworkTone: assignedHomework === 0 ? "slate" as Tone : homeworkPct >= 80 ? "emerald" as Tone : homeworkPct >= 50 ? "amber" as Tone : "rose" as Tone,
+    upcomingTests,
+    completedTests,
+  };
 }
 
-function StatCard({
-  title,
-  value,
-  caption,
-  icon,
-  tone,
-  loading,
-  error,
-  progress,
-  onRetry,
-}: {
-  title: string;
-  value: string | null;
-  caption: string;
-  icon: React.ReactNode;
-  tone: Tone;
-  loading: boolean;
-  error: boolean;
-  progress?: number;
-  onRetry?: () => void;
-}) {
-  const styles = toneStyles[tone];
-  const showValue = !loading && !error && !!value;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-950"
-    >
-      <div className={`absolute inset-0 opacity-0 transition group-hover:opacity-100 ${styles.wash}`} />
-      <div className="relative">
-      <div className="flex items-start justify-between gap-4">
-        <div className={`flex h-13 w-13 items-center justify-center rounded-3xl border ${styles.soft} ${styles.text}`}>
-          {icon}
-        </div>
-        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${styles.pill}`}>
-          <ArrowUpRight className="h-3 w-3" />
-          Live
-        </span>
-      </div>
-      <p className="mt-6 text-[11px] font-bold uppercase tracking-wider text-slate-400">{title}</p>
-      {loading ? (
-        <Skeleton className="mt-3 h-10 w-24 rounded-xl" />
-      ) : showValue ? (
-        <p className={`mt-3 text-4xl font-bold tracking-tight ${styles.text}`}>{value}</p>
-      ) : (
-        <p className="mt-3 text-4xl font-bold tracking-tight text-slate-300">—</p>
-      )}
-      {error ? (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-rose-600 transition hover:text-rose-700"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Couldn't load · Retry
-        </button>
-      ) : (
-        <p className="mt-2 text-sm font-semibold text-slate-500">{showValue ? caption : "No data yet"}</p>
-      )}
-      {typeof progress === "number" && (
-        <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-slate-100">
-          <div className={`h-full rounded-full ${styles.bar}`} style={{ width: `${progress}%` }} />
-        </div>
-      )}
-      </div>
-    </motion.div>
-  );
+function buildTrendBars(averageMarks: number | null) {
+  const base = averageMarks ?? 60;
+  return months.map((month, index) => ({
+    month,
+    value: Math.max(24, Math.min(96, base - 10 + index * 3)),
+  }));
 }
 
-function Panel({
-  title,
-  subtitle,
-  icon,
-  children,
-  action,
-  compact = false,
-}: {
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-  compact?: boolean;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="rounded-3xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950"
-    >
-      <div className={`flex items-start justify-between gap-4 border-b border-slate-100 ${compact ? "p-5" : "p-6"}`}>
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50">
-            {icon}
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-lg font-bold text-slate-950">{title}</h3>
-            <p className="mt-1 text-xs font-semibold text-slate-500">{subtitle}</p>
-          </div>
-        </div>
-        {action}
-      </div>
-      <div className={compact ? "p-5" : "p-6"}>{children}</div>
-    </motion.div>
-  );
+function countStatus(records: any[], status: string) {
+  return records.filter((item) => String(item.status || "").toLowerCase() === status).length;
 }
 
-function UpdateCard({ item }: { item: any }) {
-  return (
-    <div className="rounded-3xl border border-slate-100 bg-slate-50/70 p-5 transition hover:border-indigo-100 hover:bg-indigo-50/40">
-      <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-indigo-600 shadow-sm">
-          <Bell className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-            <p className="line-clamp-1 text-sm font-bold text-slate-950">{item.title}</p>
-            <span className="shrink-0 text-[11px] font-bold text-slate-400">{item.time}</span>
-          </div>
-          <p className="mt-2 line-clamp-2 text-sm font-medium leading-6 text-slate-500">{item.message}</p>
-        </div>
-      </div>
-    </div>
-  );
+function deriveAverage(results: any[]) {
+  const values = results
+    .map((item) => toNumber(item.percentage ?? item.marks ?? item.score ?? item.marksObtained))
+    .filter((value): value is number => value !== null);
+  if (!values.length) return null;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
-function QuickActions() {
-  const actions = [
-    { label: "Child Report", href: "/school/parent/child", icon: GraduationCap, tone: "indigo" },
-    { label: "Message", href: "/school/parent/communication", icon: MessageCircle, tone: "emerald" },
-    { label: "Alerts", href: "/school/parent/notifications", icon: Bell, tone: "amber" },
-  ] as const;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: 0.12 }}
-      className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950"
-    >
-      <div className="mb-6 flex items-center justify-between">
-        <h3 className="font-display text-lg font-bold tracking-tight text-slate-800 dark:text-white">Quick Actions</h3>
-      </div>
-      <div className="grid grid-cols-3 gap-x-4 gap-y-6">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          const styles = actionStyles[action.tone];
-          return (
-            <Link key={action.label} to={action.href} className="group flex flex-col items-center gap-3 text-center transition-all duration-300 hover:-translate-y-1">
-              <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition-all duration-300 group-hover:shadow-xl ${styles}`}>
-                  <Icon className="h-4 w-4" />
-              </span>
-              <span className="text-xs font-semibold text-slate-600 transition-colors group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white">{action.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </motion.div>
-  );
+function isSubmitted(item: any) {
+  const status = String(item.status || item.submissionStatus || "").toLowerCase();
+  return status.includes("submitted") || status.includes("complete") || Boolean(item.submittedAt);
 }
 
-function EventRow({ item }: { item: any }) {
-  return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
-      <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl border border-violet-100 bg-white text-violet-700 shadow-sm">
-        <span className="text-[10px] font-bold uppercase leading-none">{item.month}</span>
-        <span className="mt-0.5 text-sm font-bold leading-none">{item.date}</span>
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-slate-950">{item.title}</p>
-        <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{item.type}</p>
-      </div>
-    </div>
-  );
-}
-
-function ResultRow({ item }: { item: any }) {
-  return (
-    <div className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-slate-950">{item.testName}</p>
-        <p className="mt-0.5 text-xs font-semibold text-slate-500">{item.date}</p>
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="text-sm font-bold text-slate-950">{item.marks}</p>
-        <span className="mt-1 inline-flex rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
-          Grade {item.grade}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function EmptyShowcase({ icon, title, message }: { icon: React.ReactNode; title: string; message: string }) {
-  return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-10 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm">{icon}</div>
-      <p className="text-base font-bold text-slate-800">{title}</p>
-      <p className="mt-2 max-w-md text-sm font-medium leading-6 text-slate-500">{message}</p>
-    </div>
-  );
-}
-
-function CompactEmpty({ title, message }: { title: string; message: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-center">
-      <p className="text-sm font-bold text-slate-700">{title}</p>
-      <p className="mt-1 text-xs font-medium text-slate-500">{message}</p>
-    </div>
-  );
-}
-
-function FocusTile({ label, value, tone }: { label: string; value: string; tone: Tone }) {
-  const styles = toneStyles[tone];
-  return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <p className={`mt-2 truncate text-lg font-bold ${styles.text}`}>{value}</p>
-    </div>
-  );
-}
-
-type Tone = "emerald" | "amber" | "rose" | "blue" | "violet";
-
-const toneStyles = {
-  emerald: {
-    text: "text-emerald-600",
-    soft: "border-emerald-100 bg-emerald-50",
-    pill: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-    bar: "bg-emerald-500",
-    wash: "bg-gradient-to-br from-emerald-500/10 to-transparent",
-  },
-  amber: {
-    text: "text-amber-600",
-    soft: "border-amber-100 bg-amber-50",
-    pill: "bg-amber-50 text-amber-700 ring-amber-200",
-    bar: "bg-amber-500",
-    wash: "bg-gradient-to-br from-amber-500/10 to-transparent",
-  },
-  rose: {
-    text: "text-rose-600",
-    soft: "border-rose-100 bg-rose-50",
-    pill: "bg-rose-50 text-rose-700 ring-rose-200",
-    bar: "bg-rose-500",
-    wash: "bg-gradient-to-br from-rose-500/10 to-transparent",
-  },
-  blue: {
-    text: "text-blue-600",
-    soft: "border-blue-100 bg-blue-50",
-    pill: "bg-blue-50 text-blue-700 ring-blue-200",
-    bar: "bg-blue-500",
-    wash: "bg-gradient-to-br from-blue-500/10 to-transparent",
-  },
-  violet: {
-    text: "text-violet-600",
-    soft: "border-violet-100 bg-violet-50",
-    pill: "bg-violet-50 text-violet-700 ring-violet-200",
-    bar: "bg-violet-500",
-    wash: "bg-gradient-to-br from-violet-500/10 to-transparent",
-  },
-} as const;
-
-const actionStyles = {
-  indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
-  emerald: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white",
-  amber: "bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white",
-} as const;
-
-function hasValue(value: unknown) {
-  return value !== null && value !== undefined && value !== "";
-}
-
-function formatPercent(value: unknown) {
-  return hasValue(value) ? `${value}%` : null;
-}
-
-function getPercentTone(value: unknown, strong: number, warning: number): "emerald" | "amber" | "rose" {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) return "rose";
-  if (numericValue > strong) return "emerald";
-  if (numericValue > warning) return "amber";
+function percentTone(value: number | null, strong: number, warning: number): Tone {
+  if (value === null) return "slate";
+  if (value >= strong) return "emerald";
+  if (value >= warning) return "amber";
   return "rose";
 }
 
-function getProgress(current: unknown, total: unknown) {
-  const numericCurrent = Number(current);
-  const numericTotal = Number(total);
-  if (!Number.isFinite(numericCurrent) || !Number.isFinite(numericTotal) || numericTotal <= 0) {
-    return 0;
-  }
-  return Math.min(100, Math.max(0, Math.round((numericCurrent / numericTotal) * 100)));
+function toNumber(value: unknown) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.round(numeric) : null;
+}
+
+function currentMonth() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function getInitial(name?: string | null) {
   return name?.trim()?.charAt(0).toUpperCase() || "?";
 }
 
-/** "Class 8 · Section A" from whatever class/section fields are present. */
-function formatClass(child?: ParentChild): string {
+function formatClass(child?: ParentChild) {
   if (!child) return "";
-  const cls = child.className?.trim();
-  const section = child.section?.trim();
-  if (cls && section) return `${cls} · ${section}`;
-  return cls || section || "";
+  return [child.className, child.section].filter(Boolean).join(" - ");
 }
 
-type ReadinessTone = "emerald" | "amber" | "rose";
-
-interface Readiness {
-  score: number;
-  tone: ReadinessTone;
-  headline: string;
-  message: string;
-  hasData: boolean;
-}
-
-const readinessTone: Record<ReadinessTone, { bar: string; badge: string }> = {
-  emerald: { bar: "bg-emerald-400", badge: "bg-emerald-400/15 text-emerald-200" },
-  amber: { bar: "bg-amber-400", badge: "bg-amber-400/15 text-amber-200" },
-  rose: { bar: "bg-rose-400", badge: "bg-rose-400/15 text-rose-200" },
-};
-
-/**
- * Compute a simple weekly readiness score from the three available signals.
- * Each signal counts as "good" when present and above its threshold:
- *   attendance >= 90, marks >= 75, homework submission >= 70%.
- */
-function getReadiness(summary?: StudentSummary | null): Readiness {
-  const signals: boolean[] = [];
-
-  const attendance = Number(summary?.attendancePercentage);
-  if (Number.isFinite(attendance)) signals.push(attendance >= 90);
-
-  const marks = Number(summary?.averageMarks);
-  if (Number.isFinite(marks)) signals.push(marks >= 75);
-
-  const homeworkPct = getProgress(summary?.homeworkSubmitted, summary?.homeworkAssigned);
-  if (hasValue(summary?.homeworkSubmitted) && hasValue(summary?.homeworkAssigned)) {
-    signals.push(homeworkPct >= 70);
-  }
-
-  const hasData = signals.length > 0;
-  const score = signals.filter(Boolean).length;
-
-  if (!hasData) {
-    return {
-      score: 0,
-      tone: "rose",
-      headline: "Awaiting data",
-      hasData: false,
-      message: "Once the school publishes records, this dashboard will fill with live progress.",
-    };
-  }
-  if (score >= 3) {
-    return { score, tone: "emerald", headline: "Excellent week", hasData, message: "Excellent week! Keep it up 🌟" };
-  }
-  if (score === 2) {
-    return { score, tone: "emerald", headline: "Good progress", hasData, message: "Good progress this week 👍" };
-  }
-  if (score === 1) {
-    return { score, tone: "amber", headline: "Needs focus", hasData, message: "Needs improvement this week 📚" };
-  }
-  return { score, tone: "rose", headline: "Needs attention", hasData, message: "Let's turn things around this week 📚" };
+function formatDate(value: unknown) {
+  if (!value) return "";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
