@@ -2,7 +2,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
+<<<<<<< HEAD
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
+=======
+  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target,
+  Trophy
+>>>>>>> 163642905c57c95e93135ef7e5034b28571c7a5c
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -249,11 +254,6 @@ const AssessmentSystem: React.FC = () => {
 
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
-
-  const updateContentText = (value: string) => {
-    setContentText(value);
-    setStructuredQuestions([]);
-  };
 
   // ── Load Context (source of truth for navigation) ────────────
   useEffect(() => {
@@ -706,11 +706,11 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
             <Target size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-            <p className="text-gray-500 mt-1 text-sm">
-              {sq
-                ? `No results for "${workspaceSearch}" in this tab.`
-                : "Get started by creating your first test."}
-            </p>
+    <p className="text-gray-500 mt-1 text-sm">
+      {sq
+        ? `No results for "${workspaceSearch}" in this tab.`
+        : "Get started by creating your first test."}
+    </p>
           </div >
         ) : (
           <DataTable columns={testColumns} data={data} />
@@ -989,8 +989,8 @@ const AssessmentSystem: React.FC = () => {
                     type="button"
                     onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
-                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
                       }`}
                   >
                     {mode.icon}
@@ -1104,6 +1104,9 @@ const AssessmentSystem: React.FC = () => {
   );
 };
 
+<<<<<<< HEAD
 // ── Presentational helpers ───────────────────────────────────────────────────
 
+=======
+>>>>>>> 163642905c57c95e93135ef7e5034b28571c7a5c
 export default AssessmentSystem;

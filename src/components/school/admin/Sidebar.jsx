@@ -76,6 +76,7 @@ const superAdminGroups = [
     heading: 'Insights',
     items: [
       { to: '/school/admin/analytics', label: 'Analytics', icon: BarChart3 },
+      { to: '/school/admin/ai-usage', label: 'AI Usage', icon: Sparkles },
       { to: '/school/admin/finance', label: 'Subscriptions', icon: Wallet },
       { to: '/super-admin/attendance-reports', label: 'Attendance Reports', icon: ClipboardList },
     ],
@@ -122,6 +123,7 @@ const instituteGroups = [
     heading: 'Administration',
     items: [
       { to: '/school/admin/users', label: 'User Management', icon: Users },
+      { to: '/school/admin/ai-usage', label: 'AI Usage', icon: Sparkles },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
     ],
