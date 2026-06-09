@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
+  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -17,6 +17,13 @@ import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
+
+function normaliseType(value: any) {
+  const type = String(value || "topic").trim().toLowerCase();
+  if (type === "unit") return "chapter";
+  if (["topic", "chapter", "subject", "mock", "final"].includes(type)) return type;
+  return "topic";
+}
 
 function Breadcrumb({
   items,
@@ -185,6 +192,7 @@ function ContentEditor({
 
 const AssessmentSystem: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingContext, setLoadingContext] = useState(true);
 
@@ -193,6 +201,16 @@ const AssessmentSystem: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<{ id: string; name: string } | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const restoredState = (location.state as any)?.assessmentWorkspace;
+    if (!restoredState) return;
+    setSelectedClass(restoredState.selectedClass || null);
+    setSelectedSection(restoredState.selectedSection || null);
+    setSelectedSubject(restoredState.selectedSubject || null);
+    setSearch('');
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   // Assessment States
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -231,11 +249,6 @@ const AssessmentSystem: React.FC = () => {
 
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
-
-  const updateContentText = (value: string) => {
-    setContentText(value);
-    setStructuredQuestions([]);
-  };
 
   // ── Load Context (source of truth for navigation) ────────────
   useEffect(() => {
@@ -372,7 +385,6 @@ const AssessmentSystem: React.FC = () => {
         raw: item,
       }));
 
-      console.log("AFTER WORKSPACE FILTER", formatted.length, formatted);
       setTestsList(formatted);
     } catch (err) {
       console.error("Fetch assessments error:", err);
@@ -532,7 +544,16 @@ const AssessmentSystem: React.FC = () => {
       render: (v: string, row: any) => (
         <span
           className="text-brand-600 font-medium hover:underline cursor-pointer"
-          onClick={() => navigate(`/school/teacher/assessments/${row.id}`)}
+          onClick={() => navigate(`/school/teacher/assessments/${row.id}`, {
+            state: {
+              from: `${location.pathname}${location.search}`,
+              assessmentWorkspace: {
+                selectedClass,
+                selectedSection,
+                selectedSubject,
+              },
+            },
+          })}
         >
           {v}
         </span>
@@ -649,19 +670,16 @@ const AssessmentSystem: React.FC = () => {
    */
   const renderDataTable = (typeFilter: string | string[]) => {
     // Stage 2 — workspace-filtered list (fetchTests already applied subject+class)
-    console.log("RAW ASSESSMENTS (in testsList, after workspace filter)", testsList.length);
 
     // Stage 3 — tab type filter
     const afterType = testsList.filter((t) =>
       Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter
     );
-    console.log("AFTER TYPE FILTER", afterType.length);
 
     // Stage 4 — status dropdown filter
     const afterStatus = workspaceStatusFilter === "all"
       ? afterType
       : afterType.filter((t) => t.status === workspaceStatusFilter);
-    console.log("AFTER STATUS FILTER", afterStatus.length);
 
     // Stage 5 — search: title OR type label only (NOT status, marks, dates)
     const sq = workspaceSearch.trim().toLowerCase();
@@ -672,8 +690,6 @@ const AssessmentSystem: React.FC = () => {
         return inTitle || inType;
       })
       : afterStatus;
-    console.log("AFTER SEARCH FILTER", afterSearch.length);
-    console.log("FINAL RENDER COUNT", afterSearch.length);
 
     const data = afterSearch;
 
@@ -692,277 +708,244 @@ const AssessmentSystem: React.FC = () => {
             </p>
           </div >
         ) : (
-  <DataTable columns={testColumns} data={data} />
-)}
+          <DataTable columns={testColumns} data={data} />
+        )}
       </div >
     );
   };
 
-// ── Render ───────────────────────────────────────────────────────────────
-return (
-  <div className="p-6 max-w-7xl mx-auto space-y-6">
-    {/* Header */}
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-          Assessments
-        </h1>
-        <p className="mt-1 text-sm font-medium text-gray-500">
-          Navigate through your assigned classes to manage assessments.
-        </p>
+  // ── Render ───────────────────────────────────────────────────────────────
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            Assessments
+          </h1>
+          <p className="mt-1 text-sm font-medium text-gray-500">
+            Navigate through your assigned classes to manage assessments.
+          </p>
+        </div>
+        {level !== 'classes' && (
+          <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
+            Back
+          </Button>
+        )}
       </div>
-      {level !== 'classes' && (
-        <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
-          Back
-        </Button>
+
+      {/* Breadcrumbs */}
+      <Breadcrumb
+        items={[
+          { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
+          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
+          ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
+        ]}
+      />
+
+      {/* Search Bar for Navigation Levels */}
+      {level !== 'workspace' && (
+        <div className="max-w-md mb-6">
+          <SearchBar value={search} onChange={setSearch} placeholder={`Search ${level}...`} />
+        </div>
       )}
-    </div>
 
-    {/* Breadcrumbs */}
-    <Breadcrumb
-      items={[
-        { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-        ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
-        ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
-        ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
-      ]}
-    />
+      {/* Level 1: Classes */}
+      {level === 'classes' && (
+        loadingContext ? (
+          <div className="py-12 text-center text-gray-400">Loading your classes...</div>
+        ) : filteredClasses.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+            No classes assigned.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClasses.map((c) => (
+              <NavCard
+                key={c.id}
+                icon={<GraduationCap size={22} />}
+                tone="brand"
+                title={c.name}
+                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
+                actionLabel="View sections"
+                onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
 
-    {/* Search Bar for Navigation Levels */}
-    {level !== 'workspace' && (
-      <div className="max-w-md mb-6">
-        <SearchBar value={search} onChange={setSearch} placeholder={`Search ${level}...`} />
-      </div>
-    )}
+      {/* Level 2: Sections */}
+      {level === 'sections' && (
+        filteredSections.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+            No sections assigned for this class.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSections.map((s) => (
+              <NavCard
+                key={s.id}
+                icon={<Layers size={22} />}
+                tone="brand"
+                title={`Section ${s.name}`}
+                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
+                actionLabel="View subjects"
+                onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
 
-    {/* Level 1: Classes */}
-    {level === 'classes' && (
-      loadingContext ? (
-        <div className="py-12 text-center text-gray-400">Loading your classes...</div>
-      ) : filteredClasses.length === 0 ? (
-        <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-          No classes assigned.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClasses.map((c) => (
-            <NavCard
-              key={c.id}
-              icon={<GraduationCap size={22} />}
-              tone="brand"
-              title={c.name}
-              meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
-              actionLabel="View sections"
-              onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
-            />
-          ))}
-        </div>
-      )
-    )}
+      {/* Level 3: Subjects */}
+      {level === 'subjects' && (
+        filteredSubjects.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+            No subjects assigned for this class.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSubjects.map((s) => (
+              <NavCard
+                key={s.id}
+                icon={<BookOpen size={22} />}
+                tone="emerald"
+                title={s.name}
+                meta="Assessments Workspace"
+                actionLabel="Open workspace"
+                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
+              />
+            ))}
+          </div>
+        )
+      )}
 
-    {/* Level 2: Sections */}
-    {level === 'sections' && (
-      filteredSections.length === 0 ? (
-        <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-          No sections assigned for this class.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSections.map((s) => (
-            <NavCard
-              key={s.id}
-              icon={<Layers size={22} />}
-              tone="brand"
-              title={`Section ${s.name}`}
-              meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
-              actionLabel="View subjects"
-              onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
-            />
-          ))}
-        </div>
-      )
-    )}
+      {/* Level 4: Workspace */}
+      {level === 'workspace' && selectedClass && selectedSubject && (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {selectedClass.name} | {selectedSubject.name}
+              </p>
+            </div>
 
-    {/* Level 3: Subjects */}
-    {level === 'subjects' && (
-      filteredSubjects.length === 0 ? (
-        <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-          No subjects assigned for this class.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSubjects.map((s) => (
-            <NavCard
-              key={s.id}
-              icon={<BookOpen size={22} />}
-              tone="emerald"
-              title={s.name}
-              meta="Assessments Workspace"
-              actionLabel="Open workspace"
-              onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
-            />
-          ))}
-        </div>
-      )
-    )}
-
-    {/* Level 4: Workspace */}
-    {level === 'workspace' && selectedClass && selectedSubject && (
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {selectedClass.name} | {selectedSubject.name}
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                id="workspace-search"
+                type="text"
+                placeholder="Search by title or type..."
+                value={workspaceSearch}
+                onChange={(e) => setWorkspaceSearch(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
+              />
+              <select
+                value={workspaceStatusFilter}
+                onChange={(e) => setWorkspaceStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+              >
+                <option value="all">All Status</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="completed">Completed</option>
+              </select>
+              <Button
+                icon={<Plus size={18} />}
+                onClick={() => {
+                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
+                  setEditingTest(null);
+                  setContentMode("manual");
+                  setContentText("");
+                  setAnswerKey("");
+                  setUploadFile(null);
+                  setAiPrompt("");
+                  setAiLanguage("en");
+                  setShowCreateModal(true);
+                }}
+                className="shadow-sm"
+              >
+                Create Test
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              id="workspace-search"
-              type="text"
-              placeholder="Search by title or type..."
-              value={workspaceSearch}
-              onChange={(e) => setWorkspaceSearch(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
-            />
-            <select
-              value={workspaceStatusFilter}
-              onChange={(e) => setWorkspaceStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-            >
-              <option value="all">All Status</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="completed">Completed</option>
-            </select>
-            <Button
-              icon={<Plus size={18} />}
-              onClick={() => {
-                setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
-                setEditingTest(null);
-                setContentMode("manual");
-                setContentText("");
-                setAnswerKey("");
-                setUploadFile(null);
-                setAiPrompt("");
-                setAiLanguage("en");
-                setShowCreateModal(true);
-              }}
-              className="shadow-sm"
-            >
-              Create Test
-            </Button>
-          </div>
-        </div>
-
-        <Tabs
-          tabs={[
-            {
-              id: "topic",
-              label: "Topic Tests",
-              icon: <ClipboardList size={16} />,
-              // Matches records with type = "topic"
-              content: renderDataTable("topic"),
-            },
-            {
-              id: "chapter",
-              label: "Chapter Tests",
-              icon: <BarChart3 size={16} />,
-              // Matches records with type = "chapter" OR legacy "unit"
-              // (legacy "unit" is already normalised to "chapter" in formatted list)
-              content: renderDataTable("chapter"),
-            },
-            {
-              id: "subject",
-              label: "Subject Tests",
-              icon: <BookOpen size={16} />,
-              // Matches records with type = "subject"
-              content: renderDataTable("subject"),
-            },
-            {
-              id: "mock",
-              label: "Mock Tests",
-              icon: <Trophy size={16} />,
-              // Matches records with type = "mock"
-              content: renderDataTable("mock"),
-            },
-            {
-              id: "final",
-              label: "Final Exams",
-              icon: <Target size={16} />,
-              // Matches records with type = "final"
-              content: renderDataTable("final"),
-            },
-          ]}
-        />
-      </div>
-    )}
-
-    {/* Create Modal */}
-    {selectedClass && selectedSubject && (
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title={editingTest ? "Update Test" : "Create New Test"}
-        size="full"
-      >
-        <div className="space-y-4 p-2">
-          <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
-            <strong>Context:</strong> Posting to {selectedClass.name}
-            {selectedSection ? ` / Section ${selectedSection.name}` : ""} ({selectedSubject.name})
-          </div>
-
-          <InputField
-            label="Test Title"
-            placeholder="Enter test title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          <Tabs
+            tabs={[
+              {
+                id: "topic",
+                label: "Topic Tests",
+                icon: <ClipboardList size={16} />,
+                // Matches records with type = "topic"
+                content: renderDataTable("topic"),
+              },
+              {
+                id: "chapter",
+                label: "Chapter Tests",
+                icon: <BarChart3 size={16} />,
+                // Matches records with type = "chapter" OR legacy "unit"
+                // (legacy "unit" is already normalised to "chapter" in formatted list)
+                content: renderDataTable("chapter"),
+              },
+              {
+                id: "subject",
+                label: "Subject Tests",
+                icon: <BookOpen size={16} />,
+                // Matches records with type = "subject"
+                content: renderDataTable("subject"),
+              },
+              {
+                id: "mock",
+                label: "Mock Tests",
+                icon: <Trophy size={16} />,
+                // Matches records with type = "mock"
+                content: renderDataTable("mock"),
+              },
+              {
+                id: "final",
+                label: "Final Exams",
+                icon: <Target size={16} />,
+                // Matches records with type = "final"
+                content: renderDataTable("final"),
+              },
+            ]}
           />
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField
-                label="Test Type"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                options={[
-                  { value: "topic", label: "Topic Test" },
-                  { value: "chapter", label: "Chapter Test" },
-                  { value: "subject", label: "Subject Test" },
-                  { value: "mock", label: "Mock Test" },
-                  { value: "final", label: "Final Exam" },
-                ]}
-              />
-              <SelectField
-                label="Language"
-                value={aiLanguage}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                options={[
-                  { value: "en", label: "English" },
-                  { value: "hi", label: "Hindi" },
-                  { value: "od", label: "Odia" },
-                ]}
-              />
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {selectedClass && selectedSubject && (
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title={editingTest ? "Update Test" : "Create New Test"}
+          size="full"
+        >
+          <div className="space-y-4 p-2">
+            <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
+              <strong>Context:</strong> Posting to {selectedClass.name}
+              {selectedSection ? ` / Section ${selectedSection.name}` : ""} ({selectedSubject.name})
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField
-                label="Chapter (optional)"
-                value={selectedChapterId}
-                onChange={(e) => setSelectedChapterId(e.target.value)}
-                options={[
-                  { value: "", label: chapters.length ? "All chapters / general" : "No chapters found" },
-                  ...chapters.map((c: any) => ({ value: c.id, label: c.name })),
-                ]}
-              />
-              <SelectField
-                label="Topic (optional)"
-                value={selectedTopicId}
-                onChange={(e) => setSelectedTopicId(e.target.value)}
-                options={[
-                  { value: "", label: selectedChapterId ? "Whole chapter" : "Select a chapter first" },
-                  ...topics.map((t: any) => ({ value: t.id, label: t.name })),
-                ]}
-              />
-            </div>
+            <InputField
+              label="Test Title"
+              placeholder="Enter test title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            />
+            <SelectField
+              label="Test Type"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              options={[
+                { value: "topic", label: "Topic Test" },
+                { value: "chapter", label: "Chapter Test" },
+                { value: "subject", label: "Subject Test" },
+                { value: "mock", label: "Mock Test" },
+                { value: "final", label: "Final Exam" },
+              ]}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <InputField

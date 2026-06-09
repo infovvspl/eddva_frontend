@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ClipboardList,
+  Compass,
   FileText,
   HelpCircle,
   LayoutDashboard,
@@ -54,6 +55,7 @@ const studentGroups = [
     heading: 'Growth',
     items: [
       { to: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle },
+      { to: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New' },
       { to: '/school/student/gamification', label: 'Gamification', icon: Trophy },
       { to: '/school/student/calendar', label: 'Calendar', icon: CalendarDays },
     ],
@@ -139,6 +141,11 @@ export default function Sidebar({ open, onClose }) {
                     >
                       <item.icon className="h-[18px] w-[18px] shrink-0" />
                       <span className={cn('truncate', collapsed && canCollapse && 'md:hidden')}>{item.label}</span>
+                      {item.badge && (
+                        <span className={cn('ml-auto rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white', collapsed && canCollapse && 'md:hidden')}>
+                          {item.badge}
+                        </span>
+                      )}
                     </NavLink>
                   ))}
                 </nav>

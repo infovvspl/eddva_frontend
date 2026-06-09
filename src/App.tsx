@@ -122,6 +122,7 @@ const SchoolFees              = lazy(() => import("./pages/school/admin/Fees"));
 const SchoolAcademicCalendar  = lazy(() => import("./pages/school/admin/AcademicCalendar"));
 const SchoolComplaints        = lazy(() => import("./pages/school/admin/Complaints"));
 const SchoolAnalytics         = lazy(() => import("./pages/school/admin/Analytics"));
+const SchoolAiUsage           = lazy(() => import("./pages/school/admin/AiUsage"));
 const SchoolTimetable         = lazy(() => import("./pages/school/admin/Timetable"));
 const SchoolAdminSettings     = lazy(() => import("./pages/school/admin/AdminSettings"));
 const SchoolReports           = lazy(() => import("./pages/school/admin/Reports"));
@@ -197,6 +198,12 @@ const SchoolStudentSupportTickets = lazy(() => import("./pages/school/student/Su
 const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
 const SchoolStudentSettings     = lazy(() => import("./pages/school/student/Settings"));
+const SchoolStudentCareer            = lazy(() => import("./pages/school/student/career/CareerHome"));
+const SchoolStudentCareerQuiz        = lazy(() => import("./pages/school/student/career/CareerQuiz"));
+const SchoolStudentCareerQuizResult  = lazy(() => import("./pages/school/student/career/CareerQuizResult"));
+const SchoolStudentCareerReport      = lazy(() => import("./pages/school/student/career/CareerReport"));
+const SchoolStudentCareerExplorer    = lazy(() => import("./pages/school/student/career/CareerExplorer"));
+const SchoolStudentCareerDetail      = lazy(() => import("./pages/school/student/career/CareerDetail"));
 
 // ── School parent pages ──────────────────────────────────────────────────────
 const SchoolParentLayout        = lazy(() => import("./components/school/parent/ParentLayout"));
@@ -362,6 +369,7 @@ const SchoolRoutes = () => (
       <Route path="complaints" element={<SchoolComplaints />} />
       <Route path="timetable" element={<SchoolTimetable />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
+      <Route path="ai-usage" element={<SchoolAiUsage />} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
@@ -421,6 +429,12 @@ const SchoolRoutes = () => (
       <Route path="attendance" element={<SchoolStudentAttendance />} />
       <Route path="calendar" element={<SchoolStudentCalendar />} />
       <Route path="analytics" element={<SchoolStudentAnalytics />} />
+      <Route path="career" element={<SchoolStudentCareer />} />
+      <Route path="career/quiz" element={<SchoolStudentCareerQuiz />} />
+      <Route path="career/quiz/result" element={<SchoolStudentCareerQuizResult />} />
+      <Route path="career/report" element={<SchoolStudentCareerReport />} />
+      <Route path="career/explore" element={<SchoolStudentCareerExplorer />} />
+      <Route path="career/explore/:careerId" element={<SchoolStudentCareerDetail />} />
       <Route path="feedback" element={<SchoolStudentFeedback />} />
       <Route path="announcements" element={<SchoolStudentAnnouncements />} />
       <Route path="support-tickets" element={<SchoolStudentSupportTickets />} />
