@@ -172,9 +172,13 @@ export async function uploadLectureVideoThroughBackend(
 export async function uploadDoubtImageThroughBackend(
   file: File,
   onProgress?: (e: UploadProgressEvent) => void,
+  replaceUrl?: string,
 ): Promise<string> {
   const form = new FormData();
   form.append("file", file);
+  if (replaceUrl) {
+    form.append("replaceUrl", replaceUrl);
+  }
 
   const res = await apiClient.post("/upload/doubt-response-image", form, {
     transformRequest: [(data, headers) => {
@@ -231,6 +235,7 @@ export async function uploadToS3(
   payload: UploadUrlRequest,
   file: File,
   onProgress?: (e: UploadProgressEvent) => void,
+  replaceUrl?: string,
 ): Promise<string> {
   let contentType = (file.type && file.type.trim()) ? file.type : payload.contentType;
   if (!contentType && payload.type === "doubt-response-image") {
@@ -248,7 +253,7 @@ export async function uploadToS3(
 
   // For doubt images, use backend proxy upload to avoid browser->S3 CORS preflight failures.
   if (merged.type === "doubt-response-image") {
-    return uploadDoubtImageThroughBackend(file, onProgress);
+    return uploadDoubtImageThroughBackend(file, onProgress, replaceUrl);
   }
 
   const { uploadUrl, fileUrl } = await requestUploadUrl(merged);

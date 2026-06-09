@@ -468,6 +468,7 @@ export interface StudentLecture {
   scheduledAt?: string;
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
+  aiNoteImages?: AiNoteImage[];
   topic?: {
     id: string;
     name: string;
@@ -480,6 +481,15 @@ export interface StudentLecture {
     isCompleted: boolean;
     rewindCount: number;
   } | null;
+}
+
+export interface AiNoteImage {
+  url: string;
+  caption?: string;
+  section_heading?: string;
+  evidence_quote?: string;
+  provider?: string;
+  model?: string;
 }
 
 export interface LectureProgress {

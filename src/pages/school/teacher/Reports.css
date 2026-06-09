@@ -16,6 +16,23 @@
   gap: 14px;
 }
 
+.reports__empty,
+.reports__error {
+  border: 1px solid var(--gray-100);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 14px 16px;
+}
+
+.reports__error {
+  border-color: rgba(239, 68, 68, 0.18);
+  color: var(--error-600);
+  background: rgba(254, 242, 242, 0.75);
+}
+
 .reports__trend {
   display: flex;
   align-items: center;

@@ -4,17 +4,9 @@ import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import {
   ChevronLeft, Trophy, Target, AlertTriangle, CheckCircle2,
-  Clock, BarChart3, FileText, Download, Award, MessageSquare,
-  UserCheck, Loader2, ClipboardList,
+  Clock, Award, MessageSquare,
+  UserCheck, Loader2, ClipboardList, XCircle, CheckCircle,
 } from 'lucide-react';
-import { getApiOrigin } from '@/lib/api-config';
-
-function resolveUploadUrl(filePath) {
-  if (!filePath) return null;
-  if (/^https?:\/\//i.test(filePath)) return filePath;
-  const clean = String(filePath).replace(/^\.\//, '').replace(/^uploads[/\\]/, '');
-  return `${getApiOrigin()}/uploads/${clean}`;
-}
 
 function GradeChip({ grade }) {
   const colors = {
@@ -33,25 +25,123 @@ function GradeChip({ grade }) {
   );
 }
 
+function parseJsonObject(value) {
+  if (!value) return {};
+  if (typeof value === 'object' && !Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function parseJsonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function getQuestions(assessment) {
+  const questions = assessment?.questions_json || assessment?.questionsJson || assessment?.questions || [];
+  return Array.isArray(questions) ? questions : parseJsonArray(questions);
+}
+
+function normalizeAnswer(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[.,;:!?()[\]{}"']/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function answerMatches(expected, actual) {
+  return normalizeAnswer(expected) === normalizeAnswer(actual);
+}
+
+function formatAnswer(question, value) {
+  if (Array.isArray(value)) return value.map((item) => formatAnswer(question, item)).join(', ');
+  const raw = String(value ?? '').trim();
+  if (!raw) return 'Not answered';
+  if (question?.type === 'mcq_single' && Array.isArray(question.options)) {
+    const selected = question.options.find((option) => String(option.id || option.value || option.text).toLowerCase() === raw.toLowerCase());
+    if (selected) {
+      const label = selected.label || selected.id || selected.value || '';
+      const text = selected.text || selected.value || selected.label || raw;
+      return label && String(label).toLowerCase() !== String(text).toLowerCase() ? `${label}. ${text}` : text;
+    }
+  }
+  return raw;
+}
+
+function buildReviewRows(assessment, submission) {
+  const questions = getQuestions(assessment);
+  const answers = parseJsonObject(submission?.answers_json || submission?.answersJson);
+  const details = parseJsonArray(submission?.grading_details || submission?.gradingDetails);
+  const detailMap = new Map(details.map((detail) => [String(detail.questionId || detail.question_id || detail.id), detail]));
+
+  return questions.map((question, index) => {
+    const questionId = String(question.id || `q-${index + 1}`);
+    const value = answers[questionId];
+    const submitted = Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
+    const detail = detailMap.get(questionId);
+    const correctAnswer = detail?.correctAnswer ?? detail?.correct_answer ?? question.correctAnswer ?? question.correct_answer;
+    const isObjective = ['mcq_single', 'true_false', 'fill_blank', 'integer'].includes(question.type);
+    const correct = isObjective && correctAnswer !== undefined && correctAnswer !== null && correctAnswer !== ''
+      ? submitted && answerMatches(correctAnswer, value)
+      : undefined;
+    const detailExplanation = String(detail?.explanation || '').trim();
+    const questionExplanation = String(question.explanation || '').trim();
+    const explanation = questionExplanation.length > detailExplanation.length ? questionExplanation : detailExplanation;
+
+    return {
+      id: questionId,
+      number: question.displayNumber || question.number || index + 1,
+      sectionTitle: question.sectionTitle || question.section || '',
+      type: question.type || 'answer',
+      text: question.text || `Question ${index + 1}`,
+      options: question.type === 'true_false'
+        ? [{ id: 'true', text: 'True' }, { id: 'false', text: 'False' }]
+        : Array.isArray(question.options) ? question.options : [],
+      submitted,
+      answerText: submitted ? formatAnswer(question, value) : 'Not answered',
+      rawAnswer: value,
+      correctAnswer,
+      correct,
+      marks: detail?.marks !== undefined ? Number(detail.marks) : undefined,
+      total: detail?.total !== undefined ? Number(detail.total) : Number(question.marks || 1),
+      explanation,
+    };
+  });
+}
+
 export default function SessionResult() {
   const { id } = useParams();           // assessment id
   const { user } = useAuth();
 
   const [assessment, setAssessment] = useState(null);
   const [myResult, setMyResult]     = useState(null);   // from results table
+  const [mySubmission, setMySubmission] = useState(null);
   const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     if (!id) return;
     const load = async () => {
       try {
-        const [asmRes, resultsRes] = await Promise.all([
+        const [asmRes, resultsRes, submissionRes] = await Promise.all([
           api.get(`/assessments/${id}`),
           api.get(`/assessments/${id}/results`),
+          api.get(`/assessments/${id}/my-submission`).catch(() => null),
         ]);
 
         const asm = asmRes.data?.data ?? asmRes.data ?? null;
         setAssessment(asm);
+        setMySubmission(submissionRes?.data?.data ?? submissionRes?.data ?? null);
 
         const allResults = resultsRes.data?.data ?? resultsRes.data ?? [];
         // Find this student's result (student_id stored in results table is the students.id)
@@ -101,8 +191,8 @@ export default function SessionResult() {
   const isAbsent      = Boolean(myResult?.is_absent);
   const grade         = myResult?.grade ?? null;
   const remarks       = myResult?.remarks ?? null;
-  const paperUrl      = resolveUploadUrl(assessment.file_path ?? assessment.filePath);
   const resultSaved   = !!myResult && !isAbsent && marks != null;
+  const reviewRows    = buildReviewRows(assessment, mySubmission);
 
   /* ── grade ring color ── */
   const ringColor =
@@ -270,35 +360,115 @@ export default function SessionResult() {
         </>
       )}
 
-      {/* Question paper / content */}
-      {(assessment.content_text || paperUrl) && (
+      {/* Answer review */}
+      {reviewRows.length > 0 && (
         <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="mb-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
-              <h3 className="text-base font-black text-slate-900 dark:text-white">Question Paper</h3>
+              <ClipboardList className="h-5 w-5 text-blue-600" />
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Review Answers</h3>
             </div>
-            {paperUrl && (
-              <a
-                href={paperUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-100 transition dark:bg-blue-900/20 dark:text-blue-400"
-              >
-                <Download size={14} /> Download
-              </a>
-            )}
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+              {reviewRows.filter((row) => row.correct === true).length}/{reviewRows.filter((row) => row.correct !== undefined).length} objective correct
+            </span>
           </div>
 
-          {assessment.content_text ? (
-            <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800 dark:bg-slate-800 dark:text-slate-100">
-              {assessment.content_text}
-            </pre>
-          ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800">
-              Download the question paper using the button above.
-            </div>
-          )}
+          <div className="space-y-4">
+            {reviewRows.map((row) => (
+              <div
+                key={row.id}
+                className={`rounded-2xl border p-4 ${
+                  row.correct === true
+                    ? 'border-emerald-100 bg-emerald-50/60 dark:border-emerald-900/30 dark:bg-emerald-950/10'
+                    : row.correct === false
+                      ? 'border-rose-100 bg-rose-50/60 dark:border-rose-900/30 dark:bg-rose-950/10'
+                      : 'border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/60'
+                }`}
+              >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
+                      Q{row.number}
+                    </span>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/20">
+                      {row.type.replace(/_/g, ' ')}
+                    </span>
+                    {row.sectionTitle && (
+                      <span className="text-xs font-bold text-slate-400">{row.sectionTitle}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {row.correct === true && <CheckCircle className="h-5 w-5 text-emerald-500" />}
+                    {row.correct === false && <XCircle className="h-5 w-5 text-rose-500" />}
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
+                      {row.marks ?? 0}/{row.total} marks
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-sm font-bold leading-6 text-slate-900 dark:text-white">{row.text}</p>
+
+                {row.options.length > 0 && (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {row.options.map((option) => {
+                      const optionId = String(option.id || option.value || option.text).toLowerCase();
+                      const selected = optionId === String(row.rawAnswer ?? '').toLowerCase();
+                      const correct = optionId === String(row.correctAnswer ?? '').toLowerCase();
+                      return (
+                        <div
+                          key={optionId}
+                          className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
+                            correct
+                              ? 'border-emerald-300 bg-emerald-100 text-emerald-800'
+                              : selected
+                                ? 'border-rose-300 bg-rose-100 text-rose-800'
+                                : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                          }`}
+                        >
+                          {(option.label || option.id) && <span className="mr-2 font-black uppercase">{option.label || option.id}.</span>}
+                          {option.text || option.value || option.label}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {!['mcq_single', 'true_false'].includes(row.type) && (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-xl bg-white p-3 dark:bg-slate-900">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Your Answer</p>
+                      <p className={`mt-1 text-sm font-black ${row.submitted ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                        {row.answerText}
+                      </p>
+                    </div>
+                    {row.correctAnswer !== undefined && row.correctAnswer !== null && row.correctAnswer !== '' && (
+                      <div className="rounded-xl bg-white p-3 dark:bg-slate-900">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Right Answer</p>
+                        <p className="mt-1 text-sm font-black text-emerald-700 dark:text-emerald-300">
+                          {formatAnswer(row, row.correctAnswer)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {row.explanation && (
+                  <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3 dark:border-blue-900/30 dark:bg-blue-950/20">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-300">Explanation</p>
+                    <p className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">{row.explanation}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {reviewRows.length === 0 && (
+        <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <ClipboardList className="mx-auto h-10 w-10 text-slate-300" />
+          <h3 className="mt-3 text-base font-black text-slate-900 dark:text-white">Detailed review is not available yet</h3>
+          <p className="mt-1 text-sm text-slate-500">Your submitted answers and objective explanations will appear here after submission data is available.</p>
         </div>
       )}
 

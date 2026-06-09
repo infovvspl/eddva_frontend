@@ -28,7 +28,8 @@ import {
   User,
   Plus,
   Phone,
-  Video
+  Video,
+  Smile,
 } from "lucide-react";
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
@@ -1710,12 +1711,15 @@ function MessagesTab() {
 
 function MeetingsTab() {
   const [showForm, setShowForm] = useState(false);
+  const [meetingMode, setMeetingMode] = useState<'online' | 'offline'>('online');
   const queryClient = useQueryClient();
 
-  const { data: meetings, isLoading } = useQuery({
+  const { data: meetings, isLoading, isError } = useQuery({
     queryKey: ['parent-meetings'],
     queryFn: () => parentClient.getMeetingRequests(),
   });
+
+  const meetingList = Array.isArray(meetings) ? meetings : [];
 
   const { data: teachers } = useQuery({
     queryKey: ['parent-teachers'],
@@ -1724,11 +1728,29 @@ function MeetingsTab() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => parentClient.createMeetingRequest(data),
-    onSuccess: () => {
+    onSuccess: (createdMeeting: any) => {
+      if (createdMeeting?.id) {
+        queryClient.setQueryData(['parent-meetings'], (current: any) => {
+          const currentList = Array.isArray(current) ? current : [];
+          const nextList = currentList.filter((item: any) => item?.id !== createdMeeting.id);
+          return [createdMeeting, ...nextList];
+        });
+      }
       setShowForm(false);
-      queryClient.invalidateQueries({ queryKey: ['parent-meetings'] });
-    }
+      queryClient.refetchQueries({ queryKey: ['parent-meetings'] });
+    },
   });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      api.patch(`/meetings/${id}/status`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parent-meetings'] });
+    },
+  });
+
+  const prettyStatus = (status: string) =>
+    status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Pending';
 
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6 bg-slate-50/30">
@@ -1747,36 +1769,91 @@ function MeetingsTab() {
           <Skeleton className="h-24 w-full rounded-2xl" />
           <Skeleton className="h-24 w-full rounded-2xl" />
         </div>
-      ) : meetings?.length > 0 ? (
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center text-center py-12 rounded-2xl border border-rose-200 bg-rose-50 text-rose-600">
+          <Calendar className="mb-3 h-12 w-12" />
+          <p className="text-sm font-bold">Unable to load meeting requests right now</p>
+        </div>
+      ) : meetingList.length > 0 ? (
         <div className="space-y-4">
-          {meetings.map((m: any, i: number) => (
-            <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          {meetingList.map((m: any) => (
+            <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
                   <Calendar className="h-6 w-6" />
                 </div>
                 <div>
-                  <h4 className="text-[15px] font-black text-slate-900">{m.teacherName}</h4>
-                  <p className="text-xs font-semibold text-slate-500 mt-1">{m.date} • {m.timeSlot}</p>
-                  {m.reason && <p className="text-xs font-medium italic text-slate-400 mt-1">"{m.reason}"</p>}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="text-[15px] font-black text-slate-900">{m.title || 'Meeting'}</h4>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                      m.isIncoming ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {m.isIncoming ? 'Incoming' : 'Requested'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500 mt-1">
+                    {m.counterpartName || m.teacherName}
+                    {m.counterpartRole ? ` • ${String(m.counterpartRole).replace('_', ' ')}` : ''}
+                  </p>
+                  <p className="text-xs font-semibold text-slate-500 mt-1">
+                    {m.date || 'Date TBD'} • {m.timeSlot || 'Time TBD'}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    <span className="rounded-full bg-slate-100 px-2 py-1">{m.meetingMode || 'online'}</span>
+                    {m.meetingPlatform && <span className="rounded-full bg-slate-100 px-2 py-1">{m.meetingPlatform}</span>}
+                    {m.location && <span className="rounded-full bg-slate-100 px-2 py-1">{m.location}</span>}
+                  </div>
+                  {m.reason && <p className="text-xs font-medium italic text-slate-400 mt-2">"{m.reason}"</p>}
+                  {m.meetingLink && (
+                    <a
+                      href={m.meetingLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex text-xs font-black text-blue-600 hover:text-blue-700"
+                    >
+                      Join meeting
+                    </a>
+                  )}
                 </div>
               </div>
               <div className="mt-4 sm:mt-0 sm:text-right">
                 <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
-                  m.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                  m.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                  m.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                  ['Accepted', 'Scheduled', 'Completed'].includes(prettyStatus(m.status)) ? 'bg-emerald-100 text-emerald-700' :
+                  prettyStatus(m.status) === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                  ['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) ? 'bg-red-100 text-red-700' :
                   'bg-slate-100 text-slate-600'
                 }`}>
-                  {m.status === 'Confirmed' && <CheckCircle2 className="h-3 w-3" />}
-                  {m.status === 'Pending' && <Clock className="h-3 w-3" />}
-                  {m.status === 'Rejected' && <X className="h-3 w-3" />}
-                  {m.status}
+                  {['Accepted', 'Scheduled', 'Completed'].includes(prettyStatus(m.status)) && <CheckCircle2 className="h-3 w-3" />}
+                  {prettyStatus(m.status) === 'Pending' && <Clock className="h-3 w-3" />}
+                  {['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) && <X className="h-3 w-3" />}
+                  {prettyStatus(m.status)}
                 </span>
-                {m.status === 'Pending' && (
-                  <button className="block w-full text-xs font-black text-red-500 hover:text-red-600 mt-2">
-                    Cancel
-                  </button>
+                {prettyStatus(m.status) === 'Pending' && (
+                  <div className="mt-2 flex flex-wrap justify-end gap-2">
+                    {m.isIncoming ? (
+                      <>
+                        <button
+                          onClick={() => statusMutation.mutate({ id: m.id, status: 'accepted' })}
+                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-emerald-700"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => statusMutation.mutate({ id: m.id, status: 'rejected' })}
+                          className="rounded-lg bg-red-100 px-3 py-1.5 text-[11px] font-black text-red-600 hover:bg-red-200"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => statusMutation.mutate({ id: m.id, status: 'cancelled' })}
+                        className="block w-full text-xs font-black text-red-500 hover:text-red-600"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -1811,17 +1888,54 @@ function MeetingsTab() {
                 </select>
               </div>
               <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase text-slate-400">Meeting Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['online', 'offline'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setMeetingMode(mode)}
+                      className={`rounded-xl border-2 px-3 py-2.5 text-sm font-black capitalize transition ${
+                        meetingMode === mode
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 text-slate-500'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+                <input type="hidden" name="meetingMode" value={meetingMode} />
+              </div>
+              <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase text-slate-400">Preferred Date</label>
                 <input type="date" name="date" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase text-slate-400">Time Slot</label>
-                <select name="timeSlot" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500">
-                  <option value="Morning (9-11 AM)">Morning (9-11 AM)</option>
-                  <option value="Afternoon (12-2 PM)">Afternoon (12-2 PM)</option>
-                  <option value="Evening (3-5 PM)">Evening (3-5 PM)</option>
-                </select>
+                <input type="time" name="timeSlot" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase text-slate-400">Duration (Minutes)</label>
+                <input type="number" min="10" step="5" name="durationMinutes" defaultValue={30} className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
+              </div>
+              {meetingMode === 'online' ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase text-slate-400">Meeting Link</label>
+                    <input type="url" name="meetingLink" placeholder="https://meet.google.com/..." className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase text-slate-400">Platform</label>
+                    <input type="text" name="meetingPlatform" placeholder="Google Meet / Zoom" className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase text-slate-400">Location</label>
+                  <input type="text" name="location" required={meetingMode === 'offline'} placeholder="Principal office / campus / classroom" className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase text-slate-400">Reason (Optional)</label>
                 <textarea name="reason" rows={3} className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none focus:border-blue-500 resize-none" placeholder="What would you like to discuss?" />

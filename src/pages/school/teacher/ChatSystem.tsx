@@ -170,6 +170,12 @@ const ChatSystem: React.FC = () => {
   const [meetDuration, setMeetDuration] = useState('30 mins');
   const [meetDate, setMeetDate] = useState(new Date().toISOString().split('T')[0]);
   const [meetTime, setMeetTime] = useState('14:00');
+  const [meetMode, setMeetMode] = useState<'online' | 'offline'>('online');
+  const [meetPlatform, setMeetPlatform] = useState('Google Meet');
+  const [meetLink, setMeetLink] = useState('');
+  const [meetLocation, setMeetLocation] = useState('');
+  const [meetingInbox, setMeetingInbox] = useState<any[]>([]);
+  const [loadingMeetingInbox, setLoadingMeetingInbox] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showSharedFilesModal, setShowSharedFilesModal] = useState(false);
@@ -272,6 +278,28 @@ const ChatSystem: React.FC = () => {
     void loadActiveTab(true);
   }, [loadActiveTab]);
 
+  const loadMeetingInbox = useCallback(async () => {
+    setLoadingMeetingInbox(true);
+    try {
+      const res = await api.get('/meetings');
+      const payload = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+      setMeetingInbox(payload);
+    } catch (err) {
+      console.error('Failed to load teacher meetings', err);
+      setMeetingInbox([]);
+    } finally {
+      setLoadingMeetingInbox(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadMeetingInbox();
+  }, [loadMeetingInbox]);
+
   const fetchMessages = useCallback(async (peerId: string) => {
     try {
       const res = await api.get(`/chat/messages/${peerId}`);
@@ -306,7 +334,7 @@ const ChatSystem: React.FC = () => {
     setReplyingTo(null);
     setEditingMessage(null);
     setInChatSearch('');
-    api.patch(`/chat/messages/${contact.id}/read`).catch(() => {});
+    api.patch(`/chat/messages/${contact.id}/read`).catch(() => { });
   };
 
   useEffect(() => {
@@ -353,7 +381,7 @@ const ChatSystem: React.FC = () => {
             }
           ];
         });
-        api.patch(`/chat/messages/${peer.id}/read`).catch(() => {});
+        api.patch(`/chat/messages/${peer.id}/read`).catch(() => { });
       }
       void loadActiveTab(false);
     });
@@ -759,11 +787,10 @@ const ChatSystem: React.FC = () => {
             <button
               key={contact.id}
               onClick={() => openConversation(contact)}
-              className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${
-                active 
-                  ? "bg-blue-50/80 border border-blue-100/50 shadow-xs" 
+              className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
+                  ? "bg-blue-50/80 border border-blue-100/50 shadow-xs"
                   : "hover:bg-slate-50/60 border border-transparent"
-              }`}
+                }`}
             >
               <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
                 {contact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -788,6 +815,70 @@ const ChatSystem: React.FC = () => {
             </button>
           );
         })}
+      </div>
+    );
+  };
+
+  const renderMeetingInbox = () => {
+    const visibleMeetings = meetingInbox.slice(0, 4);
+    return (
+      <div className="p-3 pb-0">
+        <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-500">Meeting Inbox</h4>
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">
+              {meetingInbox.length}
+            </span>
+          </div>
+          {loadingMeetingInbox ? (
+            <p className="text-[11px] font-semibold text-slate-400">Loading meetings...</p>
+          ) : visibleMeetings.length === 0 ? (
+            <p className="text-[11px] font-semibold text-slate-400">No meeting requests yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {visibleMeetings.map((meeting) => (
+                <div key={meeting.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-[11px] font-bold text-slate-800">{meeting.title}</p>
+                      <p className="truncate text-[10px] font-semibold text-slate-500">
+                        {meeting.counterpartName} • {meeting.meetingDate || 'Date TBD'} {meeting.startTime ? `• ${meeting.startTime}` : ''}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${meeting.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                      {meeting.status}
+                    </span>
+                  </div>
+                  {meeting.status === 'pending' && meeting.isIncoming && (
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={async () => {
+                          await api.patch(`/meetings/${meeting.id}/status`, { status: 'accepted' });
+                          await loadMeetingInbox();
+                          showToast('Meeting accepted', 'success');
+                        }}
+                        className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await api.patch(`/meetings/${meeting.id}/status`, { status: 'rejected' });
+                          await loadMeetingInbox();
+                          showToast('Meeting rejected', 'info');
+                        }}
+                        className="rounded-lg bg-red-100 px-2.5 py-1 text-[10px] font-black text-red-600"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -827,7 +918,7 @@ const ChatSystem: React.FC = () => {
 
   return (
     <div className="h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] min-h-0 rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex flex-col md:flex-row relative">
-      
+
       {/* Column 1: Sidebar Directory */}
       <div className={`w-full md:w-[300px] lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${activeContact ? 'hidden md:flex' : 'flex'}`}>
         <div className="flex items-center justify-between p-4 border-b border-slate-100/60 bg-white shrink-0">
@@ -860,11 +951,10 @@ const ChatSystem: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition whitespace-nowrap ${
-                  active
+                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition whitespace-nowrap ${active
                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
                     : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
-                }`}
+                  }`}
               >
                 {tab.icon}
                 <span>{tab.label}</span>
@@ -908,17 +998,17 @@ const ChatSystem: React.FC = () => {
                 </div>
               </div>
 
-                <div className="flex items-center gap-1">
-                  <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                    <Search size={16} />
-                  </button>
-                  <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                  >
-                    <Info size={16} />
-                  </button>
-                </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
+                  <Search size={16} />
+                </button>
+                <button
+                  onClick={() => setShowDetails(!showDetails)}
+                  className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                >
+                  <Info size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Messages Scroll Area */}
@@ -942,24 +1032,22 @@ const ChatSystem: React.FC = () => {
                     <div
                       key={msg.id}
                       id={`msg-${msg.id}`}
-                      className={`flex ${mine ? 'justify-end' : 'justify-start'} transition-all duration-500 rounded-2xl ${
-                        highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
-                      }`}
+                      className={`flex ${mine ? 'justify-end' : 'justify-start'} transition-all duration-500 rounded-2xl ${highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
+                        }`}
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
                       <div
-                        className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${
-                          mine
+                        className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
                             ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
                             : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
-                        }`}
+                          }`}
                       >
                         {msg.is_forwarded && (
                           <p className={`mb-1 flex items-center gap-1 text-[9px] font-bold uppercase ${mine ? 'text-blue-600' : 'text-slate-400'}`}>
                             <Forward size={10} /> Forwarded
                           </p>
                         )}
-                        
+
                         {msg.parent_message_id && (
                           <div className={`mb-2 border-l-2 pl-2 text-[10px] opacity-80 ${mine ? 'border-blue-300 text-blue-600' : 'border-slate-300 text-slate-500'}`}>
                             Reply to message
@@ -1010,7 +1098,7 @@ const ChatSystem: React.FC = () => {
                         ) : (
                           <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                         )}
-                        
+
                         <div className="mt-1 flex items-center justify-end gap-1 text-[9px] opacity-85">
                           <span className={mine ? 'text-blue-500' : 'text-slate-400'}>{msg.time}</span>
                           {msg.is_edited && <span className={mine ? 'text-blue-500' : 'text-slate-400'}>• Edited</span>}
@@ -1287,20 +1375,20 @@ const ChatSystem: React.FC = () => {
             },
             ...(contextMenu.message.sender === 'me' && !contextMenu.message.is_deleted
               ? [
-                  {
-                    label: 'Edit',
-                    icon: Edit2,
-                    act: () => {
-                      setEditingMessage(contextMenu.message);
-                      setEditText(contextMenu.message.text);
-                    }
-                  },
-                  {
-                    label: 'Delete',
-                    icon: Trash2,
-                    act: () => submitDelete(contextMenu.message.id)
+                {
+                  label: 'Edit',
+                  icon: Edit2,
+                  act: () => {
+                    setEditingMessage(contextMenu.message);
+                    setEditText(contextMenu.message.text);
                   }
-                ]
+                },
+                {
+                  label: 'Delete',
+                  icon: Trash2,
+                  act: () => submitDelete(contextMenu.message.id)
+                }
+              ]
               : [])
           ].map((action, actionIdx) => (
             <button
@@ -1495,7 +1583,7 @@ const ChatSystem: React.FC = () => {
               className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Video Meet</h3>
+                <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Meeting</h3>
                 <button
                   onClick={() => setShowVideoMeetModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
@@ -1522,6 +1610,24 @@ const ChatSystem: React.FC = () => {
                     rows={2}
                     className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400 resize-none"
                   />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400">Meeting Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['online', 'offline'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setMeetMode(mode)}
+                        className={`rounded-xl border px-3 py-2 text-xs font-black capitalize transition ${meetMode === mode
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 text-slate-500'
+                          }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -1556,53 +1662,76 @@ const ChatSystem: React.FC = () => {
                     <option value="90 mins">90 mins</option>
                   </select>
                 </div>
+                {meetMode === 'online' ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-slate-400">Meeting Platform</label>
+                      <input
+                        type="text"
+                        value={meetPlatform}
+                        onChange={(e) => setMeetPlatform(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-400">Meeting Link</label>
+                      <input
+                        type="url"
+                        value={meetLink}
+                        onChange={(e) => setMeetLink(e.target.value)}
+                        placeholder="https://meet.google.com/..."
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Meeting Location</label>
+                    <input
+                      type="text"
+                      value={meetLocation}
+                      onChange={(e) => setMeetLocation(e.target.value)}
+                      placeholder="School campus / classroom / office"
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex gap-2">
                 <button
                   onClick={async () => {
-                    const roomUrl = `https://meet.eddva.com/room/${Math.random().toString(36).substring(2, 11)}`;
-                    const formattedInvite = `[MEETING_CARD]|${meetTitle}|${meetDate} ${meetTime}|${meetDuration}|${meetDesc}|${roomUrl}`;
-                    
                     try {
-                      const res = await api.post('/chat/messages', {
-                        receiverId: activeContact.id,
-                        content: formattedInvite
+                      await api.post('/meetings', {
+                        title: meetTitle,
+                        description: meetDesc,
+                        meetingDate: meetDate,
+                        startTime: meetTime,
+                        durationMinutes: Number.parseInt(meetDuration, 10) || 30,
+                        meetingMode: meetMode,
+                        meetingPlatform: meetMode === 'online' ? meetPlatform : null,
+                        meetingLink: meetMode === 'online' ? meetLink || null : null,
+                        location: meetMode === 'offline' ? meetLocation : null,
+                        recipientIds: [activeContact.id],
                       });
-                      const created = res.data?.data;
-                      if (created) {
-                        setMessages((prev) => {
-                          if (prev.some(m => String(m.id) === String(created.id))) return prev;
-                          return [
-                            ...prev,
-                            {
-                              id: created.id,
-                              text: created.content ?? created.text,
-                              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                              sender: 'me',
-                              created_at: created.created_at
-                            }
-                          ];
-                        });
-                      }
+                      await loadMeetingInbox();
                       setShowVideoMeetModal(false);
-                      showToast('Meeting invitation card sent!', 'success');
+                      showToast('Meeting request created successfully!', 'success');
                     } catch (err) {
-                      showToast('Failed to send meeting invitation', 'error');
+                      showToast('Failed to create meeting request', 'error');
                     }
                   }}
                   className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition"
                 >
-                  Start Meeting
+                  Save Meeting
                 </button>
                 <button
                   onClick={() => {
                     setShowVideoMeetModal(false);
-                    showToast('Meeting scheduled successfully!', 'success');
                   }}
                   className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
                 >
-                  Schedule Only
+                  Cancel
                 </button>
               </div>
             </motion.div>
@@ -1653,7 +1782,7 @@ const ChatSystem: React.FC = () => {
                   <button
                     onClick={async () => {
                       if (!activeContact) return;
-                      await api.patch(`/chat/messages/${activeContact.id}/read`).catch(() => {});
+                      await api.patch(`/chat/messages/${activeContact.id}/read`).catch(() => { });
                       showToast('Conversation marked as read', 'success');
                       setShowMoreOptions(false);
                     }}
@@ -1903,9 +2032,8 @@ const ChatSystem: React.FC = () => {
             initial={{ opacity: 0, x: 50, y: -20 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 50 }}
-            className={`pointer-events-auto flex items-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold text-white shadow-xl ${
-              t.type === 'success' ? 'bg-emerald-600' : t.type === 'error' ? 'bg-rose-600' : 'bg-blue-600'
-            }`}
+            className={`pointer-events-auto flex items-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold text-white shadow-xl ${t.type === 'success' ? 'bg-emerald-600' : t.type === 'error' ? 'bg-rose-600' : 'bg-blue-600'
+              }`}
           >
             {t.message}
           </motion.div>

@@ -3,8 +3,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
+  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
 } from "lucide-react";
+import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
 import Button from "@/components/school/Button";
 import Badge from "@/components/school/Badge";
@@ -17,6 +18,13 @@ import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
+
+function normaliseType(value: any) {
+  const type = String(value || "topic").trim().toLowerCase();
+  if (type === "unit") return "chapter";
+  if (["topic", "chapter", "subject", "mock", "final"].includes(type)) return type;
+  return "topic";
+}
 
 function Breadcrumb({
   items,
@@ -32,11 +40,10 @@ function Breadcrumb({
             type="button"
             onClick={item.onClick}
             disabled={item.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              item.active
-                ? "bg-brand-50 text-brand-700"
-                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${item.active
+              ? "bg-brand-50 text-brand-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              }`}
           >
             {item.icon}
             {item.label}
@@ -84,9 +91,110 @@ function NavCard({
   );
 }
 
+function ContentEditor({
+  questions,
+  onQuestionsChange,
+  answerKey,
+  onAnswerKeyChange,
+}: {
+  questions: string;
+  onQuestionsChange: (v: string) => void;
+  answerKey: string;
+  onAnswerKeyChange: (v: string) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+
+  return (
+    <div className="space-y-4">
+      {/* Tab Switcher */}
+      <div className="flex border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab("edit")}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
+            ? "border-brand-500 text-brand-600 font-extrabold"
+            : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+        >
+          ✏️ Edit Test
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("preview")}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
+            ? "border-brand-500 text-brand-600 font-extrabold"
+            : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+        >
+          👁️ Preview (Student View)
+        </button>
+      </div>
+
+      {activeTab === "edit" ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Question Paper pane */}
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 border-b border-blue-100">
+              <FileText size={14} className="text-blue-600" />
+              <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper</span>
+              <span className="ml-auto text-[10px] text-blue-400 font-medium">Students will see this</span>
+            </div>
+            <textarea
+              value={questions}
+              onChange={(e) => onQuestionsChange(e.target.value)}
+              placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
+              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+
+          {/* Answer Key pane */}
+          <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 border-b border-amber-100">
+              <span className="text-sm">🔑</span>
+              <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key</span>
+              <span className="ml-auto text-[10px] text-amber-500 font-medium">Teacher only · hidden from students</span>
+            </div>
+            <textarea
+              value={answerKey}
+              onChange={(e) => onAnswerKeyChange(e.target.value)}
+              placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
+              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 overflow-hidden">
+          <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+            <FileText size={14} />
+            <span>Question Paper Preview (Student View)</span>
+          </div>
+          <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
+            {questions.trim() ? (
+              <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
+            )}
+          </div>
+          <div className="mt-4 rounded-lg border border-amber-100 bg-white p-4">
+            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
+              <span>Answer Key Preview (Teacher Only)</span>
+            </div>
+            {answerKey.trim() ? (
+              <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
+            ) : (
+              <p className="text-sm text-gray-400">The answer key preview will appear here once answers are added.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const AssessmentSystem: React.FC = () => {
   const confirm = useConfirm();
   const navigate = useNavigate();
+  const location = useLocation();
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingContext, setLoadingContext] = useState(true);
 
@@ -96,6 +204,16 @@ const AssessmentSystem: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
   const [search, setSearch] = useState('');
 
+  useEffect(() => {
+    const restoredState = (location.state as any)?.assessmentWorkspace;
+    if (!restoredState) return;
+    setSelectedClass(restoredState.selectedClass || null);
+    setSelectedSection(restoredState.selectedSection || null);
+    setSelectedSubject(restoredState.selectedSubject || null);
+    setSearch('');
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
+
   // Assessment States
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [testsList, setTestsList] = useState<any[]>([]);
@@ -103,9 +221,25 @@ const AssessmentSystem: React.FC = () => {
   const [editingTest, setEditingTest] = useState<any>(null);
   const [contentMode, setContentMode] = useState<"manual" | "upload" | "ai">("manual");
   const [contentText, setContentText] = useState("");
+  const [answerKey, setAnswerKey] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiLanguage, setAiLanguage] = useState("en");
+  const [aiConfig, setAiConfig] = useState({
+    mcqCount: 5,
+    trueFalseCount: 5,
+    fillBlankCount: 5,
+    shortCount: 3,
+    longCount: 2,
+    difficulty: "intermediate",
+  });
+
+  // Curriculum scope (optional) — chapter → topic for the selected subject
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [selectedChapterId, setSelectedChapterId] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -141,6 +275,30 @@ const AssessmentSystem: React.FC = () => {
     void load();
     return () => { cancelled = true; };
   }, [assignments.length, setAssignments]);
+
+  // Load chapters for the selected subject whenever the Create modal opens.
+  useEffect(() => {
+    if (!showCreateModal || !selectedSubject) return;
+    let cancelled = false;
+    setSelectedChapterId("");
+    setSelectedTopicId("");
+    setTopics([]);
+    api.get(`/topics/chapters?subjectId=${selectedSubject.id}`)
+      .then((res) => { if (!cancelled) setChapters(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setChapters([]); });
+    return () => { cancelled = true; };
+  }, [showCreateModal, selectedSubject]);
+
+  // Load topics for the selected chapter
+  useEffect(() => {
+    setSelectedTopicId("");
+    if (!selectedChapterId) { setTopics([]); return; }
+    let cancelled = false;
+    api.get(`/topics?chapterId=${selectedChapterId}`)
+      .then((res) => { if (!cancelled) setTopics(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setTopics([]); });
+    return () => { cancelled = true; };
+  }, [selectedChapterId]);
 
   // ── Derived hierarchies ──────────────────────────────────────────────────
   const classes = useMemo(() => {
@@ -188,9 +346,9 @@ const AssessmentSystem: React.FC = () => {
 
   const level = selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
+  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
   const goBack = () => {
     if (level === 'workspace') goToSubjects();
     else if (level === 'subjects') goToSections();
@@ -213,7 +371,8 @@ const AssessmentSystem: React.FC = () => {
       const formatted = allAssessments.map((item: any) => ({
         id: item.id,
         title: item.title,
-        type: item.assessment_type || item.type || "topic",
+        type: normaliseType(item.assessment_type || item.type || "topic"),
+        rawType: item.assessment_type || item.type || "topic", // original for debugging
         totalMarks: item.total_marks,
         duration: item.duration_minutes || "-",
         date: item.scheduled_at || item.scheduled_date
@@ -256,9 +415,9 @@ const AssessmentSystem: React.FC = () => {
       const payload: Record<string, any> = {
         title: formData.title,
         type: formData.type,
-        assessmentType: formData.type, // Handle backend variations
+        assessmentType: formData.type,
         subjectId: selectedSubject?.id,
-        class_id: selectedClass?.id, // frontend metadata if needed
+        class_id: selectedClass?.id,
         sectionId: selectedSection?.id,
         total_marks: formData.total_marks,
         totalMarks: formData.total_marks,
@@ -267,7 +426,11 @@ const AssessmentSystem: React.FC = () => {
         scheduled_date: formData.scheduled_date,
         scheduledAt: formData.scheduled_date,
         contentText,
+        answerKey,
         contentSource: contentMode,
+        chapterId: selectedChapterId || undefined,
+        topicId: selectedTopicId || undefined,
+        language: aiLanguage,
       };
 
       if (editingTest) {
@@ -282,7 +445,7 @@ const AssessmentSystem: React.FC = () => {
         data.append("file", uploadFile);
         await api.post("/assessments", data);
       }
-      
+
       await fetchTests();
       setEditingTest(null);
       setShowCreateModal(false);
@@ -295,16 +458,54 @@ const AssessmentSystem: React.FC = () => {
       });
       setContentMode("manual");
       setContentText("");
+      setAnswerKey("");
       setUploadFile(null);
       setAiPrompt("");
+      setAiLanguage("en");
     } catch (err) {
       console.error("Create assessment error:", err);
+    }
+  };
+
+  const handleLanguageChange = async (newLang: string) => {
+    setAiLanguage(newLang);
+    if (!contentText.trim() && !answerKey.trim()) return;
+
+    const langLabel = newLang === 'hi' ? 'Hindi' : newLang === 'od' ? 'Odia' : 'English';
+    const confirmed = window.confirm(`Do you want to translate the current question paper and answer key to ${langLabel}?`);
+    if (!confirmed) return;
+
+    setGeneratingAi(true);
+    try {
+      if (contentText.trim()) {
+        const resQ = await api.post("/assessments/translate", {
+          text: contentText,
+          language: newLang,
+        });
+        const translatedQ = resQ.data?.data?.translatedText || resQ.data?.translatedText || contentText;
+        setContentText(translatedQ);
+      }
+      if (answerKey.trim()) {
+        const resA = await api.post("/assessments/translate", {
+          text: answerKey,
+          language: newLang,
+        });
+        const translatedA = resA.data?.data?.translatedText || resA.data?.translatedText || answerKey;
+        setAnswerKey(translatedA);
+      }
+    } catch (err) {
+      console.error("Translation error:", err);
+      alert("Failed to translate the content. Please try again.");
+    } finally {
+      setGeneratingAi(false);
     }
   };
 
   const handleAiGenerate = async () => {
     setGeneratingAi(true);
     try {
+      const chapterName = chapters.find((c: any) => c.id === selectedChapterId)?.name;
+      const topicName = topics.find((t: any) => t.id === selectedTopicId)?.name;
       const res = await api.post("/assessments/ai-generate", {
         title: formData.title,
         type: formData.type,
@@ -312,13 +513,23 @@ const AssessmentSystem: React.FC = () => {
         durationMinutes: formData.duration_minutes,
         className: selectedClass?.name,
         subjectName: selectedSubject?.name,
+        chapterName,
+        topicName,
         prompt: aiPrompt,
+        mcqCount: aiConfig.mcqCount,
+        trueFalseCount: aiConfig.trueFalseCount,
+        fillBlankCount: aiConfig.fillBlankCount,
+        shortCount: aiConfig.shortCount,
+        longCount: aiConfig.longCount,
+        difficulty: aiConfig.difficulty,
+        language: aiLanguage,
       });
       const draft = res.data?.data || res.data || {};
       if (draft.title && !formData.title.trim()) {
         setFormData((current) => ({ ...current, title: draft.title }));
       }
       setContentText(draft.contentText || draft.content_text || "");
+      setAnswerKey(draft.answerKey || draft.answer_key || "");
       setContentMode("ai");
     } catch (err) {
       console.error("AI assessment generation error:", err);
@@ -335,7 +546,16 @@ const AssessmentSystem: React.FC = () => {
       render: (v: string, row: any) => (
         <span
           className="text-brand-600 font-medium hover:underline cursor-pointer"
-          onClick={() => navigate(`/school/teacher/assessments/${row.id}`)}
+          onClick={() => navigate(`/school/teacher/assessments/${row.id}`, {
+            state: {
+              from: `${location.pathname}${location.search}`,
+              assessmentWorkspace: {
+                selectedClass,
+                selectedSection,
+                selectedSubject,
+              },
+            },
+          })}
         >
           {v}
         </span>
@@ -344,15 +564,27 @@ const AssessmentSystem: React.FC = () => {
     {
       key: "type",
       title: "Type",
-      render: (v: string) => (
-        <Badge
-          variant={
-            v === "final" ? "error" : v === "mock" ? "warning" : v === "unit" ? "info" : "purple"
-          }
-        >
-          {v}
-        </Badge>
-      ),
+      render: (v: string) => {
+        const labelMap: Record<string, string> = {
+          topic: "Topic Test",
+          chapter: "Chapter Test",
+          subject: "Subject Test",
+          mock: "Mock Test",
+          final: "Final Exam",
+        };
+        const variantMap: Record<string, "error" | "warning" | "info" | "purple" | "success"> = {
+          topic: "purple",
+          chapter: "info",
+          subject: "success",
+          mock: "warning",
+          final: "error",
+        };
+        return (
+          <Badge variant={variantMap[v] ?? "purple"}>
+            {labelMap[v] ?? v}
+          </Badge>
+        );
+      },
     },
     { key: "totalMarks", title: "Total Marks" },
     { key: "duration", title: "Duration (mins)" },
@@ -388,9 +620,11 @@ const AssessmentSystem: React.FC = () => {
                 scheduled_date: row.rawDate ? String(row.rawDate).slice(0, 10) : "",
               });
               setContentText(row.raw?.content_text || row.raw?.contentText || "");
+              setAnswerKey(row.raw?.answer_key || row.raw?.answerKey || "");
               setContentMode(row.raw?.content_source === "upload" ? "upload" : row.raw?.content_source === "ai" ? "ai" : "manual");
               setUploadFile(null);
               setAiPrompt("");
+              setAiLanguage(row.raw?.language || "en");
               setShowCreateModal(true);
             }}
           >
@@ -424,13 +658,48 @@ const AssessmentSystem: React.FC = () => {
     },
   ];
 
+  // ── Type label map (used for search matching against type) ──────────────
+  const TYPE_LABEL_MAP: Record<string, string> = {
+    topic: "topic test",
+    chapter: "chapter test",
+    subject: "subject test",
+    mock: "mock test",
+    final: "final exam",
+  };
+
+  /**
+   * renderDataTable — 5-stage filter pipeline
+   *
+   * Stage 1  RAW ASSESSMENTS     — all records from API (logged in fetchTests)
+   * Stage 2  AFTER WORKSPACE     — subject + class filter (applied in fetchTests, stored in testsList)
+   * Stage 3  AFTER TYPE FILTER   — keep only records matching this tab's type
+   * Stage 4  AFTER STATUS FILTER — apply Upcoming / Completed dropdown
+   * Stage 5  AFTER SEARCH FILTER — case-insensitive match on title OR type label
+   */
   const renderDataTable = (typeFilter: string | string[]) => {
-    const data = testsList.filter((t) => {
-      const matchType = Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter;
-      const matchSearch = t.title.toLowerCase().includes(workspaceSearch.toLowerCase());
-      const matchStatus = workspaceStatusFilter === "all" || t.status === workspaceStatusFilter;
-      return matchType && matchSearch && matchStatus;
-    });
+    // Stage 2 — workspace-filtered list (fetchTests already applied subject+class)
+
+    // Stage 3 — tab type filter
+    const afterType = testsList.filter((t) =>
+      Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter
+    );
+
+    // Stage 4 — status dropdown filter
+    const afterStatus = workspaceStatusFilter === "all"
+      ? afterType
+      : afterType.filter((t) => t.status === workspaceStatusFilter);
+
+    // Stage 5 — search: title OR type label only (NOT status, marks, dates)
+    const sq = workspaceSearch.trim().toLowerCase();
+    const afterSearch = sq
+      ? afterStatus.filter((t) => {
+        const inTitle = (t.title ?? "").toLowerCase().includes(sq);
+        const inType = (TYPE_LABEL_MAP[t.type] ?? t.type ?? "").toLowerCase().includes(sq);
+        return inTitle || inType;
+      })
+      : afterStatus;
+
+    const data = afterSearch;
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -438,14 +707,18 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-12 text-center text-gray-400">Loading tests...</div>
         ) : data.length === 0 ? (
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
-             <Target size={48} className="mx-auto text-gray-300 mb-4" />
-             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-             <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
-          </div>
+            <Target size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
+            <p className="text-gray-500 mt-1 text-sm">
+              {sq
+                ? `No results for "${workspaceSearch}" in this tab.`
+                : "Get started by creating your first test."}
+            </p>
+          </div >
         ) : (
           <DataTable columns={testColumns} data={data} />
         )}
-      </div>
+      </div >
     );
   };
 
@@ -475,7 +748,7 @@ const AssessmentSystem: React.FC = () => {
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
           ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
           ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => {}, active: true }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
 
@@ -567,14 +840,15 @@ const AssessmentSystem: React.FC = () => {
                 {selectedClass.name} | {selectedSubject.name}
               </p>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-3">
               <input
+                id="workspace-search"
                 type="text"
-                placeholder="Search tests..."
+                placeholder="Search by title or type..."
                 value={workspaceSearch}
                 onChange={(e) => setWorkspaceSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
               />
               <select
                 value={workspaceStatusFilter}
@@ -592,8 +866,10 @@ const AssessmentSystem: React.FC = () => {
                   setEditingTest(null);
                   setContentMode("manual");
                   setContentText("");
+                  setAnswerKey("");
                   setUploadFile(null);
                   setAiPrompt("");
+                  setAiLanguage("en");
                   setShowCreateModal(true);
                 }}
                 className="shadow-sm"
@@ -609,20 +885,38 @@ const AssessmentSystem: React.FC = () => {
                 id: "topic",
                 label: "Topic Tests",
                 icon: <ClipboardList size={16} />,
+                // Matches records with type = "topic"
                 content: renderDataTable("topic"),
               },
               {
-                id: "unit",
-                label: "Unit Tests",
+                id: "chapter",
+                label: "Chapter Tests",
                 icon: <BarChart3 size={16} />,
-                content: renderDataTable("unit"),
+                // Matches records with type = "chapter" OR legacy "unit"
+                // (legacy "unit" is already normalised to "chapter" in formatted list)
+                content: renderDataTable("chapter"),
+              },
+              {
+                id: "subject",
+                label: "Subject Tests",
+                icon: <BookOpen size={16} />,
+                // Matches records with type = "subject"
+                content: renderDataTable("subject"),
               },
               {
                 id: "mock",
-                label: "Mock & Final",
+                label: "Mock Tests",
+                icon: <Trophy size={16} />,
+                // Matches records with type = "mock"
+                content: renderDataTable("mock"),
+              },
+              {
+                id: "final",
+                label: "Final Exams",
                 icon: <Target size={16} />,
-                content: renderDataTable(["mock", "subject", "final"]),
-              }
+                // Matches records with type = "final"
+                content: renderDataTable("final"),
+              },
             ]}
           />
         </div>
@@ -634,6 +928,7 @@ const AssessmentSystem: React.FC = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           title={editingTest ? "Update Test" : "Create New Test"}
+          size="full"
         >
           <div className="space-y-4 p-2">
             <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
@@ -653,13 +948,13 @@ const AssessmentSystem: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
               options={[
                 { value: "topic", label: "Topic Test" },
-                { value: "unit", label: "Unit Test" },
-                { value: "mock", label: "Mock Test" },
+                { value: "chapter", label: "Chapter Test" },
                 { value: "subject", label: "Subject Test" },
+                { value: "mock", label: "Mock Test" },
                 { value: "final", label: "Final Exam" },
               ]}
             />
-            
+
             <div className="grid grid-cols-2 gap-4">
               <InputField
                 label="Total Marks"
@@ -676,7 +971,7 @@ const AssessmentSystem: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
               />
             </div>
-            
+
             <InputField
               label="Date"
               type="date"
@@ -696,11 +991,10 @@ const AssessmentSystem: React.FC = () => {
                     key={mode.id}
                     type="button"
                     onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
-                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${
-                      contentMode === mode.id
-                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
-                    }`}
+                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
+                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+                      }`}
                   >
                     {mode.icon}
                     {mode.label}
@@ -709,12 +1003,11 @@ const AssessmentSystem: React.FC = () => {
               </div>
 
               {contentMode === "manual" && (
-                <textarea
-                  value={contentText}
-                  onChange={(e) => setContentText(e.target.value)}
-                  rows={8}
-                  placeholder="Paste or type the assessment questions here. Example: Section A - Answer any 5 questions..."
-                  className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                <ContentEditor
+                  questions={contentText}
+                  onQuestionsChange={setContentText}
+                  answerKey={answerKey}
+                  onAnswerKeyChange={setAnswerKey}
                 />
               )}
 
@@ -731,39 +1024,74 @@ const AssessmentSystem: React.FC = () => {
                   ) : (
                     <p className="text-xs text-gray-500">Upload a PDF, document, text file, or question-paper image.</p>
                   )}
-                  <textarea
-                    value={contentText}
-                    onChange={(e) => setContentText(e.target.value)}
-                    rows={4}
-                    placeholder="Optional notes for this uploaded question paper."
-                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                  <ContentEditor
+                    questions={contentText}
+                    onQuestionsChange={setContentText}
+                    answerKey={answerKey}
+                    onAnswerKeyChange={setAnswerKey}
                   />
                 </div>
               )}
 
               {contentMode === "ai" && (
                 <div className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Question types &amp; counts</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {([
+                      { key: "mcqCount", label: "MCQ (1 mark)" },
+                      { key: "trueFalseCount", label: "True / False" },
+                      { key: "fillBlankCount", label: "Fill in blanks" },
+                      { key: "shortCount", label: "Short answer" },
+                      { key: "longCount", label: "Long answer" },
+                    ] as const).map((f) => (
+                      <label key={f.key} className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                        {f.label}
+                        <input
+                          type="number"
+                          min={0}
+                          value={(aiConfig as any)[f.key]}
+                          onChange={(e) => setAiConfig((c) => ({ ...c, [f.key]: Math.max(0, Number(e.target.value) || 0) }))}
+                          className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                        />
+                      </label>
+                    ))}
+                    <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+                      Difficulty
+                      <select
+                        value={aiConfig.difficulty}
+                        onChange={(e) => setAiConfig((c) => ({ ...c, difficulty: e.target.value }))}
+                        className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </label>
+
+                  </div>
                   <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    rows={3}
-                    placeholder="Tell AI what to generate. Example: 20 marks History test on French Revolution, include 1 map question and 2 long answers."
+                    rows={2}
+                    placeholder="Optional: extra instructions. Example: focus on French Revolution causes; include one map-based question."
                     className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
                   />
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
                     {generatingAi ? "Generating..." : "Generate Question Paper"}
                   </Button>
-                  <textarea
-                    value={contentText}
-                    onChange={(e) => setContentText(e.target.value)}
-                    rows={8}
-                    placeholder="AI generated assessment content will appear here. You can edit it before creating."
-                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                  />
+                  {/* Show two-pane editor once AI has generated content */}
+                  {contentText && (
+                    <ContentEditor
+                      questions={contentText}
+                      onQuestionsChange={setContentText}
+                      answerKey={answerKey}
+                      onAnswerKeyChange={setAnswerKey}
+                    />
+                  )}
                 </div>
               )}
             </div>
-            
+
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                 Cancel
@@ -772,11 +1100,13 @@ const AssessmentSystem: React.FC = () => {
                 {editingTest ? "Update Test" : "Create Test"}
               </Button>
             </div>
-          </div>
-        </Modal>
+          </div >
+        </Modal >
       )}
-    </div>
+    </div >
   );
 };
+
+// ── Presentational helpers ───────────────────────────────────────────────────
 
 export default AssessmentSystem;
