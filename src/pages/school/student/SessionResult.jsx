@@ -433,22 +433,24 @@ export default function SessionResult() {
                   </div>
                 )}
 
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <div className="rounded-xl bg-white p-3 dark:bg-slate-900">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Your Answer</p>
-                    <p className={`mt-1 text-sm font-black ${row.submitted ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
-                      {row.answerText}
-                    </p>
-                  </div>
-                  {row.correctAnswer !== undefined && row.correctAnswer !== null && row.correctAnswer !== '' && (
+                {!['mcq_single', 'true_false'].includes(row.type) && (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
                     <div className="rounded-xl bg-white p-3 dark:bg-slate-900">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Right Answer</p>
-                      <p className="mt-1 text-sm font-black text-emerald-700 dark:text-emerald-300">
-                        {formatAnswer(row, row.correctAnswer)}
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Your Answer</p>
+                      <p className={`mt-1 text-sm font-black ${row.submitted ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                        {row.answerText}
                       </p>
                     </div>
-                  )}
-                </div>
+                    {row.correctAnswer !== undefined && row.correctAnswer !== null && row.correctAnswer !== '' && (
+                      <div className="rounded-xl bg-white p-3 dark:bg-slate-900">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Right Answer</p>
+                        <p className="mt-1 text-sm font-black text-emerald-700 dark:text-emerald-300">
+                          {formatAnswer(row, row.correctAnswer)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {row.explanation && (
                   <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3 dark:border-blue-900/30 dark:bg-blue-950/20">

@@ -247,7 +247,7 @@ function parseJsonArray(value: any) {
 
 function getAssessmentQuestions(assessment: any) {
   const questions = assessment?.questions_json || assessment?.questionsJson || assessment?.questions || [];
-  return Array.isArray(questions) ? questions : [];
+  return parseJsonArray(questions);
 }
 
 function getQuestionSectionLetter(question: any) {
@@ -354,7 +354,7 @@ function buildStructuredAnswerRow(question: any, questionId: string, value: any,
     : undefined;
   const detailTotal = detail?.total !== undefined ? Number(detail.total) : undefined;
   const detailMatchesQuestion = detailTotal === undefined || detailTotal === inferredTotal;
-  return {
+  const row = {
     id: questionId,
     number,
     sectionTitle: effectiveQuestion.sectionTitle || effectiveQuestion.section || undefined,
@@ -363,11 +363,15 @@ function buildStructuredAnswerRow(question: any, questionId: string, value: any,
     answerText: submitted ? formatSubmittedValue(effectiveQuestion, value) : "",
     options: Array.isArray(effectiveQuestion.options) ? effectiveQuestion.options : undefined,
     correctAnswer,
-    marksAwarded: detail?.marks !== undefined && detailMatchesQuestion ? Number(detail.marks) : inferredAwarded,
+    marksAwarded: isObjective && correctAnswer !== undefined
+      ? inferredAwarded
+      : detail?.marks !== undefined && detailMatchesQuestion ? Number(detail.marks) : inferredAwarded,
     marksTotal: detailTotal !== undefined && detailMatchesQuestion ? detailTotal : isObjective ? inferredTotal : undefined,
     gradingStatus: detail?.status,
     submitted,
   };
+  console.log(`Q${number} - type: ${row.type}, isObjective: ${isObjective}, correctAnswer: ${correctAnswer}, value: ${value}, inferredAwarded: ${inferredAwarded}, detailMarks: ${detail?.marks}, marksAwarded: ${row.marksAwarded}`);
+  return row;
 }
 
 function getStructuredAnswerRows(assessment: any, submission: any, options: { includeBlank?: boolean } = {}): StructuredAnswerRow[] {
@@ -471,9 +475,11 @@ function StructuredAnswersView({
                     })}
                   </div>
                 )}
-                <div className={`mt-2 rounded-md bg-white p-3 text-sm font-bold leading-6 ${row.submitted ? "text-gray-900" : "text-gray-400"}`}>
-                  {row.submitted ? row.answerText : "Not answered"}
-                </div>
+                {!["mcq_single", "true_false"].includes(row.type) && (
+                  <div className={`mt-2 rounded-md bg-white p-3 text-sm font-bold leading-6 ${row.submitted ? "text-gray-900" : "text-gray-400"}`}>
+                    {row.submitted ? row.answerText : "Not answered"}
+                  </div>
+                )}
                 {row.correctAnswer && (
                   <p className="mt-2 text-xs font-semibold text-emerald-700">Answer key: {row.correctAnswer}</p>
                 )}
@@ -499,6 +505,7 @@ const AssessmentDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [reviewStudent, setReviewStudent] = useState<any | null>(null);
+  const [activeTabId, setActiveTabId] = useState("overview");
 
   // Marks Entry Pagination & Search
   const [marksPage, setMarksPage] = useState(1);
@@ -699,6 +706,31 @@ const AssessmentDetails: React.FC = () => {
       return;
     }
     if (!reviewSubmission?.answer_text?.trim()) {
+      const objectiveRows = reviewStructuredRows.filter((r) => ["mcq_single", "true_false", "fill_blank", "integer"].includes(r.type));
+      if (objectiveRows.length > 0) {
+        let score = 0;
+        let total = 0;
+        objectiveRows.forEach((r) => {
+          const inferredTotal = r.marksTotal || 1;
+          total += inferredTotal;
+          if (r.submitted && r.correctAnswer !== undefined) {
+            const submittedRaw = r.answerText.split(".")[0]?.trim().toLowerCase();
+            const correctRaw = String(r.correctAnswer || "").trim().toLowerCase();
+            if (submittedRaw === correctRaw) {
+              score += inferredTotal;
+            }
+          }
+        });
+        const pct = percentage(score, total);
+        updateDraft(reviewStudent.id, {
+          marksObtained: String(score),
+          grade: gradeFromPercent(pct),
+          remarks: `Auto objective score recalculated: ${score}/${total}. Add manual marks for theory questions if needed.`,
+          isAbsent: false,
+        });
+        return;
+      }
+
       const objectiveScore = Number(reviewSubmission?.objective_score ?? reviewSubmission?.objectiveScore);
       const objectiveTotal = Number(reviewSubmission?.objective_total ?? reviewSubmission?.objectiveTotal);
       if (Number.isFinite(objectiveScore) && Number.isFinite(objectiveTotal) && objectiveTotal > 0) {
@@ -790,6 +822,11 @@ const AssessmentDetails: React.FC = () => {
         ...current,
         [studentId]: nextDraft,
       }));
+      if (reviewStudent && String(reviewStudent.id) === studentId) {
+        setReviewStudent(null);
+        setActiveTabId("attempts");
+        setMarksSearch(reviewStudent.name || "");
+      }
     } catch (err) {
       console.error("Failed to save result", err);
       alert("Could not save result. Please try again.");
@@ -1296,6 +1333,8 @@ const AssessmentDetails: React.FC = () => {
       </div>
 
       <Tabs
+        activeTabId={activeTabId}
+        onChange={(tabId) => setActiveTabId(tabId)}
         tabs={[
           { id: "overview", label: "Overview", icon: <BarChart3 size={16} />, content: overviewContent },
           { id: "submissions", label: "Submissions", icon: <FileText size={16} />, content: submissionsContent },

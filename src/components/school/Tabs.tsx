@@ -13,6 +13,7 @@ interface Tab {
 interface TabsProps {
   tabs: Tab[];
   defaultTab?: string;
+  activeTabId?: string;
   className?: string;
   orientation?: 'horizontal' | 'vertical';
   variant?: 'pills' | 'stacked';
@@ -22,6 +23,7 @@ interface TabsProps {
 const Tabs: React.FC<TabsProps> = ({
   tabs,
   defaultTab,
+  activeTabId,
   className = '',
   orientation = 'horizontal',
   variant = 'pills',
@@ -38,6 +40,12 @@ const Tabs: React.FC<TabsProps> = ({
       return nextTab;
     });
   }, [defaultTab, tabs]);
+
+  useEffect(() => {
+    if (activeTabId && tabs.some((tab) => tab.id === activeTabId)) {
+      setActiveTab(activeTabId);
+    }
+  }, [activeTabId, tabs]);
 
   // Notify the parent of the active tab (initial + on change) so it can
   // lazy-load that tab's data instead of fetching every tab upfront.
