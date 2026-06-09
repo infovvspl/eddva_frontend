@@ -5,10 +5,12 @@ import {
   Award,
   BarChart3,
   ChevronLeft,
+  ChevronRight,
   Download,
   Eye,
   FileText,
   Save,
+  Search,
   Target,
   TrendingUp,
   Trophy,
@@ -498,6 +500,16 @@ const AssessmentDetails: React.FC = () => {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [reviewStudent, setReviewStudent] = useState<any | null>(null);
 
+  // Marks Entry Pagination & Search
+  const [marksPage, setMarksPage] = useState(1);
+  const [marksLimit, setMarksLimit] = useState(10);
+  const [marksSearch, setMarksSearch] = useState("");
+
+  // Submissions Pagination & Search
+  const [submissionsPage, setSubmissionsPage] = useState(1);
+  const [submissionsLimit, setSubmissionsLimit] = useState(10);
+  const [submissionsSearch, setSubmissionsSearch] = useState("");
+
   const totalMarks = Number(assessment?.total_marks || assessment?.totalMarks || 100);
   const previousPage = location.state?.from;
   const assessmentWorkspace = location.state?.assessmentWorkspace;
@@ -611,6 +623,47 @@ const AssessmentDetails: React.FC = () => {
       .sort((a, b) => Number(b.marks_obtained || 0) - Number(a.marks_obtained || 0))
       .map((result, index) => ({ ...result, rank: index + 1 }));
   }, [results, totalMarks]);
+
+  const filteredStudents = useMemo(() => {
+    if (!marksSearch.trim()) return students;
+    const q = marksSearch.toLowerCase();
+    return students.filter((s) => {
+      const name = String(s.name || "").toLowerCase();
+      const rollNo = String(s.studentProfile?.rollNo || "").toLowerCase();
+      return name.includes(q) || rollNo.includes(q);
+    });
+  }, [students, marksSearch]);
+
+  const paginatedStudents = useMemo(() => {
+    const start = (marksPage - 1) * marksLimit;
+    return filteredStudents.slice(start, start + marksLimit);
+  }, [filteredStudents, marksPage, marksLimit]);
+
+  const totalMarksPages = Math.max(1, Math.ceil(filteredStudents.length / marksLimit));
+
+  useEffect(() => {
+    setMarksPage(1);
+  }, [marksSearch, marksLimit]);
+
+  const filteredSubmissions = useMemo(() => {
+    if (!submissionsSearch.trim()) return submissions;
+    const q = submissionsSearch.toLowerCase();
+    return submissions.filter((sub) => {
+      const name = String(sub.student_name || sub.studentName || "Student").toLowerCase();
+      return name.includes(q);
+    });
+  }, [submissions, submissionsSearch]);
+
+  const paginatedSubmissions = useMemo(() => {
+    const start = (submissionsPage - 1) * submissionsLimit;
+    return filteredSubmissions.slice(start, start + submissionsLimit);
+  }, [filteredSubmissions, submissionsPage, submissionsLimit]);
+
+  const totalSubmissionsPages = Math.max(1, Math.ceil(filteredSubmissions.length / submissionsLimit));
+
+  useEffect(() => {
+    setSubmissionsPage(1);
+  }, [submissionsSearch, submissionsLimit]);
 
   const updateDraft = (studentId: string, patch: Partial<DraftResult>) => {
     setDrafts((current) => ({
@@ -878,19 +931,81 @@ const AssessmentDetails: React.FC = () => {
 
   const attemptsContent = (
     <GlassCard>
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Marks Entry</h3>
           <p className="text-sm text-gray-500">
-            {students.length} student{students.length === 1 ? "" : "s"} in this assessment roster.
+            {filteredStudents.length} of {students.length} student{students.length === 1 ? "" : "s"} in this roster.
           </p>
         </div>
-        <Button variant="outline" onClick={() => markAssessmentStatus("completed")}>
-          Mark Completed
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {students.length > 0 && (
+            <>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={marksSearch}
+                  onChange={(e) => setMarksSearch(e.target.value)}
+                  placeholder="Search by student name or roll..."
+                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-xs font-semibold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                />
+              </div>
+              <select
+                value={marksLimit}
+                onChange={(e) => setMarksLimit(Number(e.target.value))}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-brand-500 cursor-pointer"
+              >
+                <option value={5}>5 per page</option>
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+                <option value={50}>50 per page</option>
+              </select>
+            </>
+          )}
+          <Button variant="outline" onClick={() => markAssessmentStatus("completed")}>
+            Mark Completed
+          </Button>
+        </div>
       </div>
       {students.length ? (
-        <DataTable columns={attemptsColumns} data={students} />
+        filteredStudents.length ? (
+          <div className="space-y-4">
+            <DataTable columns={attemptsColumns} data={paginatedStudents} />
+
+            {/* Pagination Controls */}
+            {totalMarksPages > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+                <p className="text-xs font-semibold text-gray-500">
+                  Showing <span className="font-bold text-gray-800">{paginatedStudents.length}</span> of <span className="font-bold text-gray-800">{filteredStudents.length}</span> students
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setMarksPage((p) => Math.max(1, p - 1))}
+                    disabled={marksPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-xs font-bold text-gray-700 px-2">
+                    Page {marksPage} of {totalMarksPages}
+                  </span>
+                  <button
+                    onClick={() => setMarksPage((p) => Math.min(totalMarksPages, p + 1))}
+                    disabled={marksPage === totalMarksPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
+            No students found matching your search.
+          </div>
+        )
       ) : (
         <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
           No students found for this assessment class or section.
@@ -1024,71 +1139,129 @@ const AssessmentDetails: React.FC = () => {
 
   const submissionsContent = (
     <GlassCard>
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Student Submissions</h3>
           <p className="text-sm text-gray-500">
-            {submissions.length} online submission{submissions.length === 1 ? "" : "s"} received.
+            {filteredSubmissions.length} of {submissions.length} online submission{submissions.length === 1 ? "" : "s"} received.
           </p>
         </div>
+        {submissions.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={submissionsSearch}
+                onChange={(e) => setSubmissionsSearch(e.target.value)}
+                placeholder="Search by student name..."
+                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-xs font-semibold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              />
+            </div>
+            <select
+              value={submissionsLimit}
+              onChange={(e) => setSubmissionsLimit(Number(e.target.value))}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-brand-500 cursor-pointer"
+            >
+              <option value={5}>5 per page</option>
+              <option value={10}>10 per page</option>
+              <option value={20}>20 per page</option>
+              <option value={50}>50 per page</option>
+            </select>
+          </div>
+        )}
       </div>
       {submissions.length ? (
-        <div className="space-y-4">
-          {submissions.map((submission) => {
-            const fileUrl = resolveUploadUrl(submission.file_path || submission.filePath);
-            const structuredRows = getStructuredAnswerRows(assessment, submission);
-            const hasAnswerText = Boolean(submission.answer_text?.trim());
-            return (
-              <div key={submission.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{submission.student_name || "Student"}</p>
-                    <p className="mt-1 text-xs font-medium text-gray-500">
-                      Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "-"}
-                    </p>
-                    <p className="mt-2 text-xs font-semibold text-gray-500">
-                      {structuredRows.length
-                        ? `${structuredRows.length} answered question${structuredRows.length === 1 ? "" : "s"}`
-                        : hasAnswerText
-                        ? "Typed response submitted"
-                        : fileUrl
-                        ? "File response submitted"
-                        : "No answer content found"}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon={<Eye size={14} />}
-                      onClick={() => openSubmissionReview({
-                        id: submission.student_user_id,
-                        name: submission.student_name || "Student",
-                        studentProfile: {
-                          rollNo: submission.roll_no,
-                          section: { name: submission.section_name },
-                        },
-                      })}
-                    >
-                      Review
-                    </Button>
-                    {fileUrl && (
-                      <a
-                        href={fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
+        filteredSubmissions.length ? (
+          <div className="space-y-4">
+            {paginatedSubmissions.map((submission) => {
+              const fileUrl = resolveUploadUrl(submission.file_path || submission.filePath);
+              const structuredRows = getStructuredAnswerRows(assessment, submission);
+              const hasAnswerText = Boolean(submission.answer_text?.trim());
+              return (
+                <div key={submission.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-900">{submission.student_name || "Student"}</p>
+                      <p className="mt-1 text-xs font-medium text-gray-500">
+                        Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "-"}
+                      </p>
+                      <p className="mt-2 text-xs font-semibold text-gray-500">
+                        {structuredRows.length
+                          ? `${structuredRows.length} answered question${structuredRows.length === 1 ? "" : "s"}`
+                          : hasAnswerText
+                          ? "Typed response submitted"
+                          : fileUrl
+                          ? "File response submitted"
+                          : "No answer content found"}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={<Eye size={14} />}
+                        onClick={() => openSubmissionReview({
+                          id: submission.student_user_id,
+                          name: submission.student_name || "Student",
+                          studentProfile: {
+                            rollNo: submission.roll_no,
+                            section: { name: submission.section_name },
+                          },
+                        })}
                       >
-                        <Download size={14} />
-                        Open file
-                      </a>
-                    )}
+                        Review
+                      </Button>
+                      {fileUrl && (
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
+                        >
+                          <Download size={14} />
+                          Open file
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+
+            {/* Pagination Controls */}
+            {totalSubmissionsPages > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+                <p className="text-xs font-semibold text-gray-500">
+                  Showing <span className="font-bold text-gray-800">{paginatedSubmissions.length}</span> of <span className="font-bold text-gray-800">{filteredSubmissions.length}</span> submissions
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSubmissionsPage((p) => Math.max(1, p - 1))}
+                    disabled={submissionsPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-xs font-bold text-gray-700 px-2">
+                    Page {submissionsPage} of {totalSubmissionsPages}
+                  </span>
+                  <button
+                    onClick={() => setSubmissionsPage((p) => Math.min(totalSubmissionsPages, p + 1))}
+                    disabled={submissionsPage === totalSubmissionsPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
+            No submissions found matching your search.
+          </div>
+        )
       ) : (
         <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
           No students have submitted this assessment online yet.

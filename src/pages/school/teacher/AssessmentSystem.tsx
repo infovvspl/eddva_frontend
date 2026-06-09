@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
+  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -17,6 +17,13 @@ import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
+
+function normaliseType(value: any) {
+  const type = String(value || "topic").trim().toLowerCase();
+  if (type === "unit") return "chapter";
+  if (["topic", "chapter", "subject", "mock", "final"].includes(type)) return type;
+  return "topic";
+}
 
 function Breadcrumb({
   items,
@@ -383,7 +390,6 @@ const AssessmentSystem: React.FC = () => {
         raw: item,
       }));
 
-      console.log("AFTER WORKSPACE FILTER", formatted.length, formatted);
       setTestsList(formatted);
     } catch (err) {
       console.error("Fetch assessments error:", err);
@@ -669,19 +675,16 @@ const AssessmentSystem: React.FC = () => {
    */
   const renderDataTable = (typeFilter: string | string[]) => {
     // Stage 2 — workspace-filtered list (fetchTests already applied subject+class)
-    console.log("RAW ASSESSMENTS (in testsList, after workspace filter)", testsList.length);
 
     // Stage 3 — tab type filter
     const afterType = testsList.filter((t) =>
       Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter
     );
-    console.log("AFTER TYPE FILTER", afterType.length);
 
     // Stage 4 — status dropdown filter
     const afterStatus = workspaceStatusFilter === "all"
       ? afterType
       : afterType.filter((t) => t.status === workspaceStatusFilter);
-    console.log("AFTER STATUS FILTER", afterStatus.length);
 
     // Stage 5 — search: title OR type label only (NOT status, marks, dates)
     const sq = workspaceSearch.trim().toLowerCase();
@@ -692,8 +695,6 @@ const AssessmentSystem: React.FC = () => {
         return inTitle || inType;
       })
       : afterStatus;
-    console.log("AFTER SEARCH FILTER", afterSearch.length);
-    console.log("FINAL RENDER COUNT", afterSearch.length);
 
     const data = afterSearch;
 
@@ -1104,56 +1105,5 @@ const AssessmentSystem: React.FC = () => {
 };
 
 // ── Presentational helpers ───────────────────────────────────────────────────
-
-const toneStyles: Record<string, { soft: string; icon: string }> = {
-  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
-  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
-  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
-};
-
-function NavCard({
-  icon, tone, title, meta, actionLabel, onClick,
-}: {
-  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
-  actionLabel: string; onClick: () => void;
-}) {
-  const t = toneStyles[tone] ?? toneStyles.brand;
-  return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
-      </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
-      </div>
-    </GlassCard>
-  );
-}
-
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
-  return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
-          <button
-            type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
-              }`}
-          >
-            {it.icon}{it.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
-  );
-}
 
 export default AssessmentSystem;
