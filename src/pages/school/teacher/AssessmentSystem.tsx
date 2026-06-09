@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target
+  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target,
+  Trophy
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -231,11 +232,6 @@ const AssessmentSystem: React.FC = () => {
 
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
-
-  const updateContentText = (value: string) => {
-    setContentText(value);
-    setStructuredQuestions([]);
-  };
 
   // ── Load Context (source of truth for navigation) ────────────
   useEffect(() => {
@@ -685,15 +681,11 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
             <Target size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-<<<<<<< HEAD
     <p className="text-gray-500 mt-1 text-sm">
       {sq
         ? `No results for "${workspaceSearch}" in this tab.`
         : "Get started by creating your first test."}
     </p>
-=======
-            <p className="text-gray-500 mt-1 text-sm">Get started by creating your first test.</p>
->>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
           </div >
         ) : (
   <DataTable columns={testColumns} data={data} />
@@ -922,7 +914,6 @@ return (
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           />
-<<<<<<< HEAD
             <SelectField
               label="Test Type"
               value={formData.type}
@@ -935,53 +926,6 @@ return (
                 { value: "final", label: "Final Exam" },
               ]}
             />
-=======
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField
-                label="Test Type"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                options={[
-                  { value: "topic", label: "Topic Test" },
-                  { value: "unit", label: "Unit Test" },
-                  { value: "mock", label: "Mock Test" },
-                  { value: "subject", label: "Subject Test" },
-                  { value: "final", label: "Final Exam" },
-                ]}
-              />
-              <SelectField
-                label="Language"
-                value={aiLanguage}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                options={[
-                  { value: "en", label: "English" },
-                  { value: "hi", label: "Hindi" },
-                  { value: "od", label: "Odia" },
-                ]}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField
-                label="Chapter (optional)"
-                value={selectedChapterId}
-                onChange={(e) => setSelectedChapterId(e.target.value)}
-                options={[
-                  { value: "", label: chapters.length ? "All chapters / general" : "No chapters found" },
-                  ...chapters.map((c: any) => ({ value: c.id, label: c.name })),
-                ]}
-              />
-              <SelectField
-                label="Topic (optional)"
-                value={selectedTopicId}
-                onChange={(e) => setSelectedTopicId(e.target.value)}
-                options={[
-                  { value: "", label: selectedChapterId ? "Whole chapter" : "Select a chapter first" },
-                  ...topics.map((t: any) => ({ value: t.id, label: t.name })),
-                ]}
-              />
-            </div>
->>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
 
             <div className="grid grid-cols-2 gap-4">
               <InputField
@@ -1020,13 +964,8 @@ return (
                     type="button"
                     onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
-<<<<<<< HEAD
                         ? "border-brand-400 bg-white text-brand-700 shadow-sm"
                         : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
-=======
-                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
->>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
                       }`}
                   >
                     {mode.icon}
@@ -1140,60 +1079,4 @@ return (
   );
 };
 
-<<<<<<< HEAD
-// ── Presentational helpers ───────────────────────────────────────────────────
-
-const toneStyles: Record<string, { soft: string; icon: string }> = {
-  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
-  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
-  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
-};
-
-function NavCard({
-  icon, tone, title, meta, actionLabel, onClick,
-}: {
-  icon: React.ReactNode; tone: keyof typeof toneStyles; title: string; meta: string;
-  actionLabel: string; onClick: () => void;
-}) {
-  const t = toneStyles[tone] ?? toneStyles.brand;
-  return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
-      </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
-      </div>
-    </GlassCard>
-  );
-}
-
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
-  return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
-          <button
-            type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
-              }`}
-          >
-            {it.icon}{it.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
-  );
-}
-
-=======
->>>>>>> 6b043f9c612dda3ca4184a894452f59a63d91fde
 export default AssessmentSystem;
