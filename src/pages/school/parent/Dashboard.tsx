@@ -20,6 +20,7 @@ import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext, type ParentChild } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentAvatar from "@/assets/images/Student_Avatar.png";
+import SmartCalendar from "@/components/school/SmartCalendar";
 
 type Tone = "blue" | "emerald" | "amber" | "rose" | "violet" | "slate";
 
@@ -110,26 +111,13 @@ export default function ParentDashboard() {
 
   return (
     <div className="space-y-5 pb-10">
-      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-6 text-white shadow-xl shadow-teal-900/10 sm:p-8">
-        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/90">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Parent Analytics
-            </span>
-            <h1 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">
-              Welcome back, {user?.name || "Parent"}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-teal-50 sm:text-base">
-              Track your child's attendance, homework, marks, and assessment readiness in one focused view.
-            </p>
-          </div>
-        )}
+      {/* Top Grid for Welcome Card and Smart Calendar */}
+      <div className="grid gap-6 lg:grid-cols-4 items-stretch">
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10"
+          className="lg:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between"
         >
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
@@ -178,8 +166,18 @@ export default function ParentDashboard() {
           </div>
         </div>
         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
-      </section>
+        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" />
+      </motion.section>
+
+      {/* Smart Calendar */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
+      >
+        <SmartCalendar />
+      </motion.div>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
