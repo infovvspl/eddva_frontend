@@ -121,6 +121,16 @@ export default function Communications() {
   const [meetDuration, setMeetDuration] = useState('30 mins');
   const [meetDate, setMeetDate] = useState(new Date().toISOString().split('T')[0]);
   const [meetTime, setMeetTime] = useState('14:00');
+  const [meetMode, setMeetMode] = useState('online');
+  const [meetPlatform, setMeetPlatform] = useState('Google Meet');
+  const [meetLink, setMeetLink] = useState('');
+  const [meetLocation, setMeetLocation] = useState('');
+  const [showBulkMeetModal, setShowBulkMeetModal] = useState(false);
+  const [meetingOptions, setMeetingOptions] = useState({ teachers: [], classes: [], sections: [] });
+  const [loadingMeetingOptions, setLoadingMeetingOptions] = useState(false);
+  const [bulkTargetType, setBulkTargetType] = useState('section_parents');
+  const [bulkClassId, setBulkClassId] = useState('');
+  const [bulkSectionId, setBulkSectionId] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showSharedFilesModal, setShowSharedFilesModal] = useState(false);
@@ -258,6 +268,26 @@ export default function Communications() {
       });
     }
   }, [messages, peerTyping]);
+
+  useEffect(() => {
+    if (!showBulkMeetModal) return;
+    let alive = true;
+    setLoadingMeetingOptions(true);
+    api.get('/meetings/options')
+      .then((res) => {
+        if (!alive) return;
+        setMeetingOptions(res.data?.data ?? { teachers: [], classes: [], sections: [] });
+      })
+      .catch((err) => {
+        console.error('Failed to load meeting options', err);
+      })
+      .finally(() => {
+        if (alive) setLoadingMeetingOptions(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [showBulkMeetModal]);
 
   async function fetchConversations(role) {
     try {
@@ -571,20 +601,31 @@ export default function Communications() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-4 flex gap-1.5 p-1 bg-slate-50/50 rounded-2xl border border-slate-100/60 max-w-xs shrink-0">
-        {PANELS.map((panel) => (
-          <button
-            key={panel.key}
-            onClick={() => setActivePanel(panel.key)}
-            className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-              activePanel === panel.key
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            {panel.label}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1.5 p-1 bg-slate-50/50 rounded-2xl border border-slate-100/60 max-w-xs shrink-0">
+          {PANELS.map((panel) => (
+            <button
+              key={panel.key}
+              onClick={() => setActivePanel(panel.key)}
+              className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                activePanel === panel.key
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              {panel.label}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => {
+            setBulkTargetType(activePanel === 'TEACHER' ? 'class_teachers' : 'section_parents');
+            setShowBulkMeetModal(true);
+          }}
+          className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-800"
+        >
+          Bulk Meeting
+        </button>
       </div>
 
       {/* 3-Column Redesigned Layout */}
@@ -1317,7 +1358,7 @@ export default function Communications() {
               className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Video Meet</h3>
+                <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Meeting</h3>
                 <button
                   onClick={() => setShowVideoMeetModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
@@ -1327,6 +1368,221 @@ export default function Communications() {
               </div>
 
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
+                <div className="space-y-1">
+                  <label className="text-slate-400">Meeting Title</label>
+                  <input
+                    type="text"
+                    value={meetTitle}
+                    onChange={(e) => setMeetTitle(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400">Meeting Description</label>
+                  <textarea
+                    value={meetDesc}
+                    onChange={(e) => setMeetDesc(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400 resize-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400">Meeting Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['online', 'offline'].map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setMeetMode(mode)}
+                        className={`rounded-xl border px-3 py-2 text-xs font-black capitalize transition ${
+                          meetMode === mode
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Meeting Date</label>
+                    <input
+                      type="date"
+                      value={meetDate}
+                      onChange={(e) => setMeetDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Start Time</label>
+                    <input
+                      type="time"
+                      value={meetTime}
+                      onChange={(e) => setMeetTime(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-400">Duration</label>
+                  <select
+                    value={meetDuration}
+                    onChange={(e) => setMeetDuration(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                  >
+                    <option value="15 mins">15 mins</option>
+                    <option value="30 mins">30 mins</option>
+                    <option value="60 mins">60 mins</option>
+                    <option value="90 mins">90 mins</option>
+                  </select>
+                </div>
+                {meetMode === 'online' ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-slate-400">Meeting Platform</label>
+                      <input
+                        type="text"
+                        value={meetPlatform}
+                        onChange={(e) => setMeetPlatform(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-400">Meeting Link</label>
+                      <input
+                        type="url"
+                        value={meetLink}
+                        onChange={(e) => setMeetLink(e.target.value)}
+                        placeholder="https://meet.google.com/..."
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Meeting Location</label>
+                    <input
+                      type="text"
+                      value={meetLocation}
+                      onChange={(e) => setMeetLocation(e.target.value)}
+                      placeholder="Conference hall / office / campus"
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.post('/meetings', {
+                        title: meetTitle,
+                        description: meetDesc,
+                        meetingDate: meetDate,
+                        startTime: meetTime,
+                        durationMinutes: Number.parseInt(meetDuration, 10) || 30,
+                        meetingMode: meetMode,
+                        meetingPlatform: meetMode === 'online' ? meetPlatform : null,
+                        meetingLink: meetMode === 'online' ? meetLink || null : null,
+                        location: meetMode === 'offline' ? meetLocation : null,
+                        recipientIds: [selectedUser.id],
+                      });
+                      setShowVideoMeetModal(false);
+                      showToast('Meeting request created successfully!', 'success');
+                    } catch (err) {
+                      showToast('Failed to create meeting request', 'error');
+                    }
+                  }}
+                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition"
+                >
+                  Save Meeting
+                </button>
+                <button
+                  onClick={() => {
+                    setShowVideoMeetModal(false);
+                  }}
+                  className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBulkMeetModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-black text-slate-900 uppercase">Bulk Meeting Scheduler</h3>
+                <button
+                  onClick={() => setShowBulkMeetModal(false)}
+                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
+                <div className="space-y-1">
+                  <label className="text-slate-400">Audience</label>
+                  <select
+                    value={bulkTargetType}
+                    onChange={(e) => setBulkTargetType(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                  >
+                    {activePanel === 'TEACHER' ? (
+                      <option value="class_teachers">Class teachers</option>
+                    ) : (
+                      <>
+                        <option value="section_parents">Section parents</option>
+                        <option value="class_parents">Class parents</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Class</label>
+                    <select
+                      value={bulkClassId}
+                      onChange={(e) => setBulkClassId(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    >
+                      <option value="">Select class</option>
+                      {(meetingOptions.classes || []).map((cls) => (
+                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Section</label>
+                    <select
+                      value={bulkSectionId}
+                      onChange={(e) => setBulkSectionId(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    >
+                      <option value="">Select section</option>
+                      {(meetingOptions.sections || [])
+                        .filter((section) => !bulkClassId || section.class_id === bulkClassId)
+                        .map((section) => (
+                          <option key={section.id} value={section.id}>
+                            {section.class_name ? `${section.class_name} - ` : ''}{section.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
                 <div className="space-y-1">
                   <label className="text-slate-400">Meeting Title</label>
                   <input
@@ -1365,57 +1621,102 @@ export default function Communications() {
                     />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-slate-400">Duration</label>
-                  <select
-                    value={meetDuration}
-                    onChange={(e) => setMeetDuration(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                  >
-                    <option value="15 mins">15 mins</option>
-                    <option value="30 mins">30 mins</option>
-                    <option value="60 mins">60 mins</option>
-                    <option value="90 mins">90 mins</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Duration</label>
+                    <select
+                      value={meetDuration}
+                      onChange={(e) => setMeetDuration(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    >
+                      <option value="15 mins">15 mins</option>
+                      <option value="30 mins">30 mins</option>
+                      <option value="60 mins">60 mins</option>
+                      <option value="90 mins">90 mins</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Meeting Type</label>
+                    <select
+                      value={meetMode}
+                      onChange={(e) => setMeetMode(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    >
+                      <option value="online">Online</option>
+                      <option value="offline">Offline</option>
+                    </select>
+                  </div>
                 </div>
+                {meetMode === 'online' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-slate-400">Meeting Platform</label>
+                      <input
+                        type="text"
+                        value={meetPlatform}
+                        onChange={(e) => setMeetPlatform(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-400">Meeting Link</label>
+                      <input
+                        type="url"
+                        value={meetLink}
+                        onChange={(e) => setMeetLink(e.target.value)}
+                        placeholder="https://meet.google.com/..."
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-slate-400">Meeting Location</label>
+                    <input
+                      type="text"
+                      value={meetLocation}
+                      onChange={(e) => setMeetLocation(e.target.value)}
+                      placeholder="Conference hall / office / campus"
+                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex gap-2">
                 <button
+                  disabled={loadingMeetingOptions}
                   onClick={async () => {
-                    const roomUrl = `https://meet.eddva.com/room/${Math.random().toString(36).substring(2, 11)}`;
-                    const formattedInvite = `[MEETING_CARD]|${meetTitle}|${meetDate} ${meetTime}|${meetDuration}|${meetDesc}|${roomUrl}`;
-                    
                     try {
-                      const res = await api.post('/chat/messages', {
-                        receiverId: selectedUser.id,
-                        content: formattedInvite
+                      await api.post('/meetings', {
+                        title: meetTitle,
+                        description: meetDesc,
+                        meetingDate: meetDate,
+                        startTime: meetTime,
+                        durationMinutes: Number.parseInt(meetDuration, 10) || 30,
+                        meetingMode: meetMode,
+                        meetingPlatform: meetMode === 'online' ? meetPlatform : null,
+                        meetingLink: meetMode === 'online' ? meetLink || null : null,
+                        location: meetMode === 'offline' ? meetLocation : null,
+                        scopeType: bulkTargetType,
+                        classId: bulkClassId || null,
+                        sectionId: bulkSectionId || null,
                       });
-                      const created = res.data?.data;
-                      if (created) {
-                        setMessages((prev) => {
-                          if (prev.some(m => String(m.id) === String(created.id))) return prev;
-                          return [...prev, created];
-                        });
-                      }
-                      setShowVideoMeetModal(false);
-                      showToast('Meeting invitation card sent!', 'success');
+                      setShowBulkMeetModal(false);
+                      showToast('Bulk meeting requests created successfully!', 'success');
                     } catch (err) {
-                      showToast('Failed to send meeting invitation', 'error');
+                      showToast('Failed to create bulk meeting requests', 'error');
                     }
                   }}
-                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition"
+                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition disabled:opacity-50"
                 >
-                  Start Meeting
+                  Create Bulk Meeting
                 </button>
                 <button
-                  onClick={() => {
-                    setShowVideoMeetModal(false);
-                    showToast('Meeting scheduled successfully!', 'success');
-                  }}
+                  onClick={() => setShowBulkMeetModal(false)}
                   className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
                 >
-                  Schedule Only
+                  Cancel
                 </button>
               </div>
             </motion.div>

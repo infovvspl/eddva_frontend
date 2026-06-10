@@ -15,7 +15,7 @@ function cleanStructuredQuestions(questions) {
   const seen = new Set();
   return questions.filter((question) => {
     const text = String(question?.text || '').trim();
-    const key = `${question?.sectionTitle || ''}-${question?.displayNumber || question?.number || ''}-${text}`;
+    const key = `${question?.sectionTitle || ''}-${text.toLowerCase().replace(/\s+/g, ' ')}`;
     if (!text || instructionPattern.test(text) || seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -43,6 +43,14 @@ function getQuestionTypeLabel(type) {
 
 function getQuestionDisplayNumber(question, fallbackIndex) {
   return question?.displayNumber || question?.number || fallbackIndex + 1;
+}
+
+function getPaletteQuestionNumber(group, itemIndex) {
+  const current = Number(group.questions[itemIndex]?.question?.displayNumber);
+  const previous = itemIndex > 0 ? Number(group.questions[itemIndex - 1]?.question?.displayNumber) : null;
+  const expected = group.startIndex + itemIndex + 1;
+  if (Number.isFinite(current) && current > 0 && (previous == null || current > previous)) return current;
+  return expected;
 }
 
 function getSectionLetter(question) {
@@ -468,7 +476,7 @@ export default function TestEngine() {
                     </p>
                   )}
                   <div className="grid grid-cols-5 gap-2">
-                    {group.questions.map(({ question, index }) => {
+                    {group.questions.map(({ question, index }, itemIndex) => {
                       const value = answers?.[question.id];
                       const answered = Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
                       return (
@@ -485,7 +493,7 @@ export default function TestEngine() {
                               : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                           )}
                         >
-                          {getQuestionDisplayNumber(question, index)}
+                          {getPaletteQuestionNumber(group, itemIndex)}
                         </button>
                       );
                     })}

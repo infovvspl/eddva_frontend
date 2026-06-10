@@ -401,6 +401,7 @@ export default function NotificationCenterModal({
 
     if (isTeacher) {
       if (cat.includes("calendar") || cat.includes("event") || title.includes("calendar") || title.includes("event")) return "/school/teacher/calendar";
+      if (cat.includes("meeting") || title.includes("meeting")) return "/school/teacher/meetings";
       if (cat.includes("assignment") || title.includes("assignment")) return "/school/teacher/assignments";
       if (cat.includes("assessment") || title.includes("assessment")) return "/school/teacher/assessments";
       if (cat.includes("class") || title.includes("class")) return "/school/teacher/classes";

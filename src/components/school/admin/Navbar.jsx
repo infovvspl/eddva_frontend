@@ -205,6 +205,7 @@ export default function Navbar({ onMenuClick }) {
         { name: 'Academic Calendar', path: '/school/teacher/calendar', icon: CalendarDays },
         { name: 'Assignments', path: '/school/teacher/assignments', icon: SettingsIcon },
         { name: 'Assessments', path: '/school/teacher/assessments', icon: SettingsIcon },
+        { name: 'Meetings', path: '/school/teacher/meetings', icon: CalendarDays },
         { name: 'Reports', path: '/school/teacher/reports', icon: SettingsIcon },
       ];
       const adminPages = [

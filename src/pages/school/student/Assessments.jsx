@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiOrigin } from '@/lib/api-config';
-import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, Save, ShieldCheck, Timer, X, Award, MessageSquare, Target, Loader2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, X, Award, MessageSquare, Target, Loader2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 function resolveUploadUrl(filePath) {
@@ -56,16 +56,72 @@ function getQuestionTypeLabel(type) {
   return labels[type] || 'Question';
 }
 
+const TEST_TYPE_FILTERS = [
+  { id: 'topic', label: 'Topic Tests', icon: ClipboardList },
+  { id: 'chapter', label: 'Chapter Tests', icon: BarChart3 },
+  { id: 'subject', label: 'Subject Tests', icon: FileText },
+  { id: 'mock', label: 'Mock Tests', icon: Trophy },
+  { id: 'final', label: 'Final Exams', icon: Target },
+];
+
+function normalizeAssessmentType(test) {
+  const raw = String(test?.assessment_type || test?.type || '').toLowerCase().trim();
+  if (raw.includes('chapter') || raw.includes('unit')) return 'chapter';
+  if (raw.includes('subject')) return 'subject';
+  if (raw.includes('mock')) return 'mock';
+  if (raw.includes('final')) return 'final';
+  return 'topic';
+}
+
+function getAssessmentSubjectId(test) {
+  return test?.subject_id || test?.subjectId || test?.subject?.id || '';
+}
+
+function getAssessmentMeta(test, subjectNameById = {}) {
+  const content = String(test?.content_text || test?.contentText || '');
+  const firstLine = content.split(/\r?\n/).find((line) => line.trim())?.replace(/^#+\s*/, '').trim() || '';
+  const classFromText = content.match(/\bClass\s*[:\-]?\s*([A-Za-z0-9 -]+?)(?=\s+(?:Maximum\s+Marks|Max\s+Marks|Time\s+Allowed|Duration|Subject)\b|[.\n\r]|$)/i)?.[1]?.trim();
+  const subjectFromText = content.match(/\bSubject\s*[:\-]?\s*([A-Za-z0-9 &-]+?)(?=\s+(?:Class|Maximum\s+Marks|Max\s+Marks|Time\s+Allowed|Duration)\b|[.\n\r]|$)/i)?.[1]?.trim();
+  const marksFromText = content.match(/\bMaximum\s+Marks\s*[:\-]?\s*(\d+)/i)?.[1]?.trim();
+  const timeFromText = content.match(/\bTime\s+Allowed\s*[:\-]?\s*([A-Za-z0-9 ]+)/i)?.[1]?.trim();
+  const subjectFromHeading = firstLine?.match(/^([A-Za-z][A-Za-z &-]*?)\s+Class\b/i)?.[1]?.trim();
+  const subjectId = getAssessmentSubjectId(test);
+
+  const className = test?.class_name || test?.className || test?.class?.name || classFromText;
+  const subjectName = subjectNameById[subjectId] || test?.subject_name || test?.subjectName || test?.subject?.name || subjectFromText || subjectFromHeading;
+  const totalMarks = test?.total_marks || test?.totalMarks || marksFromText || 100;
+  const duration = test?.duration_minutes || test?.durationMinutes || timeFromText || 60;
+  const durationText = String(duration).toLowerCase().includes('min') ? duration : `${duration} minutes`;
+
+  return { className, subjectName, subjectId, totalMarks, durationText };
+}
+
+function getAssessmentSubjectName(test, subjectNameById = {}) {
+  return getAssessmentMeta(test, subjectNameById).subjectName || 'General';
+}
+
+function getAssessmentSummary(test, subjectNameById = {}) {
+  const { className, subjectName, totalMarks, durationText } = getAssessmentMeta(test, subjectNameById);
+  return [
+    className ? `Class: ${className}` : null,
+    subjectName ? `Subject: ${subjectName}` : null,
+    `Max Marks: ${totalMarks}`,
+    `Time Allowed: ${durationText}`,
+  ].filter(Boolean).join(' | ');
+}
+
 export default function Assessments() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('available');
+  const [typeFilter, setTypeFilter] = useState('topic');
+  const [subjectFilter, setSubjectFilter] = useState('all');
+  const [classSubjects, setClassSubjects] = useState([]);
   const [assessments, setAssessments] = useState([]);
   // myResults: array of { assessment, result } objects
   const [myResults, setMyResults] = useState([]);
   const [resultsLoading, setResultsLoading] = useState(false);
-  const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [submitTarget, setSubmitTarget] = useState(null);
   const [answerText, setAnswerText] = useState('');
   const [answerFile, setAnswerFile] = useState(null);
@@ -96,6 +152,34 @@ export default function Assessments() {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const sectionId = user?.studentProfile?.sectionId || user?.sectionId;
+    if (!sectionId) {
+      setClassSubjects([]);
+      return;
+    }
+    const fetchClassSubjects = async () => {
+      try {
+        const res = await api.get(`/academic/sections/${sectionId}/teaching-map`);
+        const data = res.data?.data ?? res.data ?? {};
+        const subjects = Array.isArray(data.subjects) ? data.subjects : [];
+        setClassSubjects(
+          subjects
+            .map((subject) => ({
+              id: subject.subjectId || subject.id,
+              name: subject.subjectName || subject.name,
+            }))
+            .filter((subject) => subject.id && subject.name)
+        );
+      } catch (error) {
+        console.error('Failed to fetch class subjects:', error);
+        setClassSubjects([]);
+      }
+    };
+    fetchClassSubjects();
+  }, [user?.studentProfile?.sectionId, user?.sectionId]);
+
 
   // Fetch results when switching to the results tab
   useEffect(() => {
@@ -186,13 +270,6 @@ export default function Assessments() {
     setRemainingSeconds(0);
     setStructuredAnswers({});
     setCurrentQuestionIndex(0);
-  };
-
-  const openSubmitFromAssessment = () => {
-    if (!selectedAssessment) return;
-    const target = selectedAssessment;
-    setSelectedAssessment(null);
-    openSubmit(target);
   };
 
   const handleAssessmentSubmit = async (autoSubmit = false) => {
@@ -327,6 +404,28 @@ export default function Assessments() {
     );
   };
 
+  const typeAssessments = assessments.filter((test) => normalizeAssessmentType(test) === typeFilter);
+  const typeResults = myResults.filter(({ assessment }) => normalizeAssessmentType(assessment) === typeFilter);
+  const subjectNameById = Object.fromEntries(classSubjects.map((subject) => [String(subject.id), subject.name]));
+  const subjectOptions = classSubjects;
+  const selectedTypeLabel = TEST_TYPE_FILTERS.find((filter) => filter.id === typeFilter)?.label || 'tests';
+  const matchesSubject = (test) => {
+    if (subjectFilter === 'all') return true;
+    const subjectId = String(getAssessmentSubjectId(test) || '');
+    if (subjectId && subjectId === String(subjectFilter)) return true;
+    const selectedSubject = subjectNameById[String(subjectFilter)];
+    return selectedSubject && getAssessmentSubjectName(test, subjectNameById).toLowerCase() === selectedSubject.toLowerCase();
+  };
+  const filteredAssessments = typeAssessments.filter(matchesSubject);
+  const filteredResults = typeResults.filter(({ assessment }) => matchesSubject(assessment));
+  const subjectOptionsKey = subjectOptions.map((subject) => subject.id).join('|');
+
+  useEffect(() => {
+    if (subjectFilter !== 'all' && !subjectOptions.some((subject) => String(subject.id) === String(subjectFilter))) {
+      setSubjectFilter('all');
+    }
+  }, [subjectFilter, subjectOptionsKey]);
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -344,33 +443,45 @@ export default function Assessments() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-        {['Practice', 'Topic', 'Unit', 'Subject', 'Mock', 'Final'].map((label) => (
-          <div key={label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <ClipboardList className="h-5 w-5 text-blue-600" />
-            <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">{label} Tests</p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Available when published.</p>
-          </div>
-        ))}
+      <div className="flex w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex min-w-max gap-1">
+          {TEST_TYPE_FILTERS.map((filter) => {
+            const Icon = filter.icon;
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => {
+                  setTypeFilter(filter.id);
+                  setSubjectFilter('all');
+                }}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-black text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
+                  typeFilter === filter.id && 'bg-blue-600 text-white shadow-sm hover:bg-blue-600 hover:text-white dark:bg-blue-600 dark:text-white dark:hover:bg-blue-600'
+                )}
+              >
+                <Icon size={16} />
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Timer className="h-5 w-5 text-blue-600" />
-          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Real-Time Timer</p>
-        </div>
-        <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <Save className="h-5 w-5 text-emerald-600" />
-          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Auto Save</p>
-        </div>
-        <div className="rounded-lg border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <ShieldCheck className="h-5 w-5 text-amber-600" />
-          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Anti-Cheat Monitoring</p>
-        </div>
-        <div className="rounded-lg border border-violet-100 bg-violet-50 p-4 dark:border-violet-900/40 dark:bg-violet-950/20">
-          <BarChart3 className="h-5 w-5 text-violet-600" />
-          <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">Instant Result</p>
-        </div>
+      <div className="flex flex-col gap-2 sm:max-w-xs">
+        <label className="text-xs font-black uppercase tracking-widest text-slate-400">Subject</label>
+        <select
+          value={subjectFilter}
+          onChange={(event) => setSubjectFilter(event.target.value)}
+          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+        >
+          <option value="all">All Subjects</option>
+          {subjectOptions.map((subject) => (
+            <option key={subject.id} value={subject.id}>
+              {subject.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Tabs */}
@@ -397,24 +508,24 @@ export default function Assessments() {
       </div>
 
       {activeTab === 'available' && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {assessments.length === 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filteredAssessments.length === 0 ? (
              <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
                <ClipboardList className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
-               <h3 className="text-lg font-bold text-slate-900 dark:text-white">No available tests</h3>
-               <p className="mt-1 text-sm text-slate-500">You don't have any pending assessments right now.</p>
+               <h3 className="text-lg font-bold text-slate-900 dark:text-white">No available {selectedTypeLabel.toLowerCase()}</h3>
+               <p className="mt-1 text-sm text-slate-500">You don't have any pending assessments in this category right now.</p>
              </div>
           ) : (
-            assessments.map((test) => {
+            filteredAssessments.map((test) => {
               const uploadUrl = resolveUploadUrl(test.file_path || test.filePath);
               const mySubmission = test.mySubmission || test.my_submission;
               const submittedFileUrl = resolveUploadUrl(mySubmission?.file_path || mySubmission?.filePath);
               const isInProgress = mySubmission?.status === 'in_progress';
               const isSubmitted = mySubmission && !isInProgress;
               return (
-              <div key={test.id} className="flex flex-col overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex flex-1 flex-col p-6">
-                  <div className="mb-4 flex items-center justify-between">
+              <div key={test.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="mb-3 flex items-center justify-between">
                     <span className="rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                       {test.type || test.assessment_type || 'Assessment'}
                     </span>
@@ -423,15 +534,15 @@ export default function Assessments() {
                     </span>
                   </div>
                   
-                  <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white line-clamp-2">
+                  <h3 className="mb-2 text-base font-bold text-slate-900 dark:text-white line-clamp-1">
                     {test.title}
                   </h3>
                   
-                  <p className="mb-6 text-sm text-slate-500 line-clamp-2">
-                    {test.content_text || 'Your teacher has posted this assessment. Open it to view instructions or download the question paper.'}
+                  <p className="mb-4 text-xs font-medium leading-5 text-slate-500 line-clamp-2">
+                    {getAssessmentSummary(test, subjectNameById)}
                   </p>
                   
-                  <div className="mb-6 flex items-center gap-4 text-xs font-semibold text-slate-500">
+                  <div className="mb-4 flex items-center gap-4 text-xs font-semibold text-slate-500">
                     <div className="flex items-center gap-1">
                       <Clock size={14} className="text-slate-400" />
                       <span>{test.duration_minutes || test.durationMinutes || 60} mins</span>
@@ -439,26 +550,19 @@ export default function Assessments() {
                     <div>{test.total_marks || test.totalMarks || 100} marks</div>
                   </div>
                   
-                  <div className="mt-auto flex flex-col gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                  <div className="mt-auto flex flex-col gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
                     {mySubmission && (
-                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 py-3 text-sm font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                        <CheckCircle2 size={16} />
+                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2.5 text-sm font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                        <CheckCircle2 size={15} />
                         {isInProgress ? 'Attempt in progress' : 'Submitted online'}
                       </div>
                     )}
-                    <Link
-                      to={`/school/student/assessments/${test.id}/view`}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20"
-                    >
-                      <FileText size={16} />
-                      View Assessment
-                    </Link>
                     {uploadUrl && (
                       <a
                         href={uploadUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
                       >
                         <Download size={16} />
                         Download Paper
@@ -469,7 +573,7 @@ export default function Assessments() {
                       onClick={() => openSubmit(test)}
                       disabled={attemptStarting || isSubmitted}
                       className={cn(
-                        'flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-colors',
+                        'flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors',
                         isSubmitted
                           ? 'cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800'
                           : isInProgress
@@ -484,7 +588,7 @@ export default function Assessments() {
                       <button
                         type="button"
                         onClick={() => window.open(submittedFileUrl, '_blank')}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-3 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-100"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-100"
                       >
                         <FileText size={16} />
                         View my submission
@@ -505,14 +609,14 @@ export default function Assessments() {
             <div className="flex h-48 items-center justify-center">
               <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
             </div>
-          ) : myResults.length === 0 ? (
+          ) : filteredResults.length === 0 ? (
             <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <BarChart3 className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">No results yet</h3>
-              <p className="mt-1 text-sm text-slate-500">Your teacher hasn't published any marks yet. Check back after assessments are graded.</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">No {selectedTypeLabel.toLowerCase()} results yet</h3>
+              <p className="mt-1 text-sm text-slate-500">Your teacher hasn't published marks in this category yet.</p>
             </div>
           ) : (
-            myResults.map(({ assessment, result }) => {
+            filteredResults.map(({ assessment, result }) => {
               const totalMarks = Number(assessment.total_marks ?? assessment.totalMarks ?? 100);
               const marks      = result ? Number(result.marks_obtained ?? 0) : null;
               const pct        = marks != null && totalMarks ? Math.round((marks / totalMarks) * 100) : null;
@@ -521,13 +625,12 @@ export default function Assessments() {
               const remarks    = result?.remarks ?? null;
               const hasResult  = !!result;
 
-              const barColor =
-                !hasResult   ? 'bg-slate-200'
-                : isAbsent   ? 'bg-rose-400'
-                : pct >= 75  ? 'bg-emerald-500'
-                : pct >= 50  ? 'bg-blue-500'
-                : pct >= 33  ? 'bg-amber-500'
-                :              'bg-rose-500';
+              const ringColor =
+                !hasResult || isAbsent || pct == null ? 'from-slate-300 to-slate-400'
+                : pct >= 75  ? 'from-emerald-400 to-green-500'
+                : pct >= 50  ? 'from-blue-400 to-indigo-500'
+                : pct >= 33  ? 'from-amber-400 to-orange-500'
+                :              'from-rose-400 to-red-500';
 
               return (
                 <div key={assessment.id} className="rounded-[2rem] border border-slate-100 bg-white shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
@@ -554,17 +657,22 @@ export default function Assessments() {
                         {assessment.scheduled_date && ` · ${new Date(assessment.scheduled_date).toLocaleDateString()}`}
                       </p>
 
-                      {/* Progress bar */}
                       <div className="mt-3">
-                        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-1">
+                        <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                           <span>{hasResult && !isAbsent ? `${marks} / ${totalMarks} marks` : isAbsent ? 'Absent' : 'Not graded'}</span>
                           {pct != null && !isAbsent && <span>{pct}%</span>}
                         </div>
                         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                           <div
-                            className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+                            className={`h-full rounded-full bg-gradient-to-r ${ringColor} transition-all duration-1000`}
                             style={{ width: hasResult && !isAbsent ? `${pct}%` : '0%' }}
                           />
+                        </div>
+                        <div className="mt-1 flex justify-between text-[10px] font-semibold text-slate-400">
+                          <span>0</span>
+                          <span className="text-rose-500">Pass: 33%</span>
+                          <span className="text-emerald-500">Distinction: 75%</span>
+                          <span>{totalMarks}</span>
                         </div>
                       </div>
 
@@ -584,7 +692,7 @@ export default function Assessments() {
                       {hasResult && !isAbsent && pct != null ? (
                         <div className={cn(
                           'flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl text-white font-black shadow-sm',
-                          pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-blue-500' : pct >= 33 ? 'bg-amber-500' : 'bg-rose-500'
+                          `bg-gradient-to-br ${ringColor}`
                         )}>
                           <span className="text-lg">{pct}</span>
                           <span className="text-[10px] font-bold">%</span>
@@ -606,63 +714,6 @@ export default function Assessments() {
               );
             })
           )}
-        </div>
-      )}
-
-      {selectedAssessment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-slate-900">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800">
-              <div>
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">{selectedAssessment.title}</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {(selectedAssessment.type || 'Assessment')} | {selectedAssessment.total_marks || 100} marks | {selectedAssessment.duration_minutes || 60} mins
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedAssessment(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="max-h-[70vh] overflow-auto p-5">
-              {selectedAssessment.content_text ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950">
-                  <div className="mb-5 border-b border-slate-100 pb-4 text-center dark:border-slate-800">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Question Paper</p>
-                    <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
-                      {selectedAssessment.title}
-                    </h3>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
-                      {selectedAssessment.total_marks || 100} marks | {selectedAssessment.duration_minutes || 60} mins
-                    </p>
-                  </div>
-                  <AssessmentContentRenderer className="text-slate-800 dark:text-slate-100">
-                    {selectedAssessment.content_text}
-                  </AssessmentContentRenderer>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800">
-                  No text instructions were added. Download the uploaded question paper if available.
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col gap-3 border-t border-slate-100 p-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-medium text-slate-500">
-                Read the question paper, then submit typed answers or upload your answer file.
-              </p>
-              <button
-                type="button"
-                onClick={openSubmitFromAssessment}
-                className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
-              >
-                <UploadCloud size={16} />
-                {(selectedAssessment.mySubmission || selectedAssessment.my_submission)?.status === 'in_progress' ? 'Continue Test' : 'Start Test'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

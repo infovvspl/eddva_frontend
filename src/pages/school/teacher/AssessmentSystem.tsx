@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target,
-  Trophy
+  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -18,6 +17,13 @@ import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
+
+function normaliseType(value: any) {
+  const type = String(value || "topic").trim().toLowerCase();
+  if (type === "unit") return "chapter";
+  if (["topic", "chapter", "subject", "mock", "final"].includes(type)) return type;
+  return "topic";
+}
 
 function Breadcrumb({
   items,
@@ -392,7 +398,6 @@ const AssessmentSystem: React.FC = () => {
         raw: item,
       }));
 
-      console.log("AFTER WORKSPACE FILTER", formatted.length, formatted);
       setTestsList(formatted);
     } catch (err) {
       console.error("Fetch assessments error:", err);
@@ -678,19 +683,16 @@ const AssessmentSystem: React.FC = () => {
    */
   const renderDataTable = (typeFilter: string | string[]) => {
     // Stage 2 — workspace-filtered list (fetchTests already applied subject+class)
-    console.log("RAW ASSESSMENTS (in testsList, after workspace filter)", testsList.length);
 
     // Stage 3 — tab type filter
     const afterType = testsList.filter((t) =>
       Array.isArray(typeFilter) ? typeFilter.includes(t.type) : t.type === typeFilter
     );
-    console.log("AFTER TYPE FILTER", afterType.length);
 
     // Stage 4 — status dropdown filter
     const afterStatus = workspaceStatusFilter === "all"
       ? afterType
       : afterType.filter((t) => t.status === workspaceStatusFilter);
-    console.log("AFTER STATUS FILTER", afterStatus.length);
 
     // Stage 5 — search: title OR type label only (NOT status, marks, dates)
     const sq = workspaceSearch.trim().toLowerCase();
@@ -701,8 +703,6 @@ const AssessmentSystem: React.FC = () => {
         return inTitle || inType;
       })
       : afterStatus;
-    console.log("AFTER SEARCH FILTER", afterSearch.length);
-    console.log("FINAL RENDER COUNT", afterSearch.length);
 
     const data = afterSearch;
 
@@ -714,11 +714,11 @@ const AssessmentSystem: React.FC = () => {
           <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
             <Target size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-    <p className="text-gray-500 mt-1 text-sm">
-      {sq
-        ? `No results for "${workspaceSearch}" in this tab.`
-        : "Get started by creating your first test."}
-    </p>
+            <p className="text-gray-500 mt-1 text-sm">
+              {sq
+                ? `No results for "${workspaceSearch}" in this tab.`
+                : "Get started by creating your first test."}
+            </p>
           </div >
         ) : (
           <DataTable columns={testColumns} data={data} />
@@ -997,8 +997,8 @@ const AssessmentSystem: React.FC = () => {
                     type="button"
                     onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
-                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
                       }`}
                   >
                     {mode.icon}
@@ -1111,5 +1111,7 @@ const AssessmentSystem: React.FC = () => {
     </div >
   );
 };
+
+// ── Presentational helpers ───────────────────────────────────────────────────
 
 export default AssessmentSystem;
