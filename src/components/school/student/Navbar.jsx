@@ -8,7 +8,6 @@ import {
   ChevronRight,
   ClipboardList,
   FileText,
-  LifeBuoy,
   LogOut,
   Megaphone,
   Menu,
@@ -52,7 +51,6 @@ const pageTitles = {
   '/school/student/timetable': 'Timetable',
   '/school/student/calendar': 'Calendar',
   '/school/student/announcements': 'Announcements',
-  '/school/student/support-tickets': 'Support Tickets',
   '/school/student/chat': 'Communication Center',
   '/school/student/profile': 'Profile',
   '/school/student/settings': 'Settings',
@@ -73,7 +71,6 @@ const studentPages = [
   { name: 'Timetable', path: '/school/student/timetable', icon: CalendarDays, keywords: 'schedule classes periods timetable' },
   { name: 'Calendar', path: '/school/student/calendar', icon: CalendarDays, keywords: 'events holidays schedule academic calendar' },
   { name: 'Announcements', path: '/school/student/announcements', icon: Megaphone, keywords: 'notice exam holiday teacher message' },
-  { name: 'Support Tickets', path: '/school/student/support-tickets', icon: LifeBuoy, keywords: 'support help ticket status issue' },
   { name: 'Profile', path: '/school/student/profile', icon: UserCircle, keywords: 'student id roll class section parent security' },
   { name: 'Settings', path: '/school/student/settings', icon: Settings, keywords: 'password devices notification theme sessions' },
 ];

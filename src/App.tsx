@@ -113,6 +113,7 @@ const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
 const SchoolAdminLayout       = lazy(() => import("./components/school/admin/Layout"));
 const SchoolAdminDashboard    = lazy(() => import("./pages/school/admin/AdminDashboard"));
 const SchoolStudents          = lazy(() => import("./pages/school/admin/Students"));
+const SchoolStudentPromotion  = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
 const SchoolTeachers          = lazy(() => import("./pages/school/admin/Teachers"));
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
@@ -196,9 +197,7 @@ const SchoolStudentAttendance   = lazy(() => import("./pages/school/student/Atte
 const SchoolStudentCalendar     = lazy(() => import("./pages/school/student/Calendar"));
 const SchoolStudentTimetable    = lazy(() => import("./pages/school/student/Timetable"));
 const SchoolStudentAnalytics    = lazy(() => import("./pages/school/student/Analytics"));
-const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feedback"));
 const SchoolStudentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
-const SchoolStudentSupportTickets = lazy(() => import("./pages/school/student/SupportTickets"));
 const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
 const SchoolStudentSettings     = lazy(() => import("./pages/school/student/Settings"));
@@ -364,6 +363,7 @@ const SchoolRoutes = () => (
       <Route path="users"      element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
+      <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />
       <Route path="teachers/:id" element={<SchoolAdminTeacherProfile />} />
       <Route path="attendance" element={<SchoolAttendance />} />
@@ -442,9 +442,7 @@ const SchoolRoutes = () => (
       <Route path="career/report" element={<SchoolStudentCareerReport />} />
       <Route path="career/explore" element={<SchoolStudentCareerExplorer />} />
       <Route path="career/explore/:careerId" element={<SchoolStudentCareerDetail />} />
-      <Route path="feedback" element={<SchoolStudentFeedback />} />
       <Route path="announcements" element={<SchoolStudentAnnouncements />} />
-      <Route path="support-tickets" element={<SchoolStudentSupportTickets />} />
       <Route path="chat" element={<SchoolStudentChat />} />
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />
