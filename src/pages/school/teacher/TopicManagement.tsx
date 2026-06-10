@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -53,6 +53,7 @@ import { getApiOrigin } from '@/lib/api-config';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
+import { useConfirm } from '@/context/ConfirmContext';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -69,6 +70,7 @@ interface Assignment {
 interface Ref { id: string; name: string }
 
 const TopicManagement: React.FC = () => {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const { assignments, setAssignments } = useAcademicStore();
   const canEditCurriculum =
@@ -220,7 +222,13 @@ const TopicManagement: React.FC = () => {
   };
 
   const handleDeleteChapter = async (chapter: any) => {
-    if (!window.confirm(`Delete chapter "${chapter.name}"? Its topics will also be removed. This cannot be undone.`)) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: `Delete chapter "${chapter.name}"? Its topics will also be removed. This cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/topics/chapters/${chapter.id}`);
       if (selectedTopic?.chapterId === chapter.id) setSelectedTopic(null);
@@ -266,7 +274,13 @@ const TopicManagement: React.FC = () => {
   };
 
   const handleDeleteTopic = async (topic: any) => {
-    if (!window.confirm(`Delete topic "${topic.name}"? Its materials will also be removed. This cannot be undone.`)) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: `Delete topic "${topic.name}"? Its materials will also be removed. This cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/topics/${topic.id}`);
       if (selectedTopic?.id === topic.id) setSelectedTopic(null);
@@ -682,6 +696,7 @@ function ChapterNode({
 // ── Material workspace (selected topic's materials, grouped by type) ─────────
 
 function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string; name: string; chapterId: string }; subjectId: string; canEdit: boolean }) {
+  const confirm = useConfirm();
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -707,7 +722,13 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
   }, [materials]);
 
   const handleDelete = async (m: SchoolMaterial) => {
-    if (!window.confirm(`Delete material "${m.title}"?`)) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: `Delete material "${m.title}"?`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try { await schoolContent.deleteMaterial(m.id); toast.success('Material deleted'); load(); }
     catch { toast.error('Failed to delete material'); }
   };

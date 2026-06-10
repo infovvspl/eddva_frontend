@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import {
   Camera, Pencil, X, Plus, Check, Loader2,
   GraduationCap, BookOpen, Users, MapPin,
@@ -304,7 +305,7 @@ export default function TeacherProfilePage() {
         phone: (p as any).phoneNumber || (p as any).phone || "",
         email: p.email,
         role: p.role as any,
-        avatar: p.avatar,
+        avatar: (p as any).avatar ?? (p as any).profilePictureUrl,
         tenantId: p.tenantId,
         tenantName: p.tenant?.name || (p as any).tenantName || "",
         isFirstLogin: false,
@@ -390,7 +391,6 @@ export default function TeacherProfilePage() {
 
   // ── Derived display values ────────────────────────────────────────────────────
 
-  const initials = (user?.name || "T").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   const completionFields = [
     user?.name, tp?.qualification, tp?.subjectExpertise?.length,
     tp?.bio, tp?.city, tp?.yearsOfExperience,
@@ -429,11 +429,12 @@ export default function TeacherProfilePage() {
             {/* Avatar */}
             <div className="relative">
               <div className="w-24 h-24 rounded-2xl border-4 border-card overflow-hidden bg-primary/10 flex items-center justify-center shadow-md">
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-bold text-primary">{initials}</span>
-                )}
+                <ProfileAvatar
+                  src={avatarPreview}
+                  name={fullName}
+                  className="h-full w-full rounded-2xl"
+                  fallbackClassName="text-2xl font-bold text-primary"
+                />
                 {isUploadingAvatar && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-2xl">
                     <Loader2 className="w-6 h-6 text-white animate-spin" />

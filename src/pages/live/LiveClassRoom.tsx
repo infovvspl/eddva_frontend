@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
+import { useConfirm } from "@/context/ConfirmContext";
 import {
   getLiveClassToken, startLiveClass, endLiveClass, getLiveSession,
   respondToPoll, createPoll, closePoll, getChatHistory, getPolls,
@@ -775,6 +776,7 @@ function ReactionsOverlay({ reactions }: { reactions: FloatingReaction[] }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LiveClassRoom() {
+  const confirm = useConfirm();
   const { lectureId } = useParams<{ lectureId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -1403,7 +1405,14 @@ export default function LiveClassRoom() {
 
   // ── Teacher: end class
   const handleEnd = async () => {
-    if (!confirm("End the class for everyone?")) return;
+    const confirmed = await confirm({
+      title: 'End Class',
+      message: 'End the class for everyone?',
+      confirmLabel: 'End Class',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
     setIsEnding(true);
     try {
       const r = await endLiveClass(lectureId!);

@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/context/ConfirmContext";
 import {
   useBatch,
   useUpdateBatch, useDeleteBatch,
@@ -506,6 +507,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function BatchDetailPage() {
+  const confirm = useConfirm();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -522,7 +524,14 @@ export default function BatchDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Delete this course? This cannot be undone.")) return;
+    const confirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this course? This cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
     try { await deleteBatch.mutateAsync(id!); navigate("/admin/batches"); }
     catch (err: any) { toast.error(err?.response?.data?.message || "Failed to delete course."); }
   };

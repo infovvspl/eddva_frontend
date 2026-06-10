@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useConfirm } from "@/context/ConfirmContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import {
@@ -714,6 +715,7 @@ function ResultsScreen({
 type Stage = "loading" | "intro" | "running" | "submitting" | "results" | "viewing_past";
 
 export default function StudentMockTestPage() {
+  const confirm = useConfirm();
   const { id: mockTestId } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -907,7 +909,12 @@ export default function StudentMockTestPage() {
         (q) => !isAttemptComplete(q, answers[q.id], answerImages[q.id]),
       ).length;
       if (unanswered > 0) {
-        const ok = window.confirm(`${unanswered} question${unanswered > 1 ? "s" : ""} unanswered. Submit anyway?`);
+        const ok = await confirm({
+          title: "Unanswered Questions",
+          message: `${unanswered} question${unanswered > 1 ? "s" : ""} unanswered. Submit anyway?`,
+          confirmLabel: "Submit",
+          cancelLabel: "Cancel",
+        });
         if (!ok) return;
       }
     }
@@ -1054,12 +1061,14 @@ export default function StudentMockTestPage() {
       setCurrentQ((idx) => idx + 1);
     };
 
-    const handleCloseTest = () => {
-      if (
-        window.confirm(
-          "Close this test? Your last answers are saved; you can resume this mock test from the list when you come back.",
-        )
-      ) {
+    const handleCloseTest = async () => {
+      const ok = await confirm({
+        title: "Close Test?",
+        message: "Close this test? Your last answers are saved; you can resume this mock test from the list when you come back.",
+        confirmLabel: "Exit",
+        cancelLabel: "Resume",
+      });
+      if (ok) {
         navigate(-1);
       }
     };

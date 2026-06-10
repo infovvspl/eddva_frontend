@@ -168,7 +168,7 @@ const ClassManagement: React.FC = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await api.get('/classes/schedules'); console.log(response.data);
+      const response = await api.get('/schedules');
       const formattedData = response.data.data.map((item: any) => ({
         id: item.id,
         title: item.subject_name || item.title,

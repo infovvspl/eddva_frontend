@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquareWarning, Plus, Filter, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { MessageSquareWarning, Plus, Filter, AlertCircle, Clock, CheckCircle, XCircle, Search } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import Button from '@/components/school/Button';
 import Badge from '@/components/school/Badge';
@@ -8,10 +8,19 @@ import DataTable from '@/components/school/DataTable';
 import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
 import './GrievanceHandling.css';
 
 const GrievanceHandling: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('all');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [stats, setStats] = useState({ open: 0, inProgress: 0, resolved: 0 });
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [grievancesList, setGrievancesList] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -23,16 +32,39 @@ const GrievanceHandling: React.FC = () => {
 
   const fetchGrievances = async () => {
     try {
-      const res = await api.get('/grievances');
+      const params: any = { page, limit };
+      if (searchQuery) params.search = searchQuery;
+      if (activeTab === 'academic') params.category = 'academic';
+      else if (activeTab === 'infrastructure') params.category = 'infrastructure';
+      else if (activeTab === 'support') params.statusIn = 'open,in-progress';
+
+      const res = await api.get('/grievances', { params });
       const formatted = res.data.data.map((g: any) => ({
         ...g,
         status: (g.status || 'open').toLowerCase(),
         raisedBy: g.raised_by_name || 'Anonymous',
         date: new Date(g.created_at).toLocaleDateString(),
-        // mock priority since backend doesn't store it yet
         priority: 'medium' 
       }));
       setGrievancesList(formatted);
+      if (typeof res.data.total !== 'undefined') {
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/grievances', { params: { limit: 1000 } }); // Get all for simple stats calculation
+      const data = res.data.data || [];
+      setStats({
+        open: data.filter((g: any) => g.status?.toLowerCase() === 'open').length,
+        inProgress: data.filter((g: any) => g.status?.toLowerCase() === 'in-progress').length,
+        resolved: data.filter((g: any) => g.status?.toLowerCase() === 'resolved' || g.status?.toLowerCase() === 'closed').length
+      });
     } catch (err) {
       console.error(err);
     }
@@ -40,7 +72,8 @@ const GrievanceHandling: React.FC = () => {
 
   useEffect(() => {
     fetchGrievances();
-  }, []);
+    fetchStats();
+  }, [page, limit, activeTab, searchQuery]);
 
   const handleCreateComplaint = async () => {
     try {
@@ -109,7 +142,7 @@ const GrievanceHandling: React.FC = () => {
       <GlassCard>
         <h3 className="grievance__support-title">Support Requests</h3>
         <div className="grievance__support-list">
-          {grievancesList.filter((g) => g.status === 'open' || g.status === 'in-progress').map((g) => (
+          {grievancesList.map((g) => (
             <div key={g.id} className="grievance__support-item">
               <div className="grievance__support-priority">
                 <div className={`grievance__priority-dot grievance__priority-dot--${g.priority}`} />
@@ -136,28 +169,71 @@ const GrievanceHandling: React.FC = () => {
         <div className="grievance__header-stats">
           <div className="grievance__stat-pill">
             <AlertCircle size={16} className="grievance__stat-icon--open" />
-            <span>{grievancesList.filter((g) => g.status === 'open').length} Open</span>
+            <span>{stats.open} Open</span>
           </div>
           <div className="grievance__stat-pill">
             <Clock size={16} className="grievance__stat-icon--progress" />
-            <span>{grievancesList.filter((g) => g.status === 'in-progress').length} In Progress</span>
+            <span>{stats.inProgress} In Progress</span>
           </div>
           <div className="grievance__stat-pill">
             <CheckCircle size={16} className="grievance__stat-icon--resolved" />
-            <span>{grievancesList.filter((g) => g.status === 'resolved' || g.status === 'closed').length} Resolved</span>
+            <span>{stats.resolved} Resolved</span>
           </div>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => setShowComplaintModal(true)}>Raise Complaint</Button>
+        <div className="flex items-center gap-3">
+          <div className="relative min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search complaints..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(1);
+                  setSearchQuery(searchInput);
+                }
+              }}
+              onBlur={() => {
+                if (searchQuery !== searchInput) {
+                  setPage(1);
+                  setSearchQuery(searchInput);
+                }
+              }}
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
+            />
+          </div>
+          <Button icon={<Plus size={16} />} onClick={() => setShowComplaintModal(true)}>Raise Complaint</Button>
+        </div>
       </div>
 
-      <Tabs
-        tabs={[
-          { id: 'all', label: 'All Complaints', icon: <MessageSquareWarning size={16} />, content: allContent },
-          { id: 'academic', label: 'Academic', icon: <AlertCircle size={16} />, content: academicContent },
-          { id: 'infrastructure', label: 'Infrastructure', icon: <Filter size={16} />, content: infraContent },
-          { id: 'support', label: 'Support Requests', icon: <Clock size={16} />, content: supportContent },
-        ]}
-      />
+      <div className="mb-4">
+        <Tabs
+          onChange={(tabId) => {
+            setActiveTab(tabId);
+            setPage(1);
+          }}
+          tabs={[
+            { id: 'all', label: 'All Complaints', icon: <MessageSquareWarning size={16} />, content: allContent },
+            { id: 'academic', label: 'Academic', icon: <AlertCircle size={16} />, content: academicContent },
+            { id: 'infrastructure', label: 'Infrastructure', icon: <Filter size={16} />, content: infraContent },
+            { id: 'support', label: 'Support Requests', icon: <Clock size={16} />, content: supportContent },
+          ]}
+        />
+      </div>
+
+      {grievancesList.length > 0 && (
+        <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+          />
+        </div>
+      )}
 
       <Modal isOpen={showComplaintModal} onClose={() => setShowComplaintModal(false)} title="Raise New Complaint">
         <div className="grievance__modal-form">

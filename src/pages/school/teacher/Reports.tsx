@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import StatCard from '@/components/school/StatCard';
@@ -6,6 +6,7 @@ import Badge from '@/components/school/Badge';
 import ProgressBar from '@/components/school/ProgressBar';
 import Tabs from '@/components/school/Tabs';
 import DataTable from '@/components/school/DataTable';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
 import './Reports.css';
 
@@ -22,6 +23,11 @@ const Reports: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -55,26 +61,34 @@ const Reports: React.FC = () => {
       }
     };
     fetchReports();
-  }, []);
+  }, [page, limit]);
 
   const studentColumns = [
     { key: 'name', title: 'Student' },
     { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
-    { key: 'avgScore', title: 'Avg Score', render: (v: number) => (
-      <Badge variant={v >= 85 ? 'success' : v >= 70 ? 'info' : 'warning'}>{v}%</Badge>
-    )},
-    { key: 'trend', title: 'Trend', render: (v: string) => (
-      <span className={`reports__trend reports__trend--${v}`}>
-        {v === 'improving' ? <TrendingUp size={14} /> : v === 'declining' ? <TrendingDown size={14} /> : <BarChart3 size={14} />}
-        {v}
-      </span>
-    )},
-    { key: 'weakAreas', title: 'Weak Areas', render: (v: string[]) => (
-      <div className="reports__tags">{v.map((a) => <Badge key={a} variant="warning">{a}</Badge>)}</div>
-    )},
-    { key: 'strongAreas', title: 'Strong Areas', render: (v: string[]) => (
-      <div className="reports__tags">{v.map((a) => <Badge key={a} variant="success">{a}</Badge>)}</div>
-    )},
+    {
+      key: 'avgScore', title: 'Avg Score', render: (v: number) => (
+        <Badge variant={v >= 85 ? 'success' : v >= 70 ? 'info' : 'warning'}>{v}%</Badge>
+      )
+    },
+    {
+      key: 'trend', title: 'Trend', render: (v: string) => (
+        <span className={`reports__trend reports__trend--${v}`}>
+          {v === 'improving' ? <TrendingUp size={14} /> : v === 'declining' ? <TrendingDown size={14} /> : <BarChart3 size={14} />}
+          {v}
+        </span>
+      )
+    },
+    {
+      key: 'weakAreas', title: 'Weak Areas', render: (v: string[]) => (
+        <div className="reports__tags">{v.map((a) => <Badge key={a} variant="warning">{a}</Badge>)}</div>
+      )
+    },
+    {
+      key: 'strongAreas', title: 'Strong Areas', render: (v: string[]) => (
+        <div className="reports__tags">{v.map((a) => <Badge key={a} variant="success">{a}</Badge>)}</div>
+      )
+    },
   ];
 
   const classColumns = [
@@ -92,6 +106,18 @@ const Reports: React.FC = () => {
         <div className="reports__empty">No students found for your assigned class or section.</div>
       )}
       <DataTable columns={studentColumns} data={studentPerformance} />
+      {studentPerformance.length > 0 && (
+        <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+          />
+        </div>
+      )}
     </div>
   );
 

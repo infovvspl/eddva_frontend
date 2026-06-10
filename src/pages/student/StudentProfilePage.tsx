@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 
 // ─── Design Tokens (original palette preserved) ───────────────────────────────
 const BLUE    = "#2563EB";
@@ -352,14 +353,12 @@ export default function StudentProfilePage() {
           {/* Avatar + ring */}
           <div className="relative shrink-0">
             <Ring pct={examRdy} size={104} stroke={5} color={tier.color}>
-              <div className="w-[76px] h-[76px] rounded-xl overflow-hidden shadow-md"
-                style={{ background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})` }}>
-                {me?.profilePictureUrl
-                  ? <img src={me.profilePictureUrl} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="" />
-                  : <div className="w-full h-full flex items-center justify-center text-white text-2xl font-black">
-                      {me?.fullName?.[0]?.toUpperCase() ?? "?"}
-                    </div>}
-              </div>
+              <ProfileAvatar
+                src={me?.profilePictureUrl ?? null}
+                name={me?.fullName}
+                className="w-[76px] h-[76px] rounded-xl overflow-hidden shadow-md"
+                fallbackClassName="text-white text-2xl font-black"
+              />
             </Ring>
             {/* Tier badge */}
             <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-lg text-[9px] font-black text-white shadow-md"

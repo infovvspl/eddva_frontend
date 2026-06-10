@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle, MessageSquare } from 'lucide-react';
+import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle, MessageSquare, CalendarDays, Sparkles } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';
@@ -11,6 +11,8 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
+import { ProfileAvatar } from '@/components/ui/profile-avatar';
+import StudentsModal from './StudentsModal';
 import './Dashboard.css';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -52,6 +54,7 @@ const Dashboard: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
   const [pendingDoubts, setPendingDoubts] = useState(0);
+  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
 
   const unreadNotificationsCount = useMemo(() => {
     return notifications.filter((n: any) => !n.isRead).length;
@@ -187,6 +190,23 @@ const Dashboard: React.FC = () => {
     return [...eventItems, ...noticeItems].slice(0, 6);
   }, [events, notices]);
 
+  const calendarWeek = useMemo(() => {
+    const monday = new Date();
+    const day = monday.getDay();
+    const diff = (day + 6) % 7;
+    monday.setDate(monday.getDate() - diff);
+
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      const eventsForDay = events
+        .filter((ev: any) => ev.startTime && ev.startTime.split('T')[0] === key)
+        .map((ev: any) => ({ t: ev.title || 'Event', tone: ev.priority === 'HIGH' ? 'bg-rose-500' : 'bg-blue-500' }));
+      return { day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i], events: eventsForDay };
+    });
+  }, [events]);
+
   const dashboardStats = [
     { id: 'students', title: 'Students', value: stats?.totalStudents ?? 0, change: 'Live', changeType: 'positive', icon: 'Users' },
     { id: 'classes', title: 'Upcoming Classes', value: upcomingClasses.length, change: 'Scheduled', changeType: 'neutral', icon: 'UserCheck' },
@@ -196,21 +216,57 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-8 text-white shadow-xl shadow-teal-900/10 mb-2">
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight">Welcome back, {user?.name || 'Teacher'}! 👩‍🏫✨</h1>
-            <p className="mt-2 max-w-xl text-teal-50 font-medium leading-relaxed font-sans">
-              Empower your students with structured learning, live classes, and instant performance tracking.
-            </p>
+      <div className="grid gap-6 lg:grid-cols-4 mb-6">
+        {/* Welcome Banner */}
+        <div className="lg:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-8 text-white shadow-xl shadow-teal-900/10">
+          <div className="absolute right-12 top-1/2 -translate-y-1/2 w-64 h-64 pointer-events-none hidden md:block select-none drop-shadow-2xl z-20">
+            <img src={TeacherAvatar} alt="Teacher Illustration" className="w-full h-full object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
           </div>
-          <div className="relative shrink-0 select-none pointer-events-none drop-shadow-2xl">
-            <img src={TeacherAvatar} alt="Teacher Illustration" className="h-40 object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
+
+          <div className="relative z-10 flex h-full flex-col justify-between">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:pr-64">
+              <div>
+                <h1 className="text-3xl font-black tracking-tight">Welcome back, {user?.name || 'Teacher'}! 👩‍🏫✨</h1>
+                <p className="mt-2 max-w-xl text-teal-50 font-medium leading-relaxed font-sans">
+                  Empower your students with structured learning, live classes, and instant performance tracking.
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-8 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm">
+              <Sparkles className="h-5 w-5 text-teal-200" />
+              <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
+        </div>
+
+        {/* Smart Calendar */}
+        <div className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold text-surface-950 dark:text-white">Smart calendar</h3>
+              <CalendarDays className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-widest text-surface-400 dark:text-slate-500">
+              {calendarWeek.map((d) => (
+                <div key={d.day}>{d.day}</div>
+              ))}
+            </div>
+            <div className="mt-2 grid min-h-[180px] grid-cols-7 gap-2">
+              {calendarWeek.map((d) => (
+                <div key={d.day} className="rounded-lg border border-[rgba(37,99,235,0.08)] bg-white/50 p-1.5 dark:border-slate-700 dark:bg-slate-800/40">
+                  {d.events.map((ev: any) => (
+                    <div key={ev.t} className={`mb-1 truncate rounded px-1 py-0.5 text-[9px] font-bold text-white ${ev.tone}`}>
+                      {ev.t}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
       </div>
 
       <div className="dashboard__stats">
@@ -223,6 +279,7 @@ const Dashboard: React.FC = () => {
             changeType={stat.changeType as any}
             icon={iconMap[stat.icon]}
             className={`stagger-${idx + 1}`}
+            onClick={stat.id === 'students' ? () => setIsStudentsModalOpen(true) : undefined}
           />
         ))}
       </div>
@@ -413,7 +470,13 @@ const Dashboard: React.FC = () => {
         {studentActivityFeed.map((activity) => (
           <div key={activity.id} className="dashboard__activity-item">
             <div className="dashboard__activity-avatar overflow-hidden bg-indigo-50 border border-indigo-200">
-              <img src="/assets/student_cartoon.png" alt="Student avatar" className="h-full w-full object-cover object-top scale-110" />
+              <ProfileAvatar
+                src={(activity as any).avatarUrl ?? (activity as any).photo ?? null}
+                name={activity.student}
+                className="h-full w-full rounded-xl"
+                imageClassName="object-cover object-top"
+                fallbackClassName="text-[10px] font-bold text-indigo-700"
+              />
             </div>
             <div className="dashboard__activity-content">
               <p><strong>{activity.student}</strong> {activity.action} <span className="dashboard__activity-target">{activity.target}</span></p>
@@ -423,9 +486,14 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
     </GlassCard>
-        </div >
-      </div >
-    </div >
+        </div>
+      </div>
+
+      <StudentsModal 
+        open={isStudentsModalOpen} 
+        onOpenChange={setIsStudentsModalOpen} 
+      />
+    </div>
   );
 };
 

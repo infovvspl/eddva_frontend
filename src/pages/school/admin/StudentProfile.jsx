@@ -12,6 +12,7 @@ import { mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const getInitials = (name) => {
   if (!name) return '??';

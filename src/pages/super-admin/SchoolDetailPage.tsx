@@ -10,7 +10,10 @@ const STATUS_STYLES: Record<string, string> = {
   SUSPENDED: "bg-rose-50 text-rose-700 border-rose-200",
 };
 
+import { useConfirm } from "@/context/ConfirmContext";
+
 const SchoolDetailPage = () => {
+  const confirm = useConfirm();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [institute, setInstitute] = useState<any>(null);
@@ -60,7 +63,13 @@ const SchoolDetailPage = () => {
   };
 
   const remove = async () => {
-    if (!confirm("Delete this school institute? This action cannot be undone.")) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: "Are you sure you want to delete this school institute? This action cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try {
       await apiClient.delete(`/school/institutes/${id}`);
       toast.success("Institute deleted");

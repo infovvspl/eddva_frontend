@@ -217,6 +217,10 @@
     overflow-x: hidden;
   }
 
+  body:has(.layout-fixed) {
+    overflow: hidden;
+  }
+
   /* Smooth anchor scrolling on desktop; `auto` on small screens = less jank on touch / low-end */
   @media (min-width: 1024px) {
     html {
