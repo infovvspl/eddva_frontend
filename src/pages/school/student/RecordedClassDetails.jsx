@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Link, useParams } from 'react-router-dom';
-import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import {
   ArrowLeft,
   BookOpen,
@@ -16,11 +16,22 @@ import {
   X,
 } from 'lucide-react';
 
+function isYouTubeUrl(url = '') {
+  return /(?:youtube\.com\/|youtu\.be\/)/i.test(url);
+}
+
+function youTubeEmbed(url = '') {
+  const match = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1` : url;
+}
+
 export default function RecordedClassDetails() {
   const { recordingId } = useParams();
+  const location = useLocation();
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailTab, setDetailTab] = useState('notes');
+  const [playback, setPlayback] = useState({ src: '', source: '', loading: false, error: '' });
 
   useEffect(() => {
     const fetchRecordings = async () => {
@@ -44,8 +55,53 @@ export default function RecordedClassDetails() {
 
   useEffect(() => {
     if (!recording) return;
-    setDetailTab(recording.notes ? 'notes' : 'transcript');
-  }, [recording]);
+    const shouldPlay = new URLSearchParams(location.search).get('play') === '1';
+    setDetailTab(shouldPlay && recording.video_url ? 'video' : recording.notes ? 'notes' : 'transcript');
+  }, [recording, location.search]);
+
+  useEffect(() => {
+    if (!recording || detailTab !== 'video') return;
+
+    let cancelled = false;
+    const loadPlayUrl = async () => {
+      const fallbackSrc = recording.video_url || '';
+      setPlayback({ src: fallbackSrc, source: recording.source || '', loading: true, error: '' });
+      try {
+        if (recording.source === 'youtube' || isYouTubeUrl(recording.video_url)) {
+          if (!cancelled) {
+            setPlayback({ src: recording.video_url, source: 'youtube', loading: false, error: '' });
+          }
+          return;
+        }
+
+        const response = await api.get(`/classes/recordings/${recording.id}/play-url`);
+        const data = unwrapSchoolData(response, {});
+        if (!cancelled) {
+          setPlayback({
+            src: data.videoUrl || recording.video_url || '',
+            source: data.source || recording.source || 'upload',
+            loading: false,
+            error: data.videoUrl || recording.video_url ? '' : 'No playable video URL was returned.',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load playable video URL:', error);
+        if (!cancelled) {
+          setPlayback({
+            src: fallbackSrc,
+            source: recording.source || 'upload',
+            loading: false,
+            error: fallbackSrc ? '' : 'Could not prepare the video link. Please refresh and try again.',
+          });
+        }
+      }
+    };
+
+    loadPlayUrl();
+    return () => {
+      cancelled = true;
+    };
+  }, [detailTab, recording]);
 
   const renderRecordingStatus = (item) => {
     if (item.notes_status === 'done' && item.notes) {
@@ -198,14 +254,18 @@ export default function RecordedClassDetails() {
                   Transcript
                 </button>
                 {recording.video_url && (
-                  <a
-                    href={recording.video_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('video')}
+                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
+                      detailTab === 'video'
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
                   >
+                    <PlayCircle size={15} />
                     Watch Video
-                  </a>
+                  </button>
                 )}
               </div>
             </div>
@@ -213,7 +273,73 @@ export default function RecordedClassDetails() {
         </div>
 
         <div className="min-h-[420px] px-6 py-6">
-          {detailTab === 'notes' ? (
+          {detailTab === 'video' ? (
+            recording.video_url ? (
+              <div className="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-slate-950 shadow-sm">
+                {playback.loading && !playback.src ? (
+                  <div className="flex aspect-video w-full flex-col items-center justify-center text-center text-white">
+                    <Loader2 className="h-10 w-10 animate-spin" />
+                    <p className="mt-3 text-sm font-bold">Preparing video...</p>
+                  </div>
+                ) : playback.error ? (
+                  <div className="flex aspect-video w-full flex-col items-center justify-center px-6 text-center text-white">
+                    <PlayCircle className="h-10 w-10 text-white/60" />
+                    <h3 className="mt-4 text-lg font-bold">Video could not start</h3>
+                    <p className="mt-2 max-w-md text-sm text-white/70">{playback.error}</p>
+                    {playback.src && (
+                      <button
+                        type="button"
+                        onClick={() => setPlayback((current) => ({ ...current, error: '' }))}
+                        className="mt-5 rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
+                      >
+                        Try again inline
+                      </button>
+                    )}
+                  </div>
+                ) : playback.source === 'youtube' || isYouTubeUrl(playback.src) ? (
+                  <iframe
+                    src={youTubeEmbed(playback.src)}
+                    title={recording.title}
+                    className="aspect-video w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="relative">
+                    <video
+                      src={playback.src}
+                      controls
+                      preload="metadata"
+                      playsInline
+                      autoPlay
+                      onError={() =>
+                        setPlayback((current) => ({
+                          ...current,
+                          error:
+                            'The browser could not play this recording. It may be an unsupported format or codec.',
+                        }))
+                      }
+                      className="aspect-video w-full bg-slate-950"
+                    />
+                    {playback.loading && (
+                      <div className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Preparing secure link
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+                <PlayCircle className="h-10 w-10 text-slate-300" />
+                <h3 className="mt-4 text-lg font-bold text-slate-900">Video unavailable</h3>
+                <p className="mt-1 max-w-md text-sm text-slate-500">
+                  This recorded class does not have a playable video link yet.
+                </p>
+              </div>
+            )
+          ) : detailTab === 'notes' ? (
             recording.notes ? (
               <div className="prose prose-slate max-w-none prose-headings:font-black prose-p:text-slate-700 prose-li:text-slate-700">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>

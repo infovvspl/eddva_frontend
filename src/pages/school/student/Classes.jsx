@@ -15,6 +15,7 @@ import {
   Loader2,
   PlayCircle,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -175,7 +176,11 @@ export default function Classes() {
                   className="overflow-hidden rounded-[1.75rem] border border-slate-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="flex gap-4">
-                    <div className="relative flex h-28 w-36 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900">
+                    <Link
+                      to={`/school/student/recorded-classes/${recording.id}?play=1`}
+                      className="relative flex h-28 w-36 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900"
+                      aria-label={`Watch ${recording.title}`}
+                    >
                       {recording.thumbnail_url ? (
                         <img
                           src={recording.thumbnail_url}
@@ -185,7 +190,10 @@ export default function Classes() {
                       ) : (
                         <PlayCircle className="h-10 w-10 text-white/70" />
                       )}
-                    </div>
+                      <span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition hover:bg-slate-950/35 hover:opacity-100">
+                        <PlayCircle className="h-9 w-9 text-white" />
+                      </span>
+                    </Link>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap gap-2">
@@ -234,15 +242,13 @@ export default function Classes() {
                           Open Details
                         </Link>
                         {canWatch && (
-                          <a
-                            href={recording.video_url}
-                            target="_blank"
-                            rel="noreferrer"
+                          <Link
+                            to={`/school/student/recorded-classes/${recording.id}?play=1`}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                           >
                             <PlayCircle size={15} />
                             Watch Video
-                          </a>
+                          </Link>
                         )}
                       </div>
                     </div>
