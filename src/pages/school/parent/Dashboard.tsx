@@ -11,6 +11,7 @@ import {
   FileText,
   GraduationCap,
   ShieldCheck,
+  Sparkles,
   TrendingUp,
   UserRound,
   XCircle,
@@ -110,21 +111,6 @@ export default function ParentDashboard() {
 
   return (
     <div className="space-y-5 pb-10">
-      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-6 text-white shadow-xl shadow-teal-900/10 sm:p-8">
-        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white/90">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Parent Analytics
-            </span>
-            <h1 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">
-              Welcome back, {user?.name || "Parent"}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-teal-50 sm:text-base">
-              Track your child's attendance, homework, marks, and assessment readiness in one focused view.
-            </p>
-          </div>
-        )}
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -177,9 +163,11 @@ export default function ParentDashboard() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
-      </section>
+      </motion.section>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

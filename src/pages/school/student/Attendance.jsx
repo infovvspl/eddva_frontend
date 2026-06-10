@@ -2,20 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import {
-  Activity,
-  AlertTriangle,
-  Award,
   CalendarCheck2,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   FileText,
   MinusCircle,
-  ShieldCheck,
   Timer,
-  TrendingUp,
   UserCheck,
   XCircle,
 } from 'lucide-react';
@@ -115,68 +109,6 @@ function statusMeta(status) {
     block: 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40',
     icon: CalendarDays,
   };
-}
-
-function StatTile({ icon: Icon, label, value, helper, tone }) {
-  const tones = {
-    blue: 'border-blue-200 bg-blue-50/90 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/25 dark:text-blue-300',
-    emerald: 'border-emerald-200 bg-emerald-50/90 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/25 dark:text-emerald-300',
-    rose: 'border-rose-200 bg-rose-50/90 text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/25 dark:text-rose-300',
-    amber: 'border-amber-200 bg-amber-50/90 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-300',
-    sky: 'border-sky-200 bg-sky-50/90 text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/25 dark:text-sky-300',
-  };
-
-  return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${tones[tone] || tones.blue}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-75">{label}</p>
-          <p className="mt-2 text-3xl font-black leading-none tracking-tight text-slate-950 dark:text-white">{value}</p>
-          <p className="mt-2 text-xs font-bold leading-5 opacity-75">{helper}</p>
-        </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/85 shadow-sm dark:bg-slate-950/45">
-          <Icon className="h-5 w-5" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function HealthRing({ percentage, total }) {
-  const message =
-    total === 0
-      ? 'Waiting for marked class days.'
-      : percentage >= 90
-        ? 'Excellent rhythm this month.'
-        : percentage >= 75
-          ? 'Above the required line.'
-          : 'Below the 75% safety line.';
-  const title = total === 0 ? 'No marks yet' : percentage >= 75 ? 'On track' : 'Needs attention';
-  const color = percentage >= 75 || total === 0 ? '#2563eb' : '#e11d48';
-
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Attendance health</p>
-        <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-      </div>
-      <div className="mt-5 flex items-center gap-5">
-        <div className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{ background: `conic-gradient(${color} ${percentage * 3.6}deg, transparent 0deg)` }}
-          />
-          <div className="relative flex h-[84px] w-[84px] items-center justify-center rounded-full bg-white text-2xl font-black text-slate-950 shadow-inner dark:bg-slate-900 dark:text-white">
-            {percentage}%
-          </div>
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{title}</h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">{message}</p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function Attendance() {
@@ -294,27 +226,6 @@ export default function Attendance() {
     [records]
   );
 
-  const streak = useMemo(() => {
-    const sorted = [...records]
-      .filter((item) => ['present', 'late'].includes(normalizeStatus(item.status)))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    if (sorted.length === 0) return 0;
-
-    let count = 1;
-    for (let index = 1; index < sorted.length; index += 1) {
-      const prev = parseRecordDate(sorted[index - 1].date);
-      const current = parseRecordDate(sorted[index].date);
-      if (!prev || !current) break;
-      const prevDay = new Date(prev.getFullYear(), prev.getMonth(), prev.getDate()).getTime();
-      const currentDay = new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime();
-      const diffDays = Math.round((prevDay - currentDay) / 86400000);
-      if (diffDays <= 3) count += 1;
-      else break;
-    }
-    return count;
-  }, [records]);
-
   const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   if (loading) {
@@ -328,7 +239,7 @@ export default function Attendance() {
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div>
           <div className="p-5 sm:p-7">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
@@ -340,7 +251,7 @@ export default function Attendance() {
                   Attendance Overview
                 </h1>
                 <p className="mt-3 text-sm font-semibold leading-7 text-slate-500 dark:text-slate-400 sm:text-base">
-                  A cleaner view of your marked days, attendance health, weekly movement, and latest class records.
+                  A cleaner view of your marked days, weekly movement, and latest class records.
                 </p>
               </div>
 
@@ -377,35 +288,7 @@ export default function Attendance() {
               </div>
             </div>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <StatTile icon={TrendingUp} label="Attendance" value={`${stats.percentage}%`} helper={`${stats.total} marked days`} tone="blue" />
-              <StatTile icon={CheckCircle2} label="Present" value={stats.present} helper="On-time days" tone="emerald" />
-              <StatTile icon={XCircle} label="Absent" value={stats.absent} helper="Missed days" tone="rose" />
-              <StatTile icon={Clock3} label="Late" value={stats.late} helper={stats.leave ? `${stats.leave} leave marks` : 'Late marks'} tone="amber" />
-            </div>
           </div>
-
-          <aside className="border-t border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/30 sm:p-7 xl:border-l xl:border-t-0">
-            <HealthRing percentage={stats.percentage} total={stats.total} />
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <Award className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                <p className="mt-3 text-2xl font-black text-slate-950 dark:text-white">{streak}</p>
-                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">Active streak</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <Activity className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                <p className="mt-3 text-2xl font-black text-slate-950 dark:text-white">{stats.attended}</p>
-                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">Attended marks</p>
-              </div>
-            </div>
-            {stats.total > 0 && stats.percentage < 75 && (
-              <div className="mt-3 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/25 dark:text-rose-300">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-                <p className="text-sm font-bold leading-5">Monthly attendance is below the required 75% line.</p>
-              </div>
-            )}
-          </aside>
         </div>
       </section>
 
