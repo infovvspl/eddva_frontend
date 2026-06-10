@@ -162,11 +162,7 @@ const SchoolAttendanceSystem    = lazy(() => import("./pages/school/teacher/Atte
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
 const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
 const SchoolAssessmentDetails   = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
-<<<<<<< HEAD
 const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
-const SchoolCreatorStudio       = lazy(() => import("./pages/school/teacher/CreatorStudio"));
-=======
->>>>>>> 253765f36b9a472a987d32cad08d682b891f322c
 const SchoolTeacherReports      = lazy(() => import("./pages/school/teacher/Reports"));
 const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
 const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
