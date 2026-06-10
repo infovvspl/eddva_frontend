@@ -10,8 +10,10 @@ import ProgressBar from '@/components/school/ProgressBar';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function Syllabus() {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const { assignments, activeAcademicContext } = useAcademicStore();
   const isTeacher = user?.role === 'TEACHER';
@@ -133,7 +135,14 @@ export default function Syllabus() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this chapter?')) return;
+    const isConfirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this chapter? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/topics/chapters/${id}`);
       toast.success('Chapter deleted successfully');

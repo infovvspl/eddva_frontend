@@ -1,5 +1,5 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { User, Mail, Phone, Settings, LogOut, Key, Bell, ChevronRight, Shield } from "lucide-react";
 import { parentClient } from "@/lib/api/parent-client";
 import { useAuthStore } from "@/lib/auth-store";
@@ -7,16 +7,59 @@ import { logout } from "@/lib/api/auth";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { uploadToS3 } from "@/lib/upload";
 
 export default function ParentProfile() {
   const { user } = useAuthStore();
   const { children: linkedChildren } = useParentContext();
   const navigate = useNavigate();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? user?.photo ?? null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar ?? user?.photo ?? null);
+  const [form, setForm] = useState({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['parent-profile'],
     queryFn: () => parentClient.getProfile(),
   });
+
+  useEffect(() => {
+    setAvatarUrl(user?.avatar ?? user?.photo ?? null);
+    setAvatarPreview(user?.avatar ?? user?.photo ?? null);
+    setForm({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
+  }, [user?.avatar, user?.photo, user?.name, user?.email, user?.phone]);
+
+  const saveProfile = useMutation({
+    mutationFn: (payload: { name?: string; email?: string; phone?: string; photo?: string | null }) => parentClient.updateProfile(payload),
+    onSuccess: () => {
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: state.user
+          ? {
+              ...state.user,
+              name: form.name,
+              email: form.email,
+              phone: form.phone,
+              avatar: avatarUrl ?? undefined,
+            }
+          : state.user,
+      }));
+      setIsEditing(false);
+    },
+  });
+
+  const handleUpload = async (file: File) => {
+    const tempUrl = URL.createObjectURL(file);
+    setAvatarPreview(tempUrl);
+    const uploaded = await uploadToS3(
+      { type: 'profile', fileName: file.name, contentType: file.type, fileSize: file.size },
+      file,
+    );
+    setAvatarUrl(uploaded);
+    URL.revokeObjectURL(tempUrl);
+  };
 
   const handleLogout = () => {
     logout();
@@ -37,37 +80,122 @@ export default function ParentProfile() {
           
           {/* PROFILE CARD */}
           <div className="rounded-[2rem] bg-white p-6 md:p-8 shadow-sm border border-slate-100">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-blue-600">Parent Profile</p>
+                <p className="text-sm font-semibold text-slate-500">Edit your contact details and photo</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditing((value) => !value)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                {isEditing ? 'View' : 'Edit'}
+              </button>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <div className="relative">
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-100 text-3xl font-black text-blue-700 shadow-inner">
-                  {user?.name?.charAt(0).toUpperCase() || 'P'}
-                </div>
+                <button type="button" onClick={() => isEditing && fileRef.current?.click()} className="block">
+                  <ProfileAvatar
+                  src={avatarPreview}
+                  name={user?.name}
+                  className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-100 text-3xl font-black text-blue-700 shadow-inner"
+                  fallbackClassName="text-3xl font-black text-blue-700"
+                  />
+                </button>
                 <div className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white border-4 border-white shadow-sm">
                   <Shield className="h-4 w-4" />
                 </div>
               </div>
               <div className="text-center sm:text-left">
-                <h3 className="text-2xl font-black text-slate-900">{user?.name || 'Parent Name'}</h3>
-                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">Parent Account</p>
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <input
+                      value={form.name}
+                      onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-900 focus:border-blue-500 focus:outline-none"
+                      placeholder="Full name"
+                    />
+                    <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Parent Account</p>
+                  </div>
+                ) : (
+                  <h3 className="text-2xl font-black text-slate-900">{user?.name || 'Parent Name'}</h3>
+                )}
               </div>
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                <Mail className="h-5 w-5 text-slate-400" />
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400">Email Address</p>
-                  <p className="text-sm font-bold text-slate-900">{user?.email || profile?.email || 'Not provided'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                <Phone className="h-5 w-5 text-slate-400" />
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400">Phone Number</p>
-                  <p className="text-sm font-bold text-slate-900">{user?.phone || profile?.phone || 'Not provided'}</p>
-                </div>
-              </div>
+              {isEditing ? (
+                <>
+                  <label className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400">Email Address</span>
+                    <input
+                      value={form.email}
+                      onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-900 focus:border-blue-500 focus:outline-none"
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400">Phone Number</span>
+                    <input
+                      value={form.phone}
+                      onChange={(event) => setForm((value) => ({ ...value, phone: event.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-900 focus:border-blue-500 focus:outline-none"
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                    <Mail className="h-5 w-5 text-slate-400" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-slate-400">Email Address</p>
+                      <p className="text-sm font-bold text-slate-900">{user?.email || profile?.email || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                    <Phone className="h-5 w-5 text-slate-400" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-slate-400">Phone Number</p>
+                      <p className="text-sm font-bold text-slate-900">{user?.phone || profile?.phone || 'Not provided'}</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
+
+            {isEditing && (
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    await handleUpload(file);
+                    event.target.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await saveProfile.mutateAsync({
+                      name: form.name,
+                      email: form.email,
+                      phone: form.phone,
+                      photo: avatarUrl,
+                    });
+                  }}
+                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={saveProfile.isPending}
+                >
+                  {saveProfile.isPending ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* LINKED CHILDREN */}

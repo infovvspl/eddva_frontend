@@ -13,6 +13,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { cn } from '@/components/school/admin/Skeleton';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -126,6 +127,12 @@ export default function Students() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
 
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [stats, setStats] = useState({ totalStudents: 0, activeStudents: 0, inactiveStudents: 0, newThisMonth: 0 });
+
   // Bulk Import State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -137,8 +144,24 @@ export default function Students() {
 
   async function fetchStudents() {
     try {
-      const res = await api.get('/students');
+      const query = new URLSearchParams();
+      query.append('page', page);
+      query.append('limit', limit);
+      if (searchQuery.trim()) query.append('search', searchQuery.trim());
+      // status and year aren't passed to backend by default unless we add them
+      
+      const [res, statsRes] = await Promise.all([
+        api.get(`/students?${query.toString()}`),
+        api.get('/students/stats')
+      ]);
       setStudents(getResponseList(res));
+      if (res.data && typeof res.data.total !== 'undefined') {
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+      }
+      if (statsRes.data?.data) {
+        setStats(statsRes.data.data);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -146,7 +169,7 @@ export default function Students() {
     }
   }
 
-  useLiveRefresh(fetchStudents, [], 15000);
+  useLiveRefresh(fetchStudents, [page, limit, searchQuery], 15000);
 
   const handleAddClick = () => {
     setSelectedStudent(null);
@@ -264,22 +287,15 @@ export default function Students() {
   };
 
   const kpis = useMemo(() => {
-    const total = students.length;
-    const active = students.filter((s) => s.isActive).length;
-    const inactive = total - active;
-
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const newThisMonth = students.filter((s) => {
-      const created = s.createdAt ? new Date(s.createdAt) : null;
-      return created && created >= startOfMonth;
-    }).length;
-
-    return { total, active, inactive, newThisMonth };
-  }, [students]);
+    return {
+      total: stats.totalStudents,
+      active: stats.activeStudents,
+      inactive: stats.inactiveStudents,
+      newThisMonth: stats.newThisMonth,
+    };
+  }, [stats]);
 
   const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
     return students
       .filter((s) => {
         if (statusFilter === 'ACTIVE') return Boolean(s.isActive);
@@ -291,16 +307,9 @@ export default function Students() {
           selectedYear === 'ALL'
             ? true
             : (s.createdAt ? new Date(s.createdAt).getFullYear().toString() === selectedYear : false);
-        if (!q) return matchesYear;
-
-        const enrollment = s.studentProfile?.enrollmentNo || '';
-        const cls = s.studentProfile?.section?.class?.name || '';
-        const sec = s.studentProfile?.section?.name || '';
-        const matchesQuery = [s.name, s.email, enrollment, cls, sec].some((v) => String(v || '').toLowerCase().includes(q));
-
-        return matchesYear && matchesQuery;
+        return matchesYear;
       });
-  }, [searchQuery, statusFilter, students, selectedYear]);
+  }, [statusFilter, students, selectedYear]);
 
   const exportCsv = () => {
     const rows = [
@@ -421,7 +430,7 @@ export default function Students() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 placeholder="Search students…"
                 className="w-full rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 py-2.5 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
@@ -557,21 +566,14 @@ export default function Students() {
           </table>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-slate-100 bg-white/60 px-5 py-4 text-xs font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Showing 1 to {filtered.length} of {students.length} student{students.length === 1 ? '' : 's'}
-          </p>
-          <div className="flex items-center gap-2">
-            <button type="button" className="rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-              ‹
-            </button>
-            <button type="button" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-sky-200">
-              1
-            </button>
-            <button type="button" className="rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-              ›
-            </button>
-          </div>
+        <div className="border-t border-slate-100 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total || students.length}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
       </div>
 

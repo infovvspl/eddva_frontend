@@ -11,7 +11,11 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     endTime: '10:00',
     subjectId: '',
     teacherId: '',
-    room: ''
+    type: 'offline',
+    room: '',
+    meetingLink: '',
+    periodNumber: '1',
+    remarks: ''
   });
   const [sections, setSections] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -27,7 +31,11 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         endTime: timetable.endTime || '10:00',
         subjectId: timetable.subjectId || '',
         teacherId: timetable.teacherId || '',
-        room: timetable.room || ''
+        type: timetable.type || 'offline',
+        room: timetable.room || '',
+        meetingLink: timetable.meetingLink || '',
+        periodNumber: timetable.periodNumber ? String(timetable.periodNumber) : '1',
+        remarks: timetable.remarks || ''
       });
     }
     fetchData();
@@ -226,6 +234,35 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Period Number</label>
+            <select
+              name="periodNumber"
+              value={formData.periodNumber}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
+                <option key={p} value={String(p)}>Period {p}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Class Type</label>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            >
+              <option value="offline">Offline / Regular</option>
+              <option value="live">Live Virtual</option>
+              <option value="lab">Lab Session</option>
+              <option value="extra">Extra Class</option>
+            </select>
+          </div>
+
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-surface-700 mb-2">Room/Lab</label>
             <input
@@ -234,7 +271,32 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               value={formData.room}
               onChange={handleChange}
               className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              placeholder="Room 101"
+              placeholder="e.g., Room 101"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Meeting Link (Live/Extra)</label>
+            <input
+              type="url"
+              name="meetingLink"
+              value={formData.meetingLink}
+              onChange={handleChange}
+              disabled={formData.type === 'offline' || formData.type === 'lab'}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
+              placeholder="https://zoom.us/..."
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Remarks (Optional)</label>
+            <input
+              type="text"
+              name="remarks"
+              value={formData.remarks}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="Any special notes for this class"
             />
           </div>
         </div>

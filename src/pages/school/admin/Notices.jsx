@@ -1,10 +1,12 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import NoticeForm from '@/components/school/admin/forms/NoticeForm';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function Notices() {
+  const confirm = useConfirm();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,7 +40,14 @@ export default function Notices() {
   };
 
   const handleDeleteClick = async (id) => {
-    if (confirm('Are you sure you want to delete this notice?')) {
+    const isConfirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this notice? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (isConfirmed) {
       try {
         await api.delete(`/notices/${id}`);
         setNotices((prev) => prev.filter((n) => n.id !== id));

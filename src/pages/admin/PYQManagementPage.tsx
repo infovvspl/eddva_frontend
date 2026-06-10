@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { CheckCircle, XCircle, Upload, Sparkles, BarChart2, RefreshCw, ChevronDown, ChevronUp, AlertCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { UnverifiedPYQ } from "@/lib/api/admin";
+import { useConfirm } from "@/context/ConfirmContext";
 
 const EXAM_LABELS: Record<string, string> = {
   jee_mains: "JEE Mains",
@@ -346,6 +347,7 @@ correct_option_ids,solution_text,marks,negative_marks`}
 // ─── Review Queue ─────────────────────────────────────────────────────────────
 
 function UnverifiedCard({ q }: { q: UnverifiedPYQ }) {
+  const confirm = useConfirm();
   const [expanded, setExpanded] = useState(true);
   const [editContent, setEditContent] = useState(q.content);
   const [editing, setEditing] = useState(false);
@@ -360,7 +362,14 @@ function UnverifiedCard({ q }: { q: UnverifiedPYQ }) {
   }
 
   async function handleReject() {
-    if (!confirm("Reject and delete this question?")) return;
+    const confirmed = await confirm({
+      title: 'Confirm Reject',
+      message: 'Are you sure you want to reject and delete this question? This action cannot be undone.',
+      confirmLabel: 'Reject',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
     try {
       await reject.mutateAsync(q.id);
       toast.success("Rejected");

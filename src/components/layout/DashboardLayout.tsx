@@ -19,6 +19,7 @@ import { useTenantFeatures } from "@/hooks/use-tenant-features";
 import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
@@ -517,7 +518,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className={cn("flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "super_admin" || user.role === "teacher") ? "font-sans bg-white" : "font-poppins")}
+      className={cn("layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "super_admin" || user.role === "teacher") ? "font-sans bg-white" : "font-poppins")}
     >
       {!lightDashboardShell && <AeroBackground />}
       
@@ -659,11 +660,12 @@ const DashboardLayout = () => {
                   aria-expanded={showUserMenu}
                   className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
                 >
-                  {instProfile?.orgImageUrl ? (
-                    <img src={instProfile.orgImageUrl} alt="Institute" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[10px] font-bold text-indigo-600">{user.name[0]}</span>
-                  )}
+                  <ProfileAvatar
+                    src={user.avatar ?? null}
+                    name={user.name}
+                    className="h-full w-full"
+                    fallbackClassName="text-[10px] font-bold text-indigo-600"
+                  />
                 </button>
 
                 <AnimatePresence>

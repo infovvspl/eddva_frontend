@@ -103,7 +103,7 @@ export default function ParentLayout() {
   const workspaceName = user?.tenantName || "School Parent Portal";
 
   return (
-    <div className="font-poppins relative flex min-h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
+    <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
       <ParentSidebar
         open={sidebarOpen}
         collapsed={collapsed}
@@ -316,11 +316,11 @@ function ParentSidebar({
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 md:sticky md:top-0 md:h-screen ${
+        className={`flex flex-col fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 md:sticky md:top-0 md:h-screen ${
           collapsed ? "md:w-[80px]" : "md:w-[280px]"
         } ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
-        <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6">
             <div className={`min-w-0 transition-opacity ${collapsed ? "md:pointer-events-none md:w-0 md:overflow-hidden md:opacity-0" : ""}`}>
               <EddvaLogo className="h-7" />
@@ -340,7 +340,7 @@ function ParentSidebar({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-6">
             <div className="mb-6">
               <p className={`mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400 ${collapsed ? "md:hidden" : ""}`}>
                 Overview
@@ -389,7 +389,7 @@ function ParentSidebar({
             </div>
           </div>
 
-          <div className="border-t border-slate-100 p-4">
+          <div className="mt-auto border-t border-slate-100 p-4">
             <div className={`flex items-center gap-3 rounded-xl bg-slate-50 p-3 ${collapsed ? "md:justify-center md:p-2" : ""}`}>
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
                 {(user?.name || "P").charAt(0).toUpperCase()}

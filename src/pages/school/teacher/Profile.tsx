@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircle } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import api from "@/lib/api/school-client";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
@@ -91,11 +92,12 @@ const Profile: React.FC = () => {
     <div className="profile-page">
       <div className="profile-header">
         <div className="profile-avatar">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="Teacher avatar" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "999px" }} />
-          ) : (
-            profile.name?.charAt(0)
-          )}
+          <ProfileAvatar
+            src={avatarUrl || user?.photo || null}
+            name={profile.name || user?.name}
+            className="w-full h-full rounded-full"
+            fallbackClassName="text-inherit"
+          />
           <button
             className="profile-avatar-btn"
             type="button"

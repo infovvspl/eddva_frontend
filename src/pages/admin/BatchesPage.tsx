@@ -20,6 +20,7 @@ import {
 import type { BatchStudentRow, BulkStudentResult } from "@/lib/api/admin";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
+import { useConfirm } from "@/context/ConfirmContext";
 import {
   BATCH_CLASS_OPTIONS,
   BATCH_EXAM_TARGET_OPTIONS,
@@ -1293,6 +1294,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
 // ─── Main BatchesPage ──────────────────────────────────────────────────────────
 
 const BatchesPage = () => {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const { data: batches, isLoading } = useBatches();
   const createBatch = useCreateBatch();
@@ -1382,12 +1384,19 @@ const BatchesPage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this batch? It must have no enrolled students.")) {
-      try {
-        await deleteBatch.mutateAsync(id);
-      } catch (err: any) {
-        alert(err?.response?.data?.message || "Failed to delete batch.");
-      }
+    const confirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this batch? It must have no enrolled students.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
+    try {
+      await deleteBatch.mutateAsync(id);
+      toast.success("Batch deleted successfully");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to delete batch.");
     }
   };
 

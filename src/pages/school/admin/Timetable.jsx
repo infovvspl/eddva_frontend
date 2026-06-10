@@ -114,6 +114,33 @@ export default function Timetable() {
         </button>
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-xs font-bold text-slate-500 uppercase">Total Classes</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white">{timetables.length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-xs font-bold text-slate-500 uppercase">Teachers</p>
+          <p className="text-2xl font-black text-blue-600">{teachers.length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-xs font-bold text-slate-500 uppercase">Offline</p>
+          <p className="text-2xl font-black text-emerald-600">{timetables.filter(t => t.type === 'offline').length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-xs font-bold text-slate-500 uppercase">Live</p>
+          <p className="text-2xl font-black text-rose-600">{timetables.filter(t => t.type === 'live').length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-xs font-bold text-slate-500 uppercase">Lab Sessions</p>
+          <p className="text-2xl font-black text-purple-600">{timetables.filter(t => t.type === 'lab').length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-xs font-bold text-slate-500 uppercase">Extra Classes</p>
+          <p className="text-2xl font-black text-amber-600">{timetables.filter(t => t.type === 'extra').length}</p>
+        </div>
+      </div>
+
       <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 md:flex-row md:items-end shadow-sm">
         <div className="flex-1">
           <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filter by Teacher</label>
@@ -216,13 +243,18 @@ export default function Timetable() {
                   <div className="flex flex-col items-end gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-450">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5 text-blue-600" />
-                      {slot.startTime} - {slot.endTime}
+                      Period {slot.periodNumber || 1} • {slot.startTime} - {slot.endTime}
                     </span>
-                    {slot.room && (
-                      <span className="rounded bg-slate-55 dark:bg-slate-800 px-1.5 py-0.5">
-                        Room {slot.room}
+                    <div className="flex items-center gap-1">
+                      <span className="rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 uppercase">
+                        {slot.type || 'OFFLINE'}
                       </span>
-                    )}
+                      {slot.room && (
+                        <span className="rounded bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5">
+                          Room {slot.room}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

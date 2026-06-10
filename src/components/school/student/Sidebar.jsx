@@ -57,6 +57,7 @@ const studentGroups = [
       { to: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle },
       { to: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New' },
       { to: '/school/student/gamification', label: 'Gamification', icon: Trophy },
+      { to: '/school/student/timetable', label: 'Timetable', icon: CalendarDays },
       { to: '/school/student/calendar', label: 'Calendar', icon: CalendarDays },
     ],
   },
@@ -77,12 +78,12 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:sticky md:top-0 md:h-screen',
+          'flex flex-col fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950 md:sticky md:top-0 md:h-screen',
           collapsed && canCollapse ? 'md:w-[80px]' : 'md:w-[280px]',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-        <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6 dark:border-slate-800">
             <div className={cn('min-w-0 transition-opacity', collapsed && canCollapse && 'md:opacity-0 md:pointer-events-none md:w-0 md:overflow-hidden')}>
               <Link to="/school/student">
@@ -111,7 +112,7 @@ export default function Sidebar({ open, onClose }) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-6 custom-scrollbar">
             {studentGroups.map((group) => (
               <div key={group.heading} className="mb-6">
                 <p
@@ -153,35 +154,15 @@ export default function Sidebar({ open, onClose }) {
             ))}
           </div>
 
-          <div className="border-t border-slate-100 p-4 dark:border-slate-800">
+          <div className="mt-auto border-t border-slate-100 p-4 dark:border-slate-800">
             <div
               className={cn(
                 'flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-900',
                 collapsed && 'md:justify-center md:p-2'
               )}
             >
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center">
-                {user?.photo ? (
-                  <img
-                    src={user.photo}
-                    alt="Student Avatar"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentNode.innerHTML = `<div class="grid h-full w-full place-items-center rounded-xl bg-blue-100 text-xs font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
-                    }}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <img
-                    src="/images/student_avatar.png"
-                    alt="Student Avatar"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentNode.innerHTML = `<div class="grid h-full w-full place-items-center rounded-xl bg-blue-100 text-xs font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
-                    }}
-                    className="h-full w-full object-cover object-top scale-125 animate-float mix-blend-multiply dark:mix-blend-normal"
-                  />
-                )}
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold tracking-tight text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+                {(user?.name || 'S').charAt(0).toUpperCase()}
               </div>
               <div className={cn('min-w-0 flex-1', collapsed && 'md:hidden')}>
                 <p className="truncate text-xs font-bold text-slate-950 dark:text-white">{user?.name || 'Student'}</p>

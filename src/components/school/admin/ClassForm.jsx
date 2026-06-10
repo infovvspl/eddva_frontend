@@ -1206,7 +1206,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
               name="studentId"
               value={formData.studentId}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="">Select Student</option>
               {students.map(student => (
@@ -1224,7 +1224,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
               name="date"
               value={formData.date}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             />
           </div>
 
@@ -1234,7 +1234,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="PRESENT">Present</option>
               <option value="ABSENT">Absent</option>
@@ -1251,7 +1251,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
             value={formData.remarks}
             onChange={handleChange}
             rows="3"
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="Any remarks..."
           />
         </div>
@@ -1261,7 +1261,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {attendance ? 'Update Attendance' : 'Mark Attendance'}
@@ -1284,14 +1284,14 @@ import { cn } from './Skeleton';
 export function EddvaLogo({ compact = false, className }) {
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <div className="relative grid h-11 w-11 place-items-center rounded-lg bg-gradient-to-br from-brand-600 via-primary to-sky-400 text-white shadow-blue">
+      <div className="relative grid h-11 w-11 place-items-center rounded-lg bg-gradient-to-br from-primary via-primary to-sky-400 text-white shadow-blue">
         <GraduationCap className="h-6 w-6" />
         <BrainCircuit className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white p-0.5 text-primary" />
       </div>
       {!compact && (
         <div className="leading-none">
           <p className="font-display text-2xl font-bold text-surface-950">EDDVA</p>
-          <p className="mt-1 text-[11px] font-bold uppercase text-brand-700">Learn with AI</p>
+          <p className="mt-1 text-[11px] font-bold uppercase text-primary-dark">Learn with AI</p>
         </div>
       )}
     </div>
@@ -1319,7 +1319,7 @@ export function InstituteLogo({ institute, size = 'md', className }) {
     <div
       className={cn(
         sizes[size],
-        'grid place-items-center rounded-lg bg-gradient-to-br from-brand-600 to-sky-400 font-bold text-white shadow-blue',
+        'grid place-items-center rounded-lg bg-gradient-to-br from-primary to-sky-400 font-bold text-white shadow-blue',
         className
       )}
     >
@@ -1403,7 +1403,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="Class 10-A"
           />
         </div>
@@ -1416,7 +1416,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
             name="level"
             value={formData.level}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="10"
           />
           </div>
@@ -1428,7 +1428,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
               name="section"
               value={formData.section}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="A, B, C etc."
             />
             <p className="mt-1 text-[10px] text-surface-500 italic">Separate multiple sections with commas</p>
@@ -1441,7 +1441,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
               name="building"
               value={formData.building}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="Main Building, Block A"
             />
           </div>
@@ -1452,7 +1452,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {classData ? 'Update Class' : 'Add Class'}
@@ -1975,7 +1975,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             name="title"
             value={formData.title}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="Notice Title"
           />
         </div>
@@ -1987,7 +1987,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="GENERAL">General</option>
               <option value="ACADEMIC">Academic</option>
@@ -2004,7 +2004,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
               name="priority"
               value={formData.priority}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="LOW">Low</option>
               <option value="NORMAL">Normal</option>
@@ -2020,7 +2020,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
               name="postedDate"
               value={formData.postedDate}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             />
           </div>
 
@@ -2031,7 +2031,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
               name="expiryDate"
               value={formData.expiryDate}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             />
           </div>
 
@@ -2042,7 +2042,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
               multiple
               value={formData.targetRoles}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 h-24"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20 h-24"
             >
               <option value="TEACHER">Teachers</option>
               <option value="STUDENT">Students</option>
@@ -2058,7 +2058,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
           <input
             type="file"
             onChange={handleFileUpload}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
           />
           {Object.keys(formData.attachments).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -2083,7 +2083,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             value={formData.content}
             onChange={handleChange}
             rows="6"
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="Notice content..."
           />
         </div>
@@ -2093,7 +2093,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {notice ? 'Update Notice' : 'Publish Notice'}
@@ -2189,7 +2189,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
             name="classId"
             value={formData.classId}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
           >
             <option value="">Select Class</option>
             {classes.map(c => (
@@ -2205,7 +2205,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="A, B, C etc."
           />
         </div>
@@ -2216,7 +2216,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
             name="classTeacherId"
             value={formData.classTeacherId}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
           >
             <option value="">Select Class Teacher</option>
             {teachers.map(t => (
@@ -2230,7 +2230,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {sectionData ? 'Update Section' : 'Add Section'}
@@ -2584,7 +2584,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="John Doe"
             />
           </div>
@@ -2596,7 +2596,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="student@school.com"
             />
           </div>
@@ -2609,7 +2609,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
                 placeholder="••••••••"
               />
             </div>
@@ -2622,7 +2622,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="enrollmentNo"
               value={formData.enrollmentNo}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="ENR001"
             />
           </div>
@@ -2634,7 +2634,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="rollNo"
               value={formData.rollNo}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="1"
             />
           </div>
@@ -2646,7 +2646,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="dob"
               value={formData.dob}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             />
           </div>
 
@@ -2656,7 +2656,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="gender"
               value={formData.gender}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
@@ -2670,7 +2670,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="sectionId"
               value={formData.sectionId}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="">Select Section</option>
               {sections.map(section => (
@@ -2688,7 +2688,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               name="admissionDate"
               value={formData.admissionDate}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             />
           </div>
         </div>
@@ -2703,7 +2703,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
                 name="fatherName"
                 value={formData.fatherName}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
                 placeholder="Father's Name"
               />
             </div>
@@ -2715,7 +2715,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
                 name="motherName"
                 value={formData.motherName}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
                 placeholder="Mother's Name"
               />
             </div>
@@ -2727,7 +2727,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
                 name="parentPhone"
                 value={formData.parentPhone}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
                 placeholder="+91 XXXXX XXXXX"
               />
             </div>
@@ -2739,7 +2739,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
                 name="parentEmail"
                 value={formData.parentEmail}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
                 placeholder="parent@email.com"
               />
             </div>
@@ -2752,7 +2752,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {student ? 'Update Student' : 'Add Student'}
@@ -2845,7 +2845,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="Mathematics"
             />
           </div>
@@ -2857,7 +2857,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
               name="code"
               value={formData.code}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="MATH-101"
             />
           </div>
@@ -2885,7 +2885,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {subject ? 'Update Subject' : 'Add Subject'}
@@ -3023,7 +3023,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="John Doe"
           />
         </div>
@@ -3035,7 +3035,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="teacher@school.com"
           />
         </div>
@@ -3048,7 +3048,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="••••••••"
             />
           </div>
@@ -3061,7 +3061,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
             name="employeeId"
             value={formData.employeeId}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="EMP001"
           />
         </div>
@@ -3073,7 +3073,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
             name="department"
             value={formData.department}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="Science"
           />
         </div>
@@ -3085,7 +3085,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
             name="joiningDate"
             value={formData.joiningDate}
             onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
           />
         </div>
 
@@ -3096,7 +3096,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
             value={formData.qualifications}
             onChange={handleChange}
             rows="3"
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             placeholder="B.Sc., M.Ed., etc."
           />
         </div>
@@ -3140,7 +3140,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {teacher ? 'Update Teacher' : 'Add Teacher'}
@@ -3251,7 +3251,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="sectionId"
               value={formData.sectionId}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="">Select Section</option>
               {sections.map(section => (
@@ -3268,7 +3268,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="dayOfWeek"
               value={formData.dayOfWeek}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="MONDAY">Monday</option>
               <option value="TUESDAY">Tuesday</option>
@@ -3285,7 +3285,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="subjectId"
               value={formData.subjectId}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="">Select Subject</option>
               {subjects.map(subject => (
@@ -3302,7 +3302,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="teacherId"
               value={formData.teacherId}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             >
               <option value="">Select Teacher</option>
               {teachers.map(teacher => (
@@ -3320,7 +3320,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="startTime"
               value={formData.startTime}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             />
           </div>
 
@@ -3331,7 +3331,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="endTime"
               value={formData.endTime}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
             />
           </div>
 
@@ -3342,7 +3342,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="room"
               value={formData.room}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary\/20"
               placeholder="Room 101"
             />
           </div>
@@ -3353,7 +3353,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white shadow-sm hover:bg-primary-dark disabled:opacity-50"
         >
           {isLoading && <Loader className="h-4 w-4 animate-spin" />}
           {timetable ? 'Update Timetable' : 'Add Timetable'}

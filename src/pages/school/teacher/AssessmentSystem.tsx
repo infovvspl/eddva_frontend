@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useConfirm } from "@/context/ConfirmContext";
 import {
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
 } from "lucide-react";
@@ -191,6 +192,7 @@ function ContentEditor({
 }
 
 const AssessmentSystem: React.FC = () => {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
   const { assignments, setAssignments } = useAcademicStore();
@@ -633,7 +635,13 @@ const AssessmentSystem: React.FC = () => {
             variant="outline"
             icon={<Trash2 size={14} />}
             onClick={async () => {
-              const confirmed = window.confirm("Delete this assessment?");
+              const confirmed = await confirm({
+                title: "Confirm Delete",
+                message: "Are you sure you want to delete this assessment? This action cannot be undone.",
+                confirmLabel: "Delete",
+                cancelLabel: "Cancel",
+                variant: "destructive",
+              });
               if (!confirmed) return;
               try {
                 await api.delete(`/assessments/${row.id}`);

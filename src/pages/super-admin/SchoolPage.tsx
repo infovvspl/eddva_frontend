@@ -15,6 +15,8 @@ interface SchoolInstitute {
   created_at: string;
 }
 
+import { useConfirm } from "@/context/ConfirmContext";
+
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE:    "bg-emerald-50 text-emerald-700 border-emerald-200",
   PENDING:   "bg-amber-50 text-amber-700 border-amber-200",
@@ -22,6 +24,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const SchoolPage = () => {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const [institutes, setInstitutes] = useState<SchoolInstitute[]>([]);
   const [total, setTotal] = useState(0);
@@ -66,7 +69,13 @@ const SchoolPage = () => {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Delete this school institute?")) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: "Are you sure you want to delete this school institute? This action cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try {
       await apiClient.delete(`/school/institutes/${id}`);
       toast.success("Institute deleted");

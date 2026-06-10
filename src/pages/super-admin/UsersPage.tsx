@@ -7,6 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUsers, useSuspendUser, useActivateUser, useDeleteUser } from "@/hooks/use-users";
 
+import { useConfirm } from "@/context/ConfirmContext";
+
 const roleConfig: Record<string, { icon: any; color: string; label: string }> = {
   super_admin: { icon: Shield, color: "text-slate-900 bg-slate-100 border-slate-200 shadow-sm", label: "Core Admin" },
   institute_admin: { icon: Users, color: "text-indigo-600 bg-indigo-50 border-indigo-100", label: "Institute Partner" },
@@ -15,6 +17,7 @@ const roleConfig: Record<string, { icon: any; color: string; label: string }> = 
 };
 
 const UsersPage = () => {
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -37,7 +40,13 @@ const UsersPage = () => {
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
-    if (window.confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: `Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (isConfirmed) {
       try {
         await deleteUser.mutateAsync(userId);
       } catch (err: any) {

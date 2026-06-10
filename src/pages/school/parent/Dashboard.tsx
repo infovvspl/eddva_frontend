@@ -124,6 +124,41 @@ export default function ParentDashboard() {
               Track your child's attendance, homework, marks, and assessment readiness in one focused view.
             </p>
           </div>
+        )}
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10"
+        >
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 left-24 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
+          <div className="grid min-h-[310px] lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="relative p-6 sm:p-8 lg:p-10">
+              <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-50 backdrop-blur">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Parent Portal
+                  </div>
+                  <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+                    {user?.name ? `Welcome, ${user.name}` : "Parent Dashboard"}
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-blue-50/90 sm:text-base">
+                    A focused view of attendance, marks, homework, tests, and school updates for the week.
+                  </p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                    className="mt-8 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
+                  >
+                    <Sparkles className="h-5 w-5 text-blue-200" />
+                    <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+                  </motion.div>
+                </div>
 
           <div className="flex items-center gap-5 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur">
             <div className="hidden h-32 w-28 shrink-0 items-end justify-center overflow-hidden rounded-2xl bg-white/10 md:flex">
