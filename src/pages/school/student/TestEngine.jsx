@@ -239,20 +239,6 @@ export default function TestEngine() {
       toast.error('Write your answer or upload an answer file');
       return;
     }
-    if (!autoSubmit && !window.confirm('Submit this assessment now? You cannot change answers after submission.')) {
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const data = new FormData();
-      if (questions.length) data.append('answersJson', JSON.stringify(currentAnswers || {}));
-      if (currentAnswerText.trim()) data.append('answerText', currentAnswerText.trim());
-      if (currentAnswerFile) data.append('file', currentAnswerFile);
-      if (autoSubmit) data.append('autoSubmit', 'true');
-      await api.post(`/assessments/${id}/submit`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
     if (!autoSubmit) {
       const ok = await confirm({
         title: 'Submit Test',
@@ -280,7 +266,6 @@ export default function TestEngine() {
       toast.error(error?.response?.data?.message || 'Failed to submit assessment');
       setSubmitting(false);
     }
-  }, [answerFile, answerText, answers, id, navigate, questions, submitting]);
   }, [submitting, answers, answerText, answerFile, questions, id, navigate, confirm]);
 
   const renderAnswerInput = (question) => {

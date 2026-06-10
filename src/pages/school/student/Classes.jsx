@@ -22,16 +22,23 @@ import { Link, useLocation } from 'react-router-dom';
 export default function Classes() {
   const location = useLocation();
   const [courses, setCourses] = useState([]);
+  const [liveClasses, setLiveClasses] = useState([]);
   const [recordings, setRecordings] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  const [liveLoading, setLiveLoading] = useState(false);
   const [recordingsLoading, setRecordingsLoading] = useState(false);
 
   const isLiveView = location.pathname.endsWith('/live-classes');
   const isRecordedView = location.pathname.endsWith('/recorded-classes');
 
-  const loading = isRecordedView ? recordingsLoading : coursesLoading;
+  const loading = isRecordedView ? recordingsLoading : isLiveView ? liveLoading : coursesLoading;
 
   useEffect(() => {
+    if (isLiveView || isRecordedView) {
+      setCoursesLoading(false);
+      return;
+    }
+
     const fetchCourses = async () => {
       try {
         const response = await api.get('/students/courses/my');
@@ -44,7 +51,27 @@ export default function Classes() {
     };
 
     fetchCourses();
-  }, []);
+  }, [isLiveView, isRecordedView]);
+
+  useEffect(() => {
+    if (!isLiveView) return;
+
+    const fetchLiveClasses = async () => {
+      try {
+        setLiveLoading(true);
+        const response = await api.get('/timetables/student/me');
+        const timetable = response.data?.timetable || response.data?.data?.timetable || [];
+        setLiveClasses(timetable.filter((item) => String(item.type || '').toLowerCase() === 'live'));
+      } catch (error) {
+        console.error('Failed to fetch live classes:', error);
+        setLiveClasses([]);
+      } finally {
+        setLiveLoading(false);
+      }
+    };
+
+    fetchLiveClasses();
+  }, [isLiveView]);
 
   useEffect(() => {
     if (!isRecordedView) return;
@@ -125,6 +152,72 @@ export default function Classes() {
       </span>
     );
   };
+
+  const liveClassesView = (
+    <div className="space-y-5">
+      {liveClasses.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <Radio className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">No live classes scheduled</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Live sessions assigned by your school will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {liveClasses.map((cls, index) => (
+            <div
+              key={`${cls.day}-${cls.startTime}-${cls.subject}-${index}`}
+              className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">
+                    <Radio size={13} />
+                    Live Class
+                  </span>
+                  <h3 className="mt-4 text-xl font-black text-slate-900 dark:text-white">{cls.subject || 'Live session'}</h3>
+                  <p className="mt-1 text-sm font-semibold text-slate-500">{cls.teacher || 'Teacher not assigned'}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3 text-blue-600 dark:bg-slate-800">
+                  <Video size={22} />
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                  <CalendarDays size={13} />
+                  {cls.day || 'Scheduled day'}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                  <Clock3 size={13} />
+                  {cls.startTime || '00:00'} - {cls.endTime || '00:00'}
+                </span>
+              </div>
+
+              <div className="mt-5">
+                {cls.meetingLink ? (
+                  <a
+                    href={cls.meetingLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                  >
+                    <Radio size={15} />
+                    Join Class
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-500 dark:bg-slate-800">
+                    Join link not added yet
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   const recordedClassesView = (
     <div className="space-y-6">
@@ -233,23 +326,14 @@ export default function Classes() {
                         )}
                       </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="mt-4">
                         <Link
-                          to={`/school/student/recorded-classes/${recording.id}`}
+                          to={`/school/student/recorded-classes/${recording.id}${canWatch ? '?play=1' : ''}`}
                           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
                         >
-                          <FileText size={15} />
-                          Open Details
+                          {canWatch ? <PlayCircle size={15} /> : <FileText size={15} />}
+                          {canWatch ? 'Watch Video' : 'Open Details'}
                         </Link>
-                        {canWatch && (
-                          <Link
-                            to={`/school/student/recorded-classes/${recording.id}?play=1`}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                          >
-                            <PlayCircle size={15} />
-                            Watch Video
-                          </Link>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -272,6 +356,8 @@ export default function Classes() {
 
       {isRecordedView ? (
         recordedClassesView
+      ) : isLiveView ? (
+        liveClassesView
       ) : (
         <>
       <div className="grid gap-4 md:grid-cols-3">

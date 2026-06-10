@@ -11,7 +11,6 @@ import {
   FileText,
   HelpCircle,
   LayoutDashboard,
-  LifeBuoy,
   LogOut,
   Megaphone,
   MessageSquare,

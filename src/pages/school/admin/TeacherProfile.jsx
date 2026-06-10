@@ -205,8 +205,8 @@ export default function TeacherProfile() {
                 </button>
               </div>
               <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-500">
-                <div className="flex items-center gap-2"><Briefcase size={18} className="text-blue-500" /> {profile.role || 'Senior Teacher'}</div>
-                <div className="flex items-center gap-2"><Building size={18} className="text-blue-500" /> {profile.department || 'Science Department'}</div>
+                <div className="flex items-center gap-2"><Briefcase size={18} className="text-blue-500" /> {profile.role || 'Designation not set'}</div>
+                <div className="flex items-center gap-2"><Building size={18} className="text-blue-500" /> {profile.department || 'Department not set'}</div>
                 <div className="flex items-center gap-2"><Mail size={18} className="text-blue-500" /> {teacher.email}</div>
               </div>
             </div>
@@ -247,23 +247,16 @@ export default function TeacherProfile() {
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Work Email" value={teacher.email} icon={Mail} />
                         <DetailItem label="Phone Number" value={teacher.phone} icon={Smartphone} />
-                        <DetailItem label="Nationality" value="Indian" icon={Globe} />
+                        <DetailItem label="Nationality" value={profile.nationality} icon={Globe} />
                       </div>
                     </div>
                   </div>
                   <div className="space-y-6">
                     <div className="p-6 rounded-3xl bg-slate-900 text-white shadow-2xl">
                       <h4 className="text-xs font-bold tracking-tight uppercase tracking-widest opacity-60 mb-4">Department Lead Info</h4>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center font-bold">SM</div>
-                        <div>
-                          <div className="text-sm font-bold tracking-tight">Sarah Miller</div>
-                          <div className="text-[10px] font-bold opacity-60">Head of Science</div>
-                        </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-white/60">
+                        No department lead assigned.
                       </div>
-                      <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold tracking-tight uppercase tracking-widest transition-all">
-                        Contact HOD
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -430,8 +423,9 @@ export default function TeacherProfile() {
               )}
 
               {activeTab === 'performance' && (() => {
-                const pct = teacher.performance?.avgStudentScore || 90;
+                const pct = teacher.performance?.avgStudentScore ?? 0;
                 const totalTests = teacher.performance?.totalTestsCount || 0;
+                const hasPerformance = totalTests > 0;
                 const strokeDashoffset = 440 - (440 * pct) / 100;
 
                 return (
@@ -467,8 +461,12 @@ export default function TeacherProfile() {
                       </div>
                       <div className="p-8 rounded-[2.5rem] bg-blue-600 text-white text-center flex flex-col justify-center shadow-xl shadow-blue-600/20">
                          <Award size={48} className="mx-auto mb-4 opacity-40" />
-                         <h4 className="text-xl font-bold tracking-tight mb-1">Excellent Pacing</h4>
-                         <p className="text-xs font-bold opacity-70 uppercase tracking-widest">Active Academic Year</p>
+                         <h4 className="text-xl font-bold tracking-tight mb-1">
+                           {hasPerformance ? 'Performance Available' : 'No Performance Data'}
+                         </h4>
+                         <p className="text-xs font-bold opacity-70 uppercase tracking-widest">
+                           {hasPerformance ? 'Based on evaluated sessions' : 'No evaluated sessions yet'}
+                         </p>
                       </div>
                     </div>
                   </div>
