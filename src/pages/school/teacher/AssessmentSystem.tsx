@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
   FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
@@ -189,19 +189,6 @@ function ContentEditor({
       )}
     </div>
   );
-}
-
-// Normalise an assessment type from the API into one of the known tab keys.
-// Handles legacy/alias values (e.g. "unit" → "chapter") and unknown values.
-const KNOWN_TYPES = ["topic", "chapter", "subject", "mock", "final"] as const;
-const TYPE_ALIASES: Record<string, (typeof KNOWN_TYPES)[number]> = {
-  unit: "chapter",
-};
-
-function normaliseType(raw: string): string {
-  const key = String(raw || "").trim().toLowerCase();
-  if (TYPE_ALIASES[key]) return TYPE_ALIASES[key];
-  return (KNOWN_TYPES as readonly string[]).includes(key) ? key : "topic";
 }
 
 const AssessmentSystem: React.FC = () => {
