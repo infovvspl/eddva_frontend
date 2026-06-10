@@ -164,6 +164,7 @@ const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/Asse
 const SchoolAssessmentDetails   = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
 const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
 const SchoolTeacherReports      = lazy(() => import("./pages/school/teacher/Reports"));
+const SchoolWeaknessDetails     = lazy(() => import("./pages/school/teacher/WeaknessDetails"));
 const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
 const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
 const SchoolTeacherMeetings     = lazy(() => import("./pages/school/teacher/Meetings"));
@@ -190,7 +191,7 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts       = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena  = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
-const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
+const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner")); // Force re-resolution from .jsx to .tsx
 const SchoolStudentAttendance   = lazy(() => import("./pages/school/student/Attendance"));
 const SchoolStudentCalendar     = lazy(() => import("./pages/school/student/Calendar"));
 const SchoolStudentTimetable    = lazy(() => import("./pages/school/student/Timetable"));
@@ -401,6 +402,7 @@ const SchoolRoutes = () => (
       <Route path="assessments/:id/submissions/:studentId/review" element={<SchoolAssessmentSubmissionReview />} />
       <Route path="assessments/:id" element={<SchoolAssessmentDetails />} />
       <Route path="reports" element={<SchoolTeacherReports />} />
+      <Route path="reports/weakness/:topic" element={<SchoolWeaknessDetails />} />
       <Route path="meetings" element={<SchoolTeacherMeetings />} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
       <Route path="chat" element={<SchoolChatSystem />} />

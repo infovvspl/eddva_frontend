@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import StatCard from '@/components/school/StatCard';
 import Badge from '@/components/school/Badge';
@@ -11,6 +12,7 @@ import api from '@/lib/api/school-client';
 import './Reports.css';
 
 const Reports: React.FC = () => {
+  const navigate = useNavigate();
   const [performanceChartData, setPerformanceChartData] = useState<any[]>([]);
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
   const [classAnalytics, setClassAnalytics] = useState<any[]>([]);
@@ -197,7 +199,12 @@ const Reports: React.FC = () => {
       )}
       <div className="reports__weakness-grid">
         {weaknessData.map((item) => (
-          <GlassCard key={item.topic} hover className="reports__weakness-card">
+          <GlassCard 
+            key={item.topic} 
+            hover 
+            className="reports__weakness-card"
+            onClick={() => navigate(`/school/teacher/reports/weakness/${item.topic}`, { state: { studentPerformance } })}
+          >
             <div className="reports__weakness-header">
               <AlertTriangle size={18} className="reports__weakness-icon" />
               <h4>{item.topic}</h4>
@@ -213,6 +220,10 @@ const Reports: React.FC = () => {
               </div>
             </div>
             <ProgressBar value={item.avgScore || item.avg_score || 0} size="sm" color="var(--gradient-warm)" />
+            <div className="reports__weakness-footer">
+              <span>View struggling students</span>
+              <ArrowRight size={12} />
+            </div>
           </GlassCard>
         ))}
       </div>
