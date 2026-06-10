@@ -9,6 +9,7 @@ import SelectField from '@/components/school/SelectField';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 export default function Subjects() {
   const confirm = useConfirm();
@@ -17,6 +18,11 @@ export default function Subjects() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Form State
   const [name, setName] = useState('');
@@ -28,9 +34,15 @@ export default function Subjects() {
   const [classes, setClasses] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchSubjects();
     fetchClasses();
   }, []);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchSubjects();
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [page, limit, searchQuery]);
 
   const fetchClasses = async () => {
     try {
@@ -44,11 +56,20 @@ export default function Subjects() {
   const fetchSubjects = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/subjects');
+      const query = new URLSearchParams();
+      query.append('page', page.toString());
+      query.append('limit', limit.toString());
+      if (searchQuery.trim()) query.append('search', searchQuery.trim());
+      
+      const res = await api.get(`/subjects?${query.toString()}`);
       if (Array.isArray(res.data)) {
         setSubjects(res.data);
       } else if (res.data && Array.isArray(res.data.data)) {
         setSubjects(res.data.data);
+        if (typeof res.data.total !== 'undefined') {
+          setTotal(res.data.total);
+          setTotalPages(res.data.totalPages);
+        }
       } else {
         setSubjects([]);
       }
@@ -116,11 +137,7 @@ export default function Subjects() {
     }
   };
 
-  const filteredSubjects = subjects.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSubjects = subjects;
 
   const columns = [
     { key: 'code', title: 'Code', width: '10%' },
@@ -174,7 +191,7 @@ export default function Subjects() {
               type="text"
               placeholder="Search subjects by name or code..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               className="w-full pl-10 pr-4 py-2 border border-slate-100 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -183,7 +200,22 @@ export default function Subjects() {
         {loading ? (
           <div className="text-center py-8 text-slate-500">Loading...</div>
         ) : (
-          <DataTable columns={columns} data={filteredSubjects} />
+          <>
+            <DataTable columns={columns} data={filteredSubjects} />
+            <div className="mt-4 border-t border-slate-100 dark:border-slate-800">
+              <DataTablePagination
+                page={page}
+                limit={limit}
+                total={total || subjects.length}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                onLimitChange={(newLimit) => {
+                  setLimit(newLimit);
+                  setPage(1);
+                }}
+              />
+            </div>
+          </>
         )}
       </div>
 

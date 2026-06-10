@@ -465,13 +465,13 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <MessageSquare className="h-5 w-5 text-violet-600" />
           </div>
           <ul className="space-y-3">
-            {[
+            {(stats?.communications || [
               { t: 'Annual Sports Day 2026 — draft published', badge: 2 },
               { t: 'PTM reminders queued for Grade 10', badge: 0 },
               { t: 'Parent portal: 98% delivery rate', badge: 1 },
-            ].map((n) => (
+            ]).map((n, idx) => (
               <li
-                key={n.t}
+                key={n.t || idx}
                 className="flex items-start justify-between gap-3 rounded-xl border border-[rgba(37,99,235,0.08)] bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-800/40"
               >
                 <p className="text-sm font-semibold text-surface-800 dark:text-slate-200">{n.t}</p>

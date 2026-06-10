@@ -29,6 +29,11 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('getProfile', '/school/parent/profile', e)),
 
+  updateProfile: (data: unknown) =>
+    schoolApi.put('/parent/profile', data)
+      .then(extractData)
+      .catch((e) => logParentApiError('updateProfile', '/school/parent/profile', e)),
+
   getChildren: () =>
     schoolApi.get('/parent/students')
       .then((res) => extractData<unknown[]>(res) ?? [])

@@ -3,8 +3,10 @@ import { ClipboardList, Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/Modal';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function QuestionBank() {
+  const confirm = useConfirm();
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,7 +69,14 @@ export default function QuestionBank() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+    const isConfirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this question? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/content/questions/${id}`);
       toast.success('Question deleted');

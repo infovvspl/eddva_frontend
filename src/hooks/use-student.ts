@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import * as studentApi from "@/lib/api/student";
+import { useAuthStore } from "@/lib/auth-store";
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 
@@ -745,6 +746,10 @@ export function useUploadAvatar() {
       qc.setQueryData<studentApi.StudentMe>(studentKeys.me, (old) =>
         old ? { ...old, profilePictureUrl: avatarUrl } : old
       );
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: state.user ? { ...state.user, avatar: avatarUrl } : state.user,
+      }));
     },
   });
 }

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText, Loader2, UploadCloud } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
+import { useConfirm } from '@/context/ConfirmContext';
 import { toast } from 'sonner';
 
 function getStructuredQuestions(test) {
@@ -98,6 +99,7 @@ function getEffectiveQuestion(question) {
 }
 
 export default function TestEngine() {
+  const confirm = useConfirm();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -237,8 +239,14 @@ export default function TestEngine() {
       toast.error('Write your answer or upload an answer file');
       return;
     }
-    if (!autoSubmit && !window.confirm('Submit this assessment now? You cannot change answers after submission.')) {
-      return;
+    if (!autoSubmit) {
+      const ok = await confirm({
+        title: 'Submit Test',
+        message: 'Are you sure you want to submit the test? You cannot change your answers after submission.',
+        confirmLabel: 'Submit',
+        cancelLabel: 'Cancel',
+      });
+      if (!ok) return;
     }
 
     setSubmitting(true);
@@ -258,7 +266,7 @@ export default function TestEngine() {
       toast.error(error?.response?.data?.message || 'Failed to submit assessment');
       setSubmitting(false);
     }
-  }, [answerFile, answerText, answers, id, navigate, questions, submitting]);
+  }, [submitting, answers, answerText, answerFile, questions, id, navigate, confirm]);
 
   const renderAnswerInput = (question) => {
     const effectiveQuestion = getEffectiveQuestion(question);
@@ -489,8 +497,8 @@ export default function TestEngine() {
                             index === currentIdx
                               ? 'bg-blue-600 text-white ring-2 ring-blue-200'
                               : answered
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                           )}
                         >
                           {getPaletteQuestionNumber(group, itemIndex)}

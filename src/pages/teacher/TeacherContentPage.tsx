@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { MAX_MATERIAL_FILE_SIZE_MB } from "@/lib/upload-limits";
 import { AeroBackground } from "@/components/shared/AeroBackground";
+import { useConfirm } from "@/context/ConfirmContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -347,6 +348,7 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: any) {
 // ─── Main Workspace ───────────────────────────────────────────────────────────
 
 function TeacherTopicWorkspace() {
+  const confirm = useConfirm();
   const { batchId, topicId } = useParams();
   const [searchParams] = useSearchParams();
   const subjectId = searchParams.get("subjectId");
@@ -370,7 +372,13 @@ function TeacherTopicWorkspace() {
   }, [subject, topicId]);
 
   const handleDelete = async (r: TopicResource) => {
-    if (!confirm(`Permanently delete "${r.title}"?`)) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: `Are you sure you want to permanently delete "${r.title}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel"
+    });
+    if (!isConfirmed) return;
     try { await deleteRes.mutateAsync(r.id); toast.success("Deleted"); }
     catch { toast.error("Failed to delete"); }
   };

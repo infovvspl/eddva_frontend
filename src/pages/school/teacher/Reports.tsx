@@ -6,6 +6,7 @@ import Badge from '@/components/school/Badge';
 import ProgressBar from '@/components/school/ProgressBar';
 import Tabs from '@/components/school/Tabs';
 import DataTable from '@/components/school/DataTable';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
 import './Reports.css';
 
@@ -24,6 +25,11 @@ const Reports: React.FC = () => {
   const [error, setError] = useState('');
   const [studentPage, setStudentPage] = useState(1);
   const [studentPageSize, setStudentPageSize] = useState(10);
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -57,15 +63,15 @@ const Reports: React.FC = () => {
       }
     };
     fetchReports();
-  }, []);
+  }, [page, limit]);
 
-  const totalPages = Math.ceil(studentPerformance.length / studentPageSize);
+  const totalStudentPages = Math.ceil(studentPerformance.length / studentPageSize);
   
   useEffect(() => {
-    if (studentPage > totalPages && totalPages > 0) {
+    if (studentPage > totalStudentPages && totalStudentPages > 0) {
       setStudentPage(1);
     }
-  }, [totalPages, studentPage]);
+  }, [totalStudentPages, studentPage]);
 
   const startIndex = (studentPage - 1) * studentPageSize;
   const endIndex = startIndex + studentPageSize;
@@ -74,21 +80,29 @@ const Reports: React.FC = () => {
   const studentColumns = [
     { key: 'name', title: 'Student' },
     { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
-    { key: 'avgScore', title: 'Avg Score', render: (v: number) => (
-      <Badge variant={v >= 85 ? 'success' : v >= 70 ? 'info' : 'warning'}>{v}%</Badge>
-    )},
-    { key: 'trend', title: 'Trend', render: (v: string) => (
-      <span className={`reports__trend reports__trend--${v}`}>
-        {v === 'improving' ? <TrendingUp size={14} /> : v === 'declining' ? <TrendingDown size={14} /> : <BarChart3 size={14} />}
-        {v}
-      </span>
-    )},
-    { key: 'weakAreas', title: 'Weak Areas', render: (v: string[]) => (
-      <div className="reports__tags">{v.map((a) => <Badge key={a} variant="warning">{a}</Badge>)}</div>
-    )},
-    { key: 'strongAreas', title: 'Strong Areas', render: (v: string[]) => (
-      <div className="reports__tags">{v.map((a) => <Badge key={a} variant="success">{a}</Badge>)}</div>
-    )},
+    {
+      key: 'avgScore', title: 'Avg Score', render: (v: number) => (
+        <Badge variant={v >= 85 ? 'success' : v >= 70 ? 'info' : 'warning'}>{v}%</Badge>
+      )
+    },
+    {
+      key: 'trend', title: 'Trend', render: (v: string) => (
+        <span className={`reports__trend reports__trend--${v}`}>
+          {v === 'improving' ? <TrendingUp size={14} /> : v === 'declining' ? <TrendingDown size={14} /> : <BarChart3 size={14} />}
+          {v}
+        </span>
+      )
+    },
+    {
+      key: 'weakAreas', title: 'Weak Areas', render: (v: string[]) => (
+        <div className="reports__tags">{v.map((a) => <Badge key={a} variant="warning">{a}</Badge>)}</div>
+      )
+    },
+    {
+      key: 'strongAreas', title: 'Strong Areas', render: (v: string[]) => (
+        <div className="reports__tags">{v.map((a) => <Badge key={a} variant="success">{a}</Badge>)}</div>
+      )
+    },
   ];
 
   const classColumns = [
@@ -134,7 +148,7 @@ const Reports: React.FC = () => {
               </select>
             </div>
             
-            {totalPages > 1 && (
+            {totalStudentPages > 1 && (
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -145,7 +159,7 @@ const Reports: React.FC = () => {
                   <ChevronLeft size={16} />
                 </button>
                 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                {Array.from({ length: totalStudentPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
                     type="button"
@@ -162,8 +176,8 @@ const Reports: React.FC = () => {
                 
                 <button
                   type="button"
-                  onClick={() => setStudentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={studentPage === totalPages}
+                  onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
+                  disabled={studentPage === totalStudentPages}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronRight size={16} />

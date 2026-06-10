@@ -154,7 +154,15 @@ export function useCompleteTeacherOnboarding() {
 
 /** Upload avatar mutation */
 export function useUploadAvatar() {
-  return useMutation({ mutationFn: (file: File) => authApi.uploadAvatar(file) });
+  return useMutation({
+    mutationFn: (file: File) => authApi.uploadAvatar(file),
+    onSuccess: (result) => {
+      const current = useAuthStore.getState().user;
+      if (current) {
+        useAuthStore.getState().setUser({ ...current, avatar: result.avatarUrl });
+      }
+    },
+  });
 }
 
 /** Dismiss first login flag mutation */
