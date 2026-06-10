@@ -30,7 +30,11 @@ const Tabs: React.FC<TabsProps> = ({
   onChange,
 }) => {
   const firstTabId = tabs[0]?.id ?? '';
-  const initialTab = defaultTab && tabs.some((tab) => tab.id === defaultTab) ? defaultTab : firstTabId;
+  const initialTab = activeTabId && tabs.some((tab) => tab.id === activeTabId)
+    ? activeTabId
+    : defaultTab && tabs.some((tab) => tab.id === defaultTab)
+      ? defaultTab
+      : firstTabId;
   const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
@@ -50,8 +54,10 @@ const Tabs: React.FC<TabsProps> = ({
   // Notify the parent of the active tab (initial + on change) so it can
   // lazy-load that tab's data instead of fetching every tab upfront.
   useEffect(() => {
-    if (activeTab) onChange?.(activeTab);
-  }, [activeTab, onChange]);
+    if (activeTab && (!activeTabId || activeTab !== activeTabId)) {
+      onChange?.(activeTab);
+    }
+  }, [activeTab, activeTabId, onChange]);
 
   const activeContent = useMemo(() => tabs.find((t) => t.id === activeTab)?.content, [activeTab, tabs]);
 

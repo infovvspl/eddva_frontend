@@ -161,6 +161,7 @@ const SchoolAttendanceSystem    = lazy(() => import("./pages/school/teacher/Atte
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
 const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
 const SchoolAssessmentDetails   = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
+const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
 const SchoolCreatorStudio       = lazy(() => import("./pages/school/teacher/CreatorStudio"));
 const SchoolTeacherReports      = lazy(() => import("./pages/school/teacher/Reports"));
 const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
@@ -394,6 +395,7 @@ const SchoolRoutes = () => (
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolAssignmentManagement />} />
       <Route path="assessments" element={<SchoolAssessmentSystem />} />
+      <Route path="assessments/:id/submissions/:studentId/review" element={<SchoolAssessmentSubmissionReview />} />
       <Route path="assessments/:id" element={<SchoolAssessmentDetails />} />
       <Route path="creator" element={<SchoolCreatorStudio />} />
       <Route path="reports" element={<SchoolTeacherReports />} />

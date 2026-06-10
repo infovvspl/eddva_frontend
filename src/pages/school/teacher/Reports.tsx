@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import StatCard from '@/components/school/StatCard';
 import Badge from '@/components/school/Badge';
@@ -22,6 +22,8 @@ const Reports: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [studentPage, setStudentPage] = useState(1);
+  const [studentPageSize, setStudentPageSize] = useState(10);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -57,6 +59,18 @@ const Reports: React.FC = () => {
     fetchReports();
   }, []);
 
+  const totalPages = Math.ceil(studentPerformance.length / studentPageSize);
+  
+  useEffect(() => {
+    if (studentPage > totalPages && totalPages > 0) {
+      setStudentPage(1);
+    }
+  }, [totalPages, studentPage]);
+
+  const startIndex = (studentPage - 1) * studentPageSize;
+  const endIndex = startIndex + studentPageSize;
+  const paginatedStudents = studentPerformance.slice(startIndex, endIndex);
+
   const studentColumns = [
     { key: 'name', title: 'Student' },
     { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
@@ -91,7 +105,74 @@ const Reports: React.FC = () => {
       {!loading && !studentPerformance.length && (
         <div className="reports__empty">No students found for your assigned class or section.</div>
       )}
-      <DataTable columns={studentColumns} data={studentPerformance} />
+      <DataTable columns={studentColumns} data={paginatedStudents} />
+      
+      {/* Pagination controls */}
+      {studentPerformance.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-4">
+          <div className="text-xs font-semibold text-gray-500">
+            Showing <span className="font-bold text-gray-700">{startIndex + 1}</span> to{" "}
+            <span className="font-bold text-gray-700">{Math.min(endIndex, studentPerformance.length)}</span> of{" "}
+            <span className="font-bold text-gray-700">{studentPerformance.length}</span> students
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500">Per page:</span>
+              <select
+                value={studentPageSize}
+                onChange={(e) => {
+                  setStudentPageSize(Number(e.target.value));
+                  setStudentPage(1);
+                }}
+                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 outline-none focus:border-brand-500"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
+                  disabled={studentPage === 1}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setStudentPage(page)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
+                      studentPage === page
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  type="button"
+                  onClick={() => setStudentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={studentPage === totalPages}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 
