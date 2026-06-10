@@ -253,6 +253,26 @@ export default function TestEngine() {
       await api.post(`/assessments/${id}/submit`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+    if (!autoSubmit) {
+      const ok = await confirm({
+        title: 'Submit Test',
+        message: 'Are you sure you want to submit the test? You cannot change your answers after submission.',
+        confirmLabel: 'Submit',
+        cancelLabel: 'Cancel',
+      });
+      if (!ok) return;
+    }
+
+    setSubmitting(true);
+    try {
+      const data = new FormData();
+      if (questions.length) data.append('answersJson', JSON.stringify(currentAnswers || {}));
+      if (currentAnswerText.trim()) data.append('answerText', currentAnswerText.trim());
+      if (currentAnswerFile) data.append('file', currentAnswerFile);
+      if (autoSubmit) data.append('autoSubmit', 'true');
+      await api.post(`/assessments/${id}/submit`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       toast.success(autoSubmit ? 'Time is over. Assessment auto-submitted.' : 'Assessment submitted');
       navigate('/school/student/assessments', { replace: true });
     } catch (error) {
@@ -261,6 +281,7 @@ export default function TestEngine() {
       setSubmitting(false);
     }
   }, [answerFile, answerText, answers, id, navigate, questions, submitting]);
+  }, [submitting, answers, answerText, answerFile, questions, id, navigate, confirm]);
 
   const renderAnswerInput = (question) => {
     const effectiveQuestion = getEffectiveQuestion(question);
