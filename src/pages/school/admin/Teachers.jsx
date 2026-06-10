@@ -11,9 +11,10 @@ import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
 import AddTeacherMultiStep from '@/components/school/admin/forms/AddTeacherMultiStep';
 import { toast } from 'sonner';
-import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { cn } from '@/components/school/admin/Skeleton';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { useConfirm } from '@/context/ConfirmContext';
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -114,6 +115,11 @@ export default function Teachers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
 
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   // Bulk Import State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -125,8 +131,18 @@ export default function Teachers() {
 
   async function fetchTeachers() {
     try {
-      const res = await api.get('/teachers');
+      const query = new URLSearchParams();
+      query.append('page', page);
+      query.append('limit', limit);
+      if (searchQuery.trim()) query.append('search', searchQuery.trim());
+      
+      const res = await api.get(`/teachers?${query.toString()}`);
       setTeachers(getResponseList(res));
+      const resData = res.data?.data || res.data;
+      if (resData && typeof resData.total !== 'undefined') {
+        setTotal(resData.total);
+        setTotalPages(resData.totalPages);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -134,7 +150,7 @@ export default function Teachers() {
     }
   }
 
-  useLiveRefresh(fetchTeachers, [], 15000);
+  useLiveRefresh(fetchTeachers, [page, limit, searchQuery], 15000);
 
   const handleImportSubmit = async (e) => {
     e.preventDefault();
@@ -267,7 +283,6 @@ export default function Teachers() {
   }, [teachers]);
 
   const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
     return teachers
       .filter((t) => {
         if (statusFilter === 'ACTIVE') return Boolean(t.isActive);
@@ -279,12 +294,9 @@ export default function Teachers() {
           selectedYear === 'ALL'
             ? true
             : (t.createdAt ? new Date(t.createdAt).getFullYear().toString() === selectedYear : false);
-        if (!q) return matchesYear;
-        const dept = t.teacherProfile?.department || '';
-        const matchesQuery = [t.name, t.email].some((v) => String(v || '').toLowerCase().includes(q));
-        return matchesYear && matchesQuery;
+        return matchesYear;
       });
-  }, [searchQuery, statusFilter, teachers, selectedYear]);
+  }, [statusFilter, teachers, selectedYear]);
 
   const exportCsv = () => {
     const rows = [
@@ -405,7 +417,7 @@ export default function Teachers() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 placeholder="Search teachers…"
                 className="w-full rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 py-2.5 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
@@ -547,21 +559,18 @@ export default function Teachers() {
           </table>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-slate-100 bg-white/60 px-5 py-4 text-xs font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Showing 1 to {filtered.length} of {teachers.length} teacher{teachers.length === 1 ? '' : 's'}
-          </p>
-          <div className="flex items-center gap-2">
-            <button type="button" className="rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-              ‹
-            </button>
-            <button type="button" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-sky-200">
-              1
-            </button>
-            <button type="button" className="rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-              ›
-            </button>
-          </div>
+        <div className="border-t border-slate-100 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total || teachers.length}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
 

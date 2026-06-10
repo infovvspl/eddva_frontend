@@ -9,11 +9,12 @@ interface StatCardProps {
   icon: React.ReactNode;
   gradient?: string;
   className?: string;
+  onClick?: () => void;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, change, changeType = 'neutral', icon, gradient, className = '' }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, change, changeType = 'neutral', icon, gradient, className = '', onClick }) => {
   return (
-    <div className={`stat-card ${className}`}>
+    <div className={`stat-card ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
       <div className="stat-card__icon" style={{ background: gradient || 'var(--gradient-primary)' }}>
         {icon}
       </div>

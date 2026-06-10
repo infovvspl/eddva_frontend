@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText, Loader2, UploadCloud } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
+import { useConfirm } from '@/context/ConfirmContext';
 import { toast } from 'sonner';
 
 function getStructuredQuestions(test) {
@@ -98,6 +99,7 @@ function getEffectiveQuestion(question) {
 }
 
 export default function TestEngine() {
+  const confirm = useConfirm();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -210,55 +212,66 @@ export default function TestEngine() {
     }
   };
 
-  const updateAnswer = (questionId, value, shouldSave = true) => {
-    setAnswers((current) => {
-      const next = { ...current, [questionId]: value };
-      latestAnswersRef.current = next;
-      return next;
-    });
-    if (shouldSave) void saveAnswer(questionId, value);
-  };
-
-  const submitAssessment = useCallback(async (autoSubmit = false) => {
-    if (submitting) return;
-    const currentAnswers = autoSubmit ? latestAnswersRef.current : answers;
-    const currentAnswerText = autoSubmit ? latestAnswerTextRef.current : answerText;
-    const currentAnswerFile = autoSubmit ? latestAnswerFileRef.current : answerFile;
-    const hasStructuredAnswer = questions.some((question) => {
-      const value = currentAnswers?.[question.id];
-      return Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
-    });
-
-    if (!autoSubmit && questions.length && !hasStructuredAnswer) {
-      toast.error('Answer at least one question before submitting');
-      return;
-    }
-    if (!autoSubmit && !questions.length && !currentAnswerText.trim() && !currentAnswerFile) {
-      toast.error('Write your answer or upload an answer file');
-      return;
-    }
-    if (!autoSubmit && !window.confirm('Submit this assessment now? You cannot change answers after submission.')) {
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const data = new FormData();
-      if (questions.length) data.append('answersJson', JSON.stringify(currentAnswers || {}));
-      if (currentAnswerText.trim()) data.append('answerText', currentAnswerText.trim());
-      if (currentAnswerFile) data.append('file', currentAnswerFile);
-      if (autoSubmit) data.append('autoSubmit', 'true');
-      await api.post(`/assessments/${id}/submit`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+  const handleSubmit = useCallback(async (isAuto = false) => {
+    if (isSubmitting) return;
+    if (!isAuto) {
+      const ok = await confirm({
+        title: 'Submit Test',
+        message: 'Are you sure you want to submit the test? You cannot change your answers after submission.',
+        confirmLabel: 'Submit',
+        cancelLabel: 'Cancel',
       });
-      toast.success(autoSubmit ? 'Time is over. Assessment auto-submitted.' : 'Assessment submitted');
-      navigate('/school/student/assessments', { replace: true });
-    } catch (error) {
-      console.error('Failed to submit assessment:', error);
-      toast.error(error?.response?.data?.message || 'Failed to submit assessment');
-      setSubmitting(false);
-    }
-  }, [answerFile, answerText, answers, id, navigate, questions, submitting]);
+      if (!ok) return;
+      const updateAnswer = (questionId, value, shouldSave = true) => {
+        setAnswers((current) => {
+          const next = { ...current, [questionId]: value };
+          latestAnswersRef.current = next;
+          return next;
+        });
+        if (shouldSave) void saveAnswer(questionId, value);
+      };
+
+      const submitAssessment = useCallback(async (autoSubmit = false) => {
+        if (submitting) return;
+        const currentAnswers = autoSubmit ? latestAnswersRef.current : answers;
+        const currentAnswerText = autoSubmit ? latestAnswerTextRef.current : answerText;
+        const currentAnswerFile = autoSubmit ? latestAnswerFileRef.current : answerFile;
+        const hasStructuredAnswer = questions.some((question) => {
+          const value = currentAnswers?.[question.id];
+          return Array.isArray(value) ? value.length > 0 : String(value ?? '').trim().length > 0;
+        });
+
+        if (!autoSubmit && questions.length && !hasStructuredAnswer) {
+          toast.error('Answer at least one question before submitting');
+          return;
+        }
+        if (!autoSubmit && !questions.length && !currentAnswerText.trim() && !currentAnswerFile) {
+          toast.error('Write your answer or upload an answer file');
+          return;
+        }
+        if (!autoSubmit && !window.confirm('Submit this assessment now? You cannot change answers after submission.')) {
+          return;
+        }
+
+        setSubmitting(true);
+        try {
+          const data = new FormData();
+          if (questions.length) data.append('answersJson', JSON.stringify(currentAnswers || {}));
+          if (currentAnswerText.trim()) data.append('answerText', currentAnswerText.trim());
+          if (currentAnswerFile) data.append('file', currentAnswerFile);
+          if (autoSubmit) data.append('autoSubmit', 'true');
+          await api.post(`/assessments/${id}/submit`, data, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          toast.success(autoSubmit ? 'Time is over. Assessment auto-submitted.' : 'Assessment submitted');
+          navigate('/school/student/assessments', { replace: true });
+        } catch (error) {
+          console.error('Failed to submit assessment:', error);
+          toast.error(error?.response?.data?.message || 'Failed to submit assessment');
+          setSubmitting(false);
+        }
+      }, [id, navigate, isSubmitting, confirm]);
+    }, [answerFile, answerText, answers, id, navigate, questions, submitting]);
 
   const renderAnswerInput = (question) => {
     const effectiveQuestion = getEffectiveQuestion(question);
@@ -489,8 +502,8 @@ export default function TestEngine() {
                             index === currentIdx
                               ? 'bg-blue-600 text-white ring-2 ring-blue-200'
                               : answered
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                           )}
                         >
                           {getPaletteQuestionNumber(group, itemIndex)}

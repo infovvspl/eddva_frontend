@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useConfirm } from "@/context/ConfirmContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ClipboardList, Clock, ChevronRight, Loader2,
@@ -383,6 +384,7 @@ function QuizRunner({
 type Stage = "loading" | "no_quiz" | "ai_generating" | "info" | "ai_info" | "quiz" | "ai_quiz" | "submitting" | "ai_submitting" | "results" | "ai_results";
 
 export default function StudentTopicQuizPage() {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const topicId = params.get("topicId") ?? "";
@@ -620,10 +622,13 @@ export default function StudentTopicQuizPage() {
     );
   }
 
-  const handleCloseQuiz = () => {
-    const ok = window.confirm(
-      "Close this quiz? Your last saved answers are kept; you can open the topic again to continue or start over.",
-    );
+  const handleCloseQuiz = async () => {
+    const ok = await confirm({
+      title: "Exit Quiz?",
+      message: "Close this quiz? Your last saved answers are kept; you can open the topic again to continue or start over.",
+      confirmLabel: "Exit",
+      cancelLabel: "Resume",
+    });
     if (ok) navigate(-1);
   };
 

@@ -38,6 +38,7 @@ import { IfAiFeature } from "@/components/ai/AiFeatureGate";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { MAX_MATERIAL_FILE_SIZE_MB } from "@/lib/upload-limits";
+import { useConfirm } from "@/context/ConfirmContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -546,6 +547,7 @@ function ResourceWorkspace({
   onNavigateToLectures: () => void;
   onOpenAi: () => void;
 }) {
+  const confirm = useConfirm();
   const { data: resources = [], isLoading } = useTopicResources(topicId);
   const { data: batchLecturesRaw = [] } = useBatchContentLectures(batchId);
   const deleteRes = useDeleteTopicResource(topicId);
@@ -578,7 +580,14 @@ function ResourceWorkspace({
   const hasAnything = resources.length > 0 || topicLectures.length > 0;
 
   const handleDelete = async (r: TopicResource) => {
-    if (!confirm(`Delete "${r.title}"?`)) return;
+    const confirmed = await confirm({
+      title: 'Confirm Delete',
+      message: `Are you sure you want to delete "${r.title}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
     try { await deleteRes.mutateAsync(r.id); toast.success("Deleted"); }
     catch { toast.error("Delete failed"); }
   };

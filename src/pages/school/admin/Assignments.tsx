@@ -7,8 +7,10 @@ import Button from '@/components/school/Button';
 import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
 import { toast } from 'sonner';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function Assignments() {
+  const confirm = useConfirm();
   const [assignments, setAssignments] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,14 @@ export default function Assignments() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this assignment?')) return;
+    const isConfirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this assignment? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/assignments/${id}`);
       toast.success('Assignment deleted successfully');

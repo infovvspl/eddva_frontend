@@ -25,6 +25,7 @@ import Modal from '@/components/school/admin/Modal';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
+import { useConfirm } from '@/context/ConfirmContext';
 
 const categories = [
   'All',
@@ -131,6 +132,7 @@ export default function AcademicCalendar({
   quickDescription = 'Plan live classes, attach meeting links, assign teachers and subjects, and keep upcoming events synced with dashboard widgets.',
   quickActionLabel = 'Schedule Live Class',
 }) {
+  const confirm = useConfirm();
   const [view, setView] = useState('month');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [category, setCategory] = useState('All');
@@ -369,7 +371,14 @@ export default function AcademicCalendar({
   }
 
   async function removeEvent(id) {
-    if (!window.confirm('Delete this event?')) return;
+    const confirmed = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this event? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
     try {
       await api.delete(`/events/${id}`);
       toast.success('Event removed');

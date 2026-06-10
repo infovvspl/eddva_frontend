@@ -5,6 +5,7 @@ import api from '@/lib/api/school-client';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 const statusIcon = {
   OPEN: AlertCircle,
@@ -28,11 +29,37 @@ export default function Complaints() {
   const [grievances, setGrievances] = useState([]);
   const [loadingGrievances, setLoadingGrievances] = useState(false);
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Reset pagination when tab changes
+  useEffect(() => {
+    setPage(1);
+    setTotal(0);
+    setTotalPages(1);
+  }, [activeTab]);
+
   async function loadComplaints() {
     try {
       setLoading(true);
-      const res = await api.get('/complaints');
+      const searchParams = new URLSearchParams();
+      searchParams.append('page', page.toString());
+      searchParams.append('limit', limit.toString());
+      if (query.trim()) searchParams.append('search', query.trim());
+
+      const res = await api.get(`/complaints?${searchParams.toString()}`);
       setComplaints(res.data?.data || res.data || []);
+      const data = res.data?.data || res.data;
+      if (res.data && typeof res.data.total !== 'undefined') {
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+      } else if (res.data?.data && typeof res.data.total !== 'undefined') {
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load support tickets.');
     } finally {
@@ -43,8 +70,20 @@ export default function Complaints() {
   async function loadGrievances() {
     try {
       setLoadingGrievances(true);
-      const res = await api.get('/grievances');
+      const searchParams = new URLSearchParams();
+      searchParams.append('page', page.toString());
+      searchParams.append('limit', limit.toString());
+      if (query.trim()) searchParams.append('search', query.trim());
+
+      const res = await api.get(`/grievances?${searchParams.toString()}`);
       setGrievances(res.data?.data || res.data || []);
+      if (res.data && typeof res.data.total !== 'undefined') {
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+      } else if (res.data?.data && typeof res.data.total !== 'undefined') {
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load student & teacher grievances.');
     } finally {
@@ -53,27 +92,18 @@ export default function Complaints() {
   }
 
   useEffect(() => {
-    loadComplaints();
-    if (isInstituteAdmin) {
-      loadGrievances();
-    }
-  }, [user]);
+    const delayDebounceFn = setTimeout(() => {
+      if (activeTab === 'platform-support') {
+        loadComplaints();
+      } else if (activeTab === 'user-support' && isInstituteAdmin) {
+        loadGrievances();
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [user, activeTab, page, limit, query]);
 
-  const filteredComplaints = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return complaints;
-    return complaints.filter((item) =>
-      [item.title, item.description, item.status, item.institute?.name].some((value) => String(value || '').toLowerCase().includes(term))
-    );
-  }, [complaints, query]);
-
-  const filteredGrievances = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return grievances;
-    return grievances.filter((item) =>
-      [item.title, item.description, item.status, item.raised_by_name, item.category].some((value) => String(value || '').toLowerCase().includes(term))
-    );
-  }, [grievances, query]);
+  const filteredComplaints = complaints;
+  const filteredGrievances = grievances;
 
   const counts = useMemo(() => {
     return complaints.reduce(
@@ -148,7 +178,7 @@ export default function Complaints() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setPage(1); }}
             placeholder={activeTab === 'user-support' ? "Search student & teacher tickets..." : "Search platform tickets..."}
             className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
           />
@@ -396,6 +426,19 @@ export default function Complaints() {
               </tbody>
             </table>
           )}
+        </div>
+        <div className="border-t border-surface-200 bg-white p-1">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total || (activeTab === 'user-support' ? grievances.length : complaints.length)}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
     </div>

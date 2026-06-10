@@ -13,6 +13,7 @@ import GlassCard from '@/components/school/GlassCard';
 import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
 import LoadingSpinner from '@/components/school/LoadingSpinner';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { exportToPDF } from '@/lib/school/pdfExport';
 import './AttendanceSystem.css';
 
@@ -72,12 +73,20 @@ const AttendanceSystem: React.FC = () => {
 
   // Editing Session Info
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [duplicateSessionId, setDuplicateSessionId] = useState<string | null>(null);
 
   // Loaded Students and their statuses
   const [students, setStudents] = useState<Student[]>([]);
   const [attendanceData, setAttendanceData] = useState<Record<string, 'present' | 'absent' | 'late' | 'leave'>>({});
   const [remarksData, setRemarksData] = useState<Record<string, string>>({});
   const [studentSearch, setStudentSearch] = useState('');
+  const [markingSearch, setMarkingSearch] = useState('');
+
+  // Marking Sheet Pagination
+  const [markingPage, setMarkingPage] = useState(1);
+  const [markingLimit, setMarkingLimit] = useState(10);
+  const [markingTotal, setMarkingTotal] = useState(0);
+  const [markingTotalPages, setMarkingTotalPages] = useState(1);
 
   // History Page
   const [historyRecords, setHistoryRecords] = useState<any[]>([]);
@@ -85,6 +94,12 @@ const AttendanceSystem: React.FC = () => {
   const [historyFilterSection, setHistoryFilterSection] = useState('');
   const [historyFilterSubject, setHistoryFilterSubject] = useState('');
   const [historyFilterDate, setHistoryFilterDate] = useState('');
+
+  // History Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // View Modal State
   const [viewingSession, setViewingSession] = useState<any>(null);
@@ -171,10 +186,16 @@ const AttendanceSystem: React.FC = () => {
       if (historyFilterSection) params.sectionId = historyFilterSection;
       if (historyFilterSubject) params.subjectId = historyFilterSubject;
       if (historyFilterDate) params.date = historyFilterDate;
+      params.page = page;
+      params.limit = limit;
 
       const res = await api.get('/attendance/history', { params });
       if (res.data?.success) {
         setHistoryRecords(res.data.data);
+        if (typeof res.data.total !== 'undefined') {
+          setTotal(res.data.total);
+          setTotalPages(res.data.totalPages);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch history:', err);
@@ -193,7 +214,88 @@ const AttendanceSystem: React.FC = () => {
     if (activeTab === 'history') {
       fetchHistory();
     }
-  }, [activeTab, historyFilterClass, historyFilterSection, historyFilterSubject, historyFilterDate]);
+  }, [activeTab, historyFilterClass, historyFilterSection, historyFilterSubject, historyFilterDate, page, limit]);
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchHistory();
+    }
+  }, [activeTab, historyFilterClass, historyFilterSection, historyFilterSubject, historyFilterDate, page, limit]);
+
+  const [isMarkingStarted, setIsMarkingStarted] = useState(false);
+
+  useEffect(() => {
+    if (isMarkingStarted) {
+      loadStudentsPage();
+    }
+  }, [markingPage, markingLimit, markingSearch]);
+
+  const loadStudentsPage = async (checkSession = false) => {
+    setStudentsLoading(true);
+    try {
+      if (checkSession && !editingSessionId) {
+        const checkRes = await api.get('/attendance/session/check', {
+          params: {
+            classId: selectedClass,
+            sectionId: selectedSection,
+            subjectId: selectedSubject || null,
+            period: selectedPeriod || null,
+            date: date
+          }
+        });
+        if (checkRes.data?.data?.exists) {
+          setDuplicateSessionId(checkRes.data.data.sessionId);
+          toast.warning('Attendance already submitted for this session.');
+          setStudentsLoading(false);
+          return false;
+        }
+      }
+
+      const res = await api.get('/attendance/students', {
+        params: { 
+          classId: selectedClass, 
+          sectionId: selectedSection,
+          page: markingPage,
+          limit: markingLimit,
+          search: markingSearch
+        }
+      });
+      
+      if (res.data?.success) {
+        const list = res.data.data;
+        setStudents(list);
+        
+        if (typeof res.data.total !== 'undefined') {
+          setMarkingTotal(res.data.total);
+          setMarkingTotalPages(res.data.totalPages);
+        }
+        
+        // Initialize attendance states only for newly loaded students
+        setAttendanceData(prev => {
+          const next = { ...prev };
+          list.forEach((s: Student) => {
+            if (!next[s.id]) next[s.id] = 'present';
+          });
+          return next;
+        });
+        
+        setRemarksData(prev => {
+          const next = { ...prev };
+          list.forEach((s: Student) => {
+            if (next[s.id] === undefined) next[s.id] = '';
+          });
+          return next;
+        });
+        return true;
+      }
+    } catch (err) {
+      console.error('Failed to load students:', err);
+      toast.error('Failed to fetch students from class');
+      return false;
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
 
   // Load Students handler
   const handleLoadStudents = async () => {
@@ -201,36 +303,12 @@ const AttendanceSystem: React.FC = () => {
       toast.error('Please select both Class and Section');
       return;
     }
-    setStudentsLoading(true);
-    try {
-      const res = await api.get('/attendance/students', {
-        params: { classId: selectedClass, sectionId: selectedSection }
-      });
-      if (res.data?.success) {
-        const list = res.data.data;
-        setStudents(list);
-        
-        // Initialize attendance states
-        const initialStatus: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
-        const initialRemarks: Record<string, string> = {};
-        list.forEach((s: Student) => {
-          initialStatus[s.id] = 'present';
-          initialRemarks[s.id] = '';
-        });
-        setAttendanceData(initialStatus);
-        setRemarksData(initialRemarks);
-        
-        if (list.length === 0) {
-          toast.info('No students found in the selected section');
-        } else {
-          toast.success(`Loaded ${list.length} students successfully`);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load students:', err);
-      toast.error('Failed to fetch students from class');
-    } finally {
-      setStudentsLoading(false);
+    setDuplicateSessionId(null);
+    setMarkingPage(1);
+    const success = await loadStudentsPage(true);
+    if (success) {
+      setIsMarkingStarted(true);
+      toast.success('Ready to mark attendance');
     }
   };
 
@@ -281,8 +359,8 @@ const AttendanceSystem: React.FC = () => {
 
   // Submit / Draft Save Attendance handler
   const handleSaveAttendance = async (finalized: boolean) => {
-    if (students.length === 0) {
-      toast.error('No students to mark attendance for');
+    if (Object.keys(attendanceData).length === 0) {
+      toast.error('No students loaded to mark attendance for');
       return;
     }
     try {
@@ -294,10 +372,10 @@ const AttendanceSystem: React.FC = () => {
         period: selectedPeriod || null,
         date,
         finalized,
-        students: students.map(s => ({
-          student_id: s.id,
-          status: attendanceData[s.id] || 'present',
-          remarks: remarksData[s.id] || null
+        students: Object.keys(attendanceData).map(studentId => ({
+          student_id: studentId,
+          status: attendanceData[studentId] || 'present',
+          remarks: remarksData[studentId] || null
         }))
       };
 
@@ -317,9 +395,16 @@ const AttendanceSystem: React.FC = () => {
           setActiveTab('history');
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to submit attendance:', err);
-      toast.error('Failed to save attendance record');
+      if (err.response?.status === 409) {
+        toast.warning('Attendance has already been submitted for this session.');
+        if (err.response.data?.sessionId) {
+          setDuplicateSessionId(err.response.data.sessionId);
+        }
+      } else {
+        toast.error('Failed to save attendance record');
+      }
     }
   };
 
@@ -448,10 +533,6 @@ const AttendanceSystem: React.FC = () => {
     }
   };
 
-  // Filtered student list for marking sheet search
-  const filteredStudents = useMemo(() => {
-    return students.filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()));
-  }, [students, studentSearch]);
 
   if (loading) {
     return (
@@ -490,105 +571,7 @@ const AttendanceSystem: React.FC = () => {
         </button>
       </div>
 
-      {/* Horizontal KPI Statistic Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        {/* Total Students Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }} 
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.02 }}
-          className="attendance-kpi group bg-white dark:bg-slate-900 rounded-3xl p-5 ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm hover:shadow-md hover:ring-indigo-100 transition-all duration-300 flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 transition-transform group-hover:scale-110">
-              <Users className="h-5 w-5" />
-            </div>
-            <Badge variant="info">Live</Badge>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Total Students</p>
-            <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{stats.totalStudents}</p>
-          </div>
-        </motion.div>
 
-        {/* Present Today Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }} 
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="attendance-kpi group bg-white dark:bg-slate-900 rounded-3xl p-5 ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm hover:shadow-md hover:ring-emerald-100 transition-all duration-300 flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform group-hover:scale-110">
-              <UserCheck className="h-5 w-5" />
-            </div>
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Present Today</p>
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{stats.presentToday + stats.lateToday}</p>
-          </div>
-        </motion.div>
-
-        {/* Absent Today Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }} 
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.08 }}
-          className="attendance-kpi group bg-white dark:bg-slate-900 rounded-3xl p-5 ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm hover:shadow-md hover:ring-rose-100 transition-all duration-300 flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 transition-transform group-hover:scale-110">
-              <UserX className="h-5 w-5" />
-            </div>
-            <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Absent Today</p>
-            <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">{stats.absentToday}</p>
-          </div>
-        </motion.div>
-
-        {/* Attendance Percentage Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }} 
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.11 }}
-          className="attendance-kpi group bg-white dark:bg-slate-900 rounded-3xl p-5 ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm hover:shadow-md hover:ring-amber-100 transition-all duration-300 flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 transition-transform group-hover:scale-110">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <Badge variant={stats.attendancePercentage >= 80 ? 'success' : stats.attendancePercentage >= 75 ? 'info' : 'warning'}>
-              {stats.attendancePercentage >= 75 ? 'Optimal' : 'Low'}
-            </Badge>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Attendance Rate</p>
-            <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{stats.attendancePercentage}%</p>
-          </div>
-        </motion.div>
-
-        {/* Classes Marked Today Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }} 
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.14 }}
-          className="attendance-kpi group bg-white dark:bg-slate-900 rounded-3xl p-5 ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm hover:shadow-md hover:ring-indigo-100 transition-all duration-300 flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 transition-transform group-hover:scale-110">
-              <Calendar className="h-5 w-5" />
-            </div>
-            <Badge variant="purple">Today</Badge>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Classes Marked</p>
-            <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{stats.classesMarkedToday}</p>
-          </div>
-        </motion.div>
-      </div>
 
       {/* Tabs Menu Navigation Bar */}
       <div className="tabs-navigation-bar flex gap-2 border-b border-slate-100 dark:border-slate-800 mb-6 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm max-w-md">
@@ -705,12 +688,44 @@ const AttendanceSystem: React.FC = () => {
             </GlassCard>
 
             {/* Attendance Sheet content */}
-            {students.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {duplicateSessionId ? (
+              <GlassCard className="p-8 border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="h-16 w-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
+                    <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    Attendance Already Submitted
+                  </h3>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6">
+                    Attendance records have already been submitted for this session. Would you like to view or edit the existing records?
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button 
+                      onClick={() => handleViewDetails(duplicateSessionId)}
+                      className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Attendance
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        handleEditSession(duplicateSessionId);
+                        setDuplicateSessionId(null);
+                      }}
+                      className="bg-indigo-600 hover:bg-indigo-700 font-bold"
+                    >
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit Attendance
+                    </Button>
+                  </div>
+                </div>
+              </GlassCard>
+            ) : students.length > 0 ? (
+              <div className="flex flex-col gap-6">
                 
-                {/* Main Attendance Sheet (2/3 width) */}
-                <div className="lg:col-span-2 space-y-4">
-                  <GlassCard className="p-6">
+                {/* Main Attendance Sheet (Full width) */}
+                <GlassCard className="p-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
                       <div>
                         <h2 className="text-base font-bold text-slate-800 dark:text-white">Attendance Marking Sheet</h2>
@@ -725,6 +740,18 @@ const AttendanceSystem: React.FC = () => {
                           placeholder="Search student..."
                           value={studentSearch}
                           onChange={(e) => setStudentSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setMarkingPage(1);
+                              setMarkingSearch(studentSearch);
+                            }
+                          }}
+                          onBlur={() => {
+                            if (markingSearch !== studentSearch) {
+                              setMarkingPage(1);
+                              setMarkingSearch(studentSearch);
+                            }
+                          }}
                           className="w-full pl-9 pr-4 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
                         />
                       </div>
@@ -765,14 +792,14 @@ const AttendanceSystem: React.FC = () => {
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                            <th className="py-3 px-2 w-[80px]">Roll No</th>
-                            <th className="py-3 px-2">Student Name</th>
-                            <th className="py-3 px-2 text-right">Attendance Status</th>
+                            <th className="py-3 px-3 w-[100px]">Roll No</th>
+                            <th className="py-3 px-3">Student Name</th>
+                            <th className="py-3 px-3 text-right">Attendance Status</th>
                           </tr>
                         </thead>
                         <tbody>
                           <AnimatePresence>
-                            {filteredStudents.map((s, index) => {
+                            {students.map((s, index) => {
                               const currentStatus = attendanceData[s.id] || 'present';
                               return (
                                 <motion.tr 
@@ -782,12 +809,12 @@ const AttendanceSystem: React.FC = () => {
                                   className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors"
                                 >
                                   {/* Roll No */}
-                                  <td className="py-3.5 px-2 text-xs font-bold text-slate-400">
+                                  <td className="py-4 px-3 text-sm font-bold text-slate-400">
                                     {s.roll_no ? String(s.roll_no).padStart(2, '0') : '--'}
                                   </td>
                                   
                                   {/* Name */}
-                                  <td className="py-3.5 px-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                                  <td className="py-4 px-3 text-sm font-bold text-slate-800 dark:text-slate-200">
                                     {s.name}
                                     <div className="mt-1 flex items-center gap-2">
                                       <input
@@ -795,20 +822,20 @@ const AttendanceSystem: React.FC = () => {
                                         placeholder="Add remarks..."
                                         value={remarksData[s.id] || ''}
                                         onChange={(e) => setRemarksData({ ...remarksData, [s.id]: e.target.value })}
-                                        className="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 text-[10px] text-slate-400 focus:text-slate-700 outline-none w-full max-w-[150px] transition-all"
+                                        className="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 text-xs text-slate-400 focus:text-slate-700 outline-none w-full max-w-[250px] transition-all py-1"
                                       />
                                     </div>
                                   </td>
 
                                   {/* Status Toggles */}
-                                  <td className="py-3.5 px-2 text-right">
-                                    <div className="inline-flex gap-1.5 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
+                                  <td className="py-4 px-3 text-right">
+                                    <div className="inline-flex gap-2 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800">
                                       {/* Present Button */}
                                       <button
                                         onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'present' })}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                                           currentStatus === 'present'
-                                            ? 'bg-emerald-500 text-white shadow-sm'
+                                            ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
@@ -818,9 +845,9 @@ const AttendanceSystem: React.FC = () => {
                                       {/* Absent Button */}
                                       <button
                                         onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'absent' })}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                                           currentStatus === 'absent'
-                                            ? 'bg-rose-500 text-white shadow-sm'
+                                            ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
@@ -830,9 +857,9 @@ const AttendanceSystem: React.FC = () => {
                                       {/* Late Button */}
                                       <button
                                         onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'late' })}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                                           currentStatus === 'late'
-                                            ? 'bg-amber-500 text-white shadow-sm'
+                                            ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
@@ -842,9 +869,9 @@ const AttendanceSystem: React.FC = () => {
                                       {/* Leave Button */}
                                       <button
                                         onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'leave' })}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                                           currentStatus === 'leave'
-                                            ? 'bg-slate-400 dark:bg-slate-600 text-white shadow-sm'
+                                            ? 'bg-slate-400 dark:bg-slate-600 text-white shadow-md'
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
@@ -856,7 +883,7 @@ const AttendanceSystem: React.FC = () => {
                               );
                             })}
                           </AnimatePresence>
-                          {filteredStudents.length === 0 && (
+                          {students.length === 0 && (
                             <tr>
                               <td colSpan={3} className="text-center py-8 text-slate-400 text-xs font-semibold">
                                 No students match your search criteria.
@@ -866,11 +893,21 @@ const AttendanceSystem: React.FC = () => {
                         </tbody>
                       </table>
                     </div>
+                    
+                    {students.length > 0 && (
+                      <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                        <DataTablePagination
+                          page={markingPage}
+                          limit={markingLimit}
+                          total={markingTotal}
+                          totalPages={markingTotalPages}
+                          onPageChange={setMarkingPage}
+                          onLimitChange={setMarkingLimit}
+                        />
+                      </div>
+                    )}
                   </GlassCard>
-                </div>
 
-                {/* Sidebar Stats and Submits (1/3 width) */}
-                <div className="space-y-6 lg:sticky lg:top-4">
                   {/* Live Summary Card */}
                   <GlassCard className="p-6 shadow-sm border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -878,7 +915,7 @@ const AttendanceSystem: React.FC = () => {
                       <h3 className="text-sm font-bold text-slate-800 dark:text-white">Attendance Summary</h3>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                       {/* Circular Progress Gauge */}
                       <div className="flex flex-col items-center justify-center py-2">
                         <div className="relative h-28 w-28 flex items-center justify-center">
@@ -931,7 +968,8 @@ const AttendanceSystem: React.FC = () => {
                   </GlassCard>
 
                   {/* Save Attendance Actions */}
-                  <GlassCard className="p-6 space-y-3 shadow-sm border border-slate-100 dark:border-slate-800">
+                  <GlassCard className="p-6 shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Button 
                       fullWidth 
                       onClick={() => handleSaveAttendance(true)}
@@ -961,10 +999,8 @@ const AttendanceSystem: React.FC = () => {
                     >
                       Cancel
                     </Button>
+                    </div>
                   </GlassCard>
-
-                </div>
-
               </div>
             ) : (
               // Empty State before loading students
@@ -1139,6 +1175,19 @@ const AttendanceSystem: React.FC = () => {
                   <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto leading-relaxed">
                     No sessions match the selected filters, or no attendance has been marked yet for this class and section.
                   </p>
+                </div>
+              )}
+
+              {historyRecords.length > 0 && !historyLoading && (
+                <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <DataTablePagination
+                    page={page}
+                    limit={limit}
+                    total={total}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    onLimitChange={setLimit}
+                  />
                 </div>
               )}
             </GlassCard>

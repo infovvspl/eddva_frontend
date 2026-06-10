@@ -31,6 +31,7 @@ import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { formatTenantUrl } from '@/lib/school/tenantRedirect';
 import { AI_FEATURES } from '@/lib/constants/aiFeatures';
+import { useConfirm } from '@/context/ConfirmContext';
 
 const BoardBadge = ({ board }) => {
   const colors = {
@@ -193,6 +194,7 @@ function readLogoFile(file) {
 }
 
 export default function Institutes() {
+  const confirm = useConfirm();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -353,11 +355,17 @@ export default function Institutes() {
   }
 
   async function handleSuspend(instituteId) {
-    const reason = window.prompt('Reason for suspension:');
-    if (!reason) return;
+    const ok = await confirm({
+      title: 'Suspend School',
+      message: 'Are you sure you want to suspend this school? This will temporarily restrict workspace access.',
+      confirmLabel: 'Suspend',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     
     try {
-      await api.post(`/institutes/${instituteId}/suspend`, { reason });
+      await api.post(`/institutes/${instituteId}/suspend`, { reason: 'Suspended by super administrator' });
       toast.success('School suspended successfully');
       await loadInstitutes();
     } catch (err) {
@@ -366,7 +374,13 @@ export default function Institutes() {
   }
 
   async function handleReactivate(instituteId) {
-    if (!window.confirm('Reactivate this school?')) return;
+    const ok = await confirm({
+      title: 'Reactivate School',
+      message: 'Are you sure you want to reactivate this school? This will restore workspace access.',
+      confirmLabel: 'Reactivate',
+      cancelLabel: 'Cancel',
+    });
+    if (!ok) return;
     
     try {
       await api.post(`/institutes/${instituteId}/reactivate`);
@@ -378,11 +392,14 @@ export default function Institutes() {
   }
 
   async function deleteInstitute(instituteId) {
-    const confirm1 = window.confirm('Are you sure you want to delete this school?\nThis action cannot be undone.');
+    const confirm1 = await confirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this school? This will permanently delete ALL data for this school. This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    });
     if (!confirm1) return;
-
-    const confirm2 = window.confirm('This will delete ALL data for this school.\nType OK to confirm.');
-    if (!confirm2) return;
 
     try {
       setSaving(true);
