@@ -308,6 +308,20 @@ export default function StudyMaterials() {
     setViewerMaterial(material);
   };
 
+  useEffect(() => {
+    if (loading || allMaterials.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const openId = params.get('openMaterialId');
+    if (openId) {
+      const found = allMaterials.find(m => String(m.id) === String(openId));
+      if (found) {
+        setSelectedSubject(found.subjectName || found.subjectId || 'Other Subjects');
+        openMaterial(found);
+      }
+    }
+  }, [loading, allMaterials]);
+
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
