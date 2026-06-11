@@ -415,6 +415,17 @@ export default function TeacherMeetingsPage() {
                         Cancel
                       </button>
                     )}
+
+                    {['accepted', 'scheduled'].includes(status) && (
+                      <button
+                        type="button"
+                        disabled={updatingId === meeting.id}
+                        onClick={() => void updateStatus(meeting.id, 'completed')}
+                        className="rounded-2xl bg-blue-100 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-200 disabled:opacity-60"
+                      >
+                        Complete
+                      </button>
+                    )}
                   </div>
                 </div>
               </article>
