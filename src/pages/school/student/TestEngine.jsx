@@ -386,7 +386,7 @@ export default function TestEngine() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-5rem)] bg-white">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur xl:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -404,7 +404,7 @@ export default function TestEngine() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Time Remaining</p>
               <p className={cn('font-mono text-xl font-black', timeLeft < 300 ? 'text-rose-600' : 'text-slate-950')}>
                 {formatRemaining(timeLeft)}
@@ -498,7 +498,7 @@ export default function TestEngine() {
                               ? 'bg-blue-600 text-white ring-2 ring-blue-200'
                               : answered
                                 ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
                           )}
                         >
                           {getPaletteQuestionNumber(group, itemIndex)}
@@ -522,7 +522,7 @@ export default function TestEngine() {
               </div>
             </div>
             {assessment.content_text && (
-              <pre className="mb-6 max-h-[45vh] overflow-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-800">
+              <pre className="mb-6 max-h-[45vh] overflow-auto whitespace-pre-wrap rounded-2xl bg-white border border-slate-200 p-5 text-sm leading-7 text-slate-800">
                 {assessment.content_text}
               </pre>
             )}

@@ -3,18 +3,14 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
   CalendarCheck,
-  CheckCircle2,
   ChevronDown,
   ClipboardList,
   FileText,
-  GraduationCap,
   ShieldCheck,
   Sparkles,
   TrendingUp,
   UserRound,
-  XCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { parentClient } from "@/lib/api/parent-client";
@@ -63,8 +59,6 @@ const toneStyles: Record<Tone, { icon: string; text: string; pill: string; bar: 
   },
 };
 
-const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-
 export default function ParentDashboard() {
   const { user } = useAuth();
   const { activeChildId, setActiveChildId, children } = useParentContext();
@@ -107,67 +101,83 @@ export default function ParentDashboard() {
 
   const loading = summaryQuery.isLoading || attendanceQuery.isLoading || marksQuery.isLoading || homeworkQuery.isLoading || testsQuery.isLoading;
   const analytics = buildAnalytics(summaryQuery.data, attendanceQuery.data, marksQuery.data, homeworkQuery.data, testsQuery.data);
-  const performanceBars = buildTrendBars(analytics.averageMarks);
 
   return (
     <div className="space-y-5 pb-10">
-        <motion.section
+        <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10"
+          className="relative flex flex-col justify-between"
         >
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 left-24 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
-          <div className="grid min-h-[310px] lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="relative p-6 sm:p-8 lg:p-10">
-              <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-50 backdrop-blur">
-                    <Sparkles className="h-3.5 w-3.5" />
+          <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+
+            {/* Elegant bubble style translucent overlays matching the screenshot */}
+            <div className="absolute top-[20px] left-[320px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute top-[-30px] right-[280px] w-28 h-28 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
+            <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
+
+            <div className="relative z-10 flex h-full flex-col justify-between space-y-6 md:pr-72">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
                     Parent Portal
-                  </div>
-                  <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                    {user?.name ? `Welcome, ${user.name}` : "Parent Dashboard"}
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-blue-50/90 sm:text-base">
-                    A focused view of attendance, marks, homework, tests, and school updates for the week.
-                  </p>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
-                    className="mt-8 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
-                  >
-                    <Sparkles className="h-5 w-5 text-blue-200" />
-                    <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
-                  </motion.div>
+                  </span>
+                  <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
+                    School Module
+                  </span>
                 </div>
-
-          <div className="flex items-center gap-5 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <div className="hidden h-32 w-28 shrink-0 items-end justify-center overflow-hidden rounded-2xl bg-white/10 md:flex">
-              <img src={StudentAvatar} alt="" className="h-36 object-contain" />
-            </div>
-            <div className="min-w-[220px]">
-              <p className="text-[11px] font-black uppercase tracking-widest text-white/50">Active student</p>
-              <div className="mt-3">
-                <ChildSwitcher
-                  activeChild={activeChild}
-                  activeChildId={activeChildId}
-                  childrenList={children}
-                  setActiveChildId={setActiveChildId}
-                />
+                <h1 className="font-display text-2xl font-black md:text-3xl text-white">
+                  Welcome back, {user?.name || "Parent"}! 👋 🌟
+                </h1>
+                <p className="mt-2 text-white/90 font-medium text-sm">
+                  A focused view of attendance, marks, homework, tests, and school updates for the week.
+                </p>
               </div>
+
+              <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-md border border-white/20 shadow-inner">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80 mb-2">Active student</p>
+                  <div className="min-w-[220px]">
+                    <ChildSwitcher
+                      activeChild={activeChild}
+                      activeChildId={activeChildId}
+                      childrenList={children}
+                      setActiveChildId={setActiveChildId}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                className="mt-4 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
+              >
+                <Sparkles className="h-5 w-5 text-blue-200" />
+                <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+              </motion.div>
             </div>
+          </section>
+
+          {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 w-[280px] h-[210px] pointer-events-none hidden md:block z-20">
+            <motion.div
+              className="w-full h-full"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <img
+                src={StudentAvatar}
+                alt="Student Avatar"
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
           </div>
-        </div>
-      </div>
-    </div>
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
-      </motion.section>
+        </motion.div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
@@ -208,7 +218,7 @@ export default function ParentDashboard() {
         />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-5">
         <div className="space-y-5">
           <Panel
             title="Attendance Summary"
@@ -236,57 +246,6 @@ export default function ParentDashboard() {
                   />
                 </div>
               </div>
-            )}
-          </Panel>
-
-          <Panel title="Performance Trend" action={<Badge tone={percentTone(analytics.averageMarks, 75, 60)}>Avg score</Badge>}>
-            {loading ? (
-              <Skeleton className="h-56 rounded-2xl" />
-            ) : (
-              <div>
-                <div className="flex h-56 items-end justify-between gap-4 px-4 sm:px-12">
-                  {performanceBars.map((item) => (
-                    <div key={item.month} className="flex h-full flex-1 flex-col items-center justify-end gap-3">
-                      <div
-                        className="w-10 rounded-t-lg bg-gradient-to-t from-indigo-500 to-violet-400 shadow-lg shadow-indigo-500/20"
-                        style={{ height: `${item.value}%` }}
-                      />
-                      <span className="text-xs font-bold text-slate-500">{item.month}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 flex items-center justify-between text-sm font-semibold text-slate-500">
-                  <span>Avg Score</span>
-                  <span className={analytics.averageMarks !== null && analytics.averageMarks >= 60 ? "text-emerald-600" : "text-amber-600"}>
-                    {analytics.averageMarksLabel}
-                  </span>
-                </div>
-              </div>
-            )}
-          </Panel>
-        </div>
-
-        <div className="space-y-5">
-          <Panel title="Academic Snapshot" action={<LinkBadge to="/school/parent/child">Full report</LinkBadge>}>
-            <div className="space-y-3">
-              <SnapshotRow icon={CheckCircle2} label="Present days" value={analytics.presentDays} tone="emerald" />
-              <SnapshotRow icon={XCircle} label="Absent days" value={analytics.absentDays} tone="rose" />
-              <SnapshotRow icon={ClipboardList} label="Homework submitted" value={analytics.submittedHomework} tone="amber" />
-              <SnapshotRow icon={FileText} label="Upcoming tests" value={analytics.upcomingTests} tone="violet" />
-            </div>
-          </Panel>
-
-          <Panel title="Recent Results" action={<Badge tone="blue">{analytics.resultCount} live</Badge>}>
-            {loading ? (
-              <LoadingRows />
-            ) : analytics.recentResults.length ? (
-              <div className="space-y-3">
-                {analytics.recentResults.slice(0, 4).map((item, index) => (
-                  <ResultRow key={item.id || index} item={item} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState icon={GraduationCap} title="No results published yet" text="Evaluated marks will appear here after teachers publish results." />
             )}
           </Panel>
         </div>
@@ -357,70 +316,6 @@ function Badge({ children, tone }: { children: React.ReactNode; tone: Tone }) {
     <span className={`rounded-full px-3 py-1 text-xs font-black ${toneStyles[tone].pill}`}>
       {children}
     </span>
-  );
-}
-
-function LinkBadge({ to, children }: { to: string; children: React.ReactNode }) {
-  return (
-    <Link to={to} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 hover:bg-indigo-100">
-      {children}
-      <ArrowRight className="h-3.5 w-3.5" />
-    </Link>
-  );
-}
-
-function SnapshotRow({ icon: Icon, label, value, tone }: { icon: React.ElementType; label: string; value: number; tone: Tone }) {
-  const style = toneStyles[tone];
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.pill}`}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <p className="truncate text-sm font-black text-slate-800">{label}</p>
-      </div>
-      <p className={`text-lg font-black ${style.text}`}>{value}</p>
-    </div>
-  );
-}
-
-function ResultRow({ item }: { item: any }) {
-  const title = item.testName || item.title || item.assessmentName || "Assessment";
-  const marks = item.marks || item.score || item.percentage || item.marksObtained || "--";
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-black text-slate-900">{title}</p>
-          <p className="mt-1 text-xs font-bold text-slate-400">{formatDate(item.date || item.createdAt || item.updatedAt) || "Recent result"}</p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-black text-slate-900">{marks}</p>
-          {item.grade && <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Grade {item.grade}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ icon: Icon, title, text }: { icon: React.ElementType; title: string; text: string }) {
-  return (
-    <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-      <Icon className="h-8 w-8 text-slate-300" />
-      <p className="mt-3 text-sm font-black text-slate-900">{title}</p>
-      <p className="mt-1 max-w-sm text-xs font-semibold leading-5 text-slate-500">{text}</p>
-    </div>
-  );
-}
-
-function LoadingRows() {
-  return (
-    <div className="space-y-3">
-      <Skeleton className="h-16 rounded-2xl" />
-      <Skeleton className="h-16 rounded-2xl" />
-      <Skeleton className="h-16 rounded-2xl" />
-    </div>
   );
 }
 
@@ -509,14 +404,6 @@ function buildAnalytics(summary: any, attendance: any, marks: any, homework: any
   };
 }
 
-function buildTrendBars(averageMarks: number | null) {
-  const base = averageMarks ?? 60;
-  return months.map((month, index) => ({
-    month,
-    value: Math.max(24, Math.min(96, base - 10 + index * 3)),
-  }));
-}
-
 function countStatus(records: any[], status: string) {
   return records.filter((item) => String(item.status || "").toLowerCase() === status).length;
 }
@@ -558,11 +445,4 @@ function getInitial(name?: string | null) {
 function formatClass(child?: ParentChild) {
   if (!child) return "";
   return [child.className, child.section].filter(Boolean).join(" - ");
-}
-
-function formatDate(value: unknown) {
-  if (!value) return "";
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
