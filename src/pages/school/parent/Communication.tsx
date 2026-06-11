@@ -60,11 +60,10 @@ export default function ParentCommunication() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-            }`}
+            className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${activeTab === tab.id
+              ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              }`}
           >
             {tab.label}
           </button>
@@ -241,7 +240,7 @@ function MessagesTab() {
     setReplyingTo(null);
     setEditingMessage(null);
     setInChatSearch("");
-    parentClient.markChatRead(contact.id).catch(() => {});
+    parentClient.markChatRead(contact.id).catch(() => { });
   };
 
   useEffect(() => {
@@ -288,7 +287,7 @@ function MessagesTab() {
             }
           ];
         });
-        parentClient.markChatRead(peerId).catch(() => {});
+        parentClient.markChatRead(peerId).catch(() => { });
       }
       void loadContacts(false);
     });
@@ -611,9 +610,8 @@ function MessagesTab() {
                 <button
                   key={c.id}
                   onClick={() => openContact(c)}
-                  className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${
-                    active ? "bg-blue-50/80 border border-blue-100/50 shadow-xs" : "hover:bg-slate-50/60 border border-transparent"
-                  }`}
+                  className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active ? "bg-blue-50/80 border border-blue-100/50 shadow-xs" : "hover:bg-slate-50/60 border border-transparent"
+                    }`}
                 >
                   <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white shadow-xs">
                     {(c.name || '?').charAt(0).toUpperCase()}
@@ -672,17 +670,17 @@ function MessagesTab() {
                 </div>
               </div>
 
-                <div className="flex items-center gap-1">
-                  <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
-                    <Search size={16} />
-                  </button>
-                  <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                  >
-                    <Info size={16} />
-                  </button>
-                </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
+                  <Search size={16} />
+                </button>
+                <button
+                  onClick={() => setShowDetails(!showDetails)}
+                  className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                >
+                  <Info size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Message Thread */}
@@ -711,17 +709,15 @@ function MessagesTab() {
                     <div
                       key={msg.id}
                       id={`msg-${msg.id}`}
-                      className={`flex ${mine ? 'justify-end' : 'justify-start'} transition-all duration-500 rounded-2xl ${
-                        highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
-                      }`}
+                      className={`flex ${mine ? 'justify-end' : 'justify-start'} transition-all duration-500 rounded-2xl ${highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
+                        }`}
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
                       <div
-                        className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${
-                          mine
-                            ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
-                            : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
-                        }`}
+                        className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
+                          ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
+                          : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                          }`}
                       >
                         {msg.is_forwarded && (
                           <p className={`mb-1 flex items-center gap-1 text-[9px] font-bold uppercase ${mine ? 'text-blue-600' : 'text-slate-400'}`}>
@@ -914,11 +910,11 @@ function MessagesTab() {
             <p className="text-xs font-semibold text-slate-500 truncate mt-1">{activeContact.email}</p>
           </div>
 
-            <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 md:grid-cols-4">
             {[
               { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-                { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
-                { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
+              { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
+              { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
               { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
             ].map((btn, idx) => (
               <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-85 transition">
@@ -1048,20 +1044,20 @@ function MessagesTab() {
             },
             ...(contextMenu.message.sender_id === user?.id && !contextMenu.message.is_deleted
               ? [
-                  {
-                    label: 'Edit',
-                    icon: Edit2,
-                    act: () => {
-                      setEditingMessage(contextMenu.message);
-                      setEditText(contextMenu.message.content || contextMenu.message.text);
-                    }
-                  },
-                  {
-                    label: 'Delete',
-                    icon: Trash2,
-                    act: () => submitDelete(contextMenu.message.id)
+                {
+                  label: 'Edit',
+                  icon: Edit2,
+                  act: () => {
+                    setEditingMessage(contextMenu.message);
+                    setEditText(contextMenu.message.content || contextMenu.message.text);
                   }
-                ]
+                },
+                {
+                  label: 'Delete',
+                  icon: Trash2,
+                  act: () => submitDelete(contextMenu.message.id)
+                }
+              ]
               : [])
           ].map((action, actionIdx) => (
             <button
@@ -1183,7 +1179,7 @@ function MessagesTab() {
                   <button
                     onClick={async () => {
                       if (!activeContact) return;
-                      await api.patch(`/chat/messages/${activeContact.id}/read`).catch(() => {});
+                      await api.patch(`/chat/messages/${activeContact.id}/read`).catch(() => { });
                       showToast('Conversation marked as read', 'success');
                       setShowMoreOptions(false);
                     }}
@@ -1285,7 +1281,7 @@ function MessagesTab() {
                   onClick={async () => {
                     const roomUrl = `https://meet.eddva.com/room/${Math.random().toString(36).substring(2, 11)}`;
                     const formattedInvite = `[MEETING_CARD]|${meetTitle}|${meetDate} ${meetTime}|${meetDuration}|${meetDesc}|${roomUrl}`;
-                    
+
                     try {
                       const res = await api.post('/chat/messages', {
                         receiverId: activeContact.id,
@@ -1385,9 +1381,8 @@ function MessagesTab() {
                           setMutedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
                           showToast(mutedChats[activeContact.id] ? 'Notifications unmuted' : 'Notifications muted', 'success');
                         }}
-                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${
-                          mutedChats[activeContact.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-600'
-                        }`}
+                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${mutedChats[activeContact.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-600'
+                          }`}
                       >
                         {mutedChats[activeContact.id] ? 'Muted' : 'Mute'}
                       </button>
@@ -1399,9 +1394,8 @@ function MessagesTab() {
                           setArchivedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
                           showToast(archivedChats[activeContact.id] ? 'Conversation unarchived' : 'Conversation archived', 'success');
                         }}
-                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${
-                          archivedChats[activeContact.id] ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
-                        }`}
+                        className={`rounded-full px-3 py-1 font-bold text-[10px] transition ${archivedChats[activeContact.id] ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
+                          }`}
                       >
                         {archivedChats[activeContact.id] ? 'Archived' : 'Archive'}
                       </button>
@@ -1431,7 +1425,7 @@ function MessagesTab() {
                   <button
                     onClick={async () => {
                       if (!activeContact) return;
-                      await parentClient.markChatRead(activeContact.id).catch(() => {});
+                      await parentClient.markChatRead(activeContact.id).catch(() => { });
                       setShowMoreOptions(false);
                       showToast('Conversation marked as read', 'success');
                     }}
@@ -1697,9 +1691,8 @@ function MessagesTab() {
             initial={{ opacity: 0, x: 50, y: -20 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 50 }}
-            className={`pointer-events-auto flex items-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold text-white shadow-xl ${
-              t.type === 'success' ? 'bg-emerald-600' : t.type === 'error' ? 'bg-rose-600' : 'bg-blue-600'
-            }`}
+            className={`pointer-events-auto flex items-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold text-white shadow-xl ${t.type === 'success' ? 'bg-emerald-600' : t.type === 'error' ? 'bg-rose-600' : 'bg-blue-600'
+              }`}
           >
             {t.message}
           </motion.div>
@@ -1785,9 +1778,8 @@ function MeetingsTab() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h4 className="text-[15px] font-black text-slate-900">{m.title || 'Meeting'}</h4>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                      m.isIncoming ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${m.isIncoming ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
                       {m.isIncoming ? 'Incoming' : 'Requested'}
                     </span>
                   </div>
@@ -1817,12 +1809,11 @@ function MeetingsTab() {
                 </div>
               </div>
               <div className="mt-4 sm:mt-0 sm:text-right">
-                <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
-                  ['Accepted', 'Scheduled', 'Completed'].includes(prettyStatus(m.status)) ? 'bg-emerald-100 text-emerald-700' :
+                <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${['Accepted', 'Scheduled', 'Completed'].includes(prettyStatus(m.status)) ? 'bg-emerald-100 text-emerald-700' :
                   prettyStatus(m.status) === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                  ['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) ? 'bg-red-100 text-red-700' :
-                  'bg-slate-100 text-slate-600'
-                }`}>
+                    ['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) ? 'bg-red-100 text-red-700' :
+                      'bg-slate-100 text-slate-600'
+                  }`}>
                   {['Accepted', 'Scheduled', 'Completed'].includes(prettyStatus(m.status)) && <CheckCircle2 className="h-3 w-3" />}
                   {prettyStatus(m.status) === 'Pending' && <Clock className="h-3 w-3" />}
                   {['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) && <X className="h-3 w-3" />}
@@ -1853,6 +1844,16 @@ function MeetingsTab() {
                         Cancel
                       </button>
                     )}
+                  </div>
+                )}
+                {['Accepted', 'Scheduled'].includes(prettyStatus(m.status)) && (
+                  <div className="mt-2 flex flex-wrap justify-end gap-2">
+                    <button
+                      onClick={() => statusMutation.mutate({ id: m.id, status: 'completed' })}
+                      className="rounded-lg bg-blue-100 px-3 py-1.5 text-[11px] font-black text-blue-700 hover:bg-blue-200"
+                    >
+                      Complete
+                    </button>
                   </div>
                 )}
               </div>
@@ -1895,11 +1896,10 @@ function MeetingsTab() {
                       key={mode}
                       type="button"
                       onClick={() => setMeetingMode(mode)}
-                      className={`rounded-xl border-2 px-3 py-2.5 text-sm font-black capitalize transition ${
-                        meetingMode === mode
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 text-slate-500'
-                      }`}
+                      className={`rounded-xl border-2 px-3 py-2.5 text-sm font-black capitalize transition ${meetingMode === mode
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 text-slate-500'
+                        }`}
                     >
                       {mode}
                     </button>
@@ -1923,8 +1923,12 @@ function MeetingsTab() {
                 <>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black uppercase text-slate-400">Meeting Link</label>
-                    <input type="url" name="meetingLink" placeholder="https://meet.google.com/..." className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
-                  </div>
+                    <input
+                      type="text"
+                      name="meetingLink"
+                      placeholder="https://meet.google.com/..."
+                      className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500"
+                    />                  </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black uppercase text-slate-400">Platform</label>
                     <input type="text" name="meetingPlatform" placeholder="Google Meet / Zoom" className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
@@ -1995,18 +1999,17 @@ function GrievancesTab() {
                   <span className="text-xs font-black text-slate-400">#{g.ticketNumber}</span>
                   <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase text-slate-600">{g.type}</span>
                 </div>
-                <span className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider ${
-                  g.status === 'Open' ? 'bg-blue-100 text-blue-700' :
+                <span className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider ${g.status === 'Open' ? 'bg-blue-100 text-blue-700' :
                   g.status === 'In Review' ? 'bg-amber-100 text-amber-700' :
-                  g.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' :
-                  'bg-slate-100 text-slate-500'
-                }`}>
+                    g.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-slate-100 text-slate-500'
+                  }`}>
                   {g.status}
                 </span>
               </div>
               <h4 className="text-[15px] font-black text-slate-900">{g.subject}</h4>
               <p className="text-xs font-semibold text-slate-400 mt-1">Submitted on {g.date}</p>
-              
+
               {g.adminResponse && (
                 <div className="mt-4 rounded-xl bg-slate-50 border border-slate-100 p-3">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Admin Response</p>

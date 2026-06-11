@@ -16,7 +16,7 @@ import {
 import {
   useAiStudySession, useStartAiStudy, useAskAiQuestion,
   useCompleteAiStudy, useCompletePlanItem
-} from "@/hooks/use-student";
+} from "@/hooks/use-school-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
 import { CardGlass } from "@/components/shared/CardGlass";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
@@ -73,13 +73,10 @@ function normalizeAiMessage(message: unknown): string {
       }
     };
 
-    //jbfjfb
-
     const trimmed = message.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const directParsed = tryParseJsonPayload(trimmed);
     if (directParsed) return directParsed;
 
-    // If model adds pre/post text around JSON, extract the largest JSON object/array segment.
     const firstBrace = trimmed.indexOf("{");
     const lastBrace = trimmed.lastIndexOf("}");
     if (firstBrace !== -1 && lastBrace > firstBrace) {
@@ -110,16 +107,11 @@ function normalizeAiMessage(message: unknown): string {
   return String(message ?? "");
 }
 
-
-
 function normalizeLessonMarkdown(md: string): string {
   return String(md || "")
-    // Unescape double-escaped backslashes from JSON payloads
     .replace(/\\\\/g, "\\")
-    // Convert LaTeX bracket math to markdown math delimiters
     .replace(/\\\[((?:.|\n)*?)\\\]/g, (_m, inner) => `\n\n$$${inner}$$\n\n`)
     .replace(/\\\(((?:.|\n)*?)\\\)/g, (_m, inner) => `$${inner}$`)
-    // If AI emits "Formula: <latex-like expression>" without delimiters, wrap it
     .replace(
       /(^|\n)\s*(Formula|Equation)\s*:\s*([^\n]+)/gi,
       (_m, prefix, label, expr) => {
@@ -129,11 +121,9 @@ function normalizeLessonMarkdown(md: string): string {
         return `${prefix}${label}: $$${e}$$`;
       },
     )
-    // User requested removing "Core Concepts/Cores" section from rendered notes.
     .replace(/\n##\s*.*Core Concepts[\s\S]*?(?=\n##\s+|$)/gi, "\n");
 }
 
-/** Optional readability for step lists in plain text; keeps lesson markdown small. */
 function formatSolutionSteps(text: string): string {
   return String(text || "")
     .replace(/\r\n/g, "\n")
@@ -145,12 +135,9 @@ function normalizeReadableText(text: string): string {
   return String(text || "")
     .replace(/\u00A0/g, " ")
     .replace(/\s+/g, " ")
-    // "Cleardefinition" -> "Clear definition"
     .replace(/([a-z])([A-Z])/g, "$1 $2")
-    // "cell senergy" / "ATP.Circle" -> proper spacing
     .replace(/([A-Za-z])([.:,;!?()])/g, "$1 $2")
     .replace(/([.:,;!?()])([A-Za-z])/g, "$1 $2")
-    // keep math minus but add spacing around it for readability
     .replace(/\s*[-−]\s*/g, " − ")
     .replace(/\s+/g, " ")
     .trim();
@@ -195,7 +182,7 @@ function parseMcqOptions(rawQuestion: string, rawOptions?: unknown[]) {
 }
 
 function storageKey(kind: "highlights" | "notes" | "inline-comments", topicId: string): string {
-  return `ai-study-${kind}-${topicId}`;
+  return `school-ai-study-${kind}-${topicId}`;
 }
 
 function NotesFlashcard({
@@ -246,34 +233,6 @@ function NotesFlashcard({
   );
 }
 
-function StudyMetric({
-  icon,
-  label,
-  value,
-  accentClass,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  accentClass: string;
-}) {
-  return (
-    <div className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-          <p className="mt-3 text-xl font-bold text-slate-900 sm:text-2xl">{value}</p>
-        </div>
-        <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", accentClass)}>
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// ─── Practice Question Card ──────────────────────────────────────────────────
 function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: number; onAskAI: (question: string) => void }) {
   const [open, setOpen] = useState(false);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
@@ -281,7 +240,6 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
     const rawFromAny = (q as any).options ?? (q as any).choices ?? (q as any).optionList ?? [];
     const primary = parseMcqOptions(q.question, rawFromAny);
     if (primary.options.length > 0) return primary;
-    // Fallback: sometimes options are appended in answer text by upstream generator.
     const fromAnswer = parseMcqOptions(q.question, []);
     if (fromAnswer.options.length > 0) return fromAnswer;
     const combined = parseMcqOptions(`${q.question}\n${q.answer}`, []);
@@ -394,7 +352,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
 
 type Tab = "lesson" | "ask";
 
-export default function StudentAiStudyPage() {
+export default function SchoolStudentAiStudyPage() {
   const { topicId = "" } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
 
@@ -476,16 +434,12 @@ export default function StudentAiStudyPage() {
       const c = localStorage.getItem(storageKey("inline-comments", topicId));
       const localH: SavedHighlight[] = h ? JSON.parse(h) : [];
       const localC: InlineComment[]  = c ? JSON.parse(c) : [];
-      // localStorage is the primary source (may have unsaved in-progress work);
-      // fall back to DB values so highlights persist across devices / cleared storage.
       setHighlights(localH.length > 0 ? localH : (sessionData?.highlights ?? []));
       setInlineComments(localC.length > 0 ? localC : (sessionData?.inlineComments ?? []));
     } catch {
       setHighlights(sessionData?.highlights ?? []);
       setInlineComments(sessionData?.inlineComments ?? []);
     }
-  // sessionData?.id ensures this re-runs once when the DB session first loads,
-  // so DB values are picked up if localStorage was empty on the initial render.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId, sessionData?.id]);
 
@@ -499,8 +453,6 @@ export default function StudentAiStudyPage() {
     localStorage.setItem(storageKey("inline-comments", topicId), JSON.stringify(inlineComments));
   }, [topicId, inlineComments]);
 
-  // Track the user's current selection inside the notes so clicking panel buttons
-  // doesn't drop it. We save a cloned Range + its text on every valid selectionchange.
   useEffect(() => {
     const handler = () => {
       const sel = window.getSelection();
@@ -516,8 +468,6 @@ export default function StudentAiStudyPage() {
     return () => document.removeEventListener("selectionchange", handler);
   }, []);
 
-  // After markdown + KaTeX finish rendering, re-apply saved highlights once. We skip
-  // any text nodes inside KaTeX output so we don't corrupt math rendering.
   useEffect(() => {
     if (activeTab !== "lesson") return;
     const root = notesContentRef.current;
@@ -612,8 +562,6 @@ export default function StudentAiStudyPage() {
     });
   }, [sessionId, topicId, elapsed, completeMut, highlights, inlineComments, planItemId, planItemMut]);
 
-  // Get the range/text the user most recently selected inside the notes, falling
-  // back to the saved ref when focus has moved to the tool panel (buttons/textarea).
   const getActiveNotesRange = useCallback((): { range: Range; text: string } | null => {
     const notesRoot = notesContentRef.current;
     if (!notesRoot) return null;
@@ -701,7 +649,7 @@ export default function StudentAiStudyPage() {
       <div className="py-20 flex items-center justify-center text-center">
          <div className="text-center max-w-md px-10">
             <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-10 mx-auto">
-              <AlertTriangle className="w-10 h-10 text-red-500" />
+               <AlertTriangle className="w-10 h-10 text-red-500" />
             </div>
             <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-4">Link Override Failure</h1>
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">Neural link could not be established. Check sector connection.</p>
@@ -779,9 +727,9 @@ export default function StudentAiStudyPage() {
                   >
                     {tab.icon}
                     {tab.label}
-                    {tab.id === "ask" && sessionData.conversation.length > 0 && (
+                    {tab.id === "ask" && (sessionData.conversation?.length ?? 0) > 0 && (
                       <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-bold text-current">
-                        {Math.ceil(sessionData.conversation.length / 2)}
+                        {Math.ceil((sessionData.conversation?.length ?? 0) / 2)}
                       </span>
                     )}
                   </button>
@@ -1098,143 +1046,68 @@ export default function StudentAiStudyPage() {
                     <div className="mb-8 flex flex-col gap-5 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
                       <div className="space-y-3">
                         <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                          <Monitor className="h-3.5 w-3.5" />
-                          Guided Notes
+                          <BookOpen className="h-3.5 w-3.5" />
+                          Interactive Study Guide
                         </span>
-                        <div>
-                          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                            Study the notes carefully
-                          </h2>
-                          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                            Use zoom controls for comfortable reading, then annotate the parts you want to revise later.
-                          </p>
-                        </div>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                          Revision Notes
+                        </h2>
                       </div>
-
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center overflow-hidden rounded-full border border-slate-200 bg-white">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500">Text size:</span>
+                        {["sm", "md", "lg"].map((size) => (
                           <button
-                            onClick={() => setNotesZoom((z) => (z === "lg" ? "md" : z === "md" ? "sm" : "sm"))}
-                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                            key={size}
+                            onClick={() => setNotesZoom(size as any)}
+                            className={cn(
+                              "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors",
+                              notesZoom === size
+                                ? "bg-slate-900 text-white"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                            )}
                           >
-                            A-
+                            {size.toUpperCase()}
                           </button>
-                          <button
-                            onClick={() => setNotesZoom("md")}
-                            className="border-x border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-50"
-                          >
-                            100%
-                          </button>
-                          <button
-                            onClick={() => setNotesZoom((z) => (z === "sm" ? "md" : z === "md" ? "lg" : "lg"))}
-                            className="px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                          >
-                            A+
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFlashcardIndex(0);
-                            setFlashcardFlipped(false);
-                            setShowFlashcards(true);
-                          }}
-                          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
-                        >
-                          <Brain className="h-4 w-4" />
-                          Flashcards
-                        </button>
+                        ))}
                       </div>
                     </div>
 
-                    <div className="relative">
-                      {openBubbleId && (
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setOpenBubbleId(null)}
-                        />
+                    <div
+                      ref={notesContentRef}
+                      className={cn(
+                        "relative select-text overflow-hidden rounded-2xl bg-white p-2 font-medium leading-relaxed text-slate-800 selection:bg-blue-100 selection:text-slate-900",
+                        mdZoomClass,
+                        mdClassBase,
                       )}
-                      {!isCompactLayout &&
-                        inlineComments.map((comment) => (
-                          <div
-                            key={comment.id}
-                            className="absolute right-0 z-20"
-                            style={{ top: comment.top, transform: "translateY(-50%)" }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setOpenBubbleId(prev => prev === comment.id ? null : comment.id)}
-                              className={cn(
-                                "flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-colors",
-                                openBubbleId === comment.id
-                                  ? "border-blue-300 bg-blue-600 text-white"
-                                  : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
-                              )}
-                              title={comment.text}
-                            >
-                              <StickyNote className="h-4 w-4" />
-                            </button>
-
-                            {openBubbleId === comment.id && (
-                              <div className="absolute right-10 top-1/2 -translate-y-1/2 z-30 w-64 rounded-2xl border border-blue-100 bg-white shadow-xl">
-                                {comment.quote && (
-                                  <div className="border-b border-slate-100 px-3 py-2">
-                                    <p className="line-clamp-2 border-l-2 border-blue-300 pl-2 text-xs italic text-slate-400">
-                                      "{comment.quote}"
-                                    </p>
-                                  </div>
-                                )}
-                                <div className="px-3 py-2.5">
-                                  <p className="text-sm leading-snug text-slate-800">{comment.text}</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-
-                      <div ref={notesContentRef} className={cn("relative pr-0 lg:pr-12", mdClassBase, mdZoomClass)}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {normalizedLessonMarkdown}
-                        </ReactMarkdown>
-                      </div>
+                    >
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {normalizedLessonMarkdown}
+                      </ReactMarkdown>
                     </div>
                   </CardGlass>
                 ) : (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-10 text-center shadow-sm">
-                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-slate-300" />
-                    <p className="text-sm font-medium text-slate-500">Generating your lesson notes...</p>
-                  </CardGlass>
+                  <div className="py-20 text-center text-sm font-semibold text-slate-400">Loading lesson content...</div>
                 )}
 
-                {!!sessionData.practiceQuestions.length && (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm sm:p-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-slate-900">Practice questions</h3>
-                        <p className="mt-1 text-sm text-slate-600">
-                          Review worked examples, then ask the AI for a deeper explanation when needed.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("ask")}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
-                      >
-                        Open AI chat
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="mt-5 grid gap-4">
-                      {sessionData.practiceQuestions.map((question, index) => (
-                        <PracticeCard key={`${question.question}-${index}`} q={question} index={index} onAskAI={handleAskAboutQuestion} />
-                      ))}
-                    </div>
-                  </CardGlass>
+                {sessionData.practiceQuestions.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <ListTodo className="w-5 h-5 text-indigo-500" /> Active Application Set
+                    </h3>
+                    {sessionData.practiceQuestions.map((q, idx) => (
+                      <PracticeCard
+                        key={`${q.question}-${idx}`}
+                        q={q}
+                        index={idx}
+                        onAskAI={handleAskAboutQuestion}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
-
             </motion.div>
           ) : (
             <motion.div
@@ -1242,275 +1115,241 @@ export default function StudentAiStudyPage() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -18 }}
-              className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+              className="grid gap-6 lg:grid-cols-[1fr_320px]"
             >
-              <CardGlass className="overflow-hidden border-slate-200/80 bg-white/92 p-0 shadow-sm">
-                <div className="border-b border-slate-200/80 px-5 py-5 sm:px-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <CardGlass className="flex h-[600px] flex-col border-slate-200/80 bg-white/92 p-0 shadow-sm relative">
+                <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4 shrink-0 bg-white/40">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
+                      <BrainCircuit className="h-5 w-5" />
+                    </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-slate-900">Ask the AI tutor</h2>
-                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                        Ask for concept clarification, solution steps, shortcuts, or common mistakes for this topic.
-                      </p>
+                      <h3 className="text-base font-bold text-slate-900">AI Tutor</h3>
+                      <p className="text-xs text-slate-500">Ask doubts, request derivations, or get help with questions.</p>
                     </div>
-                    <div className="inline-flex items-center gap-2 self-start rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                      <BrainCircuit className="h-4 w-4 text-blue-600" />
-                      {sessionData.conversation.length ? `${Math.ceil(sessionData.conversation.length / 2)} doubts asked` : "No doubts asked yet"}
-                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1">
+                    <button
+                      onClick={() => setAiMode("short")}
+                      className={cn(
+                        "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                        aiMode === "short" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800",
+                      )}
+                    >
+                      Brief
+                    </button>
+                    <button
+                      onClick={() => setAiMode("detailed")}
+                      className={cn(
+                        "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                        aiMode === "detailed" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800",
+                      )}
+                    >
+                      In-depth
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex min-h-[620px] flex-col">
-                  <div className={cn("flex-1 p-4 sm:p-6", sessionData.conversation.length === 0 ? "flex items-center justify-center" : "overflow-y-auto")}>
-                    <AnimatePresence mode="popLayout">
-                      {sessionData.conversation.length === 0 ? (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.96 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="mx-auto max-w-lg text-center"
-                        >
-                          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-blue-50 text-blue-700 shadow-sm">
-                            <BrainCircuit className="h-10 w-10" />
-                          </div>
-                          <h3 className="text-2xl font-bold text-slate-900">Start with your first question</h3>
-                          <p className="mt-3 text-sm leading-6 text-slate-600">
-                            Try asking for a simpler explanation, a worked numerical example, or a quick revision summary.
-                          </p>
-                        </motion.div>
-                      ) : (
-                        <div className="space-y-6">
-                          {sessionData.conversation.map((msg, index) => (
-                            <motion.div
-                              key={index}
-                              initial={{ opacity: 0, x: msg.role === "student" ? 18 : -18 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className={cn(
-                                "flex gap-3 sm:gap-4",
-                                msg.role === "student" ? "justify-end" : "justify-start",
-                              )}
-                            >
-                              <div
-                                className={cn(
-                                  "flex max-w-[92%] gap-3 sm:max-w-[80%]",
-                                  msg.role === "student" ? "flex-row-reverse" : "flex-row",
-                                )}
-                              >
-                                <div
-                                  className={cn(
-                                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm",
-                                    msg.role === "ai" ? "bg-blue-600" : "bg-slate-900",
-                                  )}
-                                >
-                                  {msg.role === "ai" ? <Sparkles className="h-5 w-5" /> : "ME"}
-                                </div>
-                                <div
-                                  className={cn(
-                                    "rounded-[1.75rem] px-4 py-3 shadow-sm sm:px-5 sm:py-4",
-                                    msg.role === "student"
-                                      ? "rounded-tr-md bg-slate-900 text-white"
-                                      : "rounded-tl-md border border-slate-200 bg-white text-slate-800",
-                                  )}
-                                >
-                                  {msg.role === "ai" ? (
-                                    <div className={cn(mdClassBase, "prose-h2:text-xl prose-h3:text-base prose-p:text-sm prose-ul:text-sm !prose-p:text-slate-800")}>
-                                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                        {normalizeAiMessage(msg.message)}
-                                      </ReactMarkdown>
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm leading-6">{msg.message.replace(/^\[Mode:\s*(?:short|detailed|brief)\]\s*/i, "")}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </motion.div>
-                          ))}
-
-                          {askMut.isPending && (
-                            <div className="flex justify-start gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
-                                <Sparkles className="h-5 w-5" />
-                              </div>
-                              <div className="flex items-center gap-2 rounded-[1.75rem] rounded-tl-md border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                                {[0, 1, 2].map((i) => (
-                                  <motion.div
-                                    key={i}
-                                    className="h-2.5 w-2.5 rounded-full bg-blue-500"
-                                    animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
-                                    transition={{ repeat: Infinity, duration: 1, delay: i * 0.18 }}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <div ref={chatEndRef} />
-                        </div>
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {sessionData.conversation?.map((msg, idx) => (
+                    <div
+                      key={`${msg.timestamp}-${idx}`}
+                      className={cn(
+                        "flex flex-col max-w-[85%] rounded-2xl px-4 py-3 text-sm font-medium leading-relaxed",
+                        msg.role === "student"
+                          ? "ml-auto bg-slate-900 text-white rounded-tr-sm"
+                          : "bg-slate-100 text-slate-800 rounded-tl-sm prose prose-sm max-w-[85%] prose-p:my-0 prose-ul:my-1 prose-li:my-0 text-left",
                       )}
-                    </AnimatePresence>
-                  </div>
+                    >
+                      {msg.role === "student" ? (
+                        msg.message.replace(/^\[Mode:\s*(?:short|detailed|brief)\]\s*/i, "")
+                      ) : (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {normalizeAiMessage(msg.message)}
+                        </ReactMarkdown>
+                      )}
+                    </div>
+                  ))}
+                  {askMut.isPending && (
+                    <div className="mr-auto bg-slate-100 text-slate-500 rounded-2xl rounded-tl-sm px-4 py-3 text-sm font-medium flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                      Formulating response...
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
 
-                  <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/95 p-4 backdrop-blur sm:p-6">
-                    <div className="flex gap-2 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setAiMode("short")}
-                        className={cn(
-                          "flex-1 py-2 rounded-xl text-xs font-semibold border transition-all",
-                          aiMode === "short"
-                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600",
-                        )}
-                      >
-                        ⚡ Brief
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAiMode("detailed")}
-                        className={cn(
-                          "flex-1 py-2 rounded-xl text-xs font-semibold border transition-all",
-                          aiMode === "detailed"
-                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600",
-                        )}
-                      >
-                        📖 Detailed
-                      </button>
+                <div className="p-4 border-t border-slate-200/80 shrink-0 bg-white/40 flex flex-col gap-3">
+                  {(sessionData.conversation?.length ?? 0) <= 1 && quickAskPrompts.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {quickAskPrompts.map((prompt, idx) => (
+                        <button
+                          key={`${prompt}-${idx}`}
+                          type="button"
+                          onClick={() => handleAskAboutQuestion(prompt)}
+                          className="text-left text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 hover:bg-indigo-100/70"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
                     </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                      <textarea
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSend();
-                          }
-                        }}
-                        placeholder="Ask a doubt about this topic..."
-                        rows={isCompactLayout ? 3 : 2}
-                        disabled={askMut.isPending}
-                        className="min-h-[96px] flex-1 resize-none rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      />
-                      <button
-                        onClick={handleSend}
-                        disabled={!chatInput.trim() || askMut.isPending}
-                        className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-40 sm:h-[96px] sm:w-[96px] sm:flex-col"
-                      >
-                        {askMut.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                        <span>Send</span>
-                      </button>
-                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      placeholder="Ask the AI Tutor a question..."
+                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSend}
+                      disabled={!chatInput.trim() || askMut.isPending}
+                      className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 flex items-center justify-center disabled:opacity-50"
+                    >
+                      <Send className="w-4 h-4" />
+                    </motion.button>
                   </div>
                 </div>
               </CardGlass>
 
-              <div className="space-y-6 lg:sticky lg:top-24">
+              <div className="space-y-6">
                 <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
-                  <h3 className="text-lg font-bold text-slate-900">Suggested prompts</h3>
-                  <p className="mt-1 text-sm text-slate-500">Use one of these to start quickly.</p>
+                  <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-500" /> Lesson shortcuts
+                  </h4>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-4">
+                    The AI knows the full lesson context. You can click on any key concept or practice question in the toolkit below to ask for an explanation instantly.
+                  </p>
 
-                  <div className="mt-4 space-y-2">
-                    {quickAskPrompts.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                        Ask for summaries, shortcuts, solved examples, or revision help.
-                      </p>
-                    ) : (
-                      quickAskPrompts.map((prompt, index) => (
-                        <button
-                          key={`${prompt}-${index}`}
-                          type="button"
-                          onClick={() => setChatInput(prompt)}
-                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
-                        >
-                          {prompt}
-                        </button>
-                      ))
+                  <div className="space-y-3">
+                    {sessionData.keyConcepts.length > 0 && (
+                      <div>
+                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Key concepts</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {sessionData.keyConcepts.map((concept, idx) => (
+                            <button
+                              key={`${concept}-${idx}`}
+                              onClick={() => handleAskAboutQuestion(`Explain the concept of: ${normalizeReadableText(concept)}`)}
+                              className="text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg px-2.5 py-1 text-left"
+                            >
+                              {normalizeReadableText(concept)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {sessionData.formulas.length > 0 && (
+                      <div>
+                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Key formulas</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {sessionData.formulas.map((formula, idx) => (
+                            <button
+                              key={`${formula}-${idx}`}
+                              onClick={() => handleAskAboutQuestion(`Walk me through the formula and variables for: ${normalizeReadableText(formula)}`)}
+                              className="text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg px-2.5 py-1 text-left font-mono"
+                            >
+                              {normalizeReadableText(formula)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </CardGlass>
 
-                {!!sessionData.practiceQuestions.length && (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900">Practice question help</h3>
-                    <p className="mt-1 text-sm text-slate-500">Jump from a question directly into an explanation.</p>
-
-                    <div className="mt-4 space-y-2">
-                      {sessionData.practiceQuestions.slice(0, 4).map((question, index) => (
-                        <button
-                          key={`${question.question}-${index}`}
-                          type="button"
-                          onClick={() => handleAskAboutQuestion(question.question)}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
-                        >
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            Question {index + 1}
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-slate-700">
-                            {question.question}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  </CardGlass>
-                )}
-
                 <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
-                  <h3 className="text-lg font-bold text-slate-900">Session progress</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {completed ? "This topic is already complete." : "You can still ask a few more doubts before marking it complete."}
-                  </p>
-
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                       <Trophy className="w-4 h-4 text-emerald-600" /> Completion Desk
+                    </h4>
+                  </div>
                   {completed ? (
-                    <div className="mt-5 space-y-3">
-                      <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
-                        Session saved. Revisit the notes anytime for revision.
+                    <div className="space-y-3">
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-[1.25rem] p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" /> Lesson complete
                       </div>
                       <button
                         onClick={() => navigate(-1)}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                        className="w-full py-3 rounded-2xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors"
                       >
-                        Back to previous page
-                        <ArrowRight className="h-4 w-4" />
+                        Exit workspace
                       </button>
                     </div>
-                  ) : showComplete ? (
-                    <div className="mt-5 space-y-3">
-                      <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50 p-4 text-sm text-slate-700">
-                        You are about to finish this session and save your progress.
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => setShowComplete(false)}
-                          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleComplete}
-                          disabled={completeMut.isPending}
-                          className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-50"
-                        >
-                          {completeMut.isPending ? "Saving..." : "Confirm"}
-                        </button>
-                      </div>
-                    </div>
                   ) : (
-                    <div className="mt-5 space-y-3">
+                    <div className="space-y-3">
                       <button
                         onClick={() => setShowComplete(true)}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                        className="w-full py-3 rounded-2xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
                       >
-                        <Trophy className="h-4 w-4" />
-                        Mark topic complete
+                        Mark lesson complete
                       </button>
                       <button
                         onClick={() => setActiveTab("lesson")}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
+                        className="w-full py-3 rounded-2xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
                       >
-                        <BookOpen className="h-4 w-4" />
                         Back to notes
                       </button>
                     </div>
                   )}
+                </CardGlass>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showComplete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+              onClick={() => setShowComplete(false)}
+            >
+              <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                <CardGlass className="border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
+                  <h3 className="text-xl font-bold text-slate-900">Finish study session?</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Are you ready to finalize your progress? This will save your highlights, comments, and award you XP.
+                  </p>
+
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
+                    <button
+                      onClick={handleComplete}
+                      disabled={completeMut.isPending}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {completeMut.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="h-4 w-4" />
+                          Mark complete
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowComplete(false)}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </CardGlass>
               </div>
             </motion.div>
@@ -1611,7 +1450,7 @@ export default function StudentAiStudyPage() {
                         <div className="mt-5 rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4">
                           <div className="mb-2 text-sm font-semibold text-blue-800">Doubt box</div>
                           <div className="mb-3 max-h-32 space-y-2 overflow-y-auto">
-                            {sessionData.conversation.length ? (
+                            {sessionData.conversation?.length ? (
                               sessionData.conversation.slice(-3).map((msg, index) => (
                                 <div
                                   key={`${msg.timestamp}-${index}`}

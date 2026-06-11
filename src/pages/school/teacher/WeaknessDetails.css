@@ -1,0 +1,317 @@
+.weakness-details {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: fadeIn 0.35s ease forwards;
+}
+
+.weakness-details__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weakness-details__back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  background: none;
+  border: none;
+  color: var(--gray-500);
+  font-size: 0.813rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.weakness-details__back-btn:hover {
+  color: var(--brand-600);
+  transform: translateX(-2px);
+}
+
+.weakness-details__title-group h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.weakness-details__title-group p {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin: 4px 0 0 0;
+}
+
+.weakness-details__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.weakness-details__content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.weakness-details__main,
+.weakness-details__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Table Card Styling */
+.weakness-details__table-card {
+  padding: 20px;
+}
+
+.weakness-details__table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.weakness-details__table-title h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0;
+}
+
+.weakness-details__table-title p {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin: 4px 0 0 0;
+}
+
+/* Search Box styling */
+.weakness-details__search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 6px 12px;
+  width: 240px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.weakness-details__search-box:focus-within {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 2px rgba(var(--brand-rgb, 99, 102, 241), 0.1);
+  background: #ffffff;
+}
+
+.weakness-details__search-icon {
+  color: var(--gray-400);
+}
+
+.weakness-details__search-input {
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 0.813rem;
+  color: var(--gray-700);
+  width: 100%;
+}
+
+.weakness-details__search-input::placeholder {
+  color: var(--gray-400);
+}
+
+/* Table Elements */
+.weakness-details__student-name {
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.weakness-details__score {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.weakness-details__trend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.weakness-details__trend--improving {
+  color: var(--success-600);
+}
+
+.weakness-details__trend--declining {
+  color: var(--error-600);
+}
+
+.weakness-details__trend--consistent {
+  color: var(--blue-500);
+}
+
+.weakness-details__tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.weakness-details__empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--gray-400);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Intervention Card Styling */
+.weakness-details__intervention-card {
+  padding: 20px;
+}
+
+.weakness-details__intervention-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.weakness-details__intervention-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0;
+}
+
+.weakness-details__intervention-desc {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+}
+
+.weakness-details__action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.weakness-details__action-item {
+  display: flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--gray-100);
+  border-radius: 8px;
+  padding: 12px;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.weakness-details__action-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--gray-200);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.weakness-details__action-icon-wrapper {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.weakness-details__action-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.weakness-details__action-details h4 {
+  font-size: 0.813rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0;
+}
+
+.weakness-details__action-details p {
+  font-size: 0.688rem;
+  color: var(--gray-500);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.weakness-details__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--brand-600);
+  font-size: 0.688rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px 0 0 0;
+  margin-top: 4px;
+  width: fit-content;
+  transition: gap 0.2s ease, color 0.2s ease;
+}
+
+.weakness-details__action-btn:hover {
+  gap: 6px;
+  color: var(--brand-700);
+}
+
+/* State and Loaders */
+.weakness-details__loading,
+.weakness-details__loading-card {
+  text-align: center;
+  padding: 60px;
+  color: var(--gray-400);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.weakness-details__error {
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 8px;
+  background: rgba(254, 242, 242, 0.75);
+  color: var(--error-600);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 14px 16px;
+}
+
+@media (max-width: 1024px) {
+  .weakness-details__content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .weakness-details__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .weakness-details__stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
