@@ -1796,7 +1796,7 @@ function MeetingsTab() {
                     {m.location && <span className="rounded-full bg-slate-100 px-2 py-1">{m.location}</span>}
                   </div>
                   {m.reason && <p className="text-xs font-medium italic text-slate-400 mt-2">"{m.reason}"</p>}
-                  {m.meetingLink && (
+                  {m.meetingLink && !['Completed', 'Cancelled', 'Rejected'].includes(prettyStatus(m.status)) && (
                     <a
                       href={m.meetingLink}
                       target="_blank"
