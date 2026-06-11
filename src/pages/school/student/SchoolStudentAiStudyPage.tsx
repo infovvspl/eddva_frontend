@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
@@ -210,11 +206,13 @@ function NotesFlashcard({
         style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
       >
         <div
-          className="absolute inset-0 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm"
+          className="absolute inset-0 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm overflow-auto"
           style={{ backfaceVisibility: "hidden" }}
         >
           <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-3">Question</p>
-          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{question}</p>
+          <div className="text-sm font-semibold text-slate-800 leading-relaxed">
+            <MarkdownRenderer content={question} />
+          </div>
           <p className="text-[11px] text-slate-500 mt-4">Click to reveal answer</p>
         </div>
         <div
@@ -222,9 +220,13 @@ function NotesFlashcard({
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-3">Answer</p>
-          <p className="text-sm font-semibold text-slate-800 leading-relaxed whitespace-pre-line">{formatSolutionSteps(answer)}</p>
+          <div className="text-sm font-semibold text-slate-800 leading-relaxed">
+            <MarkdownRenderer content={formatSolutionSteps(answer)} />
+          </div>
           {explanation && (
-            <p className="text-xs text-slate-600 mt-3 leading-relaxed whitespace-pre-line">{formatSolutionSteps(explanation)}</p>
+            <div className="text-xs text-slate-600 mt-3 leading-relaxed">
+              <MarkdownRenderer content={formatSolutionSteps(explanation)} />
+            </div>
           )}
           <p className="text-[11px] text-slate-500 mt-3">Click to flip back</p>
         </div>
@@ -277,6 +279,15 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
             className="overflow-hidden"
           >
             <div className="px-5 pb-6 pt-3 border-t border-slate-100 space-y-5">
+              <div>
+                <p className="text-[11px] font-semibold text-indigo-700 mb-2 flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-indigo-500" /> Full Question
+                </p>
+                <div className="text-sm font-semibold text-slate-800 leading-relaxed bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                  <MarkdownRenderer content={parsed.question} />
+                </div>
+              </div>
+
               {parsed.options.length > 0 && (
                 <div>
                   <p className="text-[11px] font-semibold text-blue-700 mb-2 flex items-center gap-2">
@@ -284,22 +295,31 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                   </p>
                   <div className="space-y-2">
                     {parsed.options.map((option, optionIndex) => (
-                      <button
+                      <div
                         key={`${option}-${optionIndex}`}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setSelectedOptionIndex(optionIndex)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedOptionIndex(optionIndex);
+                          }
+                        }}
                         className={cn(
-                          "w-full text-left text-sm font-medium leading-relaxed p-3 rounded-xl border transition-colors",
+                          "w-full text-left text-sm font-medium leading-relaxed p-3 rounded-xl border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500",
                           selectedOptionIndex === optionIndex
                             ? "bg-blue-100 border-blue-300 text-slate-800"
                             : "bg-blue-50 border-blue-100 text-slate-700 hover:bg-blue-100/70",
                         )}
                       >
-                        <span className="font-semibold text-blue-700 mr-2">
+                        <span className="font-semibold text-blue-700 mr-2 inline-block">
                           {String.fromCharCode(65 + optionIndex)}.
                         </span>
-                        {option}
-                      </button>
+                        <div className="inline-block align-top text-slate-700">
+                          <MarkdownRenderer content={option} />
+                        </div>
+                      </div>
                     ))}
                   </div>
                   {selectedOptionIndex !== null && correctOptionIndex !== null && (
@@ -321,8 +341,8 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                 <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
                    <CheckCircle className="w-4 h-4" /> Solution Core
                 </p>
-                <div className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  {formatSolutionSteps(q.answer)}
+                <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <MarkdownRenderer content={formatSolutionSteps(q.answer)} />
                 </div>
               </div>
               {q.explanation && (
@@ -330,8 +350,8 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                   <p className="text-[11px] font-semibold text-amber-600 mb-2 flex items-center gap-2">
                      <Lightbulb className="w-4 h-4" /> Logic Synthesis
                   </p>
-                  <div className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    {formatSolutionSteps(q.explanation)}
+                  <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <MarkdownRenderer content={formatSolutionSteps(q.explanation)} />
                   </div>
                 </div>
               )}
@@ -1080,12 +1100,9 @@ export default function SchoolStudentAiStudyPage() {
                         mdClassBase,
                       )}
                     >
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                      >
-                        {normalizedLessonMarkdown}
-                      </ReactMarkdown>
+                      <MarkdownRenderer
+                        content={normalizedLessonMarkdown}
+                      />
                     </div>
                   </CardGlass>
                 ) : (
@@ -1165,12 +1182,9 @@ export default function SchoolStudentAiStudyPage() {
                       {msg.role === "student" ? (
                         msg.message.replace(/^\[Mode:\s*(?:short|detailed|brief)\]\s*/i, "")
                       ) : (
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                        >
-                          {normalizeAiMessage(msg.message)}
-                        </ReactMarkdown>
+                        <MarkdownRenderer
+                          content={normalizeAiMessage(msg.message)}
+                        />
                       )}
                     </div>
                   ))}
@@ -1459,7 +1473,11 @@ export default function SchoolStudentAiStudyPage() {
                                     msg.role === "student" ? "bg-white text-slate-700" : "bg-blue-100 text-blue-900",
                                   )}
                                 >
-                                  {msg.role === "student" ? msg.message.replace(/^\[Mode:\s*(?:short|detailed|brief)\]\s*/i, "") : normalizeAiMessage(msg.message)}
+                                  {msg.role === "student" ? (
+                                    msg.message.replace(/^\[Mode:\s*(?:short|detailed|brief)\]\s*/i, "")
+                                  ) : (
+                                    <MarkdownRenderer content={normalizeAiMessage(msg.message)} />
+                                  )}
                                 </div>
                               ))
                             ) : (

@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
 import {
   Plus,
@@ -1168,11 +1167,14 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
           <div className="flex-1 overflow-y-auto p-5">
             <SlideDeck slides={slides} height={480} topic={material.title} />
           </div>
+        ) : material.description ? (
+          <MarkdownRenderer
+            content={material.description}
+            className="prose-slate flex-1 overflow-y-auto p-6"
+          />
         ) : (
           <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
-            {material.description
-              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
-              : <p className="text-surface-400">No content.</p>}
+            <p className="text-surface-400">No content.</p>
           </div>
         )}
       </div>
@@ -1324,9 +1326,7 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
                 <SlideDeck slides={previewSlides} height={300} topic={topic.name} />
               ) : (
                 <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
-                  <div className="prose prose-sm prose-slate max-w-none dark:prose-invert">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
-                  </div>
+                  <MarkdownRenderer content={content || ''} className="prose-slate" />
                 </div>
               )}
             </div>

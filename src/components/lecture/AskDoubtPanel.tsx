@@ -69,22 +69,8 @@ function parseAiAnswer(raw: string | null | undefined) {
   return null;
 }
 
-const formatMarkdown = (text?: string) => {
-  if (!text) return "";
-  return text
-    .replace(/\\n/g, "\n")
-    .replace(/\r?\n/g, "\n\n")
-    // Step-based and final answer formatting
-    .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    // Theory-specific 5-part numerical/theory headers
-    .replace(/(\(\d\)\s*[a-zA-Z\s/-]+[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    // Legacy sub-headers
-    .replace(/(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
-    .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-};
+import { formatMarkdown } from "@/components/shared/MarkdownRenderer";
+
 
 export function AskDoubtPanel({
   lectureId, topicId, topicName, lectureTitle, timestampSeconds, onClose,

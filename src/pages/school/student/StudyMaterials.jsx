@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -674,9 +673,10 @@ function MaterialViewer({ material, onClose }) {
           {canShowMindmap && viewMode === 'mindmap' ? (
             <MindMapCanvas data={mindmapTree} height={560} />
           ) : previewContent ? (
-            <div className="prose prose-slate max-w-none rounded-xl bg-slate-50 p-4 dark:prose-invert dark:bg-slate-950">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewContent}</ReactMarkdown>
-            </div>
+            <MarkdownRenderer
+              content={previewContent}
+              className="prose-slate rounded-xl bg-slate-50 p-4 dark:bg-slate-950"
+            />
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-500 dark:border-slate-700">
               No preview content is available for this material.

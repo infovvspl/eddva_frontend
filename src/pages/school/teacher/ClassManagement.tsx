@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles } from 'lucide-react';
 
 /**
@@ -594,9 +593,7 @@ const ClassManagement: React.FC = () => {
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600"><Sparkles size={13} /> AI-generated notes</span>
                         <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-blue-600 hover:underline">Regenerate</button>
                       </div>
-                      <div className="prose prose-sm prose-slate max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{detailRec.notes}</ReactMarkdown>
-                      </div>
+                      <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
                     </>
                   ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (
                     <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating AI notes from the transcript…</p>
