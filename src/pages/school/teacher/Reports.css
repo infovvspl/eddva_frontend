@@ -65,6 +65,24 @@
 
 .reports__weakness-card {
   animation: fadeIn 0.35s ease forwards;
+  cursor: pointer;
+}
+
+.reports__weakness-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.688rem;
+  font-weight: 700;
+  color: var(--brand-600);
+  margin-top: 12px;
+  justify-content: flex-end;
+  transition: gap 0.2s ease, color 0.2s ease;
+}
+
+.reports__weakness-card:hover .reports__weakness-footer {
+  gap: 6px;
+  color: var(--brand-700);
 }
 
 .reports__weakness-header {

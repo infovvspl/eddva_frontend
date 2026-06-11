@@ -36,7 +36,7 @@ const GrievanceHandling: React.FC = () => {
       if (searchQuery) params.search = searchQuery;
       if (activeTab === 'academic') params.category = 'academic';
       else if (activeTab === 'infrastructure') params.category = 'infrastructure';
-      else if (activeTab === 'support') params.statusIn = 'open,in-progress';
+      else if (activeTab === 'support') params.statusIn = 'OPEN,IN_PROGRESS';
 
       const res = await api.get('/grievances', { params });
       const formatted = res.data.data.map((g: any) => ({
@@ -61,8 +61,8 @@ const GrievanceHandling: React.FC = () => {
       const res = await api.get('/grievances', { params: { limit: 1000 } }); // Get all for simple stats calculation
       const data = res.data.data || [];
       setStats({
-        open: data.filter((g: any) => g.status?.toLowerCase() === 'open').length,
-        inProgress: data.filter((g: any) => g.status?.toLowerCase() === 'in-progress').length,
+        open: data.filter((g: any) => String(g.status || '').toUpperCase() === 'OPEN').length,
+        inProgress: data.filter((g: any) => String(g.status || '').toUpperCase() === 'IN_PROGRESS').length,
         resolved: data.filter((g: any) => g.status?.toLowerCase() === 'resolved' || g.status?.toLowerCase() === 'closed').length
       });
     } catch (err) {

@@ -32,6 +32,8 @@ import NotificationCenterModal from '@/components/school/NotificationCenterModal
 
 function pageTitle(pathname) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
+  if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';
+  if (/\/school\/admin\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
   return pathname
     .split('/')
     .pop()

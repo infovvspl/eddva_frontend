@@ -28,7 +28,7 @@ import api, { unwrapSchoolData, unwrapSchoolList } from "@/lib/api/school-client
 import { getApiOrigin } from "@/lib/api-config";
 import "./AssessmentSystem.css";
 
-type DraftResult = {
+export type DraftResult = {
   marksObtained: string;
   grade: string;
   remarks: string;
@@ -56,12 +56,12 @@ type StructuredAnswerRow = {
   submitted: boolean;
 };
 
-function percentage(marks: number, total: number) {
+export function percentage(marks: number, total: number) {
   if (!total) return 0;
   return Math.round((marks / total) * 100);
 }
 
-function gradeFromPercent(pct: number) {
+export function gradeFromPercent(pct: number) {
   if (pct >= 90) return "A+";
   if (pct >= 75) return "A";
   if (pct >= 60) return "B";
@@ -70,7 +70,7 @@ function gradeFromPercent(pct: number) {
   return "F";
 }
 
-function resolveUploadUrl(filePath: string | null | undefined) {
+export function resolveUploadUrl(filePath: string | null | undefined) {
   if (!filePath) return null;
   if (/^https?:\/\//i.test(filePath)) return filePath;
   const clean = String(filePath).replace(/^\.\//, "").replace(/^uploads[/\\]/, "");
@@ -374,7 +374,7 @@ function buildStructuredAnswerRow(question: any, questionId: string, value: any,
   return row;
 }
 
-function getStructuredAnswerRows(assessment: any, submission: any, options: { includeBlank?: boolean } = {}): StructuredAnswerRow[] {
+export function getStructuredAnswerRows(assessment: any, submission: any, options: { includeBlank?: boolean } = {}): StructuredAnswerRow[] {
   const answers = parseJsonObject(submission?.answers_json || submission?.answersJson);
   const questions = getAssessmentQuestions(assessment);
   const questionMap = new Map(questions.map((question: any) => [String(question.id), question]));
@@ -395,7 +395,7 @@ function getStructuredAnswerRows(assessment: any, submission: any, options: { in
     });
 }
 
-function StructuredAnswersView({
+export function StructuredAnswersView({
   rows,
   emptyText = "No structured answers were submitted.",
 }: {
@@ -505,12 +505,12 @@ const AssessmentDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [reviewStudent, setReviewStudent] = useState<any | null>(null);
-  const [activeTabId, setActiveTabId] = useState("overview");
+  const [activeTabId, setActiveTabId] = useState(location.state?.activeTabId || "overview");
 
   // Marks Entry Pagination & Search
   const [marksPage, setMarksPage] = useState(1);
   const [marksLimit, setMarksLimit] = useState(10);
-  const [marksSearch, setMarksSearch] = useState("");
+  const [marksSearch, setMarksSearch] = useState(location.state?.marksSearch || "");
 
   // Submissions Pagination & Search
   const [submissionsPage, setSubmissionsPage] = useState(1);
@@ -681,22 +681,14 @@ const AssessmentDetails: React.FC = () => {
 
   const openSubmissionReview = (student: any) => {
     const studentId = String(student.id || student.student_user_id || student.studentId);
-    setDrafts((current) => {
-      if (current[studentId]) return current;
-      const existing = resultMap.get(studentId);
-      const marks = existing?.marks_obtained ?? "";
-      const pct = marks === "" ? 0 : percentage(Number(marks), totalMarks);
-      return {
-        ...current,
-        [studentId]: {
-          marksObtained: marks === "" ? "" : String(Number(marks)),
-          grade: existing?.grade || (marks === "" ? "" : gradeFromPercent(pct)),
-          remarks: existing?.remarks || "",
-          isAbsent: Boolean(existing?.is_absent),
-        },
-      };
+    navigate(`/school/teacher/assessments/${id}/submissions/${studentId}/review`, {
+      state: {
+        from: `/school/teacher/assessments/${id}`,
+        originalFrom: previousPage || `/school/teacher/assessments`,
+        assessmentWorkspace,
+        student: { ...student, id: studentId },
+      },
     });
-    setReviewStudent({ ...student, id: studentId });
   };
 
   const autoGradeReviewSubmission = () => {
