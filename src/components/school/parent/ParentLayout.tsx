@@ -9,7 +9,7 @@ import {
   Menu,
   MessageCircle,
   Search,
-  User as UserIcon,
+  UserCircle,
   X,
   Loader2,
   CheckCheck,
@@ -26,7 +26,6 @@ const navItems = [
   { name: "Child Report", href: "/school/parent/child", icon: GraduationCap },
   { name: "Communication", href: "/school/parent/communication", icon: MessageCircle },
   { name: "Alerts", href: "/school/parent/notifications", icon: Bell },
-  { name: "Profile", href: "/school/parent/profile", icon: UserIcon },
 ];
 
 export default function ParentLayout() {
@@ -48,8 +47,10 @@ export default function ParentLayout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifCenterOpen, setNotifCenterOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (notifOpen) {
@@ -60,6 +61,7 @@ export default function ParentLayout() {
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!notifRef.current?.contains(e.target as Node)) setNotifOpen(false);
+      if (!profileRef.current?.contains(e.target as Node)) setProfileOpen(false);
     }
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
@@ -112,7 +114,6 @@ export default function ParentLayout() {
         unreadCount={unreadCount}
         user={user}
         workspaceName={workspaceName}
-        logout={logout}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -207,21 +208,19 @@ export default function ParentLayout() {
                               }
                               setNotifOpen(false);
                             }}
-                            className={`group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/40 dark:hover:bg-slate-800/40 cursor-pointer transition-colors ${
-                              !n.isRead ? "bg-blue-50/20 dark:bg-blue-900/10" : ""
-                            }`}
+                            className={`group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/40 dark:hover:bg-slate-800/40 cursor-pointer transition-colors ${!n.isRead ? "bg-blue-50/20 dark:bg-blue-900/10" : ""
+                              }`}
                           >
                             {!n.isRead && (
                               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500" />
                             )}
 
-                            <div className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold ${
-                              n.priority === 'urgent' 
+                            <div className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold ${n.priority === 'urgent'
                                 ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30"
                                 : n.priority === 'high'
-                                ? "bg-orange-50 text-orange-600"
-                                : "bg-blue-50 text-blue-600"
-                            }`}>
+                                  ? "bg-orange-50 text-orange-600"
+                                  : "bg-blue-50 text-blue-600"
+                              }`}>
                               <Bell size={14} />
                             </div>
 
@@ -262,16 +261,74 @@ export default function ParentLayout() {
                 )}
               </div>
 
-              <Link to="/school/parent/profile" className="flex items-center gap-3 border-l border-slate-100 pl-3">
-                <div className="hidden text-right sm:block">
-                  <p className="text-sm font-bold leading-none text-slate-950">{user?.name || "Parent"}</p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">Parent</p>
-                </div>
-                <div className="relative grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold text-blue-700">
-                  {user?.name?.charAt(0).toUpperCase() || "P"}
-                  <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
-                </div>
-              </Link>
+              <div className="relative border-l border-slate-100 pl-4 dark:border-slate-800" ref={profileRef}>
+                <button
+                  onClick={() => setProfileOpen((o) => !o)}
+                  className="flex items-center gap-2 outline-none"
+                  aria-label="User Profile menu"
+                >
+                  <div className="hidden text-right sm:block">
+                    <p className="text-sm font-bold leading-none text-slate-950">{user?.name || "Parent"}</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">Parent</p>
+                  </div>
+                  <div className="relative">
+                    {user?.photo ? (
+                      <img 
+                        src={user.photo} 
+                        alt={user?.name || 'Parent'} 
+                        onError={(e: any) => {
+                          e.target.style.display = 'none';
+                          e.target.parentNode.innerHTML = `<div class="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'P').charAt(0).toUpperCase()}</div>`;
+                        }}
+                        className="h-10 w-10 rounded-2xl border border-slate-200 object-cover" 
+                      />
+                    ) : (
+                      <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        {(user?.name || 'P').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
+                  </div>
+                </button>
+
+                {profileOpen && (
+                  <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                    {/* Profile Header */}
+                    <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Parent'}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Parent Portal</p>
+                    </div>
+                    
+                    {/* My Profile Link */}
+                    <Link
+                      to="/school/parent/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                        <UserCircle size={16} />
+                      </div>
+                      My Profile
+                    </Link>
+
+                    <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
+
+                    {/* Logout button */}
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
+                        <LogOut size={16} />
+                      </div>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -316,9 +373,8 @@ function ParentSidebar({
   return (
     <>
       <aside
-        className={`flex flex-col fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 md:sticky md:top-0 md:h-screen ${
-          collapsed ? "md:w-[80px]" : "md:w-[280px]"
-        } ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        className={`flex flex-col fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 md:sticky md:top-0 md:h-screen ${collapsed ? "md:w-[80px]" : "md:w-[280px]"
+          } ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6">
@@ -354,8 +410,7 @@ function ParentSidebar({
                     title={collapsed ? item.name : undefined}
                     onClick={onClose}
                     className={({ isActive }) =>
-                      `group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${
-                        isActive ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                      `group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${isActive ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
                       }`
                     }
                   >
@@ -371,21 +426,6 @@ function ParentSidebar({
                   </NavLink>
                 ))}
               </nav>
-            </div>
-
-            <div className="mb-6">
-              <p className={`mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400 ${collapsed ? "md:hidden" : ""}`}>
-                Support
-              </p>
-              <button
-                type="button"
-                onClick={() => logout?.()}
-                title={collapsed ? "Logout" : undefined}
-                className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-slate-600 transition-all hover:bg-rose-50 hover:text-rose-600"
-              >
-                <LogOut className="h-[18px] w-[18px] shrink-0" />
-                <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Logout</span>
-              </button>
             </div>
           </div>
 
