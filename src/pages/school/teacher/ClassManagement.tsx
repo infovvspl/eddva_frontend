@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles } from 'lucide-react';
+import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy } from 'lucide-react';
+
 
 /**
  * Transcript/notes status pill for a recording card. While transcription (or
@@ -103,6 +106,11 @@ const ClassManagement: React.FC = () => {
   const [filterTopics, setFilterTopics] = useState<any[]>([]);
   const [detailRec, setDetailRec] = useState<any | null>(null);
   const [detailTab, setDetailTab] = useState<'overview' | 'notes' | 'transcript' | 'quiz'>('overview');
+  const [quizSubTab, setQuizSubTab] = useState<'questions' | 'students'>('questions');
+  const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [quizAnalytics, setQuizAnalytics] = useState<any | null>(null);
+  const [quizAnalyticsLoading, setQuizAnalyticsLoading] = useState(false);
+  const [quizAnalyticsError, setQuizAnalyticsError] = useState<string | null>(null);
   const [recordingForm, setRecordingForm] = useState({
     title: '',
     description: '',
@@ -202,6 +210,23 @@ const ClassManagement: React.FC = () => {
       setRecordedClassData(Array.isArray(rows) ? rows : []);
     } catch (error) {
       console.error('Failed to fetch recordings', error);
+    }
+  };
+
+  const fetchQuizAnalytics = async (recordingId: string) => {
+    setQuizAnalyticsLoading(true);
+    setQuizAnalyticsError(null);
+    try {
+      const response = await api.get(`/classes/recordings/${recordingId}/quiz-analytics`);
+      setQuizAnalytics(response.data?.data ?? response.data ?? null);
+    } catch (error: any) {
+      console.error('Failed to fetch quiz analytics', error);
+      setQuizAnalytics(null);
+      setQuizAnalyticsError(error?.response?.status === 404
+        ? 'Student results endpoint is not available on the running backend. Restart the backend server.'
+        : (error?.response?.data?.message || 'Could not load student results.'));
+    } finally {
+      setQuizAnalyticsLoading(false);
     }
   };
 
@@ -336,6 +361,8 @@ const ClassManagement: React.FC = () => {
   const handleGenerateQuiz = async (id: string) => {
     try {
       await api.post(`/classes/recordings/${id}/generate-quiz`);
+      setQuizAnalytics(null);
+      setQuizAnalyticsError(null);
       setDetailRec((prev: any) => (prev && prev.id === id ? { ...prev, quiz_status: 'processing' } : prev));
       fetchRecordedClasses();
     } catch (e: any) {
@@ -380,6 +407,15 @@ const ClassManagement: React.FC = () => {
       return fresh || prev;
     });
   }, [recordedClassData]);
+
+  useEffect(() => {
+    if (detailRec?.id && detailTab === 'quiz' && detailRec.quiz_status === 'done') {
+      fetchQuizAnalytics(detailRec.id);
+    } else if (!detailRec || detailRec.quiz_status !== 'done') {
+      setQuizAnalytics(null);
+      setQuizAnalyticsError(null);
+    }
+  }, [detailRec?.id, detailRec?.quiz_status, detailTab, recordedClassData]);
 
   const liveContent = (
     <div className="class__section">
@@ -565,9 +601,9 @@ const ClassManagement: React.FC = () => {
                     <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Watch stats</p>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: 'Total Watches', value: detailRec.views ?? 0 },
-                        { label: 'Completion Rate', value: '0%' },
-                        { label: 'Avg Watch', value: '0%' },
+                        { label: 'Total Watches', value: detailRec.total_watchers ?? detailRec.views ?? 0 },
+                        { label: 'Completion Rate', value: `${detailRec.completion_rate ?? 0}%` },
+                        { label: 'Avg Watch', value: `${detailRec.avg_watch_percentage ?? 0}%` },
                         { label: 'Confusion Spots', value: 0 },
                       ].map((s) => (
                         <div key={s.label} className="rounded-xl border border-slate-100 p-3">
@@ -629,41 +665,198 @@ const ClassManagement: React.FC = () => {
               {detailTab === 'quiz' && (
                 <div>
                   {detailRec.quiz_status === 'done' && Array.isArray(detailRec.quiz) && detailRec.quiz.length ? (
-                    <>
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
-                          <Sparkles size={13} /> {detailRec.quiz.length} in-video questions
-                        </span>
-                        <button onClick={() => handleGenerateQuiz(detailRec.id)} className="text-xs font-bold text-blue-600 hover:underline">Regenerate</button>
-                      </div>
-                      <div className="space-y-4">
-                        {detailRec.quiz.map((q: any, qi: number) => (
-                          <div key={q.id || qi} className="rounded-xl border border-slate-100 p-4">
-                            <div className="mb-2 flex items-center gap-2">
-                              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-black uppercase text-blue-600">At {q.triggerAtPercent ?? 0}%</span>
-                              {q.segmentTitle && <span className="truncate text-[11px] font-semibold text-slate-400">{q.segmentTitle}</span>}
+                    (() => {
+                      const analytics = quizAnalytics ?? { students: [], questionStats: [], totalWatchers: 0 };
+                      const quizAvg = analytics && analytics.students.filter(s => s.quizScore !== null).length > 0
+                        ? Math.round(analytics.students.filter(s => s.quizScore !== null).reduce((a, s) => a + (s.quizScore ?? 0), 0) / analytics.students.filter(s => s.quizScore !== null).length) + "%"
+                        : "—";
+
+                      return (
+                        <div className="flex flex-col h-full space-y-4">
+                          {quizAnalyticsError && (
+                            <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                              {quizAnalyticsError}
                             </div>
-                            <p className="text-sm font-bold text-slate-900">{qi + 1}. {q.questionText}</p>
-                            <div className="mt-2 space-y-1.5">
-                              {(q.options || []).map((opt: any) => {
-                                const correct = opt.label === q.correctOption;
-                                return (
-                                  <div key={opt.label}
-                                    className={`flex items-start gap-2 rounded-lg border px-3 py-1.5 text-sm ${correct ? 'border-emerald-300 bg-emerald-50 font-semibold text-emerald-700' : 'border-slate-200 text-slate-600'}`}>
-                                    <span className="font-bold">{opt.label}.</span>
-                                    <span>{opt.text}</span>
-                                    {correct && <span className="ml-auto text-[10px] font-black uppercase text-emerald-600">Correct</span>}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            {q.explanation && (
-                              <p className="mt-2 text-xs text-slate-500"><span className="font-bold text-slate-600">Why:</span> {q.explanation}</p>
+                          )}
+                          {/* Summary strip */}
+                          <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-100 bg-slate-50/50 rounded-2xl shrink-0">
+                            {[
+                              { label: "Questions", value: detailRec.quiz.length, icon: ListChecks, color: "text-blue-600", bg: "bg-blue-50" },
+                              { label: "Attempted By", value: quizAnalyticsError ? "—" : (analytics?.students.filter(s => s.answeredCount > 0).length ?? 0), icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
+                              { label: "Avg Accuracy", value: quizAnalyticsError ? "—" : quizAvg, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+                            ].map(m => (
+                              <div key={m.label} className="text-center">
+                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1.5", m.bg)}>
+                                  <m.icon className={cn("w-4.5 h-4.5", m.color)} />
+                                </div>
+                                <p className="text-base font-bold text-slate-800">{m.value}</p>
+                                <p className="text-[10px] text-slate-400 font-semibold">{m.label}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Sub-tabs */}
+                          <div className="flex border-b border-slate-100 shrink-0">
+                            {(["questions", "students"] as const).map(k => (
+                              <button key={k} onClick={() => setQuizSubTab(k)}
+                                className={cn("px-4 py-2.5 text-xs font-bold border-b-2 transition-colors -mb-px capitalize",
+                                  quizSubTab === k ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400 hover:text-slate-600")}>
+                                {k === "questions" ? `Questions (${detailRec.quiz.length})` : `Student Results (${analytics?.students.length ?? 0})`}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="flex-1 space-y-3 pt-2">
+                            {quizAnalyticsLoading && (
+                              <p className="inline-flex items-center gap-2 text-xs font-bold text-slate-400">
+                                <Loader2 size={14} className="animate-spin" /> Loading student results...
+                              </p>
+                            )}
+                            {/* ── Questions sub-tab ── */}
+                            {quizSubTab === "questions" && detailRec.quiz.map((cp: any, i: number) => {
+                              const qStat = analytics?.questionStats.find(q => q.questionId === (cp.id || `q-${i}`));
+                              const isExpanded = expandedQuestion === (cp.id || `q-${i}`);
+                              const totalAnswered = qStat?.totalAttempts ?? 0;
+
+                              const optionCounts: Record<string, number> = {};
+                              if (analytics) {
+                                cp.options.forEach((o: any) => { optionCounts[o.label] = 0; });
+                                analytics.students.forEach(s => {
+                                  const r = s.responses.find(r => r.questionId === (cp.id || `q-${i}`));
+                                  if (r) optionCounts[r.selectedOption] = (optionCounts[r.selectedOption] ?? 0) + 1;
+                                });
+                              }
+
+                              return (
+                                <div key={cp.id || `q-${i}`} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedQuestion(isExpanded ? null : (cp.id || `q-${i}`))}
+                                    className="w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 transition-colors"
+                                  >
+                                    <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg shrink-0 mt-0.5">Q{i + 1}</span>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[10px] font-bold text-slate-400 mb-1">{cp.segmentTitle} · at {cp.triggerAtPercent}% of video</p>
+                                      <p className="text-sm font-bold text-slate-800 leading-5">{cp.questionText}</p>
+                                      {qStat && (
+                                        <div className="mt-2.5 flex items-center gap-3">
+                                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div
+                                              className={cn("h-full rounded-full transition-all", (qStat.accuracy ?? 0) >= 60 ? "bg-emerald-500" : (qStat.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-rose-500")}
+                                              style={{ width: `${qStat.accuracy ?? 0}%` }}
+                                            />
+                                          </div>
+                                          <span className={cn("text-[10px] font-black shrink-0",
+                                            (qStat.accuracy ?? 0) >= 60 ? "text-emerald-600" : (qStat.accuracy ?? 0) >= 40 ? "text-amber-600" : "text-rose-600")}>
+                                            {qStat.accuracy !== null ? `${qStat.accuracy}% correct` : "No attempts"}
+                                          </span>
+                                          <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalAnswered} attempts</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <ChevronRight className={cn("w-4 h-4 text-slate-400 shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
+                                  </button>
+
+                                  {isExpanded && (
+                                    <div className="border-t border-slate-100 p-4 space-y-2.5 bg-slate-50/50">
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Option Breakdown</p>
+                                      {cp.options.map((opt: any) => {
+                                        const count = optionCounts[opt.label] ?? 0;
+                                        const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
+                                        const isCorrect = opt.label === cp.correctOption;
+                                        return (
+                                          <div key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-100 text-slate-700")}>
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                              <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
+                                                isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
+                                              <span className={cn("text-xs flex-1", isCorrect ? "font-bold text-emerald-800" : "text-slate-700")}>{opt.text}</span>
+                                              {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                                              <span className="text-xs font-bold text-slate-800 shrink-0">{count} ({pct}%)</span>
+                                            </div>
+                                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                              <div
+                                                className={cn("h-full rounded-full transition-all", isCorrect ? "bg-emerald-500" : "bg-slate-300")}
+                                                style={{ width: `${pct}%` }}
+                                              />
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                      {cp.explanation && (
+                                        <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
+                                          <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                          <p className="text-xs text-amber-800 font-medium leading-relaxed">{cp.explanation}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+
+                            {/* ── Students sub-tab ── */}
+                            {quizSubTab === "students" && (
+                              analytics?.students.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                                  <Users className="w-10 h-10 opacity-20 mb-3" />
+                                  <p className="text-sm font-bold">No students have attempted the quiz yet.</p>
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {(analytics?.students ?? [])
+                                    .filter(s => s.answeredCount > 0)
+                                    .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
+                                    .map((s, idx) => (
+                                      <div key={s.studentId} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                        <div className="flex items-center gap-3 p-3">
+                                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
+                                            {s.studentName.charAt(0).toUpperCase()}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-slate-800 truncate">{s.studentName}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                              <span className="text-xs text-slate-400 font-semibold">{s.correctCount}/{s.answeredCount} correct</span>
+                                              <span className="text-slate-300 text-xs">·</span>
+                                              <span className="text-xs text-slate-400 font-semibold">watched {Math.round(s.watchPercentage)}%</span>
+                                            </div>
+                                          </div>
+                                          <div className={cn("text-xs font-black px-2.5 py-1 rounded-full",
+                                            s.quizScore === null ? "text-slate-500 bg-slate-100" :
+                                            s.quizScore >= 70 ? "text-emerald-700 bg-emerald-50" :
+                                            s.quizScore >= 40 ? "text-amber-700 bg-amber-50" : "text-rose-700 bg-rose-50")}>
+                                            {s.quizScore !== null ? `${s.quizScore}%` : "—"}
+                                          </div>
+                                        </div>
+                                        {s.answeredCount > 0 && (
+                                          <div className="border-t border-slate-100 px-3 py-2 bg-slate-50/50 flex flex-wrap gap-2">
+                                            {detailRec.quiz.map((cp: any, qi: number) => {
+                                              const resp = s.responses.find(r => r.questionId === (cp.id || `q-${qi}`));
+                                              return (
+                                                <div key={cp.id || `q-${qi}`} title={resp ? `Q${qi + 1}: chose ${resp.selectedOption}${resp.isCorrect ? " ✓" : ` (correct: ${cp.correctOption})`}` : `Q${qi + 1}: not answered`}
+                                                  className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold cursor-default",
+                                                    !resp ? "bg-slate-100 text-slate-400" :
+                                                    resp.isCorrect ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                                                  )}>
+                                                  <span>Q{qi + 1}</span>
+                                                  {resp ? (
+                                                    resp.isCorrect ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />
+                                                  ) : (
+                                                    <span className="text-[9px]">?</span>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                </div>
+                              )
                             )}
                           </div>
-                        ))}
-                      </div>
-                    </>
+                        </div>
+                      );
+                    })()
                   ) : detailRec.quiz_status === 'processing' || detailRec.quiz_status === 'pending' ? (
                     <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating in-video quiz…</p>
                   ) : (detailRec.transcript_status === 'done' || detailRec.notes_status === 'done') ? (
