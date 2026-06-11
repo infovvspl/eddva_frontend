@@ -11,7 +11,6 @@ import {
   FileText,
   HelpCircle,
   LayoutDashboard,
-  LifeBuoy,
   LogOut,
   Megaphone,
   MessageSquare,
@@ -40,6 +39,7 @@ const studentGroups = [
       { to: '/school/student/live-classes', label: 'Live Classes', icon: Radio },
       { to: '/school/student/recorded-classes', label: 'Recorded Classes', icon: Video },
       { to: '/school/student/study-materials', label: 'Study Materials', icon: BookOpen },
+      { to: '/school/student/planner', label: 'AI Study Planner', icon: BrainCircuit },
     ],
   },
   {

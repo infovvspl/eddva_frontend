@@ -136,6 +136,11 @@ export default function Timetable() {
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {isActive && <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {cls.periodName || (cls.periodNumber ? `Period ${cls.periodNumber}` : '')}
+                          </span>
+                        </div>
+                        <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
                           {cls.startTime} - {cls.endTime}
                         </div>
                       </td>
@@ -203,10 +208,12 @@ export default function Timetable() {
                 ) : (
                   timeSlots.map((slotTime, idx) => {
                     const [startTime, endTime] = slotTime.split('-');
+                    const match = timetable.find(t => t.startTime === startTime && t.endTime === endTime);
+                    const periodName = match?.periodName || `P${idx + 1}`;
                     return (
                       <tr key={slotTime} className="group">
                         <td className="p-3 border-b border-r border-slate-100 dark:border-slate-800/50 text-center align-middle bg-slate-50/30 dark:bg-slate-800/20">
-                          <div className="font-bold text-slate-700 dark:text-slate-300">P{idx + 1}</div>
+                          <div className="font-bold text-slate-700 dark:text-slate-300">{periodName}</div>
                           <div className="text-[10px] font-semibold text-slate-500 whitespace-nowrap mt-1">{startTime}-{endTime}</div>
                         </td>
                         {DAYS.map(day => {

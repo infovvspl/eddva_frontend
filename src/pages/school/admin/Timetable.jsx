@@ -260,7 +260,7 @@ export default function Timetable() {
                   <div className="flex flex-col items-end gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-450">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5 text-blue-600" />
-                      Period {slot.periodNumber || 1} • {slot.startTime} - {slot.endTime}
+                      {slot.periodName || `Period ${slot.periodNumber || 1}`} • {slot.startTime} - {slot.endTime}
                     </span>
                     <div className="flex items-center gap-1">
                       <span className="rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 uppercase">

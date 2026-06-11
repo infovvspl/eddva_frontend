@@ -19,7 +19,7 @@ export default function Layout() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
-          <AnimatePresence initial={false} mode="sync">
+          <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>
               <div className="mx-auto h-full max-w-[1680px]">
                 <Outlet />

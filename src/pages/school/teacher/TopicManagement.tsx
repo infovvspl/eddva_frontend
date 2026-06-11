@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import FlashcardViewer from '@/components/resources/FlashcardViewer';
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
 import {
   Plus,
@@ -69,6 +71,9 @@ interface Assignment {
 
 interface Ref { id: string; name: string }
 
+// AI PPT Studio (standalone ppt-generator app). Override via VITE_PPT_STUDIO_URL.
+const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || 'http://localhost:5050';
+
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
@@ -88,6 +93,7 @@ const TopicManagement: React.FC = () => {
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<{ id: string; name: string; chapterId: string } | null>(null);
+  const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
 
@@ -298,6 +304,47 @@ const TopicManagement: React.FC = () => {
   const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  // Receive a generated .pptx from the embedded PPT Studio and save it to the
+  // open topic's Course Content materials, then acknowledge the iframe.
+  useEffect(() => {
+    const onMessage = async (e: MessageEvent) => {
+      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string };
+      if (data?.type !== 'EDVA_PPT_SAVE') return;
+      const reply = (type: string, message?: string) =>
+        (e.source as Window | null)?.postMessage({ type, message }, '*');
+      try {
+        if (!selectedTopic) { toast.error('Open a topic first, then save the PPT to it.'); reply('EDVA_PPT_SAVE_ERROR', 'Open a topic first'); return; }
+        if (!data.base64) { reply('EDVA_PPT_SAVE_ERROR', 'No file data'); return; }
+        const bin = atob(data.base64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const fileName = data.fileName || `${data.title || 'Presentation'}.pptx`;
+        const file = new File([bytes], fileName, {
+          type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        });
+        const fileUrl = await schoolContent.uploadMaterialFile(file);
+        await schoolContent.createMaterial({
+          title: data.title || 'Presentation',
+          fileType: 'ppt',
+          fileUrl,
+          fileName,
+          fileSizeKb: Math.round(file.size / 1024),
+          topicId: selectedTopic.id,
+          chapterId: selectedTopic.chapterId,
+          subjectId: selectedSubject?.id,
+        });
+        toast.success('PPT saved to Course Content');
+        reply('EDVA_PPT_SAVED');
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Save failed';
+        toast.error(msg);
+        reply('EDVA_PPT_SAVE_ERROR', msg);
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [selectedTopic, selectedSubject]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -453,6 +500,7 @@ const TopicManagement: React.FC = () => {
                 topic={selectedTopic}
                 subjectId={selectedSubject.id}
                 canEdit={canEditCurriculum}
+                onOpenPptStudio={() => setPptStudioOpen(true)}
               />
             ) : (
               <div className="flex h-full min-h-[300px] items-center justify-center p-6">
@@ -488,6 +536,32 @@ const TopicManagement: React.FC = () => {
             </div>
           </Modal>
         </>
+      )}
+
+      {/* ── AI PPT Studio (embedded ppt-generator) ──────────────────────── */}
+      {pptStudioOpen && (
+        <div className="fixed inset-0 z-[300] flex flex-col bg-slate-900/95 backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
+            <div className="flex items-center gap-2 text-white">
+              <Presentation size={18} />
+              <span className="text-sm font-bold">AI PPT Studio</span>
+              {selectedTopic && <span className="truncate text-xs text-white/60">· {selectedTopic.name}</span>}
+            </div>
+            <button
+              onClick={() => setPptStudioOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+              title="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <iframe
+            title="AI PPT Studio"
+            src={`${PPT_STUDIO_URL}/${selectedTopic ? `?topic=${encodeURIComponent(selectedTopic.name)}` : ''}`}
+            className="w-full flex-1 border-0 bg-white"
+            allow="clipboard-write; downloads"
+          />
+        </div>
       )}
     </div >
   );
@@ -695,7 +769,7 @@ function ChapterNode({
 
 // ── Material workspace (selected topic's materials, grouped by type) ─────────
 
-function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string; name: string; chapterId: string }; subjectId: string; canEdit: boolean }) {
+function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string }; subjectId: string; canEdit: boolean; onOpenPptStudio: () => void }) {
   const confirm = useConfirm();
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -831,6 +905,8 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
                     {items.map((m) => {
                       const href = resolveFileUrl(m.fileUrl ?? m.file_url);
                       const isText = !!m.description && !href;
+                      // A real uploaded slide deck (.pptx) → open it in the in-app Office viewer.
+                      const isViewablePpt = String(m.fileType ?? '').toLowerCase() === 'ppt' && !!href && /\.pptx?($|\?)/i.test(href);
                       return (
                         <div key={m.id} className="group flex items-center gap-3 rounded-xl border border-surface-100 bg-white p-3 transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
@@ -851,7 +927,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
                               <Download size={13} /> PDF
                             </button>
                           )}
-                          {isText ? (
+                          {isText || isViewablePpt ? (
                             <button onClick={() => setViewMaterial(m)}
                               className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
                               <Eye size={13} /> View
@@ -891,6 +967,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit }: { topic: { id: string;
           topic={topic}
           onClose={() => setShowAi(false)}
           onSaved={() => { load(); }}
+          onOpenPptStudio={() => { setShowAi(false); onOpenPptStudio(); }}
         />
       )}
 
@@ -1025,6 +1102,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
   const fileType = String(material.fileType ?? '').toLowerCase();
   const isMindmap = fileType === 'mindmap';
   const isPresentation = fileType === 'ppt';
+  const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || (material.description || '').trim().startsWith('Q:');
   const tree = useMemo(
     () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, material.title) : null),
     [isMindmap, material.description, material.title],
@@ -1035,11 +1113,15 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
   );
   const showTree = !!tree && tree.children.length > 0;
   const showSlides = slides.length > 0;
+  // A real uploaded .pptx file (binary) — no markdown slides to render.
+  const fileUrl = resolveFileUrl(material.fileUrl ?? (material as unknown as { file_url?: string }).file_url);
+  const isOfficeFile = !!fileUrl && /\.(pptx?|docx?|xlsx?)$/i.test(fileUrl);
+  const isBinaryPpt = isPresentation && isOfficeFile && !showSlides;
   const hasRich = showTree || showSlides;
   const richLabel = showTree ? 'Tree' : 'Slides';
   const [view, setView] = useState<'rich' | 'text'>(hasRich ? 'rich' : 'text');
   const rich = hasRich && view === 'rich';
-  const widthClass = rich && showTree ? 'max-w-5xl' : rich && showSlides ? 'max-w-4xl' : 'max-w-3xl';
+  const widthClass = isBinaryPpt ? 'max-w-[1400px] h-[88vh]' : rich && showTree ? 'max-w-5xl' : rich && showSlides ? 'max-w-4xl' : 'max-w-3xl';
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -1059,14 +1141,29 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                   className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'text' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>Text</button>
               </div>
             )}
-            <button onClick={() => downloadMaterial(material)} title="Download as PDF"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 px-3 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
-              <Download size={14} /> PDF
-            </button>
+            {isBinaryPpt ? (
+              <a href={fileUrl} target="_blank" rel="noreferrer" download title="Download PPT"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 px-3 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
+                <Download size={14} /> PPT
+              </a>
+            ) : (
+              <button onClick={() => downloadMaterial(material)} title="Download as PDF"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 px-3 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
+                <Download size={14} /> PDF
+              </button>
+            )}
             <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
           </div>
         </div>
-        {rich && showTree ? (
+        {isBinaryPpt ? (
+          <div className="flex-1 overflow-hidden bg-surface-50 dark:bg-surface-950">
+            <iframe
+              title={material.title}
+              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`}
+              className="h-full min-h-[70vh] w-full border-0"
+            />
+          </div>
+        ) : rich && showTree ? (
           <div className="flex-1 overflow-hidden p-4">
             <MindMapCanvas data={tree} height={560} />
           </div>
@@ -1074,10 +1171,17 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
           <div className="flex-1 overflow-y-auto p-5">
             <SlideDeck slides={slides} height={480} topic={material.title} />
           </div>
+        ) : material.description ? (
+          <MarkdownRenderer
+            content={material.description}
+            className="prose-slate flex-1 overflow-y-auto p-6"
+          />
         ) : (
           <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
             {material.description
-              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
+              ? isFlashcard
+                ? <FlashcardViewer content={material.description} />
+                : <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
               : <p className="text-surface-400">No content.</p>}
           </div>
         )}
@@ -1091,7 +1195,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
   { id: 'dpp', label: 'DPP Sheet', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
   { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
-  { id: 'presentation', label: 'Presentation', desc: 'Slide-by-slide PPT deck with titles & bullet points', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'notes', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'notes', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
@@ -1100,7 +1204,7 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
   { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'notes', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
 ];
 
-function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; name: string; chapterId: string }; onClose: () => void; onSaved: () => void }) {
+function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string }; onClose: () => void; onSaved: () => void; onOpenPptStudio: () => void }) {
   const [typeId, setTypeId] = useState('dpp');
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState('');
@@ -1182,7 +1286,7 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
               const Icon = t.icon;
               const active = typeId === t.id;
               return (
-                <button key={t.id} onClick={() => { setTypeId(t.id); setContent(null); }}
+                <button key={t.id} onClick={() => { if (t.id === 'presentation') { onOpenPptStudio(); return; } setTypeId(t.id); setContent(null); }}
                   className={`rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
                   <div className={`mb-1.5 inline-flex rounded-lg p-1.5 ${t.soft}`}><Icon size={16} className={t.text} /></div>
                   <p className="text-sm font-bold text-surface-900 dark:text-white">{t.label}</p>
@@ -1230,9 +1334,7 @@ function AiGeneratePanel({ topic, onClose, onSaved }: { topic: { id: string; nam
                 <SlideDeck slides={previewSlides} height={300} topic={topic.name} />
               ) : (
                 <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
-                  <div className="prose prose-sm prose-slate max-w-none dark:prose-invert">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
-                  </div>
+                  <MarkdownRenderer content={content || ''} className="prose-slate" />
                 </div>
               )}
             </div>

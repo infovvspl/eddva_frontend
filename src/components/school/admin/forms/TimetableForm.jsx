@@ -17,12 +17,14 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     type: 'offline',
     room: '',
     meetingLink: '',
+    periodId: '',
     periodNumber: '1',
     remarks: ''
   });
   const [sections, setSections] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [periods, setPeriods] = useState([]);
   const [teacherProfile, setTeacherProfile] = useState(null);
   const [error, setError] = useState('');
 
@@ -38,6 +40,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         type: timetable.type || 'offline',
         room: timetable.room || '',
         meetingLink: timetable.meetingLink || '',
+        periodId: timetable.periodId || '',
         periodNumber: timetable.periodNumber ? String(timetable.periodNumber) : '1',
         remarks: timetable.remarks || ''
       });
@@ -54,10 +57,11 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         setFormData(prev => ({ ...prev, teacherId: String(profile?.id || '') }));
       }
 
-      const [secRes, subjRes, teachRes] = await Promise.all([
+      const [secRes, subjRes, teachRes, periodRes] = await Promise.all([
         api.get('/academic/classes'),
         api.get('/academic/subjects'),
-        api.get('/teachers')
+        api.get('/teachers'),
+        api.get('/academic/periods')
       ]);
       
       const allSections = [];
@@ -70,6 +74,16 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       setSections(allSections);
       setSubjects(getResponseList(subjRes));
       setTeachers(getResponseList(teachRes));
+      
+      const pList = getResponseList(periodRes);
+      setPeriods(pList);
+      
+      if (timetable && !timetable.periodId && timetable.periodNumber) {
+        const matchingPeriod = pList.find(p => String(p.sequenceNo) === String(timetable.periodNumber));
+        if (matchingPeriod) {
+          setFormData(prev => ({ ...prev, periodId: matchingPeriod.id }));
+        }
+      }
     } catch (error) {
       console.error('Failed to load timetable data:', error);
     }
@@ -140,6 +154,10 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
     if (!formData.sectionId) {
       setError('Please select a section');
+      return;
+    }
+    if (!formData.periodId) {
+      setError('Please select a period');
       return;
     }
     if (!formData.subjectId) {
@@ -250,13 +268,47 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           )}
 
           <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Period *</label>
+            <select
+              name="periodId"
+              value={formData.periodId}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                const p = periods.find(x => String(x.id) === String(selectedId));
+                if (p) {
+                  setFormData(prev => ({
+                    ...prev,
+                    periodId: selectedId,
+                    periodNumber: String(p.sequenceNo),
+                    startTime: p.startTime,
+                    endTime: p.endTime
+                  }));
+                } else {
+                  setFormData(prev => ({
+                    ...prev,
+                    periodId: '',
+                  }));
+                }
+              }}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+            >
+              <option value="">Select Period</option>
+              {periods.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.periodName} ({p.startTime} - {p.endTime})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Start Time</label>
             <input
               type="time"
               name="startTime"
               value={formData.startTime}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              readOnly
+              className="w-full rounded-lg border border-surface-200 bg-slate-50 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 cursor-not-allowed"
             />
           </div>
 
@@ -266,23 +318,9 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               type="time"
               name="endTime"
               value={formData.endTime}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              readOnly
+              className="w-full rounded-lg border border-surface-200 bg-slate-50 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 cursor-not-allowed"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Period Number</label>
-            <select
-              name="periodNumber"
-              value={formData.periodNumber}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
-                <option key={p} value={String(p)}>Period {p}</option>
-              ))}
-            </select>
           </div>
 
           <div>

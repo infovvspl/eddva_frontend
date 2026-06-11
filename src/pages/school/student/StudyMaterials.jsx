@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
+import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
+import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -52,6 +56,23 @@ const RESOURCE_META = {
   default: { label: 'Material', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20' },
 };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function cleanLabel(value) {
+  const label = String(value || '').trim();
+  if (!label || UUID_PATTERN.test(label)) return '';
+  return label;
+}
+
+function getMaterialSubjectName(material) {
+  return (
+    cleanLabel(material.subjectName) ||
+    cleanLabel(material.subject_name) ||
+    cleanLabel(material.subject) ||
+    'Other Subjects'
+  );
+}
+
 function getSubjectColor(name) {
   const key = (name || '').toLowerCase();
   return Object.entries(SUBJECT_COLORS).find(([k]) => key.includes(k))?.[1] ?? SUBJECT_COLORS.default;
@@ -89,7 +110,7 @@ function groupMaterials(materials) {
   const tree = {};
 
   materials.forEach((m) => {
-    const subject = m.subjectName || m.subjectId || 'Other Subjects';
+    const subject = getMaterialSubjectName(m);
     const chapter = m.chapterName || m.fileName || 'General Chapters';
     const topic = m.topicName || 'General Topics';
 
@@ -116,6 +137,78 @@ function countSubject(chapters) {
   });
 
   return { chapters: chapterNames.length, topics, materials };
+}
+
+function labelFromKey(key = '') {
+  return String(key)
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function tryParseJson(value) {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed || !/^[\[{]/.test(trimmed)) return value;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+}
+
+function valueToMarkdown(value, key = '', depth = 0) {
+  const parsed = tryParseJson(value);
+  const heading = '#'.repeat(Math.min(depth + 3, 6));
+
+  if (parsed == null || parsed === '') return '';
+  if (typeof parsed === 'string' || typeof parsed === 'number' || typeof parsed === 'boolean') {
+    return String(parsed);
+  }
+
+  if (Array.isArray(parsed)) {
+    return parsed
+      .map((item, index) => {
+        if (item && typeof item === 'object' && !Array.isArray(item)) {
+          const title = item.title || item.name || item.term || item.concept || item.question || `${labelFromKey(key) || 'Item'} ${index + 1}`;
+          const body = Object.entries(item)
+            .filter(([entryKey]) => !['title', 'name', 'term', 'concept', 'question', 'id', 'type'].includes(entryKey))
+            .map(([entryKey, entryValue]) => {
+              const text = valueToMarkdown(entryValue, entryKey, depth + 1);
+              return text ? `- **${labelFromKey(entryKey)}:** ${text.replace(/\n/g, '\n  ')}` : '';
+            })
+            .filter(Boolean)
+            .join('\n');
+          return `${index + 1}. ${title}${body ? `\n${body}` : ''}`;
+        }
+        return `- ${valueToMarkdown(item, key, depth + 1)}`;
+      })
+      .filter(Boolean)
+      .join('\n\n');
+  }
+
+  const directContent = parsed.markdown || parsed.content || parsed.text || parsed.notes || parsed.answer;
+  if (directContent && Object.keys(parsed).length <= 3) return valueToMarkdown(directContent, key, depth);
+
+  return Object.entries(parsed)
+    .map(([entryKey, entryValue]) => {
+      const text = valueToMarkdown(entryValue, entryKey, depth + 1);
+      if (!text) return '';
+      if (Array.isArray(tryParseJson(entryValue)) || (tryParseJson(entryValue) && typeof tryParseJson(entryValue) === 'object')) {
+        return `${heading} ${labelFromKey(entryKey)}\n\n${text}`;
+      }
+      return `- **${labelFromKey(entryKey)}:** ${text}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function materialDescriptionMarkdown(material) {
+  return valueToMarkdown(material.description || '');
+}
+
+function isMindmapMaterial(material) {
+  return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap');
 }
 
 export default function StudyMaterials() {
@@ -190,7 +283,7 @@ export default function StudyMaterials() {
     return allMaterials.filter((m) => {
       const haystack = [
         m.title,
-        m.subjectName || m.subjectId,
+        getMaterialSubjectName(m),
         m.chapterName || m.fileName,
         m.topicName,
         m.fileType || m.type,
@@ -231,6 +324,20 @@ export default function StudyMaterials() {
     }
     setViewerMaterial(material);
   };
+
+  useEffect(() => {
+    if (loading || allMaterials.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const openId = params.get('openMaterialId');
+    if (openId) {
+      const found = allMaterials.find(m => String(m.id) === String(openId));
+      if (found) {
+        setSelectedSubject(getMaterialSubjectName(found));
+        openMaterial(found);
+      }
+    }
+  }, [loading, allMaterials]);
+
 
   if (loading) {
     return (
@@ -523,6 +630,23 @@ function EmptyMaterials({ className }) {
 }
 
 function MaterialViewer({ material, onClose }) {
+  const previewContent = materialDescriptionMarkdown(material);
+  const isMindmap = isMindmapMaterial(material);
+  const mindmapTree = useMemo(
+    () => (isMindmap && previewContent ? mindmapMarkdownToTree(previewContent, material.title) : null),
+    [isMindmap, material.title, previewContent],
+  );
+  const canShowMindmap = !!mindmapTree?.children?.length;
+  const isFlashcard = (material.fileType || material.type || '').toLowerCase().includes('flashcard') || 
+                      (material.title || '').toLowerCase().includes('flashcard') || 
+                      (previewContent && previewContent.trim().startsWith('Q:'));
+
+  const [viewMode, setViewMode] = useState(canShowMindmap ? 'mindmap' : 'text');
+
+  useEffect(() => {
+    setViewMode(canShowMindmap ? 'mindmap' : 'text');
+  }, [canShowMindmap, material.id]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -530,7 +654,7 @@ function MaterialViewer({ material, onClose }) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+      <div className={`flex max-h-[86vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900 ${canShowMindmap && viewMode === 'mindmap' ? 'max-w-5xl' : 'max-w-3xl'}`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-black text-slate-900 dark:text-white">{material.title}</h2>
@@ -538,20 +662,47 @@ function MaterialViewer({ material, onClose }) {
               {material.fileType || material.type || 'Material'}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {canShowMindmap && (
+              <div className="flex rounded-xl border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('mindmap')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${viewMode === 'mindmap' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+                >
+                  Mindmap
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('text')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${viewMode === 'text' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+                >
+                  Text
+                </button>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto p-5">
-          {material.description ? (
-            <pre className="whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
-              {material.description}
-            </pre>
+          {canShowMindmap && viewMode === 'mindmap' ? (
+            <MindMapCanvas data={mindmapTree} height={560} />
+          ) : previewContent ? (
+            isFlashcard ? (
+              <FlashcardViewer content={previewContent} />
+            ) : (
+              <MarkdownRenderer
+                content={previewContent}
+                className="prose-slate rounded-xl bg-slate-50 p-4 dark:bg-slate-950"
+              />
+            )
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-500 dark:border-slate-700">
               No preview content is available for this material.

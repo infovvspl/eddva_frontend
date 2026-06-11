@@ -110,122 +110,125 @@ const CookiePolicyPage = lazy(() => import("./pages/landing/CookiePolicyPage"));
 const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
 
 // ── School admin pages ───────────────────────────────────────────────────────
-const SchoolAdminLayout       = lazy(() => import("./components/school/admin/Layout"));
-const SchoolAdminDashboard    = lazy(() => import("./pages/school/admin/AdminDashboard"));
-const SchoolStudents          = lazy(() => import("./pages/school/admin/Students"));
+const SchoolAdminLayout = lazy(() => import("./components/school/admin/Layout"));
+const SchoolAdminDashboard = lazy(() => import("./pages/school/admin/AdminDashboard"));
+const SchoolStudents = lazy(() => import("./pages/school/admin/Students"));
+const SchoolStudentPromotion = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
-const SchoolTeachers          = lazy(() => import("./pages/school/admin/Teachers"));
+const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
-const SchoolAttendance        = lazy(() => import("./pages/school/admin/Attendance"));
-const SchoolAcademics         = lazy(() => import("./pages/school/admin/Academics"));
-const SchoolNotices           = lazy(() => import("./pages/school/admin/Notices"));
-const SchoolFees              = lazy(() => import("./pages/school/admin/Fees"));
-const SchoolAcademicCalendar  = lazy(() => import("./pages/school/admin/AcademicCalendar"));
-const SchoolComplaints        = lazy(() => import("./pages/school/admin/Complaints"));
-const SchoolAnalytics         = lazy(() => import("./pages/school/admin/Analytics"));
-const SchoolAiUsage           = lazy(() => import("./pages/school/admin/AiUsage"));
-const SchoolTimetable         = lazy(() => import("./pages/school/admin/Timetable"));
-const SchoolAdminSettings     = lazy(() => import("./pages/school/admin/AdminSettings"));
-const SchoolReports           = lazy(() => import("./pages/school/admin/Reports"));
-const SchoolFinance           = lazy(() => import("./pages/school/admin/Finance"));
-const SchoolCommunications    = lazy(() => import("./pages/school/admin/Communications"));
-const SchoolAuditLogs         = lazy(() => import("./pages/school/admin/AuditLogs"));
-const SchoolSecurity          = lazy(() => import("./pages/school/admin/SecurityCenter"));
-const SchoolSubjects          = lazy(() => import("./pages/school/admin/Subjects"));
-const SchoolAssignments       = lazy(() => import("./pages/school/admin/Assignments"));
-const SchoolStudyMaterials    = lazy(() => import("./pages/school/admin/StudyMaterials"));
-const SchoolSyllabus          = lazy(() => import("./pages/school/admin/Syllabus"));
-const SchoolExams             = lazy(() => import("./pages/school/admin/Exams"));
-const SchoolQuestionBank      = lazy(() => import("./pages/school/admin/QuestionBank"));
-const SchoolMarksEntry        = lazy(() => import("./pages/school/admin/MarksEntry"));
-const SchoolResults           = lazy(() => import("./pages/school/admin/Results"));
-const SchoolReportCards       = lazy(() => import("./pages/school/admin/ReportCards"));
-const SchoolFeeStructures     = lazy(() => import("./pages/school/admin/FeeStructures"));
+const SchoolAttendance = lazy(() => import("./pages/school/admin/Attendance"));
+const SchoolAcademics = lazy(() => import("./pages/school/admin/Academics"));
+const SchoolNotices = lazy(() => import("./pages/school/admin/Notices"));
+const SchoolFees = lazy(() => import("./pages/school/admin/Fees"));
+const SchoolAcademicCalendar = lazy(() => import("./pages/school/admin/AcademicCalendar"));
+const SchoolComplaints = lazy(() => import("./pages/school/admin/Complaints"));
+const SchoolAnalytics = lazy(() => import("./pages/school/admin/Analytics"));
+const SchoolAiUsage = lazy(() => import("./pages/school/admin/AiUsage"));
+const SchoolTimetable = lazy(() => import("./pages/school/admin/Timetable"));
+const SchoolAdminSettings = lazy(() => import("./pages/school/admin/AdminSettings"));
+const SchoolReports = lazy(() => import("./pages/school/admin/Reports"));
+const SchoolFinance = lazy(() => import("./pages/school/admin/Finance"));
+const SchoolCommunications = lazy(() => import("./pages/school/admin/Communications"));
+const SchoolAuditLogs = lazy(() => import("./pages/school/admin/AuditLogs"));
+const SchoolSecurity = lazy(() => import("./pages/school/admin/SecurityCenter"));
+const SchoolSubjects = lazy(() => import("./pages/school/admin/Subjects"));
+const SchoolAssignments = lazy(() => import("./pages/school/admin/Assignments"));
+const SchoolStudyMaterials = lazy(() => import("./pages/school/admin/StudyMaterials"));
+const SchoolSyllabus = lazy(() => import("./pages/school/admin/Syllabus"));
+const SchoolExams = lazy(() => import("./pages/school/admin/Exams"));
+const SchoolQuestionBank = lazy(() => import("./pages/school/admin/QuestionBank"));
+const SchoolMarksEntry = lazy(() => import("./pages/school/admin/MarksEntry"));
+const SchoolResults = lazy(() => import("./pages/school/admin/Results"));
+const SchoolReportCards = lazy(() => import("./pages/school/admin/ReportCards"));
+const SchoolFeeStructures = lazy(() => import("./pages/school/admin/FeeStructures"));
 const SchoolPaymentCollection = lazy(() => import("./pages/school/admin/PaymentCollection"));
-const SchoolPaymentHistory    = lazy(() => import("./pages/school/admin/PaymentHistory"));
-const SchoolFeeDefaulters     = lazy(() => import("./pages/school/admin/FeeDefaulters"));
-const SchoolMessageLogs       = lazy(() => import("./pages/school/admin/MessageLogs"));
-const SchoolAiInsights        = lazy(() => import("./pages/school/admin/AiInsights"));
+const SchoolPaymentHistory = lazy(() => import("./pages/school/admin/PaymentHistory"));
+const SchoolFeeDefaulters = lazy(() => import("./pages/school/admin/FeeDefaulters"));
+const SchoolMessageLogs = lazy(() => import("./pages/school/admin/MessageLogs"));
+const SchoolAiInsights = lazy(() => import("./pages/school/admin/AiInsights"));
 const SchoolStudentPerformance = lazy(() => import("./pages/school/admin/StudentPerformance"));
 const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/AttendanceAnalytics"));
-const SchoolCustomReports     = lazy(() => import("./pages/school/admin/CustomReports"));
-const SchoolInstitutes        = lazy(() => import("./pages/school/admin/Institutes"));
-const SchoolAdminUsers        = lazy(() => import("./pages/school/admin/Users"));
+const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReports"));
+const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
+const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
-const SchoolTeacherLayout       = lazy(() => import("./components/school/admin/Layout"));
-const SchoolTeacherDashboard    = lazy(() => import("./pages/school/teacher/Dashboard"));
-const SchoolTopicManagement     = lazy(() => import("./pages/school/teacher/TopicManagement"));
-const SchoolClassManagement     = lazy(() => import("./pages/school/teacher/ClassManagement"));
-const SchoolTeacherCalendar     = lazy(() => import("./pages/school/teacher/Calendar"));
-const SchoolAttendanceSystem    = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
+const SchoolTeacherLayout = lazy(() => import("./components/school/admin/Layout"));
+const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
+const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
+const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
+const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
+const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
-const SchoolAssessmentSystem    = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
-const SchoolAssessmentDetails   = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
-const SchoolTeacherReports      = lazy(() => import("./pages/school/teacher/Reports"));
-const SchoolGrievanceHandling   = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
-const SchoolChatSystem          = lazy(() => import("./pages/school/teacher/ChatSystem"));
-const SchoolTeacherMeetings     = lazy(() => import("./pages/school/teacher/Meetings"));
-const SchoolTeacherProfile      = lazy(() => import("./pages/school/teacher/Profile"));
+const SchoolAssessmentSystem = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
+const SchoolAssessmentDetails = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
+const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
+const SchoolTeacherReports = lazy(() => import("./pages/school/teacher/Reports"));
+const SchoolWeaknessDetails = lazy(() => import("./pages/school/teacher/WeaknessDetails"));
+const SchoolGrievanceHandling = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
+const SchoolChatSystem = lazy(() => import("./pages/school/teacher/ChatSystem"));
+const SchoolTeacherMeetings = lazy(() => import("./pages/school/teacher/Meetings"));
+const SchoolTeacherProfile = lazy(() => import("./pages/school/teacher/Profile"));
 const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Notifications"));
-const SchoolTeacherDoubtQueue   = lazy(() => import("./pages/school/teacher/DoubtQueue"));
-const SchoolTeacherSettings     = lazy(() => import("./pages/school/teacher/Settings"));
-const SchoolTeacherTimetable    = lazy(() => import("./pages/school/teacher/Timetable"));
+const SchoolTeacherDoubtQueue = lazy(() => import("./pages/school/teacher/DoubtQueue"));
+const SchoolTeacherSettings = lazy(() => import("./pages/school/teacher/Settings"));
+const SchoolTeacherTimetable = lazy(() => import("./pages/school/teacher/Timetable"));
 
 // ── School student pages ─────────────────────────────────────────────────────
-const SchoolStudentLayout       = lazy(() => import("./components/school/student/Layout"));
-const SchoolStudentDashboard    = lazy(() => import("./pages/school/student/Dashboard"));
-const SchoolStudentClasses      = lazy(() => import("./pages/school/student/Classes"));
+const SchoolStudentLayout = lazy(() => import("./components/school/student/Layout"));
+const SchoolStudentDashboard = lazy(() => import("./pages/school/student/Dashboard"));
+const SchoolStudentClasses = lazy(() => import("./pages/school/student/Classes"));
 const SchoolStudentRecordedClassDetails = lazy(() => import("./pages/school/student/RecordedClassDetails"));
 const SchoolStudentClassDetails = lazy(() => import("./pages/school/student/ClassDetails"));
 const SchoolStudentTopicDetails = lazy(() => import("./pages/school/student/TopicDetails"));
 const SchoolStudentStudyMaterials = lazy(() => import("./pages/school/student/StudyMaterials"));
-const SchoolStudentAssignments  = lazy(() => import("./pages/school/student/Assignments"));
-const SchoolStudentAssessments  = lazy(() => import("./pages/school/student/Assessments"));
+const SchoolStudentAssignments = lazy(() => import("./pages/school/student/Assignments"));
+const SchoolStudentAssessments = lazy(() => import("./pages/school/student/Assessments"));
 const SchoolStudentAssessmentView = lazy(() => import("./pages/school/student/AssessmentView"));
-const SchoolStudentTestEngine   = lazy(() => import("./pages/school/student/TestEngine"));
+const SchoolStudentTestEngine = lazy(() => import("./pages/school/student/TestEngine"));
 const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/SessionResult"));
 
-const SchoolStudentDoubts       = lazy(() => import("./pages/school/student/Doubts"));
-const SchoolStudentBattleArena  = lazy(() => import("./pages/school/student/BattleArena"));
+const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
+const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
-const SchoolStudentQuizRush     = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
+const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
 const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
-const SchoolStudentMathSprint   = lazy(() => import("./pages/school/student/game-zone/MathSprint"));
-const SchoolStudentMemoryMatch  = lazy(() => import("./pages/school/student/game-zone/MemoryMatch"));
-const SchoolStudentWordMaster   = lazy(() => import("./pages/school/student/game-zone/WordMaster"));
+const SchoolStudentMathSprint = lazy(() => import("./pages/school/student/game-zone/MathSprint"));
+const SchoolStudentMemoryMatch = lazy(() => import("./pages/school/student/game-zone/MemoryMatch"));
+const SchoolStudentWordMaster = lazy(() => import("./pages/school/student/game-zone/WordMaster"));
 const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
-const SchoolStudentAttendance   = lazy(() => import("./pages/school/student/Attendance"));
-const SchoolStudentCalendar     = lazy(() => import("./pages/school/student/Calendar"));
-const SchoolStudentTimetable    = lazy(() => import("./pages/school/student/Timetable"));
-const SchoolStudentAnalytics    = lazy(() => import("./pages/school/student/Analytics"));
-const SchoolStudentFeedback     = lazy(() => import("./pages/school/student/Feedback"));
+const SchoolStudentAttendance = lazy(() => import("./pages/school/student/Attendance"));
+const SchoolStudentCalendar = lazy(() => import("./pages/school/student/Calendar"));
+const SchoolStudentTimetable = lazy(() => import("./pages/school/student/Timetable"));
+const SchoolStudentAnalytics = lazy(() => import("./pages/school/student/Analytics"));
 const SchoolStudentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
-const SchoolStudentSupportTickets = lazy(() => import("./pages/school/student/SupportTickets"));
-const SchoolStudentChat         = lazy(() => import("./pages/school/student/Chat"));
-const SchoolStudentProfile      = lazy(() => import("./pages/school/student/Profile"));
-const SchoolStudentSettings     = lazy(() => import("./pages/school/student/Settings"));
-const SchoolStudentCareer            = lazy(() => import("./pages/school/student/career/CareerHome"));
-const SchoolStudentCareerQuiz        = lazy(() => import("./pages/school/student/career/CareerQuiz"));
-const SchoolStudentCareerQuizResult  = lazy(() => import("./pages/school/student/career/CareerQuizResult"));
-const SchoolStudentCareerReport      = lazy(() => import("./pages/school/student/career/CareerReport"));
-const SchoolStudentCareerExplorer    = lazy(() => import("./pages/school/student/career/CareerExplorer"));
-const SchoolStudentCareerDetail      = lazy(() => import("./pages/school/student/career/CareerDetail"));
+const SchoolStudentChat = lazy(() => import("./pages/school/student/Chat"));
+const SchoolStudentProfile = lazy(() => import("./pages/school/student/Profile"));
+const SchoolStudentSettings = lazy(() => import("./pages/school/student/Settings"));
+const SchoolStudentCareer = lazy(() => import("./pages/school/student/career/CareerHome"));
+const SchoolStudentCareerQuiz = lazy(() => import("./pages/school/student/career/CareerQuiz"));
+const SchoolStudentCareerQuizResult = lazy(() => import("./pages/school/student/career/CareerQuizResult"));
+const SchoolStudentCareerReport = lazy(() => import("./pages/school/student/career/CareerReport"));
+const SchoolStudentCareerExplorer = lazy(() => import("./pages/school/student/career/CareerExplorer"));
+const SchoolStudentCareerDetail = lazy(() => import("./pages/school/student/career/CareerDetail"));
+const SchoolStudentAiStudyPage = lazy(() => import("./pages/school/student/SchoolStudentAiStudyPage"));
+const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/SchoolStudentTopicQuizPage"));
 
 // ── School parent pages ──────────────────────────────────────────────────────
-const SchoolParentLayout        = lazy(() => import("./components/school/parent/ParentLayout"));
-const SchoolParentAuthGuard     = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
-const SchoolParentLogin         = lazy(() => import("./pages/school/parent/Login"));
-const SchoolParentDashboard     = lazy(() => import("./pages/school/parent/Dashboard"));
-const SchoolParentChild         = lazy(() => import("./pages/school/parent/Child"));
+const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentLayout"));
+const SchoolParentAuthGuard = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
+const SchoolParentLogin = lazy(() => import("./pages/school/parent/Login"));
+const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard"));
+const SchoolParentChild = lazy(() => import("./pages/school/parent/Child"));
 const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
 const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notifications"));
-const SchoolParentProfile       = lazy(() => import("./pages/school/parent/Profile"));
+const SchoolParentProfile = lazy(() => import("./pages/school/parent/Profile"));
 
 // ── Super-admin school pages ─────────────────────────────────────────────────
-const SuperAdminSchoolPage      = lazy(() => import("./pages/super-admin/SchoolPage"));
+const SuperAdminSchoolPage = lazy(() => import("./pages/super-admin/SchoolPage"));
 const SuperAdminSchoolDetailPage = lazy(() => import("./pages/super-admin/SchoolDetailPage"));
-const CreateSchoolPage          = lazy(() => import("./pages/super-admin/CreateSchoolPage"));
+const CreateSchoolPage = lazy(() => import("./pages/super-admin/CreateSchoolPage"));
 const SuperAdminCourseDetailPage = lazy(() => import("./pages/super-admin/CourseDetailPage"));
 
 const queryClient = new QueryClient({
@@ -364,9 +367,10 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolAdminDashboard />} />
       {/* School super-admin only */}
       <Route path="institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolInstitutes /></SchoolGuard>} />
-      <Route path="users"      element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
+      <Route path="users" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
+      <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />
       <Route path="teachers/:id" element={<SchoolAdminTeacherProfile />} />
       <Route path="attendance" element={<SchoolAttendance />} />
@@ -402,8 +406,10 @@ const SchoolRoutes = () => (
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolAssignmentManagement />} />
       <Route path="assessments" element={<SchoolAssessmentSystem />} />
+      <Route path="assessments/:id/submissions/:studentId/review" element={<SchoolAssessmentSubmissionReview />} />
       <Route path="assessments/:id" element={<SchoolAssessmentDetails />} />
       <Route path="reports" element={<SchoolTeacherReports />} />
+      <Route path="reports/weakness/:topic" element={<SchoolWeaknessDetails />} />
       <Route path="meetings" element={<SchoolTeacherMeetings />} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
       <Route path="chat" element={<SchoolChatSystem />} />
@@ -438,6 +444,8 @@ const SchoolRoutes = () => (
       <Route path="game-zone/memory-match" element={<SchoolStudentMemoryMatch />} />
       <Route path="game-zone/word-master" element={<SchoolStudentWordMaster />} />
       <Route path="planner" element={<SchoolStudentStudyPlanner />} />
+      <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
+      <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
       <Route path="attendance" element={<SchoolStudentAttendance />} />
       <Route path="timetable" element={<SchoolStudentTimetable />} />
       <Route path="calendar" element={<SchoolStudentCalendar />} />
@@ -448,9 +456,7 @@ const SchoolRoutes = () => (
       <Route path="career/report" element={<SchoolStudentCareerReport />} />
       <Route path="career/explore" element={<SchoolStudentCareerExplorer />} />
       <Route path="career/explore/:careerId" element={<SchoolStudentCareerDetail />} />
-      <Route path="feedback" element={<SchoolStudentFeedback />} />
       <Route path="announcements" element={<SchoolStudentAnnouncements />} />
-      <Route path="support-tickets" element={<SchoolStudentSupportTickets />} />
       <Route path="chat" element={<SchoolStudentChat />} />
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />

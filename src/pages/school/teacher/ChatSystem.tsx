@@ -874,6 +874,20 @@ const ChatSystem: React.FC = () => {
                       </button>
                     </div>
                   )}
+                  {['accepted', 'scheduled'].includes(meeting.status) && (
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={async () => {
+                          await api.patch(`/meetings/${meeting.id}/status`, { status: 'completed' });
+                          await loadMeetingInbox();
+                          showToast('Meeting completed', 'success');
+                        }}
+                        className="rounded-lg bg-blue-100 px-2.5 py-1 text-[10px] font-black text-blue-700 hover:bg-blue-200 transition"
+                      >
+                        Complete
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

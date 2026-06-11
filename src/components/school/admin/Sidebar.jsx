@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import {
   Bell,
   AlertCircle,
+  ArrowUpRight,
   BarChart3,
   BookOpen,
   Building2,
@@ -88,7 +89,6 @@ const superAdminGroups = [
       { to: '/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/security', label: 'Security Center', icon: Shield },
-      { to: '/school/admin/settings', label: 'Settings', icon: SettingsIcon },
       { action: 'logout', label: 'Logout', icon: LogOut },
     ],
   },
@@ -100,6 +100,7 @@ const instituteGroups = [
     items: [
       { to: '/school/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { to: '/school/admin/students', label: 'Students', icon: GraduationCap },
+      { to: '/school/admin/student-promotion', label: 'Student Promotion', icon: ArrowUpRight },
       { to: '/school/admin/teachers', label: 'Teachers', icon: Users },
       { to: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
       { to: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
