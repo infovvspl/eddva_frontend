@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { Link, useParams } from 'react-router-dom';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import {
@@ -224,9 +223,7 @@ export default function RecordedClassDetails() {
     if (detailTab === 'notes') {
       if (recording.notes) {
         return (
-          <div className="prose prose-slate max-w-none prose-headings:font-black prose-p:text-slate-700 prose-li:text-slate-700">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{recording.notes}</ReactMarkdown>
-          </div>
+          <MarkdownRenderer content={recording.notes} className="prose-slate" />
         );
       }
 

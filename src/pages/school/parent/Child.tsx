@@ -299,9 +299,19 @@ function HomeworkTab({ studentId }: { studentId: string | null }) {
                 </div>
               </div>
               <div className="sm:text-right">
-                <span className="inline-flex items-center rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-amber-700">
-                  Assigned
-                </span>
+                {hw.status === 'submitted' ? (
+                  <span className="inline-flex items-center rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-emerald-700">
+                    Submitted
+                  </span>
+                ) : hw.status === 'overdue' ? (
+                  <span className="inline-flex items-center rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-red-700">
+                    Overdue
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-amber-700">
+                    Pending
+                  </span>
+                )}
               </div>
             </div>
           ))}

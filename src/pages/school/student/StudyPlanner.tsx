@@ -680,6 +680,7 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIf
 function PracticeHistoryReviewCard({ session }: { 
   session: studentApi.AiStudySessionData;
 }) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const questions = session.practiceQuestions ?? [];
   const cfg = session.subjectName ? subjectCfg(session.subjectName) : null;
@@ -701,13 +702,21 @@ function PracticeHistoryReviewCard({ session }: {
              </span>
           </div>
         </div>
-        <button 
-          onClick={() => setExpanded(!expanded)}
-          className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1"
-        >
-          {expanded ? "Hide Details" : "Review Questions"}
-          <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button 
+            onClick={() => navigate(`/school/student/quiz?topicId=${session.topicId}`)}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors"
+          >
+            Re-attempt
+          </button>
+          <button 
+            onClick={() => setExpanded(!expanded)}
+            className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1"
+          >
+            {expanded ? "Hide Details" : "Review Questions"}
+            <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {expanded && (
@@ -879,16 +888,16 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
   const goals: MicroGoal[] = [];
 
   revisionTopics.filter(t => t.isOverdue).slice(0, 2).forEach(t =>
-    goals.push({ id: `rev-${t.topicId}`, icon: "🔁", text: `Revise ${t.topicName}`, sub: `${t.subjectName} · Overdue`, url: "/school/student/study-materials" })
+    goals.push({ id: `rev-${t.topicId}`, icon: "🔁", text: `Revise ${t.topicName}`, sub: `${t.subjectName} · Overdue`, url: `/school/student/ai-study/${t.topicId}` })
   );
   weakTopics.slice(0, 2).forEach(t =>
-    goals.push({ id: `wk-${t.topicId}`, icon: "⚡", text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} · ${t.accuracy}% accuracy`, url: "/school/student/assessments" })
+    goals.push({ id: `wk-${t.topicId}`, icon: "⚡", text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} · ${t.accuracy}% accuracy`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
   highNegativeTopics.slice(0, 1).forEach(t =>
-    goals.push({ id: `neg-${t.topicId}`, icon: "🎯", text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} · ${t.wrong}/${t.attempted} wrong`, url: "/school/student/assessments" })
+    goals.push({ id: `neg-${t.topicId}`, icon: "🎯", text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} · ${t.wrong}/${t.attempted} wrong`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
   pendingPYQTopics.slice(0, 2).forEach(t =>
-    goals.push({ id: `pyq-${t.topicId}`, icon: "📋", text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} · Not attempted`, url: "/school/student/assessments" })
+    goals.push({ id: `pyq-${t.topicId}`, icon: "📋", text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} · Not attempted`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
 
   const display   = goals.slice(0, 5);
@@ -1947,22 +1956,22 @@ export default function SchoolStudentStudyPlanner() {
     });
 
   const handleOpenPlanItem = (item: StudyPlanItem) => {
-    const videoUrl = item.content?.videoUrl?.trim();
     const topicId  = item.content?.topicId || item.refId;
     if (item.type === "practice" && topicId) {
-      navigate("/school/student/assessments");
+      navigate(`/school/student/quiz?topicId=${topicId}&planItemId=${item.id}`);
       return;
     }
-    if (item.type === "revision" && topicId) {
-      navigate("/school/student/study-materials");
+    if ((item.type === "lecture" || item.type === "revision") && topicId) {
+      navigate(`/school/student/ai-study/${topicId}?planItemId=${item.id}`);
       return;
     }
+    const videoUrl = item.content?.videoUrl?.trim();
     if ((item.type === "lecture" || item.type === "revision") && videoUrl) {
       navigate("/school/student/recorded-classes");
       return;
     }
     if (topicId) {
-      navigate("/school/student/study-materials");
+      navigate(`/school/student/ai-study/${topicId}?planItemId=${item.id}`);
       return;
     }
     toast.error("No study resource is attached to this task yet.");
@@ -2668,7 +2677,7 @@ export default function SchoolStudentStudyPlanner() {
                                     <div className="space-y-2">
                                       {items.map(t => (
                                         <div key={t.topicId}
-                                          onClick={() => navigate("/school/student/assessments")}
+                                          onClick={() => navigate(`/school/student/quiz?topicId=${t.topicId}`)}
                                           className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-violet-200 hover:shadow-sm transition-all cursor-pointer">
                                           <div className="shrink-0 w-9 h-9 rounded-lg bg-violet-50 border border-violet-200 flex items-center justify-center text-violet-600"><Activity className="w-4 h-4" /></div>
                                           <div className="flex-1 min-w-0">
@@ -2677,7 +2686,7 @@ export default function SchoolStudentStudyPlanner() {
                                               <span className="text-xs text-gray-400">{t.chapterName}</span>
                                             </div>
                                           </div>
-                                          <button onClick={(e) => { e.stopPropagation(); navigate("/school/student/assessments"); }}
+                                          <button onClick={(e) => { e.stopPropagation(); navigate(`/school/student/quiz?topicId=${t.topicId}`); }}
                                             className="shrink-0 px-3 py-1.5 bg-violet-600 text-white rounded-xl text-xs font-semibold hover:bg-violet-700 transition-colors">Attempt</button>
                                         </div>
                                       ))}
@@ -2952,7 +2961,7 @@ export default function SchoolStudentStudyPlanner() {
                                                 </div>
                                                 <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full border ${accColor}`}>{ch.overallAccuracy}%</span>
                                                 <button
-                                                  onClick={() => navigate("/school/student/assessments")}
+                                                  onClick={() => navigate(`/school/student/quiz?chapterId=${ch.chapterId}`)}
                                                   className="shrink-0 px-3 py-2 bg-amber-500 text-white rounded-xl text-xs font-semibold hover:bg-amber-600 transition-colors flex items-center gap-1">
                                                   <Zap className="w-3 h-3" /> Practice
                                                 </button>
@@ -3022,7 +3031,7 @@ export default function SchoolStudentStudyPlanner() {
                                                   <div className="font-semibold text-sm text-gray-900 truncate">{topic.topicName}</div>
                                                 </div>
                                                 <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full border ${accColor}`}>{topic.accuracy}%</span>
-                                                <button onClick={() => navigate("/school/student/assessments")}
+                                                <button onClick={() => navigate(`/school/student/quiz?topicId=${topic.topicId}`)}
                                                   className="shrink-0 px-3 py-2 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700 transition-colors flex items-center gap-1">
                                                   <Zap className="w-3 h-3" /> Practice
                                                 </button>
@@ -3098,7 +3107,7 @@ export default function SchoolStudentStudyPlanner() {
                                                   </div>
                                                 </div>
                                                 <div className="shrink-0 text-right"><span className="text-sm font-bold text-gray-700">{t.bestAccuracy}%</span><div className="text-[10px] text-gray-400 mt-0.5">accuracy</div></div>
-                                                <button onClick={() => navigate("/school/student/study-materials")}
+                                                <button onClick={() => navigate(`/school/student/ai-study/${t.topicId}`)}
                                                   className="shrink-0 px-3 py-2 bg-violet-600 text-white rounded-xl text-xs font-semibold hover:bg-violet-700 transition-colors flex items-center gap-1">
                                                   <RefreshCw className="w-3 h-3" /> Revise
                                                 </button>
@@ -3174,7 +3183,7 @@ export default function SchoolStudentStudyPlanner() {
                                                   </div>
                                                 </div>
                                                 <div className="shrink-0 text-right"><span className="text-sm font-bold text-red-600">{t.pyqAccuracy}%</span><div className="text-[10px] text-gray-400 mt-0.5">PYQ acc.</div></div>
-                                                <button onClick={() => navigate("/school/student/assessments")}
+                                                <button onClick={() => navigate(`/school/student/quiz?topicId=${t.topicId}`)}
                                                   className="shrink-0 px-3 py-2 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition-colors flex items-center gap-1">
                                                   <Target className="w-3 h-3" /> Retry PYQ
                                                 </button>
@@ -3425,7 +3434,7 @@ export default function SchoolStudentStudyPlanner() {
                             <NoteHistoryReviewCard
                               key={session.id}
                               session={session}
-                              onNavigate={(topicId) => navigate("/school/student/study-materials")}
+                              onNavigate={(topicId) => navigate(`/school/student/ai-study/${topicId}`)}
                             />
                           ))}
                         </div>
