@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
-import { Bell, CalendarDays, ClipboardList, ExternalLink, FileText, Image as ImageIcon, Megaphone, MessageSquare, Search } from 'lucide-react';
+import { Bell, CalendarDays, ClipboardList, ExternalLink, FileText, Image as ImageIcon, Megaphone, MessageSquare, Search, X } from 'lucide-react';
 
 const categories = ['All', 'GENERAL', 'EXAM', 'HOLIDAY', 'ACADEMIC'];
 
@@ -29,6 +29,7 @@ export default function Announcements() {
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -140,22 +141,23 @@ export default function Announcements() {
               const fileAttachments = attachments.filter((file) => !isImageAttachment(file));
 
               return (
-                <article key={notice.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  {imageAttachments.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => window.open(imageAttachments[0].url, '_blank', 'noopener,noreferrer')}
-                      className="group block w-full bg-slate-100 text-left dark:bg-slate-950"
-                      aria-label={`Open ${imageAttachments[0].name}`}
-                    >
-                      <img
-                        src={imageAttachments[0].url}
-                        alt={imageAttachments[0].name}
-                        className="h-72 w-full object-cover transition duration-300 group-hover:scale-[1.01]"
-                      />
-                    </button>
-                  )}
-                  <div className="p-5">
+                <article key={notice.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <div className={`flex flex-col gap-5 ${imageAttachments.length > 0 ? 'xl:flex-row' : ''}`}>
+                    {imageAttachments.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(imageAttachments[0])}
+                        className="group block w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left dark:border-slate-800 dark:bg-slate-950 xl:w-56"
+                        aria-label={`Open ${imageAttachments[0].name}`}
+                      >
+                        <img
+                          src={imageAttachments[0].url}
+                          alt={imageAttachments[0].name}
+                          className="h-40 w-full object-cover transition duration-300 group-hover:scale-[1.03] sm:h-44 xl:h-36"
+                        />
+                      </button>
+                    )}
+                    <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <h2 className="text-base font-black text-slate-950 dark:text-white">{notice.title}</h2>
@@ -180,8 +182,10 @@ export default function Announcements() {
                           <a
                             key={file.name}
                             href={file.url}
-                            target="_blank"
-                            rel="noreferrer"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              setPreviewImage(file);
+                            }}
                             className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-300"
                           >
                             <ImageIcon size={14} />
@@ -204,6 +208,7 @@ export default function Announcements() {
                         ))}
                       </div>
                     )}
+                    </div>
                   </div>
                 </article>
               );
@@ -232,6 +237,37 @@ export default function Announcements() {
           </div>
         </aside>
       </section>
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-950"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{previewImage.name}</p>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                aria-label="Close image preview"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[calc(92vh-58px)] overflow-auto bg-slate-50 p-3 dark:bg-slate-900">
+              <img
+                src={previewImage.url}
+                alt={previewImage.name}
+                className="mx-auto max-h-[calc(92vh-88px)] w-auto max-w-full rounded-xl object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
