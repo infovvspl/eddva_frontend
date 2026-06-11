@@ -1237,6 +1237,48 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
   );
 }
 
+function BacklogEmpty({ label }: { label: string }) {
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-white p-6 text-center">
+      <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+      <p className="mt-2 text-sm font-bold text-slate-500">{label}</p>
+    </div>
+  );
+}
+
+function BacklogActionRow({
+  icon: Icon,
+  title,
+  subtitle,
+  buttonLabel,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  buttonLabel: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-white p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+    >
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-black text-slate-900">{title}</span>
+        {subtitle && <span className="mt-0.5 block truncate text-xs font-bold text-slate-500">{subtitle}</span>}
+      </span>
+      <span className="shrink-0 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-black text-white">
+        {buttonLabel}
+      </span>
+    </button>
+  );
+}
+
 // ─── Backlog Section Wrapper ───────────────────────────────────────────────────
 
 type AccentColor = "red" | "blue" | "amber" | "violet" | "teal" | "indigo" | "rose";
@@ -1672,14 +1714,28 @@ export default function SchoolStudentStudyPlanner() {
 
   // Weak chapters: chapters with overall accuracy > 0 and < 50% with at least one attempted topic
   const weakChapters = useMemo(() => {
-    const list: Array<{ chapterId: string; chapterName: string; subjectName: string; topicsTotal: number; topicsCompleted: number; overallAccuracy: number; attemptedTopics: number }> = [];
+    const list: Array<{
+      chapterId: string;
+      chapterName: string;
+      subjectName: string;
+      topicsTotal: number;
+      topicsCompleted: number;
+      overallAccuracy: number;
+      attemptedTopics: number;
+      practiceTopicId: string | null;
+      practiceTopicName: string | null;
+    }> = [];
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c => {
-        const attempted = c.topics.filter(t =>
+        const attemptedTopics = c.topics.filter(t =>
           selectedCourseTopicIds.has(t.topicId) &&
           (t.attemptCount > 0 || t.status === "completed" || t.status === "in_progress")
-        ).length;
+        );
+        const attempted = attemptedTopics.length;
         if (attempted > 0 && c.overallAccuracy > 0 && c.overallAccuracy < 50) {
+          const practiceTopic = [...attemptedTopics]
+            .filter(t => (t.bestAccuracy ?? 0) > 0)
+            .sort((a, b) => (a.bestAccuracy ?? 0) - (b.bestAccuracy ?? 0))[0] ?? attemptedTopics[0];
           list.push({
             chapterId: c.chapterId,
             chapterName: c.chapterName,
@@ -1688,6 +1744,8 @@ export default function SchoolStudentStudyPlanner() {
             topicsCompleted: c.topicsCompleted,
             overallAccuracy: Math.round(c.overallAccuracy),
             attemptedTopics: attempted,
+            practiceTopicId: practiceTopic?.topicId ?? null,
+            practiceTopicName: practiceTopic?.topicName ?? null,
           });
         }
       })
@@ -2009,6 +2067,1019 @@ export default function SchoolStudentStudyPlanner() {
   );
 
   if (generate.isPending || regenerate.isPending || clearPlan.isPending) return <GeneratingView />;
+
+  const pendingTodayItems = todayItems.filter(item => item.status !== "completed");
+  const nextUpItems = pendingTodayItems.slice(0, 3);
+  const currentClassLabel = student?.currentClass ? `Class ${student.currentClass}` : "School";
+  const courseLabel = selectedCourse?.title || selectedCourse?.name || currentClassLabel;
+  const syllabusTotal = effectiveProgressReport?.summary?.totalTopics ?? 0;
+  const syllabusDone = effectiveProgressReport?.summary?.completedTopics ?? 0;
+  const syllabusPct = syllabusTotal > 0 ? Math.round((syllabusDone / syllabusTotal) * 100) : 0;
+  const attentionItems = [
+    { label: "Missed tasks", value: backlogPlanItems.length, icon: AlertTriangle, tone: "text-rose-600 bg-rose-50 border-rose-100", tab: "backlogs" as ActiveTab },
+    { label: "Weak topics", value: weakTopics.length, icon: TrendingDown, tone: "text-amber-600 bg-amber-50 border-amber-100", tab: "weakness" as ActiveTab },
+    { label: "Revision due", value: revisionTopics.length, icon: RefreshCw, tone: "text-blue-600 bg-blue-50 border-blue-100", tab: "revision" as ActiveTab },
+  ];
+  const simpleNav = [
+    { key: "today" as ActiveTab, label: "Today", icon: ListTodo, count: pendingTodayItems.length },
+    { key: "backlogs" as ActiveTab, label: "Backlogs", icon: AlertTriangle, count: totalBacklogCount },
+    { key: "weakness" as ActiveTab, label: "Weak Topics", icon: TrendingDown, count: weakTopics.length + weakChapters.length + forgottenConcepts.length + highNegativeTopics.length },
+    { key: "revision" as ActiveTab, label: "Revision", icon: RefreshCw, count: revisionTopics.length },
+    { key: "roadmap" as ActiveTab, label: "Roadmap", icon: MapIcon, count: syllabusTotal },
+  ];
+  const subjectProgress = (effectiveProgressReport?.subjects ?? []).slice(0, 4);
+
+  return (
+    <div className="min-h-screen bg-slate-50/70 px-4 py-5 sm:px-6 lg:px-8">
+      {confirmReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-black text-slate-950">Reset study plan?</h3>
+            <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+              This will clear the current plan and create a fresh monthly schedule.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmReset(false)}
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetConfirmed}
+                disabled={clearPlan.isPending}
+                className="flex-1 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
+              >
+                {clearPlan.isPending ? "Resetting..." : "Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-7xl space-y-5">
+        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-700">
+                <BrainCircuit className="h-3.5 w-3.5" />
+                Study Planner
+              </div>
+              <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                Today's learning plan
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
+                {courseLabel} plan for {format(new Date(), "EEEE, MMM d")}.
+              </p>
+              {myCourses.length > 1 && (
+                <select
+                  value={selectedCourseId ?? ""}
+                  onChange={(event) => setSelectedCourseId(event.target.value || null)}
+                  className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 sm:w-72"
+                >
+                  {myCourses.map(course => (
+                    <option key={course.id} value={course.id}>{course.title || course.name || "Course"}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 sm:min-w-[420px]">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-blue-600">Today</p>
+                <p className="mt-2 text-2xl font-black text-slate-950">{doneCount}/{todayItems.length}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">tasks done</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-emerald-600">Syllabus</p>
+                <p className="mt-2 text-2xl font-black text-slate-950">{syllabusPct}%</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">{syllabusDone}/{syllabusTotal} topics</p>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-amber-600">Time</p>
+                <p className="mt-2 text-2xl font-black text-slate-950">{totalMinutes}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">minutes</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <nav className="grid gap-3 sm:grid-cols-5">
+          {simpleNav.map(item => {
+            const Icon = item.icon;
+            const active = activeTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveTab(item.key)}
+                className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left shadow-sm transition ${
+                  active
+                    ? "border-blue-200 bg-blue-600 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50"
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate text-sm font-black">{item.label}</span>
+                </span>
+                {item.count > 0 && (
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-black ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+                    {item.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <main className="space-y-5">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-slate-950">
+                    {activeTab === "backlogs" ? "Backlogs" : activeTab === "weakness" ? "Weak Areas Analysis" : activeTab === "revision" ? "Revision" : activeTab === "roadmap" ? "Roadmap" : "Your tasks"}
+                  </h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500">
+                    {activeTab === "backlogs"
+                      ? "Open missed work, pending lectures, notes, PYQs, and tests."
+                      : activeTab === "weakness"
+                      ? "Select a category to analyse and improve weak areas."
+                      : activeTab === "revision"
+                      ? "Review topics that are due and keep memory fresh."
+                      : activeTab === "roadmap"
+                      ? "See your subjects, chapters, and topic progress."
+                      : "Finish these one by one. Completed tasks stay checked."}
+                  </p>
+                </div>
+                {hasPlan && activeTab === "today" && (
+                  <div className="flex w-fit rounded-xl bg-slate-100 p-1">
+                    {(["today", "week"] as const).map(view => (
+                      <button
+                        key={view}
+                        type="button"
+                        onClick={() => setTodayView(view)}
+                        className={`rounded-lg px-4 py-2 text-sm font-black transition ${
+                          todayView === view ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        {view === "today" ? "Today" : "Week"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-5">
+                {activeTab === "backlogs" ? (
+                  <div className="space-y-4">
+                    {totalBacklogCount === 0 ? (
+                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-10 text-center">
+                        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
+                        <h3 className="mt-3 text-lg font-black text-slate-950">No backlogs</h3>
+                        <p className="mt-1 text-sm font-medium text-slate-500">Everything looks clear.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {[
+                            { key: "plan", label: "Missed Tasks", desc: "Study plan items you did not complete", count: backlogPlanItems.length, icon: ClipboardList, tone: "rose" },
+                            { key: "lectures", label: "Video Lectures", desc: "All unwatched lectures from this course", count: pendingLectures.length, icon: PlayCircle, tone: "blue" },
+                            { key: "notes", label: "Notes", desc: "Unread notes from this course", count: pendingNotes.length, icon: BookOpen, tone: "amber" },
+                            { key: "mindmaps", label: "Mindmaps", desc: "Visual mindmaps not yet reviewed", count: pendingMindmaps.length, icon: BrainCircuit, tone: "indigo" },
+                            { key: "pyq", label: "PYQs Pending", desc: "Previous year questions not practised", count: pendingPYQTopics.length, icon: Activity, tone: "violet" },
+                            { key: "dpp", label: "DPPs & PDFs", desc: "Practice sheets and reading material", count: pendingResources.length, icon: FileText, tone: "teal" },
+                            { key: "mocktests", label: "Mock Tests", desc: "Published tests not yet attempted", count: pendingMockTests.length, icon: ClipboardList, tone: "rose" },
+                          ].map(card => {
+                            const Icon = card.icon;
+                            const isOpen = backlogPage === card.key;
+                            const colorClass = {
+                              rose: "text-rose-500 bg-rose-50 border-rose-100",
+                              blue: "text-blue-600 bg-blue-50 border-blue-100",
+                              amber: "text-amber-600 bg-amber-50 border-amber-100",
+                              indigo: "text-indigo-500 bg-indigo-50 border-indigo-100",
+                              violet: "text-violet-600 bg-violet-50 border-violet-100",
+                              teal: "text-teal-600 bg-teal-50 border-teal-100",
+                            }[card.tone];
+                            return (
+                              <button
+                                key={card.label}
+                                type="button"
+                                onClick={() => setBacklogPage(card.key as typeof backlogPage)}
+                                className={`relative min-h-[150px] overflow-hidden rounded-2xl border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+                                  isOpen ? "border-blue-300 shadow-sm" : "border-slate-200"
+                                }`}
+                              >
+                                <span className={`absolute -right-8 -top-8 h-24 w-24 rounded-bl-full ${card.count > 0 ? colorClass?.split(" ")[1] : "bg-slate-50"}`} />
+                                <span className={`relative grid h-11 w-11 place-items-center rounded-xl border ${card.count > 0 ? colorClass : "border-slate-100 bg-slate-50 text-slate-300"}`}>
+                                  <Icon className="h-5 w-5" />
+                                </span>
+                                <span className="relative mt-6 block text-lg font-black text-slate-950">{card.label}</span>
+                                <span className="relative mt-2 block text-sm font-semibold leading-5 text-slate-500">{card.desc}</span>
+                                <span className={`relative mt-5 inline-flex rounded-full px-3 py-1 text-xs font-black ${
+                                  card.count > 0 ? colorClass : "bg-emerald-50 text-emerald-600"
+                                }`}>
+                                  {card.count > 0 ? `${card.count} items pending` : "All clear"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {!backlogPage ? (
+                          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-700">
+                            Pick one backlog category above. Start with 2-3 items only and blend them into today's plan.
+                          </div>
+                        ) : (
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                              <p className="text-sm font-black text-slate-900">
+                                {backlogPage === "plan" ? "Missed Tasks" :
+                                  backlogPage === "lectures" ? "Video Lectures" :
+                                  backlogPage === "notes" ? "Notes" :
+                                  backlogPage === "mindmaps" ? "Mindmaps" :
+                                  backlogPage === "pyq" ? "PYQs Pending" :
+                                  backlogPage === "dpp" ? "DPPs & PDFs" : "Mock Tests"}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setBacklogPage(null)}
+                                className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 transition hover:text-slate-800"
+                              >
+                                Close
+                              </button>
+                            </div>
+
+                            {backlogPage === "plan" && (
+                              backlogPlanItems.length === 0 ? (
+                                <BacklogEmpty label="No missed study tasks." />
+                              ) : (
+                                <div className="space-y-2">
+                                  {backlogPlanItems.slice(0, 8).map(item => (
+                                    <PlanItemCard
+                                      key={item.id}
+                                      item={item}
+                                      priority={derivePriority(item, weakTopicIds)}
+                                      onComplete={id => complete.mutate(id)}
+                                      onSkip={id => skip.mutate(id)}
+                                      onOpen={handleOpenPlanItem}
+                                      hideReviewIfDone={true}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            )}
+
+                            {backlogPage === "lectures" && (
+                              pendingLectures.length === 0 ? (
+                                <BacklogEmpty label="All lectures watched." />
+                              ) : (
+                                <div className="space-y-2">
+                                  {pendingLectures.slice(0, 8).map(lecture => (
+                                    <BacklogActionRow
+                                      key={lecture.id}
+                                      icon={PlayCircle}
+                                      title={lecture.title}
+                                      subtitle={lecture.topic?.name || lecture.topic?.chapter?.name || "Recorded lecture"}
+                                      buttonLabel={lecture.studentProgress?.watchPercentage ? "Resume" : "Watch"}
+                                      onClick={() => navigate(`/school/student/recorded-classes/${lecture.id}`)}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            )}
+
+                            {backlogPage === "notes" && (
+                              pendingNotes.length === 0 ? (
+                                <BacklogEmpty label="No unread notes." />
+                              ) : (
+                                <div className="space-y-2">
+                                  {pendingNotes.slice(0, 8).map(resource => (
+                                    <BacklogActionRow
+                                      key={resource.id}
+                                      icon={BookOpen}
+                                      title={resource.title}
+                                      subtitle={`${resource.subjectName} - ${resource.topicName}`}
+                                      buttonLabel="Read"
+                                      onClick={() => navigate(`/school/student/study-materials?openMaterialId=${resource.id}`)}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            )}
+
+                            {backlogPage === "mindmaps" && (
+                              pendingMindmaps.length === 0 ? (
+                                <BacklogEmpty label="No pending mindmaps." />
+                              ) : (
+                                <div className="space-y-2">
+                                  {pendingMindmaps.slice(0, 8).map(resource => (
+                                    <BacklogActionRow
+                                      key={resource.id}
+                                      icon={BrainCircuit}
+                                      title={resource.title}
+                                      subtitle={`${resource.subjectName} - ${resource.topicName}`}
+                                      buttonLabel="View"
+                                      onClick={() => navigate(`/school/student/study-materials?openMaterialId=${resource.id}`)}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            )}
+
+                            {backlogPage === "pyq" && (
+                              pendingPYQTopics.length === 0 ? (
+                                <BacklogEmpty label="All PYQs attempted." />
+                              ) : (
+                                <div className="space-y-2">
+                                  {pendingPYQTopics.slice(0, 8).map(topic => (
+                                    <BacklogActionRow
+                                      key={topic.topicId}
+                                      icon={Activity}
+                                      title={topic.topicName}
+                                      subtitle={`${topic.subjectName} - ${topic.chapterName}`}
+                                      buttonLabel="Attempt"
+                                      onClick={() => navigate(`/school/student/quiz?topicId=${topic.topicId}`)}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            )}
+
+                            {backlogPage === "dpp" && (
+                              pendingResources.length === 0 ? (
+                                <BacklogEmpty label="No pending DPPs or PDFs." />
+                              ) : (
+                                <div className="space-y-2">
+                                  {pendingResources.slice(0, 8).map(resource => (
+                                    <BacklogActionRow
+                                      key={resource.id}
+                                      icon={FileText}
+                                      title={resource.title}
+                                      subtitle={`${resource.subjectName} - ${resource.topicName}`}
+                                      buttonLabel="Open"
+                                      onClick={() => navigate(`/school/student/study-materials?openMaterialId=${resource.id}`)}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            )}
+
+                            {backlogPage === "mocktests" && (
+                              pendingMockTests.length === 0 ? (
+                                <BacklogEmpty label="No pending mock tests." />
+                              ) : (
+                                <div className="space-y-2">
+                                  {pendingMockTests.slice(0, 8).map(test => (
+                                    <BacklogActionRow
+                                      key={test.id}
+                                      icon={ClipboardList}
+                                      title={test.title}
+                                      subtitle={test.subjectName || test.subject || "Assessment"}
+                                      buttonLabel="Start"
+                                      onClick={() => navigate(`/school/student/assessments/${test.id}/take`)}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ) : activeTab === "weakness" ? (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {[
+                        { key: "chapters", label: "Weak Chapters", desc: "Chapters with overall accuracy below 50%", count: weakChapters.length, icon: BookOpen, tone: "amber" },
+                        { key: "topics", label: "Low Accuracy", desc: "Topics where you score below 50%", count: weakTopics.length, icon: TrendingDown, tone: "rose" },
+                        { key: "forgotten", label: "Forgotten", desc: "Completed 14+ days ago without revision", count: forgottenConcepts.length, icon: Brain, tone: "violet" },
+                        { key: "negative", label: "High Negative", desc: "PYQ topics with more wrong answers", count: highNegativeTopics.length, icon: Target, tone: "rose" },
+                      ].map(card => {
+                        const Icon = card.icon;
+                        const isOpen = weakPage === card.key;
+                        const colorClass = {
+                          amber: "text-amber-600 bg-amber-50 border-amber-100",
+                          rose: "text-rose-600 bg-rose-50 border-rose-100",
+                          violet: "text-violet-600 bg-violet-50 border-violet-100",
+                        }[card.tone];
+                        return (
+                          <button
+                            key={card.key}
+                            type="button"
+                            onClick={() => setWeakPage(card.key as typeof weakPage)}
+                            className={`relative min-h-[150px] overflow-hidden rounded-2xl border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+                              isOpen ? "border-blue-300 shadow-sm" : "border-slate-200"
+                            }`}
+                          >
+                            <span className={`absolute -right-8 -top-8 h-24 w-24 rounded-bl-full ${colorClass?.split(" ")[1]}`} />
+                            <span className={`relative grid h-11 w-11 place-items-center rounded-xl border ${colorClass}`}>
+                              <Icon className="h-5 w-5" />
+                            </span>
+                            <span className="relative mt-6 block text-lg font-black text-slate-950">{card.label}</span>
+                            <span className="relative mt-2 block text-sm font-semibold leading-5 text-slate-500">{card.desc}</span>
+                            <span className={`relative mt-5 inline-flex rounded-full px-3 py-1 text-xs font-black ${colorClass}`}>
+                              {card.count} {card.key === "chapters" ? "chapters" : "topics"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {!weakPage ? (
+                      <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-700">
+                        Choose one weak-area category above. Practice a small set first, then revise the related notes.
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                          <p className="text-sm font-black text-slate-900">
+                            {weakPage === "chapters" ? "Weak Chapters" :
+                              weakPage === "topics" ? "Low Accuracy Topics" :
+                              weakPage === "forgotten" ? "Forgotten Topics" : "High Negative Areas"}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setWeakPage(null)}
+                            className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 transition hover:text-slate-800"
+                          >
+                            Close
+                          </button>
+                        </div>
+
+                        {weakPage === "chapters" && (
+                          weakChapters.length === 0 ? (
+                            <BacklogEmpty label="No weak chapters found." />
+                          ) : (
+                            <div className="space-y-2">
+                              {weakChapters.slice(0, 10).map(chapter => {
+                                const pct = chapter.topicsTotal > 0 ? Math.round((chapter.topicsCompleted / chapter.topicsTotal) * 100) : 0;
+                                return (
+                                  <div key={chapter.chapterId} className="rounded-xl border border-slate-100 bg-white p-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-black text-slate-900">{chapter.chapterName}</p>
+                                        <p className="mt-1 text-xs font-bold text-slate-500">{chapter.subjectName} - {chapter.topicsCompleted}/{chapter.topicsTotal} topics done</p>
+                                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                                          <div className="h-full rounded-full bg-amber-500" style={{ width: `${pct}%` }} />
+                                        </div>
+                                      </div>
+                                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-black text-amber-700">
+                                        {Math.round(chapter.overallAccuracy)}%
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => navigate(`/school/student/quiz?chapterId=${chapter.chapterId}`)}
+                                        className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white transition hover:bg-amber-600"
+                                      >
+                                        Practice
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )
+                        )}
+
+                        {weakPage === "topics" && (
+                          weakTopics.length === 0 ? (
+                            <BacklogEmpty label="No low accuracy topics found." />
+                          ) : (
+                            <div className="space-y-2">
+                              {weakTopics.slice(0, 10).map(topic => (
+                                <BacklogActionRow
+                                  key={topic.topicId}
+                                  icon={TrendingDown}
+                                  title={topic.topicName}
+                                  subtitle={`${topic.subjectName} - ${topic.chapterName} - ${topic.accuracy}% accuracy`}
+                                  buttonLabel="Practice"
+                                  onClick={() => navigate(`/school/student/quiz?topicId=${topic.topicId}`)}
+                                />
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {weakPage === "forgotten" && (
+                          forgottenConcepts.length === 0 ? (
+                            <BacklogEmpty label="No forgotten topics found." />
+                          ) : (
+                            <div className="space-y-2">
+                              {forgottenConcepts.slice(0, 10).map(topic => (
+                                <BacklogActionRow
+                                  key={topic.topicId}
+                                  icon={Brain}
+                                  title={topic.topicName}
+                                  subtitle={`${topic.subjectName} - ${topic.chapterName} - ${topic.daysSince ?? "many"} days ago`}
+                                  buttonLabel="Revise"
+                                  onClick={() => navigate(`/school/student/ai-study/${topic.topicId}`)}
+                                />
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {weakPage === "negative" && (
+                          highNegativeTopics.length === 0 ? (
+                            <BacklogEmpty label="No high negative-marking areas found." />
+                          ) : (
+                            <div className="space-y-2">
+                              {highNegativeTopics.slice(0, 10).map(topic => (
+                                <BacklogActionRow
+                                  key={topic.topicId}
+                                  icon={Target}
+                                  title={topic.topicName}
+                                  subtitle={`${topic.subjectName} - ${topic.wrong}/${topic.attempted} wrong - ${topic.pyqAccuracy}% PYQ accuracy`}
+                                  buttonLabel="Retry"
+                                  onClick={() => navigate(`/school/student/quiz?topicId=${topic.topicId}`)}
+                                />
+                              ))}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : activeTab === "revision" ? (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {[
+                        {
+                          key: "spaced",
+                          label: "Spaced Repetition",
+                          desc: "Smart 1, 3, 7, 21 day revision cycles based on your performance.",
+                          count: `${revisionTopics.length} topics due`,
+                          icon: RefreshCw,
+                          tone: "blue",
+                          active: true,
+                        },
+                        {
+                          key: "intensive",
+                          label: "Intensive Revision",
+                          desc: "Focus on high-volume review of recently learned concepts.",
+                          count: intensiveRevisionItems.length ? `${intensiveRevisionItems.length} sessions` : "Unlocks at 100% completion",
+                          icon: Flame,
+                          tone: "amber",
+                          active: intensiveRevisionItems.length > 0,
+                        },
+                        {
+                          key: "notes",
+                          label: "AI Revision Notes",
+                          desc: "Review your personalized AI study summaries and highlights.",
+                          count: `${completedAiNotes.length} sessions`,
+                          icon: BrainCircuit,
+                          tone: "violet",
+                          active: completedAiNotes.length > 0,
+                        },
+                        {
+                          key: "practice",
+                          label: "Practice History",
+                          desc: "Re-attempt and review past quizzes and practice questions.",
+                          count: `${completedPracticeSessions.length} completed`,
+                          icon: CheckCheck,
+                          tone: "teal",
+                          active: completedPracticeSessions.length > 0,
+                        },
+                      ].map(card => {
+                        const Icon = card.icon;
+                        const colors = {
+                          blue: "text-blue-600 bg-blue-50 border-blue-100",
+                          amber: "text-amber-600 bg-amber-50 border-amber-100",
+                          violet: "text-violet-600 bg-violet-50 border-violet-100",
+                          teal: "text-teal-600 bg-teal-50 border-teal-100",
+                        }[card.tone];
+                        return (
+                          <button
+                            key={card.key}
+                            type="button"
+                            disabled={!card.active}
+                            onClick={() => card.active && setRevisionCategory(card.key as "spaced" | "intensive" | "notes" | "practice")}
+                            className={`group relative overflow-hidden rounded-2xl border bg-white p-6 text-left transition ${
+                              revisionCategory === card.key
+                                ? "border-blue-300 shadow-sm ring-2 ring-blue-100"
+                                : "border-slate-200 hover:border-blue-200 hover:shadow-sm"
+                            } ${!card.active ? "opacity-55" : ""}`}
+                          >
+                            <span className={`mb-6 inline-flex h-11 w-11 items-center justify-center rounded-2xl border ${colors}`}>
+                              <Icon className="h-6 w-6" />
+                            </span>
+                            <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-50 transition group-hover:bg-blue-50" />
+                            <h3 className="text-lg font-black text-slate-950">{card.label}</h3>
+                            <p className="mt-2 max-w-sm text-sm font-medium leading-6 text-slate-500">{card.desc}</p>
+                            <span className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-black ${colors}`}>
+                              {card.count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {revisionCategory && (
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-black text-slate-950">
+                              {revisionCategory === "spaced"
+                                ? "Spaced Repetition"
+                                : revisionCategory === "intensive"
+                                ? "Intensive Revision"
+                                : revisionCategory === "notes"
+                                ? "AI Revision Notes"
+                                : "Practice History"}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-slate-500">Choose one item and continue studying.</p>
+                          </div>
+                          <button type="button" onClick={() => setRevisionCategory(null)} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                            Close
+                          </button>
+                        </div>
+
+                        {revisionCategory === "spaced" && (
+                          revisionTopics.length === 0 ? (
+                            <BacklogEmpty label="No revision due. Complete more topics to unlock revision cycles." />
+                          ) : (
+                            <div className="space-y-2">
+                              {revisionTopics.slice(0, 10).map(topic => (
+                                <BacklogActionRow
+                                  key={`${topic.topicId}-${topic.intervalDays}`}
+                                  icon={RefreshCw}
+                                  title={topic.topicName}
+                                  subtitle={`${topic.subjectName} - ${topic.chapterName} - ${topic.nextRevisionLabel}`}
+                                  buttonLabel="Revise"
+                                  onClick={() => setRevisionModal({
+                                    topicId: topic.topicId,
+                                    topicName: topic.topicName,
+                                    subjectName: topic.subjectName,
+                                    accuracy: topic.accuracy,
+                                    intervalDays: topic.intervalDays as 1 | 3 | 7 | 21,
+                                  })}
+                                />
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {revisionCategory === "intensive" && (
+                          intensiveRevisionItems.length === 0 ? (
+                            <BacklogEmpty label="Intensive revision unlocks after more completed study activity." />
+                          ) : (
+                            <div className="space-y-2">
+                              {intensiveRevisionItems.slice(0, 10).map(item => (
+                                <BacklogActionRow
+                                  key={item.id}
+                                  icon={Flame}
+                                  title={item.content?.topicName || item.title}
+                                  subtitle={item.description || "Revision task"}
+                                  buttonLabel="Start"
+                                  onClick={() => handleStartItem(item)}
+                                />
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {revisionCategory === "notes" && (
+                          completedAiNotes.length === 0 ? (
+                            <BacklogEmpty label="No AI revision notes yet." />
+                          ) : (
+                            <div className="space-y-2">
+                              {completedAiNotes.slice(0, 10).map(note => (
+                                <BacklogActionRow
+                                  key={note.id}
+                                  icon={BrainCircuit}
+                                  title={note.topicName || "Revision note"}
+                                  subtitle={note.subjectName || "AI generated summary"}
+                                  buttonLabel="Open"
+                                  onClick={() => navigate(`/school/student/ai-study/${note.topicId}`)}
+                                />
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {revisionCategory === "practice" && (
+                          completedPracticeSessions.length === 0 ? (
+                            <BacklogEmpty label="No practice history yet." />
+                          ) : (
+                            <div className="space-y-2">
+                              {completedPracticeSessions.slice(0, 10).map(session => (
+                                <BacklogActionRow
+                                  key={session.id}
+                                  icon={CheckCheck}
+                                  title={session.topicName || "Practice session"}
+                                  subtitle={`${session.subjectName || "Subject"} - ${session.accuracy ?? 0}% accuracy`}
+                                  buttonLabel="Retry"
+                                  onClick={() => navigate(`/school/student/quiz?topicId=${session.topicId}`)}
+                                />
+                              ))}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    <div className="rounded-2xl border border-teal-100 bg-teal-50 p-5">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-black text-teal-700">
+                        <RefreshCw className="h-4 w-4" />
+                        Spaced Repetition
+                      </div>
+                      <div className="grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-2">
+                        <span><b className="rounded-full bg-rose-100 px-2 py-0.5 text-rose-700">1-Day</b> accuracy below 40%</span>
+                        <span><b className="rounded-full bg-orange-100 px-2 py-0.5 text-orange-700">3-Day</b> accuracy 40-54%</span>
+                        <span><b className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700">7-Day</b> accuracy 55-64%</span>
+                        <span><b className="rounded-full bg-teal-100 px-2 py-0.5 text-teal-700">21-Day</b> accuracy 65-74%</span>
+                      </div>
+                      <p className="mt-4 border-t border-teal-100 pt-3 text-xs font-bold leading-5 text-teal-700">
+                        Accuracy improves, interval extends, and the topic eventually clears the revision queue.
+                      </p>
+                    </div>
+                  </div>
+                ) : activeTab === "roadmap" ? (
+                  <div className="space-y-4">
+                    {(effectiveProgressReport?.subjects ?? []).length === 0 ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center">
+                        <MapIcon className="mx-auto h-10 w-10 text-slate-300" />
+                        <h3 className="mt-3 text-lg font-black text-slate-950">Roadmap is not ready</h3>
+                        <p className="mt-1 text-sm font-medium text-slate-500">Generate a plan to build your roadmap.</p>
+                      </div>
+                    ) : (
+                      (effectiveProgressReport?.subjects ?? []).map(subject => (
+                        <div key={subject.subjectId} className="rounded-2xl border border-slate-200 bg-white p-4">
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-base font-black text-slate-950">{subject.subjectName}</p>
+                              <p className="mt-1 text-xs font-bold text-slate-500">{subject.topicsCompleted}/{subject.topicsTotal} topics complete</p>
+                            </div>
+                            <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-blue-700">
+                              {subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0}%
+                            </span>
+                          </div>
+                          <div className="space-y-3">
+                            {subject.chapters.map(chapter => (
+                              <div key={chapter.chapterId} className="rounded-xl bg-slate-50 p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-sm font-black text-slate-800">{chapter.chapterName}</p>
+                                  <p className="text-xs font-bold text-slate-500">{chapter.topicsCompleted}/{chapter.topicsTotal}</p>
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {chapter.topics.slice(0, 8).map(topic => {
+                                    const done = topic.status === "completed";
+                                    return (
+                                      <button
+                                        key={topic.topicId}
+                                        type="button"
+                                        onClick={() => navigate(`/school/student/ai-study/${topic.topicId}`)}
+                                        className={`rounded-full border px-3 py-1 text-xs font-black transition ${
+                                          done
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                            : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
+                                        }`}
+                                      >
+                                        {topic.topicName}
+                                      </button>
+                                    );
+                                  })}
+                                  {chapter.topics.length > 8 && (
+                                    <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-500">
+                                      +{chapter.topics.length - 8} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : planLoading ? (
+                  <div className="flex h-56 items-center justify-center">
+                    <div className="h-7 w-7 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                  </div>
+                ) : !hasPlan ? (
+                  <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/40 p-10 text-center">
+                    <Rocket className="mx-auto h-11 w-11 text-blue-500" />
+                    <h3 className="mt-4 text-lg font-black text-slate-950">No study plan yet</h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500">
+                      Create a simple monthly plan from your class subjects and available topics.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleAutoGenerate}
+                      className="mx-auto mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Generate Plan
+                    </button>
+                  </div>
+                ) : todayView === "week" ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {weekDays.map(day => {
+                      const dayDone = day.items.filter(item => item.status === "completed").length;
+                      return (
+                        <div key={day.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-black text-slate-900">{day.label}</p>
+                              <p className="mt-1 text-xs font-bold text-slate-500">{dayDone}/{day.items.length} done</p>
+                            </div>
+                            <Calendar className="h-5 w-5 text-slate-400" />
+                          </div>
+                          <div className="mt-3 space-y-2">
+                            {day.items.length === 0 ? (
+                              <p className="rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-400">No tasks planned.</p>
+                            ) : (
+                              day.items.slice(0, 3).map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => handleOpenPlanItem(item)}
+                                  className="flex w-full items-center gap-3 rounded-xl bg-white px-3 py-3 text-left transition hover:bg-blue-50"
+                                >
+                                  <span className={`h-2.5 w-2.5 rounded-full ${item.status === "completed" ? "bg-emerald-500" : "bg-blue-500"}`} />
+                                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-700">{item.title}</span>
+                                  <ChevronRight className="h-4 w-4 text-slate-300" />
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : todayItems.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center">
+                    <CheckCircle2 className="mx-auto h-11 w-11 text-emerald-500" />
+                    <h3 className="mt-4 text-lg font-black text-slate-950">No tasks for today</h3>
+                    <p className="mt-2 text-sm font-medium text-slate-500">You are clear for today.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {Object.entries(bySubject).map(([subject, items]) => {
+                      const cfg = subjectCfg(subject);
+                      const subjectDone = items.filter(item => item.status === "completed").length;
+                      return (
+                        <div key={subject} className={`overflow-hidden rounded-2xl border ${cfg.border}`}>
+                          <div className={`flex items-center justify-between gap-3 px-4 py-3 ${cfg.bg}`}>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot}`} />
+                              <p className={`truncate text-sm font-black ${cfg.color}`}>{subject}</p>
+                            </div>
+                            <p className="shrink-0 text-xs font-black text-slate-500">{subjectDone}/{items.length} done</p>
+                          </div>
+                          <div className="space-y-2 bg-white p-2">
+                            {items.map(item => (
+                              <PlanItemCard
+                                key={item.id}
+                                item={item}
+                                priority={derivePriority(item, weakTopicIds)}
+                                onComplete={id => complete.mutate(id)}
+                                onSkip={id => skip.mutate(id)}
+                                onOpen={handleOpenPlanItem}
+                                hideReviewIfDone={true}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {subjectProgress.length > 0 && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-black text-slate-950">Subject progress</h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/school/student/study-materials")}
+                    className="text-sm font-black text-blue-600 transition hover:text-blue-700"
+                  >
+                    Study materials
+                  </button>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {subjectProgress.map(subject => {
+                    const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
+                    const cfg = subjectCfg(subject.subjectName);
+                    return (
+                      <div key={subject.subjectId} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="truncate text-sm font-black text-slate-900">{subject.subjectName}</p>
+                          <p className={`text-sm font-black ${cfg.color}`}>{pct}%</p>
+                        </div>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                          <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className="mt-2 text-xs font-bold text-slate-500">
+                          {subject.topicsCompleted} of {subject.topicsTotal} topics complete
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </main>
+
+          <aside className="space-y-5">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-black text-slate-950">Next up</h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500">Start with one small task.</p>
+                </div>
+                <CircleProgress pct={donePct} color="#2563eb" size={58} />
+              </div>
+              <div className="mt-4 space-y-2">
+                {nextUpItems.length === 0 ? (
+                  <p className="rounded-2xl bg-emerald-50 px-4 py-4 text-sm font-bold text-emerald-700">
+                    All today's tasks are complete.
+                  </p>
+                ) : (
+                  nextUpItems.map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleOpenPlanItem(item)}
+                      className="flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+                    >
+                      <PlayCircle className="h-5 w-5 shrink-0 text-blue-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-800">{item.title}</p>
+                        <p className="mt-0.5 text-xs font-bold text-slate-500">{item.estimatedMinutes} min</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-300" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-black text-slate-950">Needs attention</h2>
+              <div className="mt-4 grid gap-3">
+                {attentionItems.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => setActiveTab(item.tab)}
+                      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:brightness-95 ${item.tone}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-black text-slate-800">{item.label}</p>
+                      </div>
+                      <p className="text-xl font-black">{item.value}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-black text-slate-950">Plan settings</h2>
+              <div className="mt-4 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  disabled={regenerate.isPending}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
+                >
+                  <RotateCcw className={`h-4 w-4 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                  Regenerate Plan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-black text-rose-600 transition hover:bg-rose-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Reset Plan
+                </button>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+
+      {revisionModal && (
+        <RevisionSessionModal
+          topic={revisionModal}
+          onClose={() => setRevisionModal(null)}
+        />
+      )}
+    </div>
+  );
 
   const TABS: Array<{ key: ActiveTab; label: string; icon: React.ReactNode; badge?: number }> = [
     { key: "today", label: "Today", icon: <ListTodo className="w-4 h-4" />, badge: todayItems.filter(i => i.status !== "completed").length || undefined },
@@ -2970,7 +4041,14 @@ export default function SchoolStudentStudyPlanner() {
                                                 </div>
                                                 <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full border ${accColor}`}>{ch.overallAccuracy}%</span>
                                                 <button
-                                                  onClick={() => navigate(`/school/student/quiz?chapterId=${ch.chapterId}`)}
+                                                  onClick={() => {
+                                                    if (!ch.practiceTopicId) {
+                                                      toast.error("No attempted topic is available for practice in this chapter yet.");
+                                                      return;
+                                                    }
+                                                    navigate(`/school/student/quiz?topicId=${ch.practiceTopicId}`);
+                                                  }}
+                                                  title={ch.practiceTopicName ? `Practice ${ch.practiceTopicName}` : "Practice weakest topic"}
                                                   className="shrink-0 px-3 py-2 bg-amber-500 text-white rounded-xl text-xs font-semibold hover:bg-amber-600 transition-colors flex items-center gap-1">
                                                   <Zap className="w-3 h-3" /> Practice
                                                 </button>

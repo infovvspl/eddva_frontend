@@ -192,7 +192,12 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
-const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner")); // Force re-resolution from .jsx to .tsx
+const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
+const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
+const SchoolStudentMathSprint = lazy(() => import("./pages/school/student/game-zone/MathSprint"));
+const SchoolStudentMemoryMatch = lazy(() => import("./pages/school/student/game-zone/MemoryMatch"));
+const SchoolStudentWordMaster = lazy(() => import("./pages/school/student/game-zone/WordMaster"));
+const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
 const SchoolStudentAttendance = lazy(() => import("./pages/school/student/Attendance"));
 const SchoolStudentCalendar = lazy(() => import("./pages/school/student/Calendar"));
 const SchoolStudentTimetable = lazy(() => import("./pages/school/student/Timetable"));
@@ -433,6 +438,11 @@ const SchoolRoutes = () => (
       <Route path="doubts" element={<SchoolStudentDoubts />} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
+      <Route path="game-zone/quiz-rush" element={<SchoolStudentQuizRush />} />
+      <Route path="game-zone/treasure-hunt" element={<SchoolStudentTreasureHunt />} />
+      <Route path="game-zone/math-sprint" element={<SchoolStudentMathSprint />} />
+      <Route path="game-zone/memory-match" element={<SchoolStudentMemoryMatch />} />
+      <Route path="game-zone/word-master" element={<SchoolStudentWordMaster />} />
       <Route path="planner" element={<SchoolStudentStudyPlanner />} />
       <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
       <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />

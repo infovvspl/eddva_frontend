@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
+import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -56,6 +56,23 @@ const RESOURCE_META = {
   default: { label: 'Material', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20' },
 };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function cleanLabel(value) {
+  const label = String(value || '').trim();
+  if (!label || UUID_PATTERN.test(label)) return '';
+  return label;
+}
+
+function getMaterialSubjectName(material) {
+  return (
+    cleanLabel(material.subjectName) ||
+    cleanLabel(material.subject_name) ||
+    cleanLabel(material.subject) ||
+    'Other Subjects'
+  );
+}
+
 function getSubjectColor(name) {
   const key = (name || '').toLowerCase();
   return Object.entries(SUBJECT_COLORS).find(([k]) => key.includes(k))?.[1] ?? SUBJECT_COLORS.default;
@@ -93,7 +110,7 @@ function groupMaterials(materials) {
   const tree = {};
 
   materials.forEach((m) => {
-    const subject = m.subjectName || m.subjectId || 'Other Subjects';
+    const subject = getMaterialSubjectName(m);
     const chapter = m.chapterName || m.fileName || 'General Chapters';
     const topic = m.topicName || 'General Topics';
 
@@ -266,7 +283,7 @@ export default function StudyMaterials() {
     return allMaterials.filter((m) => {
       const haystack = [
         m.title,
-        m.subjectName || m.subjectId,
+        getMaterialSubjectName(m),
         m.chapterName || m.fileName,
         m.topicName,
         m.fileType || m.type,
@@ -315,7 +332,7 @@ export default function StudyMaterials() {
     if (openId) {
       const found = allMaterials.find(m => String(m.id) === String(openId));
       if (found) {
-        setSelectedSubject(found.subjectName || found.subjectId || 'Other Subjects');
+        setSelectedSubject(getMaterialSubjectName(found));
         openMaterial(found);
       }
     }
@@ -620,6 +637,10 @@ function MaterialViewer({ material, onClose }) {
     [isMindmap, material.title, previewContent],
   );
   const canShowMindmap = !!mindmapTree?.children?.length;
+  const isFlashcard = (material.fileType || material.type || '').toLowerCase().includes('flashcard') || 
+                      (material.title || '').toLowerCase().includes('flashcard') || 
+                      (previewContent && previewContent.trim().startsWith('Q:'));
+
   const [viewMode, setViewMode] = useState(canShowMindmap ? 'mindmap' : 'text');
 
   useEffect(() => {
@@ -674,9 +695,14 @@ function MaterialViewer({ material, onClose }) {
           {canShowMindmap && viewMode === 'mindmap' ? (
             <MindMapCanvas data={mindmapTree} height={560} />
           ) : previewContent ? (
-            <div className="prose prose-slate max-w-none rounded-xl bg-slate-50 p-4 dark:prose-invert dark:bg-slate-950">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewContent}</ReactMarkdown>
-            </div>
+            isFlashcard ? (
+              <FlashcardViewer content={previewContent} />
+            ) : (
+              <MarkdownRenderer
+                content={previewContent}
+                className="prose-slate rounded-xl bg-slate-50 p-4 dark:bg-slate-950"
+              />
+            )
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-500 dark:border-slate-700">
               No preview content is available for this material.

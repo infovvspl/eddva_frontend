@@ -1,15 +1,22 @@
 import { io, type Socket } from "socket.io-client";
+import { getApiOrigin } from "@/lib/api-config";
 
 /**
  * Connect to the school notification realtime namespace (`/notifications`).
  *
- * Socket.IO uses the `/socket.io` path, which the Vite dev server proxies to
- * the backend (and a reverse proxy forwards in production), so connecting to
- * the same origin reaches the NestJS gateway on whichever port it runs.
+ * The Socket.IO gateway runs on the API host, not the frontend origin. In a
+ * split deployment (e.g. dev.eddva.in → dev-api.eddva.in) connecting to the
+ * page origin fails, so we target the API origin. Order:
+ *   VITE_SOCKET_URL (explicit) → API origin (from VITE_API_BASE_URL) →
+ *   same origin (local dev, where Vite proxies /socket.io).
  */
 export function createNotificationSocket(): Socket {
-  const socket = io(`${window.location.origin}/notifications`, {
+  const explicit = (import.meta.env.VITE_SOCKET_URL as string | undefined)?.trim();
+  const base = explicit || getApiOrigin() || window.location.origin;
+
+  const socket = io(`${base}/notifications`, {
     transports: ["websocket", "polling"],
+    withCredentials: true,
   });
 
   socket.on("connect", () => console.info("[notification-socket] connected", socket.id));

@@ -1,83 +1,39 @@
 import { useState, useRef, useEffect } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, GraduationCap, Send, ThumbsUp, ThumbsDown,
   Clock, BookOpen, CheckCircle, Loader2, RefreshCw, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiClient, extractData } from "@/lib/api/client";
+import api, { unwrapSchoolData } from "@/lib/api/school-client";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 interface Props {
-  lectureId: string;
-  topicId: string;
-  topicName: string;
+  recordingId: string;
+  subjectId: string;
+  subjectName: string;
   lectureTitle: string;
   timestampSeconds: number;
   onClose: () => void;
 }
 
-type Mode = "short" | "detailed";
 type Tab = "ai" | "teacher";
 
 interface DoubtResponse {
-  doubtId: string;
+  id: string;
   aiExplanation: string;
-  aiConceptLinks?: string[];
+  aiSteps?: string[];
 }
 
 function fmtTime(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
-function parseAiAnswer(raw: string | null | undefined) {
-  if (!raw) return null;
-  let str = raw.trim();
-  
-  // Try to find the outermost { } block first (strips preambles/postscripts)
-  const jsonMatch = str.match(/(\{[\s\S]*\})/);
-  if (jsonMatch) str = jsonMatch[1].trim();
-
-  const check = (obj: any): any => {
-    if (obj && typeof obj === "object" && (obj.brief || obj.detailed)) return obj;
-    return null;
-  };
-
-  try {
-    return JSON.parse(str);
-  } catch {
-    // Aggressive fix: escape raw newlines inside what looks like string values
-    const fixed = str.replace(/"([\s\S]*?)"/g, (match) => 
-      match.replace(/\n/g, "\\n").replace(/\r/g, "\\n")
-    );
-    try {
-      return JSON.parse(fixed);
-    } catch {
-      // One last try: if it's the "tightMatch" version
-      const tightMatch = str.match(/\{"brief":[\s\S]*\}/);
-      if (tightMatch) {
-        try {
-          return JSON.parse(tightMatch[0].replace(/"([\s\S]*?)"/g, (m) => m.replace(/\n/g, "\\n")));
-        } catch { /* Final fail */ }
-      }
-    }
-  }
-  return null;
-}
-
-import { formatMarkdown } from "@/components/shared/MarkdownRenderer";
-
-
-export function AskDoubtPanel({
-  lectureId, topicId, topicName, lectureTitle, timestampSeconds, onClose,
+export function SchoolAskDoubtPanel({
+  recordingId, subjectId, subjectName, lectureTitle, timestampSeconds, onClose,
 }: Props) {
   const [tab, setTab] = useState<Tab>("ai");
   const [text, setText] = useState("");
-  const [mode, setMode] = useState<Mode>("short");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<DoubtResponse | null>(null);
   const [feedback, setFeedback] = useState<"helpful" | "not_helpful" | null>(null);
@@ -108,19 +64,27 @@ export function AskDoubtPanel({
     setLoading(true);
     resetState();
     try {
-      const res = await apiClient.post("/doubts", {
-        ...(topicId ? { topicId } : {}),
-        questionText: text.trim(),
-        source: "lecture",
-        sourceRefId: lectureId,
-        explanationMode: mode,
+      const res = await api.post("/doubts", {
+        questionText: `${text.trim()} (At segment timestamp: ${fmtTime(timestampSeconds)})`,
+        subjectId: subjectId || undefined,
+        subjectName: subjectName || undefined,
+        askTeacher: false,
       });
-      setResponse(extractData<DoubtResponse>(res));
-    } catch {
+      const result = unwrapSchoolData(res, null);
+      if (result) {
+        setResponse({
+          id: result.id,
+          aiExplanation: result.aiExplanation || "I couldn't generate a clear explanation.",
+          aiSteps: result.aiSteps || [],
+        });
+      } else {
+        throw new Error("No data returned");
+      }
+    } catch (err) {
       setResponse({
-        doubtId: "",
+        id: "",
         aiExplanation: "I couldn't process your doubt right now. Please try again in a moment.",
-        aiConceptLinks: [],
+        aiSteps: [],
       });
     } finally {
       setLoading(false);
@@ -131,13 +95,11 @@ export function AskDoubtPanel({
     if (!text.trim() || loading) return;
     setLoading(true);
     try {
-      await apiClient.post("/doubts", {
-        ...(topicId ? { topicId } : {}),
-        questionText: text.trim(),
-        source: "lecture",
-        sourceRefId: lectureId,
-        explanationMode: "short",
-        skipAI: true,
+      await api.post("/doubts", {
+        questionText: `${text.trim()} (At segment timestamp: ${fmtTime(timestampSeconds)})`,
+        subjectId: subjectId || undefined,
+        subjectName: subjectName || undefined,
+        askTeacher: true,
       });
       setTeacherSent(true);
     } catch {
@@ -148,10 +110,10 @@ export function AskDoubtPanel({
   };
 
   const handleFeedback = async (helpful: boolean) => {
-    if (!response?.doubtId || feedback) return;
+    if (!response?.id || feedback) return;
     setFeedback(helpful ? "helpful" : "not_helpful");
     try {
-      await apiClient.post(`/doubts/${response.doubtId}/helpful`, { isHelpful: helpful });
+      await api.patch(`/doubts/${response.id}/helpful`, { isHelpful: helpful });
     } catch { /* silent */ }
     if (helpful) {
       setFeedbackMsg("Marked as helpful — glad it worked!");
@@ -167,17 +129,17 @@ export function AskDoubtPanel({
   };
 
   return (
-    <div className="flex flex-col gap-0">
+    <div className="flex flex-col gap-0 text-slate-800">
 
       {/* ── Context Strip ── */}
       <div className="flex items-center gap-2 flex-wrap mb-4">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-violet-700 bg-violet-50 border border-violet-200 px-2.5 py-1 rounded-full">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2.5 py-1 rounded-full">
           <Clock className="w-3 h-3 shrink-0" />
           {fmtTime(timestampSeconds)}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full max-w-[180px]">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full max-w-[180px]">
           <BookOpen className="w-3 h-3 shrink-0" />
-          <span className="truncate">{topicName}</span>
+          <span className="truncate">{subjectName || "General"}</span>
         </span>
       </div>
 
@@ -229,33 +191,6 @@ export function AskDoubtPanel({
         </span>
       </div>
 
-      {/* ── AI Mode Pills ── */}
-      <AnimatePresence>
-        {tab === "ai" && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex gap-2 mb-3 overflow-hidden"
-          >
-            {(["short", "detailed"] as Mode[]).map(m => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={cn(
-                  "flex-1 py-2 rounded-lg text-xs font-semibold border transition-all",
-                  mode === m
-                    ? "bg-violet-600 text-white border-violet-600 shadow-sm"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-violet-300 hover:text-violet-600",
-                )}
-              >
-                {m === "short" ? "⚡ Brief" : "📖 Detailed"}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* ── Submit Button ── */}
       <button
         onClick={tab === "ai" ? handleAsk : handleAskTeacher}
@@ -298,9 +233,6 @@ export function AskDoubtPanel({
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
                 <span className="text-xs font-bold text-violet-800">AI Answer</span>
-                {mode === "detailed" && (
-                  <span className="text-[10px] font-semibold text-violet-500 bg-violet-100 px-1.5 py-0.5 rounded-full">Detailed</span>
-                )}
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -328,65 +260,16 @@ export function AskDoubtPanel({
                   transition={{ duration: 0.2 }}
                 >
                   {/* Response body */}
-                  <div className="px-4 py-4">
-                    <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-800 prose-headings:font-bold prose-strong:text-indigo-700 prose-code:bg-slate-100 prose-code:text-violet-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600">
-                      {(() => {
-                        const parsed = parseAiAnswer(response.aiExplanation);
-                        if (!parsed) {
-                          return (
-                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {formatMarkdown(response.aiExplanation)}
-                            </ReactMarkdown>
-                          );
-                        }
+                  <div className="px-4 py-4 text-slate-700">
+                    <MarkdownRenderer content={response.aiExplanation} className="prose-slate" />
 
-                        // Use the 'mode' state which can be 'short' or 'detailed'
-                        const viewMode = mode === "short" ? "brief" : "detailed";
-                        
-                        if (viewMode === "brief") {
-                          return (
-                            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
-                              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {formatMarkdown(parsed.brief?.answer || parsed.detailed?.final_answer || parsed.detailed?.solution || response.aiExplanation)}
-                              </ReactMarkdown>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div className="space-y-3 prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-ul:my-2">
-                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {formatMarkdown(parsed.detailed?.solution || parsed.detailed?.explanation || parsed.brief?.answer || response.aiExplanation)}
-                            </ReactMarkdown>
-                            {parsed.detailed?.verification && (
-                              <div className="p-3 bg-violet-50/50 border border-violet-100 rounded-lg not-prose">
-                                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wide mb-1">✓ Verification</p>
-                                <p className="text-xs text-slate-600 leading-relaxed">{parsed.detailed.verification}</p>
-                              </div>
-                            )}
-                            {parsed.detailed?.key_concept && (
-                              <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg not-prose">
-                                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
-                                <p className="text-xs text-slate-600 leading-relaxed">{parsed.detailed.key_concept}</p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Concept links */}
-                    {(response.aiConceptLinks?.length ?? 0) > 0 && (
-                      <div className="mt-3 pt-3 border-t border-violet-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Related Concepts</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {response.aiConceptLinks!.map((link, i) => (
-                            <span key={i} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
-                              {link}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                    {/* Steps list if present */}
+                    {Array.isArray(response.aiSteps) && response.aiSteps.length > 0 && (
+                      <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-slate-600">
+                        {response.aiSteps.map((step, i) => (
+                          <li key={i}>{step}</li>
+                        ))}
+                      </ol>
                     )}
                   </div>
 
@@ -423,7 +306,7 @@ export function AskDoubtPanel({
                           "text-[11px] font-semibold ml-1",
                           feedback === "helpful" ? "text-emerald-600" : "text-slate-500",
                         )}>
-                          {feedback === "helpful" ? "Thanks!" : "Noted"}
+                          {feedbackMsg}
                         </span>
                       )}
                     </div>
@@ -450,7 +333,7 @@ export function AskDoubtPanel({
             </div>
             <p className="text-sm font-bold text-blue-800 mb-1">Doubt sent successfully!</p>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Your teacher will review and respond soon. You'll get notified when they reply.
+              Your teacher will review and respond soon. You'll get notified in the dashboard when they reply.
             </p>
             <button
               onClick={() => { resetState(); setText(""); textareaRef.current?.focus(); }}

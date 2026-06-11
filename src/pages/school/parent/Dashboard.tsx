@@ -8,7 +8,6 @@ import {
   ClipboardList,
   FileText,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
   UserRound,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext, type ParentChild } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentAvatar from "@/assets/images/Student_Avatar.png";
+import SmartCalendar from "@/components/school/SmartCalendar";
 
 type Tone = "blue" | "emerald" | "amber" | "rose" | "violet" | "slate";
 
@@ -104,11 +104,13 @@ export default function ParentDashboard() {
 
   return (
     <div className="space-y-5 pb-10">
-        <motion.div
+      {/* Top Grid for Welcome Card and Smart Calendar */}
+      <div className="grid gap-6 lg:grid-cols-4 items-stretch">
+        <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative flex flex-col justify-between"
+          className="lg:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between"
         >
           <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
@@ -150,7 +152,7 @@ export default function ParentDashboard() {
                   </div>
                 </div>
               </div>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -177,7 +179,17 @@ export default function ParentDashboard() {
               />
             </motion.div>
           </div>
+        </motion.section>
+
+        {/* Smart Calendar */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
+        >
+          <SmartCalendar />
         </motion.div>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

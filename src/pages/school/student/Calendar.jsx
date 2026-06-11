@@ -18,6 +18,16 @@ const categoryStyles = {
 
 const categoryOptions = ['ACADEMIC', 'EXAM', 'HOLIDAY', 'VACATION', 'MEETING', 'LIVE_CLASS', 'All'];
 
+const categoryIcons = {
+  ACADEMIC: '📚',
+  EXAM: '📝',
+  HOLIDAY: '🏖️',
+  VACATION: '✈️',
+  MEETING: '👨‍👩‍👧',
+  LIVE_CLASS: '🎥',
+  All: '📅',
+};
+
 function toDateKey(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -188,58 +198,49 @@ export default function Calendar() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-[11px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Upcoming Agenda</h3>
-              <Clock className="text-slate-300" size={16} />
+        <div className="space-y-4">
+          <button className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-br from-slate-950 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-4 shadow-lg ring-1 ring-slate-900/5 dark:ring-white/10 text-left transition hover:shadow-xl hover:scale-[1.02] group">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.85rem] bg-amber-400/10 text-amber-400 transition-colors group-hover:bg-amber-400/20">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-white truncate">Final Exams Sync</h3>
+                <p className="text-[10px] font-semibold text-slate-400 truncate">Automated exam scheduling is active.</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-slate-500 transition-colors group-hover:text-amber-400" />
+          </button>
+
+          <div className="rounded-2xl bg-white dark:bg-slate-950 p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Agenda</h3>
+              <Clock className="h-4 w-4 text-slate-300" />
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-2">
               {events.slice(0, 5).map(ev => (
-                <div key={ev.id} className="relative pl-6 group">
-                  <div className={cn(
-                    "absolute left-0 top-1 w-1.5 h-full rounded-full",
-                    ev.priority === 'HIGH' ? "bg-rose-500" : "bg-blue-500"
-                  )} />
-                  <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
-                    {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    {ev.endTime && ev.endTime.split('T')[0] !== ev.startTime.split('T')[0] ? ` - ${new Date(ev.endTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-                    {ev.isAllDay ? '' : ` - ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                  </p>
-                  <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{ev.title}</h4>
-                  <div className="mt-2 flex items-center gap-3">
-                    {ev.location && (
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                        <MapPin size={12} />
-                        {ev.location}
-                      </div>
-                    )}
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-md text-[9px] font-bold tracking-tight uppercase",
-                      categoryStyles[ev.category]
-                    )}>{ev.category}</span>
+                <div key={ev.id} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[ev.category] || '📅'}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{ev.title}</p>
+                      <p className="truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                        📅 {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {ev.isAllDay ? '' : ` • ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      </p>
+                    </div>
                   </div>
+                  <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[ev.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
+                    {ev.category.replace('_', ' ')}
+                  </span>
                 </div>
               ))}
               {events.length === 0 && !loading && (
-                <div className="text-center py-12">
-                  <CalendarDays size={32} className="mx-auto text-slate-200 mb-3" />
-                  <p className="text-xs font-bold text-slate-400 italic">No events scheduled for this period.</p>
+                <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
+                  No events scheduled for this period.
                 </div>
               )}
-            </div>
-          </div>
-
-          <div className="p-8 rounded-lg bg-slate-900 text-white shadow-xl relative overflow-hidden">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <AlertTriangle size={16} className="text-amber-500" />
-                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-amber-500">Academic Focus</span>
-              </div>
-              <h3 className="text-lg font-bold tracking-tight mb-2">Final Exams Sync</h3>
-              <p className="text-xs text-slate-400 font-medium leading-relaxed mb-6">Automated exam scheduling is active. Ensure all faculty meetings are cleared before the 24th.</p>
-              <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest border border-white/10 transition-all">View Exam Rules</button>
             </div>
           </div>
         </div>
