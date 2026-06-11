@@ -698,14 +698,11 @@ function MaterialViewer({ material, onClose }) {
             isFlashcard ? (
               <FlashcardViewer content={previewContent} />
             ) : (
-              <div className="prose prose-slate max-w-none rounded-xl bg-slate-50 p-4 dark:prose-invert dark:bg-slate-950">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewContent}</ReactMarkdown>
-              </div>
+              <MarkdownRenderer
+                content={previewContent}
+                className="prose-slate rounded-xl bg-slate-50 p-4 dark:bg-slate-950"
+              />
             )
-            <MarkdownRenderer
-              content={previewContent}
-              className="prose-slate rounded-xl bg-slate-50 p-4 dark:bg-slate-950"
-            />
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-500 dark:border-slate-700">
               No preview content is available for this material.
