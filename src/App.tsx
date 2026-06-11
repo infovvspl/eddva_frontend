@@ -207,6 +207,8 @@ const SchoolStudentCareerQuizResult  = lazy(() => import("./pages/school/student
 const SchoolStudentCareerReport      = lazy(() => import("./pages/school/student/career/CareerReport"));
 const SchoolStudentCareerExplorer    = lazy(() => import("./pages/school/student/career/CareerExplorer"));
 const SchoolStudentCareerDetail      = lazy(() => import("./pages/school/student/career/CareerDetail"));
+const SchoolStudentAiStudyPage       = lazy(() => import("./pages/school/student/SchoolStudentAiStudyPage"));
+const SchoolStudentTopicQuizPage     = lazy(() => import("./pages/school/student/SchoolStudentTopicQuizPage"));
 
 // ── School parent pages ──────────────────────────────────────────────────────
 const SchoolParentLayout        = lazy(() => import("./components/school/parent/ParentLayout"));
@@ -432,6 +434,8 @@ const SchoolRoutes = () => (
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
       <Route path="planner" element={<SchoolStudentStudyPlanner />} />
+      <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
+      <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
       <Route path="attendance" element={<SchoolStudentAttendance />} />
       <Route path="timetable" element={<SchoolStudentTimetable />} />
       <Route path="calendar" element={<SchoolStudentCalendar />} />

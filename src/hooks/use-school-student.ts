@@ -15,6 +15,8 @@ export const schoolStudentKeys = {
   revisionIntensive: (batchId?: string) => ["school-student", "revision", "intensive", batchId ?? ""] as const,
   revisionNotes: (batchId?: string) => ["school-student", "revision", "notes", batchId ?? ""] as const,
   practiceHistory: (batchId?: string) => ["school-student", "revision", "practice", batchId ?? ""] as const,
+  studyStatus: (topicId: string) => ["school-student", "topics", topicId, "study-status"] as const,
+  aiSession: (topicId: string) => ["school-student", "topics", topicId, "ai-study-session"] as const,
 };
 
 // ─── Profile / Stats ──────────────────────────────────────────────────────────
@@ -359,7 +361,156 @@ export function useWeeklyActivity() {
 export function useAiStudyHistory() {
   return useQuery({
     queryKey: ["school-student", "ai-study-history"],
-    queryFn: () => [],
-    staleTime: Infinity,
+    queryFn: async () => {
+      const res = await schoolApi.get("/ai-study/history");
+      return res.data?.data ?? res.data ?? [];
+    },
+    staleTime: 60_000,
+    retry: false,
   });
 }
+
+export function useStudyStatus(topicId: string) {
+  return useQuery({
+    queryKey: schoolStudentKeys.studyStatus(topicId),
+    queryFn: async () => {
+      const res = await schoolApi.get(`/topics/${topicId}/study-status`);
+      return res.data?.data ?? res.data;
+    },
+    enabled: !!topicId,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useAiStudySession(topicId: string) {
+  return useQuery({
+    queryKey: schoolStudentKeys.aiSession(topicId),
+    queryFn: async () => {
+      const res = await schoolApi.get(`/topics/${topicId}/ai-study/session`);
+      return res.data?.data === null ? null : (res.data?.data ?? res.data);
+    },
+    enabled: !!topicId,
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+export function useStartAiStudy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (topicId: string) => {
+      const res = await schoolApi.post(`/topics/${topicId}/ai-study/start`);
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: (_data, topicId) => {
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.studyStatus(topicId) });
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.aiSession(topicId) });
+    },
+  });
+}
+
+export function useAskAiQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ topicId, sessionId, question }: { topicId: string; sessionId: string; question: string }) => {
+      const res = await schoolApi.post(`/topics/${topicId}/ai-study/${sessionId}/ask`, { question });
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: (_data, { topicId }) => {
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.aiSession(topicId) });
+    },
+  });
+}
+
+export function useCompleteAiStudy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      topicId,
+      sessionId,
+      timeSpentSeconds,
+      highlights,
+      inlineComments,
+    }: {
+      topicId: string;
+      sessionId: string;
+      timeSpentSeconds: number;
+      highlights: any[];
+      inlineComments: any[];
+    }) => {
+      const res = await schoolApi.patch(`/topics/${topicId}/ai-study/${sessionId}/complete`, { timeSpentSeconds, highlights, inlineComments });
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: (_data, { topicId }) => {
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.studyStatus(topicId) });
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.aiSession(topicId) });
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.me });
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.plan });
+      qc.invalidateQueries({ queryKey: ["school-student", "ai-study-history"] });
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.progressReport() });
+    },
+  });
+}
+
+export function useSaveAiStudyNotes() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      topicId,
+      sessionId,
+      highlights,
+      inlineComments,
+    }: {
+      topicId: string;
+      sessionId: string;
+      highlights: any[];
+      inlineComments: any[];
+    }) => {
+      const res = await schoolApi.patch(`/topics/${topicId}/ai-study/${sessionId}/save-notes`, { highlights, inlineComments });
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: (_data, { topicId }) => {
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.aiSession(topicId) });
+    },
+  });
+}
+
+export function useGenerateAiQuiz() {
+  return useMutation({
+    mutationFn: async (topicId: string) => {
+      const res = await schoolApi.post(`/topics/${topicId}/ai-quiz/generate`);
+      return res.data?.data ?? res.data;
+    },
+  });
+}
+
+export function useCompleteAiQuiz() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      topicId,
+      score,
+      totalMarks,
+      accuracy,
+      correctCount,
+      wrongCount,
+    }: {
+      topicId: string;
+      score: number;
+      totalMarks: number;
+      accuracy: number;
+      correctCount: number;
+      wrongCount: number;
+    }) => {
+      const res = await schoolApi.post(`/topics/${topicId}/ai-quiz/complete`, { score, totalMarks, accuracy, correctCount, wrongCount });
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.me });
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.plan });
+      qc.invalidateQueries({ queryKey: schoolStudentKeys.progressReport() });
+    },
+  });
+}
+
