@@ -6,9 +6,13 @@ import Modal from '@/components/school/admin/Modal';
 import TimetableForm from '@/components/school/admin/forms/TimetableForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
+import { useAuth } from '@/context/SchoolAuthContext';
 
 export default function Timetable() {
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER';
   const [timetables, setTimetables] = useState([]);
+  const [teacherProfile, setTeacherProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTimetable, setSelectedTimetable] = useState(null);
@@ -23,6 +27,10 @@ export default function Timetable() {
 
   const fetchTimetables = async () => {
     try {
+      if (isTeacher) {
+        const pRes = await api.get(`/teachers/${user.id}`);
+        setTeacherProfile(pRes.data?.data?.teacherProfile);
+      }
       const res = await api.get('/timetable');
       setTimetables(getResponseList(res));
     } catch (err) {
@@ -88,9 +96,14 @@ export default function Timetable() {
   const teachers = Array.from(new Set(timetables.map((t) => formatTeacherName(t.teacher)).filter(Boolean))).sort();
   const classes = Array.from(new Set(timetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort();
 
+  const validSectionIds = isTeacher && teacherProfile ? new Set((teacherProfile.assignments || []).map(a => String(a.sectionId))) : null;
+
   const groupedByDay = {};
   days.forEach((day) => {
     let dayTimetables = timetables.filter((t) => t.dayOfWeek === day);
+    if (isTeacher && validSectionIds) {
+      dayTimetables = dayTimetables.filter(t => validSectionIds.has(String(t.sectionId)));
+    }
     if (filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
     if (filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
     groupedByDay[day] = dayTimetables;
@@ -213,18 +226,22 @@ export default function Timetable() {
                       {slot.subject?.name || 'Subject'}
                     </span>
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => handleEditClick(slot)}
-                        className="rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(slot.id)}
-                        className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {(!isTeacher || (slot.teacher?.user?.id === user?.id)) && (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(slot)}
+                            className="rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(slot.id)}
+                            className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 

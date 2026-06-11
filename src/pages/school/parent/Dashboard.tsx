@@ -165,7 +165,9 @@ export default function ParentDashboard() {
             </div>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+      </div>
+    </div>
+    <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" />
       </motion.section>
 

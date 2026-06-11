@@ -9,11 +9,6 @@ export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isTakingAssessment = /^\/school\/student\/assessments\/[^/]+\/take\/?$/.test(location.pathname);
-  const mainRef = useRef(null);
-
-  useEffect(() => {
-    mainRef.current?.scrollTo({ top: 0, left: 0 });
-  }, [location.pathname]);
 
   return (
     <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25 dark:from-slate-950 dark:via-slate-900/30 dark:to-indigo-950/20">

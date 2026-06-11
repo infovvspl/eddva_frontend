@@ -96,8 +96,9 @@ const Dashboard: React.FC = () => {
           id: item.id,
           time: `${item.start_time || item.startTime || item.schedule || '--'}`,
           subject: item.subject_name || item.subjectName || item.subject?.name || item.title || 'Scheduled class',
-          room: item.zoom_link || item.google_meet_link || item.room || 'Online',
+          room: item.room || 'Online',
           class: item.class_name || item.className || item.class?.name || item.examTarget || '-',
+          type: item.class_type || item.type || '',
         })));
         setStudents(data.students || []);
       }
@@ -376,12 +377,21 @@ const Dashboard: React.FC = () => {
                     <Clock size={14} />
                     <span>{cls.time}</span>
                   </div>
-                  <div className="dashboard__class-info">
-                    <p className="dashboard__class-subject">{cls.subject}</p>
-                    <div className="dashboard__class-meta">
-                      <span><MapPin size={12} /> {cls.room}</span>
-                      <span>Class {cls.class}</span>
+                  <div className="dashboard__class-info flex items-center justify-between w-full">
+                    <div>
+                      <p className="dashboard__class-subject">{cls.subject}</p>
+                      <div className="dashboard__class-meta">
+                        <span>Class {cls.class}</span>
+                        {(!cls.type || cls.type.toLowerCase() !== 'live') && (
+                          <span><MapPin size={12} /> {cls.room}</span>
+                        )}
+                      </div>
                     </div>
+                    {(cls.type && cls.type.toLowerCase() === 'live') && (
+                      <Link to="/school/teacher/live-classes" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700">
+                        Join Live
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))}

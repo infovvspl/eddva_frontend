@@ -382,16 +382,16 @@ export default function Dashboard() {
                         {item.subjectName || item.subject || item.title || 'Class'}
                       </p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {item.startTime
-                          ? new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                          : item.type || 'Scheduled'}
+                        {item.startTime || item.type || 'Scheduled'}
                         {item.teacherName ? ` · ${item.teacherName}` : ''}
-                        {item.room ? ` · ${item.room}` : ''}
+                        {(!item.type || item.type.toLowerCase() !== 'live') && item.room ? ` · Room ${item.room}` : ''}
                       </p>
                     </div>
-                    <Link to="/school/student/live-classes" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
-                      Join
-                    </Link>
+                    {(item.type && item.type.toLowerCase() === 'live') && (
+                      <Link to="/school/student/live-classes" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
+                        Join Live
+                      </Link>
+                    )}
                   </div>
                 ))
               ) : (
