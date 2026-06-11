@@ -1,15 +1,20 @@
 import { io, type Socket } from "socket.io-client";
+import { getApiOrigin } from "@/lib/api-config";
 
 /**
  * Connect to the school chat realtime namespace (`/chat`).
  *
- * Socket.IO uses the `/socket.io` path, which the Vite dev server proxies to
- * the backend (and a reverse proxy forwards in production), so connecting to
- * the same origin reaches the NestJS gateway on whichever port it runs.
+ * The Socket.IO gateway runs on the API host. In a split deployment
+ * (dev.eddva.in → dev-api.eddva.in) the page origin has no socket server, so
+ * target the API origin: VITE_SOCKET_URL → API origin → same origin (local dev).
  */
 export function createChatSocket(): Socket {
-  const socket = io(`${window.location.origin}/chat`, {
+  const explicit = (import.meta.env.VITE_SOCKET_URL as string | undefined)?.trim();
+  const base = explicit || getApiOrigin() || window.location.origin;
+
+  const socket = io(`${base}/chat`, {
     transports: ["websocket", "polling"],
+    withCredentials: true,
   });
 
   // Lightweight diagnostics — visible in the browser console so connection
