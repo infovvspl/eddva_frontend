@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import StudentsModal from './StudentsModal';
+import SmartCalendar from '@/components/school/SmartCalendar';
 import './Dashboard.css';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -95,8 +96,9 @@ const Dashboard: React.FC = () => {
           id: item.id,
           time: `${item.start_time || item.startTime || item.schedule || '--'}`,
           subject: item.subject_name || item.subjectName || item.subject?.name || item.title || 'Scheduled class',
-          room: item.zoom_link || item.google_meet_link || item.room || 'Online',
+          room: item.room || 'Online',
           class: item.class_name || item.className || item.class?.name || item.examTarget || '-',
+          type: item.class_type || item.type || '',
         })));
         setStudents(data.students || []);
       }
@@ -244,28 +246,7 @@ const Dashboard: React.FC = () => {
 
         {/* Smart Calendar */}
         <div className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
-          <div>
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-surface-950 dark:text-white">Smart calendar</h3>
-              <CalendarDays className="h-5 w-5 text-blue-600" />
-            </div>
-            <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-widest text-surface-400 dark:text-slate-500">
-              {calendarWeek.map((d) => (
-                <div key={d.day}>{d.day}</div>
-              ))}
-            </div>
-            <div className="mt-2 grid min-h-[180px] grid-cols-7 gap-2">
-              {calendarWeek.map((d) => (
-                <div key={d.day} className="rounded-lg border border-[rgba(37,99,235,0.08)] bg-white/50 p-1.5 dark:border-slate-700 dark:bg-slate-800/40">
-                  {d.events.map((ev: any) => (
-                    <div key={ev.t} className={`mb-1 truncate rounded px-1 py-0.5 text-[9px] font-bold text-white ${ev.tone}`}>
-                      {ev.t}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+          <SmartCalendar />
         </div>
       </div>
 
@@ -396,12 +377,21 @@ const Dashboard: React.FC = () => {
                     <Clock size={14} />
                     <span>{cls.time}</span>
                   </div>
-                  <div className="dashboard__class-info">
-                    <p className="dashboard__class-subject">{cls.subject}</p>
-                    <div className="dashboard__class-meta">
-                      <span><MapPin size={12} /> {cls.room}</span>
-                      <span>Class {cls.class}</span>
+                  <div className="dashboard__class-info flex items-center justify-between w-full">
+                    <div>
+                      <p className="dashboard__class-subject">{cls.subject}</p>
+                      <div className="dashboard__class-meta">
+                        <span>Class {cls.class}</span>
+                        {(!cls.type || cls.type.toLowerCase() !== 'live') && (
+                          <span><MapPin size={12} /> {cls.room}</span>
+                        )}
+                      </div>
                     </div>
+                    {(cls.type && cls.type.toLowerCase() === 'live') && (
+                      <Link to="/school/teacher/live-classes" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700">
+                        Join Live
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))}

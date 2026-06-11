@@ -2,8 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
+import { useAuth } from '@/context/SchoolAuthContext';
 
 export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading }) {
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER';
   const [formData, setFormData] = useState({
     sectionId: '',
     dayOfWeek: 'MONDAY',
@@ -14,12 +17,15 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     type: 'offline',
     room: '',
     meetingLink: '',
+    periodId: '',
     periodNumber: '1',
     remarks: ''
   });
   const [sections, setSections] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [periods, setPeriods] = useState([]);
+  const [teacherProfile, setTeacherProfile] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -34,6 +40,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         type: timetable.type || 'offline',
         room: timetable.room || '',
         meetingLink: timetable.meetingLink || '',
+        periodId: timetable.periodId || '',
         periodNumber: timetable.periodNumber ? String(timetable.periodNumber) : '1',
         remarks: timetable.remarks || ''
       });
@@ -43,10 +50,18 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
   const fetchData = async () => {
     try {
-      const [secRes, subjRes, teachRes] = await Promise.all([
+      if (isTeacher) {
+        const res = await api.get(`/teachers/${user.id}`);
+        const profile = res.data?.data?.teacherProfile;
+        setTeacherProfile(profile);
+        setFormData(prev => ({ ...prev, teacherId: String(profile?.id || '') }));
+      }
+
+      const [secRes, subjRes, teachRes, periodRes] = await Promise.all([
         api.get('/academic/classes'),
         api.get('/academic/subjects'),
-        api.get('/teachers')
+        api.get('/teachers'),
+        api.get('/academic/periods')
       ]);
       
       const allSections = [];
@@ -59,6 +74,16 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       setSections(allSections);
       setSubjects(getResponseList(subjRes));
       setTeachers(getResponseList(teachRes));
+      
+      const pList = getResponseList(periodRes);
+      setPeriods(pList);
+      
+      if (timetable && !timetable.periodId && timetable.periodNumber) {
+        const matchingPeriod = pList.find(p => String(p.sequenceNo) === String(timetable.periodNumber));
+        if (matchingPeriod) {
+          setFormData(prev => ({ ...prev, periodId: matchingPeriod.id }));
+        }
+      }
     } catch (error) {
       console.error('Failed to load timetable data:', error);
     }
@@ -67,7 +92,29 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
   const selectedSection = sections.find(sec => String(sec.id) === String(formData.sectionId));
   const classId = selectedSection?.classId;
 
+  // Filter sections if user is a teacher
+  const filteredSections = useMemo(() => {
+    if (!isTeacher) return sections;
+    const assignments = teacherProfile?.assignments || [];
+    const validSectionIds = new Set(assignments.map(a => String(a.sectionId)));
+    return sections.filter(sec => validSectionIds.has(String(sec.id)));
+  }, [isTeacher, sections, teacherProfile]);
+
+  // Filter subjects based on selected section (if teacher)
+  const filteredSubjects = useMemo(() => {
+    if (!isTeacher) return subjects;
+    if (!formData.sectionId) return [];
+    const assignments = teacherProfile?.assignments || [];
+    const validSubjectIds = new Set(
+      assignments
+        .filter(a => String(a.sectionId) === String(formData.sectionId))
+        .map(a => String(a.subjectId))
+    );
+    return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
+  }, [isTeacher, subjects, teacherProfile, formData.sectionId]);
+
   const filteredTeachers = useMemo(() => {
+    if (isTeacher) return []; // Teachers don't need this filtering, they are auto-assigned
     if (!formData.sectionId || !formData.subjectId || sections.length === 0 || teachers.length === 0) {
       return [];
     }
@@ -79,9 +126,10 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         String(a.subjectId) === String(formData.subjectId)
       );
     });
-  }, [teachers, formData.sectionId, formData.subjectId, classId, sections.length]);
+  }, [isTeacher, teachers, formData.sectionId, formData.subjectId, classId, sections.length]);
 
   useEffect(() => {
+    if (isTeacher) return;
     if (sections.length === 0 || teachers.length === 0) return;
     if (formData.sectionId && formData.subjectId) {
       const isValid = filteredTeachers.some(t => String(t.teacherProfile?.id) === String(formData.teacherId));
@@ -93,7 +141,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         setFormData(prev => ({ ...prev, teacherId: '' }));
       }
     }
-  }, [formData.sectionId, formData.subjectId, filteredTeachers, sections.length, teachers.length]);
+  }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, sections.length, teachers.length]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -106,6 +154,10 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
     if (!formData.sectionId) {
       setError('Please select a section');
+      return;
+    }
+    if (!formData.periodId) {
+      setError('Please select a period');
       return;
     }
     if (!formData.subjectId) {
@@ -124,7 +176,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     await onSubmit(formData);
   };
 
-  const isSubmitDisabled = isLoading || (formData.sectionId && formData.subjectId && filteredTeachers.length === 0);
+  const isSubmitDisabled = isLoading || (!isTeacher && formData.sectionId && formData.subjectId && filteredTeachers.length === 0);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -142,11 +194,11 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
             <select
               name="sectionId"
               value={formData.sectionId}
-              onChange={handleChange}
+              onChange={(e) => { handleChange(e); if(isTeacher) setFormData(prev => ({...prev, sectionId: e.target.value, subjectId: ''})); }}
               className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
             >
               <option value="">Select Section</option>
-              {sections.map(section => (
+              {filteredSections.map(section => (
                 <option key={section.id} value={section.id}>
                   {section.className} - {section.name}
                 </option>
@@ -177,10 +229,11 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="subjectId"
               value={formData.subjectId}
               onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              disabled={isTeacher && !formData.sectionId}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
             >
               <option value="">Select Subject</option>
-              {subjects.map(subject => (
+              {filteredSubjects.map(subject => (
                 <option key={subject.id} value={subject.id}>
                   {subject.name}
                 </option>
@@ -188,27 +241,63 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
             </select>
           </div>
 
+          {!isTeacher && (
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
+              <select
+                name="teacherId"
+                value={formData.teacherId}
+                onChange={handleChange}
+                disabled={!formData.sectionId || !formData.subjectId}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
+              >
+                {!formData.sectionId || !formData.subjectId ? (
+                  <option value="">Select Section and Subject first</option>
+                ) : (
+                  <>
+                    <option value="">Select Teacher</option>
+                    {filteredTeachers.map(teacher => (
+                      <option key={teacher.teacherProfile?.id} value={teacher.teacherProfile?.id}>
+                        {teacher.name}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Period *</label>
             <select
-              name="teacherId"
-              value={formData.teacherId}
-              onChange={handleChange}
-              disabled={!formData.sectionId || !formData.subjectId}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
+              name="periodId"
+              value={formData.periodId}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                const p = periods.find(x => String(x.id) === String(selectedId));
+                if (p) {
+                  setFormData(prev => ({
+                    ...prev,
+                    periodId: selectedId,
+                    periodNumber: String(p.sequenceNo),
+                    startTime: p.startTime,
+                    endTime: p.endTime
+                  }));
+                } else {
+                  setFormData(prev => ({
+                    ...prev,
+                    periodId: '',
+                  }));
+                }
+              }}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
             >
-              {!formData.sectionId || !formData.subjectId ? (
-                <option value="">Select Section and Subject first</option>
-              ) : (
-                <>
-                  <option value="">Select Teacher</option>
-                  {filteredTeachers.map(teacher => (
-                    <option key={teacher.teacherProfile?.id} value={teacher.teacherProfile?.id}>
-                      {teacher.name}
-                    </option>
-                  ))}
-                </>
-              )}
+              <option value="">Select Period</option>
+              {periods.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.periodName} ({p.startTime} - {p.endTime})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -218,8 +307,8 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               type="time"
               name="startTime"
               value={formData.startTime}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              readOnly
+              className="w-full rounded-lg border border-surface-200 bg-slate-50 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 cursor-not-allowed"
             />
           </div>
 
@@ -229,23 +318,9 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               type="time"
               name="endTime"
               value={formData.endTime}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              readOnly
+              className="w-full rounded-lg border border-surface-200 bg-slate-50 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 cursor-not-allowed"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Period Number</label>
-            <select
-              name="periodNumber"
-              value={formData.periodNumber}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
-                <option key={p} value={String(p)}>Period {p}</option>
-              ))}
-            </select>
           </div>
 
           <div>
@@ -302,7 +377,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         </div>
       </div>
 
-      {formData.sectionId && formData.subjectId && filteredTeachers.length === 0 && (
+      {!isTeacher && formData.sectionId && formData.subjectId && filteredTeachers.length === 0 && (
         <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
           <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">
