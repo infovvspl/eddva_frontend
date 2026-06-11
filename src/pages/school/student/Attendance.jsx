@@ -48,9 +48,9 @@ function normalizeStatus(s) { return String(s || '').toLowerCase(); }
 
 const STATUS = {
   present: { label: 'Present', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe', ring: '#3b82f6', Icon: CheckCircle2 },
-  late:    { label: 'Late',    color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', ring: '#f59e0b', Icon: Timer },
-  leave:   { label: 'Leave',  color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', ring: '#8b5cf6', Icon: MinusCircle },
-  absent:  { label: 'Absent', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', ring: '#ef4444', Icon: XCircle },
+  late: { label: 'Late', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', ring: '#f59e0b', Icon: Timer },
+  leave: { label: 'Leave', color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', ring: '#8b5cf6', Icon: MinusCircle },
+  absent: { label: 'Absent', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', ring: '#ef4444', Icon: XCircle },
 };
 function getMeta(status) {
   return STATUS[normalizeStatus(status)] || null;
@@ -83,10 +83,10 @@ export default function Attendance() {
 
   const stats = useMemo(() => {
     const present = records.filter(r => normalizeStatus(r.status) === 'present').length;
-    const absent  = records.filter(r => normalizeStatus(r.status) === 'absent').length;
-    const late    = records.filter(r => normalizeStatus(r.status) === 'late').length;
-    const leave   = records.filter(r => normalizeStatus(r.status) === 'leave').length;
-    const total   = records.length;
+    const absent = records.filter(r => normalizeStatus(r.status) === 'absent').length;
+    const late = records.filter(r => normalizeStatus(r.status) === 'late').length;
+    const leave = records.filter(r => normalizeStatus(r.status) === 'leave').length;
+    const total = records.length;
     const attended = present + late;
     return { present, absent, late, leave, total, attended, pct: total ? clampPct((attended / total) * 100) : 0 };
   }, [records]);
@@ -135,10 +135,10 @@ export default function Attendance() {
 
   /* ── stat cards ─────────────────────────────────────────────────────── */
   const statCards = [
-    { label: 'Present',    value: stats.present, ...STATUS.present },
-    { label: 'Absent',     value: stats.absent,  ...STATUS.absent  },
-    { label: 'Late',       value: stats.late,    ...STATUS.late    },
-    { label: 'On Leave',   value: stats.leave,   ...STATUS.leave   },
+    { label: 'Present', value: stats.present, ...STATUS.present },
+    { label: 'Absent', value: stats.absent, ...STATUS.absent },
+    { label: 'Late', value: stats.late, ...STATUS.late },
+    { label: 'On Leave', value: stats.leave, ...STATUS.leave },
   ];
 
   if (loading) {
@@ -270,7 +270,7 @@ export default function Attendance() {
 
           {/* legend */}
           <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            {[{color:'#3b82f6',label:'≥75% good'},{color:'#ef4444',label:'<75% low'},{color:'#e2e8f0',label:'No classes'}].map(l => (
+            {[{ color: '#3b82f6', label: '≥75% good' }, { color: '#ef4444', label: '<75% low' }, { color: '#e2e8f0', label: 'No classes' }].map(l => (
               <span key={l.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#64748b', fontWeight: 600 }}>
                 <span style={{ width: 10, height: 10, borderRadius: 3, background: l.color, display: 'inline-block' }} />
                 {l.label}
@@ -338,71 +338,71 @@ export default function Attendance() {
       {/* ── full-width calendar ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* monthly calendar */}
-          <div style={card}>
-            <div style={{ ...cardHeader, flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <h2 style={cardTitle}>Monthly Calendar</h2>
-                <p style={cardSub}>Each day coloured by attendance status</p>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {Object.entries(STATUS).map(([key, s]) => (
-                  <span key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: s.color, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 99, padding: '3px 10px' }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
-                    {s.label}
-                  </span>
-                ))}
-              </div>
+        {/* monthly calendar */}
+        <div style={card}>
+          <div style={{ ...cardHeader, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h2 style={cardTitle}>Monthly Calendar</h2>
+              <p style={cardSub}>Each day coloured by attendance status</p>
             </div>
-
-            <div style={{ marginTop: 18 }}>
-              {/* weekday headers */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 6 }}>
-                {WEEKDAYS.map(d => (
-                  <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#cbd5e1', padding: '4px 0' }}>{d}</div>
-                ))}
-              </div>
-              {/* day cells */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
-                {calendarDays.map(day => {
-                  if (day.blank) return <div key={day.key} />;
-                  const meta = getMeta(day.record?.status);
-                  const isMarked = !!meta;
-                  const Icon = meta?.Icon;
-                  return (
-                    <div
-                      key={day.key}
-                      style={{
-                        borderRadius: 12,
-                        border: day.isToday ? '2px solid #3b82f6' : `1px solid ${isMarked ? meta.border : '#f1f5f9'}`,
-                        background: isMarked ? meta.bg : '#fff',
-                        padding: '8px 6px',
-                        minHeight: 64,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 4,
-                        transition: 'transform 0.15s',
-                        cursor: 'default',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                    >
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: day.isToday ? '#3b82f6' : '#0f172a' }}>{day.day}</p>
-                      {Icon
-                        ? <Icon size={14} color={meta.color} />
-                        : <span style={{ width: 14, height: 14 }} />
-                      }
-                      <p style={{ margin: 0, fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: isMarked ? meta.color : '#e2e8f0' }}>
-                        {isMarked ? meta.label : '·'}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {Object.entries(STATUS).map(([key, s]) => (
+                <span key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: s.color, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 99, padding: '3px 10px' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
+                  {s.label}
+                </span>
+              ))}
             </div>
           </div>
+
+          <div style={{ marginTop: 18 }}>
+            {/* weekday headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 6 }}>
+              {WEEKDAYS.map(d => (
+                <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#cbd5e1', padding: '4px 0' }}>{d}</div>
+              ))}
+            </div>
+            {/* day cells */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
+              {calendarDays.map(day => {
+                if (day.blank) return <div key={day.key} />;
+                const meta = getMeta(day.record?.status);
+                const isMarked = !!meta;
+                const Icon = meta?.Icon;
+                return (
+                  <div
+                    key={day.key}
+                    style={{
+                      borderRadius: 12,
+                      border: day.isToday ? '2px solid #3b82f6' : `1px solid ${isMarked ? meta.border : '#f1f5f9'}`,
+                      background: isMarked ? meta.bg : '#fff',
+                      padding: '8px 6px',
+                      minHeight: 64,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 4,
+                      transition: 'transform 0.15s',
+                      cursor: 'default',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
+                  >
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: day.isToday ? '#3b82f6' : '#0f172a' }}>{day.day}</p>
+                    {Icon
+                      ? <Icon size={14} color={meta.color} />
+                      : <span style={{ width: 14, height: 14 }} />
+                    }
+                    <p style={{ margin: 0, fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: isMarked ? meta.color : '#e2e8f0' }}>
+                      {isMarked ? meta.label : '·'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

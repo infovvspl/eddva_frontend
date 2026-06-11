@@ -34,6 +34,7 @@ import {
   Presentation,
   BookMarked,
   Download,
+  Highlighter,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
@@ -41,6 +42,7 @@ import Button from '@/components/school/Button';
 import SearchBar from '@/components/school/SearchBar';
 import Badge from '@/components/school/Badge';
 import Modal from '@/components/school/Modal';
+import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
 import InputField from '@/components/school/InputField';
 
 import api from '@/lib/api/school-client';
@@ -775,6 +777,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
+  const [viewingResourceModal, setViewingResourceModal] = useState<SchoolMaterial | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
@@ -931,10 +934,10 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
                               <Eye size={13} /> View
                             </button>
                           ) : href ? (
-                            <a href={href} target="_blank" rel="noopener noreferrer"
+                            <button onClick={() => setViewingResourceModal(m)}
                               className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                               <ExternalLink size={13} /> Open
-                            </a>
+                            </button>
                           ) : null}
                           {canEdit && (
                             <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
@@ -971,6 +974,20 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
 
       {viewMaterial && (
         <MarkdownViewer material={viewMaterial} onClose={() => setViewMaterial(null)} />
+      )}
+
+      {viewingResourceModal && (
+        <ResourceViewerModal
+          title={viewingResourceModal.title}
+          content={viewingResourceModal.description}
+          fileUrl={viewingResourceModal.fileUrl ?? viewingResourceModal.file_url}
+          externalUrl={viewingResourceModal.externalUrl}
+          type={viewingResourceModal.fileType ?? 'pdf'}
+          topicId={topic.id}
+          resourceId={viewingResourceModal.id}
+          isTeacher={true}
+          onClose={() => setViewingResourceModal(null)}
+        />
       )}
     </div>
   );
@@ -1120,6 +1137,124 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
   const rich = hasRich && view === 'rich';
   const widthClass = isBinaryPpt ? 'max-w-[1400px] h-[88vh]' : rich && showTree ? 'max-w-5xl' : rich && showSlides ? 'max-w-4xl' : 'max-w-3xl';
 
+  // --- HIGHLIGHTER LOGIC ---
+  const [highlights, setHighlights] = useState<{ text: string; color: string }[]>([]);
+  const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
+  const [selectedText, setSelectedText] = useState("");
+  const [highlightColor, setHighlightColor] = useState("#fef08a");
+  const notesContentRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+
+  useEffect(() => {
+    if (!material.id) return;
+    try {
+      const h = localStorage.getItem(`teacher-content-highlights-${material.id}`);
+      if (h) setHighlights(JSON.parse(h));
+    } catch {}
+  }, [material.id]);
+
+  useEffect(() => {
+    if (!material.id) return;
+    localStorage.setItem(`teacher-content-highlights-${material.id}`, JSON.stringify(highlights));
+  }, [material.id, highlights]);
+
+  useEffect(() => {
+    if (view !== 'text') return;
+    const root = notesContentRef.current;
+    if (!root || !material.description) return;
+    
+    // Clear existing marks first to prevent duplication on re-renders
+    const existingMarks = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
+    existingMarks.forEach(mark => {
+      const parent = mark.parentNode;
+      if (parent) {
+        while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+        parent.removeChild(mark);
+      }
+    });
+
+    const timer = setTimeout(() => {
+      highlights.forEach((h) => {
+        if (!h.text) return;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: (node) => {
+            let parent: HTMLElement | null = (node.parentElement as HTMLElement) || null;
+            while (parent && parent !== root) {
+              if (parent.tagName === "MARK") return NodeFilter.FILTER_REJECT;
+              parent = parent.parentElement;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          },
+        });
+        let node = walker.nextNode();
+        while (node) {
+          const nv = node.nodeValue || "";
+          const idx = nv.indexOf(h.text);
+          if (idx >= 0) {
+            try {
+              const range = document.createRange();
+              range.setStart(node, idx);
+              range.setEnd(node, idx + h.text.length);
+              const mark = document.createElement("mark");
+              mark.setAttribute("data-user-highlight", "1");
+              mark.style.backgroundColor = h.color;
+              mark.style.padding = "0 1px";
+              mark.style.cursor = "pointer";
+              mark.title = "Click to remove highlight";
+              mark.onclick = () => {
+                setHighlights(prev => prev.filter(x => x.text !== h.text));
+              };
+              range.surroundContents(mark);
+            } catch {}
+            break;
+          }
+          node = walker.nextNode();
+        }
+      });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [view, material.description, highlights]);
+
+  useEffect(() => {
+    if (view !== 'text') return;
+    const handler = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+        setSelectionRect(null);
+        return;
+      }
+      const root = notesContentRef.current;
+      if (!root) return;
+      const anchor = sel.anchorNode;
+      if (!anchor || !root.contains(anchor)) {
+        setSelectionRect(null);
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      savedRangeRef.current = range.cloneRange();
+      setSelectedText(sel.toString().trim().replace(/\s+/g, " "));
+      setSelectionRect(range.getBoundingClientRect());
+    };
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, [view]);
+
+  const handleCaptureHighlight = () => {
+    if (!savedRangeRef.current || !selectedText) return;
+    if (highlights.some(h => h.text === selectedText)) {
+      window.getSelection()?.removeAllRanges();
+      setSelectionRect(null);
+      return;
+    }
+    const newHighlight = { text: selectedText, color: highlightColor };
+    setHighlights(prev => [newHighlight, ...prev]);
+    window.getSelection()?.removeAllRanges();
+    setSelectionRect(null);
+    savedRangeRef.current = null;
+    setSelectedText("");
+  };
+  // -------------------------
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -1169,10 +1304,44 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
             <SlideDeck slides={slides} height={480} topic={material.title} />
           </div>
         ) : (
-          <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
+          <div ref={notesContentRef} className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert relative">
             {material.description
               ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
               : <p className="text-surface-400">No content.</p>}
+              
+            {/* Floating Color Picker */}
+            {selectionRect && selectedText && (
+              <div 
+                className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white p-2 shadow-xl border border-surface-200 dark:bg-surface-800 dark:border-surface-700 animate-in fade-in zoom-in-95"
+                style={{
+                  top: Math.max(10, selectionRect.top - 60) + 'px',
+                  left: Math.max(10, selectionRect.left + (selectionRect.width / 2) - 100) + 'px',
+                }}
+              >
+                <div className="flex items-center gap-1.5 px-1">
+                  {["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => { e.preventDefault(); setHighlightColor(color); }}
+                      className={`h-6 w-6 rounded-full border-2 transition-transform ${highlightColor === color ? "scale-110 border-surface-900 dark:border-white" : "border-transparent"}`}
+                      style={{ backgroundColor: color }}
+                      title="Select color"
+                    />
+                  ))}
+                </div>
+                <div className="w-px h-6 bg-surface-200 dark:bg-surface-700 mx-1" />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={(e) => { e.preventDefault(); handleCaptureHighlight(); }}
+                  className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-violet-700 flex items-center gap-1.5"
+                >
+                  <Highlighter size={13} /> Save
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

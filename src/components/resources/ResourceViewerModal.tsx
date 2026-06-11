@@ -1,17 +1,24 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  X, Printer, ExternalLink, FileText, Loader2, 
-  Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight, 
-  ListChecks, Check, Trophy, AlertCircle, Maximize2, Minimize2
+import {
+  X, Printer, ExternalLink, FileText, Loader2,
+  Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight,
+  ListChecks, Check, Trophy, AlertCircle, Maximize2, Minimize2,
+  ZoomIn, ZoomOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DppContentRenderer from "@/components/DppContentRenderer";
 import { getResourceDownloadUrl } from "@/lib/api/student";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
+import PdfHighlightOverlay from "@/components/resources/PdfHighlightOverlay";
 
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 const _API_ORIGIN = getApiOrigin();
 
 function resolveUrl(url?: string | null): string | undefined {
@@ -33,7 +40,7 @@ function FlashcardViewer({ content }: { content: string }) {
     let currentA = "";
 
     for (const raw of lines) {
-      const line = raw.trim().replace(/\*\*/g, ""); 
+      const line = raw.trim().replace(/\*\*/g, "");
       if (!line) continue;
 
       if (/^[Qq][\s\d]*[:.]/.test(line)) {
@@ -277,34 +284,101 @@ interface ResourceViewerModalProps {
   type: string;
   topicId?: string;
   resourceId?: string;
+  isTeacher?: boolean;
   onClose: () => void;
 }
 
 const RESOURCE_META: Record<string, {
   label: string; icon: React.ReactNode; color: string; bg: string; border: string;
 }> = {
-  dpp:      { label: "DPP",              icon: <FileText className="w-4 h-4" />, color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200" },
-  pyq:      { label: "PYQ",              icon: <Trophy className="w-4 h-4" />, color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200" },
-  pdf:      { label: "Lecture Notes",     icon: <FileText className="w-4 h-4" />, color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200" },
-  notes:    { label: "Handwritten Notes", icon: <FileText className="w-4 h-4" />, color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200" },
-  mindmap:  { label: "Mindmap",           icon: <Brain className="w-4 h-4" />, color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200" },
-  quiz:     { label: "Quiz",             icon: <FlaskConical className="w-4 h-4" />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  dpp: { label: "DPP", icon: <FileText className="w-4 h-4" />, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200" },
+  pyq: { label: "PYQ", icon: <Trophy className="w-4 h-4" />, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200" },
+  pdf: { label: "Lecture Notes", icon: <FileText className="w-4 h-4" />, color: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
+  notes: { label: "Handwritten Notes", icon: <FileText className="w-4 h-4" />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+  mindmap: { label: "Mindmap", icon: <Brain className="w-4 h-4" />, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" },
+  quiz: { label: "Quiz", icon: <FlaskConical className="w-4 h-4" />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
 };
 
 function Brain(props: any) {
   return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z"/></svg>
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z" /><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z" /></svg>
   );
 }
 
 function FlaskConical(props: any) {
   return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v7.5"/><path d="M14 2v7.5"/><path d="M8.5 13h7"/><path d="M16 3H8"/><path d="M12 2a3 3 0 0 1 3 3v4.5l5.3 9a2 2 0 0 1-1.7 3H5.4a2 2 0 0 1-1.7-3l5.3-9V5a3 3 0 0 1 3-3Z"/></svg>
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v7.5" /><path d="M14 2v7.5" /><path d="M8.5 13h7" /><path d="M16 3H8" /><path d="M12 2a3 3 0 0 1 3 3v4.5l5.3 9a2 2 0 0 1-1.7 3H5.4a2 2 0 0 1-1.7-3l5.3-9V5a3 3 0 0 1 3-3Z" /></svg>
+  );
+}
+
+// ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
+
+function InternalPdfViewer({ url, resourceId, isTeacher }: { url: string, resourceId?: string, isTeacher?: boolean }) {
+  const [numPages, setNumPages] = useState<number>();
+  const [scale, setScale] = useState<number>(1.2);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+  }
+
+  return (
+    <div ref={containerRef} className="flex-1 overflow-auto p-4 md:p-8 flex justify-center w-full relative">
+      <Document
+        file={url}
+        onLoadSuccess={onDocumentLoadSuccess}
+        onLoadError={(error) => {
+          console.error("PDF Load Error:", error);
+        }}
+        onSourceError={(error) => {
+          console.error("PDF Source Error:", error);
+        }}
+        loading={
+          <div className="flex items-center justify-center h-full w-full gap-3 text-indigo-600 font-bold p-10">
+            <Loader2 className="w-8 h-8 animate-spin" />
+            Loading PDF...
+          </div>
+        }
+        className="flex flex-col items-center min-w-min gap-6 pb-20"
+      >
+        {numPages &&
+          Array.from({ length: numPages }, (_, index) => (
+            <div
+              key={`page_${index + 1}`}
+              className="shadow-lg bg-white"
+            >
+              <Page
+                pageNumber={index + 1}
+                scale={scale}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                loading={
+                  <div className="w-[800px] h-[1000px] bg-white animate-pulse" />
+                }
+                onRenderError={(error) => {
+                  console.error(
+                    `Page ${index + 1} render error:`,
+                    error
+                  );
+                }}
+              />
+              {resourceId && (
+                <PdfHighlightOverlay
+                  pageNumber={index + 1}
+                  resourceId={resourceId}
+                  containerRef={containerRef}
+                  isTeacher={!!isTeacher}
+                />
+              )}
+            </div>
+          ))}
+      </Document>
+    </div>
   );
 }
 
 export default function ResourceViewerModal({
-  title, content, fileUrl, externalUrl, type, topicId, resourceId, onClose
+  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, onClose
 }: ResourceViewerModalProps) {
   const [downloading, setDownloading] = useState(false);
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
@@ -378,7 +452,7 @@ export default function ResourceViewerModal({
               </span>
               {fileUrl && (
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                   • {fileUrl.split(".").pop()?.toUpperCase()} File
+                  • {fileUrl.split(".").pop()?.toUpperCase()} File
                 </span>
               )}
             </div>
@@ -429,18 +503,14 @@ export default function ResourceViewerModal({
             </div>
           ) : isImage && presignedUrl ? (
             <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-200/30">
-              <img 
-                src={presignedUrl} 
-                alt={title} 
-                className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300" 
+              <img
+                src={presignedUrl}
+                alt={title}
+                className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300"
               />
             </div>
           ) : isPdf && presignedUrl ? (
-            <iframe
-              src={`${presignedUrl}#toolbar=0`}
-              className="w-full h-full border-0"
-              title={title}
-            />
+            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} />
           ) : externalUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
               <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
