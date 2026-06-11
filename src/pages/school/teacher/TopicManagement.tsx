@@ -1178,7 +1178,11 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
           />
         ) : (
           <div className="prose prose-slate max-w-none flex-1 overflow-y-auto p-6 dark:prose-invert">
-            <p className="text-surface-400">No content.</p>
+            {material.description
+              ? isFlashcard
+                ? <FlashcardViewer content={material.description} />
+                : <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
+              : <p className="text-surface-400">No content.</p>}
           </div>
         )}
       </div>

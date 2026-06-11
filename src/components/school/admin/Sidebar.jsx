@@ -89,7 +89,6 @@ const superAdminGroups = [
       { to: '/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/security', label: 'Security Center', icon: Shield },
-      { to: '/school/admin/settings', label: 'Settings', icon: SettingsIcon },
       { action: 'logout', label: 'Logout', icon: LogOut },
     ],
   },
