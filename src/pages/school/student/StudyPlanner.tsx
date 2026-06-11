@@ -1660,14 +1660,28 @@ export default function SchoolStudentStudyPlanner() {
 
   // Weak chapters: chapters with overall accuracy > 0 and < 50% with at least one attempted topic
   const weakChapters = useMemo(() => {
-    const list: Array<{ chapterId: string; chapterName: string; subjectName: string; topicsTotal: number; topicsCompleted: number; overallAccuracy: number; attemptedTopics: number }> = [];
+    const list: Array<{
+      chapterId: string;
+      chapterName: string;
+      subjectName: string;
+      topicsTotal: number;
+      topicsCompleted: number;
+      overallAccuracy: number;
+      attemptedTopics: number;
+      practiceTopicId: string | null;
+      practiceTopicName: string | null;
+    }> = [];
     effectiveProgressReport?.subjects.forEach(s =>
       s.chapters.forEach(c => {
-        const attempted = c.topics.filter(t =>
+        const attemptedTopics = c.topics.filter(t =>
           selectedCourseTopicIds.has(t.topicId) &&
           (t.attemptCount > 0 || t.status === "completed" || t.status === "in_progress")
-        ).length;
+        );
+        const attempted = attemptedTopics.length;
         if (attempted > 0 && c.overallAccuracy > 0 && c.overallAccuracy < 50) {
+          const practiceTopic = [...attemptedTopics]
+            .filter(t => (t.bestAccuracy ?? 0) > 0)
+            .sort((a, b) => (a.bestAccuracy ?? 0) - (b.bestAccuracy ?? 0))[0] ?? attemptedTopics[0];
           list.push({
             chapterId: c.chapterId,
             chapterName: c.chapterName,
@@ -1676,6 +1690,8 @@ export default function SchoolStudentStudyPlanner() {
             topicsCompleted: c.topicsCompleted,
             overallAccuracy: Math.round(c.overallAccuracy),
             attemptedTopics: attempted,
+            practiceTopicId: practiceTopic?.topicId ?? null,
+            practiceTopicName: practiceTopic?.topicName ?? null,
           });
         }
       })
@@ -2961,7 +2977,14 @@ export default function SchoolStudentStudyPlanner() {
                                                 </div>
                                                 <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full border ${accColor}`}>{ch.overallAccuracy}%</span>
                                                 <button
-                                                  onClick={() => navigate(`/school/student/quiz?chapterId=${ch.chapterId}`)}
+                                                  onClick={() => {
+                                                    if (!ch.practiceTopicId) {
+                                                      toast.error("No attempted topic is available for practice in this chapter yet.");
+                                                      return;
+                                                    }
+                                                    navigate(`/school/student/quiz?topicId=${ch.practiceTopicId}`);
+                                                  }}
+                                                  title={ch.practiceTopicName ? `Practice ${ch.practiceTopicName}` : "Practice weakest topic"}
                                                   className="shrink-0 px-3 py-2 bg-amber-500 text-white rounded-xl text-xs font-semibold hover:bg-amber-600 transition-colors flex items-center gap-1">
                                                   <Zap className="w-3 h-3" /> Practice
                                                 </button>

@@ -459,6 +459,7 @@ function VideoPlayer({
   const [videoEnded, setVideoEnded] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastUiReport = useRef(0);
+  const qc = useQueryClient();
 
   useEffect(() => {
     checkpointsRef.current = checkpoints;
@@ -468,12 +469,33 @@ function VideoPlayer({
     activeQuizRef.current = activeQuiz;
   }, [activeQuiz]);
 
+  const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
+  const seekedRef = useRef(false);
+
   useEffect(() => {
     shownIdsRef.current = new Set();
     lastUiReport.current = 0;
+    seekedRef.current = false;
   }, [src]);
 
-  const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
+  useEffect(() => {
+    if (resumeAt && resumeAt > 0 && !seekedRef.current) {
+      if (isYouTube) {
+        if (ytPlayerRef.current) {
+          try {
+            ytPlayerRef.current.seekTo(resumeAt, true);
+            seekedRef.current = true;
+          } catch { /* */ }
+        }
+      } else {
+        const v = videoRef.current;
+        if (v && v.readyState >= 1) {
+          v.currentTime = resumeAt;
+          seekedRef.current = true;
+        }
+      }
+    }
+  }, [resumeAt, isYouTube]);
 
   const showControls = () => {
     setControlsVisible(true);
@@ -510,11 +532,34 @@ function VideoPlayer({
     const v = videoRef.current;
     const t = isYouTube ? localTime : (v?.currentTime ?? 0);
     const taken = Math.max(0, 30 - Math.floor(t % 30));
-    return await submitQuizResponse(lectureId, {
+    const result = await submitQuizResponse(lectureId, {
       questionId: activeQuiz.id,
       selectedOption: option,
       timeTakenSeconds: taken,
     });
+
+    // Update query cache for lecture-progress to immediately show answered questions in sidebar
+    qc.setQueryData(["student", "lecture-progress", lectureId], (old: any) => {
+      if (!old) return old;
+      const responses = old.quizResponses ? [...old.quizResponses] : [];
+      const idx = responses.findIndex((r: any) => r.questionId === activeQuiz.id);
+      const newResponse = {
+        questionId: activeQuiz.id,
+        selectedOption: option,
+        isCorrect: result.isCorrect,
+      };
+      if (idx >= 0) {
+        responses[idx] = newResponse;
+      } else {
+        responses.push(newResponse);
+      }
+      return {
+        ...old,
+        quizResponses: responses,
+      };
+    });
+
+    return result;
   };
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -560,12 +605,15 @@ function VideoPlayer({
               dur = p.getDuration();
             } catch { /* */ }
             if (dur > 0) setDuration(dur);
-            if (resumeAt && resumeAt > 5) {
+            if (resumeAt && resumeAt > 0 && !seekedRef.current) {
               p.seekTo(resumeAt, true);
-              const mins = Math.floor(resumeAt / 60);
-              const secs = String(Math.floor(resumeAt % 60)).padStart(2, "0");
-              setResumeToast(`Resuming at ${mins}:${secs}`);
-              setTimeout(() => setResumeToast(null), 3000);
+              seekedRef.current = true;
+              if (resumeAt > 5) {
+                const mins = Math.floor(resumeAt / 60);
+                const secs = String(Math.floor(resumeAt % 60)).padStart(2, "0");
+                setResumeToast(`Resuming at ${mins}:${secs}`);
+                setTimeout(() => setResumeToast(null), 3000);
+              }
             }
 
             ytTickRef.current = setInterval(() => {
@@ -669,12 +717,15 @@ function VideoPlayer({
             const v = videoRef.current;
             if (!v) return;
             setDuration(v.duration ?? 0);
-            if (resumeAt && resumeAt > 5) {
+            if (resumeAt && resumeAt > 0 && !seekedRef.current) {
               v.currentTime = resumeAt;
-              const mins = Math.floor(resumeAt / 60);
-              const secs = String(Math.floor(resumeAt % 60)).padStart(2, "0");
-              setResumeToast(`Resuming at ${mins}:${secs}`);
-              setTimeout(() => setResumeToast(null), 3000);
+              seekedRef.current = true;
+              if (resumeAt > 5) {
+                const mins = Math.floor(resumeAt / 60);
+                const secs = String(Math.floor(resumeAt % 60)).padStart(2, "0");
+                setResumeToast(`Resuming at ${mins}:${secs}`);
+                setTimeout(() => setResumeToast(null), 3000);
+              }
             }
           }}
           onPlay={() => { setPlaying(true); setVideoEnded(false); hideTimer.current = setTimeout(() => setControlsVisible(false), 3000); }}
@@ -1026,6 +1077,7 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
   checkpoints: QuizCheckpoint[];
   savedResponses?: { questionId: string; isCorrect: boolean; selectedOption: string }[];
 }) {
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const answered = savedResponses ?? [];
   const correct = answered.filter(r => r.isCorrect).length;
 
@@ -1054,30 +1106,123 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
         </div>
       ) : checkpoints.map((cp, i) => {
         const response = answered.find(r => r.questionId === cp.id);
+        const hasAnswered = !!response;
+        const isExpanded = !!expandedIds[cp.id];
+
+        if (!hasAnswered) {
+          return (
+            <div
+              key={cp.id}
+              className="p-4 rounded-2xl border bg-white border-slate-100 transition-all"
+            >
+              <div className="flex items-start gap-3">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 bg-slate-100 text-slate-400">
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  {cp.segmentTitle && (
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {cp.segmentTitle}
+                    </p>
+                  )}
+                  <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+                  <span className="mt-2.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-350">
+                    <Lock className="w-3.5 h-3.5 text-slate-300" /> Not answered yet
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
-          <div key={cp.id} className={cn("p-4 rounded-2xl border",
-            response?.isCorrect ? "bg-emerald-50 border-emerald-200" :
-              response ? "bg-red-50 border-red-200" : "bg-white border-slate-100")}>
+          <div
+            key={cp.id}
+            onClick={() => {
+              setExpandedIds((prev) => ({
+                ...prev,
+                [cp.id]: !prev[cp.id],
+              }));
+            }}
+            className={cn(
+              "p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-sm select-none",
+              response.isCorrect ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"
+            )}
+          >
             <div className="flex items-start gap-3">
-              <span className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0",
-                response?.isCorrect ? "bg-emerald-500 text-white" :
-                  response ? "bg-red-500 text-white" : "bg-slate-100 text-slate-400")}>
+              <span
+                className={cn(
+                  "w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0",
+                  response.isCorrect ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+                )}
+              >
                 {i + 1}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-400 mb-1">{cp.segmentTitle}</p>
-                <p className="text-sm font-semibold text-slate-800 leading-snug mb-2">{cp.questionText}</p>
-                {response ? (
-                  <div className="flex items-center gap-2 text-xs font-semibold">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", response.isCorrect ? "bg-emerald-500" : "bg-red-500")} />
-                    <span className={response.isCorrect ? "text-emerald-700" : "text-red-600"}>
-                      {response.selectedOption}
-                    </span>
+                {cp.segmentTitle && (
+                  <p className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider mb-1",
+                    response.isCorrect ? "text-emerald-500/80" : "text-red-500/80"
+                  )}>
+                    {cp.segmentTitle}
+                  </p>
+                )}
+                <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+
+                {isExpanded && (
+                  <div className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
+                    {/* Options list */}
+                    <div className="space-y-2">
+                      {(cp.options || []).map((opt) => {
+                        const isSelected = response.selectedOption === opt.label;
+                        const isCorrectOption = cp.correctOption === opt.label;
+
+                        return (
+                          <div
+                            key={opt.label}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-xl border text-xs font-semibold",
+                              isCorrectOption
+                                ? "border-emerald-250 bg-emerald-500/10 text-emerald-800"
+                                : isSelected
+                                ? "border-red-250 bg-red-500/10 text-red-800"
+                                : "border-slate-100 bg-slate-50/50 text-slate-500"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black shrink-0",
+                                isCorrectOption
+                                  ? "bg-emerald-500 text-white"
+                                  : isSelected
+                                  ? "bg-red-500 text-white"
+                                  : "bg-slate-200 text-slate-500"
+                              )}
+                            >
+                              {opt.label}
+                            </span>
+                            <span className="flex-1 font-medium">{opt.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {cp.explanation && (
+                      <div className="p-3 bg-white/60 rounded-xl border border-slate-200/60 text-xs text-slate-500 leading-relaxed">
+                        <p className="font-bold text-slate-700 mb-1 flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Explanation
+                        </p>
+                        {cp.explanation}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 text-xs font-semibold">
+                      <div className={cn("w-1.5 h-1.5 rounded-full", response.isCorrect ? "bg-emerald-500" : "bg-red-500")} />
+                      <span className={response.isCorrect ? "text-emerald-700" : "text-red-600"}>
+                        You answered Option {response.selectedOption}
+                      </span>
+                    </div>
                   </div>
-                ) : (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-slate-300">
-                    <Lock className="w-3 h-3" /> Not answered
-                  </span>
                 )}
               </div>
             </div>

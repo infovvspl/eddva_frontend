@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   X, Brain, ChevronRight, ChevronDown, CheckCircle2,
   XCircle, RefreshCw, Clock, Target, Sparkles, Zap,
@@ -310,12 +311,14 @@ function ResultsPhase({
   session,
   correct,
   total,
-  onClose,
+  onDone,
+  isSaving,
 }: {
   session: RevisionSessionData;
   correct: number;
   total: number;
-  onClose: () => void;
+  onDone: (accuracy: number) => void;
+  isSaving: boolean;
 }) {
   const newAccuracy = total > 0 ? Math.round((correct / total) * 100) : session.previousAccuracy;
   const improved = newAccuracy >= session.previousAccuracy + 15;
@@ -401,9 +404,11 @@ function ResultsPhase({
       )}
 
       <button
-        onClick={onClose}
-        className="w-full py-3 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors"
+        onClick={() => onDone(newAccuracy)}
+        disabled={isSaving}
+        className="w-full py-3 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
+        {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
         Done
       </button>
     </div>
@@ -413,9 +418,11 @@ function ResultsPhase({
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
 export default function RevisionSessionModal({ topic, onClose }: Props) {
+  const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("loading");
   const [session, setSession] = useState<RevisionSessionData | null>(null);
   const [drillResult, setDrillResult] = useState<{ correct: number; total: number } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     schoolApi.post('/study-plans/revision-session', {
@@ -435,6 +442,25 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
   }, []);
 
   const meta = session ? SESSION_META[session.sessionType] : null;
+
+  const handleCompleteRevision = async (accuracy: number, correct: number, total: number) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      await schoolApi.post('/study-plans/revision-session/complete', {
+        topicId: topic.topicId,
+        accuracy,
+        correctCount: correct,
+        totalQuestions: total,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["school-student"] });
+      toast.success("Revision schedule updated");
+      onClose();
+    } catch {
+      toast.error("Could not update revision schedule. Please try again.");
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
@@ -510,7 +536,8 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
               session={session}
               correct={drillResult.correct}
               total={drillResult.total}
-              onClose={onClose}
+              onDone={(accuracy) => handleCompleteRevision(accuracy, drillResult.correct, drillResult.total)}
+              isSaving={isSaving}
             />
           )}
 
@@ -519,7 +546,8 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
               session={session}
               correct={0}
               total={0}
-              onClose={onClose}
+              onDone={(accuracy) => handleCompleteRevision(accuracy, 0, 0)}
+              isSaving={isSaving}
             />
           )}
         </div>
