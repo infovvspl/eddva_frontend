@@ -89,8 +89,10 @@ export default function TeacherMeetingsPage() {
 
   const loadParents = useCallback(async () => {
     setLoadingParents(true);
+    console.log('Modal Opened - Loading Parents');
     try {
       const res = await api.get('/chat/directory');
+      console.log('Parent API Response:', res.data);
       const rows = unwrapList(res.data);
       const unique = new Map<string, ParentOption>();
       rows.forEach((row: any) => {
@@ -105,6 +107,7 @@ export default function TeacherMeetingsPage() {
         });
       });
       const nextParents = [...unique.values()];
+      console.log('Mapped Parent Options:', nextParents);
       setParents(nextParents);
     } catch (error) {
       console.error('Failed to load parent options', error);
@@ -365,7 +368,7 @@ export default function TeacherMeetingsPage() {
                   </div>
 
                   <div className="flex w-full flex-col gap-2 xl:w-[220px]">
-                    {meeting.meetingMode === 'online' && meeting.meetingLink && (
+                    {meeting.meetingMode === 'online' && meeting.meetingLink && !['completed', 'cancelled'].includes(status) && (
                       <a
                         href={meeting.meetingLink}
                         target="_blank"

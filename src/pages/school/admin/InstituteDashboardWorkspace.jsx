@@ -39,7 +39,6 @@ import {
 import { Skeleton, cn } from '@/components/school/admin/Skeleton';
 import api from '@/lib/api/school-client';
 import { InstituteLogo } from '@/components/school/admin/Brand';
-import { useAuth } from '@/context/SchoolAuthContext';
 import AdminAvatar from '@/assets/images/admin-avatar.png';
 import SmartCalendar from '@/components/school/SmartCalendar';
 
@@ -171,8 +170,7 @@ const container = {
 
 export default function InstituteDashboardWorkspace({ stats, institute, loading }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const displayName = user?.name || 'Admin';
+  const instituteName = institute?.name || 'Your Institute';
 
   const students = stats?.totalStudents ?? 0;
   const teachers = stats?.totalTeachers ?? 0;
@@ -292,10 +290,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               </div>
               <div>
                 <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-                  Welcome back, {displayName} 👋
+                  Welcome, {instituteName}
                 </h1>
                 <p className="mt-1.5 text-blue-100 font-medium tracking-wide text-sm">
-                  {institute?.name || 'Your Institute'}
+                  School administration dashboard
                 </p>
               </div>
             </div>

@@ -82,28 +82,28 @@ export function useCourseCurriculum(classId?: string) {
       if (!classId) return null;
       const res = await schoolApi.get(`/students/courses/${classId}`);
       const raw = res.data?.data ?? res.data ?? {};
-      
+
       // Map school backend shape to B2C frontend shape so StudyPlanner can render it
       const subjects = (raw?.curriculum ?? []).map((s: any) => ({
-        id:        s.id,
-        name:      s.name,
+        id: s.id,
+        name: s.name,
         colorCode: s.colorCode ?? null,
-        chapters:  (s.chapters ?? []).map((ch: any) => ({
-          id:        ch.id,
-          name:      ch.name,
-          topics:    (ch.topics ?? []).map((t: any) => ({
-            id:                 t.id,
-            name:               t.name,
-            status:             t.progress?.status ?? "unlocked",
-            bestAccuracy:       t.progress?.bestAccuracy ?? 0,
+        chapters: (s.chapters ?? []).map((ch: any) => ({
+          id: ch.id,
+          name: ch.name,
+          topics: (ch.topics ?? []).map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            status: t.progress?.status ?? "unlocked",
+            bestAccuracy: t.progress?.bestAccuracy ?? 0,
             gatePassPercentage: t.gatePassPercentage ?? 70,
-            completedAt:        t.progress?.completedAt ?? null,
+            completedAt: t.progress?.completedAt ?? null,
             lectures: {
-              total:     t.lectures?.total ?? 0,
+              total: t.lectures?.total ?? 0,
               completed: t.lectures?.completed ?? 0,
             },
-            resources:          t.resources ?? [],
-            resourceCounts:     t.resourceCounts ?? {},
+            resources: t.resources ?? [],
+            resourceCounts: t.resourceCounts ?? {},
           })),
         })),
       }));

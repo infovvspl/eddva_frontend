@@ -264,11 +264,11 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
         className="w-full flex items-center gap-4 p-5 text-left transition-colors"
       >
         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
-           <span className="text-[11px] font-semibold text-slate-500">Q{index + 1}</span>
+          <span className="text-[11px] font-semibold text-slate-500">Q{index + 1}</span>
         </div>
         <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 truncate">{parsed.question}</p>
         <motion.div animate={{ rotate: open ? 180 : 0 }}>
-           <ChevronDown className="w-5 h-5 text-slate-400" />
+          <ChevronDown className="w-5 h-5 text-slate-400" />
         </motion.div>
       </button>
 
@@ -339,7 +339,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
 
               <div>
                 <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
-                   <CheckCircle className="w-4 h-4" /> Solution Core
+                  <CheckCircle className="w-4 h-4" /> Solution Core
                 </p>
                 <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <MarkdownRenderer content={formatSolutionSteps(q.answer)} />
@@ -348,7 +348,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
               {q.explanation && (
                 <div>
                   <p className="text-[11px] font-semibold text-amber-600 mb-2 flex items-center gap-2">
-                     <Lightbulb className="w-4 h-4" /> Logic Synthesis
+                    <Lightbulb className="w-4 h-4" /> Logic Synthesis
                   </p>
                   <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <MarkdownRenderer content={formatSolutionSteps(q.explanation)} />
@@ -442,7 +442,7 @@ export default function SchoolStudentAiStudyPage() {
     if (!sessionLoading && !session && !startMut.isPending && !startMut.data) {
       startMut.mutate(topicId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionLoading, session, topicId]);
 
   useEffect(() => { if (sessionData?.isCompleted) setCompleted(true); }, [sessionData?.isCompleted]);
@@ -453,14 +453,14 @@ export default function SchoolStudentAiStudyPage() {
       const h = localStorage.getItem(storageKey("highlights", topicId));
       const c = localStorage.getItem(storageKey("inline-comments", topicId));
       const localH: SavedHighlight[] = h ? JSON.parse(h) : [];
-      const localC: InlineComment[]  = c ? JSON.parse(c) : [];
+      const localC: InlineComment[] = c ? JSON.parse(c) : [];
       setHighlights(localH.length > 0 ? localH : (sessionData?.highlights ?? []));
       setInlineComments(localC.length > 0 ? localC : (sessionData?.inlineComments ?? []));
     } catch {
       setHighlights(sessionData?.highlights ?? []);
       setInlineComments(sessionData?.inlineComments ?? []);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId, sessionData?.id]);
 
   useEffect(() => {
@@ -567,16 +567,16 @@ export default function SchoolStudentAiStudyPage() {
 
   const handleComplete = useCallback(() => {
     if (!sessionId || !topicId) return;
-    completeMut.mutate({ 
-      topicId, 
-      sessionId, 
+    completeMut.mutate({
+      topicId,
+      sessionId,
       timeSpentSeconds: elapsed,
       highlights,
       inlineComments
     }, {
-      onSuccess: () => { 
-        setCompleted(true); 
-        setShowComplete(false); 
+      onSuccess: () => {
+        setCompleted(true);
+        setShowComplete(false);
         if (planItemId) planItemMut.mutate(planItemId);
       },
     });
@@ -650,16 +650,16 @@ export default function SchoolStudentAiStudyPage() {
   if (startMut.isPending || (sessionLoading && !session)) {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-center">
-         <div className="relative mb-12">
-            <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl z-10 relative">
-               <Sparkles className="w-12 h-12 text-blue-500 animate-pulse" />
-            </div>
-            <div className="absolute inset-0 bg-blue-100 rounded-[2.5rem] animate-ping opacity-30 z-0" />
-         </div>
-         <div className="space-y-4">
-            <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter text-center">Opening Study Session</h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Creating personalized curriculum...</p>
-         </div>
+        <div className="relative mb-12">
+          <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl z-10 relative">
+            <Sparkles className="w-12 h-12 text-blue-500 animate-pulse" />
+          </div>
+          <div className="absolute inset-0 bg-blue-100 rounded-[2.5rem] animate-ping opacity-30 z-0" />
+        </div>
+        <div className="space-y-4">
+          <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter text-center">Opening Study Session</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse text-center">Creating personalized curriculum...</p>
+        </div>
       </div>
     );
   }
@@ -667,14 +667,14 @@ export default function SchoolStudentAiStudyPage() {
   if (startMut.isError) {
     return (
       <div className="py-20 flex items-center justify-center text-center">
-         <div className="text-center max-w-md px-10">
-            <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-10 mx-auto">
-               <AlertTriangle className="w-10 h-10 text-red-500" />
-            </div>
-            <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-4">Link Override Failure</h1>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">Neural link could not be established. Check sector connection.</p>
-            <button onClick={() => startMut.mutate(topicId)} className="w-full py-6 rounded-3xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest">Retry Synchronization</button>
-         </div>
+        <div className="text-center max-w-md px-10">
+          <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-10 mx-auto">
+            <AlertTriangle className="w-10 h-10 text-red-500" />
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-4">Link Override Failure</h1>
+          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">Neural link could not be established. Check sector connection.</p>
+          <button onClick={() => startMut.mutate(topicId)} className="w-full py-6 rounded-3xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest">Retry Synchronization</button>
+        </div>
       </div>
     );
   }
@@ -682,8 +682,8 @@ export default function SchoolStudentAiStudyPage() {
   if (!sessionData) return null;
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "lesson",   label: "Notes",    icon: <BookOpen className="w-4 h-4" /> },
-    { id: "ask",      label: "Ask AI",     icon: <BrainCircuit className="w-4 h-4" /> },
+    { id: "lesson", label: "Notes", icon: <BookOpen className="w-4 h-4" /> },
+    { id: "ask", label: "Ask AI", icon: <BrainCircuit className="w-4 h-4" /> },
   ];
 
   return (
@@ -1286,7 +1286,7 @@ export default function SchoolStudentAiStudyPage() {
                 <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                       <Trophy className="w-4 h-4 text-emerald-600" /> Completion Desk
+                      <Trophy className="w-4 h-4 text-emerald-600" /> Completion Desk
                     </h4>
                   </div>
                   {completed ? (
