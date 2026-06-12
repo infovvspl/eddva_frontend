@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Edit2, Eye, Layers, Plus, Search, Trash2, UsersRound } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, BookOpen, Edit2, Layers, Plus, Search, Trash2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import { toast } from 'sonner';
@@ -26,7 +26,6 @@ type Subject = {
   description?: string;
   class_id?: string;
   section_id?: string;
-  class_name?: string;
   section_name?: string;
 };
 
@@ -39,19 +38,11 @@ type SubjectFormState = {
   sectionId: string;
 };
 
-const emptyForm: SubjectFormState = {
-  name: '',
-  code: '',
-  description: '',
-  type: 'Theory',
-  classId: '',
-  sectionId: '',
-};
-
 const fieldClassName =
   'w-full rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-semibold text-surface-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white';
 
-export default function Subjects() {
+export default function ClassSubjects() {
+  const { classId } = useParams();
   const navigate = useNavigate();
   const confirm = useConfirm();
 
@@ -59,47 +50,57 @@ export default function Subjects() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sectionFilter, setSectionFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-  const [formData, setFormData] = useState<SubjectFormState>(emptyForm);
+  const [formData, setFormData] = useState<SubjectFormState>({
+    name: '',
+    code: '',
+    description: '',
+    type: 'Theory',
+    classId: classId || '',
+    sectionId: '',
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [classId]);
 
-  const totalSections = useMemo(
-    () => classes.reduce((sum, cls) => sum + (cls.sections || []).length, 0),
-    [classes],
+  const selectedClass = useMemo(
+    () => classes.find((cls) => String(cls.id) === String(classId)),
+    [classes, classId],
   );
 
-  const classesWithSubjects = useMemo(() => {
-    const classIds = new Set(subjects.map((subject) => subject.class_id).filter(Boolean));
-    return classes.filter((cls) => classIds.has(cls.id)).length;
-  }, [classes, subjects]);
-
-  const filteredClasses = useMemo(() => {
+  const filteredSubjects = useMemo(() => {
     const term = searchQuery.trim().toLowerCase();
-    if (!term) return classes;
+    return subjects.filter((subject) => {
+      const matchesSearch =
+        !term ||
+        subject.name?.toLowerCase().includes(term) ||
+        subject.code?.toLowerCase().includes(term) ||
+        subject.description?.toLowerCase().includes(term);
 
-    return classes.filter((cls) => {
-      const classSubjects = subjectsForClass(cls.id);
-      return (
-        cls.name.toLowerCase().includes(term) ||
-        classSubjects.some((subject) =>
-          subject.name?.toLowerCase().includes(term) ||
-          subject.code?.toLowerCase().includes(term),
-        )
-      );
+      const matchesSection =
+        sectionFilter === 'all' ||
+        (sectionFilter === 'all-sections' && !subject.section_id) ||
+        String(subject.section_id) === String(sectionFilter);
+
+      return matchesSearch && matchesSection;
     });
-  }, [classes, subjects, searchQuery]);
+  }, [subjects, searchQuery, sectionFilter]);
+
+  const mappedSectionCount = useMemo(
+    () => new Set(subjects.map((subject) => subject.section_id).filter(Boolean)).size,
+    [subjects],
+  );
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [classRes, subjectRes] = await Promise.all([
         api.get('/academic/classes'),
-        api.get('/subjects', { params: { page: 1, limit: 500 } }),
+        api.get('/subjects', { params: { page: 1, limit: 500, classId } }),
       ]);
 
       const classPayload = classRes.data?.data ?? classRes.data;
@@ -108,20 +109,13 @@ export default function Subjects() {
       setClasses(Array.isArray(classPayload) ? classPayload : []);
       setSubjects(Array.isArray(subjectPayload) ? subjectPayload : []);
     } catch (error) {
-      handleApiError(error, 'Failed to load subject management');
+      handleApiError(error, 'Failed to load class subjects');
     } finally {
       setLoading(false);
     }
   };
 
-  const subjectsForClass = (classId: string) => subjects.filter((subject) => String(subject.class_id) === String(classId));
-
-  const sectionCountWithSubjects = (cls: SchoolClass) => {
-    const sectionIds = new Set(subjectsForClass(cls.id).map((subject) => subject.section_id).filter(Boolean));
-    return sectionIds.size;
-  };
-
-  const handleOpenModal = (subject?: Subject, classId = '') => {
+  const openModal = (subject?: Subject) => {
     if (subject) {
       setEditingSubject(subject);
       setFormData({
@@ -129,12 +123,19 @@ export default function Subjects() {
         code: subject.code || '',
         description: subject.description || '',
         type: subject.type || 'Theory',
-        classId: subject.class_id || classId,
+        classId: subject.class_id || classId || '',
         sectionId: subject.section_id || '',
       });
     } else {
       setEditingSubject(null);
-      setFormData({ ...emptyForm, classId });
+      setFormData({
+        name: '',
+        code: '',
+        description: '',
+        type: 'Theory',
+        classId: classId || '',
+        sectionId: '',
+      });
     }
     setIsModalOpen(true);
   };
@@ -142,7 +143,6 @@ export default function Subjects() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingSubject(null);
-    setFormData(emptyForm);
   };
 
   const handleSave = async (event: React.FormEvent) => {
@@ -199,23 +199,42 @@ export default function Subjects() {
     }
   };
 
-  const openClassSubjects = (classId: string) => {
-    navigate(`/school/admin/subjects/${classId}`);
-  };
+  if (loading) return <div className="p-8 dark:text-white">Loading class subjects...</div>;
 
-  const selectedClass = classes.find((cls) => cls.id === formData.classId);
-
-  if (loading) return <div className="p-8 dark:text-white">Loading subjects...</div>;
+  if (!selectedClass) {
+    return (
+      <div className="mx-auto max-w-6xl">
+        <button
+          onClick={() => navigate('/school/admin/subjects')}
+          className="mb-5 inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Subjects
+        </button>
+        <div className="rounded-xl border border-surface-200 bg-white p-10 text-center shadow-sm dark:border-surface-800 dark:bg-surface-900">
+          <h1 className="text-2xl font-bold text-surface-950 dark:text-white">Class not found</h1>
+          <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">The selected class is not available.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">Subjects</h1>
-          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Manage subjects class by class.</p>
+          <button
+            onClick={() => navigate('/school/admin/subjects')}
+            className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Classes
+          </button>
+          <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">{selectedClass.name} Subjects</h1>
+          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Manage subject mappings for this class.</p>
         </div>
         <button
-          onClick={() => handleOpenModal()}
+          onClick={() => openModal()}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
@@ -224,24 +243,37 @@ export default function Subjects() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper="All mapped subjects" />
-        <SummaryCard icon={Layers} tone="emerald" label="Total Classes" value={classes.length} helper="Available classes" />
-        <SummaryCard icon={UsersRound} tone="indigo" label="Classes with Subjects" value={classesWithSubjects} helper={`${totalSections} total sections`} />
+        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper={`Inside ${selectedClass.name}`} />
+        <SummaryCard icon={Layers} tone="emerald" label="Mapped Sections" value={mappedSectionCount} helper={`${(selectedClass.sections || []).length} sections available`} />
+        <SummaryCard icon={BookOpen} tone="indigo" label="Class-wide Subjects" value={subjects.filter((subject) => !subject.section_id).length} helper="Applied to all sections" />
       </div>
 
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
-        <div className="flex flex-col gap-3 border-b border-surface-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-surface-800">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search class or subject..."
-              className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-80 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
-            />
+        <div className="flex flex-col gap-3 border-b border-surface-200 p-4 md:flex-row md:items-center md:justify-between dark:border-surface-800">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search subject..."
+                className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+              />
+            </div>
+            <select
+              value={sectionFilter}
+              onChange={(event) => setSectionFilter(event.target.value)}
+              className="h-11 rounded-lg border border-surface-200 bg-white px-4 text-sm font-semibold text-surface-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+            >
+              <option value="all">All Sections</option>
+              <option value="all-sections">Class-wide</option>
+              {(selectedClass.sections || []).map((section) => (
+                <option key={section.id} value={section.id}>Section {section.name}</option>
+              ))}
+            </select>
           </div>
           <button
-            onClick={() => handleOpenModal()}
+            onClick={() => openModal()}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
           >
             <Plus className="h-4 w-4" />
@@ -250,52 +282,48 @@ export default function Subjects() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] text-left">
+          <table className="w-full min-w-[800px] text-left">
             <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
               <tr>
-                <th className="px-5 py-4">Class</th>
-                <th className="px-3 py-4 text-center">Subjects</th>
-                <th className="px-3 py-4 text-center">Sections</th>
-                <th className="px-3 py-4">Sample Subjects</th>
-                <th className="px-3 py-4">Status</th>
+                <th className="px-5 py-4">Code</th>
+                <th className="px-3 py-4">Subject Name</th>
+                <th className="px-3 py-4">Section</th>
+                <th className="px-3 py-4">Type</th>
+                <th className="px-3 py-4">Description</th>
                 <th className="px-3 py-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-200 text-sm dark:divide-surface-800">
-              {filteredClasses.length === 0 ? (
+              {filteredSubjects.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center">
-                    <p className="font-bold text-surface-900 dark:text-white">No matching classes found</p>
-                    <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Try a different search, or add subjects to a class.</p>
+                    <p className="font-bold text-surface-900 dark:text-white">No subjects found</p>
+                    <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Add subjects for {selectedClass.name} to complete the academic setup.</p>
+                    <button
+                      onClick={() => openModal()}
+                      className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Subject
+                    </button>
                   </td>
                 </tr>
               ) : (
-                filteredClasses.map((cls) => {
-                  const classSubjects = subjectsForClass(cls.id);
-                  const sampleSubjects = classSubjects.slice(0, 3).map((subject) => subject.name).join(', ') || '-';
-
-                  return (
-                    <tr key={cls.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
-                      <td className="px-5 py-4 font-bold text-surface-950 dark:text-white">{cls.name}</td>
-                      <td className="px-3 py-4 text-center font-semibold text-blue-700 dark:text-blue-300">{classSubjects.length}</td>
-                      <td className="px-3 py-4 text-center text-surface-700 dark:text-surface-200">{sectionCountWithSubjects(cls)} / {(cls.sections || []).length}</td>
-                      <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{sampleSubjects}</td>
-                      <td className="px-3 py-4"><StatusPill active={classSubjects.length > 0} /></td>
-                      <td className="px-3 py-4">
-                        <div className="flex justify-center gap-2">
-                          <IconButton title="Open class subjects" onClick={() => openClassSubjects(cls.id)} icon={Eye} />
-                          <IconButton title="Add subject to class" onClick={() => handleOpenModal(undefined, cls.id)} icon={Plus} />
-                          {classSubjects[0] && (
-                            <>
-                              <IconButton title="Edit first subject" onClick={() => handleOpenModal(classSubjects[0])} icon={Edit2} />
-                              <IconButton title="Delete first subject" onClick={() => handleDelete(classSubjects[0].id)} icon={Trash2} danger />
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                filteredSubjects.map((subject) => (
+                  <tr key={subject.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
+                    <td className="px-5 py-4 font-mono text-sm text-surface-700 dark:text-surface-200">{subject.code || '-'}</td>
+                    <td className="px-3 py-4 font-bold text-surface-950 dark:text-white">{subject.name}</td>
+                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.section_name ? `Section ${subject.section_name}` : 'All Sections'}</td>
+                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.type || 'Theory'}</td>
+                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.description || '-'}</td>
+                    <td className="px-3 py-4">
+                      <div className="flex justify-center gap-2">
+                        <IconButton title={`Edit ${subject.name}`} onClick={() => openModal(subject)} icon={Edit2} />
+                        <IconButton title={`Delete ${subject.name}`} onClick={() => handleDelete(subject.id)} icon={Trash2} danger />
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -304,14 +332,13 @@ export default function Subjects() {
 
       <Modal
         isOpen={isModalOpen}
-        title={editingSubject ? 'Edit Subject' : 'Add Subject'}
+        title={editingSubject ? 'Edit Subject' : `Add Subject in ${selectedClass.name}`}
         onClose={closeModal}
         size="md"
       >
         <SubjectEditor
           formData={formData}
           setFormData={setFormData}
-          classes={classes}
           selectedClass={selectedClass}
           isSubmitting={isSubmitting}
           editingSubject={editingSubject}
@@ -326,7 +353,6 @@ export default function Subjects() {
 function SubjectEditor({
   formData,
   setFormData,
-  classes,
   selectedClass,
   isSubmitting,
   editingSubject,
@@ -335,39 +361,24 @@ function SubjectEditor({
 }: {
   formData: SubjectFormState;
   setFormData: React.Dispatch<React.SetStateAction<SubjectFormState>>;
-  classes: SchoolClass[];
-  selectedClass?: SchoolClass;
+  selectedClass: SchoolClass;
   isSubmitting: boolean;
   editingSubject: Subject | null;
   onSubmit: (event: React.FormEvent) => void;
   onCancel: () => void;
 }) {
   const updateField = (field: keyof SubjectFormState, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-      ...(field === 'classId' ? { sectionId: '' } : {}),
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Subject Code">
-          <input
-            value={formData.code}
-            onChange={(event) => updateField('code', event.target.value)}
-            placeholder="MATH-101"
-            className={fieldClassName}
-          />
+          <input value={formData.code} onChange={(event) => updateField('code', event.target.value)} placeholder="MATH-101" className={fieldClassName} />
         </FormField>
         <FormField label="Subject Name *">
-          <input
-            value={formData.name}
-            onChange={(event) => updateField('name', event.target.value)}
-            placeholder="Mathematics"
-            className={fieldClassName}
-          />
+          <input value={formData.name} onChange={(event) => updateField('name', event.target.value)} placeholder="Mathematics" className={fieldClassName} />
         </FormField>
       </div>
 
@@ -378,29 +389,15 @@ function SubjectEditor({
             <option value="Practical">Practical</option>
           </select>
         </FormField>
-        <FormField label="Class">
-          <select value={formData.classId} onChange={(event) => updateField('classId', event.target.value)} className={fieldClassName}>
-            <option value="">Select Class</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>{cls.name}</option>
+        <FormField label="Section">
+          <select value={formData.sectionId} onChange={(event) => updateField('sectionId', event.target.value)} className={fieldClassName}>
+            <option value="">All Sections / Class-wide</option>
+            {(selectedClass.sections || []).map((section) => (
+              <option key={section.id} value={section.id}>Section {section.name}</option>
             ))}
           </select>
         </FormField>
       </div>
-
-      <FormField label="Section">
-        <select
-          value={formData.sectionId}
-          onChange={(event) => updateField('sectionId', event.target.value)}
-          disabled={!formData.classId}
-          className={`${fieldClassName} disabled:opacity-50`}
-        >
-          <option value="">All Sections / No specific section</option>
-          {(selectedClass?.sections || []).map((section) => (
-            <option key={section.id} value={section.id}>Section {section.name}</option>
-          ))}
-        </select>
-      </FormField>
 
       <FormField label="Description">
         <textarea
@@ -453,18 +450,6 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }: { icon: any; to
         </div>
       </div>
     </div>
-  );
-}
-
-function StatusPill({ active }: { active: boolean }) {
-  const classes = active
-    ? 'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/60'
-    : 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/60';
-
-  return (
-    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1 ${classes}`}>
-      {active ? 'Mapped' : 'Pending'}
-    </span>
   );
 }
 
