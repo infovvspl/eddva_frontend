@@ -55,9 +55,10 @@ export const schoolContent = {
   deleteMaterial: (id: string) =>
     schoolApi.delete(`/materials/${id}`).then(extractData),
 
-  /** Generate AI study content for a topic (preview only — not saved yet). */
+  /** Generate AI study content for a topic or chapter (preview only — not saved yet). */
   generateAiContent: (body: {
-    topicId: string;
+    topicId?: string;
+    chapterId?: string;
     contentType: string;
     difficulty?: string;
     length?: string;
@@ -68,7 +69,7 @@ export const schoolContent = {
     .then((res) => extractData<{ content: string; contentType: string; topicName: string }>(res)),
 
   /** Persist AI-generated markdown as a study material for students. */
-  saveAiMaterial: (body: { topicId: string; title: string; content: string; resourceType: string }) =>
+  saveAiMaterial: (body: { topicId?: string; chapterId?: string; title: string; content: string; resourceType: string }) =>
     schoolApi.post('/materials/ai-save', body).then(extractData),
 
   /** Generate (or fetch cached) an AI image for one slide; returns its S3 URL. */
