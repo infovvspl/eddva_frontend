@@ -165,7 +165,7 @@ function normalizeMember(raw: unknown): LeaderboardGroupMember {
   return {
     studentId: stringFrom(r, ["studentId", "student_id"], stringFrom(student, ["id"])),
     fullName: stringFrom(r, ["fullName", "full_name", "name"], stringFrom(student, ["fullName"], "Student")),
-    avatarUrl: stringFrom(r, ["avatarUrl", "avatar_url"], stringFrom(student, ["profilePictureUrl"])) || null,
+    avatarUrl: stringFrom(r, ["avatarUrl", "avatar_url"], stringFrom(student, ["profileImage"])) || null,
     xpEarned: numberFrom(r, ["xpEarned", "xp_earned", "cycleXp"]),
     rank: numberFrom(r, ["rank"]),
     zone: zoneFrom(r),

@@ -174,7 +174,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '', phone: '',
-    dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', photo: null,
+    dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', profileImage: null,
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
     primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
@@ -434,8 +434,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="flex flex-col md:flex-row gap-8 mb-8">
               <div className="shrink-0 flex flex-col items-center gap-4">
                 <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 transition-all">
-                  {formData.photo ? (
-                    <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} alt="Preview" className="w-full h-full object-cover" />
+                  {formData.profileImage ? (
+                    <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
                   )}
@@ -447,7 +447,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                       if (file) {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                          setFormData(prev => ({ ...prev, photo: reader.result }));
+                          setFormData(prev => ({ ...prev, profileImage: reader.result }));
                         };
                         reader.readAsDataURL(file);
                       }
@@ -848,7 +848,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="p-8 rounded-[40px] bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-8 shadow-2xl">
               <div className="flex items-center gap-8">
                 <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
-                   {formData.photo ? <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
+                   {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
                   <h3 className="text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>

@@ -93,7 +93,7 @@ const Profile: React.FC = () => {
       <div className="profile-header">
         <div className="profile-avatar">
           <ProfileAvatar
-            src={avatarUrl || user?.photo || null}
+            src={avatarUrl || user?.profileImage || null}
             name={profile.name || user?.name}
             className="w-full h-full rounded-full"
             fallbackClassName="text-inherit"

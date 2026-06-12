@@ -225,8 +225,8 @@ function EditModal({ me, onClose }: { me: any; onClose: () => void }) {
           <div className="relative cursor-pointer group" onClick={() => fileRef.current?.click()}>
             <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br"
               style={{ background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})` }}>
-              {me.profilePictureUrl
-                ? <img src={me.profilePictureUrl} className="w-full h-full object-cover" alt="" />
+              {me.profileImage
+                ? <img src={me.profileImage} className="w-full h-full object-cover" alt="" />
                 : <div className="w-full h-full flex items-center justify-center text-white text-2xl font-black">{me.fullName?.[0]?.toUpperCase()}</div>}
             </div>
             <div className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -354,7 +354,7 @@ export default function StudentProfilePage() {
           <div className="relative shrink-0">
             <Ring pct={examRdy} size={104} stroke={5} color={tier.color}>
               <ProfileAvatar
-                src={me?.profilePictureUrl ?? null}
+                src={me?.profileImage ?? null}
                 name={me?.fullName}
                 className="w-[76px] h-[76px] rounded-xl overflow-hidden shadow-md"
                 fallbackClassName="text-white text-2xl font-black"

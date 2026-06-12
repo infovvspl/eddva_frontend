@@ -256,8 +256,8 @@ export default function TeacherProfilePage() {
   const [dateOfBirth, setDateOfBirth] = useState(tp?.dateOfBirth || "");
   const [city, setCity] = useState(tp?.city || "");
   const [state, setState] = useState(tp?.state || "");
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(tp?.profilePhotoUrl || user?.avatar || null);
-  const [avatarUrl, setAvatarUrl] = useState<string>(tp?.profilePhotoUrl || user?.avatar || "");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(tp?.profilePhotoUrl || user?.profileImage || null);
+  const [avatarUrl, setAvatarUrl] = useState<string>(tp?.profilePhotoUrl || user?.profileImage || "");
 
   // Professional fields
   const [qualification, setQualification] = useState(tp?.qualification || "");
@@ -281,9 +281,9 @@ export default function TeacherProfilePage() {
     setIsUploadingAvatar(true);
     try {
       const result = await uploadAvatar.mutateAsync(file);
-      setAvatarUrl(result.avatarUrl);
+      setAvatarUrl(result.profileImageUrl);
       // Immediately save avatar
-      await completeOnboarding.mutateAsync({ profilePhotoUrl: result.avatarUrl });
+      await completeOnboarding.mutateAsync({ profilePhotoUrl: result.profileImageUrl });
       await refreshStore();
       toast({ title: "Photo updated!" });
     } catch {
@@ -305,7 +305,7 @@ export default function TeacherProfilePage() {
         phone: (p as any).phoneNumber || (p as any).phone || "",
         email: p.email,
         role: p.role as any,
-        avatar: (p as any).avatar ?? (p as any).profilePictureUrl,
+        profileImage: (p as any).profileImage ?? (p as any).profileImage,
         tenantId: p.tenantId,
         tenantName: p.tenant?.name || (p as any).tenantName || "",
         isFirstLogin: false,
