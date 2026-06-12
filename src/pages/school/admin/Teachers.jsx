@@ -104,6 +104,19 @@ function parseCsv(text) {
   return records;
 }
 
+function normalizeSections(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export default function Teachers() {
   const { institute } = useAuth();
   const [teachers, setTeachers] = useState([]);
@@ -114,6 +127,9 @@ export default function Teachers() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
+  const [classes, setClasses] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState('ALL');
+  const [selectedSectionId, setSelectedSectionId] = useState('ALL');
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -131,12 +147,15 @@ export default function Teachers() {
 
   async function fetchTeachers() {
     try {
-      const query = new URLSearchParams();
-      query.append('page', page);
-      query.append('limit', limit);
-      if (searchQuery.trim()) query.append('search', searchQuery.trim());
+      const params = {
+        page,
+        limit,
+        ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+        ...(selectedClassId !== 'ALL' ? { classId: selectedClassId } : {}),
+        ...(selectedSectionId !== 'ALL' ? { sectionId: selectedSectionId } : {}),
+      };
       
-      const res = await api.get(`/teachers?${query.toString()}`);
+      const res = await api.get('/teachers', { params });
       setTeachers(getResponseList(res));
       const resData = res.data?.data || res.data;
       if (resData && typeof resData.total !== 'undefined') {
@@ -150,7 +169,26 @@ export default function Teachers() {
     }
   }
 
-  useLiveRefresh(fetchTeachers, [page, limit, searchQuery], 15000);
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchClasses() {
+      try {
+        const res = await api.get('/academic/classes');
+        if (mounted) setClasses(getResponseList(res));
+      } catch (error) {
+        console.error(error);
+        if (mounted) setClasses([]);
+      }
+    }
+
+    fetchClasses();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useLiveRefresh(fetchTeachers, [page, limit, searchQuery, selectedClassId, selectedSectionId], 15000);
 
   const handleImportSubmit = async (e) => {
     e.preventDefault();
@@ -282,6 +320,33 @@ export default function Teachers() {
     return { total, active, inactive, newThisMonth };
   }, [teachers]);
 
+  const selectedClass = useMemo(
+    () => classes.find((cls) => String(cls.id) === String(selectedClassId)),
+    [classes, selectedClassId],
+  );
+
+  const sectionOptions = useMemo(() => normalizeSections(selectedClass?.sections), [selectedClass]);
+
+  const handleClassFilterChange = (value) => {
+    setSelectedClassId(value);
+    setSelectedSectionId('ALL');
+    setPage(1);
+  };
+
+  const handleSectionFilterChange = (value) => {
+    setSelectedSectionId(value);
+    setPage(1);
+  };
+
+  const clearTeacherFilters = () => {
+    setStatusFilter('ALL');
+    setSelectedYear('ALL');
+    setSelectedClassId('ALL');
+    setSelectedSectionId('ALL');
+    setSearchQuery('');
+    setPage(1);
+  };
+
   const filtered = useMemo(() => {
     return teachers
       .filter((t) => {
@@ -301,7 +366,7 @@ export default function Teachers() {
   const exportCsv = () => {
     const rows = [
       ['Teacher Name', 'Email', 'Sections', 'Subjects', 'Status'],
-      ...teachers.map((t) => [
+      ...filtered.map((t) => [
         t.name || '-',
         t.email || '-',
         (t.sections || []).map(s => s.name).join(', ') || '-',
@@ -315,7 +380,7 @@ export default function Teachers() {
   if (loading) return <div className="p-8 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading…</div>;
 
   return (
-    <div className="mx-auto max-w-6xl px-2 sm:px-4">
+    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white">Teachers</h1>
@@ -344,7 +409,7 @@ export default function Teachers() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
             title: 'Total Teachers',
@@ -393,16 +458,21 @@ export default function Teachers() {
       </div>
 
       <div className="mt-5 glass-premium rounded-2xl overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Users className="h-4 w-4 text-blue-600" />
               {formatNumber(filtered.length)} results
             </div>
 
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+              <Filter className="h-4 w-4 text-blue-600" />
+              Filter
+            </div>
+
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               aria-label="Filter by status"
             >
@@ -410,10 +480,35 @@ export default function Teachers() {
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
             </select>
+
+            <select
+              value={selectedClassId}
+              onChange={(e) => handleClassFilterChange(e.target.value)}
+              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              aria-label="Filter by class"
+            >
+              <option value="ALL">All classes</option>
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+
+            <select
+              value={selectedSectionId}
+              onChange={(e) => handleSectionFilterChange(e.target.value)}
+              disabled={selectedClassId === 'ALL'}
+              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              aria-label="Filter by section"
+            >
+              <option value="ALL">{selectedClassId === 'ALL' ? 'Select class first' : 'All sections'}</option>
+              {sectionOptions.map((section) => (
+                <option key={section.id} value={section.id}>Section {section.name}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <div className="relative w-full sm:max-w-xs">
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
+            <div className="relative w-full sm:max-w-sm lg:max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
@@ -427,12 +522,20 @@ export default function Teachers() {
               <Calendar className="h-4 w-4 text-slate-400" />
               <select
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
+                onChange={(e) => { setSelectedYear(e.target.value); setPage(1); }}
                 className="bg-transparent outline-none"
               >
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
+
+            <button
+              type="button"
+              onClick={clearTeacherFilters}
+              className="inline-flex items-center justify-center rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Clear Filters
+            </button>
 
             <button
               type="button"
@@ -460,7 +563,7 @@ export default function Teachers() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-5 py-12 text-center text-slate-400">
+                  <td colSpan="6" className="px-5 py-12 text-center text-slate-400">
                     No teachers found.
                   </td>
                 </tr>
