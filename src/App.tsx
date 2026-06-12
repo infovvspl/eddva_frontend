@@ -119,6 +119,7 @@ const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
 const SchoolAttendance = lazy(() => import("./pages/school/admin/Attendance"));
 const SchoolAcademics = lazy(() => import("./pages/school/admin/Academics"));
+const SchoolClassSections = lazy(() => import("./pages/school/admin/ClassSections"));
 const SchoolNotices = lazy(() => import("./pages/school/admin/Notices"));
 const SchoolFees = lazy(() => import("./pages/school/admin/Fees"));
 const SchoolAcademicCalendar = lazy(() => import("./pages/school/admin/AcademicCalendar"));
@@ -133,6 +134,7 @@ const SchoolCommunications = lazy(() => import("./pages/school/admin/Communicati
 const SchoolAuditLogs = lazy(() => import("./pages/school/admin/AuditLogs"));
 const SchoolSecurity = lazy(() => import("./pages/school/admin/SecurityCenter"));
 const SchoolSubjects = lazy(() => import("./pages/school/admin/Subjects"));
+const SchoolClassSubjects = lazy(() => import("./pages/school/admin/ClassSubjects"));
 const SchoolAssignments = lazy(() => import("./pages/school/admin/Assignments"));
 const SchoolStudyMaterials = lazy(() => import("./pages/school/admin/StudyMaterials"));
 const SchoolSyllabus = lazy(() => import("./pages/school/admin/Syllabus"));
@@ -375,6 +377,7 @@ const SchoolRoutes = () => (
       <Route path="teachers/:id" element={<SchoolAdminTeacherProfile />} />
       <Route path="attendance" element={<SchoolAttendance />} />
       <Route path="academics" element={<SchoolAcademics />} />
+      <Route path="academics/:classId/sections" element={<SchoolClassSections />} />
       <Route path="notices" element={<SchoolNotices />} />
       <Route path="calendar" element={<SchoolAcademicCalendar />} />
       <Route path="complaints" element={<SchoolComplaints />} />
@@ -386,6 +389,7 @@ const SchoolRoutes = () => (
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
+      <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
     </Route>
 

@@ -127,6 +127,7 @@ const instituteGroups = [
       { to: '/school/admin/ai-usage', label: 'AI Usage', icon: Sparkles },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
+      { to: '/school/admin/student-promotion', label: 'Student Promotion', icon: ArrowUpRight },
     ],
   },
 ];

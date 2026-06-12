@@ -25,6 +25,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import SmartCalendar from '@/components/school/SmartCalendar';
+import './Dashboard.css';
 
 const tones = {
   blue: {
@@ -96,10 +97,10 @@ function QuickAction({ to, icon: Icon, label, tone = 'slate' }) {
 
 function EmptyMini({ icon: Icon, title, text }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-800 dark:bg-slate-900/50">
-      <Icon className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-700" />
-      <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{title}</p>
-      <p className="mt-1 text-xs font-medium text-slate-500">{text}</p>
+    <div className="empty-mini rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-center dark:border-slate-800 dark:bg-slate-900/50">
+      <Icon className="mx-auto text-slate-300 dark:text-slate-700" />
+      <p className="title font-bold text-slate-900 dark:text-white">{title}</p>
+      <p className="desc font-medium text-slate-500">{text}</p>
     </div>
   );
 }
@@ -212,7 +213,10 @@ export default function Dashboard() {
     return Array.from({ length: 7 }).map((_, i) => {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const key = d.toISOString().split('T')[0];
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const dateVal = String(d.getDate()).padStart(2, '0');
+      const key = `${year}-${month}-${dateVal}`;
       const events = weekEvents
         .filter(ev => ev.startTime && ev.startTime.split('T')[0] === key)
         .map(ev => ({ t: ev.title || 'Event', tone: ev.priority === 'HIGH' ? 'bg-rose-500' : 'bg-blue-500' }));
@@ -237,7 +241,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="student-dashboard space-y-6">
       {refreshing && (
         <div className="flex items-center justify-end gap-2 text-xs font-semibold text-slate-400">
           <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
@@ -245,10 +249,10 @@ export default function Dashboard() {
         </div>
       )}
       {/* Top Grid for Welcome Card and Smart Calendar */}
-      <div className="grid gap-6 lg:grid-cols-4 items-stretch">
+      <div className="grid gap-6 lg:grid-cols-4 items-start">
         {/* Welcome Card Wrapper */}
         <div className="lg:col-span-3 relative flex flex-col justify-between">
-          <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
+          <section className="student-hero-banner relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
 
             {/* Elegant bubble style translucent overlays matching the screenshot */}
@@ -322,7 +326,7 @@ export default function Dashboard() {
           </section>
 
           {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
-          <div className="absolute right-8 top-1/2 -translate-y-1/2 w-[280px] h-[210px] pointer-events-none hidden md:block z-20">
+          <div className="student-avatar-container">
             <motion.div
               className="w-full h-full"
               animate={{ y: [0, -10, 0] }}

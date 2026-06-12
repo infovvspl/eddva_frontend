@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 
-export default function SectionForm({ sectionData, classes = [], onSubmit, onCancel, isLoading, defaultAcademicYear = '2025-2026' }) {
+export default function SectionForm({ sectionData, classes = [], onSubmit, onCancel, isLoading, defaultAcademicYear = '2025-2026', initialClassId = '' }) {
   const [formData, setFormData] = useState({
     name: '',
     classId: '',
@@ -18,12 +18,13 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
         academicYear: sectionData.academic_year || sectionData.academicYear || defaultAcademicYear
       });
     } else {
-      setFormData(prev => ({
-        ...prev,
+      setFormData({
+        name: '',
+        classId: initialClassId || '',
         academicYear: defaultAcademicYear
-      }));
+      });
     }
-  }, [sectionData, defaultAcademicYear]);
+  }, [sectionData, defaultAcademicYear, initialClassId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

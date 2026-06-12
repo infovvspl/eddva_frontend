@@ -86,9 +86,12 @@ export const formatMarkdown = (text?: string) => {
 
     const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
     
-    // A math word is a sequence of letters (not a blacklisted English word) OR digits.
-    const mathWord = `(?:(?<![a-zA-Z])(?!${englishWords}(?![a-zA-Z]))[a-zA-Z]+|\\d+)`;
-    const mathToken = `(?:${mathWord}|[()+\\-*\\/^=<>'_\\-{}#]|\\\\[a-zA-Z]+|[ \\t]+)`;
+    // A math word is a standard function, a variable of 1-2 letters not in the englishWords list, or digits.
+    const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|(?<![a-zA-Z])(?!${englishWords}(?![a-zA-Z]))[a-zA-Z]{1,2}(?![a-zA-Z])|\\d+)`;
+    const opPattern = `\\s*[()+\\-*\\/^=<>\'_\\-{}#]\\s*`;
+    const commandPattern = `\\s*\\\\[a-zA-Z]+\\s*`;
+
+    const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
 
     const mathPattern = `(?<![\\w$])(?:${mathToken})*\\^(?:${mathToken})*(?![\\w$])`;
     const subscriptPattern = `(?<![\\w$])(?:${mathToken})*_(?:${mathToken})*(?![\\w$])`;

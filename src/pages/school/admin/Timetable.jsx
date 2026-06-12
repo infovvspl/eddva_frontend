@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
@@ -93,18 +93,43 @@ export default function Timetable() {
     return null;
   };
 
-  const teachers = Array.from(new Set(timetables.map((t) => formatTeacherName(t.teacher)).filter(Boolean))).sort();
-  const classes = Array.from(new Set(timetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort();
+  const assignmentClassName = (assignment) => {
+    if (!assignment) return null;
+    return assignment.className || assignment.class?.name || assignment.section?.className || assignment.section?.class?.name || null;
+  };
+
+  const isCurrentTeacherSlot = (slot) => {
+    if (!isTeacher) return true;
+    const teacherProfileId = teacherProfile?.id;
+    return (
+      (teacherProfileId && String(slot.teacherId || '') === String(teacherProfileId)) ||
+      (teacherProfileId && String(slot.teacher?.id || '') === String(teacherProfileId)) ||
+      (teacherProfileId && String(slot.teacher?.teacherProfile?.id || '') === String(teacherProfileId)) ||
+      (user?.id && String(slot.teacher?.user?.id || '') === String(user.id))
+    );
+  };
+
+  const visibleTimetables = useMemo(
+    () => (isTeacher ? timetables.filter(isCurrentTeacherSlot) : timetables),
+    [isTeacher, timetables, teacherProfile, user?.id]
+  );
+
+  const teachers = Array.from(new Set(visibleTimetables.map((t) => formatTeacherName(t.teacher)).filter(Boolean))).sort();
+  const assignedClasses = Array.from(
+    new Set((teacherProfile?.assignments || []).map(assignmentClassName).filter(Boolean))
+  ).sort();
+  const timetableClasses = Array.from(new Set(visibleTimetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort();
+  const classes = isTeacher && assignedClasses.length ? assignedClasses : timetableClasses;
 
   const validSectionIds = isTeacher && teacherProfile ? new Set((teacherProfile.assignments || []).map(a => String(a.sectionId))) : null;
 
   const groupedByDay = {};
   days.forEach((day) => {
-    let dayTimetables = timetables.filter((t) => t.dayOfWeek === day);
+    let dayTimetables = visibleTimetables.filter((t) => t.dayOfWeek === day);
     if (isTeacher && validSectionIds) {
       dayTimetables = dayTimetables.filter(t => validSectionIds.has(String(t.sectionId)));
     }
-    if (filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
+    if (!isTeacher && filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
     if (filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
     groupedByDay[day] = dayTimetables;
   });
@@ -130,7 +155,7 @@ export default function Timetable() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold text-slate-500 uppercase">Total Classes</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{timetables.length}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white">{visibleTimetables.length}</p>
         </div>
         <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold text-slate-500 uppercase">Teachers</p>
@@ -138,34 +163,36 @@ export default function Timetable() {
         </div>
         <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold text-slate-500 uppercase">Offline</p>
-          <p className="text-2xl font-black text-emerald-600">{timetables.filter(t => t.type === 'offline').length}</p>
+          <p className="text-2xl font-black text-emerald-600">{visibleTimetables.filter(t => t.type === 'offline').length}</p>
         </div>
         <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold text-slate-500 uppercase">Live</p>
-          <p className="text-2xl font-black text-rose-600">{timetables.filter(t => t.type === 'live').length}</p>
+          <p className="text-2xl font-black text-rose-600">{visibleTimetables.filter(t => t.type === 'live').length}</p>
         </div>
         <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold text-slate-500 uppercase">Lab Sessions</p>
-          <p className="text-2xl font-black text-purple-600">{timetables.filter(t => t.type === 'lab').length}</p>
+          <p className="text-2xl font-black text-purple-600">{visibleTimetables.filter(t => t.type === 'lab').length}</p>
         </div>
         <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-xs font-bold text-slate-500 uppercase">Extra Classes</p>
-          <p className="text-2xl font-black text-amber-600">{timetables.filter(t => t.type === 'extra').length}</p>
+          <p className="text-2xl font-black text-amber-600">{visibleTimetables.filter(t => t.type === 'extra').length}</p>
         </div>
       </div>
 
       <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 md:flex-row md:items-end shadow-sm">
-        <div className="flex-1">
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filter by Teacher</label>
-          <select
-            value={filterTeacher}
-            onChange={(e) => setFilterTeacher(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
-          >
-            <option value="">All Teachers</option>
-            {teachers.map((teacher) => (<option key={teacher} value={teacher}>{teacher}</option>))}
-          </select>
-        </div>
+        {!isTeacher && (
+          <div className="flex-1">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filter by Teacher</label>
+            <select
+              value={filterTeacher}
+              onChange={(e) => setFilterTeacher(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
+            >
+              <option value="">All Teachers</option>
+              {teachers.map((teacher) => (<option key={teacher} value={teacher}>{teacher}</option>))}
+            </select>
+          </div>
+        )}
         <div className="flex-1">
           <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filter by Class</label>
           <select
@@ -178,7 +205,7 @@ export default function Timetable() {
           </select>
         </div>
 
-        {(filterTeacher || filterClass) && (
+        {((!isTeacher && filterTeacher) || filterClass) && (
           <button
             onClick={() => { setFilterTeacher(''); setFilterClass(''); }}
             className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
@@ -226,7 +253,7 @@ export default function Timetable() {
                       {slot.subject?.name || 'Subject'}
                     </span>
                     <div className="flex gap-1">
-                      {(!isTeacher || (slot.teacher?.user?.id === user?.id)) && (
+                      {(!isTeacher || isCurrentTeacherSlot(slot)) && (
                         <>
                           <button
                             onClick={() => handleEditClick(slot)}

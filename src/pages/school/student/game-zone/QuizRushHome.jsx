@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient as api } from '@/lib/api/client';
+import schoolApi from '@/lib/api/school-client';
+import { useAuth } from '@/context/SchoolAuthContext';
 import { Play, Trophy, ArrowLeft, Loader2, Sparkles, BookOpen, Star, HelpCircle, Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function QuizRushHome({ onStart, onViewLeaderboard }) {
+  const { user } = useAuth();
   const [subjects, setSubjects] = useState([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState('');
@@ -15,7 +18,13 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        const res = await api.get('/content/subjects');
+        const classId = user?.studentProfile?.classId;
+        if (!classId) {
+          setSubjects([]);
+          setLoading(false);
+          return;
+        }
+        const res = await schoolApi.get('/subjects', { params: { classId, limit: 100 } });
         const list = res.data?.data ?? res.data ?? [];
         setSubjects(list);
         if (list.length > 0) {
@@ -29,7 +38,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
       }
     };
     fetchSubjects();
-  }, []);
+  }, [user]);
 
   const selectedSubject = subjects.find((s) => s.id === selectedSubjectId);
   const chapters = selectedSubject?.chapters || [];
