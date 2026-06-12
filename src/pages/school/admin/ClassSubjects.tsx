@@ -203,7 +203,7 @@ export default function ClassSubjects() {
 
   if (!selectedClass) {
     return (
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
         <button
           onClick={() => navigate('/school/admin/subjects')}
           className="mb-5 inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
@@ -220,7 +220,7 @@ export default function ClassSubjects() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <button
@@ -242,7 +242,7 @@ export default function ClassSubjects() {
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper={`Inside ${selectedClass.name}`} />
         <SummaryCard icon={Layers} tone="emerald" label="Mapped Sections" value={mappedSectionCount} helper={`${(selectedClass.sections || []).length} sections available`} />
         <SummaryCard icon={BookOpen} tone="indigo" label="Class-wide Subjects" value={subjects.filter((subject) => !subject.section_id).length} helper="Applied to all sections" />

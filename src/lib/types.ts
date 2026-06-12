@@ -57,7 +57,7 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
-  avatar?: string;
+  profileImage?: string;
   /** Coaching: coaching tenant UUID. School: same value as instituteId (legacy field name). */
   tenantId?: string;
   /** School module only — institutes.id from school DB */
@@ -106,7 +106,7 @@ export interface Batch {
   examTarget: "JEE" | "NEET" | "Both";
   className: string;
   teacherName: string;
-  teacherAvatar?: string;
+  teacherProfileImage?: string;
   studentCount: number;
   maxStudents: number;
   status: "active" | "upcoming" | "completed";

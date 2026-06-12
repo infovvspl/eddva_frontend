@@ -28,7 +28,7 @@ export interface SchoolUser {
   role: 'SUPER_ADMIN' | 'INSTITUTE_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
   instituteId?: string | null;
   institute?: SchoolInstitute | null;
-  photo?: string | null;
+  profileImage?: string | null;
   phone?: string | null;
   isActive?: boolean;
   studentProfile?: SchoolStudentProfile | null;

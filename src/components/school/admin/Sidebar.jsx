@@ -124,7 +124,6 @@ const instituteGroups = [
     heading: 'Administration',
     items: [
       { to: '/school/admin/users', label: 'User Management', icon: Users },
-      { to: '/school/admin/ai-usage', label: 'AI Usage', icon: Sparkles },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
       { to: '/school/admin/student-promotion', label: 'Student Promotion', icon: ArrowUpRight },
@@ -271,7 +270,7 @@ export default function Sidebar({ open, onClose }) {
                 )}
               >
                 <ProfileAvatar
-                  src={user?.photo ?? null}
+                  src={user?.profileImage ?? null}
                   name={user?.name}
                   className={cn(
                     'h-10 w-10 shrink-0 rounded-xl',

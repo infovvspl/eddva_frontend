@@ -917,7 +917,7 @@ export interface TeacherOverview {
 export interface ClassPerformanceStudent {
   studentId: string;
   name: string;
-  avatar: string | null;
+  profileImage: string | null;
   quizzesTaken: number;
   avgScore: number;
   accuracy: number;
@@ -978,7 +978,7 @@ export interface DoubtAnalytics {
 }
 
 export interface StudentDeepDive {
-  student: { id: string; name: string; avatar: string | null; email: string | null; phone: string | null; class: string; examTarget: string };
+  student: { id: string; name: string; profileImage: string | null; email: string | null; phone: string | null; class: string; examTarget: string };
   performance: { avgScore: number; accuracy: number; quizzesTaken: number; lecturesWatched: number; avgWatchPercentage: number; doubtCount: number };
   recentQuizzes: { id: string; mockTestId: string; score: number; correct: number; wrong: number; skipped: number; submittedAt: string };
   lectureActivity: { lectureId: string; lectureTitle: string; watchPercentage: number; isCompleted: boolean; rewindCount: number; confusionFlags: number };
@@ -1259,7 +1259,7 @@ export interface AssignmentSubmission {
       fullName?: string;
       email: string;
       avatarUrl?: string;
-      profilePictureUrl?: string;
+      profileImage?: string;
     };
   };
 }

@@ -79,6 +79,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const originalTitleRef = useRef<string>(document.title);
   const titleIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const settingsRef = useRef(settings);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   // Sync preferences from local storage on mount
   useEffect(() => {
@@ -182,67 +187,73 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
-    const socket = createNotificationSocket();
-    socket.emit("join_user", user.id);
+    let socket: ReturnType<typeof createNotificationSocket> | null = null;
+    const connectTimer = window.setTimeout(() => {
+      socket = createNotificationSocket();
+      socket.emit("join_user", user.id);
 
-    socket.on("new_notification", (newNotif: any) => {
-      // 1. DND filtering
-      if (settings.doNotDisturb) return;
+      socket.on("new_notification", (newNotif: any) => {
+        const currentSettings = settingsRef.current;
 
-      // 2. Type-specific preferences check
-      const type = (newNotif.type || newNotif.category || "").toLowerCase();
-      if (type === "chat" && !settings.chatNotificationsEnabled) return;
-      if ((type.includes("announcement") || type.includes("notice")) && !settings.announcementAlerts) return;
-      if (type.includes("attendance") && !settings.attendanceAlerts) return;
-      if (type.includes("assignment") && !settings.assignmentAlerts) return;
+        // 1. DND filtering
+        if (currentSettings.doNotDisturb) return;
 
-      // 3. Active Conversation Thread Check
-      // If user is actively chatting with the sender of this message, don't show OS notification or play sound
-      const activePeerId = (window as any).activeChatPeerId;
-      const notifSenderId = newNotif.senderId || newNotif.userId;
-      if (type === "chat" && activePeerId && String(activePeerId) === String(notifSenderId)) {
-        // Just refresh list & unread count inside the app without disturbing the user
-        setNotifications(prev => [newNotif, ...prev]);
-        return;
-      }
+        // 2. Type-specific preferences check
+        const type = (newNotif.type || newNotif.category || "").toLowerCase();
+        if (type === "chat" && !currentSettings.chatNotificationsEnabled) return;
+        if ((type.includes("announcement") || type.includes("notice")) && !currentSettings.announcementAlerts) return;
+        if (type.includes("attendance") && !currentSettings.attendanceAlerts) return;
+        if (type.includes("assignment") && !currentSettings.assignmentAlerts) return;
 
-      // 4. Update state
-      setNotifications(prev => [newNotif, ...prev]);
-      setUnreadCount(prev => prev + 1);
-
-      // 5. Play Sound
-      if (settings.soundEnabled) {
-        playChime();
-      }
-
-      // 6. Native Desktop Notification if page is hidden/inactive
-      if (settings.desktopNotificationsEnabled && Notification.permission === "granted") {
-        if (document.hidden || !document.hasFocus()) {
-          const desktopNotif = new Notification(newNotif.title, {
-            body: newNotif.message,
-            icon: "/logo.png", // fallback icon
-            tag: newNotif.id,
-          });
-
-          desktopNotif.onclick = () => {
-            window.parent.focus();
-            window.focus();
-            if (newNotif.id) {
-              api.patch(`/school/notifications/${newNotif.id}/read`).catch(() => {});
-            }
-            if (newNotif.actionUrl) {
-              navigate(newNotif.actionUrl);
-            }
-            desktopNotif.close();
-          };
+        // 3. Active Conversation Thread Check
+        // If user is actively chatting with the sender of this message, don't show OS notification or play sound
+        const activePeerId = (window as any).activeChatPeerId;
+        const notifSenderId = newNotif.senderId || newNotif.userId;
+        if (type === "chat" && activePeerId && String(activePeerId) === String(notifSenderId)) {
+          // Just refresh list & unread count inside the app without disturbing the user
+          setNotifications(prev => [newNotif, ...prev]);
+          return;
         }
-      }
-    });
+
+        // 4. Update state
+        setNotifications(prev => [newNotif, ...prev]);
+        setUnreadCount(prev => prev + 1);
+
+        // 5. Play Sound
+        if (currentSettings.soundEnabled) {
+          playChime();
+        }
+
+        // 6. Native Desktop Notification if page is hidden/inactive
+        if (currentSettings.desktopNotificationsEnabled && Notification.permission === "granted") {
+          if (document.hidden || !document.hasFocus()) {
+            const desktopNotif = new Notification(newNotif.title, {
+              body: newNotif.message,
+              icon: "/logo.png", // fallback icon
+              tag: newNotif.id,
+            });
+
+            desktopNotif.onclick = () => {
+              window.parent.focus();
+              window.focus();
+              if (newNotif.id) {
+                api.patch(`/school/notifications/${newNotif.id}/read`).catch(() => {});
+              }
+              if (newNotif.actionUrl) {
+                navigate(newNotif.actionUrl);
+              }
+              desktopNotif.close();
+            };
+          }
+        }
+      });
+    }, 0);
 
     return () => {
-      socket.disconnect();
+      window.clearTimeout(connectTimer);
+      socket?.disconnect();
     };
-  }, [isAuthenticated, user?.id, settings]);
+  }, [isAuthenticated, user?.id, navigate]);
 
   const requestPermission = async () => {
     try {

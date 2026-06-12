@@ -16,8 +16,8 @@ export default function ParentProfile() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? user?.photo ?? null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar ?? user?.photo ?? null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? user?.profileImage ?? null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar ?? user?.profileImage ?? null);
   const [form, setForm] = useState({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
 
   const { data: profile, isLoading } = useQuery({
@@ -26,13 +26,13 @@ export default function ParentProfile() {
   });
 
   useEffect(() => {
-    setAvatarUrl(user?.avatar ?? user?.photo ?? null);
-    setAvatarPreview(user?.avatar ?? user?.photo ?? null);
+    setAvatarUrl(user?.avatar ?? user?.profileImage ?? null);
+    setAvatarPreview(user?.avatar ?? user?.profileImage ?? null);
     setForm({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
-  }, [user?.avatar, user?.photo, user?.name, user?.email, user?.phone]);
+  }, [user?.avatar, user?.profileImage, user?.name, user?.email, user?.phone]);
 
   const saveProfile = useMutation({
-    mutationFn: (payload: { name?: string; email?: string; phone?: string; photo?: string | null }) => parentClient.updateProfile(payload),
+    mutationFn: (payload: { name?: string; email?: string; phone?: string; profileImage?: string | null }) => parentClient.updateProfile(payload),
     onSuccess: () => {
       useAuthStore.setState((state) => ({
         ...state,
@@ -42,7 +42,7 @@ export default function ParentProfile() {
               name: form.name,
               email: form.email,
               phone: form.phone,
-              avatar: avatarUrl ?? undefined,
+              profileImage: avatarUrl ?? undefined,
             }
           : state.user,
       }));
@@ -186,7 +186,7 @@ export default function ParentProfile() {
                       name: form.name,
                       email: form.email,
                       phone: form.phone,
-                      photo: avatarUrl,
+                      profileImage: avatarUrl,
                     });
                   }}
                   className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"

@@ -184,7 +184,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     // Basic Info
     name: '', email: '', password: '', confirmPassword: '', phone: '', altPhone: '',
     dob: '', gender: '', bloodGroup: '', nationalId: '', nationality: 'Indian',
-    religion: '', maritalStatus: '', photo: null,
+    religion: '', maritalStatus: '', profileImage: null,
     
     // Academic
     qualification: '', degree: '', institute: '', passingYear: '', 
@@ -435,7 +435,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       password: formData.password || undefined,
       confirmPassword: formData.confirmPassword || undefined,
       phone: formData.phone || null,
-      photo: formData.photo || null,
+      profileImage: formData.profileImage || null,
       employeeId: formData.employeeCode || null,
       bloodGroup: formData.bloodGroup || null,
       maritalStatus: formData.maritalStatus || null,
@@ -493,8 +493,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="shrink-0 flex flex-col items-center gap-4">
           <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all">
-            {formData.photo ? (
-              <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} alt="Preview" className="w-full h-full object-cover" />
+            {formData.profileImage ? (
+              <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
             ) : (
               <>
                 <Camera className="text-slate-400 group-hover:text-blue-500 transition-colors" size={32} />
@@ -509,7 +509,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                 if (file) {
                   const reader = new FileReader();
                   reader.onloadend = () => {
-                    setFormData(prev => ({ ...prev, photo: reader.result }));
+                    setFormData(prev => ({ ...prev, profileImage: reader.result }));
                   };
                   reader.readAsDataURL(file);
                 }
@@ -1110,8 +1110,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         <div className="p-8 rounded-[30px] bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative overflow-hidden shadow-2xl shadow-blue-600/30">
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
             <div className="w-28 h-28 rounded-2xl border-4 border-white/20 overflow-hidden shrink-0 shadow-xl bg-white/10 flex items-center justify-center">
-              {formData.photo ? (
-                <img src={typeof formData.photo === 'string' ? formData.photo : URL.createObjectURL(formData.photo)} alt="Preview" className="w-full h-full object-cover" />
+              {formData.profileImage ? (
+                <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
               ) : (
                 <User size={48} className="opacity-40" />
               )}

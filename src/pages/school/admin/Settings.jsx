@@ -213,8 +213,8 @@ function ProfileTab({ user }) {
       <div className="flex items-center gap-8 mb-10 p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
         <div className="relative group">
           <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
-            {user?.photo ? (
-              <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white text-3xl font-bold tracking-tight">
                 {user?.name?.[0].toUpperCase()}

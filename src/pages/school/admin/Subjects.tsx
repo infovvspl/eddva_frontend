@@ -208,7 +208,7 @@ export default function Subjects() {
   if (loading) return <div className="p-8 dark:text-white">Loading subjects...</div>;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">Subjects</h1>
@@ -223,7 +223,7 @@ export default function Subjects() {
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper="All mapped subjects" />
         <SummaryCard icon={Layers} tone="emerald" label="Total Classes" value={classes.length} helper="Available classes" />
         <SummaryCard icon={UsersRound} tone="indigo" label="Classes with Subjects" value={classesWithSubjects} helper={`${totalSections} total sections`} />

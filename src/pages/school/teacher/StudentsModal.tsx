@@ -192,8 +192,8 @@ const StudentsModal: React.FC<StudentsModalProps> = ({ open, onOpenChange }) => 
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
-                            {student.photo ? (
-                              <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
+                            {student.profileImage ? (
+                              <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" />
                             ) : (
                               student.name?.charAt(0).toUpperCase()
                             )}

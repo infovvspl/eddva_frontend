@@ -116,7 +116,7 @@ export default function ClassSections() {
 
   if (!selectedClass) {
     return (
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
         <button
           onClick={() => navigate('/school/admin/academics')}
           className="mb-5 inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
@@ -133,7 +133,7 @@ export default function ClassSections() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <button
@@ -167,7 +167,7 @@ export default function ClassSections() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <SummaryCard icon={Layers} tone="blue" label="Total Sections" value={sections.length} helper={`Inside ${selectedClass.name}`} />
         <SummaryCard icon={UsersRound} tone="emerald" label="Total Students" value={classStudents(selectedClass)} helper="Across all sections" />
       </div>
