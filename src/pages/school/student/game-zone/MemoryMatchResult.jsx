@@ -1,8 +1,13 @@
 import React from 'react';
 import { Trophy, Coins, Star, RefreshCw, Medal, Award, ArrowLeft, ArrowUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 
 export default function MemoryMatchResult({ result, onPlayAgain, onViewLeaderboard }) {
+  React.useEffect(() => {
+    clearStudentDashboardCache();
+  }, []);
+
   const {
     turnsCount,
     mismatchesCount,
