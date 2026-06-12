@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Timer, RefreshCw, XCircle, Grid, Zap, Shield, HelpCircle } from 'lucide-react';
+import { Timer, RefreshCw, XCircle, Grid, Zap, Shield, HelpCircle, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
-  const { deckName, difficulty, cards } = session;
+  const { deckName, difficulty, cards = [] } = session;
   const [flippedCards, setFlippedCards] = useState([]); // Array of indices of open cards
   const [matchedIds, setMatchedIds] = useState(new Set()); // Set of matchIds
   const [turns, setTurns] = useState(0);
@@ -87,7 +87,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
 
   const totalPairs = cards.length / 2;
   const matchedCount = matchedIds.size;
-  const progressPercent = Math.min(100, Math.round((matchedCount / totalPairs) * 100));
+  const progressPercent = totalPairs > 0 ? Math.min(100, Math.round((matchedCount / totalPairs) * 100)) : 0;
 
   // Determine grid column counts based on deck size
   const gridClass = cards.length <= 12 

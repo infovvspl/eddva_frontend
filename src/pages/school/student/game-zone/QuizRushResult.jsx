@@ -1,8 +1,13 @@
 import React from 'react';
 import { Trophy, Star, Coins, Zap, Award, RefreshCw, Milestone, ArrowRight, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 
 export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard }) {
+  React.useEffect(() => {
+    clearStudentDashboardCache();
+  }, []);
+
   const {
     totalQuestions,
     correctAnswers,
