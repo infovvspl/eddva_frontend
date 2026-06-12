@@ -28,7 +28,7 @@ export default function MemoryMatch() {
 
   const handleFinishGame = async (turnsCount, mismatchesCount) => {
     try {
-      const res = await api.post('/games/memory-match/submit', {
+      const res = await api.post('/school/gamification/memory-match/submit', {
         sessionId: sessionData.sessionId,
         turnsCount,
         mismatchesCount,

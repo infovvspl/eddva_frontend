@@ -744,11 +744,11 @@ export function useUploadAvatar() {
     onSuccess: (avatarUrl) => {
       // Optimistically patch the cached me data so avatar updates instantly
       qc.setQueryData<studentApi.StudentMe>(studentKeys.me, (old) =>
-        old ? { ...old, profilePictureUrl: avatarUrl } : old
+        old ? { ...old, profileImage: avatarUrl } : old
       );
       useAuthStore.setState((state) => ({
         ...state,
-        user: state.user ? { ...state.user, avatar: avatarUrl } : state.user,
+        user: state.user ? { ...state.user, profileImage: avatarUrl } : state.user,
       }));
     },
   });

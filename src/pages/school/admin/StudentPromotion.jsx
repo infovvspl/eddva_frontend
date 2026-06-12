@@ -305,7 +305,7 @@ export default function StudentPromotion() {
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
                               <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-sm font-black text-blue-700">
-                                {student.photo ? <img src={student.photo} alt={student.name} className="h-full w-full object-cover" /> : studentInitial(student.name)}
+                                {student.profileImage ? <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" /> : studentInitial(student.name)}
                               </div>
                               <div className="min-w-0">
                                 <p className="truncate font-bold text-slate-900 dark:text-white">{student.name}</p>

@@ -3159,7 +3159,7 @@ const BattleArena = () => {
   const xpPoints = Number(student?.xpPoints ?? eloData?.xpPoints ?? 0);
   const myStudentId  = student?.id ?? "";
   const myName       = me?.fullName ?? "You";
-  const myAvatarUrl  = me?.profilePictureUrl ?? null;
+  const myAvatarUrl  = me?.profileImage ?? null;
   const backendUrl = (() => {
     const raw = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
     try { return new URL(raw).origin; } catch { return raw; }

@@ -419,8 +419,8 @@ export default function StudentProfile() {
         <div className="px-12 pb-12 -mt-16">
           <div className="flex flex-col md:flex-row items-end gap-8 mb-8">
             <div className="w-40 h-40 rounded-[2.5rem] border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 shadow-xl">
-              {student.photo ? (
-                <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+              {student.profileImage ? (
+                <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-4xl font-bold tracking-tight text-blue-700">
                   {getInitials(student.name)}

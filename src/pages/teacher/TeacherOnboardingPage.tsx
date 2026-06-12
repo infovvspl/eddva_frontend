@@ -243,7 +243,7 @@ export default function TeacherOnboardingPage() {
     setIsUploadingAvatar(true);
     try {
       const result = await uploadAvatar.mutateAsync(file);
-      setAvatarUrl(result.avatarUrl);
+      setAvatarUrl(result.profileImageUrl);
     } catch {
       toast({ title: "Upload failed", description: "Could not upload avatar. You can continue anyway.", variant: "destructive" });
     } finally {
@@ -293,7 +293,7 @@ export default function TeacherOnboardingPage() {
           phone: (p as any).phoneNumber || (p as any).phone || "",
           email: p.email,
           role: p.role as any,
-          avatar: (p as any).avatar ?? (p as any).profilePictureUrl,
+          profileImage: (p as any).profileImage ?? (p as any).profileImage,
           tenantId: p.tenantId,
           tenantName: p.tenant?.name || (p as any).tenantName || "",
           isFirstLogin: false,

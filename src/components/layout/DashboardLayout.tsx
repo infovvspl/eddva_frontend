@@ -661,7 +661,7 @@ const DashboardLayout = () => {
                   className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
                 >
                   <ProfileAvatar
-                    src={user.avatar ?? null}
+                    src={user.profileImage ?? null}
                     name={user.name}
                     className="h-full w-full"
                     fallbackClassName="text-[10px] font-bold text-indigo-600"

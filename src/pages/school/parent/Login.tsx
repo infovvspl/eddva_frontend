@@ -58,7 +58,7 @@ export default function ParentLogin() {
         phone: res.user.phone ?? "",
         email: res.user.email,
         role: "PARENT" as const, // Force parent role for this portal
-        avatar: res.user.photo ?? undefined,
+        profileImage: res.user.profileImage ?? undefined,
         tenantId: res.user.instituteId ?? undefined,
         tenantName: res.institute?.name ?? undefined,
         isFirstLogin: false,

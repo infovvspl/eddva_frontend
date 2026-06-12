@@ -272,9 +272,9 @@ export default function ParentLayout() {
                     <p className="mt-1 text-xs font-semibold text-slate-500">Parent</p>
                   </div>
                   <div className="relative">
-                    {user?.photo ? (
+                    {user?.profileImage ? (
                       <img 
-                        src={user.photo} 
+                        src={user.profileImage} 
                         alt={user?.name || 'Parent'} 
                         onError={(e: any) => {
                           e.target.style.display = 'none';

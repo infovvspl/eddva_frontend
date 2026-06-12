@@ -582,8 +582,8 @@ export default function Students() {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-4">
                         <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
-                          {student.photo ? (
-                            <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
+                          {student.profileImage ? (
+                            <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
                               {(student.name || 'S').slice(0, 1).toUpperCase()}

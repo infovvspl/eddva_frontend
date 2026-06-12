@@ -52,7 +52,7 @@ export function useVerifyOtp() {
           phone: profile.phoneNumber || profile.phone || "",
           email: profile.email,
           role: profile.role as "super_admin" | "institute_admin" | "teacher" | "student",
-          avatar: profile.avatar,
+          profileImage: profile.profileImage,
           tenantId: profile.tenantId,
           tenantName: profile.tenant?.name || profile.tenantName || "",
           isFirstLogin: (profile as any).isFirstLogin ?? false,
@@ -113,7 +113,7 @@ export function useMe(enabled = true) {
         phone: profile.phoneNumber || profile.phone || "",
         email: profile.email,
         role: profile.role as "super_admin" | "institute_admin" | "teacher" | "student",
-        avatar: profile.avatar,
+        profileImage: profile.profileImage,
         tenantId: profile.tenantId,
         tenantName: profile.tenant?.name || profile.tenantName || "",
         isFirstLogin: (profile as any).isFirstLogin ?? false,
@@ -159,7 +159,7 @@ export function useUploadAvatar() {
     onSuccess: (result) => {
       const current = useAuthStore.getState().user;
       if (current) {
-        useAuthStore.getState().setUser({ ...current, avatar: result.avatarUrl });
+        useAuthStore.getState().setUser({ ...current, profileImage: result.avatarUrl });
       }
     },
   });

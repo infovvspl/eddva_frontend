@@ -447,9 +447,9 @@ export default function Navbar({ onMenuClick }) {
               aria-label="User Profile menu"
             >
               <div className="relative">
-                {user?.photo ? (
+                {user?.profileImage ? (
                   <img 
-                    src={user.photo} 
+                    src={user.profileImage} 
                     alt={user?.name || 'Student'} 
                     onError={(e) => {
                       e.target.style.display = 'none';

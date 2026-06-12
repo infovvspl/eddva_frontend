@@ -1279,7 +1279,7 @@ export interface StudentMe {
   phone?: string;
   email?: string;
   city?: string;
-  profilePictureUrl?: string;
+  profileImage?: string;
   role: string;
   tenantId: string;
   student?: {
@@ -1318,7 +1318,7 @@ export async function getMe(): Promise<StudentMe> {
     phone: u.phoneNumber,
     email: u.email,
     city: u.city,
-    profilePictureUrl: u.profilePictureUrl,
+    profileImage: u.profileImage,
     role: u.role,
     tenantId: u.tenantId,
     student: s
@@ -1766,7 +1766,7 @@ export interface StudentProfile {
   phone?: string;
   email?: string;
   city?: string;
-  profilePictureUrl?: string;
+  profileImage?: string;
   examTarget?: string;
   currentClass?: string;
   examYear?: number;
