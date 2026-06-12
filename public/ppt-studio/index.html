@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI PPT Generator — Create stunning, professional PowerPoint presentations in seconds with the power of AI. Choose topics, themes, and languages effortlessly." />
+  <title>AI PPT Generator — Create Stunning Presentations</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- PptxGenJS CDN -->
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" defer></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  HEADER                                     -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div style="height: 1.5rem"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  VIEW 1: SETUP VIEW                        -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main id="setup-view" class="setup-view">
+    <div class="glass-card setup-card">
+
+      <!-- Hero -->
+      <div class="studio-hero">
+        <div class="hero-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>
+        </div>
+        <div class="hero-text">
+          <h1 class="hero-title">Create a Presentation</h1>
+          <p class="hero-sub">Describe a topic and let AI build a polished, classroom-ready slide deck in seconds.</p>
+        </div>
+      </div>
+
+      <!-- Topic Input -->
+      <section class="input-section">
+        <label class="input-label" for="topic-input">What's your presentation about?</label>
+        <input
+          type="text"
+          id="topic-input"
+          class="text-input"
+          placeholder="e.g., Photosynthesis in Plants, World War II, Machine Learning Basics..."
+          autocomplete="off"
+        />
+      </section>
+
+      <!-- Slide Count -->
+      <section class="input-section">
+        <label class="input-label" for="slide-count-slider">Number of Slides</label>
+        <div class="range-wrapper">
+          <input
+            type="range"
+            id="slide-count-slider"
+            class="range-slider"
+            min="3"
+            max="20"
+            value="7"
+          />
+          <span id="slide-count-display" class="range-value">7</span>
+        </div>
+      </section>
+
+      <!-- Theme Picker -->
+      <section class="input-section">
+        <label class="input-label">Choose a Theme</label>
+        <div class="theme-grid">
+
+          <div class="theme-card" data-theme="dark-professional" tabindex="0" role="button" aria-pressed="false">
+            <div class="color-bar">
+              <span class="color-swatch" style="--swatch:#1a1a2e"></span>
+              <span class="color-swatch" style="--swatch:#16213e"></span>
+              <span class="color-swatch" style="--swatch:#e94560"></span>
+            </div>
+            <span class="theme-name">Dark Professional</span>
+          </div>
+
+          <div class="theme-card" data-theme="ocean-blue" tabindex="0" role="button" aria-pressed="false">
+            <div class="color-bar">
+              <span class="color-swatch" style="--swatch:#0c2d48"></span>
+              <span class="color-swatch" style="--swatch:#145374"></span>
+              <span class="color-swatch" style="--swatch:#2e8bc0"></span>
+            </div>
+            <span class="theme-name">Ocean Blue</span>
+          </div>
+
+          <div class="theme-card" data-theme="warm-sunset" tabindex="0" role="button" aria-pressed="false">
+            <div class="color-bar">
+              <span class="color-swatch" style="--swatch:#2d132c"></span>
+              <span class="color-swatch" style="--swatch:#801336"></span>
+              <span class="color-swatch" style="--swatch:#ee4540"></span>
+            </div>
+            <span class="theme-name">Warm Sunset</span>
+          </div>
+
+          <div class="theme-card" data-theme="forest-green" tabindex="0" role="button" aria-pressed="false">
+            <div class="color-bar">
+              <span class="color-swatch" style="--swatch:#1b2a1b"></span>
+              <span class="color-swatch" style="--swatch:#2d4a2d"></span>
+              <span class="color-swatch" style="--swatch:#5cdb95"></span>
+            </div>
+            <span class="theme-name">Forest Green</span>
+          </div>
+
+          <div class="theme-card" data-theme="royal-purple" tabindex="0" role="button" aria-pressed="false">
+            <div class="color-bar">
+              <span class="color-swatch" style="--swatch:#1a1035"></span>
+              <span class="color-swatch" style="--swatch:#2d1b69"></span>
+              <span class="color-swatch" style="--swatch:#b24bf3"></span>
+            </div>
+            <span class="theme-name">Royal Purple</span>
+          </div>
+
+          <div class="theme-card selected" data-theme="clean-white" tabindex="0" role="button" aria-pressed="true">
+            <div class="color-bar">
+              <span class="color-swatch" style="--swatch:#f8f9fa"></span>
+              <span class="color-swatch" style="--swatch:#e2e8f0"></span>
+              <span class="color-swatch" style="--swatch:#4361ee"></span>
+            </div>
+            <span class="theme-name">Clean White</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Presentation Style Picker -->
+      <section class="input-section">
+        <label class="input-label">Presentation Style</label>
+        <div class="style-grid">
+
+          <div class="style-card selected" data-style="executive" tabindex="0" role="button" aria-pressed="true">
+            <div class="style-preview">
+              <div class="sp sp-executive">
+                <div class="sp-right-band"></div>
+                <div class="sp-top-bar"></div>
+                <div class="sp-t1"></div>
+                <div class="sp-accent"></div>
+                <div class="sp-t2"></div>
+                <div class="sp-t3"></div>
+              </div>
+            </div>
+            <span class="style-name">Executive</span>
+            <span class="style-desc">Dark &amp; polished</span>
+          </div>
+
+          <div class="style-card" data-style="boardroom" tabindex="0" role="button" aria-pressed="false">
+            <div class="style-preview">
+              <div class="sp sp-boardroom">
+                <div class="sp-left-pane">
+                  <div class="sp-t1"></div>
+                  <div class="sp-accent"></div>
+                  <div class="sp-t2"></div>
+                  <div class="sp-t3"></div>
+                </div>
+                <div class="sp-right-pane"></div>
+              </div>
+            </div>
+            <span class="style-name">Boardroom</span>
+            <span class="style-desc">Split &amp; bold</span>
+          </div>
+
+          <div class="style-card" data-style="immersive" tabindex="0" role="button" aria-pressed="false">
+            <div class="style-preview">
+              <div class="sp sp-immersive">
+                <div class="sp-overlay"></div>
+                <div class="sp-bottom-band"></div>
+                <div class="sp-t1"></div>
+                <div class="sp-t2"></div>
+              </div>
+            </div>
+            <span class="style-name">Immersive</span>
+            <span class="style-desc">Full-bleed &amp; vivid</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Language Selector -->
+      <section class="input-section">
+        <label class="input-label" for="language-select">Language</label>
+        <div class="select-wrapper">
+          <select id="language-select" class="text-input select-input">
+            <option value="english" selected>English</option>
+            <option value="hindi">Hindi</option>
+            <option value="spanish">Spanish</option>
+            <option value="french">French</option>
+            <option value="german">German</option>
+            <option value="chinese">Chinese</option>
+            <option value="japanese">Japanese</option>
+            <option value="arabic">Arabic</option>
+          </select>
+          <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </section>
+
+      <!-- Generate Button -->
+      <button id="generate-btn" class="btn-primary generate-btn" type="button">
+        <span class="btn-sparkle" aria-hidden="true">✨</span>
+        Generate Presentation
+      </button>
+
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  LOADING OVERLAY                            -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="loading-overlay" class="loading-overlay" aria-hidden="true">
+    <div class="glass-card loading-card">
+      <div class="loading-spinner" aria-label="Loading"></div>
+      <p id="loading-status" class="loading-status">Generating your presentation…</p>
+      <div class="progress-track">
+        <div id="loading-progress" class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p id="loading-step" class="loading-step">Step 1 of 3: Creating content…</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  VIEW 2: PREVIEW VIEW                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="preview-view" class="preview-view" style="display:none;">
+
+    <!-- Top Bar -->
+    <div class="preview-topbar">
+      <div class="topbar-left">
+        <button id="back-btn" class="btn-secondary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </button>
+        <h2 id="pres-title" class="pres-title">Untitled Presentation</h2>
+      </div>
+      <div class="topbar-actions" style="display:flex; gap:0.5rem;">
+        <button id="save-edva-btn" class="btn-secondary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          Save to Course Content
+        </button>
+        <button id="download-btn" class="btn-primary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download PPT
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="preview-main">
+
+      <!-- Slide Preview Area -->
+      <div id="slide-preview-area" class="slide-preview-area">
+        <div class="slide-canvas-wrapper">
+          <button id="prev-slide-btn" class="slide-nav-btn slide-nav-prev" type="button" aria-label="Previous slide">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <div id="slide-canvas" class="slide-canvas"></div>
+          <button id="next-slide-btn" class="slide-nav-btn slide-nav-next" type="button" aria-label="Next slide">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+        <p id="slide-counter" class="slide-counter">Slide 1 of 7</p>
+      </div>
+
+      <!-- Edit Panel -->
+      <aside id="edit-panel" class="edit-panel glass-card">
+        <h3 class="edit-panel-heading">Edit Slide</h3>
+
+        <div class="edit-group">
+          <label class="input-label" for="edit-title-field">Title</label>
+          <div id="edit-title" class="edit-field" contenteditable="true" role="textbox" aria-label="Slide title"></div>
+        </div>
+
+        <div class="edit-group">
+          <label class="input-label" for="edit-subtitle-field">Subtitle</label>
+          <div id="edit-subtitle" class="edit-field" contenteditable="true" role="textbox" aria-label="Slide subtitle"></div>
+        </div>
+
+        <div class="edit-group">
+          <label class="input-label">Bullet Points</label>
+          <div id="edit-bullets" class="edit-bullets">
+            <!-- Bullet divs injected by JS -->
+          </div>
+          <button id="add-bullet-btn" class="btn-secondary btn-sm" type="button">+ Add Bullet</button>
+        </div>
+
+        <div class="edit-group">
+          <label class="input-label">Slide Image</label>
+          <div class="edit-image-container">
+            <img id="edit-image-preview" class="edit-image-preview" src="" alt="Slide image" style="display:none;" />
+            <span class="image-placeholder" id="image-placeholder">No image</span>
+          </div>
+          <div class="image-search-row">
+            <input type="text" id="edit-image-search" class="text-input text-input-sm" placeholder="Search term…" />
+            <button id="search-image-btn" class="btn-secondary btn-sm" type="button">Search</button>
+          </div>
+        </div>
+
+        <div class="edit-group">
+          <label class="input-label" for="edit-image-size">Image Size</label>
+          <div class="select-wrapper">
+            <select id="edit-image-size" class="text-input select-input">
+              <option value="small">Small</option>
+              <option value="medium" selected>Medium</option>
+              <option value="large">Large</option>
+              <option value="full">Full Background</option>
+              <option value="none">No Image</option>
+            </select>
+            <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="edit-group">
+          <label class="input-label">Image Fit</label>
+          <div class="fit-toggle" id="edit-image-fit" role="group" aria-label="Image fit">
+            <button type="button" class="fit-btn active" data-fit="cover">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+              Fill
+            </button>
+            <button type="button" class="fit-btn" data-fit="contain">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 3h18M3 21h18"/></svg>
+              Fit whole image
+            </button>
+          </div>
+          <p class="crop-hint">“Fit” shows the entire image without cropping the sides.</p>
+        </div>
+
+        <div class="edit-group">
+          <label class="input-label">Image Crop &amp; Position</label>
+          <p class="crop-hint">Click a dot to set the focal point</p>
+          <div class="crop-picker" id="edit-image-position">
+            <button class="crop-dot" data-pos="top left"     title="Top Left"></button>
+            <button class="crop-dot" data-pos="top center"   title="Top Center"></button>
+            <button class="crop-dot" data-pos="top right"    title="Top Right"></button>
+            <button class="crop-dot" data-pos="center left"  title="Center Left"></button>
+            <button class="crop-dot active" data-pos="center center" title="Center (default)"></button>
+            <button class="crop-dot" data-pos="center right" title="Center Right"></button>
+            <button class="crop-dot" data-pos="bottom left"  title="Bottom Left"></button>
+            <button class="crop-dot" data-pos="bottom center" title="Bottom Center"></button>
+            <button class="crop-dot" data-pos="bottom right"  title="Bottom Right"></button>
+          </div>
+        </div>
+
+        <button id="regenerate-btn" class="btn-secondary regenerate-btn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"></path></svg>
+          Regenerate Slide
+        </button>
+
+        <div class="edit-group">
+          <label class="input-label" for="edit-notes">Speaker Notes</label>
+          <textarea id="edit-notes" class="text-input edit-notes-textarea" placeholder="Add speaker notes…" rows="4"></textarea>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Slide Thumbnails Strip -->
+    <div id="slide-thumbnails" class="slide-thumbnails">
+      <!-- Thumbnail cards injected by JS -->
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  TOAST CONTAINER                            -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  SCRIPTS                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <script src="js/api.js"></script>
+  <script src="js/preview.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/pptExport.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

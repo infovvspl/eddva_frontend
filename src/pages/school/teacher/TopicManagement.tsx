@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
@@ -53,7 +51,7 @@ import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import { presentationMarkdownToSlides, slideImageQuery, slideImagePrompt, fetchSlideImage, type Slide } from '@/lib/presentation-markdown';
 import { downloadMaterial, downloadAllMaterials, isDownloadableAiMaterial } from '@/lib/material-download';
 import { schoolContent, type SchoolMaterial, type SchoolMaterialType } from '@/lib/api/school-content';
-import { getApiOrigin } from '@/lib/api-config';
+import { getApiOrigin, getApiBaseUrl } from '@/lib/api-config';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
@@ -73,8 +71,9 @@ interface Assignment {
 
 interface Ref { id: string; name: string }
 
-// AI PPT Studio (standalone ppt-generator app). Override via VITE_PPT_STUDIO_URL.
-const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || 'http://localhost:5050';
+// AI PPT Studio — served natively from the EDVA frontend (same origin), so nothing
+// separate needs to run. Override via VITE_PPT_STUDIO_URL only if hosted elsewhere.
+const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || '/ppt-studio/index.html';
 
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
@@ -94,13 +93,14 @@ const TopicManagement: React.FC = () => {
   // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState<{ id: string; name: string; chapterId: string } | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<{ id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' } | null>(null);
   const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
 
   // ── Modals ─────────────────────────────────────────────────────────────────
   const [showChapterModal, setShowChapterModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
@@ -331,7 +331,7 @@ const TopicManagement: React.FC = () => {
           fileUrl,
           fileName,
           fileSizeKb: Math.round(file.size / 1024),
-          topicId: selectedTopic.id,
+          topicId: selectedTopic.kind === 'chapter' ? undefined : selectedTopic.id,
           chapterId: selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
         });
@@ -464,7 +464,10 @@ const TopicManagement: React.FC = () => {
                 <h3 className="font-bold text-surface-900 dark:text-white">Chapters & Topics</h3>
               </div>
               {canEditCurriculum && (
-                <Button size="sm" icon={<Plus size={16} />} onClick={openCreateChapter}>Chapter</Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" icon={<Upload size={16} />} onClick={() => setShowBulkModal(true)}>Import</Button>
+                  <Button size="sm" icon={<Plus size={16} />} onClick={openCreateChapter}>Chapter</Button>
+                </div>
               )}
             </div>
             <div className="max-h-[70vh] overflow-y-auto p-3">
@@ -480,8 +483,9 @@ const TopicManagement: React.FC = () => {
                       chapter={chapter}
                       version={curriculumVersion}
                       canEdit={canEditCurriculum}
-                      selectedTopicId={selectedTopic?.id ?? null}
-                      onSelectTopic={(t) => setSelectedTopic({ id: t.id, name: t.name, chapterId: chapter.id })}
+                      selectedScopeId={selectedTopic?.id ?? null}
+                      onSelectTopic={(t) => setSelectedTopic({ id: t.id, name: t.name, chapterId: chapter.id, kind: 'topic' })}
+                      onSelectChapter={() => setSelectedTopic({ id: chapter.id, name: chapter.name, chapterId: chapter.id, kind: 'chapter' })}
                       onAddTopic={() => openCreateTopic(chapter.id)}
                       onEditTopic={openEditTopic}
                       onDeleteTopic={handleDeleteTopic}
@@ -527,6 +531,16 @@ const TopicManagement: React.FC = () => {
             </div>
           </Modal>
 
+          {selectedSubject && (
+            <BulkImportModal
+              isOpen={showBulkModal}
+              subjectId={selectedSubject.id}
+              subjectName={selectedSubject.name}
+              onClose={() => setShowBulkModal(false)}
+              onImported={() => { setShowBulkModal(false); void fetchChapters(selectedSubject.id); }}
+            />
+          )}
+
           <Modal isOpen={showTopicModal} onClose={() => { setShowTopicModal(false); setEditingTopicId(null); }} title={editingTopicId ? 'Edit Topic' : 'Create Topic'}>
             <div className="space-y-4">
               <InputField label="Topic Name" value={newTopic.name} onChange={(e) => setNewTopic({ ...newTopic, name: e.target.value })} placeholder="e.g. Laws of Thermodynamics" />
@@ -559,7 +573,14 @@ const TopicManagement: React.FC = () => {
           </div>
           <iframe
             title="AI PPT Studio"
-            src={`${PPT_STUDIO_URL}/${selectedTopic ? `?topic=${encodeURIComponent(selectedTopic.name)}` : ''}`}
+            src={(() => {
+              const q = new URLSearchParams();
+              q.set('api', getApiBaseUrl());
+              const inst = (user as any)?.instituteId || (user as any)?.tenantId;
+              if (inst) q.set('institute', String(inst));
+              if (selectedTopic) q.set('topic', selectedTopic.name);
+              return `${PPT_STUDIO_URL}?${q.toString()}`;
+            })()}
             className="w-full flex-1 border-0 bg-white"
             allow="clipboard-write; downloads"
           />
@@ -675,7 +696,7 @@ const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.Co
   { value: 'notes', label: 'Notes', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
   { value: 'pyq', label: 'PYQ', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { value: 'formula_sheet', label: 'Formula Sheet', icon: FileSpreadsheet, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
-  { value: 'dpp', label: 'DPP', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'dpp', label: 'Daily Assessment', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
   { value: 'mindmap', label: 'Mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { value: 'ppt', label: 'Presentation', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { value: 'ebook', label: 'E-book', icon: BookMarked, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
@@ -691,10 +712,10 @@ function resolveFileUrl(url?: string | null) {
 // ── Chapter node (accordion: chapter → its topics) ───────────────────────────
 
 function ChapterNode({
-  chapter, version, canEdit, selectedTopicId, onSelectTopic, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
+  chapter, version, canEdit, selectedScopeId, onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
 }: {
-  chapter: any; version: number; canEdit: boolean; selectedTopicId: string | null;
-  onSelectTopic: (t: any) => void; onAddTopic: () => void; onEditTopic: (t: any) => void;
+  chapter: any; version: number; canEdit: boolean; selectedScopeId: string | null;
+  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: () => void; onEditTopic: (t: any) => void;
   onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -734,8 +755,16 @@ function ChapterNode({
             <div className="flex justify-center py-3"><Loader2 size={16} className="animate-spin text-brand-500" /></div>
           ) : (
             <div className="space-y-1">
+              {/* Chapter-level materials (AI + uploads), like a topic */}
+              <div
+                className={`group/chmat flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 transition-colors ${selectedScopeId === chapter.id ? 'bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-900/30' : 'hover:bg-white dark:hover:bg-surface-800'}`}
+                onClick={onSelectChapter}
+              >
+                <Library size={14} className={selectedScopeId === chapter.id ? 'text-brand-600' : 'text-surface-400'} />
+                <span className={`flex-1 truncate text-sm font-semibold ${selectedScopeId === chapter.id ? 'text-brand-700 dark:text-brand-300' : 'text-surface-600 dark:text-surface-300'}`}>Chapter Materials</span>
+              </div>
               {topics.map((t) => {
-                const active = selectedTopicId === t.id;
+                const active = selectedScopeId === t.id;
                 return (
                   <div
                     key={t.id}
@@ -771,8 +800,9 @@ function ChapterNode({
 
 // ── Material workspace (selected topic's materials, grouped by type) ─────────
 
-function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string }; subjectId: string; canEdit: boolean; onOpenPptStudio: () => void }) {
+function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; subjectId: string; canEdit: boolean; onOpenPptStudio: () => void }) {
   const confirm = useConfirm();
+  const isChapter = topic.kind === 'chapter';
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -784,11 +814,11 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
 
   const load = React.useCallback(() => {
     setLoading(true);
-    schoolContent.getMaterials({ topicId: topic.id })
+    schoolContent.getMaterials(isChapter ? { chapterId: topic.id } : { topicId: topic.id })
       .then((list) => setMaterials(Array.isArray(list) ? list : []))
       .catch(() => setMaterials([]))
       .finally(() => setLoading(false));
-  }, [topic.id]);
+  }, [topic.id, isChapter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -828,7 +858,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 p-4 dark:border-surface-700">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-surface-400">Topic</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-surface-400">{isChapter ? 'Chapter' : 'Topic'}</p>
           <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{topic.name}</h3>
         </div>
         <div className="flex items-center gap-2">
@@ -1119,7 +1149,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
   const fileType = String(material.fileType ?? '').toLowerCase();
   const isMindmap = fileType === 'mindmap';
   const isPresentation = fileType === 'ppt';
-  const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || (material.description || '').trim().startsWith('Q:');
+  const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || /^\s*\**\s*Q(?:uestion)?\s*\d*\s*[:.]/i.test(material.description || '');
   const tree = useMemo(
     () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, material.title) : null),
     [isMindmap, material.description, material.title],
@@ -1306,6 +1336,10 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
           <div className="flex-1 overflow-y-auto p-5">
             <SlideDeck slides={slides} height={480} topic={material.title} />
           </div>
+        ) : isFlashcard && material.description ? (
+          <div className="flex-1 overflow-y-auto p-4">
+            <FlashcardViewer content={material.description} />
+          </div>
         ) : material.description ? (
           <MarkdownRenderer
             content={material.description}
@@ -1362,7 +1396,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 // ── AI Content Generator panel ───────────────────────────────────────────────
 
 const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
-  { id: 'dpp', label: 'DPP Sheet', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
+  { id: 'dpp', label: 'Daily Assessment', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
   { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
@@ -1373,7 +1407,8 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
   { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'notes', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
 ];
 
-function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string }; onClose: () => void; onSaved: () => void; onOpenPptStudio: () => void }) {
+function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; onClose: () => void; onSaved: () => void; onOpenPptStudio: () => void }) {
+  const scopeRef = topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const [typeId, setTypeId] = useState('dpp');
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState('');
@@ -1395,13 +1430,14 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
     [isPresentation, content],
   );
   const showPreviewSlides = previewSlides.length > 0;
+  const showPreviewFlashcards = typeId === 'flashcard' && !!content;
 
   const handleGenerate = async () => {
     setGenerating(true);
     setContent(null);
     try {
       const res = await schoolContent.generateAiContent({
-        topicId: topic.id,
+        ...scopeRef,
         contentType: typeId,
         questionCount: isQuestionType ? questionCount : undefined,
         extraContext: extraContext.trim() || undefined,
@@ -1419,7 +1455,7 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
     setSaving(true);
     try {
       await schoolContent.saveAiMaterial({
-        topicId: topic.id,
+        ...scopeRef,
         title: `${cfg.label} — ${topic.name}`,
         content,
         resourceType: cfg.saveAs,
@@ -1501,6 +1537,10 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
                 </div>
               ) : showPreviewSlides ? (
                 <SlideDeck slides={previewSlides} height={300} topic={topic.name} />
+              ) : showPreviewFlashcards ? (
+                <div className="rounded-2xl border border-surface-100 bg-surface-50 px-2 dark:border-surface-700 dark:bg-surface-800">
+                  <FlashcardViewer content={content || ''} />
+                </div>
               ) : (
                 <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
                   <MarkdownRenderer content={content || ''} className="prose-slate" />
@@ -1530,7 +1570,7 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
 function AddMaterialModal({
   topic, subjectId, initialType, onClose, onSaved,
 }: {
-  topic: { id: string; name: string; chapterId: string }; subjectId: string;
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; subjectId: string;
   initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
 }) {
   const [step, setStep] = useState<'type' | 'input'>(initialType ? 'input' : 'type');
@@ -1575,7 +1615,7 @@ function AddMaterialModal({
         fileSizeKb,
         subjectIdFk: subjectId,
         chapterId: topic.chapterId,
-        topicId: topic.id,
+        topicId: topic.kind === 'chapter' ? undefined : topic.id,
       });
       toast.success('Material added');
       onSaved();
@@ -1663,6 +1703,184 @@ function AddMaterialModal({
         )}
       </div>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Bulk curriculum import (chapters + topics) from CSV / pasted text.
+ * Format: two columns — Chapter, Topic. Rows that repeat a chapter add more
+ * topics to it; a row with only a chapter creates an empty chapter.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+type ParsedRow = { chapter: string; topic: string };
+
+/** Minimal CSV parser: handles quoted fields, commas inside quotes, and CRLF. */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let field = '';
+  let row: string[] = [];
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field); field = '';
+    } else if (c === '\n') {
+      row.push(field); rows.push(row); row = []; field = '';
+    } else if (c === '\r') {
+      // ignore — handled by the following \n
+    } else field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function rowsFromCsv(text: string): ParsedRow[] {
+  const raw = parseCsv(text).filter((r) => r.some((c) => c.trim()));
+  if (!raw.length) return [];
+  // Drop a header row if the first cell looks like a header label.
+  const first = (raw[0][0] || '').trim().toLowerCase();
+  const start = first === 'chapter' || first === 'chapters' ? 1 : 0;
+  const out: ParsedRow[] = [];
+  for (let i = start; i < raw.length; i++) {
+    const chapter = (raw[i][0] || '').trim();
+    const topic = (raw[i][1] || '').trim();
+    if (!chapter) continue;
+    out.push({ chapter, topic });
+  }
+  return out;
+}
+
+const CSV_TEMPLATE =
+  'Chapter,Topic\n' +
+  'Real Numbers,Euclid’s Division Lemma\n' +
+  'Real Numbers,Fundamental Theorem of Arithmetic\n' +
+  'Polynomials,Zeroes of a Polynomial\n' +
+  'Polynomials,Division Algorithm\n';
+
+function BulkImportModal({
+  isOpen, subjectId, subjectName, onClose, onImported,
+}: {
+  isOpen: boolean; subjectId: string; subjectName: string;
+  onClose: () => void; onImported: () => void;
+}) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const rows = useMemo(() => rowsFromCsv(text), [text]);
+  const grouped = useMemo(() => {
+    const order: string[] = [];
+    const map = new Map<string, string[]>();
+    for (const r of rows) {
+      if (!map.has(r.chapter)) { map.set(r.chapter, []); order.push(r.chapter); }
+      if (r.topic && !map.get(r.chapter)!.some((t) => t.toLowerCase() === r.topic.toLowerCase())) {
+        map.get(r.chapter)!.push(r.topic);
+      }
+    }
+    return order.map((c) => ({ chapter: c, topics: map.get(c)! }));
+  }, [rows]);
+
+  const topicCount = grouped.reduce((n, g) => n + g.topics.length, 0);
+
+  const onFile = async (f: File) => {
+    const content = await f.text();
+    setText(content);
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'curriculum-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async () => {
+    if (!rows.length) { toast.warning('Add at least one chapter row first'); return; }
+    setBusy(true);
+    try {
+      const res = await api.post('/topics/bulk-import', { subjectId, rows });
+      const s = res.data?.data || res.data || {};
+      const parts: string[] = [];
+      if (s.chaptersCreated) parts.push(`${s.chaptersCreated} chapter(s)`);
+      if (s.topicsCreated) parts.push(`${s.topicsCreated} topic(s)`);
+      const skipped = (s.chaptersExisting || 0) + (s.topicsExisting || 0);
+      toast.success(
+        parts.length ? `Imported ${parts.join(' & ')}${skipped ? ` · ${skipped} already existed` : ''}`
+          : 'Nothing new to import — everything already existed',
+      );
+      setText('');
+      onImported();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Bulk import failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Bulk Import Curriculum">
+      <div className="space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm text-surface-500 dark:text-surface-300">
+            Import chapters &amp; topics into <span className="font-semibold text-surface-700 dark:text-surface-100">{subjectName}</span>.
+            Use two columns — <b>Chapter</b>, <b>Topic</b>. Existing names are reused, not duplicated.
+          </p>
+          <Button size="sm" variant="ghost" icon={<Download size={15} />} onClick={downloadTemplate}>Template</Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) void onFile(e.target.files[0]); e.target.value = ''; }} />
+          <Button size="sm" variant="outline" icon={<FileSpreadsheet size={15} />} onClick={() => fileRef.current?.click()}>Upload CSV</Button>
+          {text && <Button size="sm" variant="ghost" icon={<X size={15} />} onClick={() => setText('')}>Clear</Button>}
+        </div>
+
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={7}
+          placeholder={'Chapter,Topic\nReal Numbers,Euclid’s Division Lemma\nReal Numbers,Fundamental Theorem of Arithmetic\nPolynomials,Zeroes of a Polynomial'}
+          className="w-full rounded-xl border border-surface-200 bg-white p-3 font-mono text-xs text-surface-800 outline-none focus:border-brand-500 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-100"
+        />
+
+        {grouped.length > 0 && (
+          <div className="rounded-xl border border-surface-100 bg-surface-50 p-3 dark:border-surface-700 dark:bg-surface-900/40">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-surface-400">
+              Preview · {grouped.length} chapter(s), {topicCount} topic(s)
+            </p>
+            <div className="max-h-52 space-y-2 overflow-y-auto">
+              {grouped.map((g) => (
+                <div key={g.chapter} className="text-sm">
+                  <p className="font-semibold text-surface-800 dark:text-surface-100">{g.chapter}</p>
+                  {g.topics.length > 0 && (
+                    <ul className="ml-4 list-disc text-surface-500 dark:text-surface-300">
+                      {g.topics.map((t) => <li key={t}>{t}</li>)}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-1">
+          <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button onClick={handleImport} disabled={busy || !rows.length}>
+            {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Importing…</span>
+              : `Import ${grouped.length || ''} Chapter(s)`}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
