@@ -907,6 +907,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
                         className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
                         <Icon size={16} className={mt.text} />
                         <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                        
                       </button>
                     );
                   })}
