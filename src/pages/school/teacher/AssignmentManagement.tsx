@@ -38,8 +38,21 @@ type CreateMode = "manual" | "image" | "ai";
 
 function resolveUploadUrl(filePath: string | null | undefined) {
   if (!filePath) return null;
-  const clean = String(filePath).replace(/^\.\//, "").replace(/^uploads[/\\]/, "");
+  const raw = String(filePath);
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/uploads/')) return `${getApiOrigin()}${raw}`;
+  const clean = raw.replace(/^\.\//, "").replace(/^uploads[/\\]/, "");
   return `${getApiOrigin()}/uploads/${clean}`;
+}
+
+function fileNameFromPath(filePath: string | null | undefined) {
+  if (!filePath) return 'Submission';
+  return String(filePath).split(/[\\/]/).pop()?.replace(/^\d+-/, '') || 'Submission';
+}
+
+function fileExtension(filePath: string | null | undefined) {
+  const name = fileNameFromPath(filePath).toLowerCase();
+  return name.includes('.') ? name.split('.').pop() || '' : '';
 }
 
 // ── Components ─────────────────────────────────────────────────────────────
@@ -118,6 +131,8 @@ const AssignmentManagement: React.FC = () => {
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [gradingId, setGradingId] = useState<string | null>(null);
   const [gradeForm, setGradeForm] = useState<{ marks: string; feedback: string }>({ marks: '', feedback: '' });
+  const [previewSubmission, setPreviewSubmission] = useState<any | null>(null);
+  const [previewFileMissing, setPreviewFileMissing] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -185,12 +200,25 @@ const AssignmentManagement: React.FC = () => {
     return classes.find((c) => c.id === selectedClass.id)?.subjects ?? [];
   }, [classes, selectedClass]);
 
-  const pendingInboxCount = inboxItems.filter((s) => s.status !== 'graded').length;
-
   // ── Filtered Navigation ──────────────────────────────────────────────────
   const q = search.trim().toLowerCase();
   const filteredClasses = classes.filter((c) => c.name?.toLowerCase().includes(q));
   const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
+
+  const visibleInboxItems = useMemo(() => {
+    const normalize = (value: unknown) => String(value ?? '').trim().toLowerCase();
+    return inboxItems.filter((sub) => {
+      const classMatches = !selectedClass
+        || String(sub.class_id ?? sub.classId ?? '') === selectedClass.id
+        || normalize(sub.class_name) === normalize(selectedClass.name);
+      const subjectMatches = !selectedSubject
+        || String(sub.subject_id ?? sub.subjectId ?? '') === selectedSubject.id
+        || normalize(sub.subject_name) === normalize(selectedSubject.name);
+      return classMatches && subjectMatches;
+    });
+  }, [inboxItems, selectedClass, selectedSubject]);
+
+  const pendingInboxCount = visibleInboxItems.filter((s) => s.status !== 'graded').length;
 
   const level: 'classes' | 'subjects' | 'workspace' =
     selectedSubject ? 'workspace' : selectedClass ? 'subjects' : 'classes';
@@ -239,8 +267,13 @@ const AssignmentManagement: React.FC = () => {
 
   const fetchInbox = async () => {
     setLoadingInbox(true);
+    setInboxItems([]);
     try {
-      const res = await api.get('/assignments/submissions/inbox');
+      const params = new URLSearchParams();
+      if (selectedClass?.id) params.set('classId', selectedClass.id);
+      if (selectedSubject?.id) params.set('subjectId', selectedSubject.id);
+      const query = params.toString();
+      const res = await api.get(`/assignments/submissions/inbox${query ? `?${query}` : ''}`);
       setInboxItems(res.data?.data || res.data || []);
     } catch (err) {
       console.error(err);
@@ -250,8 +283,8 @@ const AssignmentManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    void fetchInbox();
-  }, []);
+    if (mainTab === 'inbox') void fetchInbox();
+  }, [mainTab, selectedClass?.id, selectedSubject?.id]);
 
   const openAssignmentDetail = (a: any, tab: 'details' | 'submissions' = 'details') => {
     setSelectedAssignment(a);
@@ -277,20 +310,40 @@ const AssignmentManagement: React.FC = () => {
     }
   };
 
-  const handleGrade = async (submissionId: string) => {
-    if (!selectedAssignment) return;
+  const handleGrade = async (submissionId: string, assignmentId = selectedAssignment?.id) => {
+    if (!assignmentId) return;
     try {
-      await api.post(`/assignments/${selectedAssignment.id}/submissions/${submissionId}/grade`, {
+      await api.post(`/assignments/${assignmentId}/submissions/${submissionId}/grade`, {
         marks: gradeForm.marks !== '' ? Number(gradeForm.marks) : undefined,
         feedback: gradeForm.feedback || undefined,
       });
       toast.success('Graded successfully');
       setGradingId(null);
-      await fetchSubmissions(selectedAssignment.id);
+      if (selectedAssignment?.id) await fetchSubmissions(selectedAssignment.id);
       await fetchInbox();
       await fetchWorkspaceAssignments();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to grade');
+    }
+  };
+
+  const openSubmissionPreview = async (submission: any) => {
+    if (!submission?.file_path) {
+      toast.warning('No submitted file found');
+      return;
+    }
+    const url = resolveUploadUrl(submission.file_path);
+    if (!url) {
+      toast.warning('No submitted file found');
+      return;
+    }
+    setPreviewFileMissing(false);
+    setPreviewSubmission(submission);
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (!res.ok) setPreviewFileMissing(true);
+    } catch {
+      setPreviewFileMissing(true);
     }
   };
 
@@ -474,7 +527,7 @@ const AssignmentManagement: React.FC = () => {
         </button>
         <button
           type="button"
-          onClick={() => { setMainTab('inbox'); void fetchInbox(); }}
+          onClick={() => setMainTab('inbox')}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition ${
             mainTab === 'inbox' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500'
           }`}
@@ -512,18 +565,22 @@ const AssignmentManagement: React.FC = () => {
       {mainTab === 'inbox' && (
         <div className="space-y-4">
           <p className="text-sm text-gray-500">
-            All student work submitted to your assignments — grade directly from here.
+            {selectedSubject && selectedClass
+              ? `Student work for ${selectedClass.name} - ${selectedSubject.name} only.`
+              : selectedClass
+                ? `Student work for ${selectedClass.name}.`
+                : 'All student work submitted to your assignments - grade directly from here.'}
           </p>
           {loadingInbox ? (
             <div className="py-12 text-center text-gray-400">Loading submissions…</div>
-          ) : inboxItems.length === 0 ? (
+          ) : visibleInboxItems.length === 0 ? (
             <div className="py-16 text-center bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl">
               <Inbox size={40} className="mx-auto text-gray-300 mb-3" />
               <p className="font-medium text-gray-700">No submissions yet</p>
               <p className="text-sm text-gray-500 mt-1">Students will appear here after they submit work.</p>
             </div>
           ) : (
-            inboxItems.map((sub) => (
+            visibleInboxItems.map((sub) => (
               <GlassCard key={sub.id} className="p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -542,10 +599,7 @@ const AssignmentManagement: React.FC = () => {
                             size="sm"
                             variant="outline"
                             icon={<FileText size={14} />}
-                            onClick={() => {
-                              const url = resolveUploadUrl(sub.file_path);
-                              if (url) window.open(url, '_blank');
-                            }}
+                            onClick={() => openSubmissionPreview(sub)}
                           >
                             View submission
                           </Button>
@@ -589,7 +643,7 @@ const AssignmentManagement: React.FC = () => {
                       />
                       <Button size="sm" onClick={() => {
                         setSelectedAssignment({ id: sub.assignment_id, title: sub.assignment_title });
-                        void handleGrade(sub.id);
+                        void handleGrade(sub.id, sub.assignment_id);
                       }}>Save</Button>
                       <Button size="sm" variant="outline" onClick={() => setGradingId(null)}>Cancel</Button>
                     </div>
@@ -1042,10 +1096,7 @@ const AssignmentManagement: React.FC = () => {
                             <button
                               type="button"
                               className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                              onClick={() => {
-                                const url = resolveUploadUrl(sub.file_path);
-                                if (url) window.open(url, '_blank');
-                              }}
+                              onClick={() => openSubmissionPreview(sub)}
                             >
                               <FileText size={13} /> View submission
                             </button>
@@ -1108,6 +1159,81 @@ const AssignmentManagement: React.FC = () => {
               </div>
             )}
           </div>
+        </Modal>
+      )}
+
+      {/* In-app Submission Preview */}
+      {previewSubmission && (
+        <Modal
+          isOpen={!!previewSubmission}
+          onClose={() => setPreviewSubmission(null)}
+          title="Submission Preview"
+          size="xl"
+        >
+          {(() => {
+            const url = resolveUploadUrl(previewSubmission.file_path);
+            const name = fileNameFromPath(previewSubmission.file_path);
+            const ext = fileExtension(previewSubmission.file_path);
+            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+            const isPdf = ext === 'pdf';
+
+            return (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-gray-900">{name}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {previewSubmission.student_name || 'Student submission'}
+                      {previewSubmission.assignment_title ? ` · ${previewSubmission.assignment_title}` : ''}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    icon={<Download size={14} />}
+                    onClick={() => {
+                      if (!url || previewFileMissing) {
+                        toast.error('Submitted file is missing from the server');
+                        return;
+                      }
+                      window.open(url, '_blank');
+                    }}
+                  >
+                    Download
+                  </Button>
+                </div>
+
+                <div className="min-h-[70vh] overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                  {!url || previewFileMissing ? (
+                    <div className="flex min-h-[70vh] flex-col items-center justify-center text-center text-gray-500">
+                      <FileText size={42} className="mb-3 text-gray-300" />
+                      <p className="text-sm font-semibold text-gray-700">Submitted file is missing from the server.</p>
+                      <p className="mt-1 max-w-md text-xs">
+                        The submission record exists, but the uploaded file cannot be found. Ask the student to submit the assignment again.
+                      </p>
+                    </div>
+                  ) : isImage ? (
+                    <div className="flex min-h-[70vh] items-center justify-center bg-gray-50 p-4">
+                      <img
+                        src={url}
+                        alt={name}
+                        className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-sm"
+                        onError={() => setPreviewFileMissing(true)}
+                      />
+                    </div>
+                  ) : isPdf ? (
+                    <iframe src={url} title={name} className="h-[70vh] w-full border-0" />
+                  ) : (
+                    <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center text-gray-500">
+                      <FileText size={42} className="mb-3 text-gray-300" />
+                      <p className="text-sm font-semibold text-gray-700">Preview is not available for this file type.</p>
+                      <p className="mt-1 max-w-md text-xs">Use Download to open the submitted file with an app on your device.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </Modal>
       )}
     </div>
