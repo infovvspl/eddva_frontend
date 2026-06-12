@@ -78,7 +78,7 @@ const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || '/ppt-
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
-  const { assignments, setAssignments } = useAcademicStore();
+  const { assignments, setAssignments, activeAcademicContext, setActiveAcademicContext } = useAcademicStore();
   const canEditCurriculum =
     user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'TEACHER';
 
@@ -113,11 +113,21 @@ const TopicManagement: React.FC = () => {
     let cancelled = false;
     const load = async () => {
       try {
-        if (assignments.length > 0) return;
         const res = await api.get('/dashboard/stats');
         const tData = res.data?.data?.teacherData || res.data?.teacherData || {};
         if (!cancelled && Array.isArray(tData.assignments)) {
-          setAssignments(tData.assignments);
+          const freshAssignments = tData.assignments;
+          setAssignments(freshAssignments);
+          if (
+            activeAcademicContext &&
+            !freshAssignments.some((a: Assignment) =>
+              a.classId === activeAcademicContext.classId &&
+              a.sectionId === activeAcademicContext.sectionId &&
+              a.subjectId === activeAcademicContext.subjectId
+            )
+          ) {
+            setActiveAcademicContext(null);
+          }
         }
       } catch (err) {
         console.error('Failed to load teacher assignments', err);
@@ -127,7 +137,7 @@ const TopicManagement: React.FC = () => {
     };
     void load();
     return () => { cancelled = true; };
-  }, [assignments.length, setAssignments]);
+  }, [activeAcademicContext, setActiveAcademicContext, setAssignments]);
 
   const all = assignments as unknown as Assignment[];
 
@@ -907,6 +917,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
                         className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
                         <Icon size={16} className={mt.text} />
                         <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                        
                       </button>
                     );
                   })}

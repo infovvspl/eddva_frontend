@@ -100,7 +100,7 @@ export default function TeacherMeetingsPage() {
         if (!parentId || unique.has(parentId)) return;
         unique.set(parentId, {
           id: parentId,
-          name: row.parent_name_user || row.parent_name || 'Parent',
+          name: row.parent_name_user || row.parent_name || row.father_name || row.mother_name || 'Parent',
           studentName: row.student_name || undefined,
           className: row.class_name || undefined,
           sectionName: row.section_name || undefined,
