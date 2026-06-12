@@ -92,6 +92,23 @@ function getResourceMeta(type, fileUrl = '') {
   return RESOURCE_META.default;
 }
 
+// Coarse buckets used to segregate a topic's files into labelled sections.
+const CATEGORY_ORDER = ['video', 'material', 'practice'];
+const CATEGORY_META = {
+  video: { label: 'Video Lectures', icon: Video },
+  material: { label: 'Study Materials', icon: FileText },
+  practice: { label: 'Practice & Assignments', icon: ClipboardList },
+};
+
+function getMaterialCategory(m) {
+  if (m?.isRecordedClass) return 'video';
+  const t = (m?.fileType || m?.type || '').toLowerCase();
+  const url = (m?.fileUrl || '').toLowerCase();
+  if (t.includes('video') || url.endsWith('.mp4') || url.endsWith('.mkv') || url.endsWith('.webm')) return 'video';
+  if (t.includes('dpp') || t.includes('assignment') || t.includes('pyq') || t.includes('question_bank')) return 'practice';
+  return 'material';
+}
+
 function materialMatchesType(material, selectedType) {
   if (selectedType === 'ALL') return true;
   const typeStr = (material.fileType || material.type || '').toLowerCase();
@@ -555,64 +572,113 @@ export default function StudyMaterials() {
   );
 }
 
+function MaterialRow({ m, onView }) {
+  const meta = getResourceMeta(m.fileType, m.fileUrl);
+  const TypeIcon = meta.icon;
+  const actionLabel = m.isRecordedClass ? 'Open Class' : 'View';
+  const statusText = m.isRecordedClass
+    ? [
+        m.notesStatus === 'done' ? 'AI notes ready' : null,
+        m.transcriptStatus === 'done' ? 'Transcript ready' : null,
+      ].filter(Boolean).join(' · ')
+    : null;
+
+  return (
+    <div className="flex items-center gap-4 p-4">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${meta.bg} ${meta.color}`}>
+        <TypeIcon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">{m.title}</p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+          <span className={`font-black uppercase ${meta.color}`}>{meta.label}</span>
+          <span>|</span>
+          <span>{m.uploaded_by_name || 'Teacher'}</span>
+          <span>|</span>
+          <span>{m.createdAt ? new Date(m.createdAt).toLocaleDateString() : 'N/A'}</span>
+          {statusText && (
+            <>
+              <span>|</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">{statusText}</span>
+            </>
+          )}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onView(m)}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-700"
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
 function TopicBlock({ topicName, materials, onView }) {
+  const [open, setOpen] = useState(false);
+
+  // Segregate this topic's files into labelled sections (videos vs materials vs practice).
+  const sections = useMemo(() => {
+    const buckets = {};
+    materials.forEach((m) => {
+      const cat = getMaterialCategory(m);
+      (buckets[cat] ||= []).push(m);
+    });
+    return CATEGORY_ORDER
+      .filter((cat) => buckets[cat]?.length)
+      .map((cat) => ({ cat, ...CATEGORY_META[cat], items: buckets[cat] }));
+  }, [materials]);
+
   return (
     <div className="overflow-hidden rounded-xl border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
+      >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/30">
           <Tag className="h-4 w-4 text-blue-600" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-black text-slate-900 dark:text-white">{topicName}</p>
           <p className="text-xs font-bold text-slate-400">{materials.length} files available</p>
         </div>
-      </div>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.18 }}>
+          <ChevronDown className="h-4 w-4 text-slate-400" />
+        </motion.div>
+      </button>
 
-      <div className="divide-y divide-slate-100 dark:divide-slate-800">
-        {materials.map((m) => {
-          const meta = getResourceMeta(m.fileType, m.fileUrl);
-          const TypeIcon = meta.icon;
-          const actionLabel = m.isRecordedClass ? 'Open Class' : 'View';
-          const statusText = m.isRecordedClass
-            ? [
-                m.notesStatus === 'done' ? 'AI notes ready' : null,
-                m.transcriptStatus === 'done' ? 'Transcript ready' : null,
-              ].filter(Boolean).join(' · ')
-            : null;
-
-          return (
-            <div key={m.id} className="flex items-center gap-4 p-4">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${meta.bg} ${meta.color}`}>
-                <TypeIcon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">{m.title}</p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
-                  <span className={`font-black uppercase ${meta.color}`}>{meta.label}</span>
-                  <span>|</span>
-                  <span>{m.uploaded_by_name || 'Teacher'}</span>
-                  <span>|</span>
-                  <span>{m.createdAt ? new Date(m.createdAt).toLocaleDateString() : 'N/A'}</span>
-                  {statusText && (
-                    <>
-                      <span>|</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{statusText}</span>
-                    </>
-                  )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-slate-100 dark:border-slate-800">
+              {sections.map(({ cat, label, icon: CatIcon, items }) => (
+                <div key={cat}>
+                  <div className="flex items-center gap-2 bg-slate-50/80 px-4 py-2 dark:bg-slate-950/30">
+                    <CatIcon className="h-3.5 w-3.5 text-slate-400" />
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">{label}</span>
+                    <span className="text-[11px] font-bold text-slate-400">· {items.length}</span>
+                  </div>
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {items.map((m) => (
+                      <MaterialRow key={m.id} m={m} onView={onView} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onView(m)}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-700"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                {actionLabel}
-              </button>
+              ))}
             </div>
-          );
-        })}
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -637,9 +703,9 @@ function MaterialViewer({ material, onClose }) {
     [isMindmap, material.title, previewContent],
   );
   const canShowMindmap = !!mindmapTree?.children?.length;
-  const isFlashcard = (material.fileType || material.type || '').toLowerCase().includes('flashcard') || 
-                      (material.title || '').toLowerCase().includes('flashcard') || 
-                      (previewContent && previewContent.trim().startsWith('Q:'));
+  const isFlashcard = (material.fileType || material.type || '').toLowerCase().includes('flashcard') ||
+                      (material.title || '').toLowerCase().includes('flashcard') ||
+                      (!!previewContent && /^\s*\**\s*Q(?:uestion)?\s*\d*\s*[:.]/i.test(previewContent));
 
   const [viewMode, setViewMode] = useState(canShowMindmap ? 'mindmap' : 'text');
 
