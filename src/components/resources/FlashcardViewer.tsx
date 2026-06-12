@@ -3,51 +3,80 @@ import { motion } from "framer-motion";
 import { Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import DppContentRenderer from "@/components/DppContentRenderer";
 
+/**
+ * Parse flashcards from AI-generated markdown into { q, a } pairs.
+ * Tolerant of the many shapes models emit:
+ *   - **Q:** … **A:** …            (same line — the prompt's canonical format)
+ *   - Q1: … / A1: …                (numbered, separate lines)
+ *   - Question: … / Answer: …      (full words)
+ *   - 1. **Question:** … etc.      (list / numbered prefixes, bold markers)
+ *   - multi-line questions/answers (continuation lines until the next marker)
+ */
+function parseFlashcards(content: string): { q: string; a: string }[] {
+  if (!content) return [];
+
+  // Strip emphasis markers and carriage returns up front.
+  const lines = content.replace(/\r/g, "").replace(/\*\*|__|`/g, "").split("\n");
+
+  // Optional leading list/number prefix, then Q / Question (+ optional number), then a separator.
+  const Q = /^\s*(?:[-*•+]\s*)?(?:\d+[.)]\s*)?Q(?:uestion)?\s*\d*\s*[:.)\-–]\s*/i;
+  const A = /^\s*(?:[-*•+]\s*)?(?:\d+[.)]\s*)?A(?:nswer)?\s*\d*\s*[:.)\-–]\s*/i;
+  // Inline answer marker on the same line — case-sensitive "A"/"Answer" so we don't
+  // split on a lowercase "answer:" that appears inside the question text.
+  const INLINE_A = /\s+(?:A|Answer)\s*\d*\s*[:.)\-–]\s+/;
+
+  const cards: { q: string; a: string }[] = [];
+  let q = "";
+  let a = "";
+  let mode: "none" | "q" | "a" = "none";
+
+  const flush = () => {
+    if (q.trim() && a.trim()) cards.push({ q: q.trim(), a: a.trim() });
+    q = "";
+    a = "";
+    mode = "none";
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    // Skip pure heading / separator lines (e.g. "### Card 3", "---") unless they hold a Q.
+    if ((/^#{1,6}\s/.test(line) || /^[-=_]{3,}$/.test(line)) && !Q.test(line)) continue;
+
+    if (Q.test(line)) {
+      flush();
+      const rest = line.replace(Q, "");
+      const m = INLINE_A.exec(rest);
+      if (m) {
+        q = rest.slice(0, m.index).trim();
+        a = rest.slice(m.index + m[0].length).trim();
+        mode = "a";
+      } else {
+        q = rest;
+        mode = "q";
+      }
+    } else if (A.test(line)) {
+      a = line.replace(A, "").trim();
+      mode = "a";
+    } else if (mode === "a") {
+      a += "\n" + line;
+    } else if (mode === "q") {
+      q += "\n" + line;
+    }
+  }
+  flush();
+  return cards;
+}
+
 export default function FlashcardViewer({ content }: { content: string }) {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
-  const cards = useMemo(() => {
-    const lines = content.split("\n");
-    const result: { q: string; a: string }[] = [];
-    let currentQ = "";
-    let currentA = "";
-
-    for (const raw of lines) {
-      const line = raw.trim().replace(/\*\*/g, ""); 
-      if (!line) continue;
-
-      const qMatch = /^[Qq][\s\d]*[:.]\s*/.exec(line);
-      if (qMatch) {
-        if (currentQ && currentA) {
-          result.push({ q: currentQ, a: currentA });
-          currentQ = "";
-          currentA = "";
-        }
-        
-        // Find if there's an " A: " or similar in the same line
-        const aMatch = /\s+[Aa][\s\d]*[:.]\s*/.exec(line);
-        if (aMatch) {
-          currentQ = line.substring(qMatch[0].length, aMatch.index).trim();
-          currentA = line.substring(aMatch.index + aMatch[0].length).trim();
-        } else {
-          currentQ = line.substring(qMatch[0].length).trim();
-          currentA = "";
-        }
-      } else if (/^[Aa][\s\d]*[:.]\s*/.test(line)) {
-        currentA = line.replace(/^[Aa][\s\d]*[:.]\s*/, "").trim();
-      } else if (currentQ) {
-        if (currentA) currentA += "\n" + line;
-        else currentQ += "\n" + line;
-      }
-    }
-    if (currentQ && currentA) result.push({ q: currentQ, a: currentA });
-    return result;
-  }, [content]);
+  const cards = useMemo(() => parseFlashcards(content), [content]);
 
   if (cards.length === 0) return <DppContentRenderer content={content} />;
 
-  const card = cards[index];
+  const card = cards[Math.min(index, cards.length - 1)];
 
   return (
     <div className="flex flex-col items-center py-4 sm:py-8">
