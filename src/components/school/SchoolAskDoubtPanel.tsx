@@ -39,6 +39,7 @@ export function SchoolAskDoubtPanel({
   const [feedback, setFeedback] = useState<"helpful" | "not_helpful" | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [teacherSent, setTeacherSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [responseExpanded, setResponseExpanded] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -51,6 +52,7 @@ export function SchoolAskDoubtPanel({
     setFeedback(null);
     setFeedbackMsg("");
     setTeacherSent(false);
+    setErrorMsg("");
     setResponseExpanded(true);
   };
 
@@ -68,6 +70,9 @@ export function SchoolAskDoubtPanel({
         questionText: `${text.trim()} (At segment timestamp: ${fmtTime(timestampSeconds)})`,
         subjectId: subjectId || undefined,
         subjectName: subjectName || undefined,
+        recordingId,
+        lectureTitle,
+        timestampSeconds: Math.round(timestampSeconds || 0),
         askTeacher: false,
       });
       const result = unwrapSchoolData(res, null);
@@ -80,7 +85,8 @@ export function SchoolAskDoubtPanel({
       } else {
         throw new Error("No data returned");
       }
-    } catch (err) {
+    } catch (err: any) {
+      setErrorMsg(err?.response?.data?.message || err?.message || "I couldn't process your doubt right now. Please try again in a moment.");
       setResponse({
         id: "",
         aiExplanation: "I couldn't process your doubt right now. Please try again in a moment.",
@@ -99,10 +105,14 @@ export function SchoolAskDoubtPanel({
         questionText: `${text.trim()} (At segment timestamp: ${fmtTime(timestampSeconds)})`,
         subjectId: subjectId || undefined,
         subjectName: subjectName || undefined,
+        recordingId,
+        lectureTitle,
+        timestampSeconds: Math.round(timestampSeconds || 0),
         askTeacher: true,
       });
       setTeacherSent(true);
-    } catch {
+    } catch (err: any) {
+      setErrorMsg(err?.response?.data?.message || err?.message || "Could not send this doubt to your teacher. Please try again.");
       setTeacherSent(false);
     } finally {
       setLoading(false);
@@ -215,6 +225,12 @@ export function SchoolAskDoubtPanel({
           </>
         )}
       </button>
+
+      {errorMsg && (
+        <p className="mt-3 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">
+          {errorMsg}
+        </p>
+      )}
 
       {/* ── AI Response ── */}
       <AnimatePresence>
