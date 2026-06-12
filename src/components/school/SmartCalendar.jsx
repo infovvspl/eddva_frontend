@@ -16,6 +16,13 @@ const EVENT_INDICATORS = {
 };
 
 export default function SmartCalendar() {
+  const getLocalYYYYMMDD = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [selectedDateEvents, setSelectedDateEvents] = useState(null);
@@ -100,7 +107,7 @@ export default function SmartCalendar() {
     return map;
   }, [events]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalYYYYMMDD(new Date());
 
   const handleDateClick = (dayEvents, date) => {
     if (dayEvents && dayEvents.length > 0) {
@@ -133,7 +140,7 @@ export default function SmartCalendar() {
 
       <div className="grid grid-cols-7 gap-1 min-h-[160px] relative flex-1">
         {calendarGrid.map((cell, idx) => {
-          const dateStr = cell.date.toISOString().split('T')[0];
+          const dateStr = getLocalYYYYMMDD(cell.date);
           const isToday = dateStr === todayStr;
           const dayEvents = eventsByDate.get(dateStr) || [];
           
@@ -146,8 +153,12 @@ export default function SmartCalendar() {
               key={idx}
               onClick={() => handleDateClick(dayEvents, cell.date)}
               className={`relative flex flex-col items-center justify-start py-1.5 rounded-lg cursor-pointer transition-all group
-                ${cell.isCurrentMonth ? 'text-slate-700 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'}
-                ${isToday ? 'font-black text-blue-600 dark:text-blue-400' : 'font-semibold hover:bg-slate-50 dark:hover:bg-slate-800'}
+                ${isToday 
+                  ? 'font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-sm' 
+                  : (cell.isCurrentMonth 
+                      ? 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800' 
+                      : 'text-slate-300 dark:text-slate-600 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800')
+                }
               `}
             >
               <span className="text-[11px] z-10">

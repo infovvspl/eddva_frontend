@@ -1,8 +1,13 @@
 import React from 'react';
 import { Trophy, Coins, Star, RefreshCw, Zap, Medal, Award, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 
 export default function MathSprintResult({ result, onPlayAgain, onViewLeaderboard }) {
+  React.useEffect(() => {
+    clearStudentDashboardCache();
+  }, []);
+
   const {
     questionsAttempted,
     correctAnswers,
