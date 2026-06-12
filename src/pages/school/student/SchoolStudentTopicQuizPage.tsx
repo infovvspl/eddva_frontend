@@ -78,9 +78,9 @@ function QuestionCard({
             {question.marksWrong > 0 && <span className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[10px] font-semibold text-red-600 sm:text-[11px]">-{question.marksWrong}</span>}
           </div>
         </div>
-        
+
         <div className="text-base font-semibold leading-snug text-slate-900 select-none sm:text-lg">
-           <MarkdownRenderer content={question.content} />
+          <MarkdownRenderer content={question.content} />
         </div>
       </CardGlass>
 
@@ -126,33 +126,33 @@ function ScoreRing({ accuracy, score, outOf, correct, wrong, skipped }: {
 }) {
   return (
     <CardGlass className="p-10 border-white bg-slate-900 text-white relative overflow-hidden mb-10">
-       <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
-       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Show Results</h3>
-       <div className="flex items-center gap-10 flex-col sm:flex-row">
-          <div className="relative w-32 h-32 shrink-0">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
-              <motion.circle cx="50" cy="50" r="45" fill="none"
-                stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
-                strokeWidth="10" strokeDasharray="283"
-                initial={{ strokeDashoffset: 283 }}
-                animate={{ strokeDashoffset: 283 * (1 - accuracy/100) }}
-                transition={{ duration: 2, ease: "easeOut" }}
-                strokeLinecap="round" />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-               <span className="text-3xl font-black italic">{accuracy.toFixed(0)}%</span>
-            </div>
+      <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Show Results</h3>
+      <div className="flex items-center gap-10 flex-col sm:flex-row">
+        <div className="relative w-32 h-32 shrink-0">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+            <motion.circle cx="50" cy="50" r="45" fill="none"
+              stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
+              strokeWidth="10" strokeDasharray="283"
+              initial={{ strokeDashoffset: 283 }}
+              animate={{ strokeDashoffset: 283 * (1 - accuracy / 100) }}
+              transition={{ duration: 2, ease: "easeOut" }}
+              strokeLinecap="round" />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-3xl font-black italic">{accuracy.toFixed(0)}%</span>
           </div>
-          <div className="text-center sm:text-left">
-            <p className="text-5xl font-black italic text-emerald-400 leading-none mb-2">{score}</p>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-6">Total Sync Points / {outOf}</p>
-            <div className="flex items-center justify-center sm:justify-start gap-4">
-               <div className="px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-black italic border border-emerald-500/20">{correct} Valid</div>
-               <div className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 text-xs font-black italic border border-red-500/20">{wrong} Error</div>
-            </div>
+        </div>
+        <div className="text-center sm:text-left">
+          <p className="text-5xl font-black italic text-emerald-400 leading-none mb-2">{score}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-6">Total Sync Points / {outOf}</p>
+          <div className="flex items-center justify-center sm:justify-start gap-4">
+            <div className="px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-black italic border border-emerald-500/20">{correct} Valid</div>
+            <div className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 text-xs font-black italic border border-red-500/20">{wrong} Error</div>
           </div>
-       </div>
+        </div>
+      </div>
     </CardGlass>
   );
 }
@@ -177,120 +177,120 @@ function QuizRunner({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
-        <CardGlass className="flex shrink-0 items-center justify-between border-slate-200 bg-white px-3 py-2.5 shadow-sm sm:px-5 sm:py-3">
-           <div className="flex items-center gap-6">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm bg-purple-600 text-white">
-                 <Sparkles className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                 <p className="text-[10px] font-semibold text-slate-500 leading-none mb-1">AI Practice Quiz</p>
-                 <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-none truncate max-w-[200px] sm:max-w-none">{title}</h3>
-              </div>
-           </div>
-
-           <div className="flex items-center gap-2 sm:gap-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                title="Close quiz"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <div className={cn(
-                 "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
-                 timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
-              )}>
-                 <Clock className="w-3.5 h-3.5" />
-                 <span className="text-xs sm:text-sm font-semibold tabular-nums leading-none">{fmt(seconds)}</span>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={onSubmit}
-                className="hidden sm:flex px-5 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow-sm"
-              >
-                Submit
-              </motion.button>
-           </div>
-        </CardGlass>
-
-        <div className="relative h-1 shrink-0 overflow-hidden rounded-full bg-slate-200/50">
-           <motion.div initial={{ width: 0 }} animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
-             className="h-full shadow-lg bg-purple-600 shadow-purple-500/20" />
+      <CardGlass className="flex shrink-0 items-center justify-between border-slate-200 bg-white px-3 py-2.5 shadow-sm sm:px-5 sm:py-3">
+        <div className="flex items-center gap-6">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm bg-purple-600 text-white">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold text-slate-500 leading-none mb-1">AI Practice Quiz</p>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-none truncate max-w-[200px] sm:max-w-none">{title}</h3>
+          </div>
         </div>
 
-        <div className="mx-auto grid min-h-0 w-full max-w-6xl flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="flex min-h-0 flex-col gap-3">
-            <div className="min-h-0 flex-1">
-              <AnimatePresence mode="wait">
-                <QuestionCard
-                  key={q.id} question={q} index={currentQ} total={questions.length}
-                  selected={selected} onSelect={onSelect}
-                />
-              </AnimatePresence>
-            </div>
-            <CardGlass className="shrink-0 border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  onClick={() => setCurrentQ(Math.max(currentQ - 1, 0))}
-                  disabled={currentQ === 0}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Previous
-                </button>
-                <button
-                  onClick={onNext}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors bg-purple-600 hover:bg-purple-500"
-                  )}
-                >
-                  {isLast ? "Finish Quiz" : "Next Question"}
-                  {isLast ? <CheckCircle className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
-                </button>
-              </div>
-            </CardGlass>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            title="Close quiz"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
+            timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
+          )}>
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-xs sm:text-sm font-semibold tabular-nums leading-none">{fmt(seconds)}</span>
           </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            onClick={onSubmit}
+            className="hidden sm:flex px-5 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow-sm"
+          >
+            Submit
+          </motion.button>
+        </div>
+      </CardGlass>
 
-          <CardGlass className="hidden min-h-0 border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-col">
-            <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">Question Grid</h4>
-              <span className="text-[11px] text-slate-500">
-                {questions.filter((question) => isTopicQuizAnswered(question, answers[question.id])).length}/{questions.length} answered
-              </span>
-            </div>
+      <div className="relative h-1 shrink-0 overflow-hidden rounded-full bg-slate-200/50">
+        <motion.div initial={{ width: 0 }} animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+          className="h-full shadow-lg bg-purple-600 shadow-purple-500/20" />
+      </div>
 
-            <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-emerald-700">Answered</div>
-              <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-red-700">Not answered</div>
-            </div>
-
-            <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1">
-              {questions.map((question, i) => {
-                const answered = isTopicQuizAnswered(question, answers[question.id]);
-                const active = i === currentQ;
-                return (
-                  <button
-                    key={question.id}
-                    type="button"
-                    onClick={() => setCurrentQ(i)}
-                    className={cn(
-                      "h-9 rounded-lg border text-xs font-semibold transition-all",
-                      active
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : answered
-                          ? "border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                          : "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
-                    )}
-                    title={`Question ${i + 1}`}
-                  >
-                    {i + 1}
-                  </button>
-                );
-              })}
+      <div className="mx-auto grid min-h-0 w-full max-w-6xl flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="min-h-0 flex-1">
+            <AnimatePresence mode="wait">
+              <QuestionCard
+                key={q.id} question={q} index={currentQ} total={questions.length}
+                selected={selected} onSelect={onSelect}
+              />
+            </AnimatePresence>
+          </div>
+          <CardGlass className="shrink-0 border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                onClick={() => setCurrentQ(Math.max(currentQ - 1, 0))}
+                disabled={currentQ === 0}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </button>
+              <button
+                onClick={onNext}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors bg-purple-600 hover:bg-purple-500"
+                )}
+              >
+                {isLast ? "Finish Quiz" : "Next Question"}
+                {isLast ? <CheckCircle className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+              </button>
             </div>
           </CardGlass>
         </div>
+
+        <CardGlass className="hidden min-h-0 border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-col">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">Question Grid</h4>
+            <span className="text-[11px] text-slate-500">
+              {questions.filter((question) => isTopicQuizAnswered(question, answers[question.id])).length}/{questions.length} answered
+            </span>
+          </div>
+
+          <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-emerald-700">Answered</div>
+            <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-red-700">Not answered</div>
+          </div>
+
+          <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1">
+            {questions.map((question, i) => {
+              const answered = isTopicQuizAnswered(question, answers[question.id]);
+              const active = i === currentQ;
+              return (
+                <button
+                  key={question.id}
+                  type="button"
+                  onClick={() => setCurrentQ(i)}
+                  className={cn(
+                    "h-9 rounded-lg border text-xs font-semibold transition-all",
+                    active
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : answered
+                        ? "border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                        : "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
+                  )}
+                  title={`Question ${i + 1}`}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </CardGlass>
+      </div>
     </div>
   );
 }
@@ -305,13 +305,13 @@ export default function SchoolStudentTopicQuizPage() {
   const topicId = params.get("topicId") ?? "";
   const [showReview, setShowReview] = useState(false);
 
-  const [stage, setStage]         = useState<Stage>("loading");
+  const [stage, setStage] = useState<Stage>("loading");
   const [questions, setQuestions] = useState<AiQuizQuestion[]>([]);
   const [aiQuizData, setAiQuizData] = useState<AiQuizData | null>(null);
-  const [currentQ, setCurrentQ]  = useState(0);
-  const [answers, setAnswers]     = useState<Record<string, string[]>>({});
-  const [aiResult, setAiResult]   = useState<AiQuizResult | null>(null);
-  
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [aiResult, setAiResult] = useState<AiQuizResult | null>(null);
+
   const planItemId = params.get("planItemId");
   const generateMut = useGenerateAiQuiz();
   const completeMut = useCompleteAiQuiz();
@@ -342,7 +342,7 @@ export default function SchoolStudentTopicQuizPage() {
         setStage("error");
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId]);
 
   const handleAiStart = () => {
@@ -394,7 +394,7 @@ export default function SchoolStudentTopicQuizPage() {
         wrongCount
       });
 
-      setAiResult(res); 
+      setAiResult(res);
       setStage("ai_results");
       if (planItemId) planItemMut.mutate(planItemId);
     } catch {
@@ -421,10 +421,10 @@ export default function SchoolStudentTopicQuizPage() {
   if (["loading", "ai_generating", "ai_submitting"].includes(stage)) {
     return (
       <div className="py-40 flex flex-col items-center justify-center text-center gap-10">
-         <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl">
-            <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
-         </div>
-         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Synchronizing Neural Modules...</p>
+        <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl">
+          <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
+        </div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Synchronizing Neural Modules...</p>
       </div>
     );
   }
@@ -479,27 +479,27 @@ export default function SchoolStudentTopicQuizPage() {
   if (stage === "ai_info" && aiQuizData) {
     return (
       <div className="py-20 flex items-center justify-center p-6">
-         <div className="w-full max-w-lg">
-            <CardGlass className="p-8 border-slate-200 bg-white shadow-sm">
-               <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-6"><BrainCircuit className="w-6 h-6" /></div>
-               <p className="text-xs font-semibold text-indigo-600 mb-1">AI quiz ready</p>
-               <h1 className="text-3xl font-bold text-slate-900 mb-7 leading-tight">{aiQuizData.topicName}</h1>
-               <div className="grid grid-cols-2 gap-4 mb-10">
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                     <Clock className="w-4 h-4 text-indigo-600 mb-2" />
-                     <p className="text-xs font-semibold text-slate-800">{aiQuizData.durationMinutes} min duration</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                     <Target className="w-4 h-4 text-emerald-500 mb-2" />
-                     <p className="text-xs font-semibold text-slate-800">70% target score</p>
-                  </div>
-               </div>
-               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiStart}
-                 className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition">
-                 Start Quiz
-               </motion.button>
-            </CardGlass>
-         </div>
+        <div className="w-full max-w-lg">
+          <CardGlass className="p-8 border-slate-200 bg-white shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-6"><BrainCircuit className="w-6 h-6" /></div>
+            <p className="text-xs font-semibold text-indigo-600 mb-1">AI quiz ready</p>
+            <h1 className="text-3xl font-bold text-slate-900 mb-7 leading-tight">{aiQuizData.topicName}</h1>
+            <div className="grid grid-cols-2 gap-4 mb-10">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <Clock className="w-4 h-4 text-indigo-600 mb-2" />
+                <p className="text-xs font-semibold text-slate-800">{aiQuizData.durationMinutes} min duration</p>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <Target className="w-4 h-4 text-emerald-500 mb-2" />
+                <p className="text-xs font-semibold text-slate-800">70% target score</p>
+              </div>
+            </div>
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiStart}
+              className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition">
+              Start Quiz
+            </motion.button>
+          </CardGlass>
+        </div>
       </div>
     );
   }
@@ -533,88 +533,88 @@ export default function SchoolStudentTopicQuizPage() {
 
     return (
       <div className="py-20 px-6">
-         <div className="w-full max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-               <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl", aiResult.passed ? "bg-emerald-500 text-white" : "bg-purple-600 text-white")}>
-                  {aiResult.passed ? <CheckCircle className="w-10 h-10" /> : <Activity className="w-10 h-10" />}
-               </div>
-               <h1 className="text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">{aiResult.passed ? "Neural Pass" : "Simulation Logged"}</h1>
-               <div className="flex items-center justify-center gap-3"><Sparkles className="w-4 h-4 text-purple-500" /><p className="text-xs font-black text-purple-500 uppercase tracking-widest">AI Synthesis Result</p></div>
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl", aiResult.passed ? "bg-emerald-500 text-white" : "bg-purple-600 text-white")}>
+              {aiResult.passed ? <CheckCircle className="w-10 h-10" /> : <Activity className="w-10 h-10" />}
             </div>
+            <h1 className="text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">{aiResult.passed ? "Neural Pass" : "Simulation Logged"}</h1>
+            <div className="flex items-center justify-center gap-3"><Sparkles className="w-4 h-4 text-purple-500" /><p className="text-xs font-black text-purple-500 uppercase tracking-widest">AI Synthesis Result</p></div>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ScoreRing
-                accuracy={aiResult.accuracy}
-                score={aiResult.score}
-                outOf={aiResult.totalMarks}
-                correct={correctCount}
-                wrong={wrongCount}
-                skipped={0}
-              />
-              <CardGlass className="p-8 border-amber-400/20 bg-amber-50/60 flex items-center gap-6 mb-10 h-fit">
-                <Trophy className="w-10 h-10 text-amber-500 shrink-0" />
-                <div>
-                  <p className="text-2xl font-black italic text-slate-900">+{aiResult.xpEarned} XP</p>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Sync rewards transferred.</p>
-                </div>
-              </CardGlass>
-            </div>
-            
-            <CardGlass className="p-8 border-white mb-10 overflow-hidden">
-               <button onClick={() => setShowReview(!showReview)} className="w-full flex items-center justify-between">
-                  <div className="flex items-center gap-4"><Info className="w-5 h-5 text-slate-400" /><span className="text-sm font-black text-slate-900 uppercase italic">Review Logic Patterns</span></div>
-                  <ChevronRight className={cn("w-6 h-6 text-slate-300 transition-transform", showReview && "rotate-90")} />
-               </button>
-               <AnimatePresence>
-                  {showReview && (
-                     <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="pt-10 space-y-6">
-                        {aiQuizData.questions.map((q, i) => {
-                           const sel = answers[q.id] || [];
-                           const correct = q.options.filter(o => o.isCorrect).map(o => o.id);
-                           const isRight = sel.length > 0 && sel.every(s => correct.includes(s));
-                           const selectedLabels = q.options
-                             .filter((o) => sel.includes(o.id))
-                             .map((o) => `${o.optionLabel}. ${o.content}`);
-                           const correctLabels = q.options
-                             .filter((o) => correct.includes(o.id))
-                             .map((o) => `${o.optionLabel}. ${o.content}`);
-                           return (
-                              <div key={i} className={cn("p-6 rounded-[2rem] border transition-all", isRight ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
-                                 <div className="flex gap-4 mb-4">
-                                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
-                                       {isRight ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                                    </div>
-                                    <p className="text-base font-bold text-slate-950">{q.content}</p>
-                                 </div>
-                                 <div className="space-y-3">
-                                   <div className="rounded-xl border border-slate-200 bg-white/80 p-4">
-                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Your answer</p>
-                                     <p className="text-sm font-semibold text-slate-700">
-                                       {selectedLabels.length ? selectedLabels.join(" | ") : "Not answered"}
-                                     </p>
-                                   </div>
-                                   <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-2">Correct answer</p>
-                                     <p className="text-sm font-semibold text-emerald-900">{correctLabels.join(" | ")}</p>
-                                   </div>
-                                   <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 mb-2">Explanation</p>
-                                     <MarkdownRenderer
-                                       content={q.explanation?.trim() || "Explanation not available."}
-                                       className="text-sm font-medium text-slate-700 leading-relaxed"
-                                     />
-                                   </div>
-                                 </div>
-                              </div>
-                           );
-                        })}
-                     </motion.div>
-                  )}
-               </AnimatePresence>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ScoreRing
+              accuracy={aiResult.accuracy}
+              score={aiResult.score}
+              outOf={aiResult.totalMarks}
+              correct={correctCount}
+              wrong={wrongCount}
+              skipped={0}
+            />
+            <CardGlass className="p-8 border-amber-400/20 bg-amber-50/60 flex items-center gap-6 mb-10 h-fit">
+              <Trophy className="w-10 h-10 text-amber-500 shrink-0" />
+              <div>
+                <p className="text-2xl font-black italic text-slate-900">+{aiResult.xpEarned} XP</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Sync rewards transferred.</p>
+              </div>
             </CardGlass>
+          </div>
 
-            <button onClick={() => navigate(-1)} className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Planner <ArrowRight className="w-6 h-6" /></button>
-         </div>
+          <CardGlass className="p-8 border-white mb-10 overflow-hidden">
+            <button onClick={() => setShowReview(!showReview)} className="w-full flex items-center justify-between">
+              <div className="flex items-center gap-4"><Info className="w-5 h-5 text-slate-400" /><span className="text-sm font-black text-slate-900 uppercase italic">Review Logic Patterns</span></div>
+              <ChevronRight className={cn("w-6 h-6 text-slate-300 transition-transform", showReview && "rotate-90")} />
+            </button>
+            <AnimatePresence>
+              {showReview && (
+                <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="pt-10 space-y-6">
+                  {aiQuizData.questions.map((q, i) => {
+                    const sel = answers[q.id] || [];
+                    const correct = q.options.filter(o => o.isCorrect).map(o => o.id);
+                    const isRight = sel.length > 0 && sel.every(s => correct.includes(s));
+                    const selectedLabels = q.options
+                      .filter((o) => sel.includes(o.id))
+                      .map((o) => `${o.optionLabel}. ${o.content}`);
+                    const correctLabels = q.options
+                      .filter((o) => correct.includes(o.id))
+                      .map((o) => `${o.optionLabel}. ${o.content}`);
+                    return (
+                      <div key={i} className={cn("p-6 rounded-[2rem] border transition-all", isRight ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
+                        <div className="flex gap-4 mb-4">
+                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
+                            {isRight ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                          </div>
+                          <p className="text-base font-bold text-slate-950">{q.content}</p>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="rounded-xl border border-slate-200 bg-white/80 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Your answer</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {selectedLabels.length ? selectedLabels.join(" | ") : "Not answered"}
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-2">Correct answer</p>
+                            <p className="text-sm font-semibold text-emerald-900">{correctLabels.join(" | ")}</p>
+                          </div>
+                          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 mb-2">Explanation</p>
+                            <MarkdownRenderer
+                              content={q.explanation?.trim() || "Explanation not available."}
+                              className="text-sm font-medium text-slate-700 leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardGlass>
+
+          <button onClick={() => navigate(-1)} className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Planner <ArrowRight className="w-6 h-6" /></button>
+        </div>
       </div>
     );
   }
