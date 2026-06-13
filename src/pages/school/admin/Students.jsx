@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { mapStudentFormToApi, mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
@@ -400,6 +400,13 @@ export default function Students() {
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Manage student profiles and enrollment.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            to="/school/admin/student-promotion"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ArrowUpRight className="h-5 w-5 text-indigo-600" />
+            Student Promotion
+          </Link>
           <button
             onClick={() => {
               setImportFile(null);
