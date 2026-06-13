@@ -75,7 +75,7 @@ export default function SupportTickets() {
         <p className="mt-1 text-sm font-medium text-slate-500">Raise support tickets and track ticket status from the student portal.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-amber-100 bg-amber-50 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
           <Ticket className="h-6 w-6 text-amber-600" />
           <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Open</p>

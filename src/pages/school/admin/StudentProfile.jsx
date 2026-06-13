@@ -485,7 +485,7 @@ export default function StudentProfile() {
               transition={{ duration: 0.2 }}
             >
               {activeTab === 'personal' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="md:col-span-2 space-y-8">
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Identity Details</h3>
@@ -566,7 +566,7 @@ export default function StudentProfile() {
                           Send Credentials
                         </button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <DetailItem label="Parent Email" value={parents.email || profile.parentEmail} icon={Mail} />
                         <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || parents.fatherPhone || profile.parentPhone} icon={Phone} />
                         <DetailItem label="Primary Occupation" value={parents.occupation || profile.parentOccupation} icon={Briefcase} />
@@ -651,7 +651,7 @@ export default function StudentProfile() {
 
               {activeTab === 'academic' && (
                 <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                     <DetailItem label="Current Class" value={profile.section?.class?.name || '—'} icon={GraduationCap} />
                     <DetailItem label="Section" value={profile.section?.name || '—'} />
                     <DetailItem label="Roll Number" value={profile.rollNo || '—'} />
@@ -727,7 +727,7 @@ export default function StudentProfile() {
                     return (
                       <>
                         {/* Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                           <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
                             <div className={`text-4xl font-bold tracking-tight mb-1 ${pct >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{total > 0 ? `${pct}%` : '—'}</div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
@@ -806,7 +806,7 @@ export default function StudentProfile() {
                 return (
                   <div className="space-y-8">
                     {/* Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
                         <div className="text-4xl font-bold tracking-tight text-blue-600 mb-1">{totalSessions}</div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed Assessments</div>

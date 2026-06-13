@@ -17,7 +17,7 @@ export default function Chat() {
         <p className="mt-1 text-sm font-medium text-slate-500">Teacher chat, class discussion, announcements, and support from one place.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-4">
         {conversations.map((item) => (
           <div key={item.title} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${item.tone}`}>

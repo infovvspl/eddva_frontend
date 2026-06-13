@@ -268,9 +268,9 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   }
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="grid gap-6 lg:grid-cols-4 pb-12 px-6">
+    <motion.div variants={container} initial="hidden" animate="show" className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 pb-12 px-6">
       {/* Hero Section */}
-      <section className="lg:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 p-8 text-white shadow-lg ring-1 ring-white/10">
+      <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 p-8 text-white shadow-lg ring-1 ring-white/10">
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-20 left-20 h-40 w-40 rounded-full bg-blue-400/20 blur-2xl pointer-events-none"></div>
@@ -320,14 +320,14 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       </motion.div>
 
       {/* Main Content Area */}
-      <div className="lg:col-span-3 space-y-6 min-w-0">
+      <div className="lg:col-span-2 xl:col-span-3 space-y-6 min-w-0">
 
         {/* Quick Actions Card */}
         <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
           <div className="mb-4">
             <h3 className="font-display text-xs font-bold uppercase tracking-widest text-slate-400">Quick Actions</h3>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
             {[
               { label: 'Add Student', icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50 group-hover:bg-blue-600 group-hover:text-white', to: '/school/admin/students' },
               { label: 'Add Teacher', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white', to: '/school/admin/teachers' },

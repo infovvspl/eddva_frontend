@@ -25,7 +25,7 @@ export default function Layout() {
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
-              <div className={cn('mx-auto h-full', isInstitute || isTeacher ? 'max-w-[1680px]' : 'max-w-7xl')}>
+              <div className={cn('mx-auto h-full', isInstitute || isTeacher ? 'max-w-screen-2xl' : 'max-w-screen-xl')}>
                 <Outlet />
               </div>
             </PageTransition>
