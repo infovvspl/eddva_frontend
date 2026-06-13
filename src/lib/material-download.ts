@@ -16,6 +16,13 @@ import type { SchoolMaterial } from './api/school-content';
 const safeName = (s: string) =>
   (s || 'material').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'material';
 
+export function materialDisplayTitle(material: Partial<SchoolMaterial> & { chapterName?: unknown; topicName?: unknown }): string {
+  const fallback = String(material.chapterName || material.topicName || material.title || 'Material').trim();
+  return fallback
+    .replace(/^\s*(?:school|jee|neet|cbse|icse)\s*[-:–—]\s*/i, '')
+    .trim() || fallback;
+}
+
 /** Strip inline Markdown markers jsPDF can't render. */
 const stripInline = (s: string): string =>
   String(s ?? '')
@@ -87,8 +94,9 @@ function renderMarkdown(doc: jsPDF, cur: Cursor, md: string): void {
 function addMaterial(doc: jsPDF, cur: Cursor, material: SchoolMaterial): void {
   const type = String(material.fileType ?? '').toLowerCase();
   const md = material.description ?? '';
+  const title = materialDisplayTitle(material);
 
-  writePara(doc, cur, material.title || 'Material', { size: 20, bold: true, gap: 2 });
+  writePara(doc, cur, title, { size: 20, bold: true, gap: 2 });
   writePara(doc, cur, `AI generated Â· ${type || 'notes'}`, { size: 9.5, color: [107, 114, 128], gap: 10 });
 
   if (type === 'ppt') {
@@ -122,7 +130,7 @@ export async function downloadMaterial(material: SchoolMaterial): Promise<void> 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const cur: Cursor = { y: MT };
   addMaterial(doc, cur, material);
-  doc.save(`${safeName(material.title)}.pdf`);
+  doc.save(`${safeName(materialDisplayTitle(material))}.pdf`);
 }
 
 /** Bundle every AI-generated material for the topic into one PDF. */
