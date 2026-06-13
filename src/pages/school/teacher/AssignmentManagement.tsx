@@ -130,8 +130,6 @@ const AssignmentManagement: React.FC = () => {
   // Workspace states
   const [workspaceAssignments, setWorkspaceAssignments] = useState<any[]>([]);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
-  const [allTeacherAssignments, setAllTeacherAssignments] = useState<any[]>([]);
-  const [loadingAllTeacherAssignments, setLoadingAllTeacherAssignments] = useState(false);
   
   // Modals
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -286,44 +284,7 @@ const AssignmentManagement: React.FC = () => {
     setSearch('');
   };
 
-  const assignmentScopeText = (a: any) => {
-    const sectionName = String(a.sectionName || a.section_name || '').trim();
-    return [
-      a.className || a.class_name,
-      sectionName ? formatSectionName(sectionName) : '',
-      a.subjectName || a.subject_name,
-    ].filter(Boolean).join(' - ');
-  };
-
-  const previousAssignments = useMemo(() => {
-    return allTeacherAssignments.filter((a) => {
-      if (selectedClass && String(a.class_id ?? a.classId ?? '') !== selectedClass.id) return false;
-      if (selectedSection) {
-        const assignmentSection = String(a.section_id ?? a.sectionId ?? '');
-        if (assignmentSection && assignmentSection !== selectedSection.id) return false;
-      }
-      if (selectedSubject && String(a.subject_id ?? a.subjectId ?? '') !== selectedSubject.id) return false;
-      return true;
-    });
-  }, [allTeacherAssignments, selectedClass, selectedSection, selectedSubject]);
-
   // ── Workspace Fetches ────────────────────────────────────────────────────
-  const fetchAllTeacherAssignments = async () => {
-    setLoadingAllTeacherAssignments(true);
-    try {
-      const res = await api.get('/assignments');
-      setAllTeacherAssignments(res.data?.data || res.data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingAllTeacherAssignments(false);
-    }
-  };
-
-  useEffect(() => {
-    if (mainTab === 'manage') void fetchAllTeacherAssignments();
-  }, [mainTab]);
-
   const fetchWorkspaceAssignments = async () => {
     if (!selectedClass || !selectedSection || !selectedSubject) return;
     setLoadingWorkspace(true);
@@ -406,7 +367,6 @@ const AssignmentManagement: React.FC = () => {
       if (selectedAssignment?.id) await fetchSubmissions(selectedAssignment.id);
       await fetchInbox();
       await fetchWorkspaceAssignments();
-      await fetchAllTeacherAssignments();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to grade');
     }
@@ -539,7 +499,6 @@ const AssignmentManagement: React.FC = () => {
 
       toast.success("Assignment published for students");
       await fetchWorkspaceAssignments();
-      await fetchAllTeacherAssignments();
       await fetchInbox();
       resetCreateForm();
       setShowUploadModal(false);
@@ -570,7 +529,6 @@ const AssignmentManagement: React.FC = () => {
       await api.delete(`/assignments/${id}`);
       closeDetail();
       await fetchWorkspaceAssignments();
-      await fetchAllTeacherAssignments();
     } catch (err) {
       console.error(err);
       alert("Failed to delete assignment");
@@ -755,80 +713,6 @@ const AssignmentManagement: React.FC = () => {
                 </div>
               </GlassCard>
             ))
-          )}
-        </div>
-      )}
-
-      {/* Previous assignments feed */}
-      {mainTab === 'manage' && level !== 'workspace' && (
-        <div className="space-y-3">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">Previous Assignments</h2>
-              <p className="text-xs font-medium text-gray-500">
-                {selectedSubject && selectedClass && selectedSection
-                  ? `${selectedClass.name} - ${selectedSection.name} - ${selectedSubject.name}`
-                  : selectedSection && selectedClass
-                    ? `${selectedClass.name} - ${selectedSection.name}`
-                    : selectedClass
-                      ? selectedClass.name
-                      : 'All assignments you created'}
-              </p>
-            </div>
-            <Badge variant="purple">{previousAssignments.length} total</Badge>
-          </div>
-
-          {loadingAllTeacherAssignments ? (
-            <div className="rounded-xl border border-gray-100 bg-gray-50 py-8 text-center text-sm text-gray-400">
-              Loading previous assignments...
-            </div>
-          ) : previousAssignments.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 py-8 text-center text-sm text-gray-500">
-              No previous assignments found for this selection.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {previousAssignments.map((a) => {
-                const subCount = a.submissionCount ?? a.submission_count ?? 0;
-                const pending = a.pendingGradeCount ?? a.pending_grade_count ?? 0;
-                return (
-                  <GlassCard key={a.id} className="flex flex-col p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="line-clamp-2 text-sm font-bold text-gray-900">{a.title}</h3>
-                        <p className="mt-1 truncate text-xs font-medium text-gray-500">
-                          {assignmentScopeText(a) || 'Assignment'}
-                        </p>
-                      </div>
-                      <Badge variant={a.type === 'homework' ? 'purple' : a.type === 'dpp' ? 'info' : 'success'}>
-                        {String(a.type || 'homework').toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-medium text-gray-500">
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar size={13} /> {a.due_date || a.dueDate ? new Date(a.due_date || a.dueDate).toLocaleDateString() : 'No due date'}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Users size={13} /> {subCount} submission{subCount === 1 ? '' : 's'}
-                      </span>
-                      {pending > 0 && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                          {pending} to grade
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-4 flex gap-2 border-t border-gray-100 pt-3">
-                      <Button size="sm" variant="outline" onClick={() => openAssignmentDetail(a, 'details')}>
-                        Details
-                      </Button>
-                      <Button size="sm" onClick={() => openAssignmentDetail(a, 'submissions')} disabled={subCount === 0}>
-                        Submissions ({subCount})
-                      </Button>
-                    </div>
-                  </GlassCard>
-                );
-              })}
-            </div>
           )}
         </div>
       )}

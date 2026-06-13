@@ -64,13 +64,23 @@ function cleanLabel(value) {
   return label;
 }
 
+function normalizeSubjectName(value) {
+  const raw = cleanLabel(value);
+  if (!raw) return '';
+  const compact = raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (['math', 'maths', 'mathematics'].includes(compact)) return 'Math';
+  if (compact === 'english') return 'English';
+  if (compact === 'science') return 'Science';
+  if (compact === 'history') return 'History';
+  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+}
+
 function getMaterialSubjectName(material) {
-  return (
-    cleanLabel(material.subjectName) ||
+  const rawSubject = cleanLabel(material.subjectName) ||
     cleanLabel(material.subject_name) ||
-    cleanLabel(material.subject) ||
-    'Other Subjects'
-  );
+    cleanLabel(material.subject);
+  if (!rawSubject) return 'Other Subjects';
+  return normalizeSubjectName(rawSubject) || 'Other Subjects';
 }
 
 function getSubjectColor(name) {
@@ -84,7 +94,7 @@ function getResourceMeta(type, fileUrl = '') {
 
   if (t.includes('video') || url.endsWith('.mp4') || url.endsWith('.mkv')) return RESOURCE_META.video;
   if (t.includes('ppt') || t.includes('presentation') || url.endsWith('.ppt') || url.endsWith('.pptx')) return RESOURCE_META.ppt;
-  if (t.includes('pdf') || url.endsWith('.pdf')) return RESOURCE_META.pdf;
+  if (t.includes('pdf') || t.includes('ebook') || url.endsWith('.pdf')) return RESOURCE_META.pdf;
   if (t.includes('assignment') || t.includes('dpp')) return RESOURCE_META.dpp;
   if (t.includes('pyq') || t.includes('question_bank') || t.includes('formula_sheet')) return RESOURCE_META.pyq;
   if (t.includes('mindmap')) return RESOURCE_META.mindmap;
@@ -114,7 +124,7 @@ function materialMatchesType(material, selectedType) {
   const typeStr = (material.fileType || material.type || '').toLowerCase();
   const fileUrlLower = (material.fileUrl || '').toLowerCase();
 
-  if (selectedType === 'pdf') return typeStr.includes('pdf') || typeStr.includes('notes') || fileUrlLower.endsWith('.pdf');
+  if (selectedType === 'pdf') return typeStr.includes('pdf') || typeStr.includes('notes') || typeStr.includes('ebook') || fileUrlLower.endsWith('.pdf');
   if (selectedType === 'notes') return typeStr.includes('notes');
   if (selectedType === 'ppt') return typeStr.includes('ppt') || typeStr.includes('presentation') || fileUrlLower.endsWith('.ppt') || fileUrlLower.endsWith('.pptx');
   if (selectedType === 'video') return typeStr.includes('video') || typeStr.includes('mp4') || fileUrlLower.endsWith('.mp4');
@@ -233,6 +243,7 @@ export default function StudyMaterials() {
   const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
   const [recordings, setRecordings] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -247,7 +258,7 @@ export default function StudyMaterials() {
   useEffect(() => {
     const fetchMaterials = async () => {
       try {
-        const [materialsRes, recordingsRes] = await Promise.all([
+        const [materialsRes, recordingsRes, coursesRes] = await Promise.all([
           api.get('/materials', {
             params: { _ts: Date.now() },
             headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
@@ -256,13 +267,19 @@ export default function StudyMaterials() {
             params: { _ts: Date.now() },
             headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
           }),
+          api.get('/students/courses/my', {
+            params: { _ts: Date.now() },
+            headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+          }),
         ]);
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
+        setCourses(unwrapSchoolList(coursesRes));
       } catch (error) {
         console.error('Failed to fetch study resources:', error);
         setMaterials([]);
         setRecordings([]);
+        setCourses([]);
       } finally {
         setLoading(false);
       }
@@ -311,7 +328,19 @@ export default function StudyMaterials() {
   }, [allMaterials, searchQuery, selectedType]);
 
   const groupedTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
-  const subjectNames = Object.keys(groupedTree).sort();
+  const allSubjectNames = useMemo(() => {
+    const names = new Set();
+    courses.forEach((c) => {
+      if (Array.isArray(c.subjects)) {
+        c.subjects.forEach((s) => {
+          const subjectName = normalizeSubjectName(s);
+          if (subjectName) names.add(subjectName);
+        });
+      }
+    });
+    Object.keys(groupedTree).forEach((s) => names.add(s));
+    return Array.from(names).sort();
+  }, [courses, groupedTree]);
   const activeChapters = selectedSubject ? groupedTree[selectedSubject] || {} : {};
   const totalCount = allMaterials.length;
 
@@ -447,12 +476,12 @@ export default function StudyMaterials() {
       </div>
 
       {!selectedSubject ? (
-        subjectNames.length === 0 ? (
+        allSubjectNames.length === 0 ? (
           <EmptyMaterials className={className} />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {subjectNames.map((subjectName) => {
-              const stats = countSubject(groupedTree[subjectName]);
+            {allSubjectNames.map((subjectName) => {
+              const stats = countSubject(groupedTree[subjectName] || {});
               const subColor = getSubjectColor(subjectName);
 
               return (
