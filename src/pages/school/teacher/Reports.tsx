@@ -172,7 +172,6 @@ const Reports: React.FC = () => {
 
   const startIndex = (studentPage - 1) * studentPageSize;
   const endIndex = startIndex + studentPageSize;
-  const paginatedStudents = studentPerformance.slice(startIndex, endIndex);
   const formatSectionName = (name?: string) => {
     const sectionName = String(name || '').trim();
     if (!sectionName) return '';
