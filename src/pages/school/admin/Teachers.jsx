@@ -135,6 +135,7 @@ export default function Teachers() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [dashboardKpis, setDashboardKpis] = useState({ total: 0, active: 0, inactive: 0, newThisMonth: 0 });
 
   // Bulk Import State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -156,11 +157,38 @@ export default function Teachers() {
       };
       
       const res = await api.get('/teachers', { params });
-      setTeachers(getResponseList(res));
-      const resData = res.data?.data || res.data;
-      if (resData && typeof resData.total !== 'undefined') {
-        setTotal(resData.total);
-        setTotalPages(resData.totalPages);
+      const teacherList = getResponseList(res);
+      setTeachers(teacherList);
+      
+      const payload = res.success !== undefined ? res : res.data;
+      if (payload) {
+        let currentTotal = 0;
+        let currentKpis = null;
+
+        if (typeof payload.total === 'number') {
+          currentTotal = payload.total;
+          setTotal(payload.total);
+          setTotalPages(payload.totalPages || 1);
+          currentKpis = payload.kpis;
+        } else {
+          currentTotal = teacherList.length;
+          setTotal(teacherList.length);
+          setTotalPages(1);
+        }
+
+        if (currentKpis) {
+          setDashboardKpis({ total: currentTotal, ...currentKpis });
+        } else {
+          const active = teacherList.filter((t) => t.isActive).length;
+          const inactive = currentTotal - active;
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const newThisMonth = teacherList.filter((t) => {
+            const created = t.createdAt ? new Date(t.createdAt) : null;
+            return created && created >= startOfMonth;
+          }).length;
+          setDashboardKpis({ total: currentTotal, active, inactive, newThisMonth });
+        }
       }
     } catch (error) {
       console.error(error);
@@ -305,20 +333,7 @@ export default function Teachers() {
     }
   };
 
-  const kpis = useMemo(() => {
-    const total = teachers.length;
-    const active = teachers.filter((t) => t.isActive).length;
-    const inactive = total - active;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const newThisMonth = teachers.filter((t) => {
-      const created = t.createdAt ? new Date(t.createdAt) : null;
-      return created && created >= startOfMonth;
-    }).length;
-
-    return { total, active, inactive, newThisMonth };
-  }, [teachers]);
 
   const selectedClass = useMemo(
     () => classes.find((cls) => String(cls.id) === String(selectedClassId)),
@@ -413,25 +428,25 @@ export default function Teachers() {
         {[
           {
             title: 'Total Teachers',
-            value: kpis.total,
+            value: dashboardKpis.total,
             subtitle: 'Active staff records',
             tone: 'from-blue-600 to-sky-500',
           },
           {
             title: 'Active Teachers',
-            value: kpis.active,
+            value: dashboardKpis.active,
             subtitle: 'Currently active',
             tone: 'from-emerald-600 to-teal-500',
           },
           {
             title: 'New This Month',
-            value: kpis.newThisMonth,
+            value: dashboardKpis.newThisMonth,
             subtitle: 'Recently added',
             tone: 'from-violet-600 to-indigo-500',
           },
           {
             title: 'Inactive Teachers',
-            value: kpis.inactive,
+            value: dashboardKpis.inactive,
             subtitle: 'Currently inactive',
             tone: 'from-rose-600 to-orange-500',
           },
@@ -666,7 +681,7 @@ export default function Teachers() {
           <DataTablePagination
             page={page}
             limit={limit}
-            total={total || teachers.length}
+            total={total}
             totalPages={totalPages}
             onPageChange={setPage}
             onLimitChange={(newLimit) => {

@@ -737,7 +737,7 @@ function BattleInProgress({
   return (
     <div className="max-w-5xl mx-auto space-y-10">
       {/* 🛡️ Combat HUD: Holographic Frames */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
         
         {/* Unit A: Player */}
         <CardGlass className="p-8 border-indigo-100 bg-white/40">
@@ -2964,7 +2964,7 @@ function ChallengeLobbyScreen({
           </div>
         </CardGlass>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
           {quickModes.map(mode => (
             <button
               key={mode.mode}

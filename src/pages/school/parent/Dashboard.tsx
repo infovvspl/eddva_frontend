@@ -105,12 +105,12 @@ export default function ParentDashboard() {
   return (
     <div className="space-y-5 pb-10">
       {/* Top Grid for Welcome Card and Smart Calendar */}
-      <div className="grid gap-6 lg:grid-cols-4 items-stretch">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between"
+          className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between"
         >
           <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>

@@ -406,7 +406,7 @@ export default function Timetable() {
             </div>
           </div>
 
-          <div className="mt-5 overflow-x-auto">
+          <div className="mt-5 overflow-x-auto w-full max-w-full">
             <div className="flex min-w-max gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950">
               {days.map((day) => (
                 <button
@@ -691,20 +691,21 @@ export default function Timetable() {
               No periods are created for {activeDay}. Add timetable slots to see engaged and idle teachers.
             </div>
           ) : (
-            <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div className="hidden md:grid md:min-w-[900px] grid-cols-12 bg-slate-50 dark:bg-slate-850 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">
-                <div className="col-span-2">Period</div>
-                <div className="col-span-5">Engaged in Class</div>
-                <div className="col-span-5">Idle / Staff Room</div>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {periodWiseStatus.map((period) => (
-                  <div
-                    key={period.key}
-                    className={`grid grid-cols-1 gap-4 px-4 py-4 md:min-w-[900px] md:grid-cols-12 md:gap-3 ${
-                      period.isCurrentPeriod ? 'bg-emerald-50/80 dark:bg-emerald-950/20' : 'bg-white dark:bg-slate-900'
-                    }`}
-                  >
+            <div className="mt-5 overflow-x-auto w-full max-w-full rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="min-w-[1000px]">
+                <div className="hidden md:grid grid-cols-12 bg-slate-50 dark:bg-slate-850 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">
+                  <div className="col-span-2">Period</div>
+                  <div className="col-span-5">Engaged in Class</div>
+                  <div className="col-span-5">Idle / Staff Room</div>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {periodWiseStatus.map((period) => (
+                    <div
+                      key={period.key}
+                      className={`grid grid-cols-1 gap-4 px-4 py-4 md:grid-cols-12 md:gap-3 ${
+                        period.isCurrentPeriod ? 'bg-emerald-50/80 dark:bg-emerald-950/20' : 'bg-white dark:bg-slate-900'
+                      }`}
+                    >
                     <div className="md:col-span-2">
                       <div className="flex items-center gap-2">
                         <span className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-black ${
@@ -764,7 +765,8 @@ export default function Timetable() {
                 ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
         </div>
       )}
 

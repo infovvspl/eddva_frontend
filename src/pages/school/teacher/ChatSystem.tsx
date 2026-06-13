@@ -1229,7 +1229,7 @@ const ChatSystem: React.FC = () => {
             <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{contactSub}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 lg:grid-cols-4">
             {[
               { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
               { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },

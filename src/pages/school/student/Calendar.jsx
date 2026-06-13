@@ -146,13 +146,15 @@ export default function Calendar() {
                 <p className="text-xs font-bold text-slate-400 animate-pulse uppercase tracking-wider">Loading schedule...</p>
               </div>
             ) : (
+              <div className="overflow-x-auto">
+              <div className="min-w-[700px]">
               <div className="grid grid-cols-7 gap-4">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                   <div key={day} className="text-center text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest pb-4">{day}</div>
                 ))}
                 
                 {calendarDays.map((day, idx) => {
-                  if (!day) return <div key={`empty-${idx}`} className="h-32 rounded-3xl bg-slate-50/30 dark:bg-slate-900/20 border border-dashed border-slate-100 dark:border-slate-800/50" />;
+                  if (!day) return <div key={`empty-${idx}`} className="min-h-16 lg:min-h-20 xl:min-h-24 rounded-2xl bg-slate-50/30 dark:bg-slate-900/20 border border-dashed border-slate-100 dark:border-slate-800/50" />;
                   
                   const key = toDateKey(day);
                   const dayEvents = eventsByDate.get(key) || [];
@@ -162,11 +164,11 @@ export default function Calendar() {
                     <div 
                       key={key} 
                       className={cn(
-                        "min-h-32 rounded-3xl border p-3 transition-all hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none group",
+                        "min-h-16 lg:min-h-20 xl:min-h-24 rounded-2xl border p-2 transition-all hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none group",
                         isToday ? "bg-blue-50/50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800" : "bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800"
                       )}
                     >
-                      <div className="flex justify-between items-center mb-3">
+                      <div className="flex justify-between items-center mb-1.5">
                         <span className={cn(
                           "text-xs font-bold tracking-tight",
                           isToday ? "text-blue-600" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
@@ -174,12 +176,12 @@ export default function Calendar() {
                         {dayEvents.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />}
                       </div>
                       
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         {dayEvents.slice(0, 3).map(ev => (
                           <div 
                             key={ev.id}
                             className={cn(
-                              "px-2 py-1.5 rounded-lg text-[9px] font-bold border truncate",
+                              "px-1.5 py-0.5 rounded-lg text-[9px] font-bold border truncate",
                               categoryStyles[ev.category] || 'bg-slate-50 text-slate-600'
                             )}
                           >
@@ -193,6 +195,8 @@ export default function Calendar() {
                     </div>
                   );
                 })}
+              </div>
+              </div>
               </div>
             )}
           </div>

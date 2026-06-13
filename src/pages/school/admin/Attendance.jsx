@@ -51,11 +51,21 @@ export default function Attendance() {
       if (studentClassId) params.classId = studentClassId;
 
       const res = await api.get('/attendance', { params });
-      setAttendance(getResponseList(res));
-      const resData = res.data?.data || res.data;
-      if (resData && typeof resData.total !== 'undefined') {
-        setTotal(resData.total);
-        setTotalPages(resData.totalPages);
+      const list = getResponseList(res);
+      setAttendance(list);
+      
+      const resData = res.data;
+      if (resData) {
+        if (typeof resData.total === 'number') {
+          setTotal(resData.total);
+          setTotalPages(resData.totalPages || 1);
+        } else if (resData.data && typeof resData.data.total === 'number') {
+          setTotal(resData.data.total);
+          setTotalPages(resData.data.totalPages || 1);
+        } else {
+          setTotal(list.length);
+          setTotalPages(1);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -175,7 +185,8 @@ export default function Attendance() {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-surface-200 bg-white shadow-sm">
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+        <table className="min-w-[700px] w-full text-left text-sm">
           <thead className="bg-surface-50 text-surface-500">
             <tr>
               <th className="px-6 py-4 font-semibold">Name</th>
@@ -239,12 +250,13 @@ export default function Attendance() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
       <div className="mt-4 rounded-lg border border-surface-200 bg-white">
         <DataTablePagination
           page={page}
           limit={limit}
-          total={total || attendance.length}
+          total={total}
           totalPages={totalPages}
           onPageChange={setPage}
           onLimitChange={(newLimit) => {

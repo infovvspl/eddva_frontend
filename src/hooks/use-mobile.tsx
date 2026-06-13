@@ -38,3 +38,23 @@ export function useIsCompactLayout() {
 
   return compact;
 }
+
+const LAPTOP_MIN = 1024;
+const LAPTOP_MAX = 1536;
+
+/** True for viewports between `lg` and `2xl` (laptops, typically 1366×768) */
+export function useIsLaptop() {
+  const [isLaptop, setIsLaptop] = React.useState(
+    () => typeof window !== "undefined" && window.innerWidth >= LAPTOP_MIN && window.innerWidth < LAPTOP_MAX
+  );
+
+  React.useEffect(() => {
+    const mql = window.matchMedia(`(min-width: ${LAPTOP_MIN}px) and (max-width: ${LAPTOP_MAX - 1}px)`);
+    const onChange = () => setIsLaptop(window.innerWidth >= LAPTOP_MIN && window.innerWidth < LAPTOP_MAX);
+    mql.addEventListener("change", onChange);
+    setIsLaptop(window.innerWidth >= LAPTOP_MIN && window.innerWidth < LAPTOP_MAX);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  return isLaptop;
+}

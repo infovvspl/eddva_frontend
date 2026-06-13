@@ -68,6 +68,7 @@ export default function TeacherMeetingsPage() {
     meetingLink: '',
     location: '',
   });
+  const [step, setStep] = useState(1);
 
   const parentIdFromQuery = useMemo(
     () => new URLSearchParams(window.location.search).get('parentId') || '',
@@ -125,6 +126,7 @@ export default function TeacherMeetingsPage() {
   useEffect(() => {
     if (!parentIdFromQuery) return;
     setForm((prev) => ({ ...prev, parentId: parentIdFromQuery }));
+    setStep(1);
     setShowCreate(true);
   }, [parentIdFromQuery]);
 
@@ -188,6 +190,7 @@ export default function TeacherMeetingsPage() {
         location: form.meetingMode === 'offline' ? form.location.trim() || null : null,
       });
       setShowCreate(false);
+      setStep(1);
       setForm((prev) => ({
         ...prev,
         description: '',
@@ -215,7 +218,10 @@ export default function TeacherMeetingsPage() {
           </div>
           <button
             type="button"
-            onClick={() => setShowCreate(true)}
+            onClick={() => {
+              setStep(1);
+              setShowCreate(true);
+            }}
             className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-black text-cyan-700 shadow-lg transition hover:bg-cyan-50"
           >
             <CalendarDays className="mr-2 h-4 w-4" />
@@ -443,11 +449,14 @@ export default function TeacherMeetingsPage() {
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black text-slate-900">Schedule Parent Meeting</h2>
-                <p className="text-sm font-semibold text-slate-500">Create a focused meeting request outside the chat flow.</p>
+                <p className="text-sm font-semibold text-slate-500">Step {step} of 2 &bull; Create a focused meeting request outside the chat flow.</p>
               </div>
               <button
                 type="button"
-                onClick={() => setShowCreate(false)}
+                onClick={() => {
+                  setShowCreate(false);
+                  setStep(1);
+                }}
                 className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
@@ -455,148 +464,173 @@ export default function TeacherMeetingsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Parent</label>
-                <select
-                  value={form.parentId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                >
-                  <option value="">{loadingParents ? 'Loading parents...' : 'Select parent'}</option>
-                  {parents.map((parent) => (
-                    <option key={parent.id} value={parent.id}>
-                      {parent.name}
-                      {parent.studentName ? ` • ${parent.studentName}` : ''}
-                      {parent.className ? ` • ${parent.className}` : ''}
-                      {parent.sectionName ? `-${parent.sectionName}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Title</label>
-                <input
-                  value={form.title}
-                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                />
-              </div>
-
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Purpose</label>
-                <textarea
-                  rows={3}
-                  value={form.description}
-                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-400 focus:bg-white"
-                  placeholder="Discuss attendance, performance, assessments, or classroom follow-up."
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Date</label>
-                <input
-                  type="date"
-                  value={form.meetingDate}
-                  onChange={(e) => setForm((prev) => ({ ...prev, meetingDate: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Time</label>
-                <input
-                  type="time"
-                  value={form.startTime}
-                  onChange={(e) => setForm((prev) => ({ ...prev, startTime: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Duration</label>
-                <select
-                  value={form.durationMinutes}
-                  onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                >
-                  <option value="15">15 mins</option>
-                  <option value="30">30 mins</option>
-                  <option value="45">45 mins</option>
-                  <option value="60">60 mins</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Mode</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['online', 'offline'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, meetingMode: mode }))}
-                      className={`rounded-2xl border px-4 py-3 text-sm font-black capitalize transition ${
-                        form.meetingMode === mode
-                          ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
-                          : 'border-slate-200 bg-slate-50 text-slate-500'
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {form.meetingMode === 'online' ? (
+              {step === 1 && (
                 <>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Platform</label>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Parent</label>
+                    <select
+                      value={form.parentId}
+                      onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    >
+                      <option value="">{loadingParents ? 'Loading parents...' : 'Select parent'}</option>
+                      {parents.map((parent) => (
+                        <option key={parent.id} value={parent.id}>
+                          {parent.name}
+                          {parent.studentName ? ` • ${parent.studentName}` : ''}
+                          {parent.className ? ` • ${parent.className}` : ''}
+                          {parent.sectionName ? `-${parent.sectionName}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Title</label>
                     <input
-                      value={form.meetingPlatform}
-                      onChange={(e) => setForm((prev) => ({ ...prev, meetingPlatform: e.target.value }))}
+                      value={form.title}
+                      onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
                     />
                   </div>
+
                   <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Meeting Link</label>
-                    <input
-                      value={form.meetingLink}
-                      onChange={(e) => setForm((prev) => ({ ...prev, meetingLink: e.target.value }))}
-                      placeholder="https://meet.google.com/..."
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Purpose</label>
+                    <textarea
+                      rows={3}
+                      value={form.description}
+                      onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-400 focus:bg-white"
+                      placeholder="Discuss attendance, performance, assessments, or classroom follow-up."
                     />
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Mode</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['online', 'offline'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setForm((prev) => ({ ...prev, meetingMode: mode }))}
+                          className={`rounded-2xl border px-4 py-3 text-sm font-black capitalize transition ${
+                            form.meetingMode === mode
+                              ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                              : 'border-slate-200 bg-slate-50 text-slate-500'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
-              ) : (
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Location</label>
-                  <input
-                    value={form.location}
-                    onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
-                    placeholder="School campus / classroom / office"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                  />
-                </div>
+              )}
+
+              {step === 2 && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Date</label>
+                    <input
+                      type="date"
+                      value={form.meetingDate}
+                      onChange={(e) => setForm((prev) => ({ ...prev, meetingDate: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Time</label>
+                    <input
+                      type="time"
+                      value={form.startTime}
+                      onChange={(e) => setForm((prev) => ({ ...prev, startTime: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Duration</label>
+                    <select
+                      value={form.durationMinutes}
+                      onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    >
+                      <option value="15">15 mins</option>
+                      <option value="30">30 mins</option>
+                      <option value="45">45 mins</option>
+                      <option value="60">60 mins</option>
+                    </select>
+                  </div>
+
+                  {form.meetingMode === 'online' ? (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Platform</label>
+                        <input
+                          value={form.meetingPlatform}
+                          onChange={(e) => setForm((prev) => ({ ...prev, meetingPlatform: e.target.value }))}
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Meeting Link</label>
+                        <input
+                          value={form.meetingLink}
+                          onChange={(e) => setForm((prev) => ({ ...prev, meetingLink: e.target.value }))}
+                          placeholder="https://meet.google.com/..."
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Location</label>
+                      <input
+                        value={form.location}
+                        onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
+                        placeholder="School campus / classroom / office"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => setShowCreate(false)}
+                onClick={() => {
+                  if (step === 2) setStep(1);
+                  else {
+                    setShowCreate(false);
+                    setStep(1);
+                  }
+                }}
                 className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-200"
               >
-                Cancel
+                {step === 2 ? 'Back' : 'Cancel'}
               </button>
-              <button
-                type="button"
-                disabled={creating || !form.parentId}
-                onClick={() => void createMeeting()}
-                className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
-              >
-                {creating ? 'Scheduling...' : 'Create Meeting'}
-              </button>
+              {step === 1 ? (
+                <button
+                  type="button"
+                  disabled={!form.parentId}
+                  onClick={() => setStep(2)}
+                  className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                >
+                  Continue
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={creating || !form.parentId}
+                  onClick={() => void createMeeting()}
+                  className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                >
+                  {creating ? 'Scheduling...' : 'Create Meeting'}
+                </button>
+              )}
             </div>
           </div>
         </div>

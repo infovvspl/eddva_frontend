@@ -74,7 +74,7 @@ function InfoScreen({ batchName, onStart }: { batchName: string; onStart: () => 
             </p>
          </header>
 
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
             {[
                { icon: BrainCircuit, label: "AI ADAPTIVE", desc: `Personalized nodes for ${batchName || "your sector"} syllabus.`, color: "text-blue-500", bg: "bg-blue-50/50" },
                { icon: Activity, label: "60 SYNC", desc: "60 minutes to complete the cognitive scan.", color: "text-amber-500", bg: "bg-amber-50/50" },

@@ -491,7 +491,7 @@ function TeacherBatchContent() {
   return (
     <div className="flex h-full bg-slate-50/50">
       {/* Sidebar Tree */}
-      <div className="w-80 border-r border-slate-100 bg-white flex flex-col shrink-0">
+      <div className="w-64 xl:w-80 border-r border-slate-100 bg-white flex flex-col shrink-0 hidden lg:flex">
         <div className="p-6 border-b border-slate-100">
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Curriculum Explorer</h3>
         </div>

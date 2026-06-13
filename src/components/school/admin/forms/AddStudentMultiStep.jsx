@@ -62,7 +62,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
           <input
             type={type}
             name={name}
-            value={value}
+            value={value ?? ''}
             onChange={onChange}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
@@ -92,7 +92,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
         <input
           type={type}
           name={name}
-          value={value}
+          value={value ?? ''}
           onChange={onChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
@@ -918,7 +918,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
 
   return (
     <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-      <div className="w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-8 hidden lg:flex flex-col">
+      <div className="w-64 xl:w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-6 xl:p-8 hidden lg:flex flex-col">
         <div className="mb-10 font-bold tracking-tight text-2xl tracking-tighter text-slate-900 dark:text-white">EDDVA <span className="text-blue-600">STUDENT</span></div>
         <div className="flex-1 space-y-2">
           {STEPS.map(step => {

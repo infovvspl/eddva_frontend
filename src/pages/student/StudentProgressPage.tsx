@@ -147,7 +147,7 @@ export default function StudentProgressPage() {
   if (isLoading) return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-pulse">
       <Skeleton className="h-12 w-64" />
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-3xl" />)}
       </div>
       <Skeleton className="h-96 rounded-3xl" />

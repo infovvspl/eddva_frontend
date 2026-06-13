@@ -14,8 +14,10 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
     attachments: {}
   });
   const [error, setError] = useState('');
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
+    setStep(1);
     if (notice) {
       setFormData({
         title: notice.title || '',
@@ -53,14 +55,19 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleNextStep = () => {
     setError('');
-
     if (!formData.title.trim()) {
       setError('Notice title is required');
       return;
     }
+    setStep(2);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
     if (!formData.content.trim()) {
       setError('Notice content is required');
       return;
@@ -79,75 +86,82 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
       )}
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-semibold text-surface-700 mb-2">Title *</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            placeholder="Notice Title"
-          />
-        </div>
+        {step === 1 && (
+          <>
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Title *</label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="Notice Title"
+              />
+            </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Category</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="GENERAL">General</option>
-              <option value="ACADEMIC">Academic</option>
-              <option value="EVENT">Event</option>
-              <option value="HOLIDAY">Holiday</option>
-              <option value="EXAM">Exam</option>
-              <option value="EMERGENCY">Emergency</option>
-            </select>
-          </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Category</label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                >
+                  <option value="GENERAL">General</option>
+                  <option value="ACADEMIC">Academic</option>
+                  <option value="EVENT">Event</option>
+                  <option value="HOLIDAY">Holiday</option>
+                  <option value="EXAM">Exam</option>
+                  <option value="EMERGENCY">Emergency</option>
+                </select>
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Priority</label>
-            <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="LOW">Low</option>
-              <option value="NORMAL">Normal</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
-            </select>
-          </div>
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Priority</label>
+                <select
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Posted Date</label>
-            <input
-              type="date"
-              name="postedDate"
-              value={formData.postedDate}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Posted Date</label>
+                <input
+                  type="date"
+                  name="postedDate"
+                  value={formData.postedDate}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Expiry Date</label>
-            <input
-              type="date"
-              name="expiryDate"
-              value={formData.expiryDate}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Expiry Date</label>
+                <input
+                  type="date"
+                  name="expiryDate"
+                  value={formData.expiryDate}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                />
+              </div>
+            </div>
+          </>
+        )}
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Target Audience (Multi-select)</label>
+        {step === 2 && (
+          <>
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Target Audience (Multi-select)</label>
             <select
               name="targetRoles"
               multiple
@@ -162,7 +176,6 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             </select>
             <p className="text-xs text-surface-500 mt-1">Leave unselected to broadcast to everyone.</p>
           </div>
-        </div>
 
         <div>
           <label className="block text-sm font-semibold text-surface-700 mb-2">Attachments</label>
@@ -187,35 +200,58 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
           )}
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-surface-700 mb-2">Content *</label>
-          <textarea
-            name="content"
-            value={formData.content}
-            onChange={handleChange}
-            rows="6"
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            placeholder="Notice content..."
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Content *</label>
+              <textarea
+                name="content"
+                value={formData.content}
+                onChange={handleChange}
+                rows="6"
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="Notice content..."
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200"
-        >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
-          {notice ? 'Update Notice' : 'Publish Notice'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 rounded-xl border border-surface-200 px-4 py-2.5 font-semibold text-surface-700 hover:bg-surface-50 active:scale-[0.98] transition-all duration-200 text-center"
-        >
-          Cancel
-        </button>
+        {step === 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-all duration-200"
+            >
+              Continue
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 rounded-xl border border-surface-200 px-4 py-2.5 font-semibold text-surface-700 hover:bg-surface-50 active:scale-[0.98] transition-all duration-200 text-center"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200"
+            >
+              {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+              {notice ? 'Update Notice' : 'Publish Notice'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="flex-1 rounded-xl border border-surface-200 px-4 py-2.5 font-semibold text-surface-700 hover:bg-surface-50 active:scale-[0.98] transition-all duration-200 text-center"
+            >
+              Back
+            </button>
+          </>
+        )}
       </div>
     </form>
   );

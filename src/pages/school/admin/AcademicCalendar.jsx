@@ -162,6 +162,7 @@ export default function AcademicCalendar({
   const [editingEvent, setEditingEvent] = useState(null);
   const [dragId, setDragId] = useState(null);
   const [form, setForm] = useState(defaultForm);
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false);
 
   function dispatchChanged() {
     window.dispatchEvent(new CustomEvent('eddva:data-changed', { detail: { resource: 'calendar' } }));
@@ -435,12 +436,12 @@ export default function AcademicCalendar({
         onDragStart={() => setDragId(event.id)}
         onClick={() => openEdit(event)}
         className={cn(
-          'group flex w-full items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-left text-xs font-bold shadow-sm transition hover:shadow-sm ring-1 ring-slate-100',
+          'group flex w-full items-center justify-between gap-1.5 rounded-xl border px-2 py-1 text-left text-[10px] font-bold shadow-sm transition hover:shadow-sm ring-1 ring-slate-100',
           categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100'
         )}
       >
         <span className="min-w-0 flex-1 truncate">{event.title}</span>
-        <Edit3 className="h-3.5 w-3.5 opacity-50 group-hover:opacity-100" />
+        <Edit3 className="h-3 w-3 opacity-50 group-hover:opacity-100 shrink-0" />
       </button>
     );
   }
@@ -482,6 +483,25 @@ export default function AcademicCalendar({
                 Today
               </button>
 
+              <button onClick={() => setSummaryModalOpen(true)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
+                <LayoutGrid className="h-4 w-4" />
+                Summary
+              </button>
+
+              <button onClick={() => {
+                const now = new Date();
+                const start = new Date(now);
+                start.setHours(9, 0, 0, 0);
+                const end = new Date(now);
+                end.setHours(10, 0, 0, 0);
+                setEditingEvent(null);
+                setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
+                setModalOpen(true);
+              }} className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40">
+                <Video className="h-4 w-4" />
+                Live Class
+              </button>
+
               <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
                 <Plus className="h-4 w-4" />
                 Add Event
@@ -518,8 +538,8 @@ export default function AcademicCalendar({
             </div>
           </div>
 
-          <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
-            <div className="border-b border-slate-100 dark:border-slate-800 lg:border-b-0 lg:border-r lg:border-slate-100 lg:dark:border-slate-800">
+          <div className="grid gap-0">
+            <div>
               {loading || metaLoading ? (
                 <div className="p-8 text-sm text-slate-500 dark:text-slate-450">Loading calendar...</div>
               ) : view === 'month' ? (
@@ -530,7 +550,7 @@ export default function AcademicCalendar({
                     </div>
                     <div className="grid grid-cols-7 gap-3">
                       {monthDays.map((day, index) => {
-                        if (!day) return <div key={`empty-${index}`} className="min-h-40 rounded-3xl border border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
+                        if (!day) return <div key={`empty-${index}`} className="min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
                         const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
                         const isToday = sameDay(day, new Date());
                         return (
@@ -539,15 +559,15 @@ export default function AcademicCalendar({
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={() => dragId && dropToDay(day, dragId)}
                             onClick={() => setSelectedDate(day)}
-                            className={cn('min-h-40 rounded-3xl border p-3 transition hover:shadow-lg', isToday ? 'border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900')}
+                            className={cn('min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border p-2 transition hover:shadow-lg', isToday ? 'border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900')}
                           >
-                            <div className="mb-3 flex items-center justify-between">
+                            <div className="mb-1.5 flex items-center justify-between">
                               <span className={cn('text-xs font-bold tracking-tight', isToday ? 'text-blue-700 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500')}>{day.getDate()}</span>
                               {dayEvents.length > 0 && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-sky-500" />}
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               {dayEvents.slice(0, 3).map(renderEventChip)}
-                              {dayEvents.length > 3 && <p className="text-center text-[10px] font-bold tracking-tight text-slate-400 dark:text-slate-500">+{dayEvents.length - 3} more</p>}
+                              {dayEvents.length > 3 && <p className="text-center text-[9px] font-bold tracking-tight text-slate-400 dark:text-slate-500">+{dayEvents.length - 3} more</p>}
                             </div>
                           </div>
                         );
@@ -557,7 +577,7 @@ export default function AcademicCalendar({
                 </div>
               ) : view === 'week' ? (
                 <div className="overflow-x-auto w-full">
-                  <div className="grid min-h-[760px] grid-cols-7 gap-0 min-w-[800px]">
+                  <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px]">
                     {weekDays.map((day) => {
                       const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
                       const isToday = sameDay(day, new Date());
@@ -637,62 +657,66 @@ export default function AcademicCalendar({
               )}
             </div>
 
-            <aside className="space-y-4 bg-slate-50/50 dark:bg-slate-900/50 p-5 lg:w-[340px]">
-              <button onClick={() => openNew()} className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-br from-slate-950 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-4 shadow-lg ring-1 ring-slate-900/5 dark:ring-white/10 text-left transition hover:shadow-xl hover:scale-[1.02] group">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.85rem] bg-amber-400/10 text-amber-400 transition-colors group-hover:bg-amber-400/20">
-                    <Video className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-white truncate">{quickTitle}</h3>
-                    <p className="text-[10px] font-semibold text-slate-400 truncate">{quickActionLabel}</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-slate-500 transition-colors group-hover:text-amber-400" />
-              </button>
 
-              <div className="rounded-2xl bg-white dark:bg-slate-950 p-5 shadow-sm">
-                <h3 className="mb-4 text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Summary</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                  {categories.filter((item) => item !== 'All').map((item) => (
-                    <div key={item} className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 py-3 px-1 text-center transition hover:border-slate-200 dark:hover:border-slate-700">
-                      <span className="text-xl mb-1">{categoryIcons[item] || '📅'}</span>
-                      <p className="text-lg font-black text-slate-950 dark:text-white leading-none">{summary[item] || 0}</p>
-                      <p className="mt-1 w-full truncate text-[8px] font-bold tracking-tight uppercase text-slate-400 dark:text-slate-500">{item.replace('_', ' ')}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-white dark:bg-slate-950 p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Events</h3>
-                  <BellRing className="h-4 w-4 text-slate-300" />
-                </div>
-                <div className="space-y-2">
-                  {upcomingEvents.map((event) => (
-                    <button key={event.id} onClick={() => openEdit(event)} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[event.category] || '📅'}</span>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
-                          <p className="truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                            📅 {new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
-                        {event.category.replace('_', ' ')}
-                      </span>
-                    </button>
-                  ))}
-                  {!upcomingEvents.length && <p className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">No upcoming events.</p>}
-                </div>
-              </div>
-            </aside>
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {summaryModalOpen && (
+          <>
+            <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSummaryModalOpen(false)} className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="fixed inset-x-4 top-[10%] z-50 mx-auto max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-slate-50 dark:bg-slate-950 shadow-2xl border dark:border-slate-800">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-5 bg-white dark:bg-slate-900 sticky top-0 z-10">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-950 dark:text-white">Calendar Summary & Events</h2>
+                </div>
+                <button onClick={() => setSummaryModalOpen(false)} className="rounded-2xl p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="p-5 grid gap-6 md:grid-cols-2">
+                <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-100 dark:border-slate-800">
+                  <h3 className="mb-4 text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Summary</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {categories.filter((item) => item !== 'All').map((item) => (
+                      <div key={item} className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-1 text-center transition hover:border-slate-200 dark:hover:border-slate-700">
+                        <span className="text-xl mb-1">{categoryIcons[item] || '📅'}</span>
+                        <p className="text-lg font-black text-slate-950 dark:text-white leading-none">{summary[item] || 0}</p>
+                        <p className="mt-1 w-full truncate text-[8px] font-bold tracking-tight uppercase text-slate-400 dark:text-slate-500">{item.replace('_', ' ')}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col max-h-[500px]">
+                  <div className="mb-4 flex items-center justify-between shrink-0">
+                    <h3 className="text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Events</h3>
+                    <BellRing className="h-4 w-4 text-slate-300" />
+                  </div>
+                  <div className="space-y-2 overflow-y-auto pr-2 pb-2">
+                    {upcomingEvents.map((event) => (
+                      <button key={event.id} onClick={() => { setSummaryModalOpen(false); openEdit(event); }} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[event.category] || '📅'}</span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
+                            <p className="truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                              📅 {new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
+                          {event.category.replace('_', ' ')}
+                        </span>
+                      </button>
+                    ))}
+                    {!upcomingEvents.length && <p className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">No upcoming events.</p>}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {modalOpen && (
