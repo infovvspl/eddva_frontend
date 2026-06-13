@@ -66,7 +66,7 @@ function buildSchoolUserFromStore(
     email: storeUser.email ?? '',
     role: zustandRoleToSchool(storeUser.role),
     instituteId: storeUser.instituteId ?? storeUser.tenantId ?? null,
-    photo: storeUser.avatar ?? null,
+    profileImage: storeUser.profileImage ?? null,
     phone: storeUser.phone ?? null,
     isActive: true,
     institute,
@@ -121,7 +121,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         });
       }
 
-      if (token && storeUser && tenantType === 'school' && storeUser.role === 'student') {
+      if (token && storeUser && tenantType === 'school') {
         try {
           const res = await apiClient.get('/school/auth/me');
           const me = res.data?.data ?? res.data;
@@ -129,6 +129,9 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (sp) {
             setStoreUser({
               ...storeUser,
+              name: me.name ?? storeUser.name,
+              phone: me.phone ?? storeUser.phone,
+              profileImage: 'profileImage' in me ? me.profileImage : ('profilePictureUrl' in me ? me.profilePictureUrl : storeUser.profileImage),
               studentProfile: {
                 id: sp.id,
                 sectionId: sp.sectionId,
@@ -181,7 +184,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       phone: u.phone ?? '',
       email: u.email,
       role: u.role.toLowerCase() as UserRole,
-      avatar: u.photo ?? undefined,
+      profileImage: u.profileImage ?? undefined,
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
@@ -244,7 +247,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       phone: userData.phone ?? '',
       email: userData.email,
       role: schoolRoleToZustand(userData.role),
-      avatar: userData.photo ?? undefined,
+      profileImage: userData.profileImage ?? undefined,
       instituteId: userData.instituteId ?? undefined,
       tenantId: userData.instituteId ?? undefined,
       tenantName: instData?.name ?? undefined,

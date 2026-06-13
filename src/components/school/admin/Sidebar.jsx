@@ -270,7 +270,7 @@ export default function Sidebar({ open, onClose }) {
                 )}
               >
                 <ProfileAvatar
-                  src={user?.photo ?? null}
+                  src={user?.profileImage ?? null}
                   name={user?.name}
                   className={cn(
                     'h-10 w-10 shrink-0 rounded-xl',

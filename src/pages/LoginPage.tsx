@@ -118,7 +118,7 @@ const LoginPage = () => {
       phone: profile.phoneNumber || profile.phone || "",
       email: profile.email,
       role: profile.role as "super_admin" | "institute_admin" | "teacher" | "student",
-      avatar: profile.avatar,
+      profileImage: profile.profileImage,
       tenantId: profile.tenantId,
       tenantName: profile.tenant?.name || profile.tenantName || "",
       isFirstLogin: profile.isFirstLogin ?? false,
@@ -148,7 +148,7 @@ const LoginPage = () => {
       phone: u.phone ?? "",
       email: u.email,
       role: (u.role.toLowerCase()) as UserRole,
-      avatar: u.photo ?? undefined,
+      profileImage: u.photo ?? undefined,
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
@@ -397,7 +397,7 @@ const LoginPage = () => {
 
                 <div>
                   <h1 className="text-[32px] font-black tracking-tight text-slate-900 leading-tight mb-2">
-                    {tenantInfo?.name ? `Welcome to ${tenantInfo.name}` : "Welcome back"}
+                    {tenantInfo?.name ? `Welcome to ${tenantInfo.name}` : "Welcome"}
                   </h1>
                   <p className="text-[16px] font-semibold text-slate-400">
                     {tenantInfo?.name ? "Sign in to access your portal." : "Continue your journey of excellence."}

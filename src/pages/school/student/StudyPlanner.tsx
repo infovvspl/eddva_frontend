@@ -9,13 +9,13 @@ import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
   RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
-  ArrowRight, ArrowLeft, Sparkles, Activity, Trash2, Bell,
+  ArrowRight, ArrowLeft, Sparkles, Activity, Bell,
   TrendingDown, AlertTriangle, RefreshCw, FileText, ClipboardList,
   BrainCircuit,
 } from "lucide-react";
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
-  useClearPlan, useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
+  useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
   useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
   useAiStudyHistory, useRevisionSpaced, useRevisionNotes, usePracticeHistory,
   useCourseCurriculum,
@@ -198,6 +198,16 @@ function maxStatus(
   b: TopicReportEntry["status"],
 ): TopicReportEntry["status"] {
   return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
+}
+
+function planItemMinutes(item: Partial<StudyPlanItem> & { durationMinutes?: number | string | null; estimatedMinutes?: number | string | null }): number {
+  const minutes = Number(item.estimatedMinutes ?? item.durationMinutes ?? 0);
+  return Number.isFinite(minutes) ? minutes : 0;
+}
+
+function safePositiveNumber(value: number | string | null | undefined): number {
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
 }
 
 function deriveStatusForTopic(topic: TopicReportEntry, todayItems: StudyPlanItem[]): TopicReportEntry["status"] {
@@ -646,7 +656,7 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIf
             <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
           )}
           <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-            <Clock className="w-3 h-3" />{item.estimatedMinutes}m
+            <Clock className="w-3 h-3" />{planItemMinutes(item)}m
           </span>
           {item.content?.topicName && <span className="text-[11px] text-gray-400 truncate">{item.content.topicName}</span>}
         </div>
@@ -1484,7 +1494,6 @@ export default function SchoolStudentStudyPlanner() {
   useEffect(() => {
     localStorage.setItem("edva_active_tab", activeTab);
   }, [activeTab]);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [todayView, setTodayView] = useState<"today" | "week">("today");
   const [selectedWeekDay, setSelectedWeekDay] = useState<string>("");
   const [backlogPage, setBacklogPage] = useState<null | "plan" | "lectures" | "notes" | "pyq" | "dpp" | "mindmaps" | "mocktests">(null);
@@ -1539,7 +1548,6 @@ export default function SchoolStudentStudyPlanner() {
 
   const generate = useGeneratePlan();
   const regenerate = useRegeneratePlan();
-  const clearPlan = useClearPlan();
   const complete = useCompletePlanItem(selectedCourseId ?? undefined);
   const skip = useSkipPlanItem(selectedCourseId ?? undefined);
 
@@ -1988,7 +1996,7 @@ export default function SchoolStudentStudyPlanner() {
 
   const doneCount = todayItems.filter(i => i.status === "completed").length;
   const donePct = todayItems.length > 0 ? Math.round((doneCount / todayItems.length) * 100) : 0;
-  const totalMinutes = todayItems.reduce((s, i) => s + i.estimatedMinutes, 0);
+  const totalMinutes = todayItems.reduce((sum, item) => sum + planItemMinutes(item), 0);
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -2014,15 +2022,6 @@ export default function SchoolStudentStudyPlanner() {
     regenerate.mutate(selectedCourseId ?? undefined, {
       onSuccess: () => toast.success("Plan regenerated!"),
       onError: () => toast.error("Could not regenerate. Please try again."),
-    });
-
-  const handleResetConfirmed = () =>
-    clearPlan.mutate(selectedCourseId ?? undefined, {
-      onSuccess: () => {
-        setConfirmReset(false);
-        toast.success("Plan cleared!");
-      },
-      onError: () => toast.error("Could not reset plan. Please try again."),
     });
 
   const handleOpenPlanItem = (item: StudyPlanItem) => {
@@ -2066,7 +2065,7 @@ export default function SchoolStudentStudyPlanner() {
     </div>
   );
 
-  if (generate.isPending || regenerate.isPending || clearPlan.isPending) return <GeneratingView />;
+  if (generate.isPending || regenerate.isPending) return <GeneratingView />;
 
   const pendingTodayItems = todayItems.filter(item => item.status !== "completed");
   const nextUpItems = pendingTodayItems.slice(0, 3);
@@ -2091,34 +2090,6 @@ export default function SchoolStudentStudyPlanner() {
 
   return (
     <div className="min-h-screen bg-slate-50/70 px-4 py-5 sm:px-6 lg:px-8">
-      {confirmReset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-base font-black text-slate-950">Reset study plan?</h3>
-            <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
-              This will clear the current plan and create a fresh monthly schedule.
-            </p>
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmReset(false)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleResetConfirmed}
-                disabled={clearPlan.isPending}
-                className="flex-1 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
-              >
-                {clearPlan.isPending ? "Resetting..." : "Reset"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="mx-auto max-w-7xl space-y-5">
         <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -3014,7 +2985,7 @@ export default function SchoolStudentStudyPlanner() {
                       <PlayCircle className="h-5 w-5 shrink-0 text-blue-600" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-black text-slate-800">{item.title}</p>
-                        <p className="mt-0.5 text-xs font-bold text-slate-500">{item.estimatedMinutes} min</p>
+                        <p className="mt-0.5 text-xs font-bold text-slate-500">{planItemMinutes(item)} min</p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
                     </button>
@@ -3058,14 +3029,6 @@ export default function SchoolStudentStudyPlanner() {
                   <RotateCcw className={`h-4 w-4 ${regenerate.isPending ? "animate-spin" : ""}`} />
                   Regenerate Plan
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmReset(true)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-black text-rose-600 transition hover:bg-rose-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Reset Plan
-                </button>
               </div>
             </section>
           </aside>
@@ -3093,28 +3056,6 @@ export default function SchoolStudentStudyPlanner() {
     <div className="min-h-screen bg-gray-50 -mx-3 -mt-4 sm:-mx-4 lg:-mx-6 lg:-mt-6">
 
       {/* Direct Study Plan view without selection page */}
-
-      {/* Reset confirmation */}
-      {confirmReset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="text-base font-bold text-gray-900 mb-1">Reset Study Plan?</h3>
-            <p className="text-sm text-gray-500 mb-5">
-              Your current plan and all progress will be deleted. You'll answer a few questions to generate a fresh plan.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmReset(false)}
-                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleResetConfirmed} disabled={clearPlan.isPending}
-                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50">
-                {clearPlan.isPending ? "Resetting..." : "Yes, Reset"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* PreferenceWizard removed */}
 
@@ -3274,7 +3215,7 @@ export default function SchoolStudentStudyPlanner() {
                             {Object.entries(activeDayBySubject).map(([subj, items]) => {
                               const cfg = subjectCfg(subj);
                               const subjDone = items.filter(i => i.status === "completed").length;
-                              const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
+                              const subjMins = items.reduce((s, i) => s + planItemMinutes(i), 0);
                               return (
                                 <div key={subj} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
                                   <div className={`flex items-center justify-between px-3 py-2 ${cfg.bg}`}>
@@ -3313,7 +3254,7 @@ export default function SchoolStudentStudyPlanner() {
                     {Object.entries(bySubject).map(([subj, items]) => {
                       const cfg = subjectCfg(subj);
                       const subjDone = items.filter(i => i.status === "completed").length;
-                      const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
+                      const subjMins = items.reduce((s, i) => s + planItemMinutes(i), 0);
                       return (
                         <div key={subj} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
                           <div className={`flex items-center justify-between px-3 py-2 ${cfg.bg}`}>
@@ -3369,10 +3310,6 @@ export default function SchoolStudentStudyPlanner() {
                       className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
                       <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
                       {regenerate.isPending ? "Creating..." : "Regenerate Plan"}
-                    </button>
-                    <button onClick={() => setConfirmReset(true)}
-                      className="w-full mt-2 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
-                      <Trash2 className="w-3.5 h-3.5" /> Reset &amp; Start Fresh
                     </button>
                   </div>
                 </div>
@@ -3890,24 +3827,28 @@ export default function SchoolStudentStudyPlanner() {
                                       {chapter}
                                     </div>
                                     <div className="space-y-2">
-                                      {items.map(t => (
-                                        <div key={t.id}
-                                          onClick={() => navigate(`/school/student/assessments/${t.id}/take`)}
-                                          className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-rose-200 hover:shadow-sm transition-all cursor-pointer">
-                                          <div className="shrink-0 w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600"><ClipboardList className="w-4 h-4" /></div>
-                                          <div className="flex-1 min-w-0">
-                                            <div className="font-medium text-sm text-gray-900 truncate">{t.title}</div>
-                                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                              {t.durationMinutes > 0 && <span className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{t.durationMinutes} min</span>}
-                                              {t.totalMarks > 0 && <span className="text-xs text-gray-400">{t.totalMarks} marks</span>}
+                                      {items.map(t => {
+                                        const durationMinutes = safePositiveNumber(t.durationMinutes);
+                                        const totalMarks = safePositiveNumber(t.totalMarks);
+                                        return (
+                                          <div key={t.id}
+                                            onClick={() => navigate(`/school/student/assessments/${t.id}/take`)}
+                                            className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3 hover:border-rose-200 hover:shadow-sm transition-all cursor-pointer">
+                                            <div className="shrink-0 w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600"><ClipboardList className="w-4 h-4" /></div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="font-medium text-sm text-gray-900 truncate">{t.title}</div>
+                                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                {durationMinutes > 0 && <span className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{durationMinutes} min</span>}
+                                                {totalMarks > 0 && <span className="text-xs text-gray-400">{totalMarks} marks</span>}
+                                              </div>
                                             </div>
+                                            <button onClick={(e) => { e.stopPropagation(); navigate(`/school/student/assessments/${t.id}/take`); }}
+                                              className="shrink-0 px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition-colors">
+                                              Start
+                                            </button>
                                           </div>
-                                          <button onClick={(e) => { e.stopPropagation(); navigate(`/school/student/assessments/${t.id}/take`); }}
-                                            className="shrink-0 px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition-colors">
-                                            Start
-                                          </button>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   </div>
                                 ))}

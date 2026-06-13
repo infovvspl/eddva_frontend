@@ -337,7 +337,7 @@ export default function Navbar({ onMenuClick }) {
                       {searchResults.students.map(s => (
                         <Link key={s.id} to={`/school/admin/students/${s.id}`} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
                           <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
-                            {s.photo ? <img src={s.photo} className="w-full h-full object-cover rounded-xl" /> : s.name[0]}
+                            {s.profileImage ? <img src={s.profileImage} className="w-full h-full object-cover rounded-xl" /> : s.name[0]}
                           </div>
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{s.name}</span>

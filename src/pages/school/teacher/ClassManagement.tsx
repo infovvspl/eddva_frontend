@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
@@ -181,6 +182,7 @@ const ClassManagement: React.FC = () => {
     title: '',
     description: '',
     classId: '',
+    sectionId: '',
     subjectId: '',
     chapterId: '',
     topicId: '',
@@ -191,6 +193,7 @@ const ClassManagement: React.FC = () => {
   });
   const [academicClasses, setAcademicClasses] = useState<any[]>([]);
   const [academicSubjects, setAcademicSubjects] = useState<any[]>([]);
+  const [teacherAssignments, setTeacherAssignments] = useState<any[]>([]);
   const [scheduleForm, setScheduleForm] = useState({
     title: '',
     classId: '',
@@ -203,6 +206,65 @@ const ClassManagement: React.FC = () => {
     liveStatus: 'scheduled',
     recurringSchedule: 'none',
   });
+
+  const recordingClassOptions = useMemo(() => {
+    const classMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments.forEach((assignment: any) => {
+      if (!assignment.classId) return;
+      classMap.set(String(assignment.classId), {
+        id: String(assignment.classId),
+        name: assignment.className || academicClasses.find((item) => String(item.id) === String(assignment.classId))?.name || 'Class',
+      });
+    });
+    return Array.from(classMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [academicClasses, teacherAssignments]);
+
+  const recordingSectionOptions = useMemo(() => {
+    if (!recordingForm.classId) return [];
+    const sectionMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments
+      .filter((assignment: any) => String(assignment.classId) === String(recordingForm.classId))
+      .forEach((assignment: any) => {
+        if (!assignment.sectionId) return;
+        sectionMap.set(String(assignment.sectionId), {
+          id: String(assignment.sectionId),
+          name: assignment.sectionName || 'Section',
+        });
+      });
+
+    return Array.from(sectionMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [recordingForm.classId, teacherAssignments]);
+
+  const recordingSubjectOptions = useMemo(() => {
+    if (!recordingForm.classId || !recordingForm.sectionId) return [];
+    const subjectMap = new Map<string, { id: string; name: string }>();
+    const matchingAssignments = teacherAssignments.filter((assignment: any) =>
+      String(assignment.classId) === String(recordingForm.classId)
+      && String(assignment.sectionId) === String(recordingForm.sectionId)
+    );
+
+    matchingAssignments.forEach((assignment: any) => {
+      if (!assignment.subjectId) return;
+      subjectMap.set(String(assignment.subjectId), {
+        id: String(assignment.subjectId),
+        name: assignment.subjectName || academicSubjects.find((item) => String(item.id) === String(assignment.subjectId))?.name || 'Subject',
+      });
+    });
+
+    const canUseSectionSubjects = matchingAssignments.some((assignment: any) => assignment.isClassTeacher && !assignment.subjectId);
+    if (canUseSectionSubjects) {
+      academicSubjects
+        .filter((subject: any) => {
+          const subjectClassId = subject.classId ?? subject.class_id;
+          const subjectSectionId = subject.sectionId ?? subject.section_id;
+          return String(subjectClassId) === String(recordingForm.classId)
+            && (!subjectSectionId || String(subjectSectionId) === String(recordingForm.sectionId));
+        })
+        .forEach((subject: any) => subjectMap.set(String(subject.id), { id: String(subject.id), name: subject.name }));
+    }
+
+    return Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [academicSubjects, recordingForm.classId, recordingForm.sectionId, teacherAssignments]);
 
   const liveColumns = [
     { key: 'title', title: 'Class Title' },
@@ -223,18 +285,22 @@ const ClassManagement: React.FC = () => {
     fetchObsLectures();
     fetchRecordedClasses();
     fetchAcademicData();
-  }, []);
+  }, [user?.id]);
 
   const fetchAcademicData = async () => {
     try {
-      const [classRes, subjectRes] = await Promise.all([
+      const requests: Promise<any>[] = [
         api.get('/academic/classes'),
         api.get('/academic/subjects'),
-      ]);
+      ];
+      if (user?.id) requests.push(api.get(`/teachers/${user.id}`));
+      const [classRes, subjectRes, teacherRes] = await Promise.all(requests);
       const classes = classRes.data?.data ?? classRes.data ?? [];
       const subjects = subjectRes.data?.data ?? subjectRes.data ?? [];
+      const teacher = teacherRes?.data?.data ?? teacherRes?.data ?? {};
       setAcademicClasses(Array.isArray(classes) ? classes : []);
       setAcademicSubjects(Array.isArray(subjects) ? subjects : []);
+      setTeacherAssignments(Array.isArray(teacher?.teacherProfile?.assignments) ? teacher.teacherProfile.assignments : []);
     } catch (error) {
       console.error('Failed to fetch academic master data', error);
     }
@@ -322,7 +388,7 @@ const ClassManagement: React.FC = () => {
 
   const resetRecordingModal = () => {
     setShowRecordingModal(false);
-    setRecordingForm({ title: '', description: '', classId: '', subjectId: '', chapterId: '', topicId: '', recordedDate: '', duration: '', youtubeUrl: '', language: 'en' });
+    setRecordingForm({ title: '', description: '', classId: '', sectionId: '', subjectId: '', chapterId: '', topicId: '', recordedDate: '', duration: '', youtubeUrl: '', language: 'en' });
     setRecordingFile(null);
     setThumbnailFile(null);
     setVideoSource('upload');
@@ -348,6 +414,9 @@ const ClassManagement: React.FC = () => {
 
   const handleUploadRecording = async () => {
     if (!recordingForm.title.trim()) { alert('Please enter a recording title'); return; }
+    if (!recordingForm.classId) { alert('Please select a class'); return; }
+    if (!recordingForm.sectionId) { alert('Please select a section'); return; }
+    if (!recordingForm.subjectId) { alert('Please select a subject'); return; }
     if (videoSource === 'upload' && !recordingFile) { alert('Please choose a video file to upload'); return; }
     if (videoSource === 'youtube') {
       if (!recordingForm.youtubeUrl.trim()) { alert('Please paste a YouTube URL'); return; }
@@ -376,6 +445,7 @@ const ClassManagement: React.FC = () => {
         title: recordingForm.title.trim(),
         description: recordingForm.description || undefined,
         classId: recordingForm.classId || undefined,
+        sectionId: recordingForm.sectionId || undefined,
         subjectId: recordingForm.subjectId || undefined,
         chapterId: recordingForm.chapterId || undefined,
         topicId: recordingForm.topicId || undefined,
@@ -1062,23 +1132,50 @@ const ClassManagement: React.FC = () => {
             <SelectField
               label="Class"
               value={recordingForm.classId}
-              onChange={(e) => setRecordingForm((prev) => ({ ...prev, classId: e.target.value }))}
-              options={[{ value: '', label: 'Select class…' }, ...academicClasses.map((c: any) => ({ value: c.id, label: c.name }))]}
+              onChange={(e) => setRecordingForm((prev) => ({
+                ...prev,
+                classId: e.target.value,
+                sectionId: '',
+                subjectId: '',
+                chapterId: '',
+                topicId: '',
+              }))}
+              options={[{ value: '', label: 'Select class...' }, ...recordingClassOptions.map((c: any) => ({ value: c.id, label: c.name }))]}
             />
             <SelectField
-              label="Subject"
-              value={recordingForm.subjectId}
-              onChange={(e) => setRecordingForm((prev) => ({ ...prev, subjectId: e.target.value }))}
-              options={[{ value: '', label: 'Select subject…' }, ...academicSubjects.map((s: any) => ({ value: s.id, label: s.name }))]}
+              label="Section"
+              value={recordingForm.sectionId}
+              onChange={(e) => setRecordingForm((prev) => ({
+                ...prev,
+                sectionId: e.target.value,
+                subjectId: '',
+                chapterId: '',
+                topicId: '',
+              }))}
+              options={[
+                { value: '', label: recordingForm.classId ? (recordingSectionOptions.length ? 'Select section...' : 'No assigned sections') : 'Select class first' },
+                ...recordingSectionOptions.map((section: any) => ({ value: section.id, label: section.name })),
+              ]}
             />
           </div>
           <div className="class__modal-row">
+            <SelectField
+              label="Subject"
+              value={recordingForm.subjectId}
+              onChange={(e) => setRecordingForm((prev) => ({ ...prev, subjectId: e.target.value, chapterId: '', topicId: '' }))}
+              options={[
+                { value: '', label: recordingForm.sectionId ? (recordingSubjectOptions.length ? 'Select subject...' : 'No assigned subjects') : 'Select section first' },
+                ...recordingSubjectOptions.map((s: any) => ({ value: s.id, label: s.name })),
+              ]}
+            />
             <SelectField
               label="Chapter (optional)"
               value={recordingForm.chapterId}
               onChange={(e) => setRecordingForm((prev) => ({ ...prev, chapterId: e.target.value }))}
               options={[{ value: '', label: recordingForm.subjectId ? (recChapters.length ? 'All / general' : 'No chapters') : 'Select subject first' }, ...recChapters.map((c: any) => ({ value: c.id, label: c.name }))]}
             />
+          </div>
+          <div className="class__modal-row">
             <SelectField
               label="Topic (optional)"
               value={recordingForm.topicId}

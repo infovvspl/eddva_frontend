@@ -107,7 +107,7 @@ export default function StudentDashboard() {
   if (isLoading) return <DashboardSkeleton />;
 
   const firstName         = me?.fullName?.split(" ")[0] || "Student";
-  const avatar            = resolveUrl(me?.profilePictureUrl);
+  const avatar            = resolveUrl(me?.profileImage);
   const streak            = me?.student?.streakDays ?? 0;
   const xp                = me?.student?.xpPoints ?? 0;
   const tier              = me?.student?.currentEloTier ?? "Iron";
@@ -168,7 +168,7 @@ export default function StudentDashboard() {
         )}
 
         <h1 className="text-3xl font-extrabold leading-tight">
-          Welcome back, {firstName}! 👋
+          Welcome, {firstName}! 👋
         </h1>
 
         <p className="text-white/80 text-sm">

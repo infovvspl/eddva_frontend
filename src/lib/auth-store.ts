@@ -69,7 +69,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user
           ? {
               ...state.user,
-              avatar: state.user.avatar?.startsWith("data:") ? undefined : state.user.avatar,
+              profileImage: state.user.profileImage?.startsWith("data:") ? undefined : state.user.profileImage,
             }
           : null,
         isAuthenticated: state.isAuthenticated,

@@ -8,19 +8,20 @@ export default function MemoryMatchLeaderboard({ onBack }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRankings = async () => {
+    const fetchLeaderboard = async () => {
       try {
-        const res = await api.get('/games/memory-match/leaderboard');
+        const res = await api.get('/school/gamification/memory-match/leaderboard');
         const list = res.data?.data ?? res.data ?? [];
         setRankings(list);
       } catch (err) {
-        console.error('Failed to load leaderboard:', err);
+        console.error('Failed to fetch leaderboard:', err);
         toast.error('Failed to load leaderboard rankings.');
       } finally {
         setLoading(false);
       }
     };
-    fetchRankings();
+
+    fetchLeaderboard();
   }, []);
 
   if (loading) {

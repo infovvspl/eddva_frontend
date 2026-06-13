@@ -26,8 +26,28 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\x07/g, "\\a")
     .replace(/\x08/g, "\\b")
     // 3. Keep carriage returns as simple newlines
-    .replace(/\\n/g, "\n")
+    .replace(/\\n(?![a-zA-Z])/g, "\n")
     .replace(/\r?\n/g, "\n\n");
+
+  const mathCommandPattern = String.raw`(?:\\(?:frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)|\\frac|\\sqrt|√)`;
+  const normalizeMathLine = (line: string) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.includes("$") || !new RegExp(mathCommandPattern).test(trimmed)) return line;
+    const prefix = line.match(/^\s*(?:\d+[\).]\s*|[-*]\s*)?/)?.[0] ?? "";
+    const body = line.slice(prefix.length).trim();
+    if (!/[=+\-*/^_{}\\√]/.test(body)) return line;
+    const sentenceLike = /[A-Za-z]{3,}\s+[A-Za-z]{3,}/.test(body.replace(/\\[A-Za-z]+/g, ""));
+    const standaloneMath =
+      /^[a-zA-Z]\s*=/.test(body) ||
+      /^(?:\\(?:frac|sqrt)|√|\d+\s*[+\-*/=]|\(?\s*[a-zA-Z0-9]+\s*[+\-*/=])/.test(body);
+    if (sentenceLike && !standaloneMath) return line;
+    return `${prefix}$${body}$`;
+  };
+
+  formatted = formatted
+    .split("\n")
+    .map(normalizeMathLine)
+    .join("\n");
 
   // Step-based and final answer formatting
   formatted = formatted
@@ -44,8 +64,10 @@ export const formatMarkdown = (text?: string) => {
 
   // 5. Restore missing backslashes for common math symbols (e.g. frac, sqrt, pi, theta, etc.)
   formatted = formatted
-    .replace(/(^|[^A-Za-z\\])(rac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\{/g, "$1\\$2{")
+    .replace(/(^|[^A-Za-z\\])(rac|frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\{/g, (_m, prefix, command) => `${prefix}\\${command === "rac" ? "frac" : command}{`)
     .replace(/(^|[^A-Za-z\\])(int_|sum_|lim_)/g, "$1\\$2")
+    .replace(/√\s*\{([^{}]+)\}/g, "\\sqrt{$1}")
+    .replace(/√\s*([A-Za-z0-9]+)/g, "\\sqrt{$1}")
     .replace(/x\s+\bo\b\s+(\d+|[a-z])/gi, "x \\to $1")
     .replace(/x\s*->\s*(\d+|[a-z])/gi, "x \\to $1");
 
@@ -76,8 +98,11 @@ export const formatMarkdown = (text?: string) => {
     const den = p2 || p3;
     return `\\frac{${p1}}{${den}}`;
   });
-  // 4. short_word / short_word (to catch dy/dx, 1/2, x/y safely)
-  formatted = formatted.replace(/\b([a-zA-Z0-9]{1,3})\s*\/\s*([a-zA-Z0-9]{1,3})\b/g, "\\frac{$1}{$2}");
+  // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
+  // base variable length is limited to 1-3 characters to prevent matching URLs/paths.
+  formatted = formatted.replace(/(?<![\w$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, num, space, den) => {
+    return `\\frac{${num}}{${den.trim()}}`;
+  });
 
   // 7. Split by $ to protect already-formatted math blocks
   const parts = formatted.split("$");
@@ -88,15 +113,15 @@ export const formatMarkdown = (text?: string) => {
     
     // A math word is a standard function, a variable of 1-2 letters not in the englishWords list, or digits.
     const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|(?<![a-zA-Z])(?!${englishWords}(?![a-zA-Z]))[a-zA-Z]{1,2}(?![a-zA-Z])|\\d+)`;
-    const opPattern = `\\s*[()+\\-*\\/^=<>\'_\\-{}#]\\s*`;
-    const commandPattern = `\\s*\\\\[a-zA-Z]+\\s*`;
+    const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
+    const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
 
     const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
 
     const mathPattern = `(?<![\\w$])(?:${mathToken})*\\^(?:${mathToken})*(?![\\w$])`;
     const subscriptPattern = `(?<![\\w$])(?:${mathToken})*_(?:${mathToken})*(?![\\w$])`;
     const equationPattern = `(?<![\\w$])(?:${mathToken})*=(?:${mathToken})*(?![\\w$])`;
-    const latexPattern = `(?<![\\w$])(?:${mathToken})*(?:\\\\frac|\\\\lim|\\\\to|\\\\sum|\\\\int)(?:${mathToken})*(?![\\w$])`;
+    const latexPattern = `(?<![\\w$])(?:${mathToken})*(?:${commandPattern})(?:${mathToken})*(?![\\w$])`;
     const functionPattern = `(?<![\\w$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
 
     const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");

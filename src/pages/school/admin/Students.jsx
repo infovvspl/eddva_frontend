@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { mapStudentFormToApi, mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
@@ -400,6 +400,13 @@ export default function Students() {
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Manage student profiles and enrollment.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            to="/school/admin/student-promotion"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ArrowUpRight className="h-5 w-5 text-indigo-600" />
+            Student Promotion
+          </Link>
           <button
             onClick={() => {
               setImportFile(null);
@@ -582,8 +589,8 @@ export default function Students() {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-4">
                         <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
-                          {student.photo ? (
-                            <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
+                          {student.profileImage ? (
+                            <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
                               {(student.name || 'S').slice(0, 1).toUpperCase()}

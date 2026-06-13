@@ -168,8 +168,8 @@ export default function TeacherProfile() {
         <div className="px-12 pb-12 -mt-20">
           <div className="flex flex-col md:flex-row items-end gap-8 mb-8">
             <div className="w-48 h-48 rounded-[3rem] border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 shadow-2xl">
-              {teacher.photo ? (
-                <img src={teacher.photo} alt={teacher.name} className="w-full h-full object-cover" />
+              {teacher.profileImage ? (
+                <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-5xl font-bold tracking-tight text-blue-700">
                   {(teacher.name || 'T').slice(0, 1).toUpperCase()}

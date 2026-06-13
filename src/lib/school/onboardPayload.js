@@ -7,7 +7,7 @@ export function mapTeacherFormToApiUpdate(form) {
     name: form.name?.trim() || null,
     email: form.email?.trim().toLowerCase() || null,
     phone: form.phone || form.altPhone || null,
-    photo: typeof form.photo === 'string' ? form.photo : null,
+    profileImage: typeof form.profileImage === 'string' ? form.profileImage : (typeof form.photo === 'string' ? form.photo : null),
     employeeId: form.employeeId || form.employeeCode || null,
     bloodGroup: form.bloodGroup || null,
     maritalStatus: form.maritalStatus || null,
