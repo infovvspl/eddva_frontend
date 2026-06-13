@@ -97,6 +97,70 @@
   gap: 14px;
 }
 
+.reports__weakness-grid--nested {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.reports__weakness-class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reports__weakness-class-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reports__weakness-class-header,
+.reports__weakness-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reports__weakness-class-header span,
+.reports__weakness-section-header span {
+  color: var(--gray-400);
+  font-size: 0.688rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.reports__weakness-class-header h3,
+.reports__weakness-section-header h4 {
+  color: var(--gray-900);
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.reports__weakness-class-header h3 {
+  font-size: 1rem;
+}
+
+.reports__weakness-section-header h4 {
+  font-size: 0.938rem;
+}
+
+.reports__weakness-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.reports__weakness-section-card {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.62);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
 .reports__weekly-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -161,6 +225,7 @@
 .reports__weakness-stats {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 10px;
 }
 

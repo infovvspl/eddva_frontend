@@ -11,10 +11,71 @@ import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
 import './Reports.css';
 
+const truthyFlag = (value: any) => value === true || value === 'true' || value === 't' || value === 1 || value === '1';
+
+const normalizeAssignmentRow = (row: any) => {
+  const classId = row?.class_id || row?.classId || '';
+  const className = row?.class_name || row?.className || '';
+  const sectionId = row?.section_id || row?.sectionId || '';
+  const sectionName = row?.section_name || row?.sectionName || '';
+  const subjectId = row?.subject_id || row?.subjectId || '';
+  const subjectName = row?.subject_name || row?.subjectName || '';
+  const isClassTeacher = truthyFlag(row?.is_class_teacher || row?.isClassTeacher);
+
+  return {
+    ...row,
+    class_id: classId,
+    class_name: className,
+    section_id: sectionId,
+    section_name: sectionName,
+    subject_id: subjectId,
+    subject_name: subjectName,
+    is_class_teacher: isClassTeacher,
+    classId,
+    className,
+    sectionId,
+    sectionName,
+    subjectId,
+    subjectName,
+    isClassTeacher,
+  };
+};
+
+const mergeAssignments = (...groups: any[][]) => {
+  const map = new Map<string, any>();
+  groups.flat().filter(Boolean).map(normalizeAssignmentRow).forEach((row) => {
+    if (!row.class_id && !row.section_id && !row.subject_id) return;
+    const key = [row.class_id, row.section_id, row.subject_id || '__all__', row.is_class_teacher ? 'ct' : 'sub'].join('|');
+    map.set(key, row);
+  });
+  return Array.from(map.values());
+};
+
+const mapRosterStudentToReportStudent = (student: any) => {
+  const profile = student.studentProfile || {};
+  const section = profile.section || {};
+  const classInfo = section.class || {};
+  return {
+    id: student.id,
+    name: student.name,
+    classId: classInfo.id || student.classId || null,
+    sectionId: section.id || profile.sectionId || student.sectionId || null,
+    className: classInfo.name || student.className || null,
+    sectionName: section.name || student.sectionName || null,
+    class: [classInfo.name || student.className, section.name || student.sectionName].filter(Boolean).join(' - ') || '-',
+    avgScore: 0,
+    attendance: 0,
+    trend: 'consistent',
+    weakAreas: [],
+    strongAreas: [],
+  };
+};
+
 const Reports: React.FC = () => {
   const navigate = useNavigate();
   const [performanceChartData, setPerformanceChartData] = useState<any[]>([]);
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
+  const [assignedRoster, setAssignedRoster] = useState<any[]>([]);
   const [classAnalytics, setClassAnalytics] = useState<any[]>([]);
   const [weaknessData, setWeaknessData] = useState<any[]>([]);
   const [scope, setScope] = useState<any>(null);
@@ -53,16 +114,70 @@ const Reports: React.FC = () => {
       try {
         setLoading(true);
         setError('');
-        const res = await api.get('/reports/class');
+        const params = new URLSearchParams();
+        if (selectedClass !== 'all') params.set('classId', selectedClass);
+        if (selectedSection !== 'all') params.set('sectionId', selectedSection);
+        const reportUrl = params.toString() ? `/reports/class?${params.toString()}` : '/reports/class';
+        const [res, dashboardRes] = await Promise.all([
+          api.get(reportUrl),
+          api.get('/dashboard/stats').catch(() => null),
+        ]);
         const body: any = res.data || {};
+        const dashboardBody: any = dashboardRes?.data || {};
+        const dashboardAssignments = dashboardBody?.data?.teacherData?.assignments || dashboardBody?.teacherData?.assignments || [];
+        const reportAssignments = Array.isArray(body.scope?.assignments) ? body.scope.assignments : [];
+        const mergedScope = {
+          ...(body.scope || {}),
+          assignments: mergeAssignments(reportAssignments, Array.isArray(dashboardAssignments) ? dashboardAssignments : []),
+        };
         const reportSummary = body.summary || {};
         const analytics = Array.isArray(body.data) ? body.data : [];
+        let reportStudents = Array.isArray(body.students) ? body.students : [];
+        let rosterStudents: any[] = [];
+
+        try {
+          const allRosterRes = await api.get('/students?limit=1000');
+          const allRosterBody: any = allRosterRes.data || {};
+          const allRoster = Array.isArray(allRosterBody.data)
+            ? allRosterBody.data
+            : Array.isArray(allRosterBody)
+              ? allRosterBody
+              : [];
+          rosterStudents = allRoster.map(mapRosterStudentToReportStudent);
+          setAssignedRoster(rosterStudents);
+        } catch (rosterErr) {
+          console.error('Unable to load assigned roster for reports', rosterErr);
+          setAssignedRoster([]);
+        }
+
+        if (selectedClass !== 'all') {
+          const rosterParams = new URLSearchParams();
+          rosterParams.set('classId', selectedClass);
+          if (selectedSection !== 'all') rosterParams.set('sectionId', selectedSection);
+          rosterParams.set('limit', '500');
+          try {
+            const rosterRes = await api.get(`/students?${rosterParams.toString()}`);
+            const rosterBody: any = rosterRes.data || {};
+            const rosterStudents = Array.isArray(rosterBody.data)
+              ? rosterBody.data
+              : Array.isArray(rosterBody)
+                ? rosterBody
+                : [];
+            const reportByStudentId = new Map(reportStudents.map((student: any) => [String(student.id), student]));
+            reportStudents = rosterStudents.map((student: any) => ({
+              ...mapRosterStudentToReportStudent(student),
+              ...(reportByStudentId.get(String(student.id)) || {}),
+            }));
+          } catch (rosterErr) {
+            console.error('Unable to load roster fallback for reports', rosterErr);
+          }
+        }
 
         setPerformanceChartData(Array.isArray(body.performance) ? body.performance : []);
         setClassAnalytics(analytics);
-        setStudentPerformance(Array.isArray(body.students) ? body.students : []);
+        setStudentPerformance(reportStudents);
         setWeaknessData(Array.isArray(body.weaknesses) ? body.weaknesses : []);
-        setScope(body.scope || null);
+        setScope(mergedScope);
         setWeeklyAnalysis({
           averageScore: Math.round(body.weeklyAnalysis?.averageScore || 0),
           passRate: Math.round(body.weeklyAnalysis?.passRate || 0),
@@ -72,12 +187,12 @@ const Reports: React.FC = () => {
           assessments: Math.round(body.weeklyAnalysis?.assessments || 0),
           days: Array.isArray(body.weeklyAnalysis?.days) ? body.weeklyAnalysis.days : [],
         });
-        setReportScope(body.scope || null);
+        setReportScope(mergedScope);
         setSummary({
           classAverage: Math.round(reportSummary.classAverage || analytics[0]?.avgScore || 0),
           passRate: Math.round(reportSummary.passRate || analytics[0]?.passRate || 0),
           atRiskStudents: Math.round(reportSummary.atRiskStudents || 0),
-          totalStudents: Math.round(reportSummary.totalStudents || body.students?.length || 0),
+          totalStudents: Math.round(reportSummary.totalStudents || reportStudents.length || 0),
         });
       } catch (err: any) {
         console.error('Error fetching reports:', err);
@@ -91,7 +206,7 @@ const Reports: React.FC = () => {
       }
     };
     fetchReports();
-  }, [page, limit]);
+  }, [page, limit, selectedClass, selectedSection]);
 
   const classes = useMemo(() => {
     const map = new Map<string, string>();
@@ -176,6 +291,123 @@ const Reports: React.FC = () => {
     const sectionName = String(name || '').trim();
     if (!sectionName) return '';
     return /^sec(?:tion)?\b/i.test(sectionName) ? sectionName : `Sec ${sectionName}`;
+  };
+  const normalizeKey = (value?: any) => String(value || '').trim().toLowerCase();
+  const reportAssignments = useMemo(
+    () => (Array.isArray(reportScope?.assignments) ? reportScope.assignments : []),
+    [reportScope],
+  );
+  const weaknessMetricBySubject = useMemo(() => {
+    const map = new Map<string, any>();
+    weaknessData.forEach((item) => {
+      const subjectName = item.topic || item.subject || item.subjectName || item.subject_name;
+      const subjectId = item.subjectId || item.subject_id;
+      if (subjectName) map.set(normalizeKey(subjectName), item);
+      if (subjectId) map.set(String(subjectId), item);
+    });
+    return map;
+  }, [weaknessData]);
+  const weaknessClassGroups = useMemo(() => {
+    const classMap = new Map<string, any>();
+
+    const ensureClass = (classId: string, className: string) => {
+      if (!classMap.has(classId)) {
+        classMap.set(classId, {
+          id: classId,
+          name: className || 'Assigned class',
+          sections: new Map<string, any>(),
+        });
+      }
+      return classMap.get(classId);
+    };
+
+    const ensureSection = (classGroup: any, sectionId: string, sectionName: string) => {
+      if (!classGroup.sections.has(sectionId)) {
+        classGroup.sections.set(sectionId, {
+          id: sectionId,
+          name: sectionName || 'Section',
+          isClassTeacher: false,
+          subjects: new Map<string, any>(),
+        });
+      }
+      return classGroup.sections.get(sectionId);
+    };
+
+    const addSubject = (sectionGroup: any, subjectId: string, subjectName: string) => {
+      if (!subjectName) return;
+      const key = subjectId || normalizeKey(subjectName);
+      if (!sectionGroup.subjects.has(key)) {
+        sectionGroup.subjects.set(key, { id: subjectId, name: subjectName });
+      }
+    };
+
+    reportAssignments.forEach((row: any) => {
+      const classId = String(row.class_id || row.classId || 'assigned-class');
+      const className = row.class_name || row.className || 'Assigned class';
+      const sectionId = String(row.section_id || row.sectionId || `${classId}-section`);
+      const sectionName = row.section_name || row.sectionName || 'Section';
+      const subjectId = String(row.subject_id || row.subjectId || '');
+      const subjectName = row.subject_name || row.subjectName || '';
+      const classGroup = ensureClass(classId, className);
+      const sectionGroup = ensureSection(classGroup, sectionId, sectionName);
+
+      if (truthyFlag(row.is_class_teacher || row.isClassTeacher)) {
+        sectionGroup.isClassTeacher = true;
+      }
+      addSubject(sectionGroup, subjectId, subjectName);
+    });
+
+    if (!reportAssignments.length) {
+      const fallbackClass = ensureClass('assigned-class', 'Assigned class');
+      const fallbackSection = ensureSection(fallbackClass, 'assigned-section', 'Section');
+      weaknessData.forEach((item) => addSubject(fallbackSection, '', item.topic || item.subject || 'General'));
+    }
+
+    return Array.from(classMap.values())
+      .map((classGroup: any) => ({
+        ...classGroup,
+        sections: Array.from(classGroup.sections.values())
+          .map((sectionGroup: any) => ({
+            ...sectionGroup,
+            subjects: Array.from(sectionGroup.subjects.values()).sort((a: any, b: any) => a.name.localeCompare(b.name)),
+          }))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name)),
+      }))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+  }, [reportAssignments, weaknessData]);
+  const reportStudentById = useMemo(() => {
+    return new Map(studentPerformance.map((student: any) => [String(student.id), student]));
+  }, [studentPerformance]);
+  const assignedRosterWithMetrics = useMemo(() => {
+    const base = assignedRoster.length ? assignedRoster : studentPerformance;
+    return base.map((student: any) => ({
+      ...student,
+      ...(reportStudentById.get(String(student.id)) || {}),
+    }));
+  }, [assignedRoster, studentPerformance, reportStudentById]);
+  const getWeaknessSubjectStats = (classId: string, sectionId: string, subject: any) => {
+    const subjectName = subject?.name || '';
+    const metric = weaknessMetricBySubject.get(String(subject?.id || '')) || weaknessMetricBySubject.get(normalizeKey(subjectName)) || {};
+    const scopedStudents = assignedRosterWithMetrics.filter((student: any) => {
+      return String(student.classId || '') === String(classId)
+        && String(student.sectionId || '') === String(sectionId);
+    });
+    const assignedStudents = scopedStudents.length;
+    const weakByStudent = scopedStudents.filter((student: any) => {
+      const weakAreas = Array.isArray(student.weakAreas) ? student.weakAreas : [];
+      return weakAreas.some((area: string) => normalizeKey(area) === normalizeKey(subjectName));
+    }).length;
+    const metricWeakStudents = metric.weakStudents || metric.weak_students || 0;
+    const atRiskStudents = weakByStudent || Math.min(Number(metricWeakStudents) || 0, assignedStudents || Number(metricWeakStudents) || 0);
+    const scoredStudents = scopedStudents
+      .map((student: any) => Number(student.avgScore || 0))
+      .filter((score: number) => Number.isFinite(score) && score > 0);
+    const metricAverage = Number(metric.avgScore || metric.avg_score || 0);
+    const classAverage = scoredStudents.length
+      ? Math.round(scoredStudents.reduce((sum: number, score: number) => sum + score, 0) / scoredStudents.length)
+      : (Number.isFinite(metricAverage) ? metricAverage : 0);
+
+    return { assignedStudents, atRiskStudents, classAverage };
   };
   const scopeAssignments = Array.isArray(scope?.assignments) ? scope.assignments : [];
   const scopeLabel = scopeAssignments.length
@@ -358,35 +590,86 @@ const Reports: React.FC = () => {
 
   const weaknessContent = (
     <div className="reports__section">
-      {!loading && !weaknessData.length && (
-        <div className="reports__empty">No weakness data yet. Publish assessment results to generate this analysis.</div>
+      {!loading && !weaknessClassGroups.length && (
+        <div className="reports__empty">No assigned class or subject data is available for weakness analysis.</div>
       )}
-      <div className="reports__weakness-grid">
-        {weaknessData.map((item) => (
-          <GlassCard 
-            key={item.topic} 
-            hover 
-            className="reports__weakness-card"
-            onClick={() => navigate(`/school/teacher/reports/weakness/${item.topic}`, { state: { studentPerformance } })}
-          >
-            <div className="reports__weakness-header">
-              <AlertTriangle size={18} className="reports__weakness-icon" />
-              <h4>{item.topic}</h4>
-            </div>
-            <div className="reports__weakness-stats">
-              <div className="reports__weakness-stat">
-                <span className="reports__weakness-label">Weak Students</span>
-                <span className="reports__weakness-value">{item.weakStudents || item.weak_students || 0}</span>
+      <div className="reports__weakness-class-list">
+        {weaknessClassGroups.map((classGroup: any) => (
+          <GlassCard key={classGroup.id} className="reports__weakness-class-card">
+            <div className="reports__weakness-class-header">
+              <div>
+                <span>Class</span>
+                <h3>{classGroup.name}</h3>
               </div>
-              <div className="reports__weakness-stat">
-                <span className="reports__weakness-label">Avg Score</span>
-                <span className="reports__weakness-value reports__weakness-value--low">{item.avgScore || item.avg_score || 0}%</span>
-              </div>
+              <Badge variant="purple">{classGroup.sections.length} section{classGroup.sections.length === 1 ? '' : 's'}</Badge>
             </div>
-            <ProgressBar value={item.avgScore || item.avg_score || 0} size="sm" color="var(--gradient-warm)" />
-            <div className="reports__weakness-footer">
-              <span>View struggling students</span>
-              <ArrowRight size={12} />
+            <div className="reports__weakness-section-grid">
+              {classGroup.sections.map((sectionGroup: any) => (
+                <div key={sectionGroup.id} className="reports__weakness-section-card">
+                  <div className="reports__weakness-section-header">
+                    <div>
+                      <span>Section</span>
+                      <h4>{formatSectionName(sectionGroup.name)}</h4>
+                    </div>
+                    <Badge variant={sectionGroup.isClassTeacher ? 'success' : 'info'}>
+                      {sectionGroup.isClassTeacher ? 'Class teacher' : 'Assigned subjects'}
+                    </Badge>
+                  </div>
+                  {!sectionGroup.subjects.length && (
+                    <div className="reports__empty">No subjects are assigned for this section.</div>
+                  )}
+                  <div className="reports__weakness-grid reports__weakness-grid--nested">
+                    {sectionGroup.subjects.map((subject: any) => {
+                      const { assignedStudents, atRiskStudents, classAverage } = getWeaknessSubjectStats(
+                        classGroup.id,
+                        sectionGroup.id,
+                        subject,
+                      );
+
+                      return (
+                        <GlassCard
+                          key={subject.id || subject.name}
+                          hover
+                          className="reports__weakness-card"
+                          onClick={() => navigate(`/school/teacher/reports/weakness/${encodeURIComponent(subject.name)}`, {
+                            state: {
+                              studentPerformance,
+                              classId: classGroup.id,
+                              sectionId: sectionGroup.id,
+                              subjectId: subject.id,
+                              subjectName: subject.name,
+                            },
+                          })}
+                        >
+                          <div className="reports__weakness-header">
+                            <AlertTriangle size={18} className="reports__weakness-icon" />
+                            <h4>{subject.name}</h4>
+                          </div>
+                          <div className="reports__weakness-stats">
+                            <div className="reports__weakness-stat">
+                              <span className="reports__weakness-label">Assigned Students</span>
+                              <span className="reports__weakness-value">{assignedStudents}</span>
+                            </div>
+                            <div className="reports__weakness-stat">
+                              <span className="reports__weakness-label">At Risk</span>
+                              <span className="reports__weakness-value reports__weakness-value--low">{atRiskStudents}</span>
+                            </div>
+                            <div className="reports__weakness-stat">
+                              <span className="reports__weakness-label">Class Average</span>
+                              <span className="reports__weakness-value">{classAverage}%</span>
+                            </div>
+                          </div>
+                          <ProgressBar value={classAverage} size="sm" color="var(--gradient-warm)" />
+                          <div className="reports__weakness-footer">
+                            <span>View struggling students</span>
+                            <ArrowRight size={12} />
+                          </div>
+                        </GlassCard>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </GlassCard>
         ))}
