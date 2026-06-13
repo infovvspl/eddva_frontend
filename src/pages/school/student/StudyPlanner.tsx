@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, differenceInDays, subDays, subYears, addDays } from "date-fns";
 import { toast } from "sonner";
 import { useQueries } from "@tanstack/react-query";
@@ -1453,9 +1453,23 @@ function groupBacklogItems<T>(
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 type ActiveTab = "today" | "backlogs" | "weakness" | "revision" | "roadmap";
+type BacklogPage = "plan" | "lectures" | "notes" | "pyq" | "dpp" | "mindmaps" | "mocktests";
+type WeakPage = "chapters" | "topics" | "forgotten" | "negative";
+type RevisionCategory = "spaced" | "intensive" | "notes" | "practice";
+
+const ACTIVE_TABS: ActiveTab[] = ["today", "backlogs", "weakness", "revision", "roadmap"];
+const BACKLOG_PAGES: BacklogPage[] = ["plan", "lectures", "notes", "pyq", "dpp", "mindmaps", "mocktests"];
+const WEAK_PAGES: WeakPage[] = ["chapters", "topics", "forgotten", "negative"];
+const REVISION_CATEGORIES: RevisionCategory[] = ["spaced", "intensive", "notes", "practice"];
+
+function pickParam<T extends string>(params: URLSearchParams, key: string, allowed: readonly T[]): T | null {
+  const value = params.get(key);
+  return value && allowed.includes(value as T) ? (value as T) : null;
+}
 
 export default function SchoolStudentStudyPlanner() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: me, isLoading: meLoading } = useStudentMe();
 
   const student = useMemo(() => {
@@ -1480,6 +1494,8 @@ export default function SchoolStudentStudyPlanner() {
     return null;
   });
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    const tabFromUrl = pickParam(searchParams, "tab", ACTIVE_TABS);
+    if (tabFromUrl) return tabFromUrl;
     if (typeof window !== "undefined") return (localStorage.getItem("edva_active_tab") as ActiveTab) || "today";
     return "today";
   });
@@ -1496,13 +1512,15 @@ export default function SchoolStudentStudyPlanner() {
   }, [activeTab]);
   const [todayView, setTodayView] = useState<"today" | "week">("today");
   const [selectedWeekDay, setSelectedWeekDay] = useState<string>("");
-  const [backlogPage, setBacklogPage] = useState<null | "plan" | "lectures" | "notes" | "pyq" | "dpp" | "mindmaps" | "mocktests">(null);
-  const [weakPage, setWeakPage] = useState<null | "chapters" | "topics" | "forgotten" | "negative">(null);
-  const [revisionCategory, setRevisionCategory] = useState<null | "spaced" | "intensive" | "notes" | "practice">(null);
+  const [backlogPage, setBacklogPage] = useState<BacklogPage | null>(() => pickParam(searchParams, "detail", BACKLOG_PAGES));
+  const [weakPage, setWeakPage] = useState<WeakPage | null>(() => pickParam(searchParams, "detail", WEAK_PAGES));
+  const [revisionCategory, setRevisionCategory] = useState<RevisionCategory | null>(() => pickParam(searchParams, "detail", REVISION_CATEGORIES));
   const [revisionPage, setRevisionPage] = useState<null | "schedule" | "table" | "aiplan">(null);
   const [openNoteIds, setOpenNoteIds] = useState<Set<string>>(new Set());
   const [revisionNotes, setRevisionNotes] = useState<Record<string, string>>({});
   const [openRevBuckets, setOpenRevBuckets] = useState<Set<number>>(new Set([1, 3, 7, 21]));
+  const [openRoadmapSubjects, setOpenRoadmapSubjects] = useState<Set<string>>(new Set());
+  const [openRoadmapChapters, setOpenRoadmapChapters] = useState<Set<string>>(new Set());
   const [revisionModal, setRevisionModal] = useState<null | {
     topicId: string; topicName: string; subjectName: string;
     accuracy: number; intervalDays: 1 | 3 | 7 | 21;
@@ -1513,6 +1531,64 @@ export default function SchoolStudentStudyPlanner() {
 
   const toggleRevBucket = (interval: number) =>
     setOpenRevBuckets(prev => { const n = new Set(prev); n.has(interval) ? n.delete(interval) : n.add(interval); return n; });
+
+  const toggleRoadmapSubject = (subjectId: string) =>
+    setOpenRoadmapSubjects(prev => { const n = new Set(prev); n.has(subjectId) ? n.delete(subjectId) : n.add(subjectId); return n; });
+
+  const toggleRoadmapChapter = (chapterId: string) =>
+    setOpenRoadmapChapters(prev => { const n = new Set(prev); n.has(chapterId) ? n.delete(chapterId) : n.add(chapterId); return n; });
+
+  useEffect(() => {
+    const tab = pickParam(searchParams, "tab", ACTIVE_TABS);
+    const detail = searchParams.get("detail");
+    const nextTab = tab ?? activeTab;
+
+    if (tab && tab !== activeTab) setActiveTab(tab);
+    setBacklogPage(nextTab === "backlogs" && detail && BACKLOG_PAGES.includes(detail as BacklogPage) ? detail as BacklogPage : null);
+    setWeakPage(nextTab === "weakness" && detail && WEAK_PAGES.includes(detail as WeakPage) ? detail as WeakPage : null);
+    setRevisionCategory(nextTab === "revision" && detail && REVISION_CATEGORIES.includes(detail as RevisionCategory) ? detail as RevisionCategory : null);
+  }, [activeTab, searchParams]);
+
+  const updatePlannerRoute = useCallback((tab: ActiveTab, detail?: string | null) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", tab);
+    if (detail) next.set("detail", detail);
+    else next.delete("detail");
+    setSearchParams(next);
+  }, [searchParams, setSearchParams]);
+
+  const selectPlannerTab = useCallback((tab: ActiveTab) => {
+    setActiveTab(tab);
+    setBacklogPage(null);
+    setWeakPage(null);
+    setRevisionCategory(null);
+    updatePlannerRoute(tab, null);
+  }, [updatePlannerRoute]);
+
+  const openBacklogPage = useCallback((page: BacklogPage) => {
+    setActiveTab("backlogs");
+    setBacklogPage(page);
+    updatePlannerRoute("backlogs", page);
+  }, [updatePlannerRoute]);
+
+  const openWeakPage = useCallback((page: WeakPage) => {
+    setActiveTab("weakness");
+    setWeakPage(page);
+    updatePlannerRoute("weakness", page);
+  }, [updatePlannerRoute]);
+
+  const openRevisionCategory = useCallback((category: RevisionCategory) => {
+    setActiveTab("revision");
+    setRevisionCategory(category);
+    updatePlannerRoute("revision", category);
+  }, [updatePlannerRoute]);
+
+  const closePlannerDetail = useCallback(() => {
+    setBacklogPage(null);
+    setWeakPage(null);
+    setRevisionCategory(null);
+    updatePlannerRoute(activeTab, null);
+  }, [activeTab, updatePlannerRoute]);
 
   const { data: rawTodayItems = [], isLoading: todayPlanLoading } = useTodaysPlan(selectedCourseId ?? undefined);
   const { data: rawBacklogWeekData = {} } = useWeeklyPlanGrouped(backlogStart, yesterday, selectedCourseId ?? undefined);
@@ -2145,7 +2221,7 @@ export default function SchoolStudentStudyPlanner() {
               <button
                 key={item.key}
                 type="button"
-                onClick={() => setActiveTab(item.key)}
+                onClick={() => selectPlannerTab(item.key)}
                 className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left shadow-sm transition ${
                   active
                     ? "border-blue-200 bg-blue-600 text-white"
@@ -2215,7 +2291,9 @@ export default function SchoolStudentStudyPlanner() {
                       </div>
                     ) : (
                       <>
-                        <div className="grid gap-4 md:grid-cols-2">
+                        {!backlogPage && (
+                          <>
+                            <div className="grid gap-4 md:grid-cols-2">
                           {[
                             { key: "plan", label: "Missed Tasks", desc: "Study plan items you did not complete", count: backlogPlanItems.length, icon: ClipboardList, tone: "rose" },
                             { key: "lectures", label: "Video Lectures", desc: "All unwatched lectures from this course", count: pendingLectures.length, icon: PlayCircle, tone: "blue" },
@@ -2239,7 +2317,7 @@ export default function SchoolStudentStudyPlanner() {
                               <button
                                 key={card.label}
                                 type="button"
-                                onClick={() => setBacklogPage(card.key as typeof backlogPage)}
+                                onClick={() => openBacklogPage(card.key as BacklogPage)}
                                 className={`relative min-h-[150px] overflow-hidden rounded-2xl border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
                                   isOpen ? "border-blue-300 shadow-sm" : "border-slate-200"
                                 }`}
@@ -2258,13 +2336,14 @@ export default function SchoolStudentStudyPlanner() {
                               </button>
                             );
                           })}
-                        </div>
+                            </div>
+                            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-700">
+                              Pick one backlog category above. Start with 2-3 items only and blend them into today's plan.
+                            </div>
+                          </>
+                        )}
 
-                        {!backlogPage ? (
-                          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-700">
-                            Pick one backlog category above. Start with 2-3 items only and blend them into today's plan.
-                          </div>
-                        ) : (
+                        {backlogPage && (
                           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
                             <div className="mb-3 flex items-center justify-between gap-3 px-1">
                               <p className="text-sm font-black text-slate-900">
@@ -2277,10 +2356,10 @@ export default function SchoolStudentStudyPlanner() {
                               </p>
                               <button
                                 type="button"
-                                onClick={() => setBacklogPage(null)}
+                                onClick={closePlannerDetail}
                                 className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 transition hover:text-slate-800"
                               >
-                                Close
+                                Back to Backlogs
                               </button>
                             </div>
 
@@ -2424,48 +2503,48 @@ export default function SchoolStudentStudyPlanner() {
                   </div>
                 ) : activeTab === "weakness" ? (
                   <div className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {[
-                        { key: "chapters", label: "Weak Chapters", desc: "Chapters with overall accuracy below 50%", count: weakChapters.length, icon: BookOpen, tone: "amber" },
-                        { key: "topics", label: "Low Accuracy", desc: "Topics where you score below 50%", count: weakTopics.length, icon: TrendingDown, tone: "rose" },
-                        { key: "forgotten", label: "Forgotten", desc: "Completed 14+ days ago without revision", count: forgottenConcepts.length, icon: Brain, tone: "violet" },
-                        { key: "negative", label: "High Negative", desc: "PYQ topics with more wrong answers", count: highNegativeTopics.length, icon: Target, tone: "rose" },
-                      ].map(card => {
-                        const Icon = card.icon;
-                        const isOpen = weakPage === card.key;
-                        const colorClass = {
-                          amber: "text-amber-600 bg-amber-50 border-amber-100",
-                          rose: "text-rose-600 bg-rose-50 border-rose-100",
-                          violet: "text-violet-600 bg-violet-50 border-violet-100",
-                        }[card.tone];
-                        return (
-                          <button
-                            key={card.key}
-                            type="button"
-                            onClick={() => setWeakPage(card.key as typeof weakPage)}
-                            className={`relative min-h-[150px] overflow-hidden rounded-2xl border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
-                              isOpen ? "border-blue-300 shadow-sm" : "border-slate-200"
-                            }`}
-                          >
-                            <span className={`absolute -right-8 -top-8 h-24 w-24 rounded-bl-full ${colorClass?.split(" ")[1]}`} />
-                            <span className={`relative grid h-11 w-11 place-items-center rounded-xl border ${colorClass}`}>
-                              <Icon className="h-5 w-5" />
-                            </span>
-                            <span className="relative mt-6 block text-lg font-black text-slate-950">{card.label}</span>
-                            <span className="relative mt-2 block text-sm font-semibold leading-5 text-slate-500">{card.desc}</span>
-                            <span className={`relative mt-5 inline-flex rounded-full px-3 py-1 text-xs font-black ${colorClass}`}>
-                              {card.count} {card.key === "chapters" ? "chapters" : "topics"}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {!weakPage && (
+                      <>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {[
+                            { key: "chapters", label: "Weak Chapters", desc: "Chapters with overall accuracy below 50%", count: weakChapters.length, icon: BookOpen, tone: "amber" },
+                            { key: "topics", label: "Low Accuracy", desc: "Topics where you score below 50%", count: weakTopics.length, icon: TrendingDown, tone: "rose" },
+                            { key: "forgotten", label: "Forgotten", desc: "Completed 14+ days ago without revision", count: forgottenConcepts.length, icon: Brain, tone: "violet" },
+                            { key: "negative", label: "High Negative", desc: "PYQ topics with more wrong answers", count: highNegativeTopics.length, icon: Target, tone: "rose" },
+                          ].map(card => {
+                            const Icon = card.icon;
+                            const colorClass = {
+                              amber: "text-amber-600 bg-amber-50 border-amber-100",
+                              rose: "text-rose-600 bg-rose-50 border-rose-100",
+                              violet: "text-violet-600 bg-violet-50 border-violet-100",
+                            }[card.tone];
+                            return (
+                              <button
+                                key={card.key}
+                                type="button"
+                                onClick={() => openWeakPage(card.key as WeakPage)}
+                                className="relative min-h-[150px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
+                              >
+                                <span className={`absolute -right-8 -top-8 h-24 w-24 rounded-bl-full ${colorClass?.split(" ")[1]}`} />
+                                <span className={`relative grid h-11 w-11 place-items-center rounded-xl border ${colorClass}`}>
+                                  <Icon className="h-5 w-5" />
+                                </span>
+                                <span className="relative mt-6 block text-lg font-black text-slate-950">{card.label}</span>
+                                <span className="relative mt-2 block text-sm font-semibold leading-5 text-slate-500">{card.desc}</span>
+                                <span className={`relative mt-5 inline-flex rounded-full px-3 py-1 text-xs font-black ${colorClass}`}>
+                                  {card.count} {card.key === "chapters" ? "chapters" : "topics"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-700">
+                          Choose one weak-area category above. Practice a small set first, then revise the related notes.
+                        </div>
+                      </>
+                    )}
 
-                    {!weakPage ? (
-                      <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-700">
-                        Choose one weak-area category above. Practice a small set first, then revise the related notes.
-                      </div>
-                    ) : (
+                    {weakPage && (
                       <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
                         <div className="mb-3 flex items-center justify-between gap-3 px-1">
                           <p className="text-sm font-black text-slate-900">
@@ -2475,10 +2554,10 @@ export default function SchoolStudentStudyPlanner() {
                           </p>
                           <button
                             type="button"
-                            onClick={() => setWeakPage(null)}
+                            onClick={closePlannerDetail}
                             className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 transition hover:text-slate-800"
                           >
-                            Close
+                            Back to Weak Topics
                           </button>
                         </div>
 
@@ -2504,8 +2583,15 @@ export default function SchoolStudentStudyPlanner() {
                                       </span>
                                       <button
                                         type="button"
-                                        onClick={() => navigate(`/school/student/quiz?chapterId=${chapter.chapterId}`)}
-                                        className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white transition hover:bg-amber-600"
+                                        onClick={() => {
+                                          if (!chapter.practiceTopicId) {
+                                            toast.error("No attempted topic is available for practice in this chapter yet.");
+                                            return;
+                                          }
+                                          navigate(`/school/student/quiz?topicId=${chapter.practiceTopicId}`);
+                                        }}
+                                        title={chapter.practiceTopicName ? `Practice ${chapter.practiceTopicName}` : "Practice weakest topic"}
+                                        className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                                       >
                                         Practice
                                       </button>
@@ -2578,77 +2664,79 @@ export default function SchoolStudentStudyPlanner() {
                   </div>
                 ) : activeTab === "revision" ? (
                   <div className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {[
-                        {
-                          key: "spaced",
-                          label: "Spaced Repetition",
-                          desc: "Smart 1, 3, 7, 21 day revision cycles based on your performance.",
-                          count: `${revisionTopics.length} topics due`,
-                          icon: RefreshCw,
-                          tone: "blue",
-                          active: true,
-                        },
-                        {
-                          key: "intensive",
-                          label: "Intensive Revision",
-                          desc: "Focus on high-volume review of recently learned concepts.",
-                          count: intensiveRevisionItems.length ? `${intensiveRevisionItems.length} sessions` : "Unlocks at 100% completion",
-                          icon: Flame,
-                          tone: "amber",
-                          active: intensiveRevisionItems.length > 0,
-                        },
-                        {
-                          key: "notes",
-                          label: "AI Revision Notes",
-                          desc: "Review your personalized AI study summaries and highlights.",
-                          count: `${completedAiNotes.length} sessions`,
-                          icon: BrainCircuit,
-                          tone: "violet",
-                          active: completedAiNotes.length > 0,
-                        },
-                        {
-                          key: "practice",
-                          label: "Practice History",
-                          desc: "Re-attempt and review past quizzes and practice questions.",
-                          count: `${completedPracticeSessions.length} completed`,
-                          icon: CheckCheck,
-                          tone: "teal",
-                          active: completedPracticeSessions.length > 0,
-                        },
-                      ].map(card => {
-                        const Icon = card.icon;
-                        const colors = {
-                          blue: "text-blue-600 bg-blue-50 border-blue-100",
-                          amber: "text-amber-600 bg-amber-50 border-amber-100",
-                          violet: "text-violet-600 bg-violet-50 border-violet-100",
-                          teal: "text-teal-600 bg-teal-50 border-teal-100",
-                        }[card.tone];
-                        return (
-                          <button
-                            key={card.key}
-                            type="button"
-                            disabled={!card.active}
-                            onClick={() => card.active && setRevisionCategory(card.key as "spaced" | "intensive" | "notes" | "practice")}
-                            className={`group relative overflow-hidden rounded-2xl border bg-white p-6 text-left transition ${
-                              revisionCategory === card.key
-                                ? "border-blue-300 shadow-sm ring-2 ring-blue-100"
-                                : "border-slate-200 hover:border-blue-200 hover:shadow-sm"
-                            } ${!card.active ? "opacity-55" : ""}`}
-                          >
-                            <span className={`mb-6 inline-flex h-11 w-11 items-center justify-center rounded-2xl border ${colors}`}>
-                              <Icon className="h-6 w-6" />
-                            </span>
-                            <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-50 transition group-hover:bg-blue-50" />
-                            <h3 className="text-lg font-black text-slate-950">{card.label}</h3>
-                            <p className="mt-2 max-w-sm text-sm font-medium leading-6 text-slate-500">{card.desc}</p>
-                            <span className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-black ${colors}`}>
-                              {card.count}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {!revisionCategory && (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {[
+                          {
+                            key: "spaced",
+                            label: "Spaced Repetition",
+                            desc: "Smart 1, 3, 7, 21 day revision cycles based on your performance.",
+                            count: `${revisionTopics.length} topics due`,
+                            icon: RefreshCw,
+                            tone: "blue",
+                            active: true,
+                          },
+                          {
+                            key: "intensive",
+                            label: "Intensive Revision",
+                            desc: "Focus on high-volume review of recently learned concepts.",
+                            count: intensiveRevisionItems.length ? `${intensiveRevisionItems.length} sessions` : "Unlocks at 100% completion",
+                            icon: Flame,
+                            tone: "amber",
+                            active: intensiveRevisionItems.length > 0,
+                          },
+                          {
+                            key: "notes",
+                            label: "AI Revision Notes",
+                            desc: "Review your personalized AI study summaries and highlights.",
+                            count: `${completedAiNotes.length} sessions`,
+                            icon: BrainCircuit,
+                            tone: "violet",
+                            active: completedAiNotes.length > 0,
+                          },
+                          {
+                            key: "practice",
+                            label: "Practice History",
+                            desc: "Re-attempt and review past quizzes and practice questions.",
+                            count: `${completedPracticeSessions.length} completed`,
+                            icon: CheckCheck,
+                            tone: "teal",
+                            active: completedPracticeSessions.length > 0,
+                          },
+                        ].map(card => {
+                          const Icon = card.icon;
+                          const colors = {
+                            blue: "text-blue-600 bg-blue-50 border-blue-100",
+                            amber: "text-amber-600 bg-amber-50 border-amber-100",
+                            violet: "text-violet-600 bg-violet-50 border-violet-100",
+                            teal: "text-teal-600 bg-teal-50 border-teal-100",
+                          }[card.tone];
+                          return (
+                            <button
+                              key={card.key}
+                              type="button"
+                              disabled={!card.active}
+                              onClick={() => card.active && openRevisionCategory(card.key as RevisionCategory)}
+                              className={`group relative overflow-hidden rounded-2xl border bg-white p-6 text-left transition ${
+                                card.active
+                                  ? "border-slate-200 hover:border-blue-200 hover:shadow-sm"
+                                  : "border-slate-200 opacity-55"
+                              }`}
+                            >
+                              <span className={`mb-6 inline-flex h-11 w-11 items-center justify-center rounded-2xl border ${colors}`}>
+                                <Icon className="h-6 w-6" />
+                              </span>
+                              <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-50 transition group-hover:bg-blue-50" />
+                              <h3 className="text-lg font-black text-slate-950">{card.label}</h3>
+                              <p className="mt-2 max-w-sm text-sm font-medium leading-6 text-slate-500">{card.desc}</p>
+                              <span className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-black ${colors}`}>
+                                {card.count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {revisionCategory && (
                       <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -2665,8 +2753,8 @@ export default function SchoolStudentStudyPlanner() {
                             </p>
                             <p className="mt-1 text-xs font-bold text-slate-500">Choose one item and continue studying.</p>
                           </div>
-                          <button type="button" onClick={() => setRevisionCategory(null)} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
-                            Close
+                          <button type="button" onClick={closePlannerDetail} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                            Back to Revision
                           </button>
                         </div>
 
@@ -2779,53 +2867,91 @@ export default function SchoolStudentStudyPlanner() {
                         <p className="mt-1 text-sm font-medium text-slate-500">Generate a plan to build your roadmap.</p>
                       </div>
                     ) : (
-                      (effectiveProgressReport?.subjects ?? []).map(subject => (
-                        <div key={subject.subjectId} className="rounded-2xl border border-slate-200 bg-white p-4">
-                          <div className="mb-4 flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-base font-black text-slate-950">{subject.subjectName}</p>
-                              <p className="mt-1 text-xs font-bold text-slate-500">{subject.topicsCompleted}/{subject.topicsTotal} topics complete</p>
-                            </div>
-                            <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-blue-700">
-                              {subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0}%
-                            </span>
-                          </div>
-                          <div className="space-y-3">
-                            {subject.chapters.map(chapter => (
-                              <div key={chapter.chapterId} className="rounded-xl bg-slate-50 p-3">
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="text-sm font-black text-slate-800">{chapter.chapterName}</p>
-                                  <p className="text-xs font-bold text-slate-500">{chapter.topicsCompleted}/{chapter.topicsTotal}</p>
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  {chapter.topics.slice(0, 8).map(topic => {
-                                    const done = topic.status === "completed";
-                                    return (
-                                      <button
-                                        key={topic.topicId}
-                                        type="button"
-                                        onClick={() => navigate(`/school/student/ai-study/${topic.topicId}`)}
-                                        className={`rounded-full border px-3 py-1 text-xs font-black transition ${
-                                          done
-                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                            : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
-                                        }`}
-                                      >
-                                        {topic.topicName}
-                                      </button>
-                                    );
-                                  })}
-                                  {chapter.topics.length > 8 && (
-                                    <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-500">
-                                      +{chapter.topics.length - 8} more
-                                    </span>
-                                  )}
-                                </div>
+                      (effectiveProgressReport?.subjects ?? []).map(subject => {
+                        const subjectOpen = openRoadmapSubjects.has(subject.subjectId);
+                        const subjectPct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
+                        return (
+                          <div key={subject.subjectId} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                            <button
+                              type="button"
+                              onClick={() => toggleRoadmapSubject(subject.subjectId)}
+                              className="flex w-full items-center justify-between gap-3 p-4 text-left transition hover:bg-blue-50/60"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate text-base font-black text-slate-950">{subject.subjectName}</p>
+                                <p className="mt-1 text-xs font-bold text-slate-500">
+                                  {subject.chapters.length} chapters - {subject.topicsCompleted}/{subject.topicsTotal} topics complete
+                                </p>
                               </div>
-                            ))}
+                              <div className="flex shrink-0 items-center gap-3">
+                                <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-blue-700">
+                                  {subjectPct}%
+                                </span>
+                                <ChevronDown className={`h-5 w-5 text-slate-400 transition ${subjectOpen ? "rotate-180" : ""}`} />
+                              </div>
+                            </button>
+
+                            {subjectOpen && (
+                              <div className="space-y-3 border-t border-slate-100 bg-slate-50/70 p-3">
+                                {subject.chapters.length === 0 ? (
+                                  <BacklogEmpty label="No chapters found for this subject." />
+                                ) : (
+                                  subject.chapters.map(chapter => {
+                                    const chapterOpen = openRoadmapChapters.has(chapter.chapterId);
+                                    const chapterPct = chapter.topicsTotal > 0 ? Math.round((chapter.topicsCompleted / chapter.topicsTotal) * 100) : 0;
+                                    return (
+                                      <div key={chapter.chapterId} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleRoadmapChapter(chapter.chapterId)}
+                                          className="flex w-full items-center justify-between gap-3 p-3 text-left transition hover:bg-slate-50"
+                                        >
+                                          <div className="min-w-0">
+                                            <p className="truncate text-sm font-black text-slate-800">{chapter.chapterName}</p>
+                                            <p className="mt-1 text-xs font-bold text-slate-500">{chapter.topicsCompleted}/{chapter.topicsTotal} topics complete</p>
+                                          </div>
+                                          <div className="flex shrink-0 items-center gap-3">
+                                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                                              {chapterPct}%
+                                            </span>
+                                            <ChevronDown className={`h-4 w-4 text-slate-400 transition ${chapterOpen ? "rotate-180" : ""}`} />
+                                          </div>
+                                        </button>
+
+                                        {chapterOpen && (
+                                          <div className="flex flex-wrap gap-2 border-t border-slate-100 bg-slate-50 p-3">
+                                            {chapter.topics.length === 0 ? (
+                                              <p className="text-xs font-bold text-slate-400">No topics in this chapter.</p>
+                                            ) : (
+                                              chapter.topics.map(topic => {
+                                                const done = topic.status === "completed";
+                                                return (
+                                                  <button
+                                                    key={topic.topicId}
+                                                    type="button"
+                                                    onClick={() => navigate(`/school/student/ai-study/${topic.topicId}`)}
+                                                    className={`rounded-full border px-3 py-1 text-xs font-black transition ${
+                                                      done
+                                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                        : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
+                                                    }`}
+                                                  >
+                                                    {topic.topicName}
+                                                  </button>
+                                                );
+                                              })
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 ) : planLoading ? (
@@ -3003,7 +3129,7 @@ export default function SchoolStudentStudyPlanner() {
                     <button
                       key={item.label}
                       type="button"
-                      onClick={() => setActiveTab(item.tab)}
+                      onClick={() => selectPlannerTab(item.tab)}
                       className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:brightness-95 ${item.tone}`}
                     >
                       <Icon className="h-5 w-5" />
@@ -3327,8 +3453,8 @@ export default function SchoolStudentStudyPlanner() {
                     forgottenConcepts={forgottenConcepts}
                     weakTopics={weakTopics}
                     pendingPYQTopics={pendingPYQTopics}
-                    onTabChange={setActiveTab}
-                    onBacklogPageChange={setBacklogPage}
+                    onTabChange={selectPlannerTab}
+                    onBacklogPageChange={openBacklogPage}
                     selectedCourseId={selectedCourseId}
                   />
                 </div>
@@ -3876,8 +4002,8 @@ export default function SchoolStudentStudyPlanner() {
               <div className="flex-1 min-w-0 space-y-3">
                 <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
                 <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
-                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={selectPlannerTab}
+                  onBacklogPageChange={openBacklogPage} selectedCourseId={selectedCourseId} />
               </div>
             </div>
           </div>
@@ -4252,8 +4378,8 @@ export default function SchoolStudentStudyPlanner() {
               <div className="flex-1 min-w-0 space-y-3">
                 <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
                 <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
-                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
+                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={selectPlannerTab}
+                  onBacklogPageChange={openBacklogPage} selectedCourseId={selectedCourseId} />
               </div>
             </div>
           </div>
@@ -4547,8 +4673,8 @@ export default function SchoolStudentStudyPlanner() {
                   forgottenConcepts={forgottenConcepts}
                   weakTopics={weakTopics}
                   pendingPYQTopics={pendingPYQTopics}
-                  onTabChange={setActiveTab}
-                  onBacklogPageChange={setBacklogPage}
+                  onTabChange={selectPlannerTab}
+                  onBacklogPageChange={openBacklogPage}
                   selectedCourseId={selectedCourseId}
                 />
               </div>
