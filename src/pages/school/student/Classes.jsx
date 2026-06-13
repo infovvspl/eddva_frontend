@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { schoolLive } from '@/lib/api/school-live';
 import {
   BookOpen,
   Radio,
@@ -23,6 +24,7 @@ export default function Classes() {
   const location = useLocation();
   const [courses, setCourses] = useState([]);
   const [liveClasses, setLiveClasses] = useState([]);
+  const [obsLive, setObsLive] = useState([]);
   const [recordings, setRecordings] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [liveLoading, setLiveLoading] = useState(false);
@@ -71,6 +73,24 @@ export default function Classes() {
     };
 
     fetchLiveClasses();
+  }, [isLiveView]);
+
+  // Currently-LIVE self-hosted (OBS/RTMP) broadcasts — polled so a class that
+  // goes live shows up without a manual refresh.
+  useEffect(() => {
+    if (!isLiveView) return;
+    let active = true;
+    const load = async () => {
+      try {
+        const live = await schoolLive.listLive();
+        if (active) setObsLive(Array.isArray(live) ? live : []);
+      } catch (err) {
+        console.error('Failed to fetch live broadcasts:', err);
+      }
+    };
+    load();
+    const id = setInterval(load, 15000);
+    return () => { active = false; clearInterval(id); };
   }, [isLiveView]);
 
   useEffect(() => {
@@ -155,7 +175,42 @@ export default function Classes() {
 
   const liveClassesView = (
     <div className="space-y-5">
-      {liveClasses.length === 0 ? (
+      {/* Live Now — self-hosted OBS broadcasts currently streaming */}
+      {obsLive.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-600">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+            </span>
+            Live Now
+          </h3>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {obsLive.map((lec) => (
+              <div key={lec.id} className="overflow-hidden rounded-[1.5rem] border border-rose-200 bg-white shadow-sm dark:border-rose-900/40 dark:bg-slate-900">
+                <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-rose-600 to-red-500 px-5 py-3 text-white">
+                  <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em]"><Radio size={14} /> Live</span>
+                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold">streaming now</span>
+                </div>
+                <div className="p-5">
+                  <h4 className="truncate text-lg font-black text-slate-900 dark:text-white">{lec.title}</h4>
+                  <p className="mt-0.5 text-sm font-semibold text-slate-500">
+                    {lec.startedAt ? `Started ${new Date(lec.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'In progress'}
+                  </p>
+                  <Link
+                    to={`/school/student/live/${lec.id}/watch`}
+                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700"
+                  >
+                    <PlayCircle size={16} /> Join Live Class
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {liveClasses.length === 0 && obsLive.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <Radio className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">No live classes scheduled</h3>
