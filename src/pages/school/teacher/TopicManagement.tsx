@@ -49,7 +49,7 @@ import api from '@/lib/api/school-client';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import { presentationMarkdownToSlides, slideImageQuery, slideImagePrompt, fetchSlideImage, type Slide } from '@/lib/presentation-markdown';
-import { downloadMaterial, downloadAllMaterials, isDownloadableAiMaterial } from '@/lib/material-download';
+import { downloadMaterial, downloadAllMaterials, isDownloadableAiMaterial, materialDisplayTitle } from '@/lib/material-download';
 import { schoolContent, type SchoolMaterial, type SchoolMaterialType } from '@/lib/api/school-content';
 import { getApiOrigin, getApiBaseUrl } from '@/lib/api-config';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -704,6 +704,11 @@ function RowSkeleton() {
 
 const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
   { value: 'notes', label: 'Notes', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
+  { value: 'study_guide', label: 'Study Guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+  { value: 'key_concepts', label: 'Key Concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { value: 'flashcard', label: 'Flashcards', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
+  { value: 'revision_checklist', label: 'Revision Checklist', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'faq', label: 'FAQ', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
   { value: 'pyq', label: 'PYQ', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { value: 'formula_sheet', label: 'Formula Sheet', icon: FileSpreadsheet, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
   { value: 'dpp', label: 'Daily Assessment', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
@@ -833,7 +838,20 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
   useEffect(() => { load(); }, [load]);
 
   const grouped = useMemo(() => {
-    const g: Record<string, SchoolMaterial[]> = { notes: [], pyq: [], formula_sheet: [], dpp: [], mindmap: [], ppt: [], ebook: [] };
+    const g: Record<string, SchoolMaterial[]> = {
+      notes: [],
+      study_guide: [],
+      key_concepts: [],
+      flashcard: [],
+      revision_checklist: [],
+      faq: [],
+      pyq: [],
+      formula_sheet: [],
+      dpp: [],
+      mindmap: [],
+      ppt: [],
+      ebook: [],
+    };
     materials.forEach((m) => { const t = String(m.fileType ?? 'notes').toLowerCase(); (g[t] ?? g.notes).push(m); });
     return g;
   }, [materials]);
@@ -855,7 +873,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
   const handleDownloadAll = async () => {
     setDownloadingAll(true);
     try {
-      const n = await downloadAllMaterials(materials, `${topic.name} — AI materials`);
+      const n = await downloadAllMaterials(materials, topic.name);
       if (!n) toast.message('No AI-generated materials to download');
     } catch {
       toast.error('Download failed');
@@ -949,13 +967,14 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
                     {items.map((m) => {
                       const href = resolveFileUrl(m.fileUrl ?? m.file_url);
                       const isText = !!m.description && !href;
+                      const displayTitle = materialDisplayTitle(m);
                       // A real uploaded slide deck (.pptx) → open it in the in-app Office viewer.
                       const isViewablePpt = String(m.fileType ?? '').toLowerCase() === 'ppt' && !!href && /\.pptx?($|\?)/i.test(href);
                       return (
                         <div key={m.id} className="group flex items-center gap-3 rounded-xl border border-surface-100 bg-white p-3 transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{m.title}</p>
+                            <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{displayTitle}</p>
                             <div className="flex items-center gap-2">
                               {isText && (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-500">
@@ -1021,7 +1040,7 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
 
       {viewingResourceModal && (
         <ResourceViewerModal
-          title={viewingResourceModal.title}
+          title={materialDisplayTitle(viewingResourceModal)}
           content={viewingResourceModal.description}
           fileUrl={viewingResourceModal.fileUrl ?? viewingResourceModal.file_url}
           externalUrl={viewingResourceModal.externalUrl}
@@ -1158,12 +1177,13 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
 
 function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClose: () => void }) {
   const fileType = String(material.fileType ?? '').toLowerCase();
+  const displayTitle = materialDisplayTitle(material);
   const isMindmap = fileType === 'mindmap';
   const isPresentation = fileType === 'ppt';
   const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || /^\s*\**\s*Q(?:uestion)?\s*\d*\s*[:.]/i.test(material.description || '');
   const tree = useMemo(
-    () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, material.title) : null),
-    [isMindmap, material.description, material.title],
+    () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, displayTitle) : null),
+    [isMindmap, material.description, displayTitle],
   );
   const slides = useMemo(
     () => (isPresentation && material.description ? presentationMarkdownToSlides(material.description) : []),
@@ -1305,7 +1325,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
       <div className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 ${widthClass}`}>
         <div className="flex items-center justify-between gap-3 border-b border-surface-100 px-6 py-4 dark:border-surface-700">
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{material.title}</h3>
+            <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{displayTitle}</h3>
             <p className="text-[11px] font-black uppercase tracking-wider text-violet-500">AI Generated · {material.fileType}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -1334,7 +1354,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
         {isBinaryPpt ? (
           <div className="flex-1 overflow-hidden bg-surface-50 dark:bg-surface-950">
             <iframe
-              title={material.title}
+              title={displayTitle}
               src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`}
               className="h-full min-h-[70vh] w-full border-0"
             />
@@ -1345,7 +1365,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
           </div>
         ) : rich && showSlides ? (
           <div className="flex-1 overflow-y-auto p-5">
-            <SlideDeck slides={slides} height={480} topic={material.title} />
+            <SlideDeck slides={slides} height={480} topic={displayTitle} />
           </div>
         ) : isFlashcard && material.description ? (
           <div className="flex-1 overflow-y-auto p-4">
@@ -1411,11 +1431,11 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
   { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
-  { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'notes', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
-  { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'notes', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
-  { id: 'flashcard', label: 'Flashcards', desc: 'Bite-sized Q&A cards for quick recall', saveAs: 'notes', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
-  { id: 'revision_checklist', label: 'Revision Checklist', desc: 'Subtopic checklist students can tick off', saveAs: 'notes', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
-  { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'notes', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+  { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'study_guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+  { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'key_concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { id: 'flashcard', label: 'Flashcards', desc: 'Bite-sized Q&A cards for quick recall', saveAs: 'flashcard', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
+  { id: 'revision_checklist', label: 'Revision Checklist', desc: 'Subtopic checklist students can tick off', saveAs: 'revision_checklist', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'faq', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
 ];
 
 function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; onClose: () => void; onSaved: () => void; onOpenPptStudio: () => void }) {
@@ -1447,13 +1467,26 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
     setGenerating(true);
     setContent(null);
     try {
+      const typeInstruction =
+        typeId === 'faq'
+          ? 'Generate FAQ only. Do not generate notes, introduction, summary, study guide, key concepts, or lesson content. The output must start with "# FAQ" and every item must be a frequently asked question in this format: "**Q1. <question?>**" then "**A.** <answer>". Include 12-15 Q&A pairs grouped under sub-topic headings.'
+          : typeId === 'revision_checklist'
+            ? 'Generate revision checklist only. Do not generate notes. Every actionable item must be a Markdown checkbox using "- [ ]".'
+            : typeId === 'flashcard'
+              ? 'Generate flashcards only. Do not generate notes. Use repeated "**Q:**" and "**A:**" pairs.'
+              : '';
+      const mergedExtraContext = [typeInstruction, extraContext.trim()].filter(Boolean).join(' ');
       const res = await schoolContent.generateAiContent({
         ...scopeRef,
         contentType: typeId,
         questionCount: isQuestionType ? questionCount : undefined,
-        extraContext: extraContext.trim() || undefined,
+        extraContext: mergedExtraContext || undefined,
       });
-      setContent(res.content ?? '');
+      const generated = res.content ?? '';
+      if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
+        toast.error('AI returned notes instead of FAQ. Try Generate again.');
+      }
+      setContent(generated);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'AI generation failed');
     } finally {
@@ -1463,6 +1496,10 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
 
   const handleSave = async () => {
     if (!content) return;
+    if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(content) && !/^#{1,3}\s*FAQ\b/im.test(content)) {
+      toast.error('This does not look like an FAQ yet. Generate again before saving.');
+      return;
+    }
     setSaving(true);
     try {
       await schoolContent.saveAiMaterial({
@@ -1471,7 +1508,7 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
         content,
         resourceType: cfg.saveAs,
       });
-      toast.success(`Saved as ${cfg.label} — students can now access it!`);
+      toast.success(`${cfg.label} saved — students can now access it!`);
       onSaved();
       onClose();
     } catch (err: any) {
