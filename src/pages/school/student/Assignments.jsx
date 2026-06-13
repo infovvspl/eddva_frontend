@@ -155,7 +155,7 @@ export default function Assignments() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (

@@ -232,7 +232,7 @@ export default function TeacherProfile() {
               transition={{ duration: 0.2 }}
             >
               {activeTab === 'personal' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="md:col-span-2 space-y-8">
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Core Identification</h3>
@@ -353,7 +353,7 @@ export default function TeacherProfile() {
                     return (
                       <>
                         {/* Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                           <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
                             <div className={`text-4xl font-bold tracking-tight mb-1 ${pct >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{total > 0 ? `${pct}%` : '—'}</div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
@@ -430,7 +430,7 @@ export default function TeacherProfile() {
 
                 return (
                   <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 shadow-xl">
                         <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Student Success Rate</h4>
                         <div className="flex items-center gap-12 flex-wrap md:flex-nowrap">

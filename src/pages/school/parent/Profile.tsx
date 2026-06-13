@@ -73,7 +73,7 @@ export default function ParentProfile() {
         <p className="text-sm font-semibold text-slate-500">Manage your account and preferences</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         
         {/* LEFT COLUMN: Profile Info & Children */}
         <div className="md:col-span-2 space-y-6 md:space-y-8">

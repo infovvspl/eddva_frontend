@@ -173,10 +173,21 @@ export default function Students() {
         api.get('/students', { params }),
         api.get('/students/stats')
       ]);
-      setStudents(getResponseList(res));
-      if (res.data && typeof res.data.total !== 'undefined') {
-        setTotal(res.data.total);
-        setTotalPages(res.data.totalPages);
+      const studentList = getResponseList(res);
+      setStudents(studentList);
+      
+      const resData = res.data;
+      if (resData) {
+        if (typeof resData.total === 'number') {
+          setTotal(resData.total);
+          setTotalPages(resData.totalPages || 1);
+        } else if (resData.data && typeof resData.data.total === 'number') {
+          setTotal(resData.data.total);
+          setTotalPages(resData.data.totalPages || 1);
+        } else {
+          setTotal(studentList.length);
+          setTotalPages(1);
+        }
       }
       if (statsRes.data?.data) {
         setStats(statsRes.data.data);
@@ -679,9 +690,13 @@ export default function Students() {
           <DataTablePagination
             page={page}
             limit={limit}
-            total={total || students.length}
+            total={total}
             totalPages={totalPages}
             onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
           />
         </div>
       </div>

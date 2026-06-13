@@ -69,7 +69,7 @@ export default function TopicDetails() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
           {/* Lectures */}
           <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">

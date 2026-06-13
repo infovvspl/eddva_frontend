@@ -51,14 +51,21 @@ export default function Complaints() {
       if (query.trim()) searchParams.append('search', query.trim());
 
       const res = await api.get(`/complaints?${searchParams.toString()}`);
-      setComplaints(res.data?.data || res.data || []);
-      const data = res.data?.data || res.data;
-      if (res.data && typeof res.data.total !== 'undefined') {
-        setTotal(res.data.total);
-        setTotalPages(res.data.totalPages);
-      } else if (res.data?.data && typeof res.data.total !== 'undefined') {
-        setTotal(res.data.total);
-        setTotalPages(res.data.totalPages);
+      const list = res.data?.data || res.data || [];
+      setComplaints(list);
+      
+      const resData = res.data;
+      if (resData) {
+        if (typeof resData.total === 'number') {
+          setTotal(resData.total);
+          setTotalPages(resData.totalPages || 1);
+        } else if (resData.data && typeof resData.data.total === 'number') {
+          setTotal(resData.data.total);
+          setTotalPages(resData.data.totalPages || 1);
+        } else {
+          setTotal(list.length);
+          setTotalPages(1);
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load support tickets.');
@@ -76,13 +83,21 @@ export default function Complaints() {
       if (query.trim()) searchParams.append('search', query.trim());
 
       const res = await api.get(`/grievances?${searchParams.toString()}`);
-      setGrievances(res.data?.data || res.data || []);
-      if (res.data && typeof res.data.total !== 'undefined') {
-        setTotal(res.data.total);
-        setTotalPages(res.data.totalPages);
-      } else if (res.data?.data && typeof res.data.total !== 'undefined') {
-        setTotal(res.data.total);
-        setTotalPages(res.data.totalPages);
+      const list = res.data?.data || res.data || [];
+      setGrievances(list);
+      
+      const resData = res.data;
+      if (resData) {
+        if (typeof resData.total === 'number') {
+          setTotal(resData.total);
+          setTotalPages(resData.totalPages || 1);
+        } else if (resData.data && typeof resData.data.total === 'number') {
+          setTotal(resData.data.total);
+          setTotalPages(resData.data.totalPages || 1);
+        } else {
+          setTotal(list.length);
+          setTotalPages(1);
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load student & teacher grievances.');
@@ -192,7 +207,7 @@ export default function Complaints() {
       )}
 
       {/* Dynamic Status Counter Grid */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-4">
         {[
           ['Total', activeCounts.total, 'bg-brand-50 text-brand-700'],
           ['Open', activeCounts.OPEN, 'bg-red-50 text-red-600'],
@@ -264,7 +279,7 @@ export default function Complaints() {
         <div className="overflow-x-auto">
           {activeTab === 'user-support' ? (
             /* USER SUPPORT TABLE (GRIEVANCES) */
-            <table className="w-full text-left">
+            <table className="min-w-[700px] w-full text-left">
               <thead>
                 <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500">
                   <th className="p-4 pl-5">Ticket / Concern</th>
@@ -343,7 +358,7 @@ export default function Complaints() {
             </table>
           ) : (
             /* PLATFORM SUPPORT TABLE (COMPLAINTS) */
-            <table className="w-full text-left">
+            <table className="min-w-[700px] w-full text-left">
               <thead>
                 <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500">
                   <th className="p-4 pl-5">Ticket</th>
@@ -431,7 +446,7 @@ export default function Complaints() {
           <DataTablePagination
             page={page}
             limit={limit}
-            total={total || (activeTab === 'user-support' ? grievances.length : complaints.length)}
+            total={total}
             totalPages={totalPages}
             onPageChange={setPage}
             onLimitChange={(newLimit) => {

@@ -114,7 +114,7 @@ export default function Timetable() {
               {getSortedClasses(currentDay).length} Classes Today
             </span>
           </div>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto w-full max-w-full shadow-sm">
             <table className="w-full text-left text-sm min-w-[600px]">
               <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -178,7 +178,7 @@ export default function Timetable() {
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full max-w-full">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80">
                 <tr>
