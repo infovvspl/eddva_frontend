@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight, ArrowRight, Search } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import StatCard from '@/components/school/StatCard';
 import Badge from '@/components/school/Badge';
@@ -27,6 +27,7 @@ const Reports: React.FC = () => {
     assessments: 0,
     days: [],
   });
+  const [reportScope, setReportScope] = useState<any>(null);
   const [summary, setSummary] = useState({
     classAverage: 0,
     passRate: 0,
@@ -37,6 +38,10 @@ const Reports: React.FC = () => {
   const [error, setError] = useState('');
   const [studentPage, setStudentPage] = useState(1);
   const [studentPageSize, setStudentPageSize] = useState(10);
+
+  const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [selectedSection, setSelectedSection] = useState<string>('all');
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -67,6 +72,7 @@ const Reports: React.FC = () => {
           assessments: Math.round(body.weeklyAnalysis?.assessments || 0),
           days: Array.isArray(body.weeklyAnalysis?.days) ? body.weeklyAnalysis.days : [],
         });
+        setReportScope(body.scope || null);
         setSummary({
           classAverage: Math.round(reportSummary.classAverage || analytics[0]?.avgScore || 0),
           passRate: Math.round(reportSummary.passRate || analytics[0]?.passRate || 0),
@@ -87,7 +93,76 @@ const Reports: React.FC = () => {
     fetchReports();
   }, [page, limit]);
 
-  const totalStudentPages = Math.ceil(studentPerformance.length / studentPageSize);
+  const classes = useMemo(() => {
+    const map = new Map<string, string>();
+    const assignments = Array.isArray(reportScope?.assignments) ? reportScope.assignments : [];
+    
+    if (assignments.length > 0) {
+      assignments.forEach((item: any) => {
+        const classId = item.class_id || item.classId;
+        const className = item.class_name || item.className;
+        if (classId && className) {
+          map.set(String(classId), className);
+        }
+      });
+    } else {
+      studentPerformance.forEach((student) => {
+        if (student.classId && student.className) {
+          map.set(String(student.classId), student.className);
+        }
+      });
+    }
+    
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [reportScope, studentPerformance]);
+
+  const sections = useMemo(() => {
+    const map = new Map<string, string>();
+    const assignments = Array.isArray(reportScope?.assignments) ? reportScope.assignments : [];
+    
+    if (assignments.length > 0) {
+      assignments.forEach((item: any) => {
+        const classId = item.class_id || item.classId;
+        const sectionId = item.section_id || item.sectionId;
+        const sectionName = item.section_name || item.sectionName;
+        if (
+          sectionId &&
+          sectionName &&
+          (selectedClass === 'all' || String(classId) === String(selectedClass))
+        ) {
+          map.set(String(sectionId), sectionName);
+        }
+      });
+    } else {
+      studentPerformance.forEach((student) => {
+        if (
+          student.sectionId &&
+          student.sectionName &&
+          (selectedClass === 'all' || String(student.classId) === String(selectedClass))
+        ) {
+          map.set(String(student.sectionId), student.sectionName);
+        }
+      });
+    }
+    
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [reportScope, studentPerformance, selectedClass]);
+
+  const filteredStudents = useMemo(() => {
+    return studentPerformance.filter((student) => {
+      const matchesClass = selectedClass === 'all' || String(student.classId) === String(selectedClass);
+      const matchesSection = selectedSection === 'all' || String(student.sectionId) === String(selectedSection);
+      const matchesSearch = studentSearchQuery.trim() === '' || 
+        student.name?.toLowerCase().includes(studentSearchQuery.toLowerCase());
+      return matchesClass && matchesSection && matchesSearch;
+    });
+  }, [studentPerformance, selectedClass, selectedSection, studentSearchQuery]);
+
+  const totalStudentPages = Math.ceil(filteredStudents.length / studentPageSize);
   
   useEffect(() => {
     if (studentPage > totalStudentPages && totalStudentPages > 0) {
@@ -112,6 +187,7 @@ const Reports: React.FC = () => {
         .join(', ')
     : 'Assigned class';
   const weeklyDays = Array.isArray(weeklyAnalysis.days) ? weeklyAnalysis.days : [];
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
   const studentColumns = [
     { key: 'name', title: 'Student' },
@@ -129,16 +205,6 @@ const Reports: React.FC = () => {
         </span>
       )
     },
-    {
-      key: 'weakAreas', title: 'Weak Areas', render: (v: string[]) => (
-        <div className="reports__tags">{v.map((a) => <Badge key={a} variant="warning">{a}</Badge>)}</div>
-      )
-    },
-    {
-      key: 'strongAreas', title: 'Strong Areas', render: (v: string[]) => (
-        <div className="reports__tags">{v.map((a) => <Badge key={a} variant="success">{a}</Badge>)}</div>
-      )
-    },
   ];
 
   const classColumns = [
@@ -152,76 +218,141 @@ const Reports: React.FC = () => {
 
   const studentContent = (
     <div className="reports__section">
-      {!loading && !studentPerformance.length && (
-        <div className="reports__empty">No students found for your assigned class or section.</div>
-      )}
-      <DataTable columns={studentColumns} data={paginatedStudents} />
-      
-      {/* Pagination controls */}
-      {studentPerformance.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-4">
-          <div className="text-xs font-semibold text-gray-500">
-            Showing <span className="font-bold text-gray-700">{startIndex + 1}</span> to{" "}
-            <span className="font-bold text-gray-700">{Math.min(endIndex, studentPerformance.length)}</span> of{" "}
-            <span className="font-bold text-gray-700">{studentPerformance.length}</span> students
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500">Per page:</span>
-              <select
-                value={studentPageSize}
-                onChange={(e) => {
-                  setStudentPageSize(Number(e.target.value));
-                  setStudentPage(1);
-                }}
-                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 outline-none focus:border-brand-500"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-            
-            {totalStudentPages > 1 && (
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
-                  disabled={studentPage === 1}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                
-                {Array.from({ length: totalStudentPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => setStudentPage(page)}
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
-                      studentPage === page
-                        ? "bg-brand-600 text-white shadow-sm"
-                        : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-                
-                <button
-                  type="button"
-                  onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
-                  disabled={studentPage === totalStudentPages}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            )}
+      <div className="reports__filters-row">
+        <div className="reports__filter-group">
+          <label htmlFor="class-filter">Class</label>
+          <select
+            id="class-filter"
+            value={selectedClass}
+            onChange={(e) => {
+              setSelectedClass(e.target.value);
+              setSelectedSection('all');
+              setStudentPage(1);
+            }}
+            className="reports__filter-select"
+          >
+            <option value="all">All Classes</option>
+            {classes.map((cls) => (
+              <option key={cls.id} value={cls.id}>
+                {cls.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="reports__filter-group">
+          <label htmlFor="section-filter">Section</label>
+          <select
+            id="section-filter"
+            value={selectedSection}
+            onChange={(e) => {
+              setSelectedSection(e.target.value);
+              setStudentPage(1);
+            }}
+            className="reports__filter-select"
+            disabled={selectedClass === 'all' && sections.length === 0}
+          >
+            <option value="all">All Sections</option>
+            {sections.map((sec) => (
+              <option key={sec.id} value={sec.id}>
+                {sec.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="reports__filter-group reports__filter-group--search">
+          <label htmlFor="student-search">Search Student</label>
+          <div className="reports__search-wrapper">
+            <Search size={16} className="reports__search-icon" />
+            <input
+              id="student-search"
+              type="text"
+              placeholder="Search by name..."
+              value={studentSearchQuery}
+              onChange={(e) => {
+                setStudentSearchQuery(e.target.value);
+                setStudentPage(1);
+              }}
+              className="reports__filter-input"
+            />
           </div>
         </div>
+      </div>
+
+      {!loading && !filteredStudents.length && (
+        <div className="reports__empty">No students found matching the selected filters.</div>
+      )}
+      
+      {filteredStudents.length > 0 && (
+        <>
+          <DataTable columns={studentColumns} data={paginatedStudents} />
+          
+          {/* Pagination controls */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-4">
+            <div className="text-xs font-semibold text-gray-500">
+              Showing <span className="font-bold text-gray-700">{startIndex + 1}</span> to{" "}
+              <span className="font-bold text-gray-700">{Math.min(endIndex, filteredStudents.length)}</span> of{" "}
+              <span className="font-bold text-gray-700">{filteredStudents.length}</span> students
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-gray-500">Per page:</span>
+                <select
+                  value={studentPageSize}
+                  onChange={(e) => {
+                    setStudentPageSize(Number(e.target.value));
+                    setStudentPage(1);
+                  }}
+                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 outline-none focus:border-brand-500"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+              
+              {totalStudentPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
+                    disabled={studentPage === 1}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  
+                  {Array.from({ length: totalStudentPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setStudentPage(page)}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
+                        studentPage === page
+                          ? "bg-brand-600 text-white shadow-sm"
+                          : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
+                    disabled={studentPage === totalStudentPages}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

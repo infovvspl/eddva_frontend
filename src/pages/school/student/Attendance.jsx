@@ -72,7 +72,7 @@ export default function Attendance() {
       setLoading(true);
       const { startDate, endDate } = getMonthRange(selectedMonth);
       try {
-        const res = await api.get('/attendance', { params: { userId, startDate, endDate } });
+        const res = await api.get('/attendance', { params: { userId, startDate, endDate, limit: 31 } });
         const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setRecords(data);
       } catch { setRecords([]); }

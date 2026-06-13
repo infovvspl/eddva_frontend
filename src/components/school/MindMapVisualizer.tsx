@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Expand, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
 
 type MindMapNode = {
   label: string;
@@ -62,6 +62,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const drag = useRef<{ ox: number; oy: number } | null>(null);
   const [grabbing, setGrabbing] = useState(false);
 
@@ -79,6 +80,15 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
   }, [contentW, contentH, height]);
 
   useLayoutEffect(() => { fit(); }, [fit]);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === containerRef.current);
+      window.setTimeout(fit, 80);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, [fit]);
 
   const zoomAround = useCallback((factor: number, px: number, py: number) => {
     setView((v) => {
@@ -124,21 +134,43 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
     setView((v) => ({ ...v, x: e.clientX - drag.current!.ox, y: e.clientY - drag.current!.oy }));
   };
   const endDrag = () => { drag.current = null; setGrabbing(false); };
+  const toggleFullscreen = async () => {
+    const el = containerRef.current;
+    if (!el) return;
+    try {
+      if (document.fullscreenElement === el) {
+        await document.exitFullscreen();
+      } else {
+        await el.requestFullscreen();
+      }
+      window.setTimeout(fit, 120);
+    } catch {
+      // Browser denied fullscreen; leave the canvas usable in-place.
+    }
+  };
 
   const btn = 'grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50';
+  const canvasHeight = isFullscreen ? '100%' : height;
 
   return (
-    <div ref={containerRef} className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white" style={{ height }}>
+    <div
+      ref={containerRef}
+      className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white fullscreen:rounded-none fullscreen:border-0"
+      style={{ height: canvasHeight }}
+    >
       {/* Zoom controls */}
       <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5">
         <button type="button" className={btn} onClick={() => zoomCenter(1.2)} title="Zoom in"><ZoomIn size={16} /></button>
         <button type="button" className={btn} onClick={() => zoomCenter(0.8)} title="Zoom out"><ZoomOut size={16} /></button>
         <button type="button" className={btn} onClick={fit} title="Fit to screen"><Maximize2 size={16} /></button>
+        <button type="button" className={btn} onClick={toggleFullscreen} title={isFullscreen ? 'Exit full screen' : 'Full screen'}>
+          {isFullscreen ? <Minimize2 size={16} /> : <Expand size={16} />}
+        </button>
       </div>
 
       <svg
         width="100%"
-        height={height}
+        height="100%"
         style={{ display: 'block', cursor: grabbing ? 'grabbing' : 'grab', touchAction: 'none' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
