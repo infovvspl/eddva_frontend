@@ -32,6 +32,7 @@ const statCards = [
 
 function resolveUploadUrl(filePath) {
   if (!filePath) return null;
+  if (/^https?:\/\//i.test(String(filePath))) return String(filePath);
   const clean = String(filePath).replace(/^\.\//, '').replace(/^uploads[/\\]/, '');
   const origin = getApiOrigin();
   return `${origin}/uploads/${clean}`;
@@ -77,6 +78,11 @@ export default function Assignments() {
 
   const handleSubmit = async () => {
     if (!submitTarget) return;
+    const assignmentId = submitTarget.id || submitTarget.assignment_id;
+    if (!assignmentId) {
+      toast.error('Assignment id is missing. Please refresh and try again.');
+      return;
+    }
     if (!submitFile && !notes.trim()) {
       toast.error('Upload a file or add notes');
       return;
@@ -86,7 +92,7 @@ export default function Assignments() {
       const data = new FormData();
       if (submitFile) data.append('file', submitFile);
       if (notes.trim()) data.append('notes', notes.trim());
-      await api.post(`/assignments/${submitTarget.id}/submit`, data, {
+      await api.post(`/assignments/${assignmentId}/submit`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success('Assignment submitted');
@@ -239,9 +245,9 @@ export default function Assignments() {
                   <h3 className="mb-1 text-lg font-bold text-slate-900 dark:text-white line-clamp-2">
                     {assignment.title}
                   </h3>
-                  {(assignment.subjectName || assignment.className) && (
+                  {(assignment.subjectName || assignment.className || assignment.sectionName) && (
                     <p className="mb-3 text-xs font-semibold text-slate-500">
-                      {[assignment.subjectName, assignment.className].filter(Boolean).join(' · ')}
+                      {[assignment.subjectName, assignment.className, assignment.sectionName].filter(Boolean).join(' · ')}
                     </p>
                   )}
 

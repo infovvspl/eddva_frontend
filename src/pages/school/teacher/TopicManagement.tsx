@@ -344,6 +344,8 @@ const TopicManagement: React.FC = () => {
           topicId: selectedTopic.kind === 'chapter' ? undefined : selectedTopic.id,
           chapterId: selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
+          classId: selectedClass?.id,
+          sectionId: selectedSection?.id,
         });
         toast.success('PPT saved to Course Content');
         reply('EDVA_PPT_SAVED');
@@ -355,7 +357,7 @@ const TopicManagement: React.FC = () => {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [selectedTopic, selectedSubject]);
+  }, [selectedTopic, selectedSubject, selectedClass, selectedSection]);
 
   return (
     <div className="space-y-6">
@@ -515,6 +517,8 @@ const TopicManagement: React.FC = () => {
                 key={selectedTopic.id}
                 topic={selectedTopic}
                 subjectId={selectedSubject.id}
+                classId={selectedClass?.id}
+                sectionId={selectedSection?.id}
                 canEdit={canEditCurriculum}
                 onOpenPptStudio={() => setPptStudioOpen(true)}
               />
@@ -815,7 +819,21 @@ function ChapterNode({
 
 // ── Material workspace (selected topic's materials, grouped by type) ─────────
 
-function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; subjectId: string; canEdit: boolean; onOpenPptStudio: () => void }) {
+function MaterialWorkspace({
+  topic,
+  subjectId,
+  classId,
+  sectionId,
+  canEdit,
+  onOpenPptStudio,
+}: {
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  subjectId: string;
+  classId?: string;
+  sectionId?: string;
+  canEdit: boolean;
+  onOpenPptStudio: () => void;
+}) {
   const confirm = useConfirm();
   const isChapter = topic.kind === 'chapter';
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
@@ -829,11 +847,15 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
 
   const load = React.useCallback(() => {
     setLoading(true);
-    schoolContent.getMaterials(isChapter ? { chapterId: topic.id } : { topicId: topic.id })
+    schoolContent.getMaterials(
+      isChapter
+        ? { chapterId: topic.id, classId, sectionId }
+        : { topicId: topic.id, classId, sectionId }
+    )
       .then((list) => setMaterials(Array.isArray(list) ? list : []))
       .catch(() => setMaterials([]))
       .finally(() => setLoading(false));
-  }, [topic.id, isChapter]);
+  }, [topic.id, isChapter, classId, sectionId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1019,6 +1041,8 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
         <AddMaterialModal
           topic={topic}
           subjectId={subjectId}
+          classId={classId}
+          sectionId={sectionId}
           initialType={addType}
           onClose={() => setShowAdd(false)}
           onSaved={() => { setShowAdd(false); load(); }}
@@ -1028,6 +1052,8 @@ function MaterialWorkspace({ topic, subjectId, canEdit, onOpenPptStudio }: { top
       {showAi && (
         <AiGeneratePanel
           topic={topic}
+          classId={classId}
+          sectionId={sectionId}
           onClose={() => setShowAi(false)}
           onSaved={() => { load(); }}
           onOpenPptStudio={() => { setShowAi(false); onOpenPptStudio(); }}
@@ -1438,7 +1464,21 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
   { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'faq', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
 ];
 
-function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; onClose: () => void; onSaved: () => void; onOpenPptStudio: () => void }) {
+function AiGeneratePanel({
+  topic,
+  classId,
+  sectionId,
+  onClose,
+  onSaved,
+  onOpenPptStudio,
+}: {
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  classId?: string;
+  sectionId?: string;
+  onClose: () => void;
+  onSaved: () => void;
+  onOpenPptStudio: () => void;
+}) {
   const scopeRef = topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const [typeId, setTypeId] = useState('dpp');
   const [questionCount, setQuestionCount] = useState(10);
@@ -1507,6 +1547,8 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
         title: `${cfg.label} — ${topic.name}`,
         content,
         resourceType: cfg.saveAs,
+        classId,
+        sectionId,
       });
       toast.success(`${cfg.label} saved — students can now access it!`);
       onSaved();
@@ -1616,9 +1658,10 @@ function AiGeneratePanel({ topic, onClose, onSaved, onOpenPptStudio }: { topic: 
 // ── Add Material modal (pick type → upload file or paste link) ───────────────
 
 function AddMaterialModal({
-  topic, subjectId, initialType, onClose, onSaved,
+  topic, subjectId, classId, sectionId, initialType, onClose, onSaved,
 }: {
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; subjectId: string;
+  classId?: string; sectionId?: string;
   initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
 }) {
   const [step, setStep] = useState<'type' | 'input'>(initialType ? 'input' : 'type');
@@ -1664,6 +1707,8 @@ function AddMaterialModal({
         subjectIdFk: subjectId,
         chapterId: topic.chapterId,
         topicId: topic.kind === 'chapter' ? undefined : topic.id,
+        classId,
+        sectionId,
       });
       toast.success('Material added');
       onSaved();

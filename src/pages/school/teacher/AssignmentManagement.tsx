@@ -17,6 +17,7 @@ import {
   Inbox,
   Plus,
   CheckCircle2,
+  Layers,
 } from "lucide-react";
 import GlassCard from "@/components/school/GlassCard";
 import Button from "@/components/school/Button";
@@ -35,6 +36,12 @@ import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
 
 type CreateMode = "manual" | "image" | "ai";
+
+function formatSectionName(name: string | null | undefined) {
+  const value = String(name || '').trim();
+  if (!value) return 'Section';
+  return /^(sec|section)\b/i.test(value) ? value : `Sec ${value}`;
+}
 
 function resolveUploadUrl(filePath: string | null | undefined) {
   if (!filePath) return null;
@@ -113,6 +120,7 @@ const AssignmentManagement: React.FC = () => {
   // Navigation state
   const [mainTab, setMainTab] = useState<'manage' | 'inbox'>('manage');
   const [selectedClass, setSelectedClass] = useState<{ id: string; name: string } | null>(null);
+  const [selectedSection, setSelectedSection] = useState<{ id: string; name: string } | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
   const [search, setSearch] = useState('');
   const [inboxItems, setInboxItems] = useState<any[]>([]);
@@ -177,32 +185,55 @@ const AssignmentManagement: React.FC = () => {
 
   // ── Derived hierarchies (class → subject, skip sections) ─────────────────
   const classes = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; subjects: Map<string, { id: string; name: string }> }>();
+    const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string> }>();
     assignments.forEach((a: any) => {
-      if (!a.classId || !a.subjectId) return;
+      if (!a.classId) return;
       const entry = map.get(a.classId) ?? {
         id: a.classId,
         name: a.className,
-        subjects: new Map<string, { id: string; name: string }>(),
+        sections: new Set<string>(),
+        subjects: new Set<string>(),
       };
-      entry.subjects.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
+      if (a.sectionId) entry.sections.add(a.sectionId);
+      if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.classId, entry);
     });
-    return Array.from(map.values()).map((c) => ({
-      id: c.id,
-      name: c.name,
-      subjects: Array.from(c.subjects.values()),
-    }));
+    return Array.from(map.values());
   }, [assignments]);
 
-  const subjects = useMemo(() => {
+  const sections = useMemo(() => {
     if (!selectedClass) return [];
-    return classes.find((c) => c.id === selectedClass.id)?.subjects ?? [];
-  }, [classes, selectedClass]);
+    const map = new Map<string, { id: string; name: string; subjects: Set<string> }>();
+    assignments
+      .filter((a: any) => a.classId === selectedClass.id)
+      .forEach((a: any) => {
+        if (!a.sectionId) return;
+        const entry = map.get(a.sectionId) ?? {
+          id: a.sectionId,
+          name: formatSectionName(a.sectionName),
+          subjects: new Set<string>(),
+        };
+        if (a.subjectId) entry.subjects.add(a.subjectId);
+        map.set(a.sectionId, entry);
+      });
+    return Array.from(map.values());
+  }, [assignments, selectedClass]);
+
+  const subjects = useMemo(() => {
+    if (!selectedClass || !selectedSection) return [];
+    const map = new Map<string, { id: string; name: string }>();
+    assignments
+      .filter((a: any) => a.classId === selectedClass.id && a.sectionId === selectedSection.id)
+      .forEach((a: any) => {
+        if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
+      });
+    return Array.from(map.values());
+  }, [assignments, selectedClass, selectedSection]);
 
   // ── Filtered Navigation ──────────────────────────────────────────────────
   const q = search.trim().toLowerCase();
   const filteredClasses = classes.filter((c) => c.name?.toLowerCase().includes(q));
+  const filteredSections = sections.filter((s) => s.name?.toLowerCase().includes(q));
   const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
 
   const visibleInboxItems = useMemo(() => {
@@ -211,33 +242,41 @@ const AssignmentManagement: React.FC = () => {
       const classMatches = !selectedClass
         || String(sub.class_id ?? sub.classId ?? '') === selectedClass.id
         || normalize(sub.class_name) === normalize(selectedClass.name);
+      const sectionMatches = !selectedSection
+        || String(sub.section_id ?? sub.sectionId ?? '') === selectedSection.id
+        || normalize(sub.section_name) === normalize(selectedSection.name);
       const subjectMatches = !selectedSubject
         || String(sub.subject_id ?? sub.subjectId ?? '') === selectedSubject.id
         || normalize(sub.subject_name) === normalize(selectedSubject.name);
-      return classMatches && subjectMatches;
+      return classMatches && sectionMatches && subjectMatches;
     });
-  }, [inboxItems, selectedClass, selectedSubject]);
+  }, [inboxItems, selectedClass, selectedSection, selectedSubject]);
 
   const pendingInboxCount = visibleInboxItems.filter((s) => s.status !== 'graded').length;
 
-  const level: 'classes' | 'subjects' | 'workspace' =
-    selectedSubject ? 'workspace' : selectedClass ? 'subjects' : 'classes';
+  const level: 'classes' | 'sections' | 'subjects' | 'workspace' =
+    selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  const goToClasses = () => { setSelectedClass(null); setSelectedSubject(null); setSearch(''); };
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
   const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
   const goBack = () => {
     if (level === 'workspace') goToSubjects();
-    else if (level === 'subjects') goToClasses();
+    else if (level === 'subjects') goToSections();
+    else if (level === 'sections') goToClasses();
   };
 
-  const openClass = (classItem: { id: string; name: string; subjects: { id: string; name: string }[] }) => {
+  const openClass = (classItem: { id: string; name: string }) => {
     setSelectedClass({ id: classItem.id, name: classItem.name });
+    setSelectedSection(null);
+    setSelectedSubject(null);
     setSearch('');
-    if (classItem.subjects.length === 1) {
-      setSelectedSubject(classItem.subjects[0]);
-    } else {
-      setSelectedSubject(null);
-    }
+  };
+
+  const openSection = (section: { id: string; name: string; subjects: Set<string> }) => {
+    setSelectedSection({ id: section.id, name: section.name });
+    setSelectedSubject(null);
+    setSearch('');
   };
 
   const openWorkspace = (subject: { id: string; name: string }) => {
@@ -247,10 +286,15 @@ const AssignmentManagement: React.FC = () => {
 
   // ── Workspace Fetches ────────────────────────────────────────────────────
   const fetchWorkspaceAssignments = async () => {
-    if (!selectedClass || !selectedSubject) return;
+    if (!selectedClass || !selectedSection || !selectedSubject) return;
     setLoadingWorkspace(true);
     try {
-      const res = await api.get(`/assignments?classId=${selectedClass.id}&subjectId=${selectedSubject.id}`);
+      const params = new URLSearchParams({
+        classId: selectedClass.id,
+        sectionId: selectedSection.id,
+        subjectId: selectedSubject.id,
+      });
+      const res = await api.get(`/assignments?${params.toString()}`);
       setWorkspaceAssignments(res.data?.data || res.data || []);
     } catch (err) {
       console.error(err);
@@ -263,7 +307,7 @@ const AssignmentManagement: React.FC = () => {
     if (level === 'workspace') {
       fetchWorkspaceAssignments();
     }
-  }, [level, selectedClass, selectedSubject]);
+  }, [level, selectedClass, selectedSection, selectedSubject]);
 
   const fetchInbox = async () => {
     setLoadingInbox(true);
@@ -271,6 +315,7 @@ const AssignmentManagement: React.FC = () => {
     try {
       const params = new URLSearchParams();
       if (selectedClass?.id) params.set('classId', selectedClass.id);
+      if (selectedSection?.id) params.set('sectionId', selectedSection.id);
       if (selectedSubject?.id) params.set('subjectId', selectedSubject.id);
       const query = params.toString();
       const res = await api.get(`/assignments/submissions/inbox${query ? `?${query}` : ''}`);
@@ -284,7 +329,7 @@ const AssignmentManagement: React.FC = () => {
 
   useEffect(() => {
     if (mainTab === 'inbox') void fetchInbox();
-  }, [mainTab, selectedClass?.id, selectedSubject?.id]);
+  }, [mainTab, selectedClass?.id, selectedSection?.id, selectedSubject?.id]);
 
   const openAssignmentDetail = (a: any, tab: 'details' | 'submissions' = 'details') => {
     setSelectedAssignment(a);
@@ -364,7 +409,7 @@ const AssignmentManagement: React.FC = () => {
   };
 
   const handleAiGenerate = async () => {
-    if (!selectedClass || !selectedSubject) return;
+    if (!selectedClass || !selectedSection || !selectedSubject) return;
     if (!aiTopic.trim() && !aiPrompt.trim()) {
       toast.error("Enter a topic or instructions for AI");
       return;
@@ -377,6 +422,7 @@ const AssignmentManagement: React.FC = () => {
         type: formData.type,
         subjectName: selectedSubject.name,
         className: selectedClass.name,
+        sectionName: selectedSection.name,
         questionCount: formData.type === "dpp" ? 10 : undefined,
       });
       const draft = unwrapSchoolData(res, { title: "", instructions: "" });
@@ -394,7 +440,7 @@ const AssignmentManagement: React.FC = () => {
   };
 
   const handleFromImage = async () => {
-    if (!selectedClass || !selectedSubject) return;
+    if (!selectedClass || !selectedSection || !selectedSubject) return;
     if (!worksheetImageUrl) {
       toast.error("Upload a worksheet photo first");
       return;
@@ -405,6 +451,7 @@ const AssignmentManagement: React.FC = () => {
         imageUrl: worksheetImageUrl,
         subjectName: selectedSubject.name,
         className: selectedClass.name,
+        sectionName: selectedSection.name,
         type: formData.type,
         prompt: aiPrompt.trim() || undefined,
       });
@@ -423,7 +470,7 @@ const AssignmentManagement: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedClass || !selectedSubject) {
+    if (!selectedClass || !selectedSection || !selectedSubject) {
       toast.error("No active workspace context.");
       return;
     }
@@ -437,6 +484,7 @@ const AssignmentManagement: React.FC = () => {
       data.append("title", formData.title.trim());
       data.append("type", formData.type);
       data.append("class_id", selectedClass.id);
+      data.append("section_id", selectedSection.id);
       data.append("subject_id", selectedSubject.id);
       if (formData.due_date) data.append("due_date", formData.due_date);
       if (formData.instructions) data.append("instructions", formData.instructions);
@@ -547,7 +595,8 @@ const AssignmentManagement: React.FC = () => {
       <Breadcrumb
         items={[
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
+          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
+          ...(selectedSection ? [{ label: selectedSection.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
           ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => {}, active: true }] : []),
         ]}
       />
@@ -565,8 +614,10 @@ const AssignmentManagement: React.FC = () => {
       {mainTab === 'inbox' && (
         <div className="space-y-4">
           <p className="text-sm text-gray-500">
-            {selectedSubject && selectedClass
-              ? `Student work for ${selectedClass.name} - ${selectedSubject.name} only.`
+            {selectedSubject && selectedClass && selectedSection
+              ? `Student work for ${selectedClass.name} - ${selectedSection.name} - ${selectedSubject.name} only.`
+              : selectedSection && selectedClass
+                ? `Student work for ${selectedClass.name} - ${selectedSection.name}.`
               : selectedClass
                 ? `Student work for ${selectedClass.name}.`
                 : 'All student work submitted to your assignments - grade directly from here.'}
@@ -586,7 +637,7 @@ const AssignmentManagement: React.FC = () => {
                   <div>
                     <p className="font-bold text-gray-900">{sub.student_name}</p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {sub.assignment_title} · {sub.class_name} · {sub.subject_name}
+                      {[sub.assignment_title, sub.class_name, sub.section_name, sub.subject_name].filter(Boolean).join(' · ')}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
                       Submitted {sub.submitted_at ? new Date(sub.submitted_at).toLocaleString() : '—'}
@@ -682,8 +733,8 @@ const AssignmentManagement: React.FC = () => {
                 icon={<GraduationCap size={22} />}
                 tone="brand"
                 title={c.name}
-                meta={`${c.subjects.length} subject${c.subjects.length === 1 ? '' : 's'}`}
-                actionLabel={c.subjects.length === 1 ? 'Open assignments' : 'Choose subject'}
+                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} · ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
+                actionLabel="Choose section"
                 onClick={() => openClass(c)}
               />
             ))}
@@ -691,11 +742,34 @@ const AssignmentManagement: React.FC = () => {
         )
       )}
 
-      {/* Level 2: Subjects */}
+      {/* Level 2: Sections */}
+      {mainTab === 'manage' && level === 'sections' && (
+        filteredSections.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+            No sections assigned for this class.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSections.map((s) => (
+              <NavCard
+                key={s.id}
+                icon={<Layers size={22} />}
+                tone="brand"
+                title={s.name}
+                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
+                actionLabel="Choose subject"
+                onClick={() => openSection(s)}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Level 3: Subjects */}
       {mainTab === 'manage' && level === 'subjects' && (
         filteredSubjects.length === 0 ? (
           <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-            No subjects assigned for this class.
+            No subjects assigned for this section.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -715,13 +789,13 @@ const AssignmentManagement: React.FC = () => {
       )}
 
       {/* Workspace */}
-      {mainTab === 'manage' && level === 'workspace' && selectedClass && selectedSubject && (
+      {mainTab === 'manage' && level === 'workspace' && selectedClass && selectedSection && selectedSubject && (
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div>
               <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
               <p className="text-sm text-gray-500 mt-1">
-                {selectedClass.name} | {selectedSubject.name}
+                {selectedClass.name} | {selectedSection.name} | {selectedSubject.name}
               </p>
             </div>
             <Button icon={<Plus size={18} />} onClick={openCreateModal} className="shadow-sm">
@@ -736,7 +810,7 @@ const AssignmentManagement: React.FC = () => {
               <div className="col-span-full py-16 text-center bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl">
                 <BookOpen size={48} className="mx-auto text-gray-300 mb-4" />
                 <h3 className="text-lg font-medium text-gray-700">No assignments yet</h3>
-                <p className="text-gray-500 mt-1 text-sm mb-4">Post homework for {selectedClass.name} — {selectedSubject.name}.</p>
+                <p className="text-gray-500 mt-1 text-sm mb-4">Post homework for {selectedClass.name} - {selectedSection.name} - {selectedSubject.name}.</p>
                 <Button icon={<Plus size={16} />} onClick={openCreateModal}>Create first assignment</Button>
               </div>
             ) : (
@@ -794,7 +868,7 @@ const AssignmentManagement: React.FC = () => {
       )}
 
       {/* Create Assignment Modal */}
-      {selectedClass && selectedSubject && (
+      {selectedClass && selectedSection && selectedSubject && (
         <Modal
           isOpen={showUploadModal}
           onClose={() => { setShowUploadModal(false); resetCreateForm(); }}
@@ -803,7 +877,7 @@ const AssignmentManagement: React.FC = () => {
         >
           <div className="space-y-5 p-2">
             <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100">
-              Posting to <strong>{selectedClass.name}</strong> · <strong>{selectedSubject.name}</strong>
+              Posting to <strong>{selectedClass.name}</strong> · <strong>{selectedSection.name}</strong> · <strong>{selectedSubject.name}</strong>
             </div>
 
             <InputField
@@ -976,6 +1050,15 @@ const AssignmentManagement: React.FC = () => {
                 </Badge>
               </div>
               <h2 className="text-xl font-bold text-gray-900">{selectedAssignment.title}</h2>
+              {(selectedAssignment.className || selectedAssignment.class_name || selectedAssignment.sectionName || selectedAssignment.section_name || selectedAssignment.subjectName || selectedAssignment.subject_name) && (
+                <p className="mt-1 text-sm font-semibold text-gray-500">
+                  {[
+                    selectedAssignment.className || selectedAssignment.class_name,
+                    selectedAssignment.sectionName || selectedAssignment.section_name,
+                    selectedAssignment.subjectName || selectedAssignment.subject_name,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              )}
               <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
                 <span className="flex items-center gap-1">
                   <Calendar size={14} /> Due: {selectedAssignment.due_date ? new Date(selectedAssignment.due_date).toLocaleDateString() : "No Due Date"}
@@ -1074,7 +1157,9 @@ const AssignmentManagement: React.FC = () => {
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="font-semibold text-gray-900 text-sm">{sub.student_name}</p>
-                          <p className="text-xs text-gray-400">{sub.student_email}</p>
+                          <p className="text-xs text-gray-400">
+                            {[sub.student_email, sub.class_name, sub.section_name].filter(Boolean).join(' · ')}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <Badge variant={sub.status === 'graded' ? 'success' : 'warning'}>

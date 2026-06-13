@@ -1,8 +1,12 @@
+
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 
 
 /**
@@ -73,6 +77,18 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
     </button>
   );
 };
+const CredRow: React.FC<{ label: string; value: string; onCopy: () => void }> = ({ label, value, onCopy }) => (
+  <div>
+    <div className="mb-1 flex items-center justify-between">
+      <span className="text-xs font-black uppercase tracking-wider text-slate-500">{label}</span>
+      <button onClick={onCopy} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+        <Copy size={13} /> Copy
+      </button>
+    </div>
+    <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-3 py-2.5 font-mono text-sm text-slate-800">{value || '—'}</code>
+  </div>
+);
+
 import Button from '@/components/school/Button';
 import Badge from '@/components/school/Badge';
 import Tabs from '@/components/school/Tabs';
@@ -90,8 +106,59 @@ import './ClassManagement.css';
 const ClassManagement: React.FC = () => {
   const { user } = useAuth();
   // navigate removed because calendar tab was removed
+  const navigate = useNavigate();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [liveClassData, setLiveClassData] = useState([]);
+
+  // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
+  const [obsLectures, setObsLectures] = useState<LiveLecture[]>([]);
+  const [showLiveModal, setShowLiveModal] = useState(false);
+  const [liveTitle, setLiveTitle] = useState('');
+  const [creatingLive, setCreatingLive] = useState(false);
+  const [createdLive, setCreatedLive] = useState<CreatedLecture | null>(null);
+  const [credsLecture, setCredsLecture] = useState<LiveLecture | null>(null); // re-show creds for an existing row
+  const [showKey, setShowKey] = useState(false);
+
+  const fetchObsLectures = async () => {
+    try { setObsLectures(await schoolLive.listLectures()); }
+    catch (err) { console.error('Failed to fetch live lectures', err); }
+  };
+
+  const openCreateLive = () => {
+    setCreatedLive(null); setCredsLecture(null); setLiveTitle(''); setShowKey(false); setShowLiveModal(true);
+  };
+
+  const submitCreateLive = async () => {
+    if (!liveTitle.trim()) { toast.warning('Enter a lecture title'); return; }
+    setCreatingLive(true);
+    try {
+      const res = await schoolLive.createLecture(liveTitle.trim());
+      setCreatedLive(res);
+      toast.success('Live class created');
+      fetchObsLectures();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to create live class');
+    } finally {
+      setCreatingLive(false);
+    }
+  };
+
+  // Credentials currently shown in the modal (from a fresh create or an existing row).
+  const activeCreds: CreatedLecture | null = createdLive
+    ? createdLive
+    : credsLecture
+      ? {
+          lectureId: credsLecture.id,
+          streamKey: credsLecture.streamKey || '',
+          rtmpUrl: credsLecture.rtmpUrl || '',
+          playbackUrl: credsLecture.playbackUrl || '',
+        }
+      : null;
+
+  const copyText = (value: string, label: string) => {
+    navigator.clipboard.writeText(value);
+    toast.success(`${label} copied`);
+  };
   const [recordedClassData, setRecordedClassData] = useState([]);
   const [showRecordingModal, setShowRecordingModal] = useState(false);
   const [uploadingRecording, setUploadingRecording] = useState(false);
@@ -215,6 +282,7 @@ const ClassManagement: React.FC = () => {
 
   useEffect(() => {
     fetchSchedules();
+    fetchObsLectures();
     fetchRecordedClasses();
     fetchAcademicData();
   }, [user?.id]);
@@ -401,6 +469,7 @@ const ClassManagement: React.FC = () => {
 
   useLiveRefresh(() => {
     fetchSchedules();
+    fetchObsLectures();
     fetchRecordedClasses();
   }, [], 30000);
 
@@ -486,9 +555,51 @@ const ClassManagement: React.FC = () => {
     }
   }, [detailRec?.id, detailRec?.quiz_status, detailTab, recordedClassData]);
 
+  const statusBadge = (s: string) =>
+    s === 'LIVE' ? <Badge variant="error">Live Now</Badge>
+      : s === 'ENDED' ? <Badge variant="info">Ended</Badge>
+        : <Badge variant="purple">Scheduled</Badge>;
+
   const liveContent = (
     <div className="class__section">
-      <DataTable columns={liveColumns} data={liveClassData} />
+      {obsLectures.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-14 text-center">
+          <Radio className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+          <h3 className="text-base font-black text-slate-900">No live classes yet</h3>
+          <p className="mt-1 text-sm text-slate-500">Click <b>Go Live (OBS)</b> to create one and get your OBS stream key.</p>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {obsLectures.map((lec) => (
+            <div key={lec.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-500">
+                <Radio className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-black text-slate-900">{lec.title}</p>
+                <p className="text-xs font-medium text-slate-400">
+                  {lec.createdAt ? new Date(lec.createdAt).toLocaleString() : '—'}
+                </p>
+              </div>
+              {statusBadge(lec.status)}
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  <Eye size={14} /> Stream Info
+                </button>
+                <button
+                  onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
+                >
+                  {lec.status === 'LIVE' ? 'Open Live' : 'Dashboard'} <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -597,11 +708,11 @@ const ClassManagement: React.FC = () => {
         <div>
           <h1 className="text-2xl font-black text-slate-900">Lectures</h1>
           <p className="mt-0.5 text-sm font-medium text-slate-500">
-            {recordedClassData.length} recorded · {liveClassData.length} live classes
+            {recordedClassData.length} recorded · {obsLectures.length} live classes
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" icon={<Radio size={16} />} onClick={() => setShowScheduleModal(true)}>Schedule Live</Button>
+          <Button variant="outline" icon={<Radio size={16} />} onClick={openCreateLive}>Go Live (OBS)</Button>
           <Button icon={<Plus size={16} />} onClick={() => setShowRecordingModal(true)}>Upload Lecture</Button>
         </div>
       </div>
@@ -948,127 +1059,65 @@ const ClassManagement: React.FC = () => {
         </div>
       )}
 
-      <Modal isOpen={showScheduleModal} onClose={() => setShowScheduleModal(false)} title="Schedule New Class">
-        <div className="class__modal-form">
-          <InputField
-            label="Class Title"
-            placeholder="Enter class title"
-            value={scheduleForm.title}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, title: e.target.value }))}
-          />
-          <SelectField
-            label="Subject"
-            value={scheduleForm.subjectId}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, subjectId: e.target.value }))}
-            options={academicSubjects.map((s: any) => ({ value: s.id, label: s.name }))}
-          />
-          <SelectField
-            label="Class"
-            value={scheduleForm.classId}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, classId: e.target.value }))}
-            options={academicClasses.map((c: any) => ({ value: c.id, label: c.name }))}
-          />
-          <div className="class__modal-row">
+      <Modal isOpen={showLiveModal} onClose={() => setShowLiveModal(false)} title={activeCreds ? 'Live Class — OBS Setup' : 'Go Live (OBS)'}>
+        {!activeCreds ? (
+          <div className="class__modal-form">
             <InputField
-              label="Date"
-              type="date"
-              value={scheduleForm.date}
-              onChange={(e) => setScheduleForm((prev) => ({ ...prev, date: e.target.value }))}
+              label="Lecture Title"
+              placeholder="e.g. Trigonometry — Live Doubt Session"
+              value={liveTitle}
+              onChange={(e) => setLiveTitle(e.target.value)}
             />
-            <InputField
-              label="Time"
-              type="time"
-              value={scheduleForm.time}
-              onChange={(e) => setScheduleForm((prev) => ({ ...prev, time: e.target.value }))}
-            />
+            <p className="text-xs text-slate-500">
+              Stream from OBS to your institute's RTMP server — students watch live with chat, reactions, and raise-hand.
+            </p>
+            <div className="class__modal-actions">
+              <Button variant="outline" onClick={() => setShowLiveModal(false)}>Cancel</Button>
+              <Button onClick={submitCreateLive} disabled={creatingLive}>
+                {creatingLive ? 'Creating…' : 'Create Live Class'}
+              </Button>
+            </div>
           </div>
-          <InputField
-            label="Duration"
-            placeholder="e.g., 45"
-            value={scheduleForm.duration}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, duration: e.target.value }))}
-          />
-          <InputField
-            label="Zoom Link"
-            placeholder="https://zoom.us/j/..."
-            value={scheduleForm.zoomLink}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, zoomLink: e.target.value }))}
-          />
-          <InputField
-            label="Google Meet Link"
-            placeholder="https://meet.google.com/..."
-            value={scheduleForm.googleMeetLink}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, googleMeetLink: e.target.value }))}
-          />
-          <SelectField
-            label="Live Status"
-            value={scheduleForm.liveStatus}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, liveStatus: e.target.value }))}
-            options={[
-              { value: 'scheduled', label: 'Scheduled' },
-              { value: 'ongoing', label: 'Ongoing' },
-              { value: 'completed', label: 'Completed' },
-            ]}
-          />
-          <SelectField
-            label="Recurring Schedule"
-            value={scheduleForm.recurringSchedule}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, recurringSchedule: e.target.value }))}
-            options={[
-              { value: 'none', label: 'One-time' },
-              { value: 'daily', label: 'Daily' },
-              { value: 'weekly', label: 'Weekly' },
-              { value: 'monthly', label: 'Monthly' },
-            ]}
-          />
-          <div className="class__modal-actions">
-            <Button variant="outline" onClick={() => setShowScheduleModal(false)}>Cancel</Button>
-            <Button
-              onClick={async () => {
-                try {
-                  if (!scheduleForm.classId || !scheduleForm.subjectId || !scheduleForm.date || !scheduleForm.time) {
-                    console.log('Form validation failed:', scheduleForm);
-                    alert('Please fill in class, subject, date and time fields');
-                    return;
-                  }
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-600">
+              <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" /></span>
+              Paste these into OBS → Settings → Stream (Service: Custom)
+            </div>
 
-                  const dayOfWeek = new Date(scheduleForm.date).toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-                  const durationMin = parseInt(scheduleForm.duration, 10) || 45;
-                  const payload = {
-                    class_id: scheduleForm.classId,
-                    subject_id: scheduleForm.subjectId,
-                    teacher_id: user?.id,
-                    day_of_week: dayOfWeek,
-                    start_time: scheduleForm.time,
-                    end_time: toEndTime(scheduleForm.time, durationMin),
-                    type: 'live',
-                    zoom_link: scheduleForm.zoomLink,
-                    google_meet_link: scheduleForm.googleMeetLink,
-                    live_status: scheduleForm.liveStatus,
-                    recurring_schedule: scheduleForm.recurringSchedule === 'none' ? null : { pattern: scheduleForm.recurringSchedule },
-                  };
+            <CredRow label="RTMP URL" value={activeCreds.rtmpUrl} onCopy={() => copyText(activeCreds.rtmpUrl, 'RTMP URL')} />
 
-                  console.log('Scheduling with payload:', payload);
-                  await api.post('/classes/schedules', payload);
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Stream Key</span>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowKey((s) => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700">
+                    {showKey ? <EyeOff size={13} /> : <Eye size={13} />} {showKey ? 'Hide' : 'Show'}
+                  </button>
+                  <button onClick={() => copyText(activeCreds.streamKey, 'Stream key')} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                    <Copy size={13} /> Copy
+                  </button>
+                </div>
+              </div>
+              <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-3 py-2.5 font-mono text-sm text-slate-800">
+                {showKey ? activeCreds.streamKey : '•'.repeat(Math.min(activeCreds.streamKey.length || 24, 32))}
+              </code>
+            </div>
 
-                  alert('Class scheduled successfully');
-                  fetchSchedules();
+            <ol className="space-y-1 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+              <li><b>1.</b> Open OBS → <b>Settings → Stream</b></li>
+              <li><b>2.</b> Service: <i>Custom</i>; paste the RTMP URL + Stream Key</li>
+              <li><b>3.</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
+            </ol>
 
-                  setShowScheduleModal(false);
-                  setScheduleForm({ title: '', classId: '', subjectId: '', date: '', time: '', duration: '45', zoomLink: '', googleMeetLink: '', liveStatus: 'scheduled', recurringSchedule: 'none' });
-                } catch (error) {
-                  console.error('Failed to create schedule', error);
-                  const errorMessage = error instanceof Error
-                    ? error.message
-                    : 'Failed to schedule class';
-                  alert(errorMessage);
-                }
-              }}
-            >
-              Schedule Class
-            </Button>
+            <div className="class__modal-actions">
+              <Button variant="outline" onClick={() => setShowLiveModal(false)}>Close</Button>
+              <Button icon={<ArrowRight size={16} />} onClick={() => navigate(`/school/teacher/live/${activeCreds.lectureId}/dashboard`)}>
+                Open Live Dashboard
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </Modal>
 
       <Modal isOpen={showRecordingModal} onClose={() => !uploadingRecording && resetRecordingModal()} title="Upload Recorded Lecture" size="lg">

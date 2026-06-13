@@ -49,7 +49,13 @@ interface PresignResponse {
 }
 
 export const schoolContent = {
-  getMaterials: (params: { topicId?: string; chapterId?: string; subjectId?: string }) =>
+  getMaterials: (params: {
+    topicId?: string;
+    chapterId?: string;
+    subjectId?: string;
+    classId?: string;
+    sectionId?: string;
+  }) =>
     schoolApi.get('/materials', { params })
       .then((res) => extractData<SchoolMaterial[]>(res) ?? []),
 
@@ -64,6 +70,8 @@ export const schoolContent = {
     subjectId?: string;
     chapterId?: string;
     topicId?: string;
+    classId?: string;
+    sectionId?: string;
   }) => schoolApi.post('/materials', body).then(extractData),
 
   deleteMaterial: (id: string) =>
@@ -83,7 +91,15 @@ export const schoolContent = {
     .then((res) => extractData<{ content: string; contentType: string; topicName: string }>(res)),
 
   /** Persist AI-generated markdown as a study material for students. */
-  saveAiMaterial: (body: { topicId?: string; chapterId?: string; title: string; content: string; resourceType: string }) =>
+  saveAiMaterial: (body: {
+    topicId?: string;
+    chapterId?: string;
+    title: string;
+    content: string;
+    resourceType: string;
+    classId?: string;
+    sectionId?: string;
+  }) =>
     schoolApi.post('/materials/ai-save', body).then(extractData),
 
   /** Generate (or fetch cached) an AI image for one slide; returns its S3 URL. */
