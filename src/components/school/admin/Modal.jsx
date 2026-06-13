@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Modal({ isOpen, title, onClose, children, size = 'md' }) {
   const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    '2xl': 'max-w-6xl',
-    'full': 'max-w-[95vw]'
+    sm: 'max-w-[95vw] sm:max-w-md',
+    md: 'max-w-[95vw] sm:max-w-lg',
+    lg: 'max-w-[95vw] sm:max-w-2xl',
+    xl: 'max-w-[95vw] sm:max-w-4xl',
+    '2xl': 'max-w-[95vw] sm:max-w-6xl',
+    'full': 'max-w-[95vw] lg:max-w-[95vw]'
   };
 
   return (
@@ -29,9 +29,9 @@ export default function Modal({ isOpen, title, onClose, children, size = 'md' })
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className={`w-full ${sizes[size]} rounded-lg border border-surface-200 bg-white shadow-2xl`}>
-              <div className="flex items-center justify-between border-b border-surface-200 p-6">
-                <h2 className="font-display text-xl font-bold text-surface-950">{title}</h2>
+            <div className={`w-full ${sizes[size]} rounded-lg border border-surface-200 bg-white shadow-2xl max-h-[95vh] flex flex-col`}>
+              <div className="flex-none flex items-center justify-between border-b border-surface-200 p-4 sm:p-6">
+                <h2 className="font-display text-lg sm:text-xl font-bold text-surface-950">{title}</h2>
                 <button
                   onClick={onClose}
                   className="rounded-lg p-1 text-surface-400 hover:bg-surface-100 hover:text-surface-600"
@@ -39,7 +39,7 @@ export default function Modal({ isOpen, title, onClose, children, size = 'md' })
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className={size === 'full' ? '' : 'p-6'}>
+              <div className={`flex-1 overflow-y-auto ${size === 'full' ? '' : 'p-4 sm:p-6'}`}>
                 {children}
               </div>
             </div>
