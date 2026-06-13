@@ -132,7 +132,7 @@ export default function ParentDashboard() {
                   </span>
                 </div>
                 <h1 className="font-display text-2xl font-black md:text-3xl text-white">
-                  Welcome back, {user?.name || "Parent"}! 👋 🌟
+                  Welcome, {user?.name || "Parent"}! 👋 🌟
                 </h1>
                 <p className="mt-2 text-white/90 font-medium text-sm">
                   A focused view of attendance, marks, homework, tests, and school updates for the week.

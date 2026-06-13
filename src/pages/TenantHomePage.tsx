@@ -186,7 +186,7 @@ const TenantHomePage = () => {
                 className="space-y-7">
 
                 <div>
-                  <h1 className="text-[30px] font-extrabold tracking-tight text-gray-900 mb-1.5">Welcome back</h1>
+                  <h1 className="text-[30px] font-extrabold tracking-tight text-gray-900 mb-1.5">Welcome</h1>
                   <p className="text-[14px] font-medium text-gray-500">
                     Enter your registered mobile number to receive a verification code.
                   </p>

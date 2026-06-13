@@ -397,7 +397,7 @@ const LoginPage = () => {
 
                 <div>
                   <h1 className="text-[32px] font-black tracking-tight text-slate-900 leading-tight mb-2">
-                    {tenantInfo?.name ? `Welcome to ${tenantInfo.name}` : "Welcome back"}
+                    {tenantInfo?.name ? `Welcome to ${tenantInfo.name}` : "Welcome"}
                   </h1>
                   <p className="text-[16px] font-semibold text-slate-400">
                     {tenantInfo?.name ? "Sign in to access your portal." : "Continue your journey of excellence."}

@@ -228,7 +228,7 @@ const Dashboard: React.FC = () => {
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:pr-64">
               <div>
-                <h1 className="text-3xl font-black tracking-tight">Welcome back, {user?.name || 'Teacher'}! 👩‍🏫✨</h1>
+                <h1 className="text-3xl font-black tracking-tight">Welcome, {user?.name || 'Teacher'}! 👩‍🏫✨</h1>
                 <p className="mt-2 max-w-xl text-teal-50 font-medium leading-relaxed font-sans">
                   Empower your students with structured learning, live classes, and instant performance tracking.
                 </p>

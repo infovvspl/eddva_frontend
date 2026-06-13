@@ -17,6 +17,16 @@ const Reports: React.FC = () => {
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
   const [classAnalytics, setClassAnalytics] = useState<any[]>([]);
   const [weaknessData, setWeaknessData] = useState<any[]>([]);
+  const [scope, setScope] = useState<any>(null);
+  const [weeklyAnalysis, setWeeklyAnalysis] = useState<any>({
+    averageScore: 0,
+    passRate: 0,
+    atRiskStudents: 0,
+    evaluatedStudents: 0,
+    totalStudents: 0,
+    assessments: 0,
+    days: [],
+  });
   const [summary, setSummary] = useState({
     classAverage: 0,
     passRate: 0,
@@ -47,6 +57,16 @@ const Reports: React.FC = () => {
         setClassAnalytics(analytics);
         setStudentPerformance(Array.isArray(body.students) ? body.students : []);
         setWeaknessData(Array.isArray(body.weaknesses) ? body.weaknesses : []);
+        setScope(body.scope || null);
+        setWeeklyAnalysis({
+          averageScore: Math.round(body.weeklyAnalysis?.averageScore || 0),
+          passRate: Math.round(body.weeklyAnalysis?.passRate || 0),
+          atRiskStudents: Math.round(body.weeklyAnalysis?.atRiskStudents || 0),
+          evaluatedStudents: Math.round(body.weeklyAnalysis?.evaluatedStudents || 0),
+          totalStudents: Math.round(body.weeklyAnalysis?.totalStudents || 0),
+          assessments: Math.round(body.weeklyAnalysis?.assessments || 0),
+          days: Array.isArray(body.weeklyAnalysis?.days) ? body.weeklyAnalysis.days : [],
+        });
         setSummary({
           classAverage: Math.round(reportSummary.classAverage || analytics[0]?.avgScore || 0),
           passRate: Math.round(reportSummary.passRate || analytics[0]?.passRate || 0),
@@ -78,6 +98,20 @@ const Reports: React.FC = () => {
   const startIndex = (studentPage - 1) * studentPageSize;
   const endIndex = startIndex + studentPageSize;
   const paginatedStudents = studentPerformance.slice(startIndex, endIndex);
+  const formatSectionName = (name?: string) => {
+    const sectionName = String(name || '').trim();
+    if (!sectionName) return '';
+    return /^sec(?:tion)?\b/i.test(sectionName) ? sectionName : `Sec ${sectionName}`;
+  };
+  const scopeAssignments = Array.isArray(scope?.assignments) ? scope.assignments : [];
+  const scopeLabel = scopeAssignments.length
+    ? scopeAssignments
+        .map((item: any) => [item.class_name, formatSectionName(item.section_name)].filter(Boolean).join(' - '))
+        .filter(Boolean)
+        .filter((value: string, index: number, values: string[]) => values.indexOf(value) === index)
+        .join(', ')
+    : 'Assigned class';
+  const weeklyDays = Array.isArray(weeklyAnalysis.days) ? weeklyAnalysis.days : [];
 
   const studentColumns = [
     { key: 'name', title: 'Student' },
@@ -232,6 +266,57 @@ const Reports: React.FC = () => {
 
   const testContent = (
     <div className="reports__section">
+      <div className="reports__weekly-stats">
+        <GlassCard className="reports__weekly-card">
+          <span className="reports__weekly-label">Weekly Average</span>
+          <strong>{weeklyAnalysis.averageScore}%</strong>
+        </GlassCard>
+        <GlassCard className="reports__weekly-card">
+          <span className="reports__weekly-label">Weekly Pass Rate</span>
+          <strong>{weeklyAnalysis.passRate}%</strong>
+        </GlassCard>
+        <GlassCard className="reports__weekly-card">
+          <span className="reports__weekly-label">Weekly At-Risk</span>
+          <strong>{weeklyAnalysis.atRiskStudents}</strong>
+        </GlassCard>
+        <GlassCard className="reports__weekly-card">
+          <span className="reports__weekly-label">Tests This Week</span>
+          <strong>{weeklyAnalysis.assessments}</strong>
+        </GlassCard>
+      </div>
+      <GlassCard>
+        <h3 className="reports__chart-title">Weekly Performance</h3>
+        {!loading && !weeklyDays.some((item: any) => item.avgScore > 0) && (
+          <div className="reports__empty">No weekly test performance is available yet.</div>
+        )}
+        <div className="reports__chart">
+          {weeklyDays.map((item: any) => (
+            <div key={item.date || item.day} className="reports__chart-bar-wrapper">
+              <div className="reports__chart-bar-group">
+                <div
+                  className="reports__chart-bar reports__chart-bar--score"
+                  style={{ height: `${item.avgScore || 0}%` }}
+                />
+                <div
+                  className="reports__chart-bar reports__chart-bar--attendance"
+                  style={{ height: `${Math.min((item.tests || 0) * 20, 100)}%` }}
+                />
+              </div>
+              <span className="reports__chart-label">{item.day}</span>
+            </div>
+          ))}
+        </div>
+        <div className="reports__chart-legend">
+          <span className="reports__legend-item">
+            <span className="reports__legend-dot reports__legend-dot--score" />
+            Avg Score
+          </span>
+          <span className="reports__legend-item">
+            <span className="reports__legend-dot reports__legend-dot--attendance" />
+            Test Count
+          </span>
+        </div>
+      </GlassCard>
       <GlassCard>
         <h3 className="reports__chart-title">Performance Over Time</h3>
         {!loading && !performanceChartData.length && (
@@ -281,6 +366,15 @@ const Reports: React.FC = () => {
     <div className="reports">
       {error && <div className="reports__error">{error}</div>}
       {loading && <div className="reports__empty">Loading reports...</div>}
+      {scope?.isClassTeacherScope && (
+        <div className="reports__scope">
+          <div>
+            <span>Class Teacher View</span>
+            <strong>{scopeLabel}</strong>
+          </div>
+          <Badge variant="success">All subjects</Badge>
+        </div>
+      )}
       <div className="reports__stats">
         <StatCard title="Class Average" value={`${summary.classAverage}%`} change="Live" changeType="positive" icon={<BarChart3 size={24} />} />
         <StatCard title="Pass Rate" value={`${summary.passRate}%`} change="Live" changeType="positive" icon={<Target size={24} />} gradient="var(--gradient-cool)" />

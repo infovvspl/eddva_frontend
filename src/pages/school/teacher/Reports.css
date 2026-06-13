@@ -10,6 +10,40 @@
   gap: 14px;
 }
 
+.reports__scope {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(79, 70, 229, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 12px 16px;
+}
+
+.reports__scope div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reports__scope span,
+.reports__weekly-label {
+  color: var(--gray-400);
+  font-size: 0.688rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.reports__scope strong {
+  color: var(--gray-800);
+  font-size: 0.875rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
 .reports__section {
   display: flex;
   flex-direction: column;
@@ -61,6 +95,27 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 14px;
+}
+
+.reports__weekly-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reports__weekly-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 86px;
+  justify-content: center;
+}
+
+.reports__weekly-card strong {
+  color: var(--gray-900);
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .reports__weakness-card {
@@ -216,10 +271,23 @@
   .reports__stats {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .reports__weekly-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 480px) {
   .reports__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .reports__scope {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reports__weekly-stats {
     grid-template-columns: 1fr;
   }
 }
