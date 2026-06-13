@@ -221,7 +221,7 @@ export default function Classes() {
 
   const recordedClassesView = (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-4">
         <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50 p-5">
           <Video className="h-6 w-6 text-blue-600" />
           <p className="mt-4 text-[11px] font-black uppercase tracking-[0.24em] text-blue-700">Lectures</p>
@@ -360,7 +360,7 @@ export default function Classes() {
         liveClassesView
       ) : (
         <>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
           <Radio className="h-6 w-6 text-blue-600" />
           <h2 className="mt-4 text-sm font-black text-slate-950 dark:text-white">Join Live Session</h2>

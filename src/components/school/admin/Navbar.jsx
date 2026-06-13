@@ -631,9 +631,13 @@ export default function Navbar({ onMenuClick }) {
               aria-label="User Profile menu"
             >
               <div className="relative">
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                  {(user?.name || 'A').charAt(0).toUpperCase()}
-                </div>
+                {user?.profileImage ? (
+                  <img src={user.profileImage} alt="Profile" className="h-10 w-10 rounded-2xl object-cover border border-slate-200 dark:border-slate-800" />
+                ) : (
+                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                    {(user?.name || 'A').charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
               </div>
             </button>

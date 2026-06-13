@@ -59,7 +59,7 @@ export default function Analytics() {
           <p className="mt-1 text-sm text-slate-500">Your analytics will appear after your teacher publishes assessment results.</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           
           {/* Key Metrics */}
           <div className="md:col-span-3 grid grid-cols-2 gap-4 sm:grid-cols-4">

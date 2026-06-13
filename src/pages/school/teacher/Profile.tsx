@@ -16,7 +16,7 @@ const Profile: React.FC = () => {
     employeeId: "",
     dateOfJoining: "",
   });
-  const [avatarUrl, setAvatarUrl] = useState<string>(localStorage.getItem("teacher_avatar") || "");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   const [assignments, setAssignments] = useState<any[]>([]);
   const [academicData, setAcademicData] = useState<any>({
@@ -64,6 +64,9 @@ const Profile: React.FC = () => {
             if (data.stats) {
                setStats(prev => ({ ...prev, ...data.stats }));
             }
+            if (data.profileImage) {
+               setAvatarUrl(prev => prev ? prev : data.profileImage);
+            }
           }
         })
         .catch(err => console.error("Failed to fetch academic data", err));
@@ -81,10 +84,6 @@ const Profile: React.FC = () => {
 
   const handleSave = () => {
     localStorage.setItem("teacher_phone", profile.phone);
-    if (avatarUrl) {
-      localStorage.setItem("teacher_avatar", avatarUrl);
-    }
-
     alert("Profile updated successfully!");
   };
 
