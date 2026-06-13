@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, Plus, Edit2, Trash2, MapPin, Users } from 'lucide-react';
+import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
@@ -7,6 +7,7 @@ import TimetableForm from '@/components/school/admin/forms/TimetableForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { PeriodSettings } from '@/pages/school/admin/AdminSettings';
 
 export default function Timetable() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ export default function Timetable() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTimetable, setSelectedTimetable] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPeriodsModal, setShowPeriodsModal] = useState(false);
   const [filterTeacher, setFilterTeacher] = useState('');
   const [filterClass, setFilterClass] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('');
@@ -353,13 +355,22 @@ export default function Timetable() {
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage class schedules and teacher assignments.</p>
         </div>
         {!isTeacher && (
-          <button
-            onClick={handleAddClick}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
-          >
-            <Plus className="h-5 w-5" />
-            Add Slot
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowPeriodsModal(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800 active:scale-[0.99]"
+            >
+              <Settings className="h-4 w-4" />
+              Manage Periods
+            </button>
+            <button
+              onClick={handleAddClick}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
+            >
+              <Plus className="h-5 w-5" />
+              Add Slot
+            </button>
+          </div>
         )}
       </div>
 
@@ -850,6 +861,10 @@ export default function Timetable() {
 
       <Modal isOpen={isModalOpen} title={selectedTimetable ? 'Edit Timetable Slot' : 'Add Timetable Slot'} onClose={() => setIsModalOpen(false)} size="lg">
         <TimetableForm timetable={selectedTimetable} onSubmit={handleSubmit} onCancel={() => setIsModalOpen(false)} isLoading={isSubmitting} />
+      </Modal>
+
+      <Modal isOpen={showPeriodsModal} title="Manage Periods" onClose={() => setShowPeriodsModal(false)} size="lg">
+        <PeriodSettings />
       </Modal>
     </div>
   );
