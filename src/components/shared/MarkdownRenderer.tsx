@@ -29,6 +29,26 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\n(?![a-zA-Z])/g, "\n")
     .replace(/\r?\n/g, "\n\n");
 
+  const mathCommandPattern = String.raw`(?:\\(?:frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)|\\frac|\\sqrt|√)`;
+  const normalizeMathLine = (line: string) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.includes("$") || !new RegExp(mathCommandPattern).test(trimmed)) return line;
+    const prefix = line.match(/^\s*(?:\d+[\).]\s*|[-*]\s*)?/)?.[0] ?? "";
+    const body = line.slice(prefix.length).trim();
+    if (!/[=+\-*/^_{}\\√]/.test(body)) return line;
+    const sentenceLike = /[A-Za-z]{3,}\s+[A-Za-z]{3,}/.test(body.replace(/\\[A-Za-z]+/g, ""));
+    const standaloneMath =
+      /^[a-zA-Z]\s*=/.test(body) ||
+      /^(?:\\(?:frac|sqrt)|√|\d+\s*[+\-*/=]|\(?\s*[a-zA-Z0-9]+\s*[+\-*/=])/.test(body);
+    if (sentenceLike && !standaloneMath) return line;
+    return `${prefix}$${body}$`;
+  };
+
+  formatted = formatted
+    .split("\n")
+    .map(normalizeMathLine)
+    .join("\n");
+
   // Step-based and final answer formatting
   formatted = formatted
     .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
@@ -44,8 +64,10 @@ export const formatMarkdown = (text?: string) => {
 
   // 5. Restore missing backslashes for common math symbols (e.g. frac, sqrt, pi, theta, etc.)
   formatted = formatted
-    .replace(/(^|[^A-Za-z\\])(rac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\{/g, "$1\\$2{")
+    .replace(/(^|[^A-Za-z\\])(rac|frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\{/g, (_m, prefix, command) => `${prefix}\\${command === "rac" ? "frac" : command}{`)
     .replace(/(^|[^A-Za-z\\])(int_|sum_|lim_)/g, "$1\\$2")
+    .replace(/√\s*\{([^{}]+)\}/g, "\\sqrt{$1}")
+    .replace(/√\s*([A-Za-z0-9]+)/g, "\\sqrt{$1}")
     .replace(/x\s+\bo\b\s+(\d+|[a-z])/gi, "x \\to $1")
     .replace(/x\s*->\s*(\d+|[a-z])/gi, "x \\to $1");
 
