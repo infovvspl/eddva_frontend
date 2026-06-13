@@ -5,14 +5,15 @@ import {
   X, Printer, ExternalLink, FileText, Loader2,
   Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight,
   ListChecks, Check, Trophy, AlertCircle, Maximize2, Minimize2,
-  ZoomIn, ZoomOut
+  ZoomIn, ZoomOut, BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DppContentRenderer from "@/components/DppContentRenderer";
 import { getResourceDownloadUrl } from "@/lib/api/student";
+import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
-import PdfHighlightOverlay from "@/components/resources/PdfHighlightOverlay";
+import PdfHighlightOverlay, { HIGHLIGHT_CATEGORIES, PdfHighlight } from "@/components/resources/PdfHighlightOverlay";
 
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -201,7 +202,7 @@ function FlaskConical(props: any) {
 
 // ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
 
-function InternalPdfViewer({ url, resourceId, isTeacher }: { url: string, resourceId?: string, isTeacher?: boolean }) {
+function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighlights }: { url: string, resourceId?: string, isTeacher?: boolean, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>> }) {
   const [numPages, setNumPages] = useState<number>();
   const [scale, setScale] = useState<number>(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -256,6 +257,8 @@ function InternalPdfViewer({ url, resourceId, isTeacher }: { url: string, resour
                   resourceId={resourceId}
                   containerRef={containerRef}
                   isTeacher={!!isTeacher}
+                  highlights={highlights}
+                  setHighlights={setHighlights}
                 />
               )}
             </div>
@@ -273,6 +276,33 @@ export default function ResourceViewerModal({
   const [loadingFile, setLoadingFile] = useState(!!fileUrl);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [highlights, setHighlights] = useState<PdfHighlight[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!resourceId || !isTeacher || type.toLowerCase() !== "pdf") return;
+    
+    apiClient.get(`/school/materials/${resourceId}/highlights`)
+      .then(res => {
+        if (mounted && res.data?.data) {
+          setHighlights(res.data.data);
+        }
+      })
+      .catch(err => console.error("Failed to load highlights", err));
+
+    return () => { mounted = false; };
+  }, [resourceId, isTeacher, type]);
+
+  const analyticsData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    highlights.forEach((h: PdfHighlight) => {
+      const cat = h.category || "concept";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [highlights]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -347,6 +377,16 @@ export default function ResourceViewerModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {isTeacher && isPdf && resourceId && (
+              <button
+                onClick={() => setShowAnalytics(true)}
+                className="px-3 h-10 rounded-xl flex items-center justify-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm font-bold text-sm"
+                title="Chapter Highlights Analytics"
+              >
+                <BarChart3 className="w-4 h-4" /> Analytics
+              </button>
+            )}
+
             <button
               onClick={toggleFullscreen}
               className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
@@ -398,7 +438,7 @@ export default function ResourceViewerModal({
               />
             </div>
           ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} />
+            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} highlights={highlights} setHighlights={setHighlights} />
           ) : externalUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
               <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
@@ -433,6 +473,58 @@ export default function ResourceViewerModal({
           )}
         </div>
       </motion.div>
+
+      {/* Analytics Dialog */}
+      <AnimatePresence>
+        {showAnalytics && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800">Chapter Highlights</h3>
+                    <p className="text-xs font-medium text-slate-500">Summary Analytics</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAnalytics(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="space-y-3">
+                  {HIGHLIGHT_CATEGORIES.map(cat => {
+                    const count = analyticsData[cat.id] || 0;
+                    return (
+                      <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shadow-inner", cat.bg)}>
+                            <span className="text-sm">{cat.icon}</span>
+                          </div>
+                          <span className="text-sm font-bold text-slate-700">{cat.label}</span>
+                        </div>
+                        <span className="text-base font-black text-slate-900">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>,
     document.body
   );

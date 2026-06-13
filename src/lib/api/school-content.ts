@@ -10,7 +10,19 @@ import { putFileToS3, type UploadProgressEvent } from './upload';
  * can't be reused because its JWT strategy resolves users from the coaching DB.
  */
 
-export type SchoolMaterialType = 'notes' | 'pyq' | 'formula_sheet' | 'dpp' | 'mindmap' | 'ppt' | 'ebook';
+export type SchoolMaterialType =
+  | 'notes'
+  | 'pyq'
+  | 'formula_sheet'
+  | 'dpp'
+  | 'mindmap'
+  | 'ppt'
+  | 'ebook'
+  | 'study_guide'
+  | 'key_concepts'
+  | 'flashcard'
+  | 'revision_checklist'
+  | 'faq';
 
 export interface SchoolMaterial {
   id: string;
@@ -24,6 +36,8 @@ export interface SchoolMaterial {
   isAiGenerated?: boolean;
   topicId?: string | null;
   chapterId?: string | null;
+  topicName?: string | null;
+  chapterName?: string | null;
   subjectIdFk?: string | null;
   createdAt?: string | null;
 }
