@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { SchoolAskDoubtPanel } from '@/components/school/SchoolAskDoubtPanel';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import { useAuth } from '@/context/SchoolAuthContext';
 import {
   ArrowLeft,
   BookOpen,
@@ -19,6 +20,7 @@ import {
   MessageCircle,
   Trophy,
   Lock,
+  ImagePlus,
 } from 'lucide-react';
 
 function isYouTubeUrl(url = '') {
@@ -36,6 +38,8 @@ function dateLabel(value) {
 
 export default function RecordedClassDetails() {
   const { recordingId } = useParams();
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER' || user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN';
   const [searchParams] = useSearchParams();
   const playParam = searchParams.get('play');
   const shouldAutoPlay = playParam === '1';
@@ -44,6 +48,7 @@ export default function RecordedClassDetails() {
   const [loading, setLoading] = useState(true);
   const [detailTab, setDetailTab] = useState('notes');
   const [playback, setPlayback] = useState({ src: '', source: '', loading: false, error: '' });
+  const [addingVisuals, setAddingVisuals] = useState(false);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [savedResponses, setSavedResponses] = useState([]);
@@ -191,12 +196,27 @@ export default function RecordedClassDetails() {
     };
   }, [recording]);
 
+  const handleAddVisuals = async () => {
+    if (!recording || addingVisuals) return;
+    setAddingVisuals(true);
+    try {
+      await api.post(`/classes/recordings/${recording.id}/regenerate-notes-images`);
+      const response = await api.get('/classes/recordings');
+      setRecordings(unwrapSchoolList(response));
+    } catch (err) {
+      console.error('Failed to trigger image enrichment:', err);
+    } finally {
+      setAddingVisuals(false);
+    }
+  };
+
   const renderRecordingStatus = (item) => {
     if (item.notes_status === 'done' && item.notes) {
+      const imageCount = Array.isArray(item.notes_images) ? item.notes_images.length : 0;
       return (
         <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
           <Sparkles size={13} />
-          AI notes ready
+          {imageCount > 0 ? `AI notes · ${imageCount} visuals` : 'AI notes ready'}
         </span>
       );
     }
@@ -291,8 +311,48 @@ export default function RecordedClassDetails() {
   const renderStudyPanel = () => {
     if (detailTab === 'notes') {
       if (recording.notes) {
+        const imageCount = Array.isArray(recording.notes_images) ? recording.notes_images.length : 0;
         return (
-          <MarkdownRenderer content={recording.notes} className="prose-slate" />
+          <div className="space-y-4">
+            {/* Visuals metadata bar */}
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5">
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                {imageCount > 0 ? (
+                  <>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                      <ImagePlus size={11} />
+                    </span>
+                    <span className="font-semibold text-slate-700">{imageCount} visual{imageCount !== 1 ? 's' : ''} embedded</span>
+                    <span>· scroll down to see them</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200 text-slate-400">
+                      <ImagePlus size={11} />
+                    </span>
+                    <span>No visuals yet</span>
+                  </>
+                )}
+              </div>
+              {isTeacher && (
+                <button
+                  type="button"
+                  onClick={handleAddVisuals}
+                  disabled={addingVisuals}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {addingVisuals ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <ImagePlus size={11} />
+                  )}
+                  {imageCount > 0 ? 'Refresh visuals' : 'Add visuals'}
+                </button>
+              )}
+            </div>
+
+            <MarkdownRenderer content={recording.notes} className="prose-slate" />
+          </div>
         );
       }
 
